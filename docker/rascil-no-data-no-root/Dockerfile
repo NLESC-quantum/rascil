@@ -19,7 +19,7 @@ RUN apt-get update -y && apt-get install -y \
 
 # This will clone into (and create) a directory at /rascil
 # The data directory will not be loaded correctly until LFS is enabled
-RUN git clone https://github.com/SKA-ScienceDataProcessor/rascil.git
+RUN git clone https://gitlab.com/ska-telescope/rascil.git
 
 # Set runtime environment variables.
 ENV RASCIL=/rascil

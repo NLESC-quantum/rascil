@@ -1,5 +1,0 @@
-arl_image: 10.128.26.15:5000/arl_img
-arl_image_tag: latest
-dask_procs: 2
-dask_threads: 1
-dask_tmp: /rascil/tmp

@@ -13,7 +13,7 @@ To acheive sufficient performance we take a dual pronged approach -
 using threaded libraries for shared memory processing, and the Dask
 library for distributed processing.
 
-Documentation is [here](https://timcornwell.gitlab.io/rascil/)
+Documentation is [here](https://ska-telescope.gitlab.io/rascil/)
 
 RASCIL can be installed using pip::
 
@@ -21,7 +21,7 @@ RASCIL can be installed using pip::
     
 You may also need the rascil data for simulations:
 
-    curl https://timcornwell.gitlab.io/rascil/rascil_data.tgz -o rascil.data.tgz
+    curl https://ska-telescope.gitlab.io/rascil/rascil_data.tgz -o rascil.data.tgz
     tar zxf rascil_data.tgz
     export RASCIL_DATA=`pwd`/rascil_data
 
@@ -30,4 +30,4 @@ clone from the GitHub repository:
  
     git clone https://gitlab.com/ska-telescope/rascil
     
-RASCIL CI/CD occurs on  [Gitlab](https://gitlab.com/timcornwell/rascil)
+RASCIL CI/CD occurs on  [Gitlab](https://gitlab.com/ska-telescope/rascil)

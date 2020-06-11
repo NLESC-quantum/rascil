@@ -27,19 +27,19 @@ dask-worker-space
 */*/notebooks/*_files
 */*/notebooks/*.rst
 */*/scripts/*.rst
-/docs/examples/notebooks
+/docs/src/examples/notebooks
 
 examples/ska_simulations/surface_simulation.rst
 
 examples/ska_simulations/pointing_simulation.rst
 
-docs/examples/ska_simulations/pointing_simulation.rst
+docs/src/examples/ska_simulations/pointing_simulation.rst
 
-docs/examples/ska_simulations/surface_simulation.rst
+docs/src/examples/ska_simulations/surface_simulation.rst
 
 examples/ska_simulations/atmospheric_simulation.rst
 
-docs/examples/ska_simulations/atmospheric_simulation.rst
+docs/src/examples/ska_simulations/atmospheric_simulation.rst
 
 dist/
 
@@ -52,3 +52,5 @@ examples/random/
 tests/workflows/voltage_pattern_gaintable.png
 
 *.img
+
+docs/src/api/

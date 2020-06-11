@@ -21,7 +21,7 @@ Command line arguments
 ++++++++++++++++++++++
 
 .. argparse::
-   :filename: ../examples/ska_simulations/atmospheric_simulation.py
+   :filename: ../../examples/ska_simulations/atmospheric_simulation.py
    :func: cli_parser
    :prog: atmospheric_simulation.py
 

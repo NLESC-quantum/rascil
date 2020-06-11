@@ -13,7 +13,7 @@ docs:
     - mkdir -p test_results
     - rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /build/
   script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make -k -C docs html
+    - PYTHONPATH=`pwd` HOME=`pwd` make -k -C docs/src html
   after_script:
     - mv docs/build/html html
   artifacts:
@@ -46,7 +46,6 @@ data:
   stage: build
   script:
     - tar -zcf rascil_data.tgz data
-  after_script:
   artifacts:
     paths:
       - rascil_data.tgz

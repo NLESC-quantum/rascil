@@ -45,7 +45,7 @@ trailing-spaces:
 	find rascil/workflows -name "*.py" -exec perl -pi -e 's/[ \t]*$$//' {} \;
 
 docs: inplace  ## build docs
-	$(MAKE) -C docs dirhtml
+	$(MAKE) -C docs/src dirhtml
 
 code-flake:
 	# flake8 ignore long lines and trailing whitespace
@@ -59,9 +59,9 @@ code-lint:
 code-analysis: code-flake code-lint  ## run pylint and flake8 checks
 
 examples: inplace  ## launch examples
-	$(MAKE) -C rascil/examples/notebooks
-	$(MAKE) -C rascil/examples/scripts
-	$(MAKE) -C rascil/examples/skasimulations
+	$(MAKE) -C examples/notebooks
+	$(MAKE) -C examples/scripts
+	$(MAKE) -C examples/ska_simulations
 
 docker:
 	cd docker/rascil-no-data;docker build -t timcornwell/rascil-no-data .

@@ -5,8 +5,8 @@
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = build
-APIDIR        = api
+BUILDDIR      = ../build
+APIDIR        = ../api
 
 # User-friendly check for sphinx-build
 ifeq ($(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?), 1)
@@ -56,16 +56,16 @@ clean:
 
 .PHONY: prepare
 prepare:
-	make -C ../examples/notebooks rst
+	make -C ../../examples/notebooks rst
 	mkdir -p examples/notebooks/
-	cp ../examples/notebooks/*.rst examples/notebooks/
-	cp -R ../examples/notebooks/*_files examples/notebooks/
-	make -C ../examples/scripts rst
+	cp ../../examples/notebooks/*.rst examples/notebooks/
+	cp -R ../../examples/notebooks/*_files examples/notebooks/
+	make -C ../../examples/scripts rst
 	mkdir -p examples/scripts/
-	cp ../examples/scripts/*.rst examples/scripts/
-	make -C ../examples/ska_simulations rst
+	cp ../../examples/scripts/*.rst examples/scripts/
+	make -C ../../examples/ska_simulations rst
 	mkdir -p examples/ska_simulations/
-	cp ../examples/ska_simulations/*.rst examples/ska_simulations/
+	cp ../../examples/ska_simulations/*.rst examples/ska_simulations/
 
 .PHONY: html
 html: prepare

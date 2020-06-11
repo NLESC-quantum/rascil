@@ -28,6 +28,6 @@ You may also need the rascil data for simulations:
 Alternatively, if you wish to develop using RASCIL then you can 
 clone from the GitHub repository:
  
-    git clone https://github.com/SKA-ScienceDataProcessor/rascil
+    git clone https://gitlab.com/ska-telescope/rascil
     
 RASCIL CI/CD occurs on  [Gitlab](https://gitlab.com/timcornwell/rascil)

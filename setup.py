@@ -25,13 +25,13 @@ packages = ['rascil']
 package_data = [i for p in packages for i in
                 glob.glob(p + '/*/') + glob.glob(p + '/*/*/') + glob.glob(p + '/*/*/*/')]
 setup(name='rascil',
-      version='0.1.5',
+      version='0.1.6beta',
       python_requires='>=3.6',
       description='Radio Astronomy Simulation, Calibration, and Imaging Library',
       long_description=open('README.md').read(),
       author='Tim Cornwell, Peter Wortmann, Bojan Nikolic, Feng Wang, Vlad Stolyarov',
       author_email='realtimcornwell@gmail.com',
-      url='https://github.com/SKA-ScienceDataProcessor/rascil',
+      url='https://gitlab.com/ska-telescope/rascil',
       license='Apache License Version 2.0',
       packages=(packages + package_data),
       test_suite="tests",

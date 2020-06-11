@@ -12,7 +12,7 @@ Process
 
 - Use git to make a local clone of the Github respository::
 
-   git clone https://github.com/SKA-ScienceDataProcessor/rascil
+   git clone https://gitlab.com/ska-telescope/rascil
 
 - Make a branch. Use a descriptive name e.g. feature_improved_gridding, bugfix_issue_666
 - Make whatever changes are needed, including documentation.
@@ -39,7 +39,7 @@ Additions and changes should adhere to these principles.
 Submitting code
 ===============
 
-RASCIL is hosted on the SDP github https://github.com/SKA-ScienceDataProcessor/rascil.git . CI/CD occurs on Gitlab at:
+RASCIL is hosted on the SDP github https://gitlab.com/ska-telescope/rascil.git . CI/CD occurs on Gitlab at:
 https://gitlab.com/timcornwell/rascil
 
 We welcome pull requests submitted via github.

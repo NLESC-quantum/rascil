@@ -22,7 +22,7 @@ Command line arguments
 ++++++++++++++++++++++
 
 .. argparse::
-   :filename: ../examples/ska_simulations/surface_simulation.py
+   :filename: ../../examples/ska_simulations/surface_simulation.py
    :func: cli_parser
    :prog: surface_simulation.py
 

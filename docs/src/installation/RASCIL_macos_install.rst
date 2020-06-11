@@ -6,7 +6,7 @@ Installation of RASCIL on macos
 RASCIL is well-suited to running under macos. Installation should be straightforward. Although the pip approach can
 be used, we recommend use of Anaconda https://www.anaconda.com. Using anaconda::
 
-    git clone https://github.com/SKA-ScienceDataProcessor/rascil
+    git clone https://gitlab.com/ska-telescope/rascil
     cd rascil
     conda env create -f environment.yml
     conda activate rascil

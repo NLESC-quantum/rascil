@@ -4,7 +4,7 @@ Running RASCIL under docker
 
 For some of the steps below it is helpful to have the RASCIL code tree available. Use::
 
-   git clone https://github.com/SKA-ScienceDataProcessor/rascil
+   git clone https://gitlab.com/ska-telescope/rascil
    cd rascil
 
 Running on existing docker images

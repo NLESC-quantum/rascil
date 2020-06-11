@@ -21,7 +21,7 @@ Command line arguments
 ++++++++++++++++++++++
 
 .. argparse::
-   :filename: ../examples/ska_simulations/pointing_simulation.py
+   :filename: ../../examples/ska_simulations/pointing_simulation.py
    :func: cli_parser
    :prog: pointing_simulation.py
 

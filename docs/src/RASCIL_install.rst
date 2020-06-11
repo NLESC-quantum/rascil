@@ -40,7 +40,7 @@ The installation steps are:
 
 - Use git to make a local clone of the Github respository::
 
-   git clone https://github.com/SKA-ScienceDataProcessor/rascil
+   git clone https://gitlab.com/ska-telescope/rascil
 
 - Change into that directory::
 

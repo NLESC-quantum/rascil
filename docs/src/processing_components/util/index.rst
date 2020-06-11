@@ -17,6 +17,12 @@ Utility
 .. automodapi::    rascil.processing_components.util.coordinate_support
    :no-inheritance-diagram:
 
+.. automodapi::    rascil.processing_components.util.geometry
+   :no-inheritance-diagram:
+
+.. automodapi::    rascil.processing_components.util.installation_checks
+   :no-inheritance-diagram:
+
 .. automodapi::    rascil.processing_components.util.sizeof
    :no-inheritance-diagram:
 

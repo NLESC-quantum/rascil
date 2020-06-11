@@ -10,6 +10,7 @@ Processing Components
 
    arrays/index
    calibration/index
+   flagging/index
    fourier_transforms/index
    griddata/index
    image/index

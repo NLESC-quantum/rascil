@@ -11,6 +11,9 @@ Imaging
 .. automodapi::    rascil.processing_components.imaging.base
    :no-inheritance-diagram:
 
+.. automodapi::    rascil.processing_components.imaging.dft
+   :no-inheritance-diagram:
+
 .. automodapi::    rascil.processing_components.imaging.imaging_params
    :no-inheritance-diagram:
 

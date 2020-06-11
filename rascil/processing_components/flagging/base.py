@@ -1,5 +1,5 @@
 """
-Base simple flagtable operations
+Simple flagging operations (Still in development)
 """
 
 __all__ = ['flagtable_summary',

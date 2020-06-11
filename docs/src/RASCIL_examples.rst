@@ -8,8 +8,7 @@ Running notebooks
 
 The best way to get familiar with RASCIL is via jupyter notebooks. For example::
 
-   jupyter examples/notebooks/imaging.ipynb
-
+   jupyter notebook examples/notebooks/imaging.ipynb
 
 See the jupyter note books below:
 
@@ -40,7 +39,9 @@ Some example scripts are found in the directory examples/scripts.
 SKA simulations
 ***************
 
-The SKA simulations make full use of the capabilities of RASCIL.
+The SKA simulations make full use of the capabilities of RASCIL. The surface simulation and atmosphere simulation
+both require special large data files that are not part of the repository. However, the pointing simulation can be run
+using data files in the RASCIL data repository.
 
 .. toctree::
    :maxdepth: 1

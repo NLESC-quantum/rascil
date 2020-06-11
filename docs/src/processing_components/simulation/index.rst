@@ -26,6 +26,9 @@ Simulation
 .. automodapi::    rascil.processing_components.simulation.simulation_helpers
    :no-inheritance-diagram:
 
+.. automodapi::    rascil.processing_components.simulation.surface
+   :no-inheritance-diagram:
+
 .. automodapi::    rascil.processing_components.simulation.testing_support
    :no-inheritance-diagram:
 

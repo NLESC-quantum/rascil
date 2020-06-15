@@ -1,0 +1,32 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+aotools = "*"
+astropy = "*"
+bokeh = "*"
+dask = "*"
+distributed = "*"
+h5py = "*"
+jupyter = "*"
+jupyter-contrib-nbextensions = "*"
+matplotlib = "*"
+numba = "*"
+numpy = "*"
+paramiko = "*"
+photutils = "*"
+python-casacore = "==3.2.0"
+graphviz = "*"
+reproject = "*"
+scikit-image = "*"
+scipy = "*"
+seqfile = "*"
+configparser = "*"
+tabulate = "*"
+
+[requires]
+python_version = "3.7"

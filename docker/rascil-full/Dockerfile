@@ -1,4 +1,6 @@
-FROM timcornwell/rascil-full-no-root
+ARG DOCKER_REGISTRY_USER
+ARG DOCKER_REGISTRY_HOST
+FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/rascil-full-root:latest as build
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
       description="RASCIL reference image" \

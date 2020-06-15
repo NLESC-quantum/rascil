@@ -1,4 +1,6 @@
-FROM timcornwell/rascil-no-data-no-root
+ARG DOCKER_REGISTRY_USER
+ARG DOCKER_REGISTRY_HOST
+FROM ${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_USER}/rascil-base-root:latest as build
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
       description="RASCIL reference image" \
@@ -15,10 +17,8 @@ RUN git lfs install && \
     python3 setup.py build && python3 setup.py install && \
     rm -rf /root/.cache
 
-WORKDIR /rascil
-
 # git-lfs is already loaded so we just need to install it
 RUN git lfs pull
 
+# Use entrypoint script to create a user on the fly and avoid running as root.
 CMD ["/bin/bash"]
-

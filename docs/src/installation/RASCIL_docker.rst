@@ -10,10 +10,10 @@ For some of the steps below it is helpful to have the RASCIL code tree available
 Running on existing docker images
 ---------------------------------
 
-The docker containers for RASCIL are on github at::
+The docker containers for RASCIL are on nexus.engageska-portugal.pt at::
 
-    docker.io/timcornwell/rascil-no-data
-    docker.io/timcornwell/rascil-full
+    nexus.engageska-portugal.pt/rascil/rascil-base
+    nexus.engageska-portugal.pt/rascil/rascil-full
 
 The first does not have the RASCIL test data but is smaller in size (2GB vs 4GB). However, for many of the tests
 and demonstrations the test data is needed.
@@ -29,7 +29,7 @@ to the name of the HOME directory, which is the same inside and outside the
 container, and then give the full address of the script inside the container. This time
 we will show the prompts from inside the container::
 
-     % docker run -p 8888:8888 -v $HOME:$HOME -it timcornwell/rascil-full
+     % docker run -p 8888:8888 -v $HOME:$HOME -it nexus.engageska-portugal.pt/rascil/rascil-full
      rascil@d0c5fc9fc19d:/rascil$ cd /<your home directory>
      rascil@d0c5fc9fc19d:/<your home directory>$ python3 /rascil/examples/scripts/imaging.py
      ...
@@ -46,7 +46,7 @@ Running notebooks
 
 We also want to be able to run jupyter notebooks inside the container::
 
-    docker run -it -p 8888:8888 --volume $HOME:$HOME timcornwell/rascil-full
+    docker run -it -p 8888:8888 --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil/rascil-full
     cd /<your home directory>
     jupyter notebook --no-browser --ip 0.0.0.0  /rascil/examples/notebooks/
 
@@ -94,7 +94,7 @@ data::
 The scheduler and 4 workers should now be running. To connect to the cluster, run the
 following into another window::
 
-    docker run -it --network host --volume $HOME:$HOME timcornwell/rascil-full
+    docker run -it --network host --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil/rascil-full
 
 Then at the docker prompt, do e.g.::
 
@@ -128,11 +128,11 @@ Singularity
 
 `Singularity <https://sylabs.io/docs/>`_ can be used to load and run the docker images::
 
-    singularity pull RASCIL.img docker://timcornwell/rascil-full-no-root
+    singularity pull RASCIL.img docker:/nexus.engageska-portugal.pt/rascil/rascil-full-root
     singularity run RASCIL.img
     python3 /rascil/examples/scripts/imaging.py
 
-Note that we use the -no-root versions of the docker images to avoid singularity
+Note that we use the -root versions of the docker images to avoid singularity
 complaining about a non-existent user RASCIL. As in docker, don't run from the /rascil/directory.
 
 Inside a SLURM file singularity can be used by prefacing dask and python commands

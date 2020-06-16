@@ -51,6 +51,10 @@ data:
       - rascil_data.tgz
     expire_in: 6 months
 
+staging:
+  stage: deploy
+  trigger: ska-telescope/rascil-docker
+
 pages:
   stage: deploy
   dependencies:

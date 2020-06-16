@@ -10,17 +10,20 @@ For some of the steps below it is helpful to have the RASCIL code tree available
 Running on existing docker images
 ---------------------------------
 
-The docker containers for RASCIL are on nexus.engageska-portugal.pt at::
+The RASCIL Dockerfiles are in a separate repository at https://gitlab.com/ska-telescope/rascil-docker.
+
+The docker images for RASCIL are on nexus.engageska-portugal.pt at::
 
     nexus.engageska-portugal.pt/rascil/rascil-base
     nexus.engageska-portugal.pt/rascil/rascil-full
+    nexus.engageska-portugal.pt/rascil/rascil-notebook
 
 The first does not have the RASCIL test data but is smaller in size (2GB vs 4GB). However, for many of the tests
 and demonstrations the test data is needed.
 
 To run RASCIL with your home directory available inside the image::
 
-    docker run -it --volume $HOME:$HOME timcornwell/rascil-full
+    docker run -it --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil/rascil-full
 
 Now let's run an example. First it simplifies using the container if we do not
 try to write inside the container, and that's why we mapped in our $HOME directory.
@@ -65,33 +68,18 @@ the standard jupyter directory page.
 Running RASCIL as a cluster
 ---------------------------
 
-The file docker/docker-compose in the RASCIL code tree provides a simple way to
+The file docker/docker-compose in the rascil-docker code tree provides a simple way to
 create a local cluster of a Dask scheduler and a number of workers. First install
-RASCIL using git clone as described above. The cluster is created using the
-docker-compose up command. To scale to e.g. 4 dask workers::
+the rascil-docker code tree::
 
-    cd docker
-    docker-compose up --scale worker=4
+       git clone https://gitlab.com/ska-telescope/rascil-docker
+       cd rascil-docker
 
-The scheduler and 4 worker should now be running. To connect to the cluster, run the following into another window::
+The cluster is created using the docker-compose up command. To scale to e.g. 4 dask workers::
 
-    docker run -it --network host timcornwell/rascil-full
+    docker-compose up -f docker-compose-base.yml --scale worker=4
 
-Then at the docker prompt, we can run a test program in python. This test program takes the
-address of the scheduler on the command line. Hence the command at the docker command line::
-
-    python3 /rascil/cluster_tests/ritoy/cluster_test_ritoy.py localhost:8786
-
-The diagnostics page should be at http://127.0.0.1:8787. This test should conclude in about
-two minutes.
-
-If the RASCIL data is already locally available then the images can be built without data using a slightly
-different compose file. This assumes that the environment variable RASCIL_DATA points to the
-data::
-
-    docker-compose --file docker-compose-no-data.yml up --scale worker=4
-
-The scheduler and 4 workers should now be running. To connect to the cluster, run the
+The scheduler, 4 workers and a notebook should now be running. To connect to the cluster, run the
 following into another window::
 
     docker run -it --network host --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil/rascil-full
@@ -113,6 +101,14 @@ Click on the 127.0.0.1 URL. We have used the jupyter lab interface instead of ju
 because the former allows control of Dask from the interface. This can be changed in the docker-compose.yml
 file. Note also that the classic notebook interface can be selected at the lab interface.
 
+If the RASCIL data is already locally available then the images can be built without data using a slightly
+different compose file. This assumes that the environment variable RASCIL_DATA points to the
+data::
+
+    docker-compose --file docker-compose-base.yml up --scale worker=4
+
+The scheduler, 4 workers and notebook should now be running and can be accessed as above.
+
 CASA Measures Tables
 --------------------
 
@@ -128,7 +124,7 @@ Singularity
 
 `Singularity <https://sylabs.io/docs/>`_ can be used to load and run the docker images::
 
-    singularity pull RASCIL.img docker:/nexus.engageska-portugal.pt/rascil/rascil-full-root
+    singularity pull RASCIL.img docker://nexus.engageska-portugal.pt/rascil/rascil-full-root
     singularity run RASCIL.img
     python3 /rascil/examples/scripts/imaging.py
 

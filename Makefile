@@ -19,18 +19,16 @@ LINE:=$(shell printf '=%.0s' {1..70})
 
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
-	DOCKER_REGISTRY_USER=rascil
-#  	DOCKER_REGISTRY_USER:=skaorca
+	DOCKER_REGISTRY_USER=ci-cd
 endif
 
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
 	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
-#	DOCKER_REGISTRY_HOST=index.docker.io
 endif
 
 
 # RASCIL data directory usualy found in ./data
-RASCILDATA = $(CURRENT_DIR)/data
+RASCIL_DATA = $(CURRENT_DIR)/data
 
 -include PrivateRules.mak
 

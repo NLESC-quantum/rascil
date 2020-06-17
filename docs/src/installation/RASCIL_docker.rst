@@ -68,7 +68,7 @@ the standard jupyter directory page.
 Running RASCIL as a cluster
 ---------------------------
 
-The file docker/docker-compose in the rascil-docker code tree provides a simple way to
+The file docker-compose in the rascil-docker code tree provides a simple way to
 create a local cluster of a Dask scheduler and a number of workers. First install
 the rascil-docker code tree::
 

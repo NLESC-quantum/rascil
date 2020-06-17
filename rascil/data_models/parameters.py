@@ -76,7 +76,7 @@ def rascil_path(path):
     return os.path.join(rascilhome, path)
 
 
-def rascil_data_path(path):
+def rascil_data_path(path, check=True):
     """Converts a path that might be relative to the RASCIL data directory into an
     absolute path::
 
@@ -90,9 +90,14 @@ def rascil_data_path(path):
     """
     rascil_data_home = os.getenv('RASCIL_DATA', None)
     if rascil_data_home is None:
-        return rascil_path('data/' + path)
+        dp = rascil_path('data/')
     else:
-        return os.path.join(rascil_data_home, path)
+        dp = rascil_data_home
+    if check:
+        if not os.path.exists(dp):
+            raise EnvironmentError("RASCIL data directory {} does not exist".format(dp))
+    dp = os.path.join(dp, path)
+    return dp
 
 
 def get_parameter(kwargs, key, default=None):

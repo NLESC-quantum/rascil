@@ -19,6 +19,6 @@ singularity cache somewhere other than your home directory::
 
     mkdir /share/nas/<yourname>/.singularity
     export SINGULARITY_CACHEDIR=/share/nas/<yourname>/.singularity
-    singularity pull RASCIL-full.img docker://timcornwell/rascil-full-no-root
+    singularity pull RASCIL-full.img docker://timcornwell/rascil-full
 
 .. _feedback: mailto:realtimcornwell@gmail.com

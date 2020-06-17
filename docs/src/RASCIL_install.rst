@@ -12,7 +12,8 @@ If you just wish to run the package and do not intend to run simulations or test
 
     pip install rascil
 
-For simulations, you can add the data in a separate step::
+This will download and install the python files, and dependencies. For simulations, you must add the data in a separate
+step::
 
     curl https://ska-telescope.gitlab.io/rascil/rascil_data.tgz -o rascil.data.tgz
     tar zxf rascil_data.tgz

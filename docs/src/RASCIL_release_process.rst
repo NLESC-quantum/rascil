@@ -13,10 +13,13 @@ Steps:
 
  * Ensure that the current master builds on GitLab: https://gitlab.com/timcornwell/rascil/pipelines
  * Decide whether a release is warranted and what semantic version number it should be: https://semver.org
- * Update setup.py for the new version number.
+ * Update setup.py for the new version number e.g. 0.1.16
+ * Goto rascil-docker, update the version number (e.g. to 0.1.16) then build, tag, and push the rascil build. This
+will trigger a build in rascil-docker
  * Update CHANGELOG.md for the relevant changes in this release.
  * Update README.md if appropriate
  * Tag the release e.g. v0.1.3 "Address hidden pip requirements"
+ * Push the rascil changes to the master
  * Build the distribution and upload to PyPI::
 
         python3 setup.py sdist bdist_wheel
@@ -29,3 +32,5 @@ Steps:
         pip install rascil
         python3
         >>> import rascil
+
+ * Reset the version numbers both in rascil and rascil-docker to the next e.g. 0.1.17b0

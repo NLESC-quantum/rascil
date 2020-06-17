@@ -22,18 +22,20 @@ if sys.platform == 'darwin':
 # re-use the setuptools build support.
 
 packages = ['rascil']
-package_data = [i for p in packages for i in
-                glob.glob(p + '/*/') + glob.glob(p + '/*/*/') + glob.glob(p + '/*/*/*/')]
+packages_data = [i for p in packages for i in
+                glob.glob(p + '/*/') + glob.glob(p + '/*/*/') + glob.glob(p + '/*/*/*/') + glob.glob(p + '/*/*/*/*/') + glob.glob(p + '/*/*/*/*/')]
+print(packages_data)
 setup(name='rascil',
       version='0.1.6b0',
       python_requires='>=3.6',
       description='Radio Astronomy Simulation, Calibration, and Imaging Library',
       long_description=open('README.md').read(),
-      author='Tim Cornwell, Peter Wortmann, Bojan Nikolic, Feng Wang, Vlad Stolyarov',
+      author='Tim Cornwell, Peter Wortmann, Bojan Nikolic, Feng Wang, Vlad Stolyarov, Mark Ashdown, Danielle Fenech',
       author_email='realtimcornwell@gmail.com',
       url='https://gitlab.com/ska-telescope/rascil',
       license='Apache License Version 2.0',
-      packages=(packages + package_data),
+      install_requires=['aotools', 'astropy', 'bokeh', 'dask', 'distributed', 'h5py', 'jupyter', 'jupyter_contrib_nbextensions', 'matplotlib', 'numba', 'numpy', 'paramiko', 'photutils', 'python-casacore', 'graphviz', 'reproject', 'scikit-image', 'scipy', 'seqfile', 'ConfigParser', 'tabulate'],
+      packages=(packages + packages_data),
       test_suite="tests",
       tests_require=['pytest']
       )

@@ -13,19 +13,24 @@ Steps:
 
  * Ensure that the current master builds on GitLab: https://gitlab.com/timcornwell/rascil/pipelines
  * Decide whether a release is warranted and what semantic version number it should be: https://semver.org
- * Update setup.py for the new version number e.g. 0.1.16
- * Goto rascil-docker, update the version number (e.g. to 0.1.16) then build, tag, and push the rascil build. This
-will trigger a build in rascil-docker
- * Update CHANGELOG.md for the relevant changes in this release.
- * Update README.md if appropriate
- * Tag the release e.g. v0.1.3 "Address hidden pip requirements"
- * Push the rascil changes to the master
+ * Update CHANGELOG.md for the relevant changes in this release, putting newer description at the top.
+ * Check if  the documentation been updated
+ * Update setup.py for the new version number e.g. 0.1.6
+ * Update README.md as appropriate
+ * Tag the release e.g.::
+
+        git tag -a v0.1.6 -m "Docker files moved to separate repo"
+
+ * Goto rascil-docker, update the version number (e.g. to 0.1.6)
+ * Goto rascil, push the rascil changes to the master. This will trigger a build of rascil and then a
+build in rascil-docker.
+ * Review the pipeline build for success
  * Build the distribution and upload to PyPI::
 
         python3 setup.py sdist bdist_wheel
         python3 -m twine upload dist/*
 
- * Create a new virtualenv and try the install: pip3 install rascil::
+ * Create a new virtualenv and try the install by using pip3 install rascil::
 
         virtualenv test_env
         . test_env/bin/activate

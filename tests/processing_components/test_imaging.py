@@ -19,7 +19,7 @@ from rascil.processing_components.image.operations import export_image_to_fits, 
 from rascil.processing_components.imaging.base import predict_2d, invert_2d
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 from rascil.processing_components.imaging.primary_beams import create_pb_generic
-from rascil.processing_components.simulation import create_named_configuration, plot_visibility
+from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation import ingest_unittest_visibility, \
     create_unittest_model, create_unittest_components
 from rascil.processing_components.skycomponent.operations import find_skycomponents, find_nearest_skycomponent, \
@@ -38,12 +38,12 @@ class TestImaging2D(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
     
     def actualSetUp(self, freqwin=1, block=False, dospectral=True,
                     image_pol=PolarisationFrame('stokesI'), zerow=False):
         
-        self.npixel = 512
+        self.npixel = 256
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = freqwin
         self.vis = list()
@@ -157,21 +157,6 @@ class TestImaging2D(unittest.TestCase):
         self.model.data[0, 0, ny // 2, nx // 2] = 1.0
         vis = predict_2d(self.vis, self.model)
         assert numpy.max(numpy.abs(vis.vis-1.0)) < 1e-12, numpy.max(numpy.abs(vis.vis-1.0))
-
-    def test_predict_2d_offset_point(self):
-        self.actualSetUp(zerow=True, block=True)
-        nchan, npol, ny, nx = self.model.shape
-        for oversampling in [15]:
-            self.model.data[...] = 0.0
-            self.model.data[0, 0, ny // 2 - ny // 8, nx // 2] = 1.0
-            vis = predict_2d(self.vis, self.model, oversampling=oversampling)
-            print(oversampling, numpy.max(numpy.abs(vis.vis)))
-            
-            plot_visibility([vis], x="uvdist")
-            plot_visibility([vis], x="uvdist", y="phase")
-
-
-        #assert numpy.max(numpy.abs(numpy.abs(vis.vis)-1.0)) < 1e-12, numpy.max(numpy.abs(numpy.abs(vis.vis)-1.0))
 
     def test_predict_2d_point_block(self):
         self.actualSetUp(zerow=True, block=True)
@@ -351,8 +336,6 @@ class TestImaging2D(unittest.TestCase):
             psf = invert_2d(self.vis, self.model, dopsf=True)
             error = numpy.max(psf[0].data) - 1.0
             assert abs(error) < 1.0e-12, error
-            rms = numpy.std(psf[0].data)
-            print(weighting, rms, psf[1])
             if self.persist:
                 export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_%s.fits' % (self.dir, weighting))
             assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
@@ -364,8 +347,6 @@ class TestImaging2D(unittest.TestCase):
             psf = invert_2d(self.vis, self.model, dopsf=True)
             error = numpy.max(psf[0].data) - 1.0
             assert abs(error) < 1.0e-12, error
-            rms = numpy.std(psf[0].data)
-            print(weighting, rms, psf[1])
             if self.persist:
                 export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_block_%s.fits' % (self.dir, weighting))
             assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
@@ -377,8 +358,6 @@ class TestImaging2D(unittest.TestCase):
             psf = invert_2d(self.vis, self.model, dopsf=True)
             error = numpy.max(psf[0].data) - 1.0
             assert abs(error) < 1.0e-12, error
-            rms = numpy.std(psf[0].data)
-            print(weighting, rms, psf[1])
             if self.persist:
                 export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_block_%s_IQUV.fits' % (self.dir, weighting))
             assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"

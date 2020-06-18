@@ -19,7 +19,7 @@ Steps:
  * Update README.md as appropriate
  * Tag the release e.g.::
 
-        git tag -a v0.1.6 -m "Docker files moved to separate repo"
+        git tag -a v.0.1.6 -m "Docker files moved to separate repo"
 
  * Goto rascil-docker, update the version number (e.g. to 0.1.6)
  * Goto rascil, push the rascil changes to the master. This will trigger a build of rascil and then a

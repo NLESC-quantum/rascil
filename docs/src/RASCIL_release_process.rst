@@ -17,19 +17,14 @@ Steps:
  * Check if  the documentation been updated
  * Update setup.py for the new version number e.g. 0.1.6
  * Update README.md as appropriate
+ * Goto rascil-docker, update the version number (e.g. to 0.1.6)
  * Tag the release e.g.::
 
         git tag -a v.0.1.6 -m "Docker files moved to separate repo"
 
- * Goto rascil-docker, update the version number (e.g. to 0.1.6)
  * Goto rascil, push the rascil changes to the master. This will trigger a build of rascil and then a
-build in rascil-docker.
+build in rascil-docker. The presence of the tag will trigger construction aand publication of the pip files
  * Review the pipeline build for success
- * Build the distribution and upload to PyPI::
-
-        python3 setup.py sdist bdist_wheel
-        python3 -m twine upload dist/*
-
  * Create a new virtualenv and try the install by using pip3 install rascil::
 
         virtualenv test_env

@@ -3,6 +3,18 @@ image: "python:3.7"
 variables:
   MPLBACKEND: "agg"
 
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+    - if: $CI_COMMIT_BRANCH
+
+stages:
+  - build
+  - test
+  - build_docker
+  - publish
+  - pages
+
 docs:
   stage: build
   before_script:
@@ -53,7 +65,7 @@ data:
       - rascil_data.tgz
     expire_in: 6 months
 
-build_wheel for publication: # Executed on a tag:
+build_wheel_for_publication: # Executed on a tag:
   stage: build
   tags:
     - docker-executor
@@ -61,7 +73,7 @@ build_wheel for publication: # Executed on a tag:
     - pip install setuptools
     - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel # --universal option to used for pure python packages
 
-publish to nexus:
+publish_to_nexus:
   stage: publish
   tags:
     - docker-executor
@@ -80,11 +92,11 @@ publish to nexus:
 
 
 staging:
-  stage: deploy
+  stage: build_docker
   trigger: ska-telescope/rascil-docker
 
 pages:
-  stage: deploy
+  stage: publish
   dependencies:
     - docs
     - unittests

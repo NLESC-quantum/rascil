@@ -48,7 +48,7 @@ class TestImagingNG(unittest.TestCase):
     def actualSetUp(self, freqwin=1, block=True, dospectral=True,
                     image_pol=PolarisationFrame('stokesI'), zerow=False, mfs=False):
         
-        self.npixel = 512
+        self.npixel = 256
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = freqwin
         self.blockvis = list()

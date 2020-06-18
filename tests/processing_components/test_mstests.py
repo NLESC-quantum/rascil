@@ -36,7 +36,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
 
 
-class TestImaging(unittest.TestCase):
+class TestMSTests(unittest.TestCase):
     def setUp(self):
         
         from rascil.data_models.parameters import rascil_path, rascil_data_path

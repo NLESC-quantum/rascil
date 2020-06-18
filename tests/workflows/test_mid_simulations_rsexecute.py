@@ -210,7 +210,7 @@ class TestPointingSimulation(unittest.TestCase):
         parser.add_argument('--integration_time', type=float, default=600, help='Integration time (s)')
         parser.add_argument('--time_range', type=float, nargs=2, default=[-4.0, 4.0], help='Time range in hours')
         
-        parser.add_argument('--npixel', type=int, default=2048, help='Number of pixels in image')
+        parser.add_argument('--npixel', type=int, default=512, help='Number of pixels in image')
         parser.add_argument('--use_natural', type=str, default='True', help='Use natural weighting?')
         
         parser.add_argument('--snapshot', type=str, default='False', help='Do snapshot only?')
@@ -260,9 +260,9 @@ class TestPointingSimulation(unittest.TestCase):
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.0001549626149499648, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -9.025636018869514e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 4.530933602609382e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 4.7832635576320996e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -4.4116536662247054e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 8.922937935290707e-06, 5, err_msg=str(qa))
     
     def test_random(self):
         
@@ -295,7 +295,6 @@ class TestPointingSimulation(unittest.TestCase):
         
         args = self.get_args()
         args.fluxlimit = 3.0
-        args.npixel = 512
         args.integration_time = 1800.0
         
         error_dirty, sumwt = self.simulation(args, 'polarisation',

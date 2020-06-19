@@ -1,4 +1,4 @@
-0.1.16
+0.1.7
 ------
 
  * Docker files split to separate repo: ska-telescope/rascil-docker

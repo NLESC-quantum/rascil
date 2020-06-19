@@ -3,14 +3,16 @@
 Installation
 ============
 
-RASCIL can be run on a Linux or macos machine or cluster of machines. At least 16GB physical memory is necessary to run the full test suite. In general more memory is better. RASCIL uses Dask for multi-processing and can make good use of multi-core and multi-node machines.
+RASCIL can be run on a Linux or macos machine or cluster of machines. At least 16GB physical memory is necessary to
+run the full test suite. In general more memory is better. RASCIL uses Dask for multi-processing and can make good
+use of multi-core and multi-node machines.
 
 Installation via pip
 ++++++++++++++++++++
 
 If you just wish to run the package and do not intend to run simulations or tests, RASCIL can be installed using pip::
 
-    pip install rascil
+     pip install -i https://nexus.engageska-portugal.pt rascil==0.1.6
 
 This will download and install the python files, and dependencies. For simulations, you must add the data in a separate
 step::

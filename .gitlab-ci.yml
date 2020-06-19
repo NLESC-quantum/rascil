@@ -81,7 +81,10 @@ publish_to_nexus:
     variables:
        - $CI_COMMIT_MESSAGE =~ /^.+$/ # Confirm tag message exists
        - $CI_COMMIT_TAG =~ /^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$/ # Confirm semantic versioning of tag
-
+  only:
+    - tags
+  only:
+    - master
 
 staging: # Start the construction of dockers files in rascil-docker
   stage: publish

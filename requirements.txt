@@ -1,5 +1,4 @@
 aotools
-astroplan
 astropy
 bokeh
 dask

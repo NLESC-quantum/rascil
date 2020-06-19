@@ -62,6 +62,8 @@ data:
     paths:
       - rascil_data.tgz
     expire_in: 6 months
+  only:
+    - master
 
 publish_to_nexus:
   stage: publish
@@ -84,6 +86,8 @@ publish_to_nexus:
 staging: # Start the construction of dockers files in rascil-docker
   stage: publish
   trigger: ska-telescope/rascil-docker
+  only:
+    - master
 
 pages:
   stage: publish

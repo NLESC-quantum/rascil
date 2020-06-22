@@ -23,7 +23,12 @@ Steps:
         git tag -a v.0.1.6 -m "Docker files moved to separate repo"
 
  * Goto rascil, push the rascil changes to the master. This will trigger a build of rascil and then a
-build in rascil-docker. The presence of the tag will trigger construction aand publication of the pip files
+build in rascil-docker. The presence of the tag will trigger construction aand publication of the pip files. At the
+moment the pip files are also labelled by build info. The following should work::
+
+        pip install -i nexus.engageska-portugal.pt/rascil/rascil-full "rascil>=0.1.7"
+
+
  * Review the pipeline build for success
  * Create a new virtualenv and try the install by using pip3 install rascil::
 
@@ -34,3 +39,4 @@ build in rascil-docker. The presence of the tag will trigger construction aand p
         >>> import rascil
 
  * Reset the version numbers both in rascil and rascil-docker to the next e.g. 0.1.17b0
+ * Make a stable release of the docker files from rascil-docker.

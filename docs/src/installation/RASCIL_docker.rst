@@ -124,14 +124,12 @@ Singularity
 
 `Singularity <https://sylabs.io/docs/>`_ can be used to load and run the docker images::
 
-    singularity pull RASCIL.img docker://nexus.engageska-portugal.pt/rascil/rascil-full
-    singularity run RASCIL.img
-    python3 /rascil/examples/scripts/imaging.py
+    singularity pull RASCIL-full.img docker://nexus.engageska-portugal.pt/rascil/rascil-full
+    singularity exec RASCIL-full.img python3 /rascil/examples/scripts/imaging.py
 
-As in docker, don't run from the /rascil/directory.
+As in docker, don't run from the /rascil/ directory.
 
-Inside a SLURM file singularity can be used by prefacing dask and python commands
-with singularity. For example::
+Inside a SLURM file singularity can be used by prefacing dask and python commands with "singularity exec". For example::
 
     ssh $host singularity exec /home/<your-name>/workspace/RASCIL-full.img dask-scheduler --port=8786 &
     ssh $host singularity exec /home/<your-name>/workspace/RASCIL-full.img dask-worker --host ${host} --nprocs 4 --nthreads 1  \

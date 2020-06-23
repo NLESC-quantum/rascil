@@ -74,10 +74,12 @@ publish_to_nexus:
     TWINE_PASSWORD: $TWINE_PASSWORD
   script:
     - pip3 install setuptools
-    - python3 setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel # --universal option to used for pure
+    - python3 setup.py egg_info sdist bdist_wheel # -b+$CI_COMMIT_SHORT_SHA
     - python3 packages
     - pip3 install twine
     - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
+  only:
+    - tags
   only:
     variables:
       - $CI_COMMIT_MESSAGE =~ /^.+$/ # Confirm tag message exists

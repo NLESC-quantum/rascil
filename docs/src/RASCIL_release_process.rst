@@ -26,7 +26,7 @@ Steps:
 build in rascil-docker. The presence of the tag will trigger construction aand publication of the pip files. At the
 moment the pip files are also labelled by build info. The following should work::
 
-        pip install -i nexus.engageska-portugal.pt/rascil/rascil-full "rascil>=0.1.7"
+     pip3 install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple/ "rascil>=0.1.7"
 
 
  * Review the pipeline build for success
@@ -34,7 +34,7 @@ moment the pip files are also labelled by build info. The following should work:
 
         virtualenv test_env
         . test_env/bin/activate
-        pip install rascil
+        pip3 install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple/ "rascil>=0.1.7"
         python3
         >>> import rascil
 

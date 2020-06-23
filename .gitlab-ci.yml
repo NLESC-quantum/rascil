@@ -27,7 +27,7 @@ unittests:
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
   script:
-    - pip install pytest pytest-xdist pytest-cov
+    - pip3 install pytest pytest-xdist pytest-cov
     - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage --durations=30 --forked
     - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose --cov=rascil --cov-report=html:coverage --cov-append --durations=30 --forked
   artifacts:
@@ -73,12 +73,11 @@ publish_to_nexus:
     TWINE_USERNAME: $TWINE_USERNAME
     TWINE_PASSWORD: $TWINE_PASSWORD
   script:
-    - pip install setuptools
-    - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel # --universal option to used for pure python packages
+    - pip3 install setuptools
+    - python3 setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel # --universal option to used for pure
+    - python3 packages
     - pip3 install twine
     - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
-  only:
-    - tags
   only:
     variables:
       - $CI_COMMIT_MESSAGE =~ /^.+$/ # Confirm tag message exists

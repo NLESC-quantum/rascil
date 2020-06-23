@@ -12,7 +12,10 @@ Installation via pip
 
 If you just wish to run the package and do not intend to run simulations or tests, RASCIL can be installed using pip::
 
-     pip install -i https://nexus.engageska-portugal.pt rascil==0.1.6
+     pip3 install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple/ "rascil>=0.1.7"
+
+This will download 0.1.7 or higher. The ">=" is a workaround needed because the releases are currently tagged
+additionally with the git tag)
 
 This will download and install the python files, and dependencies. For simulations, you must add the data in a separate
 step::

@@ -44,7 +44,7 @@ docs:
     - mkdir -p docs/build/html
     - mkdir -p test_results
     - mkdir -p /usr/share/casacore/data/
-    - rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
+    - rsync --contimeout=120 -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make -k -C docs/src html
   after_script:

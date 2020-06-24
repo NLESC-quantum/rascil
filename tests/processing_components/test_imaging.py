@@ -314,7 +314,7 @@ class TestImaging2D(unittest.TestCase):
 
     def test_invert_spec_wterm(self):
         self.persist = True
-        self.actualSetUp(zerow=False, dospectral=True, freqwin=5)
+        self.actualSetUp(zerow=False, dospectral=True, freqwin=4)
         gcf, cf = create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
                                                   oversampling=4, support=100, use_aaf=True)
         cf_clipped = apply_bounding_box_convolutionfunction(cf, 1e-4)

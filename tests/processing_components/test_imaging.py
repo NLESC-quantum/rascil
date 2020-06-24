@@ -209,11 +209,11 @@ class TestImaging2D(unittest.TestCase):
         self._invert_base(name='invert_2d_IQUV', positionthreshold=2.0, check_components=True)
 
     def test_invert_2d_spec_I(self):
-        self.actualSetUp(zerow=True, freqwin=5, image_pol=PolarisationFrame("stokesI"), dospectral=True)
+        self.actualSetUp(zerow=True, freqwin=4, image_pol=PolarisationFrame("stokesI"), dospectral=True)
         self._invert_base(name='invert_2d_spec_I', positionthreshold=2.0, check_components=True)
 
     def test_invert_2d_spec_IQUV(self):
-        self.actualSetUp(zerow=True, freqwin=5, image_pol=PolarisationFrame("stokesIQUV"))
+        self.actualSetUp(zerow=True, freqwin=4, image_pol=PolarisationFrame("stokesIQUV"))
         self._invert_base(name='invert_2d_IQUV', positionthreshold=2.0, check_components=True)
 
     def test_invert_2d_IQ(self):

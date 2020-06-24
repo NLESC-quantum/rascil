@@ -40,10 +40,6 @@ log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
 
-log = logging.getLogger('logger')
-
-log.setLevel(logging.WARNING)
-
 class TestGridDataGridding(unittest.TestCase):
     
     def setUp(self):
@@ -223,7 +219,7 @@ class TestGridDataGridding(unittest.TestCase):
     
     def test_griddata_invert_wterm(self):
         self.actualSetUp(zerow=False)
-        gcf, cf = create_awterm_convolutionfunction(self.model, nw=100, wstep=8.0, oversampling=8, support=32,
+        gcf, cf = create_awterm_convolutionfunction(self.model, nw=100, wstep=8.0, oversampling=4, support=32,
                                                     use_aaf=True)
         
         cf_image = convert_convolutionfunction_to_image(cf)
@@ -238,7 +234,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_wterm.fits' % self.dir)
-        self.check_peaks(im, 97.13333924372108)
+        self.check_peaks(im, 97.13206509102542)
     
     def test_griddata_invert_awterm(self):
         self.actualSetUp(zerow=False)
@@ -247,7 +243,7 @@ class TestGridDataGridding(unittest.TestCase):
         if self.persist:
             export_image_to_fits(pb, "%s/test_gridding_awterm_pb.fits" % self.dir)
         gcf, cf = create_awterm_convolutionfunction(self.model, make_pb=make_pb, nw=100, wstep=8.0,
-                                                    oversampling=16, support=32, use_aaf=True)
+                                                    oversampling=4, support=32, use_aaf=True)
         cf_image = convert_convolutionfunction_to_image(cf)
         cf_image.data = numpy.real(cf_image.data)
         if self.persist:
@@ -260,7 +256,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_awterm.fits' % self.dir)
-        self.check_peaks(im, 97.13257546573094)
+        self.check_peaks(im, 97.13258774073446)
     
     def test_griddata_predict_pswf(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))

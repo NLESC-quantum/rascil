@@ -16,6 +16,8 @@ stages:
 unittests:
   stage: test
   before_script:
+    - echo "CI_COMMIT_TAG, ${CI_COMMIT_TAG}"
+    - echo "CI_COMMIT_MESSAGE, ${CI_COMMIT_MESSAGE}"
     - apt-get update
     - apt-get -y install rsync ca-certificates pybind11-dev
     - pip3 install -r requirements.txt

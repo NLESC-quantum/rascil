@@ -9,15 +9,15 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 stages:
-  - install
   - test
   - build
   - publish
 
-install_rascil:
-  stage: install
+# Always run the unittests. Add retry since the rsync is currently unreliable
+unittests:
+  stage: test
   retry: 2
-  script:
+  before_script:
     - apt-get update
     - apt-get -y install rsync ca-certificates pybind11-dev
     - pip3 install -r requirements.txt
@@ -27,15 +27,8 @@ install_rascil:
     - cd nifty_gridder
     - pip3 install .
     - cd ..
-
-# Always run the unittests. Add retry since the rsync is currently unreliable
-unittests:
-  stage: test
-  retry: 2
-  dependencies:
-    - install_rascil
-  script:
     - mkdir -p test_results
+  script:
     - pip3 install pytest pytest-xdist pytest-cov
     - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage   --durations=30 --forked
     - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose  --cov=rascil --cov-report=html:coverage --cov-append --durations=30 --forked
@@ -48,8 +41,14 @@ unittests:
 docs:
   stage: test
   retry: 2
-  dependencies:
-    - install_rascil
+  before_script:
+    - apt-get update
+    - apt-get -y install pandoc rsync
+    - pip install -r requirements.txt -r requirements-docs.txt
+    - mkdir -p docs/build/html
+    - mkdir -p test_results
+    - mkdir -p /usr/share/casacore/data/
+    - rsync --contimeout=240 -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make -k -C docs/src html
   after_script:
@@ -100,7 +99,6 @@ staging: # Start the construction of dockers files in rascil-docker
 pages:
   stage: publish
   dependencies:
-    - install_rascil
     - docs
     - unittests
     - data

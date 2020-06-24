@@ -13,6 +13,7 @@ stages:
   - build
   - publish
 
+# Always run the unittests
 unittests:
   stage: test
   before_script:
@@ -28,13 +29,14 @@ unittests:
     - rsync --contimeout=120 -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
   script:
     - pip3 install pytest pytest-xdist pytest-cov
-#    - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage   --durations=30 --forked
-#    - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose  --cov=rascil --cov-report=html:coverage --cov-append --durations=30 --forked
+    - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage   --durations=30 --forked
+    - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose  --cov=rascil --cov-report=html:coverage --cov-append --durations=30 --forked
   artifacts:
     paths:
       - coverage
     expire_in: 1 week
 
+# Always try to build the docs since this catches errors via the notebook
 docs:
   stage: test
   before_script:
@@ -44,7 +46,7 @@ docs:
     - mkdir -p docs/build/html
     - mkdir -p test_results
     - mkdir -p /usr/share/casacore/data/
-    - rsync --contimeout=120 -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
+    - rsync --contimeout=240 -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make -k -C docs/src html
   after_script:
@@ -53,10 +55,8 @@ docs:
     paths:
       - html/
     expire_in: 1 week
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
 
-
+# Build the data file only if on the master
 data:
   stage: build
   script:
@@ -68,6 +68,7 @@ data:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
+# Publish pip file to nexus only if this is a tagged build of the master
 publish_to_nexus:
   stage: publish
   tags:
@@ -79,31 +80,34 @@ publish_to_nexus:
     - echo "Commit tag is ${CI_COMMIT_TAG}"
     - echo "Commit message is ${CI_COMMIT_MESSAGE}"
     - pip3 install setuptools
-    - python3 setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel # --universal option to used for pure
+    - python3 setup.py egg_info sdist bdist_wheel # --universal option to used for pure
     - pip3 install twine
     - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
 
+# Trigger downstream docker build to nexus only if this is a tagged build of the master
 staging: # Start the construction of dockers files in rascil-docker
   stage: publish
   trigger: ska-telescope/rascil-docker
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
+
+# Publish the docs, data, and coverage if this is a build of the master
 pages:
   stage: publish
   dependencies:
-#    - docs
-#    - unittests
+    - docs
+    - unittests
     - data
   script:
-#    - mv html public
+    - mv html public
     - mv rascil_data.tgz public
-#    - mv coverage/ public/coverage
+    - mv coverage/ public/coverage
   artifacts:
     paths:
       - public
-#      - public/coverage
+      - public/coverage
     expire_in: 1 month
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'

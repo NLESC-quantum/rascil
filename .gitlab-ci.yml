@@ -1,4 +1,4 @@
-image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+image: python:3.7
 
 variables:
   MPLBACKEND: "agg"

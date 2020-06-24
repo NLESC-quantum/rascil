@@ -166,32 +166,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         
         if self.persist: export_image_to_fits(restored, '%s/test_imaging_%s_mmclean_restored.fits' % (self.dir, rsexecute.type()))
     
-    def test_deconvolve_and_restore_cube_mmclean_serialclean(self):
-        self.actualSetUp(add_errors=True)
-        dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',
-                                                          dopsf=False, normalize=True)
-        psf_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',
-                                                        dopsf=True, normalize=True)
-        dirty_imagelist = rsexecute.persist(dirty_imagelist)
-        psf_imagelist = rsexecute.persist(psf_imagelist)
-        dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist,
-                                                            self.model_imagelist,
-                                                            niter=1000, use_serial_clean=True,
-                                                            fractional_threshold=0.01, scales=[0, 3, 10],
-                                                            algorithm='mmclean', nmoment=3, nchan=self.freqwin,
-                                                            threshold=0.1, gain=0.7)
-        dec_imagelist = rsexecute.persist(dec_imagelist)
-        residual_imagelist = residual_list_rsexecute_workflow(self.vis_list, model_imagelist=dec_imagelist,
-                                                               context='2d')
-        residual_imagelist = rsexecute.persist(residual_imagelist)
-        restored_list = restore_list_rsexecute_workflow(model_imagelist=dec_imagelist, psf_imagelist=psf_imagelist,
-                                                         residual_imagelist=residual_imagelist,
-                                                         empty=self.model_imagelist)
-        
-        restored = rsexecute.compute(restored_list, sync=True)[0]
-        
-        if self.persist: export_image_to_fits(restored, '%s/test_imaging_%s_mmclean_restored.fits' % (self.dir, rsexecute.type()))
-    
     def test_deconvolve_and_restore_cube_mmclean_facets(self):
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',

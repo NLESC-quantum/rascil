@@ -27,6 +27,7 @@ log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
 
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
 
 class TestImagingDeconvolveGraph(unittest.TestCase):
     
@@ -111,9 +112,11 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             self.vis_list = [insert_unittest_errors(self.vis_list[i])
                              for i, _ in enumerate(self.frequency)]
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_time_setup(self):
         self.actualSetUp()
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_deconvolve_spectral(self):
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_serial_workflow(self.vis_list, self.model_imagelist,
@@ -128,6 +131,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         if self.persist: export_image_to_fits(deconvolved[0], '%s/test_imaging_serial_deconvolve_spectral.fits' %
                              (self.dir))
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_deconvolve_and_restore_cube_mmclean(self):
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_serial_workflow(self.vis_list, self.model_imagelist, context='2d',
@@ -146,6 +150,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         
         if self.persist: export_image_to_fits(restored, '%s/test_imaging_serial_mmclean_restored.fits' % (self.dir))
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_deconvolve_and_restore_cube_mmclean_facets(self):
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_serial_workflow(self.vis_list, self.model_imagelist,

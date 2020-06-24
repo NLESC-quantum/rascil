@@ -3,6 +3,7 @@
 
 """
 
+import os
 import logging
 import sys
 import unittest
@@ -31,6 +32,8 @@ log = logging.getLogger('logger')
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
+
 
 
 class TestPipelinesFunctions(unittest.TestCase):
@@ -55,6 +58,7 @@ class TestPipelinesFunctions(unittest.TestCase):
                                           times=self.times, add_errors=add_errors, block=block,
                                           bandpass=bandpass)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def ingest_visibility(self, freq=None, chan_width=None, times=None, add_errors=False,
                           block=True, bandpass=False):
         if freq is None:
@@ -121,9 +125,11 @@ class TestPipelinesFunctions(unittest.TestCase):
         
         return vt
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_time_setup(self):
         pass
         
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_RCAL(self):
         self.setupVis(add_errors=True, block=True, freqwin=5)
         for igt, gt in enumerate(rcal(vis=self.vis, components=self.comps)):

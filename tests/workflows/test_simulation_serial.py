@@ -2,6 +2,7 @@
 
 
 """
+import os
 import logging
 import unittest
 
@@ -17,6 +18,10 @@ log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
+
+
+
 class TestSimulationrsexecuteSupport(unittest.TestCase):
     def setUp(self):
     
@@ -29,6 +34,7 @@ class TestSimulationrsexecuteSupport(unittest.TestCase):
         self.times = numpy.linspace(-300.0, 300.0, 3) * numpy.pi / 43200.0
 
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_create_simulate_vis_list(self):
         vis_list = simulate_list_serial_workflow(frequency=self.frequency, channel_bandwidth=self.channel_bandwidth)
         assert len(vis_list) == len(self.frequency)

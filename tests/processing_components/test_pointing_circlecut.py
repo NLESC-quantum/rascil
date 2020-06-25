@@ -29,12 +29,12 @@ log.setLevel(logging.WARNING)
 class TestPointing(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
-        self.doplot = True
+        self.doplot = False
         
         self.midcore = create_named_configuration('MID', rmax=300.0)
         self.nants = len(self.midcore.names)
         self.dir = rascil_path('test_results')
-        self.ntimes = 301
+        self.ntimes = 31
         self.times = numpy.linspace(-6.0, 6.0, self.ntimes) * numpy.pi / (12.0)
         
         self.frequency = numpy.array([1.4e9])
@@ -56,7 +56,7 @@ class TestPointing(unittest.TestCase):
         comp = create_skycomponent(direction=self.sidelobe, flux=[[1.0]], frequency=self.frequency,
                                    polarisation_frame=PolarisationFrame('stokesI'))
     
-        telescopes = ['MID', 'MID_GAUSS']
+        telescopes = ['MID']
         for telescope in telescopes:
             pt = create_pointingtable_from_blockvisibility(self.vis)
             pt = simulate_pointingtable(pt, pointing_error=0.0,

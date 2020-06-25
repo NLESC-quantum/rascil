@@ -41,7 +41,7 @@ class TestSkyModel(unittest.TestCase):
     
     def actualSetUp(self, freqwin=1, block=False, dopol=False, zerow=False):
         
-        self.npixel = 1024
+        self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = freqwin
         self.vis_list = list()

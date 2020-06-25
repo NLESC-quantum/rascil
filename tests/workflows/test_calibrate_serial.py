@@ -26,6 +26,7 @@ log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
 
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
 
 class TestCalibrateGraphs(unittest.TestCase):
     
@@ -94,10 +95,11 @@ class TestCalibrateGraphs(unittest.TestCase):
         
         assert numpy.max(numpy.abs(self.error_blockvis_list[0].vis - self.blockvis_list[0].vis)) > 0.0
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_time_setup(self):
         self.actualSetUp()
     
-    @unittest.skip("Known error")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_calibrate_serial(self):
         amp_errors = {'T': 0.0, 'G': 0.0}
         phase_errors = {'T': 1.0, 'G': 0.0}
@@ -116,6 +118,7 @@ class TestCalibrateGraphs(unittest.TestCase):
         err = numpy.max(numpy.abs(calibrate_list[0][0].flagged_vis - self.blockvis_list[0].flagged_vis))
         assert err < 2e-6, err
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_calibrate_serial_empty(self):
         amp_errors = {'T': 0.0, 'G': 0.0}
         phase_errors = {'T': 1.0, 'G': 0.0}
@@ -134,6 +137,7 @@ class TestCalibrateGraphs(unittest.TestCase):
                                                 global_solution=False)
         assert len(calibrate_list[1][0]) > 0
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_calibrate_serial_global(self):
         amp_errors = {'T': 0.0, 'G': 0.0}
         phase_errors = {'T': 1.0, 'G': 0.0}
@@ -153,6 +157,7 @@ class TestCalibrateGraphs(unittest.TestCase):
         err = numpy.max(numpy.abs(calibrate_list[0][0].flagged_vis - self.blockvis_list[0].flagged_vis))
         assert err < 2e-6, err
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_calibrate_serial_global_empty(self):
         amp_errors = {'T': 0.0, 'G': 0.0}
         phase_errors = {'T': 1.0, 'G': 0.0}

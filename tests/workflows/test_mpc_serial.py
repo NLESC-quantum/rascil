@@ -29,6 +29,8 @@ log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
 
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
+
 
 class TestMPC(unittest.TestCase):
     def setUp(self):
@@ -94,9 +96,11 @@ class TestMPC(unittest.TestCase):
         assert numpy.max(numpy.abs(self.skymodel_list[-1].image.data)) > 0.0, "Image is empty"
         self.vis_list = [copy_visibility(self.vis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_time_setup(self):
         self.actualSetUp()
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predictcal(self):
         
         self.actualSetUp(zerow=True)
@@ -116,6 +120,7 @@ class TestMPC(unittest.TestCase):
             
             plotvis(0, vobs)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invertcal(self):
         self.actualSetUp(zerow=True)
         
@@ -134,6 +139,7 @@ class TestMPC(unittest.TestCase):
             show_image(results[0][0], title='Dirty image, no cross-subtraction', vmax=0.1, vmin=-0.01)
             plt.show(block=False)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_crosssubtract_datamodel(self):
         self.actualSetUp(zerow=True)
         

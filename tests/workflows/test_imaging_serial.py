@@ -38,6 +38,7 @@ try:
 except ImportError:
     run_ng_tests = False
 
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
 
 class TestImaging(unittest.TestCase):
     def setUp(self):
@@ -197,21 +198,22 @@ class TestImaging(unittest.TestCase):
         
         if check_components:
             self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)
-    
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_2d(self):
         self.actualSetUp(zerow=True)
         self._predict_base(context='2d', fluxthreshold=3.0)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_2d_block(self):
         self.actualSetUp(zerow=True, block=True)
         self._predict_base(context='2d', extr='_block', fluxthreshold=3.0)
 
-    @unittest.skip("Facets need overlap")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_facets(self):
         self.actualSetUp()
         self._predict_base(context='facets', fluxthreshold=17.0, facets=8)
     
-    @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_facets_ng(self):
         self.actualSetUp()
         self._predict_base(context='facets_ng', fluxthreshold=6.0, facets=8)
@@ -224,6 +226,7 @@ class TestImaging(unittest.TestCase):
                            overlap=16, taper="tukey")
 
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_ng(self):
         self.actualSetUp()
         self._predict_base(context='ng', fluxthreshold=0.16)
@@ -239,136 +242,160 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp()
         self._predict_base(context='facets_wstack', fluxthreshold=15.0, facets=8, vis_slices=101)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_timeslice(self):
         self.actualSetUp()
         self._predict_base(context='timeslice', fluxthreshold=5.5, vis_slices=self.ntimes)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wsnapshots(self):
         self.actualSetUp(makegcfcf=True)
         self._predict_base(context='wsnapshots', fluxthreshold=5.5,
                            vis_slices=self.ntimes // 2, gcfcf=self.gcfcf_joint)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wprojection(self):
         self.actualSetUp(makegcfcf=True)
         self._predict_base(context='2d', extra='_wprojection', fluxthreshold=3.2,
                            gcfcf=self.gcfcf)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
         self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=3.3,
                            gcfcf=self.gcfcf_clipped)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack(self):
         self.actualSetUp(block=False)
         self._predict_base(context='wstack', fluxthreshold=3.3, vis_slices=101)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_wprojection(self):
         self.actualSetUp(makegcfcf=True, block=False)
         self._predict_base(context='wstack', extra='_wprojection', fluxthreshold=3.6, vis_slices=11,
                            gcfcf=self.gcfcf_joint)
     
-    @unittest.skip("Too much for CI/CD")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_spectral(self):
         self.actualSetUp(dospectral=True, block=False)
         self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=101)
     
-    @unittest.skip("Too much for CI/CD")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_spectral_pol(self):
         self.actualSetUp(dospectral=True, dopol=True, block=False)
         self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=101)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
         self._invert_base(context='2d', positionthreshold=2.0, check_components=False)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_2d_psf(self):
         self.actualSetUp(zerow=True)
         self._invert_base(context='2d', positionthreshold=2.0, check_components=False, dopsf=True)
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_2d_uniform(self):
         self.actualSetUp(zerow=True, makegcfcf=True)
         self.bvis_list = weight_list_serial_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
                                                         weighting='uniform')
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_2d_uniform_block(self):
         self.actualSetUp(zerow=True, makegcfcf=True, block=True)
         self.bvis_list = weight_list_serial_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
                                                      weighting='uniform')
         assert isinstance(self.bvis_list[0], BlockVisibility)
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_2d_uniform_nogcfcf(self):
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_serial_workflow(self.bvis_list, self.model_list)
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
     
     @unittest.skip("Facets need overlap")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_facets(self):
         self.actualSetUp()
         self._invert_base(context='facets', positionthreshold=2.0, check_components=True, facets=8)
     
     @unittest.skip("Facets need overlap")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_facets_timeslice(self):
         self.actualSetUp()
         self._invert_base(context='facets_timeslice', check_components=True, vis_slices=self.ntimes,
                           positionthreshold=5.0, flux_threshold=1.0, facets=8)
     
     @unittest.skip("Facets need overlap")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_facets_wprojection(self):
         self.actualSetUp(makegcfcf=True)
         self._invert_base(context='facets', extra='_wprojection', check_components=True,
                           positionthreshold=2.0, facets=4, gcfcf=self.gcfcf)
     
     @unittest.skip("Facets need overlap")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_facets_wstack(self):
         self.actualSetUp(block=False)
         self._invert_base(context='facets_wstack', positionthreshold=1.0, check_components=False, facets=4,
                           vis_slices=101)
     
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_ng(self):
         self.actualSetUp()
         self._invert_base(context='ng', positionthreshold=2.0, check_components=True)
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_timeslice(self):
         self.actualSetUp()
         self._invert_base(context='timeslice', positionthreshold=1.0, check_components=True,
                           vis_slices=self.ntimes)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wsnapshots(self):
         self.actualSetUp(makegcfcf=True)
         self._invert_base(context='wsnapshots', positionthreshold=1.0,
                           check_components=True, vis_slices=self.ntimes // 2, gcfcf=self.gcfcf_joint)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wprojection(self):
         self.actualSetUp(makegcfcf=True)
         self._invert_base(context='2d', extra='_wprojection', positionthreshold=2.0, gcfcf=self.gcfcf)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
         self._invert_base(context='2d', extra='_wprojection_clipped', positionthreshold=2.0,
                           gcfcf=self.gcfcf_clipped)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wprojection_wstack(self):
         self.actualSetUp(makegcfcf=True, block=False)
         self._invert_base(context='wstack', extra='_wprojection', positionthreshold=1.0, vis_slices=11,
                           gcfcf=self.gcfcf_joint)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack(self):
         self.actualSetUp(block=False)
         self._invert_base(context='wstack', positionthreshold=1.0, vis_slices=101)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack_spectral(self):
         self.actualSetUp(dospectral=True, block=False)
         self._invert_base(context='wstack', extra='_spectral', positionthreshold=2.0,
                           vis_slices=101)
     
-    @unittest.skip("Too much for CI/CD")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack_spectral_pol(self):
         self.actualSetUp(dospectral=True, dopol=True, block=False)
         self._invert_base(context='wstack', extra='_spectral_pol', positionthreshold=2.0,
                           vis_slices=101)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_zero_list(self):
         self.actualSetUp()
         
@@ -386,6 +413,7 @@ class TestImaging(unittest.TestCase):
         
         assert numpy.max(numpy.abs(diff_vis_list[centre].vis)) < 1e-15, numpy.max(numpy.abs(diff_vis_list[centre].vis))
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_residual_list(self):
         self.actualSetUp(zerow=True)
     
@@ -395,6 +423,7 @@ class TestImaging(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 0.32584463456508744) < 1.0, str(qa)
         assert numpy.abs(qa.data['min'] + 0.4559162232699305) < 1.0, str(qa)
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_restored_list(self):
         self.actualSetUp(zerow=True)
         
@@ -411,6 +440,7 @@ class TestImaging(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 100.00291168642293) < 1e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.1698056648051111) < 1e-7, str(qa)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_restored_list_noresidual(self):
         self.actualSetUp(zerow=True)
         
@@ -425,6 +455,7 @@ class TestImaging(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 100.0) < 1e-7, str(qa)
         assert numpy.abs(qa.data['min']) < 1e-7, str(qa)
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_restored_list_facet(self):
         self.actualSetUp(zerow=True)
         

@@ -44,7 +44,7 @@ class TestPrimaryBeamsPol(unittest.TestCase):
         self.config = create_named_configuration(config, rmax=rmax)
         self.times = numpy.linspace(-300.0, 300.0, 3) * numpy.pi / 43200.0
         nants = self.config.xyz.shape[0]
-        self.npixel = 1024
+        self.npixel = 256
         self.fov = 8
         self.cellsize = numpy.pi * self.fov / (self.npixel * 180.0)
         assert nants > 1
@@ -139,7 +139,7 @@ class TestPrimaryBeamsPol(unittest.TestCase):
                                       polarisation_frame=vpol)
         cellsize = advise_wide_field(bvis)['cellsize']
         component_centre = SkyCoord(ra=+15.25 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
-        model = create_image_from_visibility(bvis, cellsize=cellsize, npixel=1024,
+        model = create_image_from_visibility(bvis, cellsize=cellsize, npixel=self.npixel,
                                              phasecentre=component_centre,
                                              override_cellsize=False,
                                              polarisation_frame=PolarisationFrame("linear"))

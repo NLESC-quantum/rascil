@@ -34,9 +34,9 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 class TestMPC(unittest.TestCase):
     def setUp(self):
         
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=True)
         
-        from rascil.data_models.parameters import rascil_path, rascil_data_path
+        from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         self.plot = False
         self.persist = os.getenv("RASCIL_PERSIST", False)

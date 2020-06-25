@@ -42,7 +42,7 @@ class TestMPC(unittest.TestCase):
     
     def actualSetUp(self, freqwin=1, block=True, dopol=False, zerow=False):
         
-        self.npixel = 1024
+        self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=550.0)
         self.freqwin = freqwin
         self.blockvis_list = list()

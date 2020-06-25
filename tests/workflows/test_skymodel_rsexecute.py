@@ -29,7 +29,7 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 class TestSkyModel(unittest.TestCase):
     def setUp(self):
     
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=True)
     
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -41,12 +41,12 @@ class TestSkyModel(unittest.TestCase):
     
     def actualSetUp(self, freqwin=1, block=False, dopol=False, zerow=False):
         
-        self.npixel = 512
-        self.low = create_named_configuration('LOWBD2', rmax=750.0)
+        self.npixel = 256
+        self.low = create_named_configuration('LOWBD2', rmax=300.0)
         self.freqwin = freqwin
         self.vis_list = list()
         self.ntimes = 5
-        self.cellsize = 0.0005
+        self.cellsize = 0.001
         # Choose the interval so that the maximum change in w is smallish
         integration_time = numpy.pi * (24 / (12 * 60))
         self.times = numpy.linspace(-integration_time * (self.ntimes // 2), integration_time * (self.ntimes // 2),
@@ -93,7 +93,7 @@ class TestSkyModel(unittest.TestCase):
         self.skymodel_list = rsexecute.compute(self.skymodel_list, sync=True)
         assert isinstance(self.skymodel_list[0].image, Image), self.skymodel_list[0].image
         assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
-        assert len(self.skymodel_list[0].components) == 25, len(self.skymodel_list[0].components)
+        assert len(self.skymodel_list[0].components) == 26, len(self.skymodel_list[0].components)
         assert numpy.max(numpy.abs(self.skymodel_list[0].image.data)) > 0.0, "Image is empty"
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
@@ -144,7 +144,7 @@ class TestSkyModel(unittest.TestCase):
             sm.image= None
             
         assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
-        assert len(self.skymodel_list[0].components) == 25, len(self.skymodel_list[0].components)
+        assert len(self.skymodel_list[0].components) == 26, len(self.skymodel_list[0].components)
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='2d')

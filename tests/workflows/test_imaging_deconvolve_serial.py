@@ -122,7 +122,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                                                     context='2d',
                                                     dopsf=True, normalize=True)
         deconvolved = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=1000,
-                                                         fractional_threshold=0.1, scales=[0, 3, 10],
+                                                         fractional_threshold=0.1, scales=[0, 3],
                                                          threshold=0.1, gain=0.7)
         if self.persist: export_image_to_fits(deconvolved[0], '%s/test_imaging_serial_deconvolve_spectral.fits' %
                              (self.dir))
@@ -135,7 +135,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         psf_imagelist = invert_list_serial_workflow(self.vis_list, self.model_imagelist, context='2d',
                                                     dopsf=True, normalize=True)
         dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=1000,
-                                                           fractional_threshold=0.01, scales=[0, 3, 10],
+                                                           fractional_threshold=0.01, scales=[0, 3],
                                                            algorithm='mmclean', nmoment=3, nchan=self.freqwin,
                                                            threshold=0.1, gain=0.7)
         residual_imagelist = residual_list_serial_workflow(self.vis_list, model_imagelist=dec_imagelist,
@@ -154,7 +154,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         psf_imagelist = invert_list_serial_workflow(self.vis_list, self.model_imagelist,
                                                     context='2d', dopsf=True, normalize=True)
         dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=1000,
-                                                           fractional_threshold=0.1, scales=[0, 3, 10],
+                                                           fractional_threshold=0.1, scales=[0, 3],
                                                            algorithm='mmclean', nmoment=3, nchan=self.freqwin,
                                                            threshold=0.01, gain=0.7, deconvolve_facets=8,
                                                            deconvolve_overlap=8, deconvolve_taper='tukey')

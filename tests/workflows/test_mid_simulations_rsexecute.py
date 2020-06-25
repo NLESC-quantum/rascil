@@ -101,7 +101,7 @@ class TestPointingSimulation(unittest.TestCase):
         advice_list = rsexecute.execute(advise_wide_field)(future_bvis_list[0], guard_band_image=1.0, delA=0.02,
                                                            verbose=False)
         advice = rsexecute.compute(advice_list, sync=True)
-        pb_npixel = 1024
+        pb_npixel = 256
         d2r = numpy.pi / 180.0
         pb_cellsize = d2r * FOV_deg / pb_npixel
         cellsize = advice['cellsize']
@@ -220,7 +220,7 @@ class TestPointingSimulation(unittest.TestCase):
         parser.add_argument('--pbradius', type=float, default=1.5, help='Radius of sources to include (in HWHM)')
         parser.add_argument('--pbtype', type=str, default='MID', help='Primary beam model: MID or MID_GAUSS')
         parser.add_argument('--seed', type=int, default=18051955, help='Random number seed')
-        parser.add_argument('--flux_limit', type=float, default=0.03, help='Flux limit (Jy)')
+        parser.add_argument('--flux_limit', type=float, default=0.3, help='Flux limit (Jy)')
         
         # Control parameters
         parser.add_argument('--use_radec', type=str, default="False", help='Calculate in RADEC (false)?')
@@ -260,9 +260,9 @@ class TestPointingSimulation(unittest.TestCase):
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 6.23888205396756e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -6.030412629959639e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 1.4401331409419742e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 2.2886082148064566e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -2.6968390524143016e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 5.100754674086175e-07, 5, err_msg=str(qa))
     
     def test_random(self):
         
@@ -273,9 +273,9 @@ class TestPointingSimulation(unittest.TestCase):
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 2.1094978960646913e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -1.3196934940913428e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 1.4297877176652153e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 5.47318841230375e-07, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -6.253389822092476e-07, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 1.277806020206335e-07, 5, err_msg=str(qa))
     
     def test_gravity(self):
         
@@ -302,9 +302,9 @@ class TestPointingSimulation(unittest.TestCase):
                                              vis_polarisation_frame=PolarisationFrame("linear"))
         qa = qa_image(error_dirty)
 
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.0001387848144478459, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.00019237177219809875, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 1.5167270452978595e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.00011758791648388429, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.0001692675354270114, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 1.337878953935504e-05, 5, err_msg=str(qa))
         
         if self.persist:
             export_image_to_fits(error_dirty, "{}/test_mid_simulation_polarisation.fits".format(results_dir))

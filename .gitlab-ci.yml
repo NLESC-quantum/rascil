@@ -13,7 +13,7 @@ stages:
   - build
   - publish
 
-# Always run the unittests. Add retry since the rsync is currently unreliable
+# Always run the unittests
 unittests:
   stage: test
   before_script:

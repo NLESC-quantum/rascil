@@ -22,6 +22,7 @@ Steps:
 
         git tag -a v.0.1.6 -m "Docker files moved to separate repo"
 
+
  * Goto rascil, push the rascil changes to the master. This will trigger a build of rascil and then a
 build in rascil-docker. The presence of the tag will trigger construction aand publication of the pip files. At the
 moment the pip files are also labelled by build info. The following should work::

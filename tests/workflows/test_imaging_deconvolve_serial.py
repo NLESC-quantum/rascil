@@ -112,8 +112,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             self.vis_list = [insert_unittest_errors(self.vis_list[i])
                              for i, _ in enumerate(self.frequency)]
     
-    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
-    def test_time_setup(self):
         self.actualSetUp()
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")

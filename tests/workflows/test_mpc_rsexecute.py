@@ -103,9 +103,7 @@ class TestMPC(unittest.TestCase):
         assert numpy.max(numpy.abs(self.skymodel_list[-1].image.data)) > 0.0, "Image is empty"
         self.vis_list = [copy_visibility(self.vis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
     
-    def test_time_setup(self):
-        self.actualSetUp()
-    
+        
     def test_predictcal(self):
         
         self.actualSetUp(zerow=True)

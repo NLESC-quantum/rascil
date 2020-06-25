@@ -103,9 +103,6 @@ class TestCalibrateGraphs(unittest.TestCase):
         
         assert numpy.max(numpy.abs(self.error_blockvis_list[0].vis - self.blockvis_list[0].vis)) > 0.0
     
-    def test_time_setup(self):
-        self.actualSetUp()
-    
     def test_calibrate_rsexecute(self):
         amp_errors = {'T': 0.0, 'G': 0.0}
         phase_errors = {'T': 1.0, 'G': 0.0}

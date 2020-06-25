@@ -79,9 +79,6 @@ class TestSkyModel(unittest.TestCase):
                          for freqwin, _ in enumerate(self.frequency)]
         self.vis_list = rsexecute.compute(self.vis_list)
     
-    def test_time_setup(self):
-        self.actualSetUp()
-    
     def test_predict(self):
         self.actualSetUp(zerow=True)
 

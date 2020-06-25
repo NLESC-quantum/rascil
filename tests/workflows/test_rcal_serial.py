@@ -125,9 +125,6 @@ class TestPipelinesFunctions(unittest.TestCase):
         
         return vt
 
-    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
-    def test_time_setup(self):
-        pass
         
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_RCAL(self):

@@ -43,14 +43,14 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
 
-    def actualSetUp(self, add_errors=False, freqwin=7, block=False, dospectral=True, dopol=False,
+    def actualSetUp(self, add_errors=False, freqwin=5, block=False, dospectral=True, dopol=False,
                     zerow=True):
         
         self.npixel = 256
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = freqwin
         self.vis_list = list()
-        self.ntimes = 5
+        self.ntimes = 3
         cellsize = 0.001
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
@@ -119,9 +119,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         self.vis_list = rsexecute.persist(self.vis_list)
         self.model_imagelist = rsexecute.scatter(self.model_imagelist)
     
-    def test_time_setup(self):
-        self.actualSetUp()
-    
     def test_deconvolve_spectral(self):
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',
@@ -152,7 +149,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
                                                             niter=1000,
                                                             fractional_threshold=0.01, scales=[0, 3, 10],
-                                                            algorithm='mmclean', nmoment=3, nchan=self.freqwin,
+                                                            algorithm='mmclean', nmoment=2, nchan=self.freqwin,
                                                             threshold=0.1, gain=0.7)
         dec_imagelist = rsexecute.persist(dec_imagelist)
         residual_imagelist = residual_list_rsexecute_workflow(self.vis_list, model_imagelist=dec_imagelist,
@@ -177,7 +174,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
                                                             niter=1000,
                                                             fractional_threshold=0.1, scales=[0, 3, 10],
-                                                            algorithm='mmclean', nmoment=3, nchan=self.freqwin,
+                                                            algorithm='mmclean', nmoment=2, nchan=self.freqwin,
                                                             threshold=0.01, gain=0.7, deconvolve_facets=8,
                                                             deconvolve_overlap=8, deconvolve_taper='tukey')
         dec_imagelist = rsexecute.persist(dec_imagelist)

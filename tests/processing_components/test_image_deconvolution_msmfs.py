@@ -44,7 +44,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.vis.data['vis'] *= 0.0
         
         # Create model
-        self.test_model = create_low_test_image_from_gleam(npixel=512, cellsize=0.001,
+        self.test_model = create_low_test_image_from_gleam(npixel=256, cellsize=0.001,
                                                            phasecentre=self.vis.phasecentre,
                                                            frequency=self.frequency,
                                                            channel_bandwidth=self.channel_bandwidth,
@@ -62,7 +62,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         if self.persist: export_image_to_fits(self.dirty, "%s/test_deconvolve_mmclean-dirty.fits" % self.dir)
         if self.persist: export_image_to_fits(self.psf, "%s/test_deconvolve_mmclean-psf.fits" % self.dir)
         window = numpy.ones(shape=self.model.shape, dtype=numpy.bool)
-        window[..., 129:384, 129:384] = True
+        window[..., 65:192, 65:192] = True
         self.innerquarter = create_image_from_array(window, self.model.wcs, polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_deconvolve_mmclean_no_taylor(self):

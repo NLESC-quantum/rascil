@@ -181,9 +181,6 @@ class TestPipelineMPC(unittest.TestCase):
 
     # End of setup, start of processing]
 
-    def test_time_setup(self):
-        self.actualSetup(nsources=1, nvoronoi=1)
-        pass
 
     @unittest.skip("Unreliable under linux for unknown reasons")
     def test_mpccal_ICAL_manysources(self):

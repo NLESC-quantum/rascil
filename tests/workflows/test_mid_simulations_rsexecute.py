@@ -210,7 +210,7 @@ class TestPointingSimulation(unittest.TestCase):
         parser.add_argument('--integration_time', type=float, default=600, help='Integration time (s)')
         parser.add_argument('--time_range', type=float, nargs=2, default=[-4.0, 4.0], help='Time range in hours')
         
-        parser.add_argument('--npixel', type=int, default=512, help='Number of pixels in image')
+        parser.add_argument('--npixel', type=int, default=256, help='Number of pixels in image')
         parser.add_argument('--use_natural', type=str, default='True', help='Use natural weighting?')
         
         parser.add_argument('--snapshot', type=str, default='False', help='Do snapshot only?')
@@ -260,9 +260,9 @@ class TestPointingSimulation(unittest.TestCase):
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 4.7832635576320996e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -4.4116536662247054e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 8.922937935290707e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 6.23888205396756e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -6.030412629959639e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 1.4401331409419742e-05, 5, err_msg=str(qa))
     
     def test_random(self):
         
@@ -302,9 +302,9 @@ class TestPointingSimulation(unittest.TestCase):
                                              vis_polarisation_frame=PolarisationFrame("linear"))
         qa = qa_image(error_dirty)
 
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.00038683191011895386, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.0006221949183420241, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 2.478984146453474e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.0001387848144478459, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.00019237177219809875, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 1.5167270452978595e-05, 5, err_msg=str(qa))
         
         if self.persist:
             export_image_to_fits(error_dirty, "{}/test_mid_simulation_polarisation.fits".format(results_dir))

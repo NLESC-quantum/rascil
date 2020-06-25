@@ -57,8 +57,6 @@ def find_times_above_elevation_limit(start_times, end_times, location, phasecent
     
     assert number_valid_times > 0, "No data above elevation limit"
     
-    log.info("find_times_above_elevation_limit: Start times for chunks above elevation limit:")
-    
     return valid_start_times
 
 

@@ -8,7 +8,7 @@ jupyter
 jupyter_contrib_nbextensions
 matplotlib
 numba
-numpy
+numpy==1.18.2
 paramiko
 photutils
 python-casacore

@@ -229,6 +229,7 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 100.00769973513495) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.033800148728078766) < 1.0e-7, str(qa)
 
+    @unittest.skip("Not a sensible mode")
     def test_ical_pipeline_pol(self):
         self.actualSetUp(add_errors=True, dopol=True)
         controls = create_calibration_controls()

@@ -23,6 +23,8 @@ log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
 
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
+
 
 class TestSkyModel(unittest.TestCase):
     def setUp(self):
@@ -74,9 +76,11 @@ class TestSkyModel(unittest.TestCase):
                                                     zerow=zerow)
                          for freqwin, _ in enumerate(self.frequency)]
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_time_setup(self):
         self.actualSetUp()
     
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict(self):
         self.actualSetUp(zerow=True)
         
@@ -98,6 +102,7 @@ class TestSkyModel(unittest.TestCase):
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
 
 
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_nocomponents(self):
         self.actualSetUp(zerow=True)
         
@@ -120,7 +125,7 @@ class TestSkyModel(unittest.TestCase):
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
     
     
-    @unittest.skip("Jenkins problems")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_noimage(self):
         self.actualSetUp(zerow=True)
         

@@ -45,7 +45,7 @@ except ImportError:
 class TestImaging(unittest.TestCase):
     def setUp(self):
         
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=True)
         
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -59,11 +59,11 @@ class TestImaging(unittest.TestCase):
                     makegcfcf=False):
         
         self.npixel = 256
-        self.low = create_named_configuration('LOWBD2', rmax=750.0)
+        self.low = create_named_configuration('LOWBD2', rmax=300.0)
         self.freqwin = freqwin
         self.bvis_list = list()
         self.ntimes = 5
-        self.cellsize = 0.0005
+        self.cellsize = 0.001
         # Choose the interval so that the maximum change in w is smallish
         integration_time = numpy.pi * (24 / (12 * 60))
         self.times = numpy.linspace(-integration_time * (self.ntimes // 2), integration_time * (self.ntimes // 2),
@@ -225,11 +225,6 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp()
         self._predict_base(context='facets', fluxthreshold=17.0, facets=8)
     
-    @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
-    def test_predict_facets_ng(self):
-        self.actualSetUp()
-        self._predict_base(context='facets_ng', fluxthreshold=6.0, facets=8)
-    
     @unittest.skip("Timeslice predict needs better interpolation and facets need overlap")
     def test_predict_facets_timeslice(self):
         self.actualSetUp()
@@ -240,7 +235,7 @@ class TestImaging(unittest.TestCase):
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_predict_ng(self):
         self.actualSetUp()
-        self._predict_base(context='ng', fluxthreshold=0.16)
+        self._predict_base(context='ng', fluxthreshold=0.62)
     
     @unittest.skip("Facets need overlap")
     def test_predict_facets_wprojection(self, makegcfcf=True):
@@ -259,7 +254,7 @@ class TestImaging(unittest.TestCase):
     
     def test_predict_wsnapshots(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='wsnapshots', fluxthreshold=5.5,
+        self._predict_base(context='wsnapshots', fluxthreshold=6.1,
                            vis_slices=self.ntimes // 2, gcfcf=self.gcfcf_joint)
     
     def test_predict_wprojection(self):
@@ -447,8 +442,8 @@ class TestImaging(unittest.TestCase):
                                               (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.00291168642293) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.1698056648051111) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00471300022062) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13833246479371353) < 1e-7, str(qa)
     
     def test_restored_list_noresidual(self):
         self.actualSetUp(zerow=True)
@@ -486,8 +481,8 @@ class TestImaging(unittest.TestCase):
                                               (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_4facets_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.00291168642292) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.16980566480511197) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00471300022062) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13833246479371353) < 1e-7, str(qa)
         
         restored_4facets_image_list[centre].data -= restored_1facets_image_list[centre].data
         if self.persist: export_image_to_fits(restored_4facets_image_list[centre],
@@ -509,7 +504,7 @@ class TestImaging(unittest.TestCase):
             qa = qa_image(r[0])
             assert numpy.abs(qa.data['max'] - 0.15513038832438183) < 1.0, str(qa)
             assert numpy.abs(qa.data['min'] + 0.4607090445091728) < 1.0, str(qa)
-            assert numpy.abs(r[1] - 831900.) < 1e-7, r
+            assert numpy.abs(r[1] - 131130.) < 1e-7, r
 
 
 if __name__ == '__main__':

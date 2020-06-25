@@ -32,6 +32,8 @@ log = logging.getLogger('logger')
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
+
 
 class TestPipelines(unittest.TestCase):
     
@@ -117,7 +119,7 @@ class TestPipelines(unittest.TestCase):
             create_unittest_model(self.vis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
             for i in range(nfreqwin)]
     
-    @unittest.skip("Too expensive to run in Jenkins")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_continuum_imaging_pipeline(self):
         self.actualSetUp(add_errors=True, zerow=True)
         clean, residual, restored = \
@@ -145,7 +147,7 @@ class TestPipelines(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 99.882832586292) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.4018872898913932) < 1.0e-7, str(qa)
 
-    @unittest.skip("Too expensive to run in Jenkins")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=True, zerow=True, dopol=True)
         clean, residual, restored = \
@@ -173,7 +175,7 @@ class TestPipelines(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 99.88283258629198) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.4018872898913914) < 1.0e-7, str(qa)
 
-    @unittest.skip("Too expensive to run in Jenkins")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_ical_pipeline(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -206,7 +208,7 @@ class TestPipelines(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 99.88471279070934) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.39848606324789765) < 1.0e-7, str(qa)
 
-    @unittest.skip("Too expensive to run in Jenkins")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_ical_pipeline_pol(self):
         self.actualSetUp(add_errors=True, dopol=True)
         controls = create_calibration_controls()
@@ -239,7 +241,7 @@ class TestPipelines(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 88.0772357735065) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 2.035420265483968) < 1.0e-7, str(qa)
 
-    @unittest.skip("Too expensive to run in Jenkins")
+    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_ical_pipeline_global(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()

@@ -28,8 +28,8 @@ log.setLevel(logging.WARNING)
 class TestCoalesce(unittest.TestCase):
     def setUp(self):
 
-        self.lowcore = create_named_configuration('LOWBD2', rmax=300.0)
-        self.times = (numpy.pi / 43200.0) * numpy.arange(0.0, 30 * 3.76, 3.76)
+        self.lowcore = create_named_configuration('LOWBD2', rmax=100.0)
+        self.times = (numpy.pi / 43200.0) * numpy.arange(0.0, 11 * 3.76, 3.76)
         df = 27343.75000
         self.frequency = numpy.array([1e8 - df, 1e8, 1e8 + df])
         self.channel_bandwidth = numpy.array([27343.75, 27343.75, 27343.75])

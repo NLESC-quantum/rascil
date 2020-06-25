@@ -33,7 +33,7 @@ if __name__ == '__main__':
     log = logging.getLogger()
     logging.info("Starting ICAL pipeline")
     
-    rsexecute.set_client(use_dask=True)
+    rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
     print(rsexecute.client)
     rsexecute.run(init_logging)
     

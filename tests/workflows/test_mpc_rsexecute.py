@@ -22,7 +22,6 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
     create_low_test_skymodel_from_gleam
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import copy_visibility
-from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 
 log = logging.getLogger('logger')
 
@@ -34,7 +33,7 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 class TestMPC(unittest.TestCase):
     def setUp(self):
         
-        rsexecute.set_client(use_dask=True)
+        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
         
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -83,8 +82,7 @@ class TestMPC(unittest.TestCase):
                                                                              zerow=zerow)
                               for freqwin, _ in enumerate(self.frequency)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
-        self.vis_list = [rsexecute.execute(convert_blockvisibility_to_visibility)(bv) for bv in self.blockvis_list]
-        self.vis_list = rsexecute.compute(self.vis_list, sync=True)
+        self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
         
         self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
                               (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
@@ -101,14 +99,14 @@ class TestMPC(unittest.TestCase):
         self.skymodel_list = expand_skymodel_by_skycomponents(self.skymodel_list[0])
         assert len(self.skymodel_list) == 36, len(self.skymodel_list)
         assert numpy.max(numpy.abs(self.skymodel_list[-1].image.data)) > 0.0, "Image is empty"
-        self.vis_list = [copy_visibility(self.vis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
+        self.blockvis_list = [copy_visibility(self.blockvis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
     
         
     def test_predictcal(self):
         
         self.actualSetUp(zerow=True)
         
-        future_vis = rsexecute.scatter(self.vis_list[0])
+        future_vis = rsexecute.scatter(self.blockvis_list[0])
         future_skymodel = rsexecute.scatter(self.skymodel_list)
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel,
                                                                      context='2d', docal=True)
@@ -129,7 +127,7 @@ class TestMPC(unittest.TestCase):
     def test_invertcal(self):
         self.actualSetUp(zerow=True)
         
-        future_vis = rsexecute.scatter(self.vis_list[0])
+        future_vis = rsexecute.scatter(self.blockvis_list[0])
         future_skymodel = rsexecute.scatter(self.skymodel_list)
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel,
                                                                     context='2d', docal=True)
@@ -138,7 +136,7 @@ class TestMPC(unittest.TestCase):
         result_skymodel = [SkyModel(components=None, image=self.skymodel_list[-1].image)
                            for v in skymodel_vislist]
         
-        self.vis_list = rsexecute.scatter(self.vis_list)
+        self.blockvis_list = rsexecute.scatter(self.blockvis_list)
         result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel,
                                                                    context='2d', docal=True)
         results = rsexecute.compute(result_skymodel, sync=True)
@@ -153,7 +151,7 @@ class TestMPC(unittest.TestCase):
     def test_crosssubtract_datamodel(self):
         self.actualSetUp(zerow=True)
         
-        future_vis = rsexecute.scatter(self.vis_list[0])
+        future_vis = rsexecute.scatter(self.blockvis_list[0])
         future_skymodel_list = rsexecute.scatter(self.skymodel_list)
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel_list,
                                                                     context='2d', docal=True)
@@ -168,7 +166,7 @@ class TestMPC(unittest.TestCase):
         result_skymodel = [SkyModel(components=None, image=self.skymodel_list[-1].image)
                            for v in skymodel_vislist]
         
-        self.vis_list = rsexecute.scatter(self.vis_list)
+        self.blockvis_list = rsexecute.scatter(self.blockvis_list)
         result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel,
                                                                    context='2d', docal=True)
         results = rsexecute.compute(result_skymodel, sync=True)

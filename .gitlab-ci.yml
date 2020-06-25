@@ -16,7 +16,6 @@ stages:
 # Always run the unittests. Add retry since the rsync is currently unreliable
 unittests:
   stage: test
-  retry: 2
   before_script:
     - apt-get update
     - apt-get -y install rsync ca-certificates pybind11-dev
@@ -40,7 +39,6 @@ unittests:
 # Always try to build the docs since this catches errors via the notebook
 docs:
   stage: test
-  retry: 2
   before_script:
     - apt-get update
     - apt-get -y install pandoc rsync

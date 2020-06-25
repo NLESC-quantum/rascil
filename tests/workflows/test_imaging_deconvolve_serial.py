@@ -111,9 +111,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         if add_errors and block:
             self.vis_list = [insert_unittest_errors(self.vis_list[i])
                              for i, _ in enumerate(self.frequency)]
-    
-        self.actualSetUp()
-    
+        
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_deconvolve_spectral(self):
         self.actualSetUp(add_errors=True)

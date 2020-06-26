@@ -38,42 +38,33 @@ clean: cleantests
 	$(PYTHON) setup.py clean --all
 	rm -rf dist
 
-in: inplace # just a shortcut
-inplace:
-	$(PYTHON) setup.py build >/dev/null 2>&1 && $(PYTHON) setup.py install >/dev/null 2>&1 || (echo "'$(PYTHON) setup.py install' failed."; exit -1)
+# Use bash shell with pipefail option enabled so that the return status of a
+# piped command is the value of the last (rightmost) commnand to exit with a
+# non-zero status. This lets us pipe output into tee but still exit on test
+# failures.
+SHELL = /bin/bash
+.SHELLFLAGS = -o pipefail -c
 
-build: in  ## build and install this project - make sure pipenv shell is activated
+all: test lint
 
-cleantests: ## clean out the cache before tests are run
-	rm -rf workers-*.dirlock
-	cd tests && rm -rf __pycache__
+# The following steps copy across useful output to this volume which can
+# then be extracted to form the CI summary for the test procedure.
+test:
+	mkdir -p ./build/reports/
+	python setup.py test | tee ./build/setup_py_test.stdout; \
+	mv coverage.xml ./build/reports/code-coverage.xml;
 
-unittest: cleantests  ## run tests using unittest
-	MPLBACKEND=agg $(PYTHON) -m unittest -f --locals tests/*/test_*.py
+# The following steps copy across useful output to this volume which can
+# then be extracted to form the CI summary for the test procedure.
+lint:
+	# FIXME pylint needs to run twice since there is no way go gather the text and junit xml output at the same time
+	mkdir -p ./build/reports/
+	pip3 install pylint2junit; \
+	pylint --output-format=parseable rascil | tee ./build/code_analysis.stdout; \
+	pylint --output-format=pylint2junit.JunitReporter rascil > ./build/reports/linting.xml;
 
-pytest: cleantests  ## run tests using pytest
-	pip install pytest >/dev/null 2>&1
-	pytest -x $(TESTS)
-
-trailing-spaces:
-	find rascil/processing_components -name "*.py" -exec perl -pi -e 's/[ \t]*$$//' {} \;
-	find rascil/workflows -name "*.py" -exec perl -pi -e 's/[ \t]*$$//' {} \;
+.PHONY: all test lint
 
 docs: inplace  ## build docs
 	$(MAKE) -C docs/src dirhtml
 
-code-flake:
-	# flake8 ignore long lines and trailing whitespace
-	$(FLAKE) --ignore=E501,W293,F401 --builtins=ModuleNotFoundError rascil/processing_components rascil/workflows
-
-code-lint:
-	$(PYLINT) --extension-pkg-whitelist=numpy \
-	  --ignored-classes=astropy.units,astropy.constants,HDUList \
-	  -E rascil/processing_components rascil/workflows tests/
-
-code-analysis: code-flake code-lint  ## run pylint and flake8 checks
-
-examples: inplace  ## launch examples
-	$(MAKE) -C examples/notebooks
-	$(MAKE) -C examples/scripts
-	$(MAKE) -C examples/ska_simulations

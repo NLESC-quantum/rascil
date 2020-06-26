@@ -14,7 +14,7 @@ stages:
   - publish
 
 # Always run the unittests
-unittests:
+test:
   stage: test
   before_script:
     - apt-get update
@@ -28,13 +28,14 @@ unittests:
     - cd ..
     - mkdir -p test_results
   script:
-    - pip3 install pytest pytest-xdist pytest-cov
-    - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage   --durations=30 --forked
-    - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose  --cov=rascil --cov-report=html:coverage --cov-append --durations=30 --forked
+    - python3 setup.py test
+    - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --durations=30
+    - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose
+    - mv coverage.xml ./build/reports/code-coverage.xml
   artifacts:
     paths:
-      - coverage
-    expire_in: 1 week
+    - ./build
+    - htmlcov
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -55,6 +56,17 @@ docs:
     paths:
       - html/
     expire_in: 1 week
+
+linting:
+  tags:
+    - docker-executor
+  stage: test
+  script:
+    - make lint
+  when: always
+  artifacts:
+    paths:
+      - ./build
 
 # Build the data file only if on the master
 data:
@@ -98,7 +110,7 @@ pages:
   stage: publish
   dependencies:
     - docs
-    - unittests
+    - test
     - data
   script:
     - mv html public
@@ -110,4 +122,19 @@ pages:
       - public/coverage
     expire_in: 1 month
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "SIM-486"'
+
+create ci metrics:
+  stage: .post
+  when: always
+  tags:
+    - docker-executor
+  script:
+    # Gitlab CI badges creation: START
+    - apt-get -y update
+    - apt-get install -y curl --no-install-recommends
+    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
+    # Gitlab CI badges creation: END
+  artifacts:
+    paths:
+      - ./build

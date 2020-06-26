@@ -39,11 +39,11 @@ test:
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
+    - mv htmlcov/* build/reports/
   artifacts:
     paths:
     - ./build
     - htmlcov
-    - xmlcov
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -77,6 +77,7 @@ data:
     expire_in: 6 months
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "SIM-486"'
 
 # Publish pip file to nexus only if this is a tagged build of the master
 publish_to_nexus:

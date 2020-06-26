@@ -57,13 +57,13 @@ lint:
 
 docs:  ## build docs
 	mkdir -p ./build/reports/
-	$(MAKE) -C docs/src dirhtml | tee ./build/setup_py_docs.stdout
+	$(MAKE) -C docs/src dirhtml
 
 test:
 	mkdir -p ./build/reports/
-	HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=xml:coverage \
-		--cov-report=html:coverage --durations=30 --forked | tee ./build/setup_py_test.stdout
+	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py --verbose --cov=rascil --cov-report=xml:coverage \
+		--cov-report=html:coverage --durations=30 | tee ./build/code_test.stdout
 	HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
 		--cov=rascil --cov-report=html:coverage --cov-report=xml:coverage --cov-append --durations=30 \
-		 | tee -a ./build/setup_py_test.stdout
+		 | tee -a ./build/code_test.stdout
 

@@ -14,11 +14,11 @@ formats: all
 
 # Optionally set the version of the Python and requirements required to build
 #  your docs
-#python:
-#    version: 3.7
-#    install:
-#      - requirements: requirements.txt
-#      - requirements: requirements-docs.txt
-#      - method: setuptools
-#        path: .
+python:
+    version: 3.7
+    install:
+      - requirements: requirements.txt
+      - requirements: requirements-docs.txt
+      - method: setuptools
+        path: .
 

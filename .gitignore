@@ -58,3 +58,7 @@ docs/src/api/
 test_results/
 
 rtd-docs/build/
+
+.*
+
+htmlcov/

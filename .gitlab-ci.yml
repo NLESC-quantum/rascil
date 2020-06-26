@@ -28,10 +28,7 @@ test:
     - cd ..
     - mkdir -p test_results
   script:
-    - python3 setup.py test
-    - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --durations=30
-    - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose
-    - mv coverage.xml ./build/reports/code-coverage.xml
+    - PYTHONPATH=`pwd` HOME=`pwd` make test
   artifacts:
     paths:
     - ./build
@@ -113,14 +110,17 @@ pages:
     - test
     - data
   script:
-    - mv html public
-    - mv rascil_data.tgz public
-    - mv coverage/ public/coverage
+    - ls -la
+    - mkdir .public
+    - cp -r htmlcov/* .public
+    - cp rascil_data.tgz .public
+    - cp -r html .public
+    - rm -rf htmlcov rascil_data.tgz html
+    - mv .public public
   artifacts:
     paths:
       - public
-      - public/coverage
-    expire_in: 1 month
+    expire_in: 30 days
   rules:
     - if: '$CI_COMMIT_BRANCH == "SIM-486"'
 

@@ -45,14 +45,21 @@ clean: cleantests
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-all: test lint
+all: test lint docs
+
+docs:  ## build docs
+	$(MAKE) -C docs/src dirhtml
 
 # The following steps copy across useful output to this volume which can
 # then be extracted to form the CI summary for the test procedure.
 test:
 	mkdir -p ./build/reports/
-	python setup.py test | tee ./build/setup_py_test.stdout; \
-	mv coverage.xml ./build/reports/code-coverage.xml;
+	pip3 install pytest pytest-xdist pytest-cov
+	HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage \
+		--durations=30 --forked | tee ./build/setup_py_test.stdout
+	HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
+		--cov=rascil --cov-report=xml:coverage --cov-append --durations=30  | tee -a ./build/setup_py_test.stdout
+	mv coverage.xml ./build/reports/code-coverage.xml
 
 # The following steps copy across useful output to this volume which can
 # then be extracted to form the CI summary for the test procedure.
@@ -63,8 +70,6 @@ lint:
 	pylint --output-format=parseable rascil | tee ./build/code_analysis.stdout; \
 	pylint --output-format=pylint2junit.JunitReporter rascil > ./build/reports/linting.xml;
 
-.PHONY: all test lint
+.PHONY: all test lint docs
 
-docs: inplace  ## build docs
-	$(MAKE) -C docs/src dirhtml
 

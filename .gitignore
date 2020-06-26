@@ -59,6 +59,14 @@ test_results/
 
 rtd-docs/build/
 
-.*
-
 htmlcov/
+
+xmlcov/
+
+.matplotlib/
+
+.astropy/
+
+.config/
+
+.coverage

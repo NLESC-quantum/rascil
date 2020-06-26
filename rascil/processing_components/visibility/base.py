@@ -859,7 +859,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             
             ntimes = time_index + 1
             
-            assert ntimes == len(numpy.unique(ms.getcol("TIME"))), "Error in finding data times"
+            assert ntimes == len(numpy.unique(time_index_row)), "Error in finding data times"
             
             bv_times = numpy.zeros([ntimes])
             bv_vis = numpy.zeros([ntimes, nants, nants, nchan, npol]).astype('complex')

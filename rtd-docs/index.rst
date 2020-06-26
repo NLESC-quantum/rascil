@@ -9,8 +9,8 @@ The SKA Radio Astronomy Simulation, Calibration and Imaging Library expresses ra
 imaging algorithms in python and numpy. The interfaces all operate with familiar data
 structures such as image, visibility table, gaintable, etc.
 
- - Source code: https://gitlab.com/ska-telescope/rascil
  - Documentation: https://ska-telescope.gitlab.io/rascil/
- - Docker files: https://ska-telescope.gitlab.io/rascil-docker/
+ - Source code: https://gitlab.com/ska-telescope/rascil
+ - Docker files: https://gitlab.com/ska-telescope/rascil-docker
 
 .. _feedback: mailto:realtimcornwell@gmail.com

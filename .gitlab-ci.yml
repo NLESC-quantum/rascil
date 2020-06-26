@@ -13,6 +13,16 @@ stages:
   - build
   - publish
 
+linting:
+  stage: test
+  script:
+    - pip install -r requirements-test.txt
+    - make lint
+  when: always
+  artifacts:
+    paths:
+      - ./build
+
 # Always run the unittests
 test:
   stage: test
@@ -34,16 +44,6 @@ test:
     - ./build
     - htmlcov
     - xmlcov
-
-linting:
-  stage: test
-  script:
-    - pip install -r requirements-test.txt
-    - make lint
-  when: always
-  artifacts:
-    paths:
-      - ./build
 
 # Always try to build the docs since this catches errors via the notebook
 docs:

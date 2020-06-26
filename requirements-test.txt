@@ -3,6 +3,7 @@ MarkupSafe
 Pygments
 pylint
 pylint-junit
+pylint2junit
 pytest
 pytest-cov
 pytest-pylint

@@ -33,6 +33,7 @@ test:
     paths:
     - ./build
     - htmlcov
+    - xmlcov
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -113,7 +114,8 @@ pages:
     - cp -r htmlcov/* .public
     - cp rascil_data.tgz .public
     - cp -r html .public
-    - rm -rf htmlcov rascil_data.tgz html
+    - cp -r xml .public
+    - rm -rf xmlcov htmlcov rascil_data.tgz html
     - mv .public public
   artifacts:
     paths:

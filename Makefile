@@ -48,21 +48,18 @@ SHELL = /bin/bash
 all: test lint docs
 
 docs:  ## build docs
-	$(MAKE) -C docs/src dirhtml
+	mkdir -p ./build/reports/
+	$(MAKE) -C docs/src dirhtml | tee ./build/setup_py_docs.stdout
 
-# The following steps copy across useful output to this volume which can
-# then be extracted to form the CI summary for the test procedure.
 test:
 	mkdir -p ./build/reports/
 	pip3 install pytest pytest-xdist pytest-cov
-	HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage \
-		--durations=30 --forked | tee ./build/setup_py_test.stdout
+	HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=xml:coverage \
+		--cov-report=html:coverage --durations=30 --forked | tee ./build/setup_py_test.stdout
 	HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
-		--cov=rascil --cov-report=xml:coverage --cov-append --durations=30  | tee -a ./build/setup_py_test.stdout
-	mv coverage.xml ./build/reports/code-coverage.xml
+		--cov=rascil --cov-report=html:coverage --cov-report=xml:coverage --cov-append --durations=30 \
+		 | tee -a ./build/setup_py_test.stdout
 
-# The following steps copy across useful output to this volume which can
-# then be extracted to form the CI summary for the test procedure.
 lint:
 	# FIXME pylint needs to run twice since there is no way go gather the text and junit xml output at the same time
 	mkdir -p ./build/reports/

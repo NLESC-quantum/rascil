@@ -55,8 +55,6 @@ docs:
     expire_in: 1 week
 
 linting:
-  tags:
-    - docker-executor
   stage: test
   script:
     - make lint

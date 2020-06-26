@@ -56,3 +56,5 @@ tests/workflows/voltage_pattern_gaintable.png
 docs/src/api/
 
 test_results/
+
+rtd-docs/build/

@@ -78,7 +78,6 @@ data:
     expire_in: 6 months
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_COMMIT_BRANCH == "SIM-486"'
 
 # Publish pip file to nexus only if this is a tagged build of the master
 publish_to_nexus:
@@ -126,7 +125,7 @@ pages:
       - public
     expire_in: 30 days
   rules:
-    - if: '$CI_COMMIT_BRANCH == "SIM-486"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
 
 create ci metrics:
   stage: .post

@@ -13,8 +13,19 @@ stages:
   - build
   - publish
 
-# Always run the unittests. Add retry since the rsync is currently unreliable
-unittests:
+linting:
+  stage: test
+  script:
+    - pip3 install -r requirements.txt
+    - pip3 install -r requirements-test.txt
+    - make lint
+  when: always
+  artifacts:
+    paths:
+      - ./build
+
+# Always run the unittests
+test:
   stage: test
   before_script:
     - apt-get update
@@ -28,13 +39,12 @@ unittests:
     - cd ..
     - mkdir -p test_results
   script:
-    - pip3 install pytest pytest-xdist pytest-cov
-    - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage   --durations=30 --forked
-    - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose  --cov=rascil --cov-report=html:coverage --cov-append --durations=30 --forked
+    - PYTHONPATH=`pwd` HOME=`pwd` make test
   artifacts:
     paths:
-      - coverage
-    expire_in: 1 week
+    - ./build
+    - htmlcov
+    - coverage.xml
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -55,6 +65,7 @@ docs:
     paths:
       - html/
     expire_in: 1 week
+
 
 # Build the data file only if on the master
 data:
@@ -98,16 +109,33 @@ pages:
   stage: publish
   dependencies:
     - docs
-    - unittests
+    - test
     - data
   script:
-    - mv html public
-    - mv rascil_data.tgz public
-    - mv coverage/ public/coverage
+    - ls -la
+    - mkdir .public
+    - cp -r htmlcov/* .public
+    - cp coverage.xml .public
+    - cp rascil_data.tgz .public
+    - cp -r html .public
+    - rm -rf coverage.xml htmlcov rascil_data.tgz html
+    - mv .public public
   artifacts:
     paths:
       - public
-      - public/coverage
-    expire_in: 1 month
+    expire_in: 30 days
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+
+create ci metrics:
+  stage: .post
+  when: always
+  script:
+    # Gitlab CI badges creation: START
+    - apt-get -y update
+    - apt-get install -y curl --no-install-recommends
+    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
+    # Gitlab CI badges creation: END
+  artifacts:
+    paths:
+      - ./build

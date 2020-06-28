@@ -42,7 +42,7 @@ class TestMPC(unittest.TestCase):
     
     def actualSetUp(self, freqwin=1, block=True, dopol=False, zerow=False):
         
-        self.npixel = 1024
+        self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=550.0)
         self.freqwin = freqwin
         self.blockvis_list = list()
@@ -96,9 +96,6 @@ class TestMPC(unittest.TestCase):
         assert numpy.max(numpy.abs(self.skymodel_list[-1].image.data)) > 0.0, "Image is empty"
         self.vis_list = [copy_visibility(self.vis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
     
-    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
-    def test_time_setup(self):
-        self.actualSetUp()
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predictcal(self):

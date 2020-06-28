@@ -44,13 +44,12 @@ class TestPipelineGraphs(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
     
-    def actualSetUp(self, add_errors=False, nfreqwin=7, dospectral=True, dopol=False, zerow=True):
+    def actualSetUp(self, add_errors=False, nfreqwin=5, dospectral=True, dopol=False, zerow=True):
         
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = nfreqwin
-        self.vis_list = list()
-        self.ntimes = 5
+        self.ntimes = 4
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
         
@@ -86,13 +85,8 @@ class TestPipelineGraphs(unittest.TestCase):
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
         self.blockvis_list = rsexecute.scatter(self.blockvis_list)
         
-        self.vis_list = [rsexecute.execute(convert_blockvisibility_to_visibility, nout=1)(bv) for bv in
-                         self.blockvis_list]
-        self.vis_list = rsexecute.compute(self.vis_list, sync=True)
-        self.vis_list = rsexecute.scatter(self.vis_list)
-        
         self.model_imagelist = [rsexecute.execute(create_unittest_model, nout=1)
-                                (self.vis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
+                                (self.blockvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
         self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
         self.model_imagelist = rsexecute.scatter(self.model_imagelist)
@@ -129,12 +123,9 @@ class TestPipelineGraphs(unittest.TestCase):
             self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
             self.blockvis_list = rsexecute.scatter(self.blockvis_list)
         
-        self.vis_list = [rsexecute.execute(convert_blockvisibility_to_visibility)(bv) for bv in self.blockvis_list]
-        self.vis_list = rsexecute.compute(self.vis_list, sync=True)
-        self.vis_list = rsexecute.scatter(self.vis_list)
         
         self.model_imagelist = [rsexecute.execute(create_unittest_model, nout=1)
-                                (self.vis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
+                                (self.blockvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
         self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
         self.model_imagelist = rsexecute.scatter(self.model_imagelist)
@@ -142,14 +133,14 @@ class TestPipelineGraphs(unittest.TestCase):
     def test_continuum_imaging_pipeline(self):
         self.actualSetUp(add_errors=False, zerow=True, dopol=False)
         continuum_imaging_list = \
-            continuum_imaging_list_rsexecute_workflow(self.vis_list,
+            continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
                                                       context='2d',
                                                       algorithm='mmclean', facets=1,
                                                       scales=[0, 3, 10],
                                                       niter=1000, fractional_threshold=0.1, threshold=0.1,
-                                                      nmoment=3,
-                                                      nmajor=5, gain=0.1,
+                                                      nmoment=2,
+                                                      nmajor=3, gain=0.1,
                                                       deconvolve_facets=4, deconvolve_overlap=32,
                                                       deconvolve_taper='tukey', psf_support=64,
                                                       restore_facets=4, psfwidth=1.0)
@@ -164,20 +155,20 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
 
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00806411666247) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.035194724937253855) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00852525535296) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.05258585881312287) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, zerow=True, dopol=True)
         continuum_imaging_list = \
-            continuum_imaging_list_rsexecute_workflow(self.vis_list,
+            continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
                                                       context='2d',
                                                       algorithm='mmclean', facets=1,
                                                       scales=[0, 3, 10],
                                                       niter=1000, fractional_threshold=0.1, threshold=0.1,
-                                                      nmoment=3,
-                                                      nmajor=5, gain=0.1,
+                                                      nmoment=2,
+                                                      nmajor=3, gain=0.1,
                                                       deconvolve_facets=4, deconvolve_overlap=32,
                                                       deconvolve_taper='tukey', psf_support=64,
                                                       restore_facets=4, psfwidth=1.0)
@@ -192,8 +183,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_pol_rsexecute_restored.fits' % self.dir)
 
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00806411666247) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.03519472493724841) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00852525535298) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.05258585881312202) < 1.0e-7, str(qa)
 
     def test_ical_pipeline(self):
         self.actualSetUp(add_errors=True)
@@ -202,14 +193,14 @@ class TestPipelineGraphs(unittest.TestCase):
         controls['T']['timeslice'] = 'auto'
 
         ical_list = \
-            ical_list_rsexecute_workflow(self.vis_list,
+            ical_list_rsexecute_workflow(self.blockvis_list,
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
                                          scales=[0, 3, 10],
                                          niter=1000, fractional_threshold=0.1, threshold=0.1,
-                                         nmoment=3,
-                                         nmajor=5, gain=0.1,
+                                         nmoment=2,
+                                         nmajor=3, gain=0.1,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
                                          restore_facets=4, psfwidth=1.0,
@@ -226,8 +217,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
 
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00769973513495) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.033800148728078766) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00798553167581) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.05237492344662603) < 1.0e-7, str(qa)
 
     @unittest.skip("Not a sensible mode")
     def test_ical_pipeline_pol(self):
@@ -237,14 +228,14 @@ class TestPipelineGraphs(unittest.TestCase):
         controls['T']['timeslice'] = 'auto'
 
         ical_list = \
-            ical_list_rsexecute_workflow(self.vis_list,
+            ical_list_rsexecute_workflow(self.blockvis_list,
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
                                          scales=[0, 3, 10],
                                          niter=1000, fractional_threshold=0.1, threshold=0.1,
-                                         nmoment=3,
-                                         nmajor=5, gain=0.1,
+                                         nmoment=2,
+                                         nmajor=3, gain=0.1,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
                                          restore_facets=4, psfwidth=1.0,
@@ -271,14 +262,14 @@ class TestPipelineGraphs(unittest.TestCase):
         controls['T']['timeslice'] = 'auto'
         
         ical_list = \
-            ical_list_rsexecute_workflow(self.vis_list,
+            ical_list_rsexecute_workflow(self.blockvis_list,
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
                                          scales=[0, 3, 10],
                                          niter=1000, fractional_threshold=0.1, threshold=0.1,
-                                         nmoment=3,
-                                         nmajor=5, gain=0.1,
+                                         nmoment=2,
+                                         nmajor=3, gain=0.1,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
                                          restore_facets=4, psfwidth=1.0,
@@ -298,13 +289,13 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00790047266979) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.033804341730225826) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00787897373843) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.0522542211249874) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_pipeline_serialclean(self):
         self.actualSetUp(add_errors=False, zerow=True)
         continuum_imaging_list = \
-            continuum_imaging_list_rsexecute_workflow(self.vis_list,
+            continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
                                                       context='2d',
                                                       algorithm='mmclean',
@@ -313,8 +304,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                                       niter=1000,
                                                       fractional_threshold=0.1,
                                                       threshold=0.1,
-                                                      nmoment=3,
-                                                      nmajor=5, gain=0.1,
+                                                      nmoment=2,
+                                                      nmajor=3, gain=0.1,
                                                       deconvolve_facets=4,
                                                       deconvolve_overlap=32,
                                                       deconvolve_taper='tukey',
@@ -335,8 +326,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.0080641496661) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.03519469833312151) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00852525535296) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.05258585881312202) < 1.0e-7, str(qa)
 
 
 if __name__ == '__main__':

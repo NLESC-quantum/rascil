@@ -32,8 +32,6 @@ class TestSkycomponent(unittest.TestCase):
         self.channel_bandwidth = numpy.array([1e6])
         self.phasecentre = SkyCoord(ra=+0.0 * u.deg, dec=-55.0 * u.deg, frame='icrs', equinox='J2000')
     
-    def test_time_setup(self):
-        pass
     
     def test_filter_flux(self):
         self.components = create_low_test_skycomponents_from_gleam(flux_limit=0.1,

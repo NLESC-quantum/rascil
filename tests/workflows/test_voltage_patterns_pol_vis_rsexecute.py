@@ -28,12 +28,12 @@ log.setLevel(logging.DEBUG)
 
 class TestVoltagePatternsPolGraph(unittest.TestCase):
     def setUp(self):
-        rsexecute.set_client(use_dask=False)
+        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
         
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         self.persist = os.getenv("RASCIL_PERSIST", False)
-        self.verbose = True
+        self.verbose = False
     
     def tearDown(self):
         rsexecute.close()
@@ -55,7 +55,7 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
     def _test(self, time_range=None, flux=None, test_vp=False, name=""):
         # Set up details of simulated observation
         
-        npixel = 1024
+        npixel = 512
         band = 'B2'
         frequency = [1.36e9]
         rmax = 1e3
@@ -201,24 +201,11 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
     def test_apply_voltage_pattern_image_test_vp_stokesI(self):
         result = self._test(test_vp=True, name="stokesI_test_vp")
 
-    @unittest.skip("Too long for CI/CD")
-    def test_apply_voltage_pattern_image_test_vp_stokesI_long(self):
-        result = self._test(test_vp=True, name="stokesI_test_vp", time_range=[-4.0, +4.0])
-
     def test_apply_voltage_pattern_image_stokesIQUV(self):
         result = self._test(test_vp=False, name="stokesIQUV", flux=[1.0, 0.5, -0.2, 0.1])
 
     def test_apply_voltage_pattern_image_test_vp_stokesIQUV(self):
         result = self._test(test_vp=True, name="stokesIQUV_test_vp", flux=[1.0, 0.5, -0.2, 0.1])
-
-    @unittest.skip("Too long for CI/CD")
-    def test_apply_voltage_pattern_image_test_vp_stokesIQUV_long(self):
-        result = self._test(test_vp=True, name="stokesIQUV_test_vp", flux=[1.0, 0.5, -0.2, 0.1], time_range=[-4.0, +4.0])
-
-    @unittest.skip("Too long for CI/CD")
-    def test_apply_voltage_pattern_image_stokesIQUV_long(self):
-        result = self._test(test_vp=False, name="stokesIQUV", flux=[1.0, 0.5, -0.2, 0.1], time_range=[-4.0, +4.0])
-
 
 if __name__ == '__main__':
     unittest.main()

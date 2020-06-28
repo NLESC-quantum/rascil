@@ -113,9 +113,6 @@ class TestGridDataGridding(unittest.TestCase):
         self.peak = numpy.unravel_index(numpy.argmax(numpy.abs(self.cmodel.data)), self.cmodel.shape)
 
     
-    def test_time_setup(self):
-        self.actualSetUp()
-
     def test_griddata_invert_pswf(self):
         self.actualSetUp(zerow=True)
         gcf, cf = create_pswf_convolutionfunction(self.model)

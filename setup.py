@@ -1,15 +1,17 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import glob
 import os
 import sys
 from distutils.sysconfig import get_config_vars
 
-# from setuptools import setup
-from setuptools import setup
+from setuptools import setup, find_namespace_packages
 
 # Bail on Python < 3
 assert sys.version_info[0] >= 3
+
+with open('README.md') as readme_file:
+    readme = readme_file.read()
 
 # MF. This is a workaround to be able to build the library with MacOS
 if sys.platform == 'darwin':
@@ -21,21 +23,45 @@ if sys.platform == 'darwin':
 # Py_Initialize() and they do define main() ), we are just cheating to
 # re-use the setuptools build support.
 
-packages = ['rascil']
-packages_data = [i for p in packages for i in
-                glob.glob(p + '/*/') + glob.glob(p + '/*/*/') + glob.glob(p + '/*/*/*/') + glob.glob(p + '/*/*/*/*/') + glob.glob(p + '/*/*/*/*/')]
-print(packages_data)
 setup(name='rascil',
       version='0.1.8b0',
       python_requires='>=3.6',
       description='Radio Astronomy Simulation, Calibration, and Imaging Library',
-      long_description=open('README.md').read(),
-      author='Tim Cornwell, Peter Wortmann, Bojan Nikolic, Feng Wang, Vlad Stolyarov, Mark Ashdown, Danielle Fenech',
+      long_description=readme + '\n\n',
+      author='Tim Cornwell, Peter Wortmann, Bojan Nikolic, Feng Wang, Vlad Stolyarov, Danielle Fenech, Mark Ashdown, Danielle Fenech',
       author_email='realtimcornwell@gmail.com',
       url='https://gitlab.com/ska-telescope/rascil',
       license='Apache License Version 2.0',
-      install_requires=['aotools', 'astropy', 'bokeh', 'dask', 'distributed', 'h5py', 'jupyter', 'jupyter_contrib_nbextensions', 'matplotlib', 'numba', 'numpy', 'paramiko', 'photutils', 'python-casacore', 'graphviz', 'reproject', 'scikit-image', 'scipy', 'seqfile', 'ConfigParser', 'tabulate'],
-      packages=(packages + packages_data),
-      test_suite="tests",
-      tests_require=['pytest']
+      zip_safe=False,
+      classifiers=[
+          'Development Status :: Alpha',
+          'Intended Audience :: Developers',
+          'License :: OSI Approved :: BSD License',
+          'Natural Language :: English',
+          'Programming Language :: Python :: 3',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7']
+      ,
+      packages=find_namespace_packages(where="rascil"),
+      package_dir={"": "rascil"},
+      test_suite='tests',
+      install_requires=['aotools', 'astropy', 'bokeh', 'dask', 'distributed', 'h5py', 'jupyter',
+                        'jupyter_contrib_nbextensions', 'matplotlib', 'numba', 'numpy', 'paramiko', 'photutils',
+                        'python-casacore', 'graphviz', 'reproject', 'scikit-image', 'scipy', 'seqfile', 'ConfigParser',
+                        'tabulate'],
+
+      setup_requires=[
+          # dependency for `python setup.py test`
+          'pytest-runner',
+          # dependencies for `python setup.py build_sphinx`
+          'sphinx',
+          'recommonmark'
+      ],
+      tests_require=[
+          'pytest',
+          'pytest-cov',
+          'pytest-json-report',
+          'pytest-xdist',
+          'pycodestyle'
+      ]
       )

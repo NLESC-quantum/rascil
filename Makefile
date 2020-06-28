@@ -38,42 +38,33 @@ clean: cleantests
 	$(PYTHON) setup.py clean --all
 	rm -rf dist
 
-in: inplace # just a shortcut
-inplace:
-	$(PYTHON) setup.py build >/dev/null 2>&1 && $(PYTHON) setup.py install >/dev/null 2>&1 || (echo "'$(PYTHON) setup.py install' failed."; exit -1)
+# Use bash shell with pipefail option enabled so that the return status of a
+# piped command is the value of the last (rightmost) commnand to exit with a
+# non-zero status. This lets us pipe output into tee but still exit on test
+# failures.
+SHELL = /bin/bash
+.SHELLFLAGS = -o pipefail -c
 
-build: in  ## build and install this project - make sure pipenv shell is activated
+all: test lint docs
 
-cleantests: ## clean out the cache before tests are run
-	rm -rf workers-*.dirlock
-	cd tests && rm -rf __pycache__
+.PHONY: all test lint docs
 
-unittest: cleantests  ## run tests using unittest
-	MPLBACKEND=agg $(PYTHON) -m unittest -f --locals tests/*/test_*.py
+lint:
+	# FIXME pylint needs to run twice since there is no way go gather the text and junit xml output at the same time
+	mkdir -p ./build/reports/
+	pylint --exit-zero --output-format=pylint2junit.JunitReporter rascil > ./build/reports/linting.xml
+	pylint --exit-zero --output-format=parseable rascil | tee ./build/code_analysis.stdout
 
-pytest: cleantests  ## run tests using pytest
-	pip install pytest >/dev/null 2>&1
-	pytest -x $(TESTS)
-
-trailing-spaces:
-	find rascil/processing_components -name "*.py" -exec perl -pi -e 's/[ \t]*$$//' {} \;
-	find rascil/workflows -name "*.py" -exec perl -pi -e 's/[ \t]*$$//' {} \;
-
-docs: inplace  ## build docs
+docs:  ## build docs
+	mkdir -p ./build/reports/
 	$(MAKE) -C docs/src dirhtml
 
-code-flake:
-	# flake8 ignore long lines and trailing whitespace
-	$(FLAKE) --ignore=E501,W293,F401 --builtins=ModuleNotFoundError rascil/processing_components rascil/workflows
+test:
+	mkdir -p ./build/reports/
+	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py --verbose --cov=rascil --cov-report=xml:coverage \
+		--cov-report=html:coverage --durations=30 | tee ./build/code_test.stdout
+	HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
+		--cov=rascil --cov-report=html:coverage --cov-report=xml:coverage --cov-append --durations=30 \
+		 | tee -a ./build/code_test.stdout
+	mv build/reports/unit-tests.xml coverage.xml
 
-code-lint:
-	$(PYLINT) --extension-pkg-whitelist=numpy \
-	  --ignored-classes=astropy.units,astropy.constants,HDUList \
-	  -E rascil/processing_components rascil/workflows tests/
-
-code-analysis: code-flake code-lint  ## run pylint and flake8 checks
-
-examples: inplace  ## launch examples
-	$(MAKE) -C examples/notebooks
-	$(MAKE) -C examples/scripts
-	$(MAKE) -C examples/ska_simulations

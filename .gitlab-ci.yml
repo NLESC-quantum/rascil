@@ -44,6 +44,7 @@ test:
     paths:
     - ./build
     - htmlcov
+    - coverage.xml
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -115,10 +116,10 @@ pages:
     - ls -la
     - mkdir .public
     - cp -r htmlcov/* .public
+    - cp coverage.xml .public
     - cp rascil_data.tgz .public
     - cp -r html .public
-    - cp -r xml .public
-    - rm -rf xmlcov htmlcov rascil_data.tgz html
+    - rm -rf coverage.xml htmlcov rascil_data.tgz html
     - mv .public public
   artifacts:
     paths:

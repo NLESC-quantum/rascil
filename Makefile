@@ -66,4 +66,5 @@ test:
 	HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
 		--cov=rascil --cov-report=html:coverage --cov-report=xml:coverage --cov-append --durations=30 \
 		 | tee -a ./build/code_test.stdout
+	mv build/reports/unit-tests.xml coverage.xml
 

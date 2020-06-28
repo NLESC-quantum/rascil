@@ -39,7 +39,6 @@ test:
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
-    - mv htmlcov/* build/reports/
   artifacts:
     paths:
     - ./build

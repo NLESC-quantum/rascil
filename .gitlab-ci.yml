@@ -14,15 +14,17 @@ stages:
   - publish
 
 linting:
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   stage: test
-  script:
+  before_script:
     - pip3 install -r requirements.txt
     - pip3 install -r requirements-test.txt
+  script:
     - make lint
   when: always
   artifacts:
     paths:
-      - ./build
+      - linting.xml
 
 # Always run the unittests
 test:
@@ -42,9 +44,10 @@ test:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
   artifacts:
     paths:
-    - ./build
-    - htmlcov
+    - coverage/
     - coverage.xml
+    - htmlcov/
+    - ./build
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -58,7 +61,7 @@ docs:
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
   script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make -k -C docs/src html
+    - PYTHONPATH=`pwd` HOME=`pwd` make docs
   after_script:
     - mv docs/build/html html
   artifacts:
@@ -97,12 +100,15 @@ publish_to_nexus:
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
 
-# Trigger downstream docker build to nexus only if this is a tagged build of the master
+# Trigger downstream docker build to nexus only if this is build of the master,
+# Pass the tag downstream so that the build can be marker stable
 staging: # Start the construction of dockers files in rascil-docker
   stage: publish
+  variables:
+    UPSTREAM_TAG: $CI_COMMIT_TAG
   trigger: ska-telescope/rascil-docker
   rules:
-    - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
 
 # Publish the docs, data, and coverage if this is a build of the master
 pages:
@@ -115,11 +121,14 @@ pages:
     - ls -la
     - mkdir .public
     - cp -r htmlcov/* .public
+    - cp -r coverage .public
     - cp coverage.xml .public
     - cp rascil_data.tgz .public
     - cp -r html .public
-    - rm -rf coverage.xml htmlcov rascil_data.tgz html
+    - rm -rf public
     - mv .public public
+    - ls -l public
+    - rm -rf coverage coverage.xml htmlcov rascil_data.tgz html
   artifacts:
     paths:
       - public

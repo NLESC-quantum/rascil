@@ -70,3 +70,9 @@ xmlcov/
 .config/
 
 .coverage
+
+coverage/
+
+coverage.xml
+
+linting.xml

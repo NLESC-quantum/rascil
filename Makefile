@@ -88,4 +88,5 @@ test:
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
 	python3 util/xmlcombine.py unit-tests-workflows.xml unit-tests-other.xml > unit-tests.xml
+	rm unit-tests-workflows.xml unit-tests-other.xml
 

@@ -115,7 +115,7 @@ pages:
     - data
   script:
     - rm -rf public
-    - ls -la docs/build/html
+    - mkdir -p public
     - mv docs/build/html/* public
     - mv coverage public
     - mv rascil_data.tgz public

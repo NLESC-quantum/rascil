@@ -5,7 +5,8 @@ import os
 import sys
 from distutils.sysconfig import get_config_vars
 
-from setuptools import setup, find_namespace_packages
+from setuptools import setup
+import setuptools
 
 # Bail on Python < 3
 assert sys.version_info[0] >= 3
@@ -42,7 +43,7 @@ setup(name='rascil',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7']
       ,
-      packages=find_namespace_packages(where="rascil"),
+      packages=setuptools.find_namespace_packages(where="rascil"),
       package_dir={"": "rascil"},
       test_suite='tests',
       install_requires=['aotools', 'astropy', 'bokeh', 'dask', 'distributed', 'h5py', 'jupyter',

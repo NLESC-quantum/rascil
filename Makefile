@@ -58,7 +58,7 @@ docs:  ## build docs
 	$(MAKE) -C docs/src dirhtml
 
 test:
-	HOME=`pwd` py.test tests/workflows/test_cal*_rsexecute.py --verbose \
+	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py --verbose \
 	--cov=rascil \
 	--json-report --json-report-file=htmlcov/report.json \
 	--cov-report=term \

@@ -59,9 +59,9 @@ docs:  ## build docs
 # Outputs docs/build/html
 	$(MAKE) -C docs/src html
 
-test:
-# Outputs unit-tests.xml htmlcov/report.json htmlcov/*.html
-	HOME=`pwd` py.test -n 4 tests --verbose \
+test-singlepass:
+	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
+	 tests --verbose \
 	--junitxml unit-tests.xml \
 	--cov rascil \
 	--cov-report term \
@@ -69,20 +69,23 @@ test:
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
 
-test-twopass:
-	HOME=`pwd` py.test tests/workflows/test_cal*_rsexecute.py --verbose \
-	--junitxml unit-tests.xml \
+test:
+	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py --verbose \
+	--junitxml unit-tests-workflows.xml \
 	--cov rascil \
 	--cov-report term \
 	--cov-report html:coverage  \
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
-	HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
-	--junitxml unit-tests.xml \
+	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
+	tests/data_models tests/processing_components tests/workflows/test*serial.py \
+	--verbose \
+	--junitxml unit-tests-other.xml \
 	--cov=rascil \
 	--cov-append \
 	--cov-report term:skip-covered \
 	--cov-report html:coverage  \
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
+	python3 util/xmlcombine.py unit-tests-workflows.xml unit-tests-other.xml > unit-tests.xml
 

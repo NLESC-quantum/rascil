@@ -5,8 +5,8 @@ import os
 import sys
 from distutils.sysconfig import get_config_vars
 
-from setuptools import setup
 import setuptools
+from setuptools import setup
 
 # Bail on Python < 3
 assert sys.version_info[0] >= 3

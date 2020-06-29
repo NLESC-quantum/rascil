@@ -8,6 +8,7 @@ This is a reminder to the maintainers of how the release process is to be done.
 * Use semantic versioning: https://semver.org
 * Follow the packaging process in: https://packaging.python.org/tutorials/packaging-projects/
 
+
 Steps:
 ------
 
@@ -23,11 +24,11 @@ Steps:
         git tag -a v.0.1.6 -m "Docker files moved to separate repo"
 
 
- * Goto rascil, push the rascil changes to the master. This will trigger a build of rascil and then a
-build in rascil-docker. The presence of the tag will trigger construction aand publication of the pip files. At the
-moment the pip files are also labelled by build info. The following should work::
+ * Goto rascil, push the rascil changes to the master. This will trigger a build of rascil and then a build in
+rascil-docker. The presence of the tag will trigger construction and publication of the pip files. At the moment the
+pip files are also labelled by build info. The following should work::
 
-     pip3 install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple/ "rascil>=0.1.7"
+        pip3 install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple/ "rascil>=0.1.7"
 
 
  * Review the pipeline build for success
@@ -38,6 +39,7 @@ moment the pip files are also labelled by build info. The following should work:
         pip3 install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple/ "rascil>=0.1.7"
         python3
         >>> import rascil
+
 
  * Reset the version numbers both in rascil and rascil-docker to the next e.g. 0.1.17b0
  * Make a stable release of the docker files from rascil-docker.

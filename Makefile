@@ -57,28 +57,33 @@ lint:
 
 docs:  ## build docs
 # Outputs docs/build/html
-	$(MAKE) -C docs/src dirhtml
-
-#addopts = -n 4 --cov --json-report --json-report-file=htmlcov/report.json --cov-report term --cov-report html \
-#    --pylint --pylint-error-types=EF --junitxml=unit-tests.xml --durations=30
-
+	$(MAKE) -C docs/src html
 
 test:
-# Outputs htmlcov/report.json coverage.html coverage
-	HOME=`pwd` py.test tests/workflows/test_cal*_rsexecute.py --verbose \
-	--cov rascil \
+# Outputs unit-tests.xml htmlcov/report.json htmlcov/*.html
+	HOME=`pwd` py.test -n 4 tests/workflows --verbose \
 	--junitxml unit-tests.xml \
-	--json-report --json-report-file htmlcov/report.json \
+	--cov rascil \
 	--cov-report term \
-	--cov-report html  \
+	--cov-report html:coverage  \
+	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
-#	HOME=`pwd` py.test -n 16 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
-#	--cov=rascil \
-#	--cov-append \
-#	--junitxml=unit-tests.xml \
-#	--json-report --json-report-file=htmlcov/report.json \
-#	--cov-report=term \
-#	--cov-report=html:coverage \
-#	--cov-report=xml --junitxml=coverage.xml \
-#	--pylint --pylint-error-types=EF --durations=30
-#
+
+test-twopass:
+	HOME=`pwd` py.test tests/workflows/test_cal*_rsexecute.py --verbose \
+	--junitxml unit-tests.xml \
+	--cov rascil \
+	--cov-report term \
+	--cov-report html:coverage  \
+	--cov-report xml:coverage.xml \
+	--pylint --pylint-error-types=EF --durations=30
+	 #tests/processing_components tests/workflows/test*serial.py --verbose
+	HOME=`pwd` py.test -n 4 tests/data_models \
+	--junitxml unit-tests.xml \
+	--cov=rascil \
+	--cov-append \
+	--cov-report term:skip-covered \
+	--cov-report html:coverage  \
+	--cov-report xml:coverage.xml \
+	--pylint --pylint-error-types=EF --durations=30
+

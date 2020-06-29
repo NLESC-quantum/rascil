@@ -114,11 +114,11 @@ pages:
     - test
     - data
   script:
-    - ls -la
     - rm -rf public
-    - mv docs/build/html public
-    - cp -r htmlcov public
-    - cp rascil_data.tgz public
+    - ls -la docs/build/html
+    - mv docs/build/html/* public
+    - mv coverage public
+    - mv rascil_data.tgz public
     - ls -l public
   artifacts:
     paths:
@@ -127,12 +127,6 @@ pages:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# The following reads::
-# build/reports/code-coverage.xml
-# build/reports/unit-tests.xml
-# build/reports/linting.xml
-# And writes:
-# build/reports/ci-metrics.json
 create ci metrics:
   stage: .post
   when: always
@@ -142,6 +136,12 @@ create ci metrics:
     - mv unit-tests.xml ./build/reports/unit-tests.xml
   script:
     # Gitlab CI badges creation: START
+    # The following reads::
+    # build/reports/code-coverage.xml
+    # build/reports/unit-tests.xml
+    # build/reports/linting.xml
+    # And writes:
+    # build/reports/ci-metrics.json
     - apt-get -y update
     - apt-get install -y curl --no-install-recommends
     - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh

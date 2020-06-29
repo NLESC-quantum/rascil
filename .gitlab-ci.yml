@@ -44,10 +44,9 @@ test:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
   artifacts:
     paths:
-    - coverage/
+    - htmlcov
     - coverage.xml
-    - htmlcov/
-    - ./build
+    - unit-tests.xml
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -62,13 +61,10 @@ docs:
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make docs
-  after_script:
-    - mv docs/build/html html
   artifacts:
     paths:
-      - html/
+      - docs/build/html/
     expire_in: 1 week
-
 
 # Build the data file only if on the master
 data:
@@ -119,16 +115,11 @@ pages:
     - data
   script:
     - ls -la
-    - mkdir .public
-    - cp -r htmlcov/* .public
-    - cp -r coverage .public
-    - cp coverage.xml .public
-    - cp rascil_data.tgz .public
-    - cp -r html .public
     - rm -rf public
-    - mv .public public
+    - mv docs/build/html public
+    - cp -r htmlcov public
+    - cp rascil_data.tgz public
     - ls -l public
-    - rm -rf coverage coverage.xml htmlcov rascil_data.tgz html
   artifacts:
     paths:
       - public
@@ -136,9 +127,19 @@ pages:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
+# The following reads::
+# build/reports/code-coverage.xml
+# build/reports/unit-tests.xml
+# build/reports/linting.xml
+# And writes:
+# build/reports/ci-metrics.json
 create ci metrics:
   stage: .post
   when: always
+  before_script:
+    - mv coverage.xml ./build/reports/code-coverage.xml
+    - mv linting.xml ./build/reports/linting.xml
+    - mv unit-tests.xml ./build/reports/unit-tests.xml
   script:
     # Gitlab CI badges creation: START
     - apt-get -y update

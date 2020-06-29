@@ -61,7 +61,7 @@ docs:  ## build docs
 
 test:
 # Outputs unit-tests.xml htmlcov/report.json htmlcov/*.html
-	HOME=`pwd` py.test -n 4 tests/workflows --verbose \
+	HOME=`pwd` py.test -n 4 tests --verbose \
 	--junitxml unit-tests.xml \
 	--cov rascil \
 	--cov-report term \
@@ -77,8 +77,7 @@ test-twopass:
 	--cov-report html:coverage  \
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
-	 #tests/processing_components tests/workflows/test*serial.py --verbose
-	HOME=`pwd` py.test -n 4 tests/data_models \
+	HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
 	--junitxml unit-tests.xml \
 	--cov=rascil \
 	--cov-append \

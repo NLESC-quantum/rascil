@@ -17,8 +17,7 @@ linting:
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   stage: test
   before_script:
-    - pip3 install -r requirements.txt
-    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt -r requirements-test.txt
   script:
     - make lint
   when: always
@@ -32,7 +31,7 @@ test:
   before_script:
     - apt-get update
     - apt-get -y install rsync ca-certificates pybind11-dev
-    - pip3 install -r requirements.txt
+    - pip3 install -r requirements.txt -r requirements-test.txt
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
     - git clone https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git

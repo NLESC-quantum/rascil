@@ -48,18 +48,4 @@ setup(name='rascil',
           'Programming Language :: Python :: 3.7'],
       packages=setuptools.find_namespace_packages(where="rascil"),
       package_dir={"": "rascil"},
-      test_suite='tests',
-      install_requires=reqs,
-      setup_requires=[
-          # dependency for `python setup.py test`
-          'pytest-runner',
-          # dependencies for `python setup.py build_sphinx`
-          'sphinx',
-          'recommonmark'],
-      tests_require=[
-          'pytest',
-          'pytest-cov',
-          'pytest-json-report',
-          'pytest-xdist',
-          'pycodestyle']
-      )
+      install_requires=reqs)

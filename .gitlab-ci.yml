@@ -44,7 +44,7 @@ test:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
   artifacts:
     paths:
-    - htmlcov
+    - coverage
     - coverage.xml
     - unit-tests.xml
 
@@ -131,6 +131,7 @@ create ci metrics:
   stage: .post
   when: always
   before_script:
+    - mkdir -p build/reports
     - mv coverage.xml ./build/reports/code-coverage.xml
     - mv linting.xml ./build/reports/linting.xml
     - mv unit-tests.xml ./build/reports/unit-tests.xml

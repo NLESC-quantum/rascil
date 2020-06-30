@@ -3,9 +3,9 @@
 
 import os
 import sys
+import glob
 from distutils.sysconfig import get_config_vars
 
-import setuptools
 from setuptools import setup
 
 # Bail on Python < 3
@@ -23,6 +23,10 @@ if sys.platform == 'darwin':
 # NB. These are not really Python extensions (i.e., they do not
 # Py_Initialize() and they do define main() ), we are just cheating to
 # re-use the setuptools build support.
+
+packages = ['rascil']
+package_data = [i for p in packages for i in
+                glob.glob(p + '/*/') + glob.glob(p + '/*/*/') + glob.glob(p + '/*/*/*/') + glob.glob(p + '/*/*/*/*/')]
 
 setup(name='rascil',
       version='0.1.8b0',
@@ -43,11 +47,11 @@ setup(name='rascil',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7']
       ,
-      packages=setuptools.find_namespace_packages(where="rascil"),
+      packages=(packages + package_data),
       package_dir={"": "rascil"},
       test_suite='tests',
       install_requires=['aotools', 'astropy', 'bokeh', 'dask', 'distributed', 'h5py', 'jupyter',
-                        'jupyter_contrib_nbextensions', 'matplotlib', 'numba', 'numpy', 'paramiko', 'photutils',
+                        'jupyter_contrib_nbextensions', 'matplotlib', 'numba', 'numpy==1.18.2', 'paramiko', 'photutils',
                         'python-casacore', 'graphviz', 'reproject', 'scikit-image', 'scipy', 'seqfile', 'ConfigParser',
                         'tabulate'],
 

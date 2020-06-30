@@ -7,12 +7,16 @@ import glob
 from distutils.sysconfig import get_config_vars
 
 from setuptools import setup
+import setuptools
 
 # Bail on Python < 3
 assert sys.version_info[0] >= 3
 
 with open('README.md') as readme_file:
     readme = readme_file.read()
+
+with open('requirements.txt') as reqs_file:
+    reqs = reqs_file.read()
 
 # MF. This is a workaround to be able to build the library with MacOS
 if sys.platform == 'darwin':
@@ -23,10 +27,6 @@ if sys.platform == 'darwin':
 # NB. These are not really Python extensions (i.e., they do not
 # Py_Initialize() and they do define main() ), we are just cheating to
 # re-use the setuptools build support.
-
-packages = ['rascil']
-package_data = [i for p in packages for i in
-                glob.glob(p + '/*/') + glob.glob(p + '/*/*/') + glob.glob(p + '/*/*/*/') + glob.glob(p + '/*/*/*/*/')]
 
 setup(name='rascil',
       version='0.1.8b0',
@@ -45,28 +45,21 @@ setup(name='rascil',
           'Natural Language :: English',
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.6',
-          'Programming Language :: Python :: 3.7']
-      ,
-      packages=(packages + package_data),
+          'Programming Language :: Python :: 3.7'],
+      packages=setuptools.find_namespace_packages(where="rascil"),
       package_dir={"": "rascil"},
       test_suite='tests',
-      install_requires=['aotools', 'astropy', 'bokeh', 'dask', 'distributed', 'h5py', 'jupyter',
-                        'jupyter_contrib_nbextensions', 'matplotlib', 'numba', 'numpy==1.18.2', 'paramiko', 'photutils',
-                        'python-casacore', 'graphviz', 'reproject', 'scikit-image', 'scipy', 'seqfile', 'ConfigParser',
-                        'tabulate'],
-
+      install_requires=reqs,
       setup_requires=[
           # dependency for `python setup.py test`
           'pytest-runner',
           # dependencies for `python setup.py build_sphinx`
           'sphinx',
-          'recommonmark'
-      ],
+          'recommonmark'],
       tests_require=[
           'pytest',
           'pytest-cov',
           'pytest-json-report',
           'pytest-xdist',
-          'pycodestyle'
-      ]
+          'pycodestyle']
       )

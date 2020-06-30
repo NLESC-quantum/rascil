@@ -51,7 +51,6 @@ all: test lint docs
 
 lint:
 # outputs linting.xml
-	# FIXME pylint needs to run twice since there is no way go gather the text and junit xml output at the same time
 	pylint --exit-zero --output-format=pylint2junit.JunitReporter rascil > linting.xml
 	pylint --exit-zero --output-format=parseable rascil
 
@@ -73,7 +72,6 @@ test:
 	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py --verbose \
 	--junitxml unit-tests-workflows.xml \
 	--cov rascil \
-	--cov-report term \
 	--cov-report html:coverage  \
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
@@ -81,9 +79,8 @@ test:
 	tests/data_models tests/processing_components tests/workflows/test*serial.py \
 	--verbose \
 	--junitxml unit-tests-other.xml \
-	--cov=rascil \
+	--cov rascil \
 	--cov-append \
-	--cov-report term:skip-covered \
 	--cov-report html:coverage  \
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30

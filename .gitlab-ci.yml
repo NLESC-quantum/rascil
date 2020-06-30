@@ -80,8 +80,6 @@ data:
 # Publish pip file to nexus only if this is a tagged build of the master
 publish_to_nexus:
   stage: publish
-  tags:
-    - docker-executor
   variables:
     TWINE_USERNAME: $TWINE_USERNAME
     TWINE_PASSWORD: $TWINE_PASSWORD

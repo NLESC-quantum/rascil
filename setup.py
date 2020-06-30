@@ -29,7 +29,7 @@ if sys.platform == 'darwin':
 # re-use the setuptools build support.
 
 setup(name='rascil',
-      version='0.1.8b0',
+      version='0.1.8',
       python_requires='>=3.6',
       description='Radio Astronomy Simulation, Calibration, and Imaging Library',
       long_description=readme + '\n\n',

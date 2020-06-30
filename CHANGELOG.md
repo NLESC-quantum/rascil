@@ -1,3 +1,10 @@
+0.1.8
+-----
+
+* Changes due to move to SKA repository: pip and docker files now available from nexus.engageska-portugal.pt
+* Pip file now downloads all prerequisites
+* Unit tests reduced in scale to improve turnaround of Gitlab tests
+
 0.1.7
 ------
 

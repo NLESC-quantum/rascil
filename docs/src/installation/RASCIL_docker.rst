@@ -14,16 +14,16 @@ The RASCIL Dockerfiles are in a separate repository at https://gitlab.com/ska-te
 
 The docker images for RASCIL are on nexus.engageska-portugal.pt at::
 
-    nexus.engageska-portugal.pt/rascil/rascil-base
-    nexus.engageska-portugal.pt/rascil/rascil-full
-    nexus.engageska-portugal.pt/rascil/rascil-notebook
+    nexus.engageska-portugal.pt/rascil-docker/rascil-base
+    nexus.engageska-portugal.pt/rascil-docker/rascil-full
+    nexus.engageska-portugal.pt/rascil-docker/rascil-notebook
 
 The first does not have the RASCIL test data but is smaller in size (2GB vs 4GB). However, for many of the tests
 and demonstrations the test data is needed.
 
 To run RASCIL with your home directory available inside the image::
 
-    docker run -it --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil/rascil-full
+    docker run -it --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil-docker/rascil-full
 
 Now let's run an example. First it simplifies using the container if we do not
 try to write inside the container, and that's why we mapped in our $HOME directory.
@@ -32,7 +32,7 @@ to the name of the HOME directory, which is the same inside and outside the
 container, and then give the full address of the script inside the container. This time
 we will show the prompts from inside the container::
 
-     % docker run -p 8888:8888 -v $HOME:$HOME -it nexus.engageska-portugal.pt/rascil/rascil-full
+     % docker run -p 8888:8888 -v $HOME:$HOME -it nexus.engageska-portugal.pt/rascil-docker/rascil-full
      rascil@d0c5fc9fc19d:/rascil$ cd /<your home directory>
      rascil@d0c5fc9fc19d:/<your home directory>$ python3 /rascil/examples/scripts/imaging.py
      ...
@@ -49,7 +49,7 @@ Running notebooks
 
 We also want to be able to run jupyter notebooks inside the container::
 
-    docker run -it -p 8888:8888 --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil/rascil-full
+    docker run -it -p 8888:8888 --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil-docker/rascil-full
     cd /<your home directory>
     jupyter notebook --no-browser --ip 0.0.0.0  /rascil/examples/notebooks/
 
@@ -82,7 +82,7 @@ The cluster is created using the docker-compose up command. To scale to e.g. 4 d
 The scheduler, 4 workers and a notebook should now be running. To connect to the cluster, run the
 following into another window::
 
-    docker run -it --network host --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil/rascil-full
+    docker run -it --network host --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil-docker/rascil-full
 
 Then at the docker prompt, do e.g.::
 
@@ -124,7 +124,7 @@ Singularity
 
 `Singularity <https://sylabs.io/docs/>`_ can be used to load and run the docker images::
 
-    singularity pull RASCIL-full.img docker://nexus.engageska-portugal.pt/rascil/rascil-full
+    singularity pull RASCIL-full.img docker://nexus.engageska-portugal.pt/rascil-docker/rascil-full
     singularity exec RASCIL-full.img python3 /rascil/examples/scripts/imaging.py
 
 As in docker, don't run from the /rascil/ directory.

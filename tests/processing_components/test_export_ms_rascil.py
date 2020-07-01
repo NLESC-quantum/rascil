@@ -39,7 +39,7 @@ class export_ms_RASCIL_test(unittest.TestCase):
         if run_ms_tests == False:
             return
 
-        msfile = rascil_path("data/vis/ASKAP_example.ms")
+        msfile = rascil_data_path("vis/ASKAP_example.ms")
         msoutfile = rascil_path("test_results/test_export_ms_ASKAP_output.ms")
 
         v = create_blockvisibility_from_ms(msfile)

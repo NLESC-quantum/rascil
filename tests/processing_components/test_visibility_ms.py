@@ -34,7 +34,7 @@ class TestCreateMS(unittest.TestCase):
         if not self.casacore_available:
             return
         
-        msfile = rascil_path("data/vis/xcasa.ms")
+        msfile = rascil_data_path("vis/xcasa.ms")
         self.vis = create_blockvisibility_from_ms(msfile)
         
         for v in self.vis:
@@ -45,7 +45,7 @@ class TestCreateMS(unittest.TestCase):
         if not self.casacore_available:
             return
     
-        msfile = rascil_path("data/vis/ASKAP_example.ms")
+        msfile = rascil_data_path("vis/ASKAP_example.ms")
     
         vis_by_channel = list()
         nchan_ave = 16
@@ -64,7 +64,7 @@ class TestCreateMS(unittest.TestCase):
         if not self.casacore_available:
             return
     
-        msfile = rascil_path("data/vis/ASKAP_example.ms")
+        msfile = rascil_data_path("vis/ASKAP_example.ms")
     
         vis_by_channel = list()
         nchan_ave = 16
@@ -84,7 +84,7 @@ class TestCreateMS(unittest.TestCase):
         if not self.casacore_available:
             return
     
-        msfile = rascil_path("data/vis/ASKAP_example.ms")
+        msfile = rascil_data_path("vis/ASKAP_example.ms")
     
         vis_by_channel = list()
         nchan_ave = 16
@@ -109,7 +109,7 @@ class TestCreateMS(unittest.TestCase):
         if not self.casacore_available:
             return
     
-        msfile = rascil_path("data/vis/ASKAP_example.ms")
+        msfile = rascil_data_path("vis/ASKAP_example.ms")
     
         vis_by_channel = list()
         nchan_ave = 16
@@ -134,7 +134,7 @@ class TestCreateMS(unittest.TestCase):
         if not self.casacore_available:
             return
     
-        msfile = rascil_path("data/vis/ASKAP_example.ms")
+        msfile = rascil_data_path("vis/ASKAP_example.ms")
     
         vis_by_channel = list()
         nchan_ave = 1
@@ -153,7 +153,7 @@ class TestCreateMS(unittest.TestCase):
         if not self.casacore_available:
             return
     
-        msfile = rascil_path("data/vis/ASKAP_example.ms")
+        msfile = rascil_data_path("vis/ASKAP_example.ms")
     
         vis_by_channel = list()
         nchan_ave = 16

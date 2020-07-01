@@ -38,7 +38,7 @@ class TestCreateMS(unittest.TestCase):
         return
     
     # def test_create_list(self):
-    #     uvfitsfile = rascil_path("data/vis/xcasa.fits")
+    #     uvfitsfile = rascil_data_path("vis/xcasa.fits")
     #     self.vis = create_blockvisibility_from_uvfits(uvfitsfile)
     
     #     for v in self.vis:
@@ -47,7 +47,7 @@ class TestCreateMS(unittest.TestCase):
     
     def test_create_list_spectral(self):
         
-        uvfitsfile = rascil_path("data/vis/ASKAP_example.fits")
+        uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")
         
         vis_by_channel = list()
         nchan_ave = 16
@@ -64,7 +64,7 @@ class TestCreateMS(unittest.TestCase):
 
     def test_create_list_spectral_average(self):
         
-        uvfitsfile = rascil_path("data/vis/ASKAP_example.fits")
+        uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")
         
         vis_by_channel = list()
         nchan_ave = 16
@@ -82,7 +82,7 @@ class TestCreateMS(unittest.TestCase):
 
     def test_invert(self):
         
-        uvfitsfile = rascil_path("data/vis/ASKAP_example.fits")
+        uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")
         
         nchan_ave = 32
         nchan = 192

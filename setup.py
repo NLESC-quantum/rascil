@@ -28,6 +28,10 @@ if sys.platform == 'darwin':
 # Py_Initialize() and they do define main() ), we are just cheating to
 # re-use the setuptools build support.
 
+packages = ['rascil']
+packages_data = [i for p in packages for i in
+                glob.glob(p + '/*/') + glob.glob(p + '/*/*/') + glob.glob(p + '/*/*/*/') + glob.glob(p + '/*/*/*/*/') + glob.glob(p + '/*/*/*/*/')]
+
 setup(name='rascil',
       version='0.1.8',
       python_requires='>=3.6',
@@ -46,6 +50,7 @@ setup(name='rascil',
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.6',
           'Programming Language :: Python :: 3.7'],
-      packages=setuptools.find_namespace_packages(where="rascil"),
-      package_dir={"": "rascil"},
-      install_requires=reqs)
+      packages=(packages + packages_data),
+      install_requires=reqs,
+      test_suite="tests",
+      tests_require=['pytest'])

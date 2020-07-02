@@ -50,21 +50,40 @@ all: test lint docs
 .PHONY: all test lint docs
 
 lint:
-	# FIXME pylint needs to run twice since there is no way go gather the text and junit xml output at the same time
-	mkdir -p ./build/reports/
-	pylint --exit-zero --output-format=pylint2junit.JunitReporter rascil > ./build/reports/linting.xml
-	pylint --exit-zero --output-format=parseable rascil | tee ./build/code_analysis.stdout
+# outputs linting.xml
+	pylint --exit-zero --output-format=pylint2junit.JunitReporter rascil > linting.xml
+	pylint --exit-zero --output-format=parseable rascil
 
 docs:  ## build docs
-	mkdir -p ./build/reports/
-	$(MAKE) -C docs/src dirhtml
+# Outputs docs/build/html
+	$(MAKE) -C docs/src html
+
+test-singlepass:
+	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
+	 tests --verbose \
+	--junitxml unit-tests.xml \
+	--cov rascil \
+	--cov-report term \
+	--cov-report html:coverage  \
+	--cov-report xml:coverage.xml \
+	--pylint --pylint-error-types=EF --durations=30
 
 test:
-	mkdir -p ./build/reports/
-	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py --verbose --cov=rascil --cov-report=xml:coverage \
-		--cov-report=html:coverage --durations=30 | tee ./build/code_test.stdout
-	HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose \
-		--cov=rascil --cov-report=html:coverage --cov-report=xml:coverage --cov-append --durations=30 \
-		 | tee -a ./build/code_test.stdout
-	mv build/reports/unit-tests.xml coverage.xml
+	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py --verbose \
+	--junitxml unit-tests-workflows.xml \
+	--cov rascil \
+	--cov-report html:coverage  \
+	--cov-report xml:coverage.xml \
+	--pylint --pylint-error-types=EF --durations=30
+	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
+	tests/data_models tests/processing_components tests/workflows/test*serial.py \
+	--verbose \
+	--junitxml unit-tests-other.xml \
+	--cov rascil \
+	--cov-append \
+	--cov-report html:coverage  \
+	--cov-report xml:coverage.xml \
+	--pylint --pylint-error-types=EF --durations=30
+	python3 util/xmlcombine.py unit-tests-workflows.xml unit-tests-other.xml > unit-tests.xml
+	rm unit-tests-workflows.xml unit-tests-other.xml
 

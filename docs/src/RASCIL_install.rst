@@ -12,17 +12,18 @@ Installation via pip
 
 If you just wish to run the package and do not intend to run simulations or tests, RASCIL can be installed using pip::
 
-     pip3 install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple/ "rascil>=0.1.7"
+     pip3 install --extra-index-url=https://nexus.engageska-portugal.pt/repository/pypi/simple/ rascil
 
-This will download 0.1.7 or higher. The ">=" is a workaround needed because the releases are currently tagged
-additionally with the git tag)
+This will download the latest stable version.
 
 This will download and install the python files, and dependencies. For simulations, you must add the data in a separate
 step::
 
-    curl https://ska-telescope.gitlab.io/rascil/rascil_data.tgz -o rascil.data.tgz
+    mkdir rascil_data
+    cd rascil_data
+    curl https://ska-telescope.gitlab.io/rascil/rascil_data.tgz -o rascil_data.tgz
     tar zxf rascil_data.tgz
-    export RASCIL_DATA=`pwd`/rascil_data
+    export RASCIL_DATA=`pwd`
 
 If you wish to run the RASCIL tests, use one of the steps below.
 
@@ -72,7 +73,7 @@ The installation steps are:
     export RASCIL=/path/to/rascil
     export PYTHONPATH=$RASCIL:$PYTHONPATH
 
-"python setup.py install" installs an egg in the correct site-packages location so the definition of PYTHONPATH is not needed
+"python setup.py install" installs in the correct site-packages location so the definition of PYTHONPATH is not needed
 if you only don't intend to update or edit rascil in place. If you do intend to make changes, you will need the
 definition of PYTHONPATH.
 

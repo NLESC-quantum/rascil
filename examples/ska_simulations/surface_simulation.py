@@ -92,7 +92,7 @@ def cli_parser():
                      help='Use Agg matplotlib backend?')
     par.add_argument('--use_radec', type=str, default="False",
                      help='Calculate primary beams in RADEC?')
-    default_shared_path = rascil_path("data/configurations")
+    default_shared_path = rascil_data_path("configurations")
     par.add_argument('--shared_directory', type=str, default=default_shared_path,
                      help='Location of configuration files (default is RASCIL data/configurations)')
     # Dask parameters; matched to P3

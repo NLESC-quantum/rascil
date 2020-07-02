@@ -14,15 +14,16 @@ stages:
   - publish
 
 linting:
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   stage: test
+  before_script:
+    - pip3 install -r requirements.txt -r requirements-test.txt
   script:
-    - pip3 install -r requirements.txt
-    - pip3 install -r requirements-test.txt
     - make lint
   when: always
   artifacts:
     paths:
-      - ./build
+      - linting.xml
 
 # Always run the unittests
 test:
@@ -30,7 +31,7 @@ test:
   before_script:
     - apt-get update
     - apt-get -y install rsync ca-certificates pybind11-dev
-    - pip3 install -r requirements.txt
+    - pip3 install -r requirements.txt -r requirements-test.txt
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
     - git clone https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git
@@ -42,9 +43,9 @@ test:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
   artifacts:
     paths:
-    - ./build
-    - htmlcov
+    - coverage
     - coverage.xml
+    - unit-tests.xml
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -58,14 +59,11 @@ docs:
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
   script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make -k -C docs/src html
-  after_script:
-    - mv docs/build/html html
+    - PYTHONPATH=`pwd` HOME=`pwd` make docs
   artifacts:
     paths:
-      - html/
+      - docs/build/html/
     expire_in: 1 week
-
 
 # Build the data file only if on the master
 data:
@@ -82,8 +80,6 @@ data:
 # Publish pip file to nexus only if this is a tagged build of the master
 publish_to_nexus:
   stage: publish
-  tags:
-    - docker-executor
   variables:
     TWINE_USERNAME: $TWINE_USERNAME
     TWINE_PASSWORD: $TWINE_PASSWORD
@@ -97,12 +93,15 @@ publish_to_nexus:
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
 
-# Trigger downstream docker build to nexus only if this is a tagged build of the master
+# Trigger downstream docker build to nexus only if this is build of the master,
+# Pass the tag downstream so that the build can be marked stable if this is tagged
 staging: # Start the construction of dockers files in rascil-docker
   stage: publish
+  variables:
+    UPSTREAM_TAG: $CI_COMMIT_TAG
   trigger: ska-telescope/rascil-docker
   rules:
-    - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "master"'
 
 # Publish the docs, data, and coverage if this is a build of the master
 pages:
@@ -112,14 +111,12 @@ pages:
     - test
     - data
   script:
-    - ls -la
-    - mkdir .public
-    - cp -r htmlcov/* .public
-    - cp coverage.xml .public
-    - cp rascil_data.tgz .public
-    - cp -r html .public
-    - rm -rf coverage.xml htmlcov rascil_data.tgz html
-    - mv .public public
+    - rm -rf public
+    - mkdir -p public
+    - mv docs/build/html/* public
+    - mv coverage public
+    - mv rascil_data.tgz public
+    - ls -l public
   artifacts:
     paths:
       - public
@@ -129,9 +126,21 @@ pages:
 
 create ci metrics:
   stage: .post
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   when: always
+  before_script:
+    - mkdir -p build/reports
+    - mv coverage.xml ./build/reports/code-coverage.xml
+    - mv linting.xml ./build/reports/linting.xml
+    - mv unit-tests.xml ./build/reports/unit-tests.xml
   script:
     # Gitlab CI badges creation: START
+    # The following reads::
+    # build/reports/code-coverage.xml
+    # build/reports/unit-tests.xml
+    # build/reports/linting.xml
+    # And writes:
+    # build/reports/ci-metrics.json
     - apt-get -y update
     - apt-get install -y curl --no-install-recommends
     - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
@@ -139,3 +148,4 @@ create ci metrics:
   artifacts:
     paths:
       - ./build
+

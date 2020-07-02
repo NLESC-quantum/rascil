@@ -69,4 +69,10 @@ xmlcov/
 
 .config/
 
-.coverage
+.coverage*
+
+coverage/
+
+coverage.xml
+
+linting.xml

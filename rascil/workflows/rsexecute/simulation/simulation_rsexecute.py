@@ -522,7 +522,7 @@ def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_compo
     no_error_pt_list = [rsexecute.execute(create_pointingtable_from_blockvisibility)(bvis)
                         for bvis in sub_bvis_list]
     
-    if time_series is '':
+    if time_series == '':
         error_pt_list = [
             rsexecute.execute(simulate_pointingtable)(pt, pointing_error=pointing_error,
                                                       static_pointing_error=static_pointing_error,

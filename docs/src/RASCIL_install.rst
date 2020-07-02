@@ -3,9 +3,9 @@
 Installation
 ============
 
-RASCIL can be run on a Linux or macos machine or cluster of machines. At least 16GB physical memory is necessary to
-run the full test suite. In general more memory is better. RASCIL uses Dask for multi-processing and can make good
-use of multi-core and multi-node machines.
+RASCIL can be run on a Linux or macos machine or cluster of machines, using python 3.7 or 3.8. At least 16GB physical
+memory is necessary to run the full test suite. In general more memory is better. RASCIL uses Dask for
+multi-processing and can make good use of multi-core and multi-node machines.
 
 Installation via pip
 ++++++++++++++++++++
@@ -16,8 +16,8 @@ If you just wish to run the package and do not intend to run simulations or test
 
 This will download the latest stable version.
 
-This will download and install the python files, and dependencies. For simulations, you must add the data in a separate
-step::
+This will download and install the python files in the rascil, and dependencies. For simulations, you must add the data
+in a separate step::
 
     mkdir rascil_data
     cd rascil_data
@@ -25,7 +25,7 @@ step::
     tar zxf rascil_data.tgz
     export RASCIL_DATA=`pwd`
 
-If you wish to run the RASCIL tests, use one of the steps below.
+If you wish to run the RASCIL examples or tests, use one of the steps below.
 
 Installation via docker
 +++++++++++++++++++++++
@@ -41,7 +41,7 @@ Installation via git clone
 
 Use of git clone is necessary if you wish to develop and possibly contribute RASCIL code. Installation should be straightforward. We strongly recommend the use of a python virtual environment.
 
-RASCIL requires python 3.6 or 3.7. It has not yet been tested for 3.8.
+RASCIL requires python 3.7 or 3.8.
 
 The installation steps are:
 
@@ -55,16 +55,16 @@ The installation steps are:
 
 - Use pip to install required python packages::
 
-   pip install pip --upgrade
-   pip install -r requirements.txt
+   pip3 install pip --upgrade
+   pip3 install -r requirements.txt
 
 - Setup RASCIL::
 
-   python setup.py install
+   python3 setup.py install
 
 - RASCIL makes use of a number of data files. These can be downloaded using Git LFS::
 
-    pip install git-lfs
+    pip3 install git-lfs
     git lfs install
     git-lfs pull
 

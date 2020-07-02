@@ -13,7 +13,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components import weight_visibility, weight_blockvisibility
+from rascil.processing_components import weight_visibility
 from rascil.processing_components.griddata.kernels import create_awterm_convolutionfunction
 from rascil.processing_components.griddata import apply_bounding_box_convolutionfunction
 from rascil.processing_components.image.operations import export_image_to_fits, smooth_image, qa_image
@@ -353,7 +353,7 @@ class TestImaging2D(unittest.TestCase):
     def test_invert_psf_weighting_block(self):
         self.actualSetUp(zerow=False, block=True)
         for weighting in ["natural", "uniform", "robust"]:
-            self.vis = weight_blockvisibility(self.vis, self.model, weighting=weighting, robustness=-1.0)
+            self.vis = weight_visibility(self.vis, self.model, weighting=weighting, robustness=-1.0)
             psf = invert_2d(self.vis, self.model, dopsf=True)
             error = numpy.max(psf[0].data) - 1.0
             assert abs(error) < 1.0e-12, error
@@ -364,7 +364,7 @@ class TestImaging2D(unittest.TestCase):
     def test_invert_psf_weighting_block_IQUV(self):
         self.actualSetUp(zerow=False, block=True, image_pol = PolarisationFrame('stokesIQUV'))
         for weighting in ["natural", "uniform", "robust"]:
-            self.vis = weight_blockvisibility(self.vis, self.model, weighting=weighting, robustness=-1.0)
+            self.vis = weight_visibility(self.vis, self.model, weighting=weighting, robustness=-1.0)
             psf = invert_2d(self.vis, self.model, dopsf=True)
             error = numpy.max(psf[0].data) - 1.0
             assert abs(error) < 1.0e-12, error

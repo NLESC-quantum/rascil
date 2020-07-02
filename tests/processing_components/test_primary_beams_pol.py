@@ -15,7 +15,7 @@ from numpy.testing import assert_array_almost_equal
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image import export_image_to_fits, reproject_image, apply_voltage_pattern_to_image, qa_image
 from rascil.processing_components.imaging import create_image_from_visibility, invert_2d, \
-    advise_wide_field, weight_blockvisibility
+    advise_wide_field, weight_visibility
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility, idft_visibility_skycomponent
 from rascil.processing_components.imaging.primary_beams import create_vp, create_pb
 from rascil.processing_components.simulation import create_named_configuration
@@ -143,7 +143,7 @@ class TestPrimaryBeamsPol(unittest.TestCase):
                                              phasecentre=component_centre,
                                              override_cellsize=False,
                                              polarisation_frame=PolarisationFrame("linear"))
-        bvis = weight_blockvisibility(bvis, model)
+        bvis = weight_visibility(bvis, model)
         
         pbmodel = create_image_from_visibility(bvis, cellsize=self.cellsize, npixel=self.npixel,
                                                override_cellsize=False,

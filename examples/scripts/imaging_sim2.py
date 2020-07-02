@@ -18,7 +18,6 @@ log = logging.getLogger('logger')
 
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))
-log.addHandler(logging.StreamHandler(sys.stderr))
 
 if __name__ == '__main__':
     results_dir = './'

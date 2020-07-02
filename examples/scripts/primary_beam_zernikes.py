@@ -92,4 +92,4 @@ if __name__ == '__main__':
         ax.axis('off')
 
     plt.savefig("random_zernikes.png")
-    plt.show()
+    plt.show(block=False)

@@ -26,7 +26,7 @@ if __name__ == '__main__':
                         help='Number of threads per worker')
     parser.add_argument('--memory', dest='memory', default=8,
                         help='Memory per worker (GB)')
-    parser.add_argument('--npixel', type=int, default=512,
+    parser.add_argument('--npixel', type=int, default=256,
                         help='Number of pixels per axis')
     parser.add_argument('--context', dest='context', default='wstack',
                         help='Context: 2d|timeslice|wstack')

@@ -20,6 +20,13 @@ from rascil.processing_components.visibility import copy_visibility, convert_blo
 from rascil.workflows.serial.imaging import predict_list_serial_workflow, invert_list_serial_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
+# ToDo - remove non-SkyModel parts
+from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rsexecute_workflow, \
+    predict_list_rsexecute_workflow, subtract_list_rsexecute_workflow, \
+    zero_list_rsexecute_workflow
+
+
+
 log = logging.getLogger('logger')
 
 
@@ -80,12 +87,25 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
 
         return v
     
-    if gcfcf is None:
-        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None)
-                for ism, sm in enumerate(skymodel_list)]
+#    if gcfcf is None:
+#        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None)
+#                for ism, sm in enumerate(skymodel_list)]
+#    else:
+#        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism])
+#                for ism, sm in enumerate(skymodel_list)]
+
+
+    if isinstance(obsvis, list):
+            assert len(obsvis) == len(skymodel_list)
+            if gcfcf is None:
+                return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None) for ism, sm in enumerate(skymodel_list)]
+            else:
+                return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism]) for ism, sm in enumerate(skymodel_list)]
     else:
-        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism])
-                for ism, sm in enumerate(skymodel_list)]
+            if gcfcf is None:
+                return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None) for ism, sm in enumerate(skymodel_list)]
+            else:
+                return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism]) for ism, sm in enumerate(skymodel_list)]
 
 
 def predict_skymodel_list_compsonly_rsexecute_workflow(obsvis, skymodel_list, docal=False, **kwargs):
@@ -267,3 +287,41 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
     else:
         return [rsexecute.execute(ft_ift_sm, nout=len(skymodel_list))(obsvis, sm, gcfcf[ism])
                 for ism, sm in enumerate(skymodel_list)]
+
+def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d', future_skymodel=None, gcfcf=None, **kwargs):
+    """ Create a graph to calculate residual image
+
+    :param vis: List of vis (or graph)
+    :param model_imagelist: Model used to determine image parameters
+    :param context: Imaging context e.g. '2d', 'wstack'
+    :param gcfcg: tuple containing grid correction and convolution function
+    :param kwargs: Parameters for functions in components
+    :return: list of (image, sumwt) tuples or graph
+    """
+    model_vis = zero_list_rsexecute_workflow(vis)
+    
+    if future_skymodel is not None:
+        #future_skymodel = rsexecute.scatter(skymodel_list)
+        model_vis = predict_skymodel_list_rsexecute_workflow(model_vis, future_skymodel,
+                                                                  context=context, 
+                                                                  gcfcf=gcfcf, docal=True, **kwargs)
+    else:
+        model_vis = predict_list_rsexecute_workflow(model_vis, model_imagelist, context=context,
+                                                gcfcf=gcfcf, **kwargs)
+    residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
+    
+    
+    
+    if future_skymodel is not None:
+        result = invert_skymodel_list_rsexecute_workflow(residual_vis, future_skymodel,
+                                                                   context=context, dopsf=False, docal=True,
+                                                                   gcfcf=gcfcf,
+                                                                   **kwargs )
+    else:    
+        result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, dopsf=False, normalize=True,
+                                            context=context,
+                                            gcfcf=gcfcf, **kwargs)
+    return rsexecute.optimize(result)
+
+
+

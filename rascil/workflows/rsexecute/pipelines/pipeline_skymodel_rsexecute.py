@@ -21,8 +21,10 @@ from rascil.data_models.memory_data_models import Image, SkyModel
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.processing_components.skymodel.operations import expand_skymodel_by_skycomponents
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymodel_list_rsexecute_workflow, \
-    invert_skymodel_list_rsexecute_workflow, crosssubtract_datamodels_skymodel_list_rsexecute_workflow
+    invert_skymodel_list_rsexecute_workflow, crosssubtract_datamodels_skymodel_list_rsexecute_workflow, \
+    residual_skymodel_list_rsexecute_workflow
 from rascil.workflows.shared.imaging.imaging_shared import sum_predict_results
+from rascil.processing_components.image.operations import copy_image
 
 log = logging.getLogger('logger')
 
@@ -45,6 +47,11 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
     """
     
     gt_list = list()
+
+# Function to copy image into a SkyModel    
+    def set_image(sm, dcm):
+        sm.image = copy_image(dcm)
+        return sm
     
 # Make wkernels    
     if gcfcf is None:
@@ -62,7 +69,6 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
         cal_vis_list = [rsexecute.execute(copy_visibility, nout=1)(v) for v in vis_list]
     else:
         cal_vis_list = vis_list
-        
     if do_selfcal:
         # Make the predicted visibilities, selfcalibrate against it correcting the gains, then
         # form the residual visibility, then make the residual image
@@ -70,12 +76,11 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
         #  Make the predicted visibilities
         
         if skymodel_list is not None:
-            future_skymodel = rsexecute.scatter(skymodel_list) # ToDo : check if it is already a list of the futures
-            predicted_model_vislist = predict_skymodel_list_rsexecute_workflow(model_vislist[0], future_skymodel,
-                                                                  context=context, 
-                                                                  vis_slices=vis_slices,
-                                                                  facets=facets, gcfcf=gcfcf, docal=True, **kwargs)            
-
+            future_skymodel = rsexecute.scatter(skymodel_list)
+            predicted_model_vislist = predict_skymodel_list_rsexecute_workflow(model_vislist, future_skymodel,
+                                                                  context=context, vis_slices=vis_slices,
+                                                                  facets=facets,
+                                                                  gcfcf=gcfcf, docal=True, **kwargs)
         else:
             predicted_model_vislist = predict_list_rsexecute_workflow(model_vislist, model_imagelist,
                                                                   context=context, vis_slices=vis_slices,
@@ -96,7 +101,16 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
         model_imagelist = [rsexecute.execute(zero_model_image, nout=1)(model) for model in model_imagelist]
         
         # Make the residual image
-        residual_imagelist = invert_list_rsexecute_workflow(cal_vis_list, model_imagelist,
+        if skymodel_list is not None:
+            future_skymodel = [rsexecute.execute(set_image)(skymodel_list[i], model_imagelist[i]) 
+                                   for i in range(len(skymodel_list))]
+
+            residual_imagelist = invert_skymodel_list_rsexecute_workflow(cal_vis_list, future_skymodel,
+                                                                   context=context, dopsf=False, docal=True,
+                                                                   vis_slices=vis_slices, facets=facets, gcfcf=gcfcf,
+                                                                   iteration=0, **kwargs )
+        else:    
+            residual_imagelist = invert_list_rsexecute_workflow(cal_vis_list, model_imagelist,
                                                             context=context, dopsf=False,
                                                             vis_slices=vis_slices, facets=facets, gcfcf=gcfcf,
                                                             iteration=0, **kwargs)
@@ -104,7 +118,15 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
     else:
         # If we are not selfcalibrating it's much easier and we can avoid an unnecessary round of gather/scatter
         # for visibility partitioning such as timeslices and wstack.
-        residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, model_imagelist, context=context,
+        
+        if skymodel_list is not None:
+            future_skymodel = [rsexecute.execute(set_image)(skymodel_list[i], model_imagelist[i]) 
+                                   for i in range(len(skymodel_list))]
+            residual_imagelist = residual_skymodel_list_rsexecute_workflow(cal_vis_list, model_imagelist, context=context, 
+                                                                           future_skymodel=future_skymodel, gcfcf=gcfcf,
+                                                                           vis_slices=vis_slices, facets=facets, **kwargs)
+        else:    
+            residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, model_imagelist, context=context,
                                                               vis_slices=vis_slices, facets=facets, gcfcf=gcfcf,
                                                               **kwargs)
     
@@ -113,15 +135,26 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
                                                                     model_imagelist,
                                                                     prefix='ical cycle 0',
                                                                     **kwargs)
+    
     # Next major cycles, if nmajor>1
     nmajor = get_parameter(kwargs, "nmajor", 5)
     if nmajor > 1:
         for cycle in range(nmajor):
             if do_selfcal:
-                model_vislist = predict_list_rsexecute_workflow(model_vislist, deconvolve_model_imagelist,
+                
+                if skymodel_list is not None:
+                    future_skymodel = [rsexecute.execute(set_image)(skymodel_list[i], deconvolve_model_imagelist[i]) 
+    for i in range(len(skymodel_list))]
+                    model_vislist = predict_skymodel_list_rsexecute_workflow(model_vislist, future_skymodel,
+                                                                  context=context, 
+                                                                  vis_slices=vis_slices,
+                                                                  facets=facets, gcfcf=gcfcf, docal=True, **kwargs)
+                else:
+                    model_vislist = predict_list_rsexecute_workflow(model_vislist, deconvolve_model_imagelist,
                                                                 context=context, vis_slices=vis_slices,
                                                                 facets=facets,
                                                                 gcfcf=gcfcf, **kwargs)
+                    
                 cal_vis_list = [rsexecute.execute(copy_visibility)(v) for v in vis_list]
                 cal_vis_list, gt_list = calibrate_list_rsexecute_workflow(cal_vis_list,
                                                                           model_vislist,
@@ -129,12 +162,29 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
                                                                           calibration_context=calibration_context,
                                                                           iteration=cycle, **kwargs)
                 residual_vislist = subtract_list_rsexecute_workflow(cal_vis_list, model_vislist)
-                residual_imagelist = invert_list_rsexecute_workflow(residual_vislist, model_imagelist,
+                
+                
+                if skymodel_list is not None:
+                    future_skymodel = [rsexecute.execute(set_image)(skymodel_list[i], model_imagelist[i]) 
+                                   for i in range(len(skymodel_list))]
+                    residual_imagelist = invert_skymodel_list_rsexecute_workflow(residual_vislist, future_skymodel,
+                                                                   context=context, dopsf=False, docal=True,
+                                                                   vis_slices=vis_slices, facets=facets, gcfcf=gcfcf,
+                                                                   iteration=0, **kwargs )
+                else:
+                    residual_imagelist = invert_list_rsexecute_workflow(residual_vislist, model_imagelist,
                                                                     context=context,
                                                                     vis_slices=vis_slices, facets=facets,
                                                                     gcfcf=gcfcf, **kwargs)
             else:
-                residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, deconvolve_model_imagelist,
+                if skymodel_list is not None:
+                    future_skymodel = [rsexecute.execute(set_image)(skymodel_list[i], deconvolve_model_imagelist[i]) 
+                                   for i in range(len(skymodel_list))]
+                    residual_imagelist = residual_skymodel_list_rsexecute_workflow(cal_vis_list, deconvolve_model_imagelist, context=context, 
+                                                                           future_skymodel=future_skymodel, vis_slices=vis_slices, facets=facets, 
+                                                                           gcfcf=gcfcf, **kwargs)
+                else:    
+                    residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, deconvolve_model_imagelist,
                                                                       context=context,
                                                                       vis_slices=vis_slices, facets=facets,
                                                                       gcfcf=gcfcf,
@@ -146,17 +196,21 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
                                                                             prefix=prefix,
                                                                             **kwargs)
     # Create residual images
-    residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, deconvolve_model_imagelist, context=context,
+    if skymodel_list is not None:
+        future_skymodel = [rsexecute.execute(set_image)(skymodel_list[i], deconvolve_model_imagelist[i]) 
+                                   for i in range(len(skymodel_list))]
+        residual_imagelist = residual_skymodel_list_rsexecute_workflow(cal_vis_list, deconvolve_model_imagelist, context=context, 
+                                                                           future_skymodel=future_skymodel, vis_slices=vis_slices, facets=facets, 
+                                                                           gcfcf=gcfcf, **kwargs)
+    else:    
+        residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, deconvolve_model_imagelist, context=context,
                                                           vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
     # Create restored images
     restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist)
     return (deconvolve_model_imagelist, residual_imagelist, restore_imagelist, gt_list)
 
 
-
-
-
-def continuum_imaging_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=None,
+def continuum_imaging_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, skymodel_list=None, gcfcf=None,
                                               vis_slices=1, facets=1, **kwargs):
     """ Create graph for the continuum imaging pipeline.
     
@@ -164,17 +218,34 @@ def continuum_imaging_skymodel_list_rsexecute_workflow(vis_list, model_imagelist
     
     :param vis_list: List of vis (or graph)
     :param model_imagelist: List of models (or graph)
+    :param skymodel_list: list of SkyModels
     :param context: Imaging context
+    :param skymodel_list: list of SkyModels
     :param kwargs: Parameters for functions in components
     :return:
     """
+    # Function to copy image into a SkyModel    
+    def set_image(sm, dcm):
+        sm.image = copy_image(dcm)
+        return sm
+
     if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(model_imagelist[0])]
+        #gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(model_imagelist[0])]
+        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(m) for m in model_imagelist]
     
     psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True,
                                                    vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
-    
-    residual_imagelist = residual_list_rsexecute_workflow(vis_list, model_imagelist, context=context, gcfcf=gcfcf,
+    # Create a list of copied input visibilities     
+    model_vislist = [rsexecute.execute(copy_visibility, nout=1)(v, zero=True) for v in vis_list]
+
+    if skymodel_list is not None:
+        future_skymodel = [rsexecute.execute(set_image)(skymodel_list[i], model_imagelist[i]) 
+                                   for i in range(len(skymodel_list))]
+        residual_imagelist = residual_skymodel_list_rsexecute_workflow(model_vislist, model_imagelist, context=context,  
+                                                          future_skymodel=future_skymodel, gcfcf=gcfcf,
+                                                          vis_slices=vis_slices, facets=facets, **kwargs)
+    else:
+        residual_imagelist = residual_list_rsexecute_workflow(model_vislist, model_imagelist, context=context, gcfcf=gcfcf,
                                                           vis_slices=vis_slices, facets=facets, **kwargs)
     
     deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
@@ -185,7 +256,7 @@ def continuum_imaging_skymodel_list_rsexecute_workflow(vis_list, model_imagelist
     if nmajor > 1:
         for cycle in range(nmajor):
             prefix = "cip cycle %d" % (cycle + 1)
-            residual_imagelist = residual_list_rsexecute_workflow(vis_list, deconvolve_model_imagelist,
+            residual_imagelist = residual_list_rsexecute_workflow(model_vislist, deconvolve_model_imagelist,
                                                                   context=context, vis_slices=vis_slices,
                                                                   facets=facets,
                                                                   gcfcf=gcfcf, **kwargs)
@@ -193,8 +264,14 @@ def continuum_imaging_skymodel_list_rsexecute_workflow(vis_list, model_imagelist
                                                                             deconvolve_model_imagelist,
                                                                             prefix=prefix,
                                                                             **kwargs)
-    
-    residual_imagelist = residual_list_rsexecute_workflow(vis_list, deconvolve_model_imagelist, context=context,
+    if skymodel_list is not None:
+        future_skymodel = [rsexecute.execute(set_image)(skymodel_list[i], deconvolve_model_imagelist[i]) 
+                                   for i in range(len(skymodel_list))]
+        residual_imagelist = residual_skymodel_list_rsexecute_workflow(model_vislist, deconvolve_model_imagelist, context=context, 
+                                                                           future_skymodel=future_skymodel, vis_slices=vis_slices, facets=facets, 
+                                                                           gcfcf=gcfcf, **kwargs)
+    else:    
+        residual_imagelist = residual_list_rsexecute_workflow(model_vislist, deconvolve_model_imagelist, context=context,
                                                           vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
     restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist)
     return (deconvolve_model_imagelist, residual_imagelist, restore_imagelist)

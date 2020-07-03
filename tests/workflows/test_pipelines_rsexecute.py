@@ -39,15 +39,16 @@ class TestPipelineGraphs(unittest.TestCase):
     
     def setUp(self):
         numpy.random.seed(180555)
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1, n_workers=4)
+        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
     
     def tearDown(self):
         rsexecute.close()
     
-    def actualSetUp(self, add_errors=False, nfreqwin=7, dospectral=True, dopol=False, zerow=True):
+    def actualSetUp(self, add_errors=False, nfreqwin=7, dospectral=True, dopol=False, zerow=True,
+                    add_components=True):
         
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
@@ -98,16 +99,22 @@ class TestPipelineGraphs(unittest.TestCase):
                                 (self.vis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
         self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
-        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
         
         self.components_list = [rsexecute.execute(create_unittest_components)
                                 (self.model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :])
                                 for freqwin, m in enumerate(self.model_imagelist)]
         self.components_list = rsexecute.compute(self.components_list, sync=True)
-        self.skymodel_list = list()
-        for components in self.components_list:
-              self.skymodel_list.append(SkyModel(components=components))
+        
+        if add_components:
+            self.skymodel_list = list()
+            for components in self.components_list:
+                  self.skymodel_list.append(SkyModel(components=components))
+        else:
+            self.skymodel_list = list()
+            for im in self.model_imagelist:
+              self.skymodel_list.append(SkyModel(image=im, components=list()))
 
+        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
         self.components_list = rsexecute.scatter(self.components_list)
         
         self.blockvis_list = [rsexecute.execute(dft_skycomponent_visibility)
@@ -382,7 +389,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
     def test_continuum_imaging_skymodel_pipeline(self):
         #self.actualSetUp(add_errors=False, zerow=True, dopol=False)
-        self.actualSetUp(add_errors=True)
+        self.actualSetUp(add_errors=True, add_components=True)
         continuum_imaging_list = \
             continuum_imaging_skymodel_list_rsexecute_workflow(self.vis_list,
                                                       model_imagelist=self.model_imagelist,

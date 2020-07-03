@@ -56,3 +56,15 @@ tests/workflows/voltage_pattern_gaintable.png
 docs/src/api/
 
 test_results/
+
+venv/
+
+.astropy/
+
+.config/
+
+.matplotlib/
+
+coverage/
+
+rtd-docs/build/

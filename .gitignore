@@ -78,3 +78,11 @@ coverage.xml
 linting.xml
 
 venv/
+
+docs/src/examples/scripts/dprepb_rsexecute_pipeline.rst
+
+docs/src/examples/scripts/imaging.rst
+
+docs/src/examples/scripts/imaging_sim2.rst
+
+docs/src/examples/scripts/primary_beam_zernikes.rst

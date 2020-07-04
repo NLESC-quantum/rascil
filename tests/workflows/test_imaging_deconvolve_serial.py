@@ -27,7 +27,7 @@ log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
 
-run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", True)
 
 class TestImagingDeconvolveGraph(unittest.TestCase):
     
@@ -41,14 +41,14 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     def tearDown(self):
         pass
     
-    def actualSetUp(self, add_errors=False, freqwin=7, block=False, dospectral=True, dopol=False,
+    def actualSetUp(self, add_errors=False, freqwin=3, block=False, dospectral=True, dopol=False,
                     zerow=True):
         
         self.npixel = 256
-        self.low = create_named_configuration('LOWBD2', rmax=750.0)
+        self.low = create_named_configuration('LOWBD2', rmax=300.0)
         self.freqwin = freqwin
         self.vis_list = list()
-        self.ntimes = 5
+        self.ntimes = 3
         cellsize = 0.001
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
@@ -121,7 +121,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         psf_imagelist = invert_list_serial_workflow(self.vis_list, self.model_imagelist,
                                                     context='2d',
                                                     dopsf=True, normalize=True)
-        deconvolved = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=1000,
+        deconvolved = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=100,
                                                          fractional_threshold=0.1, scales=[0, 3],
                                                          threshold=0.1, gain=0.7)
         if self.persist: export_image_to_fits(deconvolved[0], '%s/test_imaging_serial_deconvolve_spectral.fits' %
@@ -134,10 +134,10 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                                                       dopsf=False, normalize=True)
         psf_imagelist = invert_list_serial_workflow(self.vis_list, self.model_imagelist, context='2d',
                                                     dopsf=True, normalize=True)
-        dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=1000,
+        dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=100,
                                                            fractional_threshold=0.01, scales=[0, 3],
-                                                           algorithm='mmclean', nmoment=3, nchan=self.freqwin,
-                                                           threshold=0.1, gain=0.7)
+                                                           algorithm='mmclean', nmoment=1, nchan=self.freqwin,
+                                                           threshold=0.7, gain=0.7)
         residual_imagelist = residual_list_serial_workflow(self.vis_list, model_imagelist=dec_imagelist,
                                                            context='2d')
         restored = restore_list_serial_workflow(model_imagelist=dec_imagelist, psf_imagelist=psf_imagelist,
@@ -153,9 +153,9 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                                                       context='2d', dopsf=False, normalize=True)
         psf_imagelist = invert_list_serial_workflow(self.vis_list, self.model_imagelist,
                                                     context='2d', dopsf=True, normalize=True)
-        dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=1000,
+        dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist, niter=100,
                                                            fractional_threshold=0.1, scales=[0, 3],
-                                                           algorithm='mmclean', nmoment=3, nchan=self.freqwin,
+                                                           algorithm='mmclean', nmoment=1, nchan=self.freqwin,
                                                            threshold=0.01, gain=0.7, deconvolve_facets=8,
                                                            deconvolve_overlap=8, deconvolve_taper='tukey')
         residual_imagelist = residual_list_serial_workflow(self.vis_list, model_imagelist=dec_imagelist,

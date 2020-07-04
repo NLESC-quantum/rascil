@@ -31,9 +31,9 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 class TestImageDeconvolutionMSMFS(unittest.TestCase):
     def setUp(self):
-        from rascil.data_models.parameters import rascil_path, rascil_data_path
+        from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
         self.niter = 1000
         self.lowcore = create_named_configuration('LOWBD2-CORE')
         self.nchan = 5
@@ -59,7 +59,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         if self.persist: export_image_to_fits(self.test_model, "%s/test_deconvolve_mmclean_model.fits" % self.dir)
         self.vis = predict_2d(self.vis, self.test_model)
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
-        self.model = create_image_from_visibility(self.vis, npixel=512, cellsize=0.001,
+        self.model = create_image_from_visibility(self.vis, npixel=256, cellsize=0.001,
                                                   polarisation_frame=PolarisationFrame('stokesIQUV'))
         self.dirty, sumwt = invert_2d(self.vis, self.model)
         self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)

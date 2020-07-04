@@ -133,7 +133,7 @@ level functions, and are available in rsexecute (i.e. dask) version and sometime
 Calibration workflows
 ---------------------
 
-* Calibrate workflow: :py:func:`rascil.workflows.rsexecute.calibration.calibrate_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.calibration.calibrate_list_serial_workflow`
+* Calibrate workflow: :py:func:`rascil.workflows.rsexecute.calibration.calibrate_list_rsexecute_workflow`
 
 
 Imaging workflows
@@ -146,16 +146,15 @@ Imaging workflows
 Pipeline workflows
 ------------------
 
-* ICAL: :py:func:`rascil.workflows.rsexecute.pipelines.ical_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.pipelines.ical_list_serial_workflow`
-* Continuum imaging: :py:func:`rascil.workflows.rsexecute.pipelines.continuum_imaging_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.pipelines.continuum_imaging_list_serial_workflow`
-* Spectral line imaging: :py:func:`rascil.workflows.rsexecute.pipelines.spectral_line_imaging_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.pipelines.spectral_line_imaging_list_serial_workflow`
+* ICAL: :py:func:`rascil.workflows.rsexecute.pipelines.ical_list_rsexecute_workflow`
+* Continuum imaging: :py:func:`rascil.workflows.rsexecute.pipelines.continuum_imaging_list_rsexecute_workflow`
+* Spectral line imaging: :py:func:`rascil.workflows.rsexecute.pipelines.spectral_line_imaging_list_rsexecute_workflow`
 * MPCCAL: :py:func:`rascil.workflows.rsexecute.pipelines.mpccal_skymodel_list_rsexecute_workflow`
 
 Simulation workflows
 --------------------
 
-* Testing and simulation support: :py:func:`rascil.workflows.rsexecute.simulation.simulate_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.simulation.simulate_list_serial_workflow`
-
+* Testing and simulation support: :py:func:`rascil.workflows.rsexecute.simulation.simulate_list_rsexecute_workflow`
 Execution
 ---------
 

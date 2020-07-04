@@ -38,7 +38,7 @@ try:
 except ImportError:
     run_ng_tests = False
 
-run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", False)
+run_serial_tests = os.getenv("RASCIL_RUN_SERIAL_TESTS", True)
 
 class TestImaging(unittest.TestCase):
     def setUp(self):
@@ -209,11 +209,13 @@ class TestImaging(unittest.TestCase):
         self._predict_base(context='2d', extr='_block', fluxthreshold=3.0)
 
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
+    @unittest.skip("Facets need overlap")
     def test_predict_facets(self):
         self.actualSetUp()
         self._predict_base(context='facets', fluxthreshold=17.0, facets=8)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
+    @unittest.skip("Facets need overlap")
     def test_predict_facets_ng(self):
         self.actualSetUp()
         self._predict_base(context='facets_ng', fluxthreshold=6.0, facets=8)

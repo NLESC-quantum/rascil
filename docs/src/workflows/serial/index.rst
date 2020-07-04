@@ -7,35 +7,26 @@ serial
 ======
 
 Serial workflows are executed immediately, and should produce the same results as rsexecute workflows to within numerical
-precision.
+precision. Only a limited number of rsexecute workflows have been reproduced as serial workflows. The motivation is
+that the scaling behaviour can be different.
 
 For example::
 
-    from rascil.workflows import continuum_imaging_list_serial_workflow
-    deconvolved_list, residual_list, restored_list = \
-        continuum_imaging_list_serial_workflow(vis_list, model_imagelist=model_list,
-                                                  context='wstack', vis_slices=51,
-                                                  scales=[0, 3, 10], algorithm='mmclean',
-                                                  nmoment=3, niter=1000,
-                                                  fractional_threshold=0.1, threshold=0.1,
-                                                  nmajor=5, gain=0.25,
-                                                  psf_support=64)
+        from rascil.workflows import invert_list_serial_workflow, deconvolve_list_serial_workflow
+        dirty_imagelist = invert_list_serial_workflow(vis_list, model_imagelist, context='ng',
+                                                      dopsf=False, normalize=True)
+        psf_imagelist = invert_list_serial_workflow(vis_list, self.model_imagelist, context='ng',
+                                                    dopsf=True, normalize=True)
+        dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist, model_imagelist, niter=1000,
+                                                           fractional_threshold=0.01, scales=[0, 3],
+                                                           algorithm='mmclean', nmoment=3, nchan=self.freqwin,
+                                                           threshold=0.1, gain=0.7)
+
 
 .. toctree::
    :maxdepth: 1
 
-.. automodapi::    rascil.workflows.serial.calibration
-   :no-inheritance-diagram:
-
 .. automodapi::    rascil.workflows.serial.imaging
    :no-inheritance-diagram:
 
-.. automodapi::    rascil.workflows.serial.pipelines
-   :no-inheritance-diagram:
-
-.. automodapi::    rascil.workflows.serial.simulation
-   :no-inheritance-diagram:
-
-.. automodapi::    rascil.workflows.serial.skymodel
-   :no-inheritance-diagram:
 

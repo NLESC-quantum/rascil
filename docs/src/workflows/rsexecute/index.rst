@@ -12,9 +12,6 @@ rsexecute workflows can be used in two modes
 
 Distribution is acheived by working on lists of data models, such as lists of BlockVisibilities.
 
-The rsexecute framework relies upon a singleton object called rsexecute. This is documented below
-as the class _rsexecutebase.
-
 For example::
 
     from rascil.workflows import continuum_imaging_list_rsexecute_workflow, rsexecute
@@ -55,6 +52,9 @@ serial version could be used::
 
 Most workflows are available in both serial and rsexecute versions, recognising that the optimisations for the
 two cases are different.
+
+The rsexecute framework relies upon a singleton object called rsexecute. This is documented below
+as the class _rsexecutebase.
 
 
 .. toctree::

@@ -222,7 +222,7 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
     psf_list = rsexecute.execute(remove_sumwt, nout=len(psf_imagelist))(psf_imagelist)
     
     def skymodel_scatter_facets(sm, facets, overlap, taper):
-        im = copy_image(sm.model)
+        im = copy_image(sm.image)
         im = insert_skycomponent(im, sm.components, **kwargs)
         return image_scatter_facets(im, facets, overlap, taper)
     
@@ -252,7 +252,7 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
                                 for im, _ in enumerate(facet_model_list[i])] for i, _ in enumerate(skymodel_list)]
 
     def skymodel_gather_facets(restored, sm, facets, overlap, taper):
-        return image_gather_facets(restored, sm.model, facets, overlap, taper)
+        return image_gather_facets(restored, sm.image, facets, overlap, taper)
 
     # Now we run restore_cube on each and gather the results across all facets
     restored_imagelist = [rsexecute.execute(skymodel_gather_facets)

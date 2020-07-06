@@ -169,7 +169,8 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
                                                                            future_skymodel=future_skymodel, vis_slices=vis_slices, facets=facets, 
                                                                            gcfcf=gcfcf, **kwargs)
     # Create restored images
-    restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist)
+    restore_imagelist = restore_skymodel_list_rsexecute_workflow(skymodel_list=future_skymodel,psf_imagelist=psf_imagelist,residual_imagelist=residual_imagelist)
+    #restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist)
     return (deconvolve_model_imagelist, residual_imagelist, restore_imagelist, gt_list)
 
 

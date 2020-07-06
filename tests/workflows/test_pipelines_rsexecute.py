@@ -39,7 +39,7 @@ class TestPipelineGraphs(unittest.TestCase):
     
     def setUp(self):
         numpy.random.seed(180555)
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1, n_workers=4)
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         self.persist = os.getenv("RASCIL_PERSIST", True)
@@ -178,6 +178,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
 
         qa = qa_image(restored[centre])
+        print(qa)
         assert numpy.abs(qa.data['max'] - 100.00806411666247) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.035194724937253855) < 1.0e-7, str(qa)
 
@@ -240,6 +241,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
 
         qa = qa_image(restored[centre])
+        print(qa)
         assert numpy.abs(qa.data['max'] - 100.00769973513495) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.033800148728078766) < 1.0e-7, str(qa)
 
@@ -383,6 +385,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
 
         qa = qa_image(restored[centre])
+        print(qa)
         assert numpy.abs(qa.data['max'] - 100.00769973513495) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.033800148728078766) < 1.0e-7, str(qa)
 
@@ -414,6 +417,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_skymodel_rsexecute_restored.fits' % self.dir)
 
         qa = qa_image(restored[centre])
+        print(qa)
         assert numpy.abs(qa.data['max'] - 100.00806411666247) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.035194724937253855) < 1.0e-7, str(qa)
 

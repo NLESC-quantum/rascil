@@ -1,4 +1,3 @@
-
 __all__ = ['predict_skymodel_list_rsexecute_workflow', 'predict_skymodel_list_compsonly_rsexecute_workflow',
            'restore_skymodel_list_rsexecute_workflow', 'crosssubtract_datamodels_skymodel_list_rsexecute_workflow',
            'convolve_skymodel_list_rsexecute_workflow', 'invert_skymodel_list_rsexecute_workflow']
@@ -9,32 +8,27 @@ import numpy
 
 from rascil.data_models.memory_data_models import Image, GainTable, Visibility, SkyModel, \
     ConvolutionFunction, BlockVisibility
-from rascil.processing_components.image import copy_image
-
 from rascil.processing_components.calibration import apply_gaintable
+from rascil.processing_components.image import copy_image
+from rascil.processing_components.image import image_scatter_facets, image_gather_facets
+from rascil.processing_components.image import restore_cube
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.skycomponent import copy_skycomponent, apply_beam_to_skycomponent, insert_skycomponent
 from rascil.processing_components.visibility import copy_visibility, convert_blockvisibility_to_visibility, \
     convert_visibility_to_blockvisibility
-from rascil.processing_components.image import restore_cube
-from rascil.processing_components.image import image_scatter_facets, image_gather_facets
-
-from rascil.workflows.serial.imaging import predict_list_serial_workflow, invert_list_serial_workflow
-from rascil.workflows.shared.imaging import remove_sumwt
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-
 # ToDo - remove non-SkyModel parts
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rsexecute_workflow, \
     predict_list_rsexecute_workflow, subtract_list_rsexecute_workflow, \
     zero_list_rsexecute_workflow
-
-
+from rascil.workflows.serial.imaging import predict_list_serial_workflow, invert_list_serial_workflow
+from rascil.workflows.shared.imaging import remove_sumwt
 
 log = logging.getLogger('logger')
 
 
 def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis_slices=1, facets=1,
-                                              gcfcf=None, docal=False, **kwargs):
+                                             gcfcf=None, docal=False, **kwargs):
     """Predict from a list of skymodels, producing one visibility per skymodel
 
     :param obsvis: "Observed Visibility"
@@ -56,29 +50,29 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
             assert isinstance(g[0], Image), g[0]
             assert isinstance(g[1], ConvolutionFunction), g[1]
         
-        v = copy_visibility(ov)
-        
-        v.data['vis'][...] = 0.0 + 0.0j
-        
+        v = copy_visibility(ov, zero=True)
+        dftv = copy_visibility(ov, zero=True)
         if len(sm.components) > 0:
-            
             if isinstance(sm.mask, Image):
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
-                v = dft_skycomponent_visibility(v, comps)
+                dftv = dft_skycomponent_visibility(dftv, comps)
             else:
-                v = dft_skycomponent_visibility(v, sm.components)
+                dftv = dft_skycomponent_visibility(dftv, sm.components)
         
         if isinstance(sm.image, Image):
             if numpy.max(numpy.abs(sm.image.data)) > 0.0:
                 if isinstance(sm.mask, Image):
                     model = copy_image(sm.image)
                     model.data *= sm.mask.data
+                    v = predict_list_serial_workflow([v], [model], context=context,
+                                                     vis_slices=vis_slices, facets=facets, gcfcf=[g],
+                                                     **kwargs)[0]
                 else:
-                    model = sm.image
-                v = predict_list_serial_workflow([v], [model], context=context,
-                                                 vis_slices=vis_slices, facets=facets, gcfcf=[g],
-                                                 **kwargs)[0]
+                    v = predict_list_serial_workflow([v], [sm.image], context=context,
+                                                     vis_slices=vis_slices, facets=facets, gcfcf=[g],
+                                                     **kwargs)[0]
+            v.data['vis'] += dftv.vis
         
         if docal and isinstance(sm.gaintable, GainTable):
             if isinstance(ov, Visibility):
@@ -87,28 +81,29 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
                 v = convert_blockvisibility_to_visibility(bv)
             else:
                 v = apply_gaintable(v, sm.gaintable, inverse=True)
-
+        
         return v
     
-#    if gcfcf is None:
-#        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None)
-#                for ism, sm in enumerate(skymodel_list)]
-#    else:
-#        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism])
-#                for ism, sm in enumerate(skymodel_list)]
-
-
+    #    if gcfcf is None:
+    #        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None)
+    #                for ism, sm in enumerate(skymodel_list)]
+    #    else:
+    #        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism])
+    #                for ism, sm in enumerate(skymodel_list)]
+    
     if isinstance(obsvis, list):
-            assert len(obsvis) == len(skymodel_list)
-            if gcfcf is None:
-                return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None) for ism, sm in enumerate(skymodel_list)]
-            else:
-                return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism]) for ism, sm in enumerate(skymodel_list)]
+        assert len(obsvis) == len(skymodel_list)
+        if gcfcf is None:
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None) for ism, sm in enumerate(skymodel_list)]
+        else:
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism]) for ism, sm in
+                    enumerate(skymodel_list)]
     else:
-            if gcfcf is None:
-                return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None) for ism, sm in enumerate(skymodel_list)]
-            else:
-                return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism]) for ism, sm in enumerate(skymodel_list)]
+        if gcfcf is None:
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None) for ism, sm in enumerate(skymodel_list)]
+        else:
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism]) for ism, sm in
+                    enumerate(skymodel_list)]
 
 
 def predict_skymodel_list_compsonly_rsexecute_workflow(obsvis, skymodel_list, docal=False, **kwargs):
@@ -132,7 +127,7 @@ def predict_skymodel_list_compsonly_rsexecute_workflow(obsvis, skymodel_list, do
         bv.data['vis'][...] = 0.0 + 0.0j
         
         assert len(sm.components) > 0
-            
+        
         if isinstance(sm.mask, Image):
             comps = copy_skycomponent(sm.components)
             comps = apply_beam_to_skycomponent(comps, sm.mask)
@@ -142,14 +137,14 @@ def predict_skymodel_list_compsonly_rsexecute_workflow(obsvis, skymodel_list, do
         
         if docal and isinstance(sm.gaintable, GainTable):
             bv = apply_gaintable(bv, sm.gaintable, inverse=True)
-            
+        
         return bv
-
+    
     return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm) for sm in skymodel_list]
 
 
 def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vis_slices=1, facets=1,
-                                             gcfcf=None, docal=False, **kwargs):
+                                            gcfcf=None, docal=False, **kwargs):
     """Calibrate and invert from a skymodel, iterating over the skymodel
 
     The visibility and image are scattered, the visibility is predicted and calibrated on each part, and then the
@@ -181,7 +176,7 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vi
                 v = convert_blockvisibility_to_visibility(bv)
             else:
                 v = apply_gaintable(v, sm.gaintable)
-            
+        
         result = invert_list_serial_workflow([v], [sm.image], context=context,
                                              vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                              **kwargs)[0]
@@ -189,6 +184,7 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vi
             result[0].data *= sm.mask.data
         
         return result
+    
     if gcfcf is None:
         return [rsexecute.execute(ift_ical_sm, nout=1)(vis_list[i], sm, None)
                 for i, sm in enumerate(skymodel_list)]
@@ -198,7 +194,7 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vi
 
 
 def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, residual_imagelist=None, restore_facets=1,
-                                    restore_overlap=0, restore_taper='tukey', **kwargs):
+                                             restore_overlap=0, restore_taper='tukey', **kwargs):
     """ Create a graph to calculate the restored skymodel
 
     :param skymodel_list: Skymodel list (or graph)
@@ -250,10 +246,10 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
                                 (model=facet_model_list[i][im], psf=facet_psf_list[i][im],
                                  **kwargs)
                                 for im, _ in enumerate(facet_model_list[i])] for i, _ in enumerate(skymodel_list)]
-
+    
     def skymodel_gather_facets(restored, sm, facets, overlap, taper):
         return image_gather_facets(restored, sm.image, facets, overlap, taper)
-
+    
     # Now we run restore_cube on each and gather the results across all facets
     restored_imagelist = [rsexecute.execute(skymodel_gather_facets)
                           (facet_restored_list[i], skymodel_list[i], facets=restore_facets,
@@ -274,6 +270,7 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
     :param modelvis_list: List of Visibility data model predictions
     :return: List of (image, weight) tuples)
    """
+    
     # Now do the meaty part. We probably want to refactor this for performance once it works.
     def vsum(ov, mv):
         # Observed vis minus the sum of all predictions
@@ -288,12 +285,12 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
             result.append(vr)
         assert len(result) == len(mv)
         return result
-        
+    
     return rsexecute.execute(vsum, nout=len(modelvis_list))(obsvis, modelvis_list)
 
 
 def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis_slices=1, facets=1,
-                                             gcfcf=None, **kwargs):
+                                              gcfcf=None, **kwargs):
     """Form residual image from observed visibility and a set of skymodel without calibration
 
     This is similar to convolving the skymodel images with the PSF
@@ -308,7 +305,7 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
     :param kwargs: Parameters for functions in components
     :return: List of (image, weight) tuples)
    """
-
+    
     def ft_ift_sm(ov, sm, g):
         assert isinstance(ov, Visibility) or isinstance(ov, BlockVisibility), ov
         assert isinstance(sm, SkyModel), sm
@@ -316,20 +313,20 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
             assert len(g) == 2, g
             assert isinstance(g[0], Image), g[0]
             assert isinstance(g[1], ConvolutionFunction), g[1]
-            
-        v = copy_visibility(ov)
-    
-        v.data['vis'][...] = 0.0 + 0.0j
-    
-        if len(sm.components) > 0:
         
+        v = copy_visibility(ov)
+        
+        v.data['vis'][...] = 0.0 + 0.0j
+        
+        if len(sm.components) > 0:
+            
             if isinstance(sm.mask, Image):
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
                 v = dft_skycomponent_visibility(v, comps)
             else:
                 v = dft_skycomponent_visibility(v, sm.components)
-    
+        
         if isinstance(sm.image, Image):
             if numpy.max(numpy.abs(sm.image.data)) > 0.0:
                 if isinstance(sm.mask, Image):
@@ -340,7 +337,7 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
                 v = predict_list_serial_workflow([v], [model], context=context,
                                                  vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                  **kwargs)[0]
-    
+        
         assert isinstance(sm.image, Image), sm.image
         
         result = invert_list_serial_workflow([v], [sm.image], context=context,
@@ -357,7 +354,9 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
         return [rsexecute.execute(ft_ift_sm, nout=len(skymodel_list))(obsvis, sm, gcfcf[ism])
                 for ism, sm in enumerate(skymodel_list)]
 
-def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d', future_skymodel=None, gcfcf=None, **kwargs):
+
+def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d', skymodel_list=None, gcfcf=None,
+                                              **kwargs):
     """ Create a graph to calculate residual image
 
     :param vis: List of vis (or graph)
@@ -369,28 +368,23 @@ def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d'
     """
     model_vis = zero_list_rsexecute_workflow(vis)
     
-    if future_skymodel is not None:
-        #future_skymodel = rsexecute.scatter(skymodel_list)
-        model_vis = predict_skymodel_list_rsexecute_workflow(model_vis, future_skymodel,
-                                                                  context=context, 
-                                                                  gcfcf=gcfcf, docal=True, **kwargs)
+    if skymodel_list is not None:
+        # skymodel_list = rsexecute.scatter(skymodel_list)
+        model_vis = predict_skymodel_list_rsexecute_workflow(model_vis, skymodel_list,
+                                                             context=context,
+                                                             gcfcf=gcfcf, docal=True, **kwargs)
     else:
         model_vis = predict_list_rsexecute_workflow(model_vis, model_imagelist, context=context,
-                                                gcfcf=gcfcf, **kwargs)
+                                                    gcfcf=gcfcf, **kwargs)
     residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
     
-    
-    
-    if future_skymodel is not None:
-        result = invert_skymodel_list_rsexecute_workflow(residual_vis, future_skymodel,
-                                                                   context=context, dopsf=False, docal=True,
-                                                                   gcfcf=gcfcf,
-                                                                   **kwargs )
-    else:    
+    if skymodel_list is not None:
+        result = invert_skymodel_list_rsexecute_workflow(residual_vis, skymodel_list,
+                                                         context=context, dopsf=False, docal=True,
+                                                         gcfcf=gcfcf,
+                                                         **kwargs)
+    else:
         result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, dopsf=False, normalize=True,
-                                            context=context,
-                                            gcfcf=gcfcf, **kwargs)
+                                                context=context,
+                                                gcfcf=gcfcf, **kwargs)
     return rsexecute.optimize(result)
-
-
-

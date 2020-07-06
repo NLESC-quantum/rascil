@@ -22,7 +22,7 @@ from rascil.data_models.memory_data_models import Skycomponent
 from rascil.processing_components.skymodel.operations import expand_skymodel_by_skycomponents
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymodel_list_rsexecute_workflow, \
     invert_skymodel_list_rsexecute_workflow, crosssubtract_datamodels_skymodel_list_rsexecute_workflow, \
-    residual_skymodel_list_rsexecute_workflow
+    residual_skymodel_list_rsexecute_workflow, restore_skymodel_list_rsexecute_workflow
 from rascil.workflows.shared.imaging.imaging_shared import sum_predict_results
 from rascil.processing_components.image.operations import copy_image
 

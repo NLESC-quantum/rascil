@@ -26,8 +26,6 @@ from rascil.processing_components.image import image_scatter_facets, image_gathe
     image_scatter_channels, image_gather_channels
 from rascil.processing_components.image.operations import copy_image, create_empty_image_like
 from rascil.processing_components.imaging import taper_visibility_gaussian
-from rascil.processing_components.visibility import convert_blockvisibility_to_visibility, \
-    convert_visibility_to_blockvisibility
 from rascil.processing_components.visibility import copy_visibility
 from rascil.processing_components.visibility import visibility_scatter, visibility_gather
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
@@ -70,6 +68,7 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slic
         predicted_vis_list = rsexecute.compute(predicted_vis_list , sync=True)
 
    """
+    
     if get_parameter(kwargs, "use_serial_predict", False):
         from rascil.workflows.serial.imaging.imaging_serial import predict_list_serial_workflow
         return [rsexecute.execute(predict_list_serial_workflow, nout=1) \
@@ -84,7 +83,7 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slic
     c = imaging_context(context)
     vis_iter = c['vis_iterator']
     predict = c['predict']
-    
+
     if facets % 2 == 0 or facets == 1:
         actual_number_facets = facets
     else:
@@ -204,11 +203,11 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
     
     if not isinstance(template_model_imagelist, collections.abc.Iterable):
         template_model_imagelist = [template_model_imagelist]
-    
+
     c = imaging_context(context)
     vis_iter = c['vis_iterator']
     invert = c['invert']
-    
+
     if facets % 2 == 0 or facets == 1:
         actual_number_facets = facets
     else:

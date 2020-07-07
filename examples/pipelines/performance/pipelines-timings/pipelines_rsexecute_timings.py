@@ -4,31 +4,28 @@
 # timings.
 #
 import logging
+import os
 import pprint
 import socket
 import time
-import os
+
 import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models import PolarisationFrame
-
-from rascil.processing_components.util.sizeof import get_size
+from rascil.processing_components import create_awterm_convolutionfunction, create_pswf_convolutionfunction, \
+    image_gather_channels, export_image_to_fits, qa_image, advise_wide_field, create_low_test_skymodel_from_gleam
 from rascil.processing_components import create_image
-
-from rascil.processing_components import create_awterm_convolutionfunction, create_pswf_convolutionfunction,\
-    image_gather_channels, export_image_to_fits, qa_image, advise_wide_field, create_low_test_skymodel_from_gleam, \
-    convert_blockvisibility_to_visibility
 from rascil.processing_components.calibration.chain_calibration import create_calibration_controls
-
+from rascil.processing_components.util.sizeof import get_size
 from rascil.workflows import invert_list_rsexecute_workflow, weight_list_rsexecute_workflow, \
-    predict_list_rsexecute_workflow, taper_list_rsexecute_workflow, remove_sumwt,\
+    predict_list_rsexecute_workflow, taper_list_rsexecute_workflow, remove_sumwt, \
     ical_list_rsexecute_workflow, simulate_list_rsexecute_workflow, \
     corrupt_list_rsexecute_workflow, predict_skymodel_list_rsexecute_workflow
-
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute, \
     get_dask_client
+
 pp = pprint.PrettyPrinter()
 
 
@@ -54,7 +51,7 @@ def git_hash():
         return "unknown"
 
 
-def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_worker=1, memory=8,
+def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_per_worker=1, memory=8,
                processes=True, order='frequency', nfreqwin=7, ntimes=3, rmax=750.0,
                facets=1, wprojection_planes=1, use_dask=True, use_serial_imaging=True,
                flux_limit=0.3, nmajor=5, dft_threshold=1.0, use_serial_clean=True,
@@ -74,7 +71,7 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     'time invert graph', time to make dirty image graph
     'time ICAL graph', time to create ICAL graph
     'time ICAL', time to execute ICAL graph
-    'context', type of imaging e.g. 'wstack'
+    'context', type of imaging e.g. 'timeslice'
     'nworkers', number of workers to create
     'threads_per_worker',
     'nnodes', Number of nodes,
@@ -101,7 +98,7 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     :param results: Initial state
     :param seed: Random number seed (used in gain simulations)
     :param context: imaging context
-    :param context: Type of context: '2d'|'timeslice'|'wstack'
+    :param context: Type of context: '2d'|'timeslice'|'wprojection'|'ng'
     :param nworkers: Number of dask workers to use
     :param threads_per_worker: Number of threads per worker
     :param processes: Use processes instead of threads 'processes'|'threads'
@@ -133,13 +130,13 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     
     def init_logging():
         logging.basicConfig(filename='pipelines_rsexecute_timings.log',
-                            filemode='w',
+                            filemode='a',
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%H:%M:%S',
                             level=logging.INFO)
     
     init_logging()
-    log = logging.getLogger()
+    log = logging.getLogger("logger")
     
     # Initialise logging on the workers. This appears to only work using the process scheduler.
     rsexecute.run(init_logging)
@@ -192,7 +189,7 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     
     lprint("****** Visibility creation ******")
     # Create the empty BlockVisibility's and persist these on the cluster
-    tmp_bvis_list = simulate_list_rsexecute_workflow('LOWBD2',
+    bvis_list = simulate_list_rsexecute_workflow('LOWBD2',
                                                       frequency=frequency,
                                                       channel_bandwidth=channel_bandwidth,
                                                       times=times,
@@ -200,25 +197,8 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
                                                       order=order,
                                                       format='blockvis',
                                                       rmax=rmax)
-    tmp_vis_list = [rsexecute.execute(convert_blockvisibility_to_visibility)(bv)
-                    for bv in tmp_bvis_list]
-    tmp_vis_list = rsexecute.client.compute(tmp_vis_list, sync=True)
-    vis_list = rsexecute.gather(tmp_vis_list)
-    
-    import matplotlib.pyplot as plt
-    plt.clf()
-    plt.hist(vis_list[0].w, bins=100)
-    plt.title('Histogram of w samples: rms=%.1f (wavelengths)' % numpy.std(vis_list[0].w))
-    plt.xlabel('W (wavelengths)')
-    #plt.show()
-    plt.clf()
-    plt.hist(vis_list[0].uvdist, bins=100)
-    plt.title('Histogram of uvdistance samples')
-    plt.xlabel('UV Distance (wavelengths)')
-    #plt.show()
-
-    rsexecute.client.cancel(tmp_vis_list)
-    future_vis_list = rsexecute.scatter(vis_list)
+    bvis_list = rsexecute.compute(bvis_list, sync=True)
+    future_bvis_list = rsexecute.scatter(bvis_list)
     
     # Find the best imaging parameters but don't bring the vis_list back here
     print("****** Finding wide field parameters ******")
@@ -226,11 +206,10 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
                                                            facets=facets,
                                                            wprojection_planes=wprojection_planes,
                                                            oversampling_synthesised_beam=4.0)
-                     for v in future_vis_list]
+                     for v in future_bvis_list]
     
-    future_advice = rsexecute.compute(future_advice)
-    advice = rsexecute.client.gather(future_advice)[-1]
-    rsexecute.client.cancel(future_advice)
+    advice = rsexecute.compute(future_advice, sync=True)[-1]
+    #rsexecute.client.cancel(future_advice)
     
     # Deconvolution via sub-images requires 2^n
     npixel = advice['npixels2']
@@ -259,6 +238,7 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
                                   polarisation_frame=PolarisationFrame("stokesI"))
     gcfcf = [create_pswf_convolutionfunction(template_model)]
     
+    vis_slices = 1
     if context == 'timeslice':
         vis_slices = ntimes
         lprint("Using timeslice with %d slices" % vis_slices)
@@ -278,10 +258,11 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
                                                    oversampling=4, support=support,
                                                    use_aaf=True)]
         lprint("Size of W projection gcf, cf = %.2E bytes" % get_size(gcfcf))
+    elif context == "ng":
+        vis_slices = 1
+        lprint("Using Nifty Gridder")
     else:
-        context = 'wstack'
-        vis_slices = advice['vis_slices']
-        lprint("Using wstack with %d slices" % vis_slices)
+        log.error("wstack no longer supported")
         
     gcfcf = rsexecute.scatter(gcfcf, broadcast=True)
     
@@ -299,7 +280,7 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     
     # We use predict_skymodel so that we can use skycomponents as well as images
     lprint("****** Starting GLEAM skymodel prediction ******")
-    predicted_vis_list = [predict_skymodel_list_rsexecute_workflow(future_vis_list[f],
+    predicted_bvis_list = [predict_skymodel_list_rsexecute_workflow(future_bvis_list[f],
                                                                     [future_skymodel_list[f]],
                                                                     context=context,
                                                                     vis_slices=vis_slices, facets=facets,
@@ -308,23 +289,21 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     
     # Corrupt the visibility for the GLEAM model
     lprint("****** Visibility corruption ******")
-    tmp_corrupted_vis_list = corrupt_list_rsexecute_workflow(predicted_vis_list,
+    corrupted_bvis_list = corrupt_list_rsexecute_workflow(predicted_bvis_list,
                                                               phase_error=1.0, seed=seed)
     lprint("****** Weighting and tapering ******")
-    tmp_corrupted_vis_list = weight_list_rsexecute_workflow(tmp_corrupted_vis_list, future_model_list)
-    tmp_corrupted_vis_list= taper_list_rsexecute_workflow(tmp_corrupted_vis_list, 0.003 * 750.0 / rmax)
-    tmp_corrupted_vis_list = rsexecute.compute(tmp_corrupted_vis_list, sync=True)
+    corrupted_bvis_list = weight_list_rsexecute_workflow(corrupted_bvis_list, future_model_list)
+    corrupted_bvis_list= taper_list_rsexecute_workflow(corrupted_bvis_list, 0.003 * 750.0 / rmax)
+    corrupted_bvis_list = rsexecute.compute(corrupted_bvis_list, sync=True)
 
-    corrupted_vis_list = rsexecute.gather(tmp_corrupted_vis_list)
-    # rsexecute.client.cancel(predicted_vis_list)
-    rsexecute.client.cancel(tmp_corrupted_vis_list)
-    future_corrupted_vis_list = rsexecute.scatter(corrupted_vis_list)
+    corrupted_bvis_list = rsexecute.gather(corrupted_bvis_list)
+    future_corrupted_bvis_list = rsexecute.scatter(corrupted_bvis_list)
 
     # At this point the only futures are of scatter'ed data so no repeated calculations should be
     # incurred.
     lprint("****** Starting dirty image calculation ******")
     start = time.time()
-    dirty_list = invert_list_rsexecute_workflow(future_corrupted_vis_list, future_model_list,
+    dirty_list = invert_list_rsexecute_workflow(future_corrupted_bvis_list, future_model_list,
                                                  vis_slices=vis_slices,
                                                  context=context, facets=facets,
                                                  use_serial_invert=use_serial_imaging,
@@ -349,13 +328,13 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     
     lprint("****** Starting prediction ******")
     start = time.time()
-    tmp_vis_list = predict_list_rsexecute_workflow(future_corrupted_vis_list, future_model_list,
+    tmp_bvis_list = predict_list_rsexecute_workflow(future_corrupted_bvis_list, future_model_list,
                                                     vis_slices=vis_slices,
                                                     context=context, facets=facets,
                                                     use_serial_predict=use_serial_imaging,
                                                     gcfcf=gcfcf)
-    result = rsexecute.compute(tmp_vis_list, sync=True)
-    # rsexecute.client.cancel(tmp_vis_list)
+    result = rsexecute.compute(tmp_bvis_list, sync=True)
+    # rsexecute.client.cancel(tmp_bvis_list)
     end = time.time()
     results['time predict'] = end - start
     lprint("Predict took %.3f seconds" % (end - start))
@@ -376,7 +355,7 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     controls['T']['timeslice'] = 'auto'
     
     start = time.time()
-    ical_list = ical_list_rsexecute_workflow(future_corrupted_vis_list,
+    ical_list = ical_list_rsexecute_workflow(future_corrupted_bvis_list,
                                               model_imagelist=future_model_list,
                                               context=context,
                                               vis_slices=vis_slices,
@@ -406,15 +385,19 @@ def trial_case(results, seed=180555, context='wstack', nworkers=8, threads_per_w
     results['time ICAL graph'] = end - start
     lprint("Construction of ICAL graph took %.3f seconds" % (end - start))
     
-    print("Current objects on cluster: ")
-    pp.pprint(rsexecute.client.who_has())
+    #print("Current objects on cluster: ")
+    #pp.pprint(rsexecute.client.who_has())
     #
     # Execute the graph
     lprint("****** Executing ICAL graph ******")
+    rsexecute.init_statistics()
+    
     start = time.time()
     deconvolved, residual, restored, gaintables = rsexecute.compute(ical_list, sync=True)
     end = time.time()
     
+    rsexecute.save_statistics("pipelines_rsexecute_timings_%s_ical" % context)
+
     results['time ICAL'] = end - start
     lprint("ICAL graph execution took %.3f seconds" % (end - start))
     qa = qa_image(deconvolved[centre])
@@ -611,17 +594,17 @@ if __name__ == '__main__':
     parser.add_argument('--nnodes', type=int, default=1, help='Number of nodes')
     parser.add_argument('--nthreads', type=int, default=1, help='Number of threads')
     parser.add_argument('--memory', type=int, default=8, help='Memory per worker')
-    parser.add_argument('--nworkers', type=int, default=1, help='Number of workers')
+    parser.add_argument('--nworkers', type=int, default=16, help='Number of workers')
     parser.add_argument('--nmajor', type=int, default=5, help='Number of major cycles')
     
     parser.add_argument('--ntimes', type=int, default=7, help='Number of hour angles')
     parser.add_argument('--nfreqwin', type=int, default=16, help='Number of frequency windows')
-    parser.add_argument('--context', type=str, default='wstack',
-                        help='Imaging context: 2d|timeslice|wstack')
-    parser.add_argument('--rmax', type=float, default=750.0, help='Maximum baseline (m)')
-    parser.add_argument('--use_serial_imaging', type=str, default='True',
+    parser.add_argument('--context', type=str, default='ng',
+                        help='Imaging context: 2d|timeslice|wprojection|ng')
+    parser.add_argument('--rmax', type=float, default=300.0, help='Maximum baseline (m)')
+    parser.add_argument('--use_serial_imaging', type=str, default='False',
                         help='Use serial imaging?')
-    parser.add_argument('--use_serial_clean', type=str, default='True',
+    parser.add_argument('--use_serial_clean', type=str, default='False',
                         help='Use serial clean?')
     parser.add_argument('--jobid', type=int, default=0, help='JOBID from slurm')
     parser.add_argument('--flux_limit', type=float, default=0.3, help='Flux limit for components')

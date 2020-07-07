@@ -171,20 +171,17 @@ if __name__ == '__main__':
     # Calculate visibility by using the predict_skymodel function which applies a different gaintable table
     # for each skymodel. We do the calculation in chunks of nworkers skymodels.
     all_skymodel_blockvis = copy_visibility(block_vis, zero=True)
-    all_skymodel_vis = convert_blockvisibility_to_visibility(all_skymodel_blockvis)
 
     ngroup = 8
-    future_vis = rsexecute.scatter(all_skymodel_vis)
+    future_vis = rsexecute.scatter(all_skymodel_blockvis)
     chunks = [all_skymodel[i:i + ngroup] for i in range(0, len(all_skymodel), ngroup)]
     for chunk in chunks:
         result = predict_skymodel_list_rsexecute_workflow(future_vis, chunk, context='2d',
                                                           docal=True)
         work_vis = rsexecute.compute(result, sync=True)
         for w in work_vis:
-            all_skymodel_vis.data['vis'] += w.data['vis']
-        assert numpy.max(numpy.abs(all_skymodel_vis.data['vis'])) > 0.0
-
-    all_skymodel_blockvis = convert_visibility_to_blockvisibility(all_skymodel_vis)
+            all_skymodel_blockvis.data['vis'] += w.data['vis']
+        assert numpy.max(numpy.abs(all_skymodel_blockvis.data['vis'])) > 0.0
 
 
     #######################################################################################################
@@ -234,7 +231,7 @@ if __name__ == '__main__':
         SkyModel(components=all_components[:args.ninitial], gaintable=null_gaintable,
                  image=model)]
 
-    future_vis = rsexecute.scatter(all_skymodel_vis)
+    future_vis = rsexecute.scatter(all_skymodel_blockvis)
     future_model = rsexecute.scatter(model)
     future_theta_list = rsexecute.scatter(ical_skymodel)
     result = mpccal_skymodel_list_rsexecute_workflow(future_vis, future_model,
@@ -306,7 +303,7 @@ if __name__ == '__main__':
     # Now we can run MPCCAL with O(10) distinct masks
     future_model = rsexecute.scatter(model)
     future_theta_list = rsexecute.scatter(mpccal_skymodel)
-    future_vis = rsexecute.scatter(all_skymodel_vis)
+    future_vis = rsexecute.scatter(all_skymodel_blockvis)
     result = mpccal_skymodel_list_rsexecute_workflow(future_vis, future_model,
                                                      future_theta_list,
                                                      mpccal_progress=partial(progress,

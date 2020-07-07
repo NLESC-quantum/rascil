@@ -41,6 +41,7 @@ test:
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
+  coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:
     - coverage

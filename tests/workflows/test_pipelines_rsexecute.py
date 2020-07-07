@@ -23,7 +23,6 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
     create_unittest_model, create_unittest_components
 from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
-from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines.pipeline_rsexecute import ical_list_rsexecute_workflow, \
     continuum_imaging_list_rsexecute_workflow
@@ -53,7 +52,6 @@ class TestPipelineGraphs(unittest.TestCase):
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = nfreqwin
-        self.vis_list = list()
         self.ntimes = 3
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
@@ -90,13 +88,8 @@ class TestPipelineGraphs(unittest.TestCase):
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
         self.blockvis_list = rsexecute.scatter(self.blockvis_list)
         
-        self.vis_list = [rsexecute.execute(convert_blockvisibility_to_visibility, nout=1)(bv) for bv in
-                         self.blockvis_list]
-        self.vis_list = rsexecute.compute(self.vis_list, sync=True)
-        self.vis_list = rsexecute.scatter(self.vis_list)
-        
         self.model_imagelist = [rsexecute.execute(create_unittest_model, nout=1)
-                                (self.vis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
+                                (self.blockvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
         self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
         
@@ -132,19 +125,15 @@ class TestPipelineGraphs(unittest.TestCase):
             self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
             self.blockvis_list = rsexecute.scatter(self.blockvis_list)
         
-        self.vis_list = [rsexecute.execute(convert_blockvisibility_to_visibility)(bv) for bv in self.blockvis_list]
-        self.vis_list = rsexecute.compute(self.vis_list, sync=True)
-        self.vis_list = rsexecute.scatter(self.vis_list)
-        
         self.model_imagelist = [rsexecute.execute(create_unittest_model, nout=1)
-                                (self.vis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
+                                (self.blockvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
         self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
     
     def test_continuum_imaging_pipeline(self):
         self.actualSetUp()
         continuum_imaging_list = \
-            continuum_imaging_list_rsexecute_workflow(self.vis_list,
+            continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
                                                       context='2d',
                                                       algorithm='mmclean', facets=1,
@@ -166,13 +155,13 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.02925433350173) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976673475616) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.0192924419299) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06612111041089375) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, zerow=True, dopol=True)
         continuum_imaging_list = \
-            continuum_imaging_list_rsexecute_workflow(self.vis_list,
+            continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
                                                       context='2d',
                                                       algorithm='mmclean', facets=1,
@@ -195,8 +184,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_pol_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.02925433350173) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976673475616) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.0192924419299) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06612111041089701) < 1.0e-7, str(qa)
     
     def test_ical_pipeline(self):
         self.actualSetUp(add_errors=True)
@@ -205,7 +194,7 @@ class TestPipelineGraphs(unittest.TestCase):
         controls['T']['timeslice'] = 'auto'
         
         ical_list = \
-            ical_list_rsexecute_workflow(self.vis_list,
+            ical_list_rsexecute_workflow(self.blockvis_list,
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
@@ -229,9 +218,9 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
         
         qa = qa_image(restored[centre])
-
-        assert numpy.abs(qa.data['max'] - 100.02294926979792) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07072800676258861) < 1.0e-7, str(qa)
+        
+        assert numpy.abs(qa.data['max'] - 100.01323241256594) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06553922563010581) < 1.0e-7, str(qa)
     
     def test_ical_pipeline_pol(self):
         self.actualSetUp(add_errors=True, dopol=True)
@@ -240,7 +229,7 @@ class TestPipelineGraphs(unittest.TestCase):
         controls['T']['timeslice'] = 'auto'
         
         ical_list = \
-            ical_list_rsexecute_workflow(self.vis_list,
+            ical_list_rsexecute_workflow(self.blockvis_list,
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
@@ -266,8 +255,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 91.55385707909245) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 2.580936818703842) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 97.95714515140392) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.5332831738302675) < 1.0e-7, str(qa)
     
     def test_ical_pipeline_global(self):
         self.actualSetUp(add_errors=True)
@@ -276,7 +265,7 @@ class TestPipelineGraphs(unittest.TestCase):
         controls['T']['timeslice'] = 'auto'
         
         ical_list = \
-            ical_list_rsexecute_workflow(self.vis_list,
+            ical_list_rsexecute_workflow(self.blockvis_list,
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
@@ -303,8 +292,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.02286955172342) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07085877712610714) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01361400765285) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06579948695723646) < 1.0e-7, str(qa)
     
     def test_ical_skymodel_pipeline_empty(self):
         self.actualSetUp(add_errors=True)
@@ -317,7 +306,7 @@ class TestPipelineGraphs(unittest.TestCase):
         skymodel_list = rsexecute.scatter(skymodel_list)
         
         ical_list = \
-            ical_skymodel_list_rsexecute_workflow(self.vis_list,
+            ical_skymodel_list_rsexecute_workflow(self.blockvis_list,
                                                   model_imagelist=self.model_imagelist,
                                                   skymodel_list=skymodel_list,
                                                   context='2d',
@@ -346,7 +335,7 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_empty')
         print(qa)
-
+        
         # assert numpy.abs(qa.data['max'] - 100.14732156317743) < 1.0e-1, str(qa)
         # assert numpy.abs(qa.data['min'] + 0.2633191873061839) < 1.0e-1, str(qa)
     
@@ -361,7 +350,7 @@ class TestPipelineGraphs(unittest.TestCase):
         skymodel_list = rsexecute.scatter(skymodel_list)
         
         ical_list = \
-            ical_skymodel_list_rsexecute_workflow(self.vis_list,
+            ical_skymodel_list_rsexecute_workflow(self.blockvis_list,
                                                   model_imagelist=self.model_imagelist,
                                                   skymodel_list=skymodel_list,
                                                   context='2d',
@@ -390,7 +379,7 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_exact')
         print(qa)
-
+        
         # assert numpy.abs(qa.data['max'] - 100.0069013141073) < 1.0e-7, str(qa)
         # assert numpy.abs(qa.data['min'] + 0.003990562438902042) < 1.0e-7, str(qa)
     
@@ -412,7 +401,7 @@ class TestPipelineGraphs(unittest.TestCase):
         skymodel_list = rsexecute.scatter(skymodel_list)
         
         ical_list = \
-            ical_skymodel_list_rsexecute_workflow(self.vis_list,
+            ical_skymodel_list_rsexecute_workflow(self.blockvis_list,
                                                   model_imagelist=self.model_imagelist,
                                                   skymodel_list=skymodel_list,
                                                   context='2d',
@@ -441,7 +430,7 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_partial')
         print(qa)
-
+        
         # assert numpy.abs(qa.data['max'] - 100.3966318267637) < 1.0e-7, str(qa)
         # assert numpy.abs(qa.data['min'] + 2.6885418753098813) < 1.0e-7, str(qa)
     
@@ -454,7 +443,7 @@ class TestPipelineGraphs(unittest.TestCase):
         skymodel_list = rsexecute.scatter(skymodel_list)
         
         continuum_imaging_list = \
-            continuum_imaging_skymodel_list_rsexecute_workflow(self.vis_list,
+            continuum_imaging_skymodel_list_rsexecute_workflow(self.blockvis_list,
                                                                model_imagelist=self.model_imagelist,
                                                                skymodel_list=skymodel_list,
                                                                context='2d',
@@ -478,10 +467,9 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_empty_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.02925433350173) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976673476293) < 1.0e-7, str(qa)
-
-
+        assert numpy.abs(qa.data['max'] - 100.0192924419299) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06612111041089701) < 1.0e-7, str(qa)
+    
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
         
@@ -497,7 +485,7 @@ class TestPipelineGraphs(unittest.TestCase):
         skymodel_list = rsexecute.scatter(skymodel_list)
         
         continuum_imaging_list = \
-            continuum_imaging_skymodel_list_rsexecute_workflow(self.vis_list,
+            continuum_imaging_skymodel_list_rsexecute_workflow(self.blockvis_list,
                                                                model_imagelist=self.model_imagelist,
                                                                skymodel_list=skymodel_list,
                                                                context='2d',
@@ -521,10 +509,10 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_rsexecute_partial_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre], context='restored')
-
-        assert numpy.abs(qa.data['max'] - 100.01311230109863) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.03596228987388796) < 1.0e-7, str(qa)
-
+        
+        assert numpy.abs(qa.data['max'] - 100.0083790456672) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.033268909069889635) < 1.0e-7, str(qa)
+    
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()
         
@@ -533,7 +521,7 @@ class TestPipelineGraphs(unittest.TestCase):
         self.model_imagelist = rsexecute.scatter(self.model_imagelist)
         
         continuum_imaging_list = \
-            continuum_imaging_skymodel_list_rsexecute_workflow(self.vis_list,
+            continuum_imaging_skymodel_list_rsexecute_workflow(self.blockvis_list,
                                                                model_imagelist=self.model_imagelist,
                                                                skymodel_list=skymodel_list,
                                                                context='2d',
@@ -559,7 +547,7 @@ class TestPipelineGraphs(unittest.TestCase):
         qa = qa_image(restored[centre], context='restored')
         assert numpy.abs(qa.data['max'] - 100.0) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min']) < 1.0e-12, str(qa)
-
+        
         qa = qa_image(residual[centre][0], context='residual')
         assert numpy.abs(qa.data['max']) < 1.0e-12, str(qa)
         assert numpy.abs(qa.data['min']) < 1.0e-12, str(qa)

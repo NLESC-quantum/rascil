@@ -51,14 +51,16 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
             assert isinstance(g[1], ConvolutionFunction), g[1]
         
         v = copy_visibility(ov, zero=True)
-        dftv = copy_visibility(ov, zero=True)
+
         if len(sm.components) > 0:
+            dftv = copy_visibility(ov, zero=True)
             if isinstance(sm.mask, Image):
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
                 dftv = dft_skycomponent_visibility(dftv, comps)
             else:
                 dftv = dft_skycomponent_visibility(dftv, sm.components)
+            v.data['vis'] += dftv.vis
         
         if isinstance(sm.image, Image):
             if numpy.max(numpy.abs(sm.image.data)) > 0.0:
@@ -72,7 +74,6 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
                     v = predict_list_serial_workflow([v], [sm.image], context=context,
                                                      vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                      **kwargs)[0]
-            v.data['vis'] += dftv.vis
         
         if docal and isinstance(sm.gaintable, GainTable):
             if isinstance(ov, Visibility):
@@ -83,13 +84,6 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
                 v = apply_gaintable(v, sm.gaintable, inverse=True)
         
         return v
-    
-    #    if gcfcf is None:
-    #        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None)
-    #                for ism, sm in enumerate(skymodel_list)]
-    #    else:
-    #        return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism])
-    #                for ism, sm in enumerate(skymodel_list)]
     
     if isinstance(obsvis, list):
         assert len(obsvis) == len(skymodel_list)

@@ -58,6 +58,10 @@ docs:
     - mkdir -p test_results
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
+    - git clone https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git
+    - cd nifty_gridder
+    - pip3 install .
+    - cd ..
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make docs
   artifacts:

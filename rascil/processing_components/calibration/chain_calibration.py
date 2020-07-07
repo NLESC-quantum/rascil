@@ -122,22 +122,13 @@ def apply_calibration_chain(vis, gaintables, calibration_context='T', controls=N
 
     if changes:
 
-        isVis = isinstance(vis, Visibility)
-        if isVis:
-            avis = convert_visibility_to_blockvisibility(vis)
-        else:
-            avis = vis
-
-        assert isinstance(avis, BlockVisibility), avis
+        assert isinstance(vis, BlockVisibility), vis
 
         for c in calibration_context:
             if iteration >= controls[c]['first_selfcal']:
-                avis = apply_gaintable(avis, gaintables[c], timeslice=controls[c]['timeslice'])
+                avis = apply_gaintable(vis, gaintables[c], timeslice=controls[c]['timeslice'])
 
-        if isVis:
-            return convert_blockvisibility_to_visibility(avis)
-        else:
-            return avis
+        return avis
     else:
         return vis
 
@@ -167,17 +158,8 @@ def calibrate_chain(vis, model_vis, gaintables=None, calibration_context='T', co
 
     if changes:
 
-        isVis = isinstance(vis, Visibility)
-        if isVis:
-            avis = convert_visibility_to_blockvisibility(vis)
-        else:
-            avis = vis
-
-        isMVis = isinstance(model_vis, Visibility)
-        if isMVis:
-            amvis = convert_visibility_to_blockvisibility(model_vis)
-        else:
-            amvis = model_vis
+        avis = vis
+        amvis = model_vis
 
         assert isinstance(avis, BlockVisibility), avis
 
@@ -204,10 +186,7 @@ def calibrate_chain(vis, model_vis, gaintables=None, calibration_context='T', co
             else:
                 log.debug('calibrate_chain: Jones matrix %s not solved, iteration %d' % (c, iteration))
 
-        if isVis:
-            return convert_blockvisibility_to_visibility(avis), gaintables
-        else:
-            return avis, gaintables
+        return avis, gaintables
     else:
         return vis, gaintables
 
@@ -229,17 +208,9 @@ def solve_calibrate_chain(vis, model_vis, gaintables=None, calibration_context='
     if controls is None:
         controls = create_calibration_controls()
 
-    isVis = isinstance(vis, Visibility)
-    if isVis:
-        avis = convert_visibility_to_blockvisibility(vis)
-    else:
-        avis = vis
+    avis = vis
 
-    isMVis = isinstance(model_vis, Visibility)
-    if isMVis:
-        amvis = convert_visibility_to_blockvisibility(model_vis)
-    else:
-        amvis = model_vis
+    amvis = model_vis
 
     assert isinstance(avis, BlockVisibility), avis
 

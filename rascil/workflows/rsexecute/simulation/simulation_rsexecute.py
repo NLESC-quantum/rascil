@@ -176,20 +176,12 @@ def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, seed=None, **kwargs)
     :return: list of vis (or graph)
     """
     
-    def corrupt_vis(vis, gt, **kwargs):
-        if isinstance(vis, Visibility):
-            bv = convert_visibility_to_blockvisibility(vis)
-        else:
-            bv = vis
-        if gt is None:
-            gt = create_gaintable_from_blockvisibility(bv, **kwargs)
+    def corrupt_vis(bvis, gt, **kwargs):
+       if gt is None:
+            gt = create_gaintable_from_blockvisibility(bvis, **kwargs)
             gt = simulate_gaintable(gt, **kwargs)
-            bv = apply_gaintable(bv, gt)
-        
-        if isinstance(vis, Visibility):
-            return convert_blockvisibility_to_visibility(bv)
-        else:
-            return bv
+            bvis = apply_gaintable(bvis, gt)
+            return bvis
     
     if gt_list is None:
         return [rsexecute.execute(corrupt_vis, nout=1)(vis_list[ivis], None, **kwargs)
@@ -426,11 +418,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
             error_bvis = apply_gaintable(error_bvis, gt)
         if residual:
             error_bvis.data['vis'] = error_bvis.data['vis'] - no_error_bvis.data['vis']
-        if context != "ng":
-            error_vis = convert_blockvisibility_to_visibility(error_bvis)
-            return error_vis
-        else:
-            return error_bvis
+        return error_bvis
     
     error_vis_list = [rsexecute.execute(selfcal_convert)(error_bvis_list[ibv],
                                                          no_error_bvis_list[ibv])

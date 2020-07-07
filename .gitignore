@@ -57,32 +57,24 @@ docs/src/api/
 
 test_results/
 
-rtd-docs/build/
-
-htmlcov/
-
-xmlcov/
-
-.matplotlib/
-
 .astropy/
 
 .config/
 
-.coverage*
+.matplotlib/
 
 coverage/
 
-coverage.xml
+rtd-docs/build/
+<<<<<<< Updated upstream
 
-linting.xml
+venv/
+=======
+<<<<<<< Updated upstream
+=======
 
 venv/
 
-docs/src/examples/scripts/dprepb_rsexecute_pipeline.rst
-
-docs/src/examples/scripts/imaging.rst
-
-docs/src/examples/scripts/imaging_sim2.rst
-
-docs/src/examples/scripts/primary_beam_zernikes.rst
+*.csv
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes

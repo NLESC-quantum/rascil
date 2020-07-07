@@ -33,7 +33,7 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 class TestMPC(unittest.TestCase):
     def setUp(self):
         
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=False, processes=True, threads_per_worker=1)
         
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -82,7 +82,6 @@ class TestMPC(unittest.TestCase):
                                                                              zerow=zerow)
                               for freqwin, _ in enumerate(self.frequency)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
-        self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
         
         self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
                               (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
@@ -99,9 +98,8 @@ class TestMPC(unittest.TestCase):
         self.skymodel_list = expand_skymodel_by_skycomponents(self.skymodel_list[0])
         assert len(self.skymodel_list) == 36, len(self.skymodel_list)
         assert numpy.max(numpy.abs(self.skymodel_list[-1].image.data)) > 0.0, "Image is empty"
-        self.blockvis_list = [copy_visibility(self.blockvis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
+        #self.vis_list = [copy_visibility(self.vis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
     
-        
     def test_predictcal(self):
         
         self.actualSetUp(zerow=True)
@@ -111,8 +109,15 @@ class TestMPC(unittest.TestCase):
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel,
                                                                      context='2d', docal=True)
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
+        # for i, v in enumerate(skymodel_vislist):
+        #     print(i, numpy.max(numpy.abs(v.vis)))
+        #
+        for i, v in enumerate(skymodel_vislist):
+            assert numpy.max(numpy.abs(v.vis)) > 0.0, i
+            
         vobs = sum_predict_results(skymodel_vislist)
-        
+        assert numpy.max(numpy.abs(vobs.vis)) > 0.0
+
         if self.plot:
             def plotvis(i, v):
                 import matplotlib.pyplot as plt

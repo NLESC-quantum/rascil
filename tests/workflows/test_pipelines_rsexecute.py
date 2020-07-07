@@ -12,6 +12,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.data_model_helpers import export_gaintable_to_hdf5
+from rascil.data_models.memory_data_models import SkyModel
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.calibration.chain_calibration import create_calibration_controls
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility, apply_gaintable
@@ -22,15 +23,17 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
     create_unittest_model, create_unittest_components
 from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
-from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines.pipeline_rsexecute import ical_list_rsexecute_workflow, \
     continuum_imaging_list_rsexecute_workflow
+from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import ical_skymodel_list_rsexecute_workflow, \
+    continuum_imaging_skymodel_list_rsexecute_workflow
 
 log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
+
 
 class TestPipelineGraphs(unittest.TestCase):
     
@@ -39,7 +42,7 @@ class TestPipelineGraphs(unittest.TestCase):
         rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
     
     def tearDown(self):
         rsexecute.close()
@@ -49,7 +52,7 @@ class TestPipelineGraphs(unittest.TestCase):
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = nfreqwin
-        self.ntimes = 4
+        self.ntimes = 3
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
         
@@ -89,13 +92,11 @@ class TestPipelineGraphs(unittest.TestCase):
                                 (self.blockvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
         self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
-        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
         
         self.components_list = [rsexecute.execute(create_unittest_components)
                                 (self.model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :])
                                 for freqwin, m in enumerate(self.model_imagelist)]
         self.components_list = rsexecute.compute(self.components_list, sync=True)
-        self.components_list = rsexecute.scatter(self.components_list)
         
         self.blockvis_list = [rsexecute.execute(dft_skycomponent_visibility)
                               (self.blockvis_list[freqwin], self.components_list[freqwin])
@@ -115,6 +116,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_image_to_fits(self.cmodel, '%s/test_pipelines_rsexecute_cmodel.fits' % self.dir)
         
         if add_errors:
+            numpy.random.seed(180555)
             gt = create_gaintable_from_blockvisibility(self.vis)
             gt = simulate_gaintable(gt, phase_error=0.1, amplitude_error=0.0, smooth_channels=1, leakage=0.0)
             self.blockvis_list = [rsexecute.execute(apply_gaintable, nout=1)
@@ -123,24 +125,22 @@ class TestPipelineGraphs(unittest.TestCase):
             self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
             self.blockvis_list = rsexecute.scatter(self.blockvis_list)
         
-        
         self.model_imagelist = [rsexecute.execute(create_unittest_model, nout=1)
                                 (self.blockvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
         self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
-        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
-
+    
     def test_continuum_imaging_pipeline(self):
-        self.actualSetUp(add_errors=False, zerow=True, dopol=False)
+        self.actualSetUp()
         continuum_imaging_list = \
             continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
                                                       context='2d',
                                                       algorithm='mmclean', facets=1,
-                                                      scales=[0, 3, 10],
-                                                      niter=1000, fractional_threshold=0.1, threshold=0.1,
+                                                      scales=[0],
+                                                      niter=100, fractional_threshold=0.1, threshold=0.01,
                                                       nmoment=2,
-                                                      nmajor=3, gain=0.1,
+                                                      nmajor=5, gain=0.7,
                                                       deconvolve_facets=4, deconvolve_overlap=32,
                                                       deconvolve_taper='tukey', psf_support=64,
                                                       restore_facets=4, psfwidth=1.0)
@@ -153,11 +153,11 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_residual.fits' % self.dir)
             export_image_to_fits(restored[centre],
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
-
+        
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00852525535296) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.05258585881312287) < 1.0e-7, str(qa)
-
+        assert numpy.abs(qa.data['max'] - 100.0192924419299) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06612111041089375) < 1.0e-7, str(qa)
+    
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, zerow=True, dopol=True)
         continuum_imaging_list = \
@@ -165,42 +165,43 @@ class TestPipelineGraphs(unittest.TestCase):
                                                       model_imagelist=self.model_imagelist,
                                                       context='2d',
                                                       algorithm='mmclean', facets=1,
-                                                      scales=[0, 3, 10],
-                                                      niter=1000, fractional_threshold=0.1, threshold=0.1,
+                                                      scales=[0],
+                                                      niter=100, fractional_threshold=0.1, threshold=0.01,
                                                       nmoment=2,
-                                                      nmajor=3, gain=0.1,
+                                                      nmajor=5, gain=0.7,
                                                       deconvolve_facets=4, deconvolve_overlap=32,
                                                       deconvolve_taper='tukey', psf_support=64,
                                                       restore_facets=4, psfwidth=1.0)
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
         if self.persist:
-            export_image_to_fits(clean[centre], '%s/test_pipelines_continuum_imaging_pol_pipeline_rsexecute_clean.fits' %
+            export_image_to_fits(clean[centre],
+                                 '%s/test_pipelines_continuum_imaging_pol_pipeline_rsexecute_clean.fits' %
                                  self.dir)
             export_image_to_fits(residual[centre][0],
                                  '%s/test_pipelines_continuum_imaging_pipeline_pol_rsexecute_residual.fits' % self.dir)
             export_image_to_fits(restored[centre],
                                  '%s/test_pipelines_continuum_imaging_pipeline_pol_rsexecute_restored.fits' % self.dir)
-
+        
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00852525535298) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.05258585881312202) < 1.0e-7, str(qa)
-
+        assert numpy.abs(qa.data['max'] - 100.0192924419299) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06612111041089701) < 1.0e-7, str(qa)
+    
     def test_ical_pipeline(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
         controls['T']['first_selfcal'] = 1
         controls['T']['timeslice'] = 'auto'
-
+        
         ical_list = \
             ical_list_rsexecute_workflow(self.blockvis_list,
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
-                                         scales=[0, 3, 10],
-                                         niter=1000, fractional_threshold=0.1, threshold=0.1,
+                                         scales=[0],
+                                         niter=100, fractional_threshold=0.1, threshold=0.01,
                                          nmoment=2,
-                                         nmajor=3, gain=0.1,
+                                         nmajor=5, gain=0.7,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
                                          restore_facets=4, psfwidth=1.0,
@@ -215,27 +216,27 @@ class TestPipelineGraphs(unittest.TestCase):
             export_image_to_fits(restored[centre], '%s/test_pipelines_ical_pipeline_rsexecute_restored.fits' % self.dir)
             export_gaintable_to_hdf5(gt_list[centre]['T'], '%s/test_pipelines_ical_pipeline_rsexecute_gaintable.hdf5' %
                                      self.dir)
-
+        
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00798553167581) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.05237492344662603) < 1.0e-7, str(qa)
-
-    @unittest.skip("Not a sensible mode")
+        
+        assert numpy.abs(qa.data['max'] - 100.01323241256594) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06553922563010581) < 1.0e-7, str(qa)
+    
     def test_ical_pipeline_pol(self):
         self.actualSetUp(add_errors=True, dopol=True)
         controls = create_calibration_controls()
         controls['T']['first_selfcal'] = 1
         controls['T']['timeslice'] = 'auto'
-
+        
         ical_list = \
             ical_list_rsexecute_workflow(self.blockvis_list,
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
-                                         scales=[0, 3, 10],
-                                         niter=1000, fractional_threshold=0.1, threshold=0.1,
+                                         scales=[0],
+                                         niter=100, fractional_threshold=0.1, threshold=0.01,
                                          nmoment=2,
-                                         nmajor=3, gain=0.1,
+                                         nmajor=5, gain=0.7,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
                                          restore_facets=4, psfwidth=1.0,
@@ -247,14 +248,16 @@ class TestPipelineGraphs(unittest.TestCase):
             export_image_to_fits(clean[centre], '%s/test_pipelines_ical_pipeline_pol_rsexecute_clean.fits' % self.dir)
             export_image_to_fits(residual[centre][0],
                                  '%s/test_pipelines_ical_pipeline__polrsexecute_residual.fits' % self.dir)
-            export_image_to_fits(restored[centre], '%s/test_pipelines_ical_pipeline_pol_rsexecute_restored.fits' % self.dir)
-            export_gaintable_to_hdf5(gt_list[centre]['T'], '%s/test_pipelines_ical_pipeline_pol_rsexecute_gaintable.hdf5' %
+            export_image_to_fits(restored[centre],
+                                 '%s/test_pipelines_ical_pipeline_pol_rsexecute_restored.fits' % self.dir)
+            export_gaintable_to_hdf5(gt_list[centre]['T'],
+                                     '%s/test_pipelines_ical_pipeline_pol_rsexecute_gaintable.hdf5' %
                                      self.dir)
-
+        
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 88.18493789481009) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 2.0896642789962585) < 1.0e-7, str(qa)
-
+        assert numpy.abs(qa.data['max'] - 97.95714515140392) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.5332831738302675) < 1.0e-7, str(qa)
+    
     def test_ical_pipeline_global(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -266,10 +269,10 @@ class TestPipelineGraphs(unittest.TestCase):
                                          model_imagelist=self.model_imagelist,
                                          context='2d',
                                          algorithm='mmclean', facets=1,
-                                         scales=[0, 3, 10],
-                                         niter=1000, fractional_threshold=0.1, threshold=0.1,
+                                         scales=[0],
+                                         niter=100, fractional_threshold=0.1, threshold=0.01,
                                          nmoment=2,
-                                         nmajor=3, gain=0.1,
+                                         nmajor=5, gain=0.7,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
                                          restore_facets=4, psfwidth=1.0,
@@ -289,45 +292,265 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00787897373843) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.0522542211249874) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01361400765285) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06579948695723646) < 1.0e-7, str(qa)
     
-    def test_continuum_imaging_pipeline_serialclean(self):
-        self.actualSetUp(add_errors=False, zerow=True)
-        continuum_imaging_list = \
-            continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
-                                                      model_imagelist=self.model_imagelist,
-                                                      context='2d',
-                                                      algorithm='mmclean',
-                                                      facets=1,
-                                                      scales=[0, 3, 10],
-                                                      niter=1000,
-                                                      fractional_threshold=0.1,
-                                                      threshold=0.1,
-                                                      nmoment=2,
-                                                      nmajor=3, gain=0.1,
-                                                      deconvolve_facets=4,
-                                                      deconvolve_overlap=32,
-                                                      deconvolve_taper='tukey',
-                                                      psf_support=64,
-                                                      use_serial_clean=True,
-                                                      restore_facets=4,
-                                                      psfwidth=1.0)
-        clean, residual, restored = rsexecute.compute(continuum_imaging_list,
-                                                      sync=True)
+    def test_ical_skymodel_pipeline_empty(self):
+        self.actualSetUp(add_errors=True)
+        controls = create_calibration_controls()
+        controls['T']['first_selfcal'] = 1
+        controls['T']['timeslice'] = 'auto'
+        
+        skymodel_list = [SkyModel(image=im) for im in self.model_imagelist]
+        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
+        skymodel_list = rsexecute.scatter(skymodel_list)
+        
+        ical_list = \
+            ical_skymodel_list_rsexecute_workflow(self.blockvis_list,
+                                                  model_imagelist=self.model_imagelist,
+                                                  skymodel_list=skymodel_list,
+                                                  context='2d',
+                                                  algorithm='mmclean', facets=1,
+                                                  scales=[0],
+                                                  niter=100, fractional_threshold=0.1, threshold=0.01,
+                                                  nmoment=2,
+                                                  nmajor=5, gain=0.7,
+                                                  deconvolve_facets=4, deconvolve_overlap=32,
+                                                  deconvolve_taper='tukey', psf_support=64,
+                                                  restore_facets=4, psfwidth=1.0,
+                                                  calibration_context='T', controls=controls, do_selfcal=True,
+                                                  global_solution=False)
+        clean, residual, restored, skymodel_list, gt_list = rsexecute.compute(ical_list, sync=True)
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(clean[centre],
-                                 '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_clean.fits' %
+                                 '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_clean.fits' % self.dir)
+            export_image_to_fits(residual[centre][0],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_residual.fits' % self.dir)
+            export_image_to_fits(restored[centre],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_restored.fits' % self.dir)
+            export_gaintable_to_hdf5(gt_list[centre]['T'],
+                                     '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_gaintable.hdf5' %
+                                     self.dir)
+        
+        qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_empty')
+        print(qa)
+        
+        # assert numpy.abs(qa.data['max'] - 100.14732156317743) < 1.0e-1, str(qa)
+        # assert numpy.abs(qa.data['min'] + 0.2633191873061839) < 1.0e-1, str(qa)
+    
+    def test_ical_skymodel_pipeline_exact(self):
+        self.actualSetUp(add_errors=True)
+        controls = create_calibration_controls()
+        controls['T']['first_selfcal'] = 1
+        controls['T']['timeslice'] = 'auto'
+        
+        skymodel_list = [SkyModel(components=comp_list) for comp_list in self.components_list]
+        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
+        skymodel_list = rsexecute.scatter(skymodel_list)
+        
+        ical_list = \
+            ical_skymodel_list_rsexecute_workflow(self.blockvis_list,
+                                                  model_imagelist=self.model_imagelist,
+                                                  skymodel_list=skymodel_list,
+                                                  context='2d',
+                                                  algorithm='mmclean', facets=1,
+                                                  scales=[0],
+                                                  niter=100, fractional_threshold=0.1, threshold=0.01,
+                                                  nmoment=2,
+                                                  nmajor=5, gain=0.7,
+                                                  deconvolve_facets=4, deconvolve_overlap=32,
+                                                  deconvolve_taper='tukey', psf_support=64,
+                                                  restore_facets=4, psfwidth=1.0,
+                                                  calibration_context='T', controls=controls, do_selfcal=True,
+                                                  global_solution=False)
+        clean, residual, restored, sky_model_list, gt_list = rsexecute.compute(ical_list, sync=True)
+        centre = len(clean) // 2
+        if self.persist:
+            export_image_to_fits(clean[centre],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_clean.fits' % self.dir)
+            export_image_to_fits(residual[centre][0],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_residual.fits' % self.dir)
+            export_image_to_fits(restored[centre],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_restored.fits' % self.dir)
+            export_gaintable_to_hdf5(gt_list[centre]['T'],
+                                     '%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable.hdf5' %
+                                     self.dir)
+        
+        qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_exact')
+        print(qa)
+        
+        # assert numpy.abs(qa.data['max'] - 100.0069013141073) < 1.0e-7, str(qa)
+        # assert numpy.abs(qa.data['min'] + 0.003990562438902042) < 1.0e-7, str(qa)
+    
+    def test_ical_skymodel_pipeline_partial(self):
+        self.actualSetUp(add_errors=True)
+        controls = create_calibration_controls()
+        controls['T']['first_selfcal'] = 1
+        controls['T']['timeslice'] = 'auto'
+        
+        scaled_components_list = list()
+        for comp_list in self.components_list:
+            scaled_comp_list = list()
+            for comp in comp_list:
+                comp.flux *= 0.1
+                scaled_comp_list.append(comp)
+            scaled_components_list.append(scaled_comp_list)
+        skymodel_list = [SkyModel(components=comp_list) for comp_list in scaled_components_list]
+        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
+        skymodel_list = rsexecute.scatter(skymodel_list)
+        
+        ical_list = \
+            ical_skymodel_list_rsexecute_workflow(self.blockvis_list,
+                                                  model_imagelist=self.model_imagelist,
+                                                  skymodel_list=skymodel_list,
+                                                  context='2d',
+                                                  algorithm='mmclean', facets=1,
+                                                  scales=[0],
+                                                  niter=100, fractional_threshold=0.1, threshold=0.01,
+                                                  nmoment=2,
+                                                  nmajor=5, gain=0.7,
+                                                  deconvolve_facets=4, deconvolve_overlap=32,
+                                                  deconvolve_taper='tukey', psf_support=64,
+                                                  restore_facets=4, psfwidth=1.0,
+                                                  calibration_context='T', controls=controls, do_selfcal=True,
+                                                  global_solution=False)
+        clean, residual, restored, skymodel_list, gt_list = rsexecute.compute(ical_list, sync=True)
+        centre = len(clean) // 2
+        if self.persist:
+            export_image_to_fits(clean[centre],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_clean.fits' % self.dir)
+            export_image_to_fits(residual[centre][0],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_residual.fits' % self.dir)
+            export_image_to_fits(restored[centre],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_restored.fits' % self.dir)
+            export_gaintable_to_hdf5(gt_list[centre]['T'],
+                                     '%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_gaintable.hdf5' %
+                                     self.dir)
+        
+        qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_partial')
+        print(qa)
+        
+        # assert numpy.abs(qa.data['max'] - 100.3966318267637) < 1.0e-7, str(qa)
+        # assert numpy.abs(qa.data['min'] + 2.6885418753098813) < 1.0e-7, str(qa)
+    
+    def test_continuum_imaging_skymodel_pipeline_empty(self):
+        self.actualSetUp()
+        
+        skymodel_list = [SkyModel(image=im) for im in self.model_imagelist]
+        
+        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
+        skymodel_list = rsexecute.scatter(skymodel_list)
+        
+        continuum_imaging_list = \
+            continuum_imaging_skymodel_list_rsexecute_workflow(self.blockvis_list,
+                                                               model_imagelist=self.model_imagelist,
+                                                               skymodel_list=skymodel_list,
+                                                               context='2d',
+                                                               algorithm='mmclean', facets=1,
+                                                               scales=[0],
+                                                               niter=100, fractional_threshold=0.1, threshold=0.01,
+                                                               nmoment=2,
+                                                               nmajor=5, gain=0.7,
+                                                               deconvolve_facets=4, deconvolve_overlap=32,
+                                                               deconvolve_taper='tukey', psf_support=64,
+                                                               restore_facets=4, psfwidth=1.0)
+        clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
+        centre = len(clean) // 2
+        if self.persist:
+            export_image_to_fits(clean[centre],
+                                 '%s/test_pipelines_continuum_imaging_skymodel_empty_rsexecute_clean.fits' %
                                  self.dir)
             export_image_to_fits(residual[centre][0],
-                                 '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_residual.fits' % self.dir)
+                                 '%s/test_pipelines_continuum_imaging_skymodel_empty_rsexecute_residual.fits' % self.dir)
             export_image_to_fits(restored[centre],
-                                 '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
+                                 '%s/test_pipelines_continuum_imaging_skymodel_empty_rsexecute_restored.fits' % self.dir)
         
-        qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.00852525535296) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.05258585881312202) < 1.0e-7, str(qa)
+        qa = qa_image(restored[centre], context='restored')
+        assert numpy.abs(qa.data['max'] - 100.0192924419299) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06612111041089701) < 1.0e-7, str(qa)
+    
+    def test_continuum_imaging_skymodel_pipeline_partial(self):
+        self.actualSetUp()
+        
+        scaled_components_list = list()
+        for comp_list in self.components_list:
+            scaled_comp_list = list()
+            for comp in comp_list:
+                comp.flux *= 0.5
+                scaled_comp_list.append(comp)
+            scaled_components_list.append(scaled_comp_list)
+        skymodel_list = [SkyModel(components=comp_list) for comp_list in scaled_components_list]
+        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
+        skymodel_list = rsexecute.scatter(skymodel_list)
+        
+        continuum_imaging_list = \
+            continuum_imaging_skymodel_list_rsexecute_workflow(self.blockvis_list,
+                                                               model_imagelist=self.model_imagelist,
+                                                               skymodel_list=skymodel_list,
+                                                               context='2d',
+                                                               algorithm='mmclean', facets=1,
+                                                               scales=[0],
+                                                               niter=100, fractional_threshold=0.1, threshold=0.01,
+                                                               nmoment=2,
+                                                               nmajor=5, gain=0.7,
+                                                               deconvolve_facets=4, deconvolve_overlap=32,
+                                                               deconvolve_taper='tukey', psf_support=64,
+                                                               restore_facets=4, psfwidth=1.0)
+        clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
+        centre = len(clean) // 2
+        if self.persist:
+            export_image_to_fits(clean[centre],
+                                 '%s/test_pipelines_continuum_imaging_skymodel_partial_rsexecute_clean.fits' %
+                                 self.dir)
+            export_image_to_fits(residual[centre][0],
+                                 '%s/test_pipelines_continuum_imaging_skymodel_rsexecute_partial_residual.fits' % self.dir)
+            export_image_to_fits(restored[centre],
+                                 '%s/test_pipelines_continuum_imaging_skymodel_rsexecute_partial_restored.fits' % self.dir)
+        
+        qa = qa_image(restored[centre], context='restored')
+        
+        assert numpy.abs(qa.data['max'] - 100.0083790456672) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.033268909069889635) < 1.0e-7, str(qa)
+    
+    def test_continuum_imaging_skymodel_pipeline_exact(self):
+        self.actualSetUp()
+        
+        skymodel_list = [SkyModel(components=comp_list) for comp_list in self.components_list]
+        
+        self.model_imagelist = rsexecute.scatter(self.model_imagelist)
+        
+        continuum_imaging_list = \
+            continuum_imaging_skymodel_list_rsexecute_workflow(self.blockvis_list,
+                                                               model_imagelist=self.model_imagelist,
+                                                               skymodel_list=skymodel_list,
+                                                               context='2d',
+                                                               algorithm='mmclean', facets=1,
+                                                               scales=[0],
+                                                               niter=100, fractional_threshold=0.1, threshold=0.01,
+                                                               nmoment=2,
+                                                               nmajor=5, gain=0.7,
+                                                               deconvolve_facets=4, deconvolve_overlap=32,
+                                                               deconvolve_taper='tukey', psf_support=64,
+                                                               restore_facets=4, psfwidth=1.0)
+        clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
+        centre = len(clean) // 2
+        if self.persist:
+            export_image_to_fits(clean[centre],
+                                 '%s/test_pipelines_continuum_imaging_skymodel_exact_rsexecute_clean.fits' %
+                                 self.dir)
+            export_image_to_fits(residual[centre][0],
+                                 '%s/test_pipelines_continuum_imaging_skymodel_rsexecute_exact_residual.fits' % self.dir)
+            export_image_to_fits(restored[centre],
+                                 '%s/test_pipelines_continuum_imaging_skymodel_rsexecute_exact_restored.fits' % self.dir)
+        
+        qa = qa_image(restored[centre], context='restored')
+        assert numpy.abs(qa.data['max'] - 100.0) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min']) < 1.0e-12, str(qa)
+        
+        qa = qa_image(residual[centre][0], context='residual')
+        assert numpy.abs(qa.data['max']) < 1.0e-12, str(qa)
+        assert numpy.abs(qa.data['min']) < 1.0e-12, str(qa)
 
 
 if __name__ == '__main__':

@@ -57,6 +57,8 @@ docs/src/api/
 
 test_results/
 
+venv/
+
 .astropy/
 
 .config/
@@ -66,15 +68,3 @@ test_results/
 coverage/
 
 rtd-docs/build/
-<<<<<<< Updated upstream
-
-venv/
-=======
-<<<<<<< Updated upstream
-=======
-
-venv/
-
-*.csv
->>>>>>> Stashed changes
->>>>>>> Stashed changes

@@ -64,16 +64,18 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
         
         if isinstance(sm.image, Image):
             if numpy.max(numpy.abs(sm.image.data)) > 0.0:
+                imgv = copy_visibility(ov, zero=True)
                 if isinstance(sm.mask, Image):
                     model = copy_image(sm.image)
                     model.data *= sm.mask.data
-                    v = predict_list_serial_workflow([v], [model], context=context,
+                    imgv = predict_list_serial_workflow([imgv], [model], context=context,
                                                      vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                      **kwargs)[0]
                 else:
-                    v = predict_list_serial_workflow([v], [sm.image], context=context,
+                    imgv = predict_list_serial_workflow([imgv], [sm.image], context=context,
                                                      vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                      **kwargs)[0]
+                v.data['vis'] += imgv.vis
         
         if docal and isinstance(sm.gaintable, GainTable):
             if isinstance(ov, Visibility):

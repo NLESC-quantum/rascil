@@ -13,7 +13,7 @@ def run(files):
             first.extend(data)
     
     if first is not None:
-        print(ElementTree.tostring(first))
+        sys.stdout.buffer.write(ElementTree.tostring(first))
 
 if __name__ == "__main__":
     run(sys.argv[1:])

@@ -81,6 +81,7 @@ test:
 	--junitxml unit-tests-other.xml \
 	--cov rascil \
 	--cov-append \
+	--cov-report term  \
 	--cov-report html:coverage  \
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30

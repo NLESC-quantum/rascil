@@ -3,7 +3,8 @@ Functions to create primary beam and voltage pattern models
 """
 
 __all__ = ['set_pb_header', 'create_pb', 'create_pb_generic', 'create_vp', 'create_vp_generic',
-           'create_vp_generic_numeric', 'create_low_test_beam', 'create_low_test_vp', 'convert_azelvp_to_radec']
+           'create_vp_generic_numeric', 'create_low_test_beam', 'create_low_test_vp', 'convert_azelvp_to_radec',
+           'normalise_vp']
 
 import collections
 import logging
@@ -445,3 +446,19 @@ def convert_azelvp_to_radec(vp, im, pa):
     rvp.data[footprint.data < 1e-6] = 0.0
 
     return rvp
+
+
+def normalise_vp(vp):
+    """ Normalise the vp in place so that the peak gain on axis for parallel pols is equal
+
+    :param vp:
+    :return:
+    """
+    g = numpy.zeros([4])
+    g[0] = numpy.max(numpy.abs(vp.data[:, 0, ...]))
+    g[3] = numpy.max(numpy.abs(vp.data[:, 3, ...]))
+    g[1] = g[2] = numpy.sqrt(g[0] * g[3])
+    for chan in range(4):
+        if g[chan] > 0.0:
+            vp.data[:, chan, ...] /= g[chan]
+    return vp

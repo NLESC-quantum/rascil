@@ -15,7 +15,7 @@ from rascil.processing_components.util.geometry import calculate_azel, calculate
 
 class TestGeometry(unittest.TestCase):
     def setUp(self):
-        self.location = EarthLocation(lon="116.76444824", lat="-26.824722084", height=300.0)
+        self.location = EarthLocation(lon=116.76444824*u.deg, lat=-26.824722084*u.deg, height=300.0)
         self.times = (numpy.pi / 43200.0) * numpy.arange(-43200, +43200, 3600.0)
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
         self.utc_time = Time(["2020-01-01T00:00:00"], format='isot', scale='utc')

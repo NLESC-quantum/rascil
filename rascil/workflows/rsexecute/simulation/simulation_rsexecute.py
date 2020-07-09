@@ -23,8 +23,8 @@ import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord, EarthLocation
 
-from rascil.data_models import rascil_data_path
-from rascil.data_models.memory_data_models import Visibility, SkyModel, Configuration
+from rascil.data_models import rascil_data_path, Image
+from rascil.data_models.memory_data_models import SkyModel, Configuration
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.calibration import apply_gaintable, \
     create_gaintable_from_blockvisibility, solve_gaintable
@@ -32,7 +32,7 @@ from rascil.processing_components.calibration.pointing import \
     create_pointingtable_from_blockvisibility
 from rascil.processing_components.image import import_image_from_fits, apply_voltage_pattern_to_image
 from rascil.processing_components.image.operations import create_empty_image_like, copy_image
-from rascil.processing_components.imaging import create_vp
+from rascil.processing_components.imaging import create_vp, normalise_vp
 from rascil.processing_components.simulation import create_configuration_from_MIDfile
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation import simulate_gaintable, \
@@ -49,8 +49,6 @@ from rascil.processing_components.simulation.simulation_helpers import plot_poin
 from rascil.processing_components.skycomponent import insert_skycomponent
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility import calculate_blockvisibility_hourangles
-from rascil.processing_components.visibility import convert_blockvisibility_to_visibility, \
-    convert_visibility_to_blockvisibility
 from rascil.processing_components.visibility import copy_visibility
 from rascil.processing_components.visibility import create_blockvisibility, \
     create_visibility
@@ -177,7 +175,7 @@ def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, seed=None, **kwargs)
     """
     
     def corrupt_vis(bvis, gt, **kwargs):
-       if gt is None:
+        if gt is None:
             gt = create_gaintable_from_blockvisibility(bvis, **kwargs)
             gt = simulate_gaintable(gt, **kwargs)
             bvis = apply_gaintable(bvis, gt)
@@ -337,10 +335,10 @@ def calculate_residual_dft_rsexecute_workflow(sub_bvis_list, sub_components, sub
     :param residual: Calculate residual visibility (True)
     :return:
     """
-
+    
     dft_bvis_list = predict_dft_rsexecute_workflow(sub_bvis_list, sub_components, gt_list, context=context)
     return sum_invert_results_rsexecute(invert_list_rsexecute_workflow(dft_bvis_list, sub_model_list,
-                                                                       context=context, **kwargs))
+                                                                       context=context, **kwargs)), dft_bvis_list
 
 
 def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
@@ -669,23 +667,17 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
     :return: (list of error-free gaintables, list of error gaintables) or graph
      """
     
-    def find_vp_actual(band):
+    def find_vp_actual(band) -> Image:
         telescope = "MID_FEKO_{}".format(band)
         vp = create_vp(telescope=telescope)
-        if normalise:
-            g = numpy.zeros([4])
-            g[0] = numpy.max(numpy.abs(vp.data[:, 0, ...]))
-            g[3] = numpy.max(numpy.abs(vp.data[:, 3, ...]))
-            g[1] = g[2] = numpy.sqrt(g[0] * g[3])
-            for chan in range(4):
-                vp.data[:, chan, ...] /= g[chan]
+        vp = normalise_vp(vp)
         return vp
     
     def find_vp_nominal(band):
         vp = find_vp_actual(band)
         vpsym = 0.5 * (vp.data[:, 0, ...] + vp.data[:, 3, ...])
         if normalise:
-            vpsym.data /= numpy.max(numpy.abs(vpsym.data))
+            vpsym /= numpy.max(numpy.abs(vpsym))
         
         vp.data[:, 1:2, ...] = 0.0 + 0.0j
         vp.data[:, 0, ...] = vpsym

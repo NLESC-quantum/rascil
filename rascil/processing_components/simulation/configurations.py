@@ -2,25 +2,60 @@
 
 """
 
-__all__ = ['create_configuration_from_file', 'create_configuration_from_MIDfile', 'create_configuration_from_SKAfile',
-           'create_LOFAR_configuration', 'create_named_configuration', 'limit_rmax']
+__all__ = ['create_configuration_from_file',
+           'create_configuration_from_MIDfile',
+           'create_configuration_from_SKAfile',
+           'create_LOFAR_configuration',
+           'create_named_configuration',
+           'limit_rmax',
+           'find_vptype_from_name']
 
 import numpy
+from typing import Union
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 
 from rascil.processing_components.util.coordinate_support import xyz_at_latitude
 from rascil.data_models.memory_data_models import Configuration
-from rascil.data_models.parameters import rascil_path, rascil_data_path, get_parameter
+from rascil.data_models.parameters import rascil_data_path, get_parameter
 from rascil.processing_components.util.installation_checks import check_data_directory
 
 import logging
 
 log = logging.getLogger('logger')
 
+def find_vptype_from_name(names, match: Union[str, dict] = "unknown"):
+    """Determine voltage pattern type from name using a dictionary
+    
+    There ae two modes:
+    
+    If match is a dict, then the antenna/station names are matched. An example of match
+    would be: d={"M0":"MeerKAT", "SKA":"MID"} The test if whether the
+    key e.g. M0 is in the antenna/station name e.g. M053
+    
+    If match is a str then the returned array is filled with that value.
+    
+    :param names:
+    :param match:
+    :return:
+    """
+    if isinstance(match, dict):
+        vp_types = numpy.repeat("unknown", len(names))
+        for item in match:
+            for i, name in enumerate(names):
+                if item in name:
+                    vp_types[i] = match.get(item)
+    elif isinstance(match, str):
+        vp_types = numpy.repeat(match, len(names))
+    else:
+        raise ValueError("match must be str or dict")
+    
+    return vp_types
+    
 def create_configuration_from_file(antfile: str, location: EarthLocation = None,
                                    mount: str = 'azel',
                                    names: str = "%d",
+                                   vp_type: Union[str, dict] = "Unknown",
                                    diameter=35.0,
                                    rmax=None, name='') -> Configuration:
     """ Define configuration from a text file
@@ -29,6 +64,7 @@ def create_configuration_from_file(antfile: str, location: EarthLocation = None,
     :param location: Earthlocation of array
     :param mount: mount type: 'azel', 'xy', 'equatorial'
     :param names: Antenna names e.g. "VLA%d"
+    :param vp_type: string or rule to map name to voltage pattern type
     :param diameter: Effective diameter of station or antenna
     :param rmax: Maximum distance from array centre (m)
     :param name: Name of array
@@ -50,7 +86,8 @@ def create_configuration_from_file(antfile: str, location: EarthLocation = None,
     mounts = numpy.repeat(mount, nants)
     antxyz, diameters, anames, mounts = limit_rmax(antxyz, diameters, anames, mounts, rmax)
     
-    fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
+    vp_types = find_vptype_from_name(anames, vp_type)
+    fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz, vp_type=vp_types,
                        diameter=diameters, name=name)
     return fc
 
@@ -58,6 +95,7 @@ def create_configuration_from_file(antfile: str, location: EarthLocation = None,
 def create_configuration_from_SKAfile(antfile: str,
                                       mount: str = 'azel',
                                       names: str = "%d",
+                                      vp_type: Union[str, dict] = "Unknown",
                                       rmax=None, name='', location=None) -> Configuration:
     """ Define configuration from a SKA format file
 
@@ -85,14 +123,16 @@ def create_configuration_from_SKAfile(antfile: str,
     anames = [names % ant for ant in range(nants)]
     mounts = numpy.repeat(mount, nants)
     antxyz, diameters, anames, mounts = limit_rmax(antxyz, diameters, anames, mounts, rmax)
-    
+
     fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
+                       vp_type=find_vptype_from_name(names, vp_type),
                        diameter=diameters, name=name)
     return fc
 
 
 def create_configuration_from_MIDfile(antfile: str, location=None,
                                       mount: str = 'azel',
+                                      vp_type: Union[str, dict] = "Unknown",
                                       rmax=None, name='') -> Configuration:
     """ Define configuration from a SKA MID format file
 
@@ -124,6 +164,7 @@ def create_configuration_from_MIDfile(antfile: str, location=None,
     antxyz, diameters, anames, mounts = limit_rmax(antxyz, diameters, anames, mounts, rmax)
 
     fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
+                       vp_type=find_vptype_from_name(anames, vp_type),
                        diameter=diameters, name=name)
 
     return fc
@@ -153,7 +194,8 @@ def limit_rmax(antxyz, diameters, names, mounts, rmax):
     return antxyz, diameters, names, mounts
 
 
-def create_LOFAR_configuration(antfile: str, location, rmax=1e6) -> Configuration:
+def create_LOFAR_configuration(antfile: str, location,
+                               rmax=1e6) -> Configuration:
     """ Define configuration from the LOFAR configuration file
 
     :param antfile:
@@ -171,8 +213,10 @@ def create_LOFAR_configuration(antfile: str, location, rmax=1e6) -> Configuratio
     diameters = numpy.repeat(35.0, nants)
     
     antxyz, diameters, mounts, anames = limit_rmax(antxyz, diameters, anames, mounts, rmax)
-
+    
+    vp_type = {"HBA":"HBA", "LBA":"LBA"}
     fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
+                       vp_type=find_vptype_from_name(anames, vp_type),
                        diameter=diameters, name='LOFAR')
     return fc
 
@@ -207,38 +251,46 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     
     check_data_directory()
 
+    low_location = EarthLocation(lon=116.76444824*u.deg, lat=-26.824722084*u.deg, height=300.0)
+    mid_location = EarthLocation(lon=21.443803*u.deg, lat=30.712925*u.deg, height=0.0)
     if name == 'LOWBD2':
-        location = EarthLocation(lon="116.76444824", lat="-26.824722084", height=300.0)
+        location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_file(antfile=rascil_data_path("configurations/LOWBD2.csv"),
                                             location=location, mount='xy', names='LOWBD2_%d',
+                                            vp_type="LOW",
                                             diameter=35.0, name=name, **kwargs)
     elif name == 'LOWBD1':
-        location = EarthLocation(lon="116.76444824", lat="-26.824722084", height=300.0)
+        location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_file(antfile=rascil_data_path("configurations/LOWBD1.csv"),
+                                            vp_type="LOW",
                                             location=location, mount='xy', names='LOWBD1_%d',
                                             diameter=35.0, name=name, **kwargs)
     elif name == 'LOWBD2-CORE':
-        location = EarthLocation(lon="116.76444824", lat="-26.824722084", height=300.0)
+        location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_file(antfile=rascil_data_path("configurations/LOWBD2-CORE.csv"),
+                                            vp_type="LOW",
                                             location=location, mount='xy', names='LOWBD2_%d',
                                             diameter=35.0, name=name, **kwargs)
     elif (name == 'LOW') or (name == 'LOWR3'):
-        location = EarthLocation(lon="116.76444824", lat="-26.824722084", height=300.0)
+        location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1low_local.cfg"),
+                                               vp_type="LOW",
                                           mount='xy', name=name, location=location, **kwargs)
     elif (name == 'MID') or (name == "MIDR5"):
-        location = EarthLocation(lon="21.443803", lat="-30.712925", height=0.0)
+        location = mid_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid_local.cfg"),
+                                               vp_type={"M0":"MeerKAT", "SKA":"MID"},
             mount='azel', name=name, location=location, **kwargs)
     elif name == 'ASKAP':
-        location = EarthLocation(lon="+116.6356824", lat="-26.7013006", height=377.0)
+        location = EarthLocation(lon=+116.6356824*u.deg, lat=-26.7013006*u.deg, height=377.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_file(antfile=rascil_data_path("configurations/A27CR3P6B.in.csv"),
+                                            vp_type="ASKAP",
                                             mount='equatorial', names='ASKAP_%d',
                                             diameter=12.0, name=name, location=location, **kwargs)
     elif name == 'LOFAR':
@@ -247,20 +299,22 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         assert get_parameter(kwargs, "meta", False) is False
         fc = create_LOFAR_configuration(antfile=rascil_data_path("configurations/LOFAR.csv"), location=location)
     elif name == 'VLAA':
-        location = EarthLocation(lon="-107.6184", lat="34.0784", height=2124.0)
+        location = EarthLocation(lon=-107.6184*u.deg, lat=34.0784*u.deg, height=2124.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_file(antfile=rascil_data_path("configurations/VLA_A_hor_xyz.csv"),
                                             location=location,
                                             mount='azel',
                                             names='VLA_%d',
+                                            vp_type="VLA",
                                             diameter=25.0, name=name, **kwargs)
     elif name == 'VLAA_north':
-        location = EarthLocation(lon="-107.6184", lat="90.000", height=0.0)
+        location = EarthLocation(lon=-107.6184*u.deg, lat=90.000*u.deg, height=0.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_file(antfile=rascil_data_path("configurations/VLA_A_hor_xyz.csv"),
                                             location=location,
                                             mount='azel',
                                             names='VLA_%d',
+                                            vp_type="VLA",
                                             diameter=25.0, name=name, **kwargs)
     else:
         raise ValueError("No such Configuration %s" % name)

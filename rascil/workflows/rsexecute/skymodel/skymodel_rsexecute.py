@@ -1,6 +1,9 @@
-__all__ = ['predict_skymodel_list_rsexecute_workflow', 'predict_skymodel_list_compsonly_rsexecute_workflow',
-           'restore_skymodel_list_rsexecute_workflow', 'crosssubtract_datamodels_skymodel_list_rsexecute_workflow',
-           'convolve_skymodel_list_rsexecute_workflow', 'invert_skymodel_list_rsexecute_workflow']
+__all__ = ['predict_skymodel_list_rsexecute_workflow',
+           'predict_skymodel_list_compsonly_rsexecute_workflow',
+           'restore_skymodel_list_rsexecute_workflow',
+           'crosssubtract_datamodels_skymodel_list_rsexecute_workflow',
+           'convolve_skymodel_list_rsexecute_workflow',
+           'invert_skymodel_list_rsexecute_workflow']
 
 import logging
 

@@ -86,8 +86,8 @@ def create_configuration_from_file(antfile: str, location: EarthLocation = None,
     mounts = numpy.repeat(mount, nants)
     antxyz, diameters, anames, mounts = limit_rmax(antxyz, diameters, anames, mounts, rmax)
     
-    vp_types = find_vptype_from_name(anames, vp_type)
-    fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz, vp_type=vp_types,
+    fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
+                       vp_type=find_vptype_from_name(anames, vp_type),
                        diameter=diameters, name=name)
     return fc
 
@@ -252,7 +252,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     check_data_directory()
 
     low_location = EarthLocation(lon=116.76444824*u.deg, lat=-26.824722084*u.deg, height=300.0)
-    mid_location = EarthLocation(lon=21.443803*u.deg, lat=30.712925*u.deg, height=0.0)
+    mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=0.0)
     if name == 'LOWBD2':
         location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))

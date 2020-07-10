@@ -391,7 +391,6 @@ class TestImaging(unittest.TestCase):
         self._invert_base(context='wstack', extra='_spectral', positionthreshold=2.0,
                           vis_slices=51)
     
-    @unittest.skip("Too much for CI/CD")
     def test_invert_wstack_spectral_pol(self):
         self.actualSetUp(dospectral=True, dopol=True, block=False)
         self._invert_base(context='wstack', extra='_spectral_pol', positionthreshold=2.0,

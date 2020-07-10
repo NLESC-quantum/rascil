@@ -132,7 +132,7 @@ class _rsexecutebase():
     For example::
 
         from rascil.workflows import continuum_imaging_list_rsexecute_workflow, rsexecute
-        rsexecute.set_client(use_dask=True, threads_per_worker=1,
+        rsexecute.set_client(use_dask=True,
             memory_limit=32 * 1024 * 1024 * 1024, n_workers=8,
             local_dir=dask_dir, verbose=True)
         continuum_imaging_list = continuum_imaging_list_rsexecute_workflow(vis_list,

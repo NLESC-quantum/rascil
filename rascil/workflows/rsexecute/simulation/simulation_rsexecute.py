@@ -338,7 +338,7 @@ def calculate_residual_dft_rsexecute_workflow(sub_bvis_list, sub_components, sub
     
     dft_bvis_list = predict_dft_rsexecute_workflow(sub_bvis_list, sub_components, gt_list, context=context)
     return sum_invert_results_rsexecute(invert_list_rsexecute_workflow(dft_bvis_list, sub_model_list,
-                                                                       context=context, **kwargs)), dft_bvis_list
+                                                                       context=context, **kwargs))
 
 
 def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,

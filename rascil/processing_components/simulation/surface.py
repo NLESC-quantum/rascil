@@ -48,7 +48,6 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
     nchan, npol, ny, nx = vp[0].data.shape
     
     vp_types = numpy.unique(vis.configuration.vp_type)
-    print(vp_types)
     
     nvp = len(vp_types)
     
@@ -134,6 +133,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
                                 number_good += 1
                             for ant in range(nant):
                                 antgain[ant, ...] = antvp[vp_for_ant[ant],...]
+                            antwt[...] = 1.0
                         except (ValueError, AssertionError):
                             number_bad += 1
                             antgain[...] = 0.0

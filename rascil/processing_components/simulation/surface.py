@@ -59,6 +59,11 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
                 vp_for_ant[ant] = ivp
     
     # We construct interpolators for each voltage pattern type and for each polarisation, and for real, imaginary parts
+    if len(vp) == 1:
+        vp_types=[0]
+    else:
+        assert len(vp) == len(vp_types)
+
     real_spline = [[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[0, pol, ...].real, kx=order, ky=order)
                    for ivp, _ in enumerate(vp_types)] for pol in range(npol)]
     imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[0, pol, ...].imag, kx=order, ky=order)

@@ -15,9 +15,11 @@ __all__ = ['simulate_list_rsexecute_workflow',
            'create_standard_low_simulation_rsexecute_workflow',
            'create_surface_errors_gaintable_rsexecute_workflow',
            'create_polarisation_gaintable_rsexecute_workflow',
+           'create_heterogeneous_gaintable_rsexecute_workflow',
            'create_atmospheric_errors_gaintable_rsexecute_workflow']
 
 import logging
+from typing import List
 
 import numpy
 from astropy import units as u
@@ -32,7 +34,7 @@ from rascil.processing_components.calibration.pointing import \
     create_pointingtable_from_blockvisibility
 from rascil.processing_components.image import import_image_from_fits, apply_voltage_pattern_to_image
 from rascil.processing_components.image.operations import create_empty_image_like, copy_image
-from rascil.processing_components.imaging import create_vp, normalise_vp
+from rascil.processing_components.imaging import create_vp, normalise_vp, create_vp_generic
 from rascil.processing_components.simulation import create_configuration_from_MIDfile
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation import simulate_gaintable, \
@@ -610,7 +612,7 @@ def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
         latitude = vis.configuration.location.lat.rad
         az, el = hadec_to_azel(ha, dec, latitude)
         
-        el_deg = el * 180.0 / numpy.pi
+        el_deg = numpy.average(el) * 180.0 / numpy.pi
         el_table = max(0.0,
                        min(90.1, elevation_sampling * ((el_deg + elevation_sampling / 2.0) // elevation_sampling)))
         return get_band_vp(band, el_table)
@@ -704,6 +706,69 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
     return no_error_gt_list, error_gt_list
 
 
+def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
+                                                     sub_components,
+                                                     use_radec=False,
+                                                     show=True,
+                                                     basename='',
+                                                     normalise=True):
+    """ Create gaintable for polarisation effects
+
+    Compare with nominal and actual voltage patterns
+
+    :param band: B1, B2 or Ku
+    :param sub_bvis_list: List of vis (or graph)
+    :param sub_components: List of components (or graph)
+    :param use_radec: Use RADEC coordinate (False)
+    :param show: Plot the results
+    :param basename: Base name for the plots
+    :param normalise: Normalise peak of each receptor
+    :return: (list of error-free gaintables, list of error gaintables) or graph
+     """
+    
+    def find_vp_actual(bvis, band) -> List[Image]:
+        vp_types = numpy.unique(bvis.configuration.vp_type)
+        telescope = "MID_FEKO_{}".format(band)
+        vp = create_vp(telescope=telescope)
+        vp = normalise_vp(vp)
+        vp_list = [vp]
+        for vp_type in vp_types:
+            if vp_type == "MEERKAT":
+                vp = create_vp_generic(vp, diameter=15.0)
+                vp = normalise_vp(vp)
+                vp_list.append(vp)
+        assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
+        return vp_list
+    
+    def find_vp_nominal(bvis, band):
+        vp_types = numpy.unique(bvis.configuration.vp_type)
+        # Use the SKA antennas as nominal
+        telescope = "MID_FEKO_{}".format(band)
+        vp = create_vp(telescope=telescope)
+        vp = normalise_vp(vp)
+        vp_list = len(vp_types) * [vp]
+        return vp_list
+    
+    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list]
+    vp_actual_list = [rsexecute.execute(find_vp_actual)(bv, band) for bv in sub_bvis_list]
+    
+    # Create the gain tables, one per Visibility and per component
+    no_error_gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)
+                        (bvis, sub_components, vp_nominal_list[ibv], use_radec=use_radec)
+                        for ibv, bvis in enumerate(sub_bvis_list)]
+    error_gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)
+                     (bvis, sub_components, vp_actual_list[ibv], use_radec=use_radec)
+                     for ibv, bvis in enumerate(sub_bvis_list)]
+    if show:
+        plot_file = 'voltage_pattern_gaintable.png'
+        error_gt_list = rsexecute.compute(error_gt_list, sync=True)
+        plot_gaintable(error_gt_list, plot_file=plot_file, title=basename + " errors")
+        no_error_gt_list = rsexecute.compute(no_error_gt_list, sync=True)
+        plot_gaintable(no_error_gt_list, plot_file=plot_file, title=basename + " nominal")
+    
+    return no_error_gt_list, error_gt_list
+
+
 def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range, time_chunk, integration_time,
                                                       polarisation_frame=None, zerow=False):
     """ Create the standard MID simulation
@@ -723,6 +788,8 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     
     # Set up details of simulated observation
     if band == 'B1':
+        frequency = numpy.array([0.4e9])
+    elif band == 'B1LOW':
         frequency = numpy.array([0.765e9])
     elif band == 'B2':
         frequency = numpy.array([1.36e9])
@@ -733,7 +800,7 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     
     channel_bandwidth = numpy.array([1e7])
     
-    mid_location = EarthLocation(lon="21.443803", lat="-30.712925", height=0.0)
+    mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=0.0)
     
     # Do each time_chunk in parallel
     start_times = numpy.arange(time_range[0] * 3600, time_range[1] * 3600, time_chunk)
@@ -756,9 +823,7 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     
     # print('%d integrations of duration %.1f s processed in %d chunks' % (ntimes, integration_time, nchunks))
     
-    mid = create_configuration_from_MIDfile(rascil_data_path('configurations/ska1mid_local.cfg'),
-                                            rmax=rmax,
-                                            location=mid_location)
+    mid = create_named_configuration("MID", rmax=rmax)
     
     bvis_graph = [
         rsexecute.execute(create_blockvisibility)(mid, rtimes[itime], frequency=frequency,
@@ -797,7 +862,7 @@ def create_standard_low_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     frequency = [1.5e8]
     
     channel_bandwidth = [1e7]
-    low_location = EarthLocation(lon="116.76444824", lat="-26.824722084", height=300.0)
+    low_location = EarthLocation(lon=116.76444824*u.deg, lat=-26.824722084*u.deg, height=300.0)
     
     # Do each time_chunk in parallel
     start_times = numpy.arange(time_range[0] * 3600, time_range[1] * 3600, time_chunk)

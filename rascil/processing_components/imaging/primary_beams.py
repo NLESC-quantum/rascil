@@ -119,7 +119,7 @@ def create_vp(model=None, telescope='MID', pointingcentre=None, padding=4, use_l
         real_vp.data /= numpy.max(numpy.abs(real_vp.data))
         return real_vp
     elif telescope == 'MEERKAT':
-        return create_vp_generic(model, pointingcentre=pointingcentre, diameter=13.5, blockage=0.0, use_local=use_local)
+        return create_vp_generic(model, pointingcentre=pointingcentre, diameter=15.0, blockage=0.0, use_local=use_local)
     elif telescope[0:3] == 'LOW':
         return create_low_test_vp(model)
     elif telescope[0:3] == 'VLA':

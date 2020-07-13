@@ -58,7 +58,7 @@ class TestConfigurations(unittest.TestCase):
             self.config = create_named_configuration(config)
             assert self.config.size() > 0.0
             assert len(self.config.vp_type) == len(self.config.names)
-            assert "MeerKAT" in numpy.unique(self.config.vp_type)
+            assert "MEERKAT" in numpy.unique(self.config.vp_type)
             assert "MID" in numpy.unique(self.config.vp_type)
 
     def test_SKA_LOW_configurations(self):

@@ -30,7 +30,7 @@ def find_vptype_from_name(names, match: Union[str, dict] = "unknown"):
     There ae two modes:
     
     If match is a dict, then the antenna/station names are matched. An example of match
-    would be: d={"M0":"MeerKAT", "SKA":"MID"} The test if whether the
+    would be: d={"M0":"MEERKAT", "SKA":"MID"} The test if whether the
     key e.g. M0 is in the antenna/station name e.g. M053
     
     If match is a str then the returned array is filled with that value.
@@ -284,7 +284,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         location = mid_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid_local.cfg"),
-                                               vp_type={"M0":"MeerKAT", "SKA":"MID"},
+                                               vp_type={"M0":"MEERKAT", "SKA":"MID"},
             mount='azel', name=name, location=location, **kwargs)
     elif name == 'ASKAP':
         location = EarthLocation(lon=+116.6356824*u.deg, lat=-26.7013006*u.deg, height=377.0)

@@ -29,7 +29,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import weight_list_rse
 from rascil.workflows.rsexecute.simulation.simulation_rsexecute import \
     calculate_residual_from_gaintables_rsexecute_workflow, create_surface_errors_gaintable_rsexecute_workflow, \
     create_pointing_errors_gaintable_rsexecute_workflow, create_standard_mid_simulation_rsexecute_workflow, \
-    create_polarisation_gaintable_rsexecute_workflow
+    create_polarisation_gaintable_rsexecute_workflow, create_heterogeneous_gaintable_rsexecute_workflow
 
 results_dir = rascil_path('test_results')
 
@@ -40,11 +40,11 @@ mpl_logger = logging.getLogger("matplotlib")
 mpl_logger.setLevel(logging.WARNING)
 
 
-class TestPointingSimulation(unittest.TestCase):
+class TestMIDSimulations(unittest.TestCase):
     
     def setUp(self) -> None:
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        rsexecute.set_client(use_dask=True)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
     
     def simulation(self, args, time_series='wind', band='B2',
                    image_polarisation_frame=PolarisationFrame("stokesI"),
@@ -151,7 +151,7 @@ class TestPointingSimulation(unittest.TestCase):
                                                                     time_series_type='precision',
                                                                     seed=seed,
                                                                     show=False, basename=basename)
-        elif time_series == 'gravity':
+        elif time_series == 'surface':
             # Dish surface sag due to gravity
             no_error_gtl, error_gtl = \
                 create_surface_errors_gaintable_rsexecute_workflow(band, future_bvis_list, original_components,
@@ -161,6 +161,12 @@ class TestPointingSimulation(unittest.TestCase):
             # Polarised beams
             no_error_gtl, error_gtl = \
                 create_polarisation_gaintable_rsexecute_workflow(band, future_bvis_list, original_components,
+                                                                 basename="Polarisation gain table",
+                                                                 show=False)
+        elif time_series == 'heterogeneous':
+            # Polarised beams
+            no_error_gtl, error_gtl = \
+                create_heterogeneous_gaintable_rsexecute_workflow(band, future_bvis_list, original_components,
                                                                  basename="Polarisation gain table",
                                                                  show=False)
         else:
@@ -192,6 +198,9 @@ class TestPointingSimulation(unittest.TestCase):
         # Actually compute the graph assembled above
         error_dirty, sumwt = rsexecute.compute(residual, sync=True)
         
+        export_image_to_fits(error_dirty,
+                             "{}/test_mid_simulations_{}_dirty.fits".format(rascil_path("test_results"), time_series))
+        
         return error_dirty, sumwt
     
     def get_args(self):
@@ -210,7 +219,7 @@ class TestPointingSimulation(unittest.TestCase):
         parser.add_argument('--integration_time', type=float, default=600, help='Integration time (s)')
         parser.add_argument('--time_range', type=float, nargs=2, default=[-4.0, 4.0], help='Time range in hours')
         
-        parser.add_argument('--npixel', type=int, default=256, help='Number of pixels in image')
+        parser.add_argument('--npixel', type=int, default=1024, help='Number of pixels in image')
         parser.add_argument('--use_natural', type=str, default='True', help='Use natural weighting?')
         
         parser.add_argument('--snapshot', type=str, default='False', help='Do snapshot only?')
@@ -250,20 +259,35 @@ class TestPointingSimulation(unittest.TestCase):
         args = parser.parse_args([])
         
         return args
-    
+
     def test_wind(self):
-        
+    
         args = self.get_args()
         args.fluxlimit = 0.1
-        
+    
         error_dirty, sumwt = self.simulation(args, 'wind')
-        
+    
         qa = qa_image(error_dirty)
-        
+    
         numpy.testing.assert_almost_equal(qa.data['max'], 2.2886082148064566e-06, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['min'], -2.6968390524143016e-06, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['rms'], 5.100754674086175e-07, 5, err_msg=str(qa))
+
+    def test_heterogeneous(self):
     
+        args = self.get_args()
+        args.fluxlimit = 0.1
+    
+        error_dirty, sumwt = self.simulation(args, 'heterogeneous',
+                                             image_polarisation_frame=PolarisationFrame("stokesIQUV"),
+                                             vis_polarisation_frame=PolarisationFrame("linear"))
+    
+        qa = qa_image(error_dirty)
+    
+        numpy.testing.assert_almost_equal(qa.data['max'], 2.2886082148064566e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -2.6968390524143016e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 5.100754674086175e-07, 5, err_msg=str(qa))
+
     def test_random(self):
         
         args = self.get_args()
@@ -277,13 +301,13 @@ class TestPointingSimulation(unittest.TestCase):
         numpy.testing.assert_almost_equal(qa.data['min'], -6.253389822092476e-07, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['rms'], 1.277806020206335e-07, 5, err_msg=str(qa))
     
-    def test_gravity(self):
+    def test_surface(self):
         
         args = self.get_args()
         args.fluxlimit = 0.1
         
         if os.path.isdir(rascil_path('models/interpolated')):
-            error_dirty, sumwt = self.simulation(args, 'gravity')
+            error_dirty, sumwt = self.simulation(args, 'surface')
             
             qa = qa_image(error_dirty)
             

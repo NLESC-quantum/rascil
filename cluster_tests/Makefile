@@ -6,7 +6,7 @@ clean:
 	make -C ritoy clean
 
 .PHONY: test
-clean:
+test:
 	make -C dask_test test
 	make -C test_image test
 	make -C ritoy test

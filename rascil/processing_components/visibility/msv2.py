@@ -817,13 +817,14 @@ try:
                     sourceList = [sourceID for bl in dataSet.baselines]
 
                     ### Zero out the visibility data
-                    try:
-                        matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
-                        matrix *= 0.0
-                    except NameError:
-                        matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.complex64)
+                    # try:
+                    #     matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
+                    #     matrix *= 0.0
+                    # except NameError:
+                    # matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.complex64)
 
                 # Save the visibility data in the right order
+                matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.complex64)
                 matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.visibilities[order, :]
 
                 # Deal with saving the data once all of the polarizations have been added to 'matrix'

@@ -46,7 +46,7 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
    """
     
     def ft_cal_sm(ov, sm, g):
-        assert isinstance(ov, Visibility) or isinstance(ov, BlockVisibility), ov
+        assert isinstance(ov, BlockVisibility), ov
         assert isinstance(sm, SkyModel), sm
         if g is not None:
             assert len(g) == 2, g
@@ -82,14 +82,7 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
         
         if docal and isinstance(sm.gaintable, GainTable):
             v = apply_gaintable(v, sm.gaintable, inverse=True)
-
-            if isinstance(ov, Visibility):
-                bv = convert_visibility_to_blockvisibility(v)
-                bv = apply_gaintable(bv, sm.gaintable, inverse=True)
-                v = convert_blockvisibility_to_visibility(bv)
-            else:
-                v = apply_gaintable(v, sm.gaintable, inverse=True)
-        
+       
         return v
     
     if isinstance(obsvis, list):
@@ -173,13 +166,6 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vi
         if docal and isinstance(sm.gaintable, GainTable):
             v = apply_gaintable(v, sm.gaintable)
             
-            if isinstance(v, Visibility):
-                bv = convert_visibility_to_blockvisibility(v)
-                bv = apply_gaintable(bv, sm.gaintable)
-                v = convert_blockvisibility_to_visibility(bv)
-            else:
-                v = apply_gaintable(v, sm.gaintable)
-        
         result = invert_list_serial_workflow([v], [sm.image], context=context,
                                              vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                              **kwargs)[0]

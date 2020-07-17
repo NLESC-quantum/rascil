@@ -321,7 +321,7 @@ class TestMIDSimulations(unittest.TestCase):
         parser.add_argument('--slurm_queue', type=str, default='compute', help='SLURM queue')
         parser.add_argument('--slurm_walltime', type=str, default='01:00:00', help='SLURM time limit')
         
-        args = parser.parse_args()
+        args = parser.parse_args([])
         return args
     
     @unittest.skip("Not deterministic")

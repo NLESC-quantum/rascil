@@ -39,7 +39,7 @@ class TestSkyModel(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
     
-    def actualSetUp(self, freqwin=1, block=False, dopol=False, zerow=False):
+    def actualSetUp(self, freqwin=1, block=True, dopol=False, zerow=False):
         
         self.npixel = 256
         self.low = create_named_configuration('LOWBD2', rmax=300.0)

@@ -820,7 +820,7 @@ try:
                     try:
                         matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
                         matrix *= 0.0
-                    except NameError:
+                    except (NameError, RuntimeError):
                         matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.complex64)
 
                 # Save the visibility data in the right order

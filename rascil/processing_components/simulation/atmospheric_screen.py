@@ -7,9 +7,15 @@
 __all__ = ['find_pierce_points', 'create_gaintable_from_screen', 'grid_gaintable_to_screen',
            'calculate_sf_from_screen', 'plot_gaintable_on_screen']
 
+import warnings
 import astropy.units as units
 import numpy
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
+from astropy.wcs import FITSFixedWarning
+from astropy.wcs import WCS
+from astropy.wcs.utils import skycoord_to_pixel
+
 
 from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility, \
@@ -48,7 +54,7 @@ def find_pierce_points(station_locations, ha, dec, phasecentre, height):
 
 
 def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, scale=1.0,
-                                 r0=5e3, type_atmosphere='ionosphere',
+                                 r0=5e3, type_atmosphere='ionosphere', reference=False,
                                  **kwargs):
     """ Create gaintables from a screen calculated using ARatmospy
 
@@ -56,11 +62,12 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
 
     :param vis:
     :param sc: Sky components for which pierce points are needed
-    :param screen:
+    :param screen: Image or string (for fits file which will be memory mapped in
     :param height: Height (in m) of screen above telescope e.g. 3e5
     :param r0: r0 in meters
     :param type_atmosphere: 'ionosphere' or 'troposphere'
     :param scale: Multiply the screen by this factor
+    :param reference: Use the first component as a reference
     :return:
     """
     assert isinstance(vis, BlockVisibility)
@@ -79,42 +86,54 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
     t2r = numpy.pi / 43200.0
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
     
+    warnings.simplefilter('ignore', FITSFixedWarning)
+    hdulist = fits.open(screen, memmap=True)
+    screen_data = hdulist[0].data
+    screen_wcs = WCS(screen)
+
     number_bad = 0
     number_good = 0
+    ncomp = len(sc)
 
     ha_zero = numpy.average(calculate_blockvisibility_hourangles(vis))
     for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
         v = create_visibility_from_rows(vis, rows)
         ha = numpy.average(calculate_blockvisibility_hourangles(v) - ha_zero).to('rad').value
+        scr = numpy.zeros([ncomp, nant])
         for icomp, comp in enumerate(sc):
             pp = find_pierce_points(station_locations, (comp.direction.ra.rad + t2r * ha) * units.rad,
                                     comp.direction.dec,
                                     height=height,
                                     phasecentre=vis.phasecentre)
-            scr = numpy.zeros([nant])
             for ant in range(nant):
                 pp0 = pp[ant][0:2]
                 # Using narrow band approach - we should loop over frequency
                 try:
                     worldloc = [pp0[0], pp0[1], ha, numpy.average(vis.frequency)]
-                    pixloc = screen.wcs.wcs_world2pix([worldloc], 0)[0].astype('int')
+                    pixloc = screen_wcs.wcs_world2pix([worldloc], 0)[0].astype('int')
                     #if type_atmosphere == 'troposphere':
                     pixloc[3] = 0
-                    scr[ant] = screen_to_phase * screen.data[pixloc[3], pixloc[2], pixloc[1], pixloc[0]]
+                    scr[icomp, ant] = screen_to_phase * screen_data[pixloc[3], pixloc[2], pixloc[1], pixloc[0]]
                     number_good += 1
                 except (ValueError, IndexError):
                     number_bad += 1
                     scr[ant] = 0.0
-            
+        if reference:
+            scr -= scr[0, :]
+
+        for icomp, comp in enumerate(sc):
             # axes of gaintable.gain are time, ant, nchan, nrec
-            gaintables[icomp].gain[iha, :, :, :] = numpy.exp(1j * scr)[..., numpy.newaxis, numpy.newaxis, numpy.newaxis]
+            gaintables[icomp].gain[iha, :, :, :] = numpy.exp(1j * scr[icomp])[..., numpy.newaxis, numpy.newaxis, numpy.newaxis]
             gaintables[icomp].phasecentre = comp.direction
+            
 
     assert number_good > 0, "create_gaintable_from_screen: There are no pierce points inside the atmospheric screen image"
     if number_bad > 0:
         log.warning("create_gaintable_from_screen: %d pierce points are inside the atmospheric screen image" % (number_good))
         log.warning("create_gaintable_from_screen: %d pierce points are outside the atmospheric screen image" % (number_bad))
 
+    hdulist.close()
+    
     return gaintables
 
 

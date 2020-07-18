@@ -428,12 +428,12 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
                                                 context=context, **kwargs)
     return dirty_list
 
-
 def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_components,
                                                            r0=5e3, screen=None,
                                                            height=3e5,
                                                            type_atmosphere='iono',
                                                            show=False, basename='',
+                                                           reference=False,
                                                            **kwargs):
     """ Create gaintable for atmospheric errors
 
@@ -454,9 +454,10 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
         rsexecute.execute(create_gaintable_from_screen)(vis, sub_components,
                                                         r0=r0,
                                                         screen=screen, height=height,
-                                                        type_atmosphere=type_atmosphere)
+                                                        type_atmosphere=type_atmosphere,
+                                                        reference=reference)
         for ivis, vis in enumerate(sub_bvis_list)]
-    
+        
     # Create the gain tables, one per Visibility and per component
     no_error_gt_list = [[rsexecute.execute(create_gaintable_from_blockvisibility)
                          (bvis, **kwargs) for cmp in sub_components]

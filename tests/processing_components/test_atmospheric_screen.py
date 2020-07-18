@@ -67,7 +67,7 @@ class TestAtmosphericScreen(unittest.TestCase):
 
     def test_create_gaintable_from_screen_ionosphere(self):
         self.actualSetup("ionosphere")
-        screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        screen = rascil_data_path('models/test_mpc_screen.fits')
         beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
                                  frequency=self.frequency)
 
@@ -90,7 +90,8 @@ class TestAtmosphericScreen(unittest.TestCase):
 
     def test_create_gaintable_from_screen_troposphere(self):
         self.actualSetup("troposphere")
-        screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        # screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        screen = rascil_data_path('models/test_mpc_screen.fits')
         beam = create_test_image(cellsize=0.00015, phasecentre=self.vis.phasecentre,
                                  frequency=self.frequency)
 
@@ -126,19 +127,20 @@ class TestAtmosphericScreen(unittest.TestCase):
         gleam_components = create_low_test_skycomponents_from_gleam(flux_limit=1.0,
                                                                     phasecentre=self.phasecentre,
                                                                     frequency=self.frequency,
-                                                                    polarisation_frame=PolarisationFrame(
-                                                                        'stokesI'),
+                                                                    polarisation_frame=PolarisationFrame('stokesI'),
                                                                     radius=0.2)
 
         pb_gleam_components = apply_beam_to_skycomponent(gleam_components, beam)
 
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
 
-        gaintables = create_gaintable_from_screen(self.vis, actual_components, screen)
+        gaintables = create_gaintable_from_screen(self.vis, actual_components,
+                                                  rascil_data_path('models/test_mpc_screen.fits'))
         assert len(gaintables) == len(actual_components), len(gaintables)
         assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 
-        newscreen = create_empty_image_like(screen)
+        old_screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        newscreen = create_empty_image_like(old_screen)
 
         newscreen, weights = grid_gaintable_to_screen(self.vis, gaintables, newscreen)
         assert numpy.max(numpy.abs(screen.data)) > 0.0
@@ -147,7 +149,7 @@ class TestAtmosphericScreen(unittest.TestCase):
 
     def test_plot_gaintable_to_screen(self):
         self.actualSetup()
-        screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        screen = rascil_data_path('models/test_mpc_screen.fits')
         beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
                                  frequency=self.frequency)
 

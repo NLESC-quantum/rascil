@@ -496,7 +496,8 @@ def advise_wide_field(vis: Union[BlockVisibility, Visibility], delA=0.02,
     wprojection_planes = vis_slices
     if verbose:
         log.info('advice_wide_field: (vis_slices) Number of planes in w stack %d (primary beam)' % (vis_slices))
-        log.info('advice_wide_field: (wprojection_planes)Number of planes in w projection %d (primary beam)' % (wprojection_planes))
+        log.info('advice_wide_field: (wprojection_planes) Number of planes in w projection %d (primary beam)' % (
+            wprojection_planes))
 
     nwpixels = int(2.0 * wprojection_planes * primary_beam_fov)
     nwpixels = nwpixels - nwpixels % 2

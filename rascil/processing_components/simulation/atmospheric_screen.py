@@ -14,8 +14,6 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.wcs import FITSFixedWarning
 from astropy.wcs import WCS
-from astropy.wcs.utils import skycoord_to_pixel
-
 
 from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility, \

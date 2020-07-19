@@ -90,7 +90,6 @@ class TestAtmosphericScreen(unittest.TestCase):
 
     def test_create_gaintable_from_screen_troposphere(self):
         self.actualSetup("troposphere")
-        # screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
         screen = rascil_data_path('models/test_mpc_screen.fits')
         beam = create_test_image(cellsize=0.00015, phasecentre=self.vis.phasecentre,
                                  frequency=self.frequency)

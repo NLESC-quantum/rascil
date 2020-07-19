@@ -73,7 +73,7 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
     assert isinstance(vis, BlockVisibility)
     
     station_locations = vis.configuration.xyz
-
+    
     scale = numpy.power(r0/5000.0, -5.0/3.0)
     if type_atmosphere == 'troposphere':
         # In troposphere files, the units are phase in radians.
@@ -86,6 +86,7 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
     t2r = numpy.pi / 43200.0
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
     
+    # Use memmap to speed up access and limit memory use
     warnings.simplefilter('ignore', FITSFixedWarning)
     hdulist = fits.open(screen, memmap=True)
     screen_data = hdulist[0].data
@@ -95,10 +96,9 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
     number_good = 0
     ncomp = len(sc)
 
-    ha_zero = numpy.average(calculate_blockvisibility_hourangles(vis))
     for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
         v = create_visibility_from_rows(vis, rows)
-        ha = numpy.average(calculate_blockvisibility_hourangles(v) - ha_zero).to('rad').value
+        ha = numpy.average(calculate_blockvisibility_hourangles(v)).to('deg').value * 43200.0 / 180.0
         scr = numpy.zeros([ncomp, nant])
         for icomp, comp in enumerate(sc):
             pp = find_pierce_points(station_locations, (comp.direction.ra.rad + t2r * ha) * units.rad,
@@ -110,16 +110,15 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
                 # Using narrow band approach - we should loop over frequency
                 try:
                     worldloc = [pp0[0], pp0[1], ha, numpy.average(vis.frequency)]
-                    pixloc = screen_wcs.wcs_world2pix([worldloc], 0)[0].astype('int')
-                    #if type_atmosphere == 'troposphere':
+                    pixloc = screen_wcs.wcs_world2pix([worldloc], 0).astype('int')[0]
                     pixloc[3] = 0
                     scr[icomp, ant] = screen_to_phase * screen_data[pixloc[3], pixloc[2], pixloc[1], pixloc[0]]
                     number_good += 1
                 except (ValueError, IndexError):
                     number_bad += 1
-                    scr[ant] = 0.0
+                    scr[icomp, ant] = 0.0
         if reference:
-            scr -= scr[0, :]
+            scr -= scr[0, :][numpy.newaxis, :]
 
         for icomp, comp in enumerate(sc):
             # axes of gaintable.gain are time, ant, nchan, nrec

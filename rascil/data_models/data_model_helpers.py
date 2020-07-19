@@ -100,6 +100,7 @@ __all__ = ['convert_earthlocation_to_string',
 
 import ast
 import collections
+from typing import Union
 
 import astropy.units as u
 import h5py
@@ -616,7 +617,7 @@ def convert_hdf_to_skycomponent(f):
     return sc
 
 
-def export_skycomponent_to_hdf5(sc: Skycomponent, filename):
+def export_skycomponent_to_hdf5(sc: Union[Skycomponent, list], filename):
     """ Export a Skycomponent to HDF5 format
 
     :param sc: SkyComponent

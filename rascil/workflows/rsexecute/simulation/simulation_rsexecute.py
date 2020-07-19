@@ -433,7 +433,7 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
                                                            height=3e5,
                                                            type_atmosphere='iono',
                                                            show=False, basename='',
-                                                           reference=False,
+                                                           reference=True,
                                                            **kwargs):
     """ Create gaintable for atmospheric errors
 
@@ -788,9 +788,9 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
         polarisation_frame = PolarisationFrame("stokesI")
     
     # Set up details of simulated observation
-    if band == 'B1':
-        frequency = numpy.array([0.4e9])
-    elif band == 'B1LOW':
+    if band == 'B1LOW':
+        frequency = numpy.array([0.350e9])
+    elif band == 'B1':
         frequency = numpy.array([0.765e9])
     elif band == 'B2':
         frequency = numpy.array([1.36e9])
@@ -812,8 +812,7 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
                                                    phasecentre=phasecentre,
                                                    elevation_limit=15.0)
     times = [numpy.arange(start_times[itime], end_times[itime], integration_time) for
-             itime in
-             range(len(start_times))]
+             itime in range(len(start_times))]
     
     s2r = numpy.pi / (12.0 * 3600)
     rtimes = s2r * numpy.array(times)

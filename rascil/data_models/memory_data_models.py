@@ -882,8 +882,8 @@ class Visibility:
     as separate columns in a numpy structured array, The fundemental unit is a complex vector of polarisation.
 
     Visibility is defined to hold an observation with one direction.
-    Polarisation frame is the same for the entire data set and can be stokes, circular, linear
-    The configuration is also an attribute
+    Polarisation frame is the same for the entire data set and can be stokes, circular, linear.
+    The configuration is also an attribute.
 
     The phasecentre is the direct of delay tracking i.e. n=0. If uvw are rotated then this
     should be updated with the new delay tracking centre. This is important for wstack and wproject
@@ -1164,9 +1164,9 @@ class BlockVisibility:
     should be updated with the new delay tracking centre. This is important for wstack and wproject
     algorithms.
 
-    Polarisation frame is the same for the entire data set and can be stokesI, circular, linear
+    Polarisation frame is the same for the entire data set and can be stokesI, circular, linear.
 
-    The configuration is also an attribute
+    The configuration is also an attribute.
     """
     
     def __init__(self,

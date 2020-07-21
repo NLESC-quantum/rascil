@@ -8,7 +8,7 @@ Directory
 This directory is designed to to help those familiar with other calibration and imaging packages navigate the Algorithm
 Reference Library. Not all functions are listed here. The API contains all functions.
 
-The long form of the name is given for all entries but all function names arre unique so a given function can be
+The long form of the name is given for all entries but all function names are unique so a given function can be
 accessed using the very top level import::
 
    import rascil.data_models
@@ -27,10 +27,10 @@ See :py:mod:`rascil.data_models.memory_data_models` for the following definition
 * Image (data and WCS header): :py:class:`rascil.data_models.memory_data_models.Image`
 * Skycomponent (data for a point source or a Gaussian source): :py:class:`rascil.data_models.memory_data_models.Skycomponent`
 * SkyModel (collection of SkyComponents and Images): :py:class:`rascil.data_models.memory_data_models.SkyModel`
-* Antenna-based visibility table, shape (nants, nants, nchan, npol), length ntimes): :py:class:`rascil.data_models.memory_data_models.BlockVisibility`
-* Baseline based visibility tables shape (npol,), length nvis) :py:class:`rascil.data_models.memory_data_models.Visibility`
+* Antenna-based visibility table, shape (nants, nants, nchan, npol), length ntime): :py:class:`rascil.data_models.memory_data_models.BlockVisibility`
+* Baseline based visibility tables shape (npol,), length nvis :py:class:`rascil.data_models.memory_data_models.Visibility`
 * Telescope Configuration: :py:class:`rascil.data_models.memory_data_models.Configuration`
-* GainTable for gain solutions (as (e.g. output from solve_gaintable): :py:class:`rascil.data_models.memory_data_models.GainTable`
+* GainTable for gain solutions (as e.g. output from solve_gaintable): :py:class:`rascil.data_models.memory_data_models.GainTable`
 
 Functions
 =========
@@ -128,7 +128,7 @@ Workflows
 =========
 
 Workflows coordinate processing using the data models, processing components, and processing library. These are high
-level functions, and are available in rsexecute (i.e. dask) version and sometimes scalar version.
+level functions, and are available in an rsexecute (i.e. dask) version and sometimes a scalar version.
 
 Calibration workflows
 ---------------------

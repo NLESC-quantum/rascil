@@ -5,6 +5,7 @@
 __all__ = ['simulate_gaintable_from_zernikes', 'simulate_gaintable_from_voltage_pattern']
 
 import logging
+import collections
 
 from astropy.time import Time
 
@@ -25,14 +26,14 @@ log = logging.getLogger('logger')
 def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=1.0, order=3,
                                             use_radec=False, elevation_limit=15.0 * numpy.pi / 180.0,
                                             **kwargs):
-    """ Create gaintables from a list of components and voltagr patterns
+    """ Create gaintables from a list of components and voltage patterns
 
     :param elevation_limit:
     :param use_radec:
     :param vis_slices:
     :param vis:
     :param sc: Sky components for which pierce points are needed
-    :param vp: Voltage pattern in AZELGEO frame
+    :param vp: Voltage pattern in AZELGEO frame, can also be a list of voltage patterns, indexed alphabeticallu
     :param scale: Multiply the screen by this factor
     :param order: order of spline (default is 3)
     :return:
@@ -40,18 +41,37 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
     
     nant = vis.vis.shape[1]
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
+
+    if not isinstance(vp, collections.abc.Iterable):
+        vp = [vp]
+
+    nchan, npol, ny, nx = vp[0].data.shape
     
-    nchan, npol, ny, nx = vp.data.shape
+    vp_types = numpy.unique(vis.configuration.vp_type)
     
-    real_spline = [RectBivariateSpline(range(ny), range(nx), vp.data[0, pol, ...].real, kx=order, ky=order)
-                   for pol in range(npol)]
-    imag_spline = [RectBivariateSpline(range(ny), range(nx), vp.data[0, pol, ...].imag, kx=order, ky=order)
-                   for pol in range(npol)]
+    nvp = len(vp_types)
+    
+    vp_for_ant = numpy.zeros([nant], dtype=int)
+    for ivp in range(nvp):
+        for ant in range(nant):
+            if vis.configuration.vp_type[ant] == vp_types[ivp]:
+                vp_for_ant[ant] = ivp
+    
+    # We construct interpolators for each voltage pattern type and for each polarisation, and for real, imaginary parts
+    if len(vp) == 1:
+        vp_types=[0]
+    else:
+        assert len(vp) == len(vp_types)
+
+    real_spline = [[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[0, pol, ...].real, kx=order, ky=order)
+                   for ivp, _ in enumerate(vp_types)] for pol in range(npol)]
+    imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[0, pol, ...].imag, kx=order, ky=order)
+                   for ivp, _ in enumerate(vp_types)] for pol in range(npol)]
     
     if not use_radec:
         assert isinstance(vis, BlockVisibility)
-        assert vp.wcs.wcs.ctype[0] == 'AZELGEO long', vp.wcs.wcs.ctype[0]
-        assert vp.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.wcs.wcs.ctype[1]
+        assert vp[0].wcs.wcs.ctype[0] == 'AZELGEO long', vp[0].wcs.wcs.ctype[0]
+        assert vp[0].wcs.wcs.ctype[1] == 'AZELGEO lati', vp[0].wcs.wcs.ctype[1]
         
         assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
         
@@ -71,15 +91,17 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
                 elevation_centre = elevation_centre[0].to('deg').value
                 
                 # Calculate the az el for this time
-                wcs_azel = vp.wcs.sub(2).deepcopy()
+                wcs_azel = vp[0].wcs.sub(2).deepcopy()
                 
                 for icomp, comp in enumerate(sc):
                     
                     if elevation_centre >= elevation_limit:
                         
+                        antvp = numpy.zeros([nvp, npol], dtype='complex')
                         antgain = numpy.zeros([nant, npol], dtype='complex')
+                        antvpwt = numpy.zeros([nvp, npol])
                         antwt = numpy.zeros([nant, npol])
-                        
+
                         # Calculate the azel of this component
                         azimuth_comp, elevation_comp = calculate_azel(v.configuration.location, utc_time,
                                                                       comp.direction)
@@ -100,15 +122,18 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
                             assert pixloc[0] < nx - 3
                             assert pixloc[1] > 2
                             assert pixloc[1] < ny - 3
-                            for pol in range(npol):
-                                gain = real_spline[pol].ev(pixloc[1], pixloc[0]) \
-                                       + 1j * imag_spline[pol].ev(pixloc[1], pixloc[0])
-                                antgain[:, pol] = gain
-                            for ant in range(nant):
-                                ag = antgain[ant, :].reshape([2, 2])
+                            # Interpolate values for all voltage pattern types
+                            for ivp, _ in enumerate(vp_types):
+                                for pol in range(npol):
+                                    antvp[ivp, pol] = real_spline[pol][ivp].ev(pixloc[1], pixloc[0]) \
+                                        + 1j * imag_spline[pol][ivp].ev(pixloc[1], pixloc[0])
+                                ag = antvp[ivp, :].reshape([2, 2])
                                 ag = numpy.linalg.inv(ag)
-                                antgain[ant, :] = ag.reshape([4])
+                                antvp[ivp, :] = ag.reshape([4])
                                 number_good += 1
+                            for ant in range(nant):
+                                antgain[ant, ...] = antvp[vp_for_ant[ant],...]
+                            antwt[...] = 1.0
                         except (ValueError, AssertionError):
                             number_bad += 1
                             antgain[...] = 0.0

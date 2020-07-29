@@ -30,7 +30,7 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 class TestPipelineMPC(unittest.TestCase):
     def setUp(self):
 
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=True)
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -139,7 +139,9 @@ class TestPipelineMPC(unittest.TestCase):
             voronoi_components = [voronoi_components[0]]
 
         self.screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-        all_gaintables = create_gaintable_from_screen(blockvis, all_components, self.screen)
+
+        all_gaintables = create_gaintable_from_screen(blockvis, all_components,
+                                                      rascil_data_path('models/test_mpc_screen.fits'))
 
         gleam_skymodel_noniso = [SkyModel(components=[all_components[i]], gaintable=all_gaintables[i])
                                  for i, sm in enumerate(all_components)]

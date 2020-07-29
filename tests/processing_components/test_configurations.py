@@ -50,13 +50,23 @@ class TestConfigurations(unittest.TestCase):
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
             self.createVis(config, +35.0)
             assert self.config.size() > 0.0
+            assert len(self.config.vp_type) == len(self.config.names)
 
     
-    def test_SKA_configurations(self):
-        for config in ['MID', 'MIDR5', 'LOW', 'LOWR3']:
+    def test_SKA_MID_configurations(self):
+        for config in ['MID', 'MIDR5']:
             self.config = create_named_configuration(config)
             assert self.config.size() > 0.0
-    
+            assert len(self.config.vp_type) == len(self.config.names)
+            assert "MEERKAT" in numpy.unique(self.config.vp_type)
+            assert "MID" in numpy.unique(self.config.vp_type)
+
+    def test_SKA_LOW_configurations(self):
+        for config in ['LOW', 'LOWR3']:
+            self.config = create_named_configuration(config)
+            assert self.config.size() > 0.0
+            assert "LOW" in numpy.unique(self.config.vp_type)
+
     def test_clip_configuration(self):
         for rmax in [100.0, 3000.0, 1000.0, 3000.0, 10000.0, 30000.0, 100000.0]:
             self.config = create_named_configuration('LOWBD2', rmax=rmax)

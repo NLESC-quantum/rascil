@@ -85,6 +85,7 @@ def rascil_data_path(path, check=True):
 
     The data path default is rascil_path('data') but may be overriden with the environment variable RASCIL_DATA.
 
+    :param check: Check path exists
     :param path:
     :return: absolute path
     """

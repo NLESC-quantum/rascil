@@ -161,8 +161,8 @@ if __name__ == '__main__':
                             reverse=True)
     print("Number of components in simulation %d" % len(all_components))
 
-    screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-    all_gaintables = create_gaintable_from_screen(block_vis, all_components, screen)
+    all_gaintables = create_gaintable_from_screen(block_vis, all_components,
+                                                  rascil_data_path('models/test_mpc_screen.fits'))
 
     all_skymodel = [SkyModel(components=[all_components[i]], gaintable=all_gaintables[i])
                     for i, sm in enumerate(all_components)]

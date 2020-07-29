@@ -32,7 +32,7 @@ class TestRFISim(unittest.TestCase):
         times = numpy.arange(ntimes) * integration_time
         
         # Perth from Google for the moment
-        perth = EarthLocation(lon="115.8605", lat="-31.9505", height=0.0)
+        perth = EarthLocation(lon=115.8605*u.deg, lat=-31.9505*u.deg, height=0.0)
         
         rmax = 1000.0
         low = create_named_configuration('LOWR3', rmax=rmax)

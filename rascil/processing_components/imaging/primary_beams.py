@@ -3,7 +3,8 @@ Functions to create primary beam and voltage pattern models
 """
 
 __all__ = ['set_pb_header', 'create_pb', 'create_pb_generic', 'create_vp', 'create_vp_generic',
-           'create_vp_generic_numeric', 'create_low_test_beam', 'create_low_test_vp', 'convert_azelvp_to_radec']
+           'create_vp_generic_numeric', 'create_low_test_beam', 'create_low_test_vp', 'convert_azelvp_to_radec',
+           'normalise_vp']
 
 import collections
 import logging
@@ -11,7 +12,7 @@ import logging
 import numpy
 from astropy import constants as const
 
-from rascil.data_models.memory_data_models import Image
+from rascil.data_models import Image, PolarisationFrame
 from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.image.operations import import_image_from_fits, reproject_image, scale_and_rotate_image
 from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, fft_image, pad_image
@@ -118,7 +119,7 @@ def create_vp(model=None, telescope='MID', pointingcentre=None, padding=4, use_l
         real_vp.data /= numpy.max(numpy.abs(real_vp.data))
         return real_vp
     elif telescope == 'MEERKAT':
-        return create_vp_generic(model, pointingcentre=pointingcentre, diameter=13.5, blockage=0.0, use_local=use_local)
+        return create_vp_generic(model, pointingcentre=pointingcentre, diameter=15.0, blockage=0.0, use_local=use_local)
     elif telescope[0:3] == 'LOW':
         return create_low_test_vp(model)
     elif telescope[0:3] == 'VLA':
@@ -216,17 +217,26 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
         
         blockage_factor = (blockage / diameter) ** 2
         
-        for pol in range(npol):
-            reflector = ft_disk(rr * numpy.pi * diameter / wavelength)
-            blockage = ft_disk(rr * numpy.pi * blockage / wavelength)
-            beam.data[chan, pol, ...] = reflector - blockage_factor * blockage
+        if beam.polarisation_frame == PolarisationFrame("linear"):
+            pols = [0, 3]
+        elif beam.polarisation_frame == PolarisationFrame("circular"):
+            pols = [0, 3]
+        else:
+            pols = range(npol)
+  
+        reflector = ft_disk(rr * numpy.pi * diameter / wavelength)
+        blockage = ft_disk(rr * numpy.pi * blockage / wavelength)
+        combined = reflector - blockage_factor * blockage
+
+        for pol in pols:
+            beam.data[chan, pol, ...] = combined
     
     set_pb_header(beam, use_local=use_local)
     return beam
 
 
 def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockage=0.0, taper='gaussian',
-                              edge=0.03162278, zernikes=None, padding=4, use_local=True, rho=0.0, diff=0.0):
+                              edge=0.03162278, zernikes=None, padding=4, use_local=True):
     """
     Make an image like model and fill it with an analytical model of the primary beam
     
@@ -275,9 +285,18 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
         
         # rr in metres
         rr = numpy.sqrt(xx**2 + yy**2)
-        for pol in range(npol):
-            xfr.data[chan, pol, ...] = tapered_disk(rr, diameter / 2.0, blockage=blockage / 2.0, edge=edge,
+        if beam.polarisation_frame == PolarisationFrame("linear"):
+            pols = [0, 3]
+        elif beam.polarisation_frame == PolarisationFrame("circular"):
+            pols = [0, 3]
+        else:
+            pols = range(npol)
+
+        combined = tapered_disk(rr, diameter / 2.0, blockage=blockage / 2.0, edge=edge,
                                                     taper=taper)
+
+        for pol in pols:
+            xfr.data[chan, pol, ...] = combined
         
         if pointingcentre is not None:
             # Correct for pointing centre
@@ -445,3 +464,19 @@ def convert_azelvp_to_radec(vp, im, pa):
     rvp.data[footprint.data < 1e-6] = 0.0
 
     return rvp
+
+
+def normalise_vp(vp):
+    """ Normalise the vp in place so that the peak gain on axis for parallel pols is equal
+
+    :param vp:
+    :return:
+    """
+    g = numpy.zeros([4])
+    g[0] = numpy.max(numpy.abs(vp.data[:, 0, ...]))
+    g[3] = numpy.max(numpy.abs(vp.data[:, 3, ...]))
+    g[1] = g[2] = numpy.sqrt(g[0] * g[3])
+    for chan in range(4):
+        if g[chan] > 0.0:
+            vp.data[:, chan, ...] /= g[chan]
+    return vp

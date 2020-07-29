@@ -283,7 +283,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif (name == 'MID') or (name == "MIDR5"):
         location = mid_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid_local.cfg"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid.cfg"),
                                                vp_type={"M0":"MEERKAT", "SKA":"MID"},
             mount='azel', name=name, location=location, **kwargs)
     elif name == 'ASKAP':

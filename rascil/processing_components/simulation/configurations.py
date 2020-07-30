@@ -291,7 +291,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif name == 'MEERKAT+':
         location = meerkat_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid.cfg"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/mkatplus.cfg"),
                                                vp_type={"m0": "MEERKAT", "s0": "MID"},
                                                mount='azel', name=name, location=location, **kwargs)
     elif name == 'ASKAP':

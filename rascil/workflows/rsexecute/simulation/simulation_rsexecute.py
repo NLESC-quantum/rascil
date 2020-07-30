@@ -771,7 +771,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
 
 
 def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range, time_chunk, integration_time,
-                                                      polarisation_frame=None, zerow=False):
+                                                      polarisation_frame=None, zerow=False, configuration='MID'):
     """ Create the standard MID simulation
     
     :param band: B1, B2, or Ku
@@ -800,17 +800,17 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
         raise ValueError("Unknown band %s" % band)
     
     channel_bandwidth = numpy.array([1e7])
-    
-    mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=0.0)
-    
+
+    mid = create_named_configuration(configuration, rmax=rmax)
+
     # Do each time_chunk in parallel
     start_times = numpy.arange(time_range[0] * 3600, time_range[1] * 3600, time_chunk)
     end_times = start_times + time_chunk
     
-    start_times = find_times_above_elevation_limit(start_times, end_times,
-                                                   location=mid_location,
-                                                   phasecentre=phasecentre,
-                                                   elevation_limit=15.0)
+    # start_times = find_times_above_elevation_limit(start_times, end_times,
+    #                                                location=mid.location,
+    #                                                phasecentre=phasecentre,
+    #                                                elevation_limit=15.0)
     times = [numpy.arange(start_times[itime], end_times[itime], integration_time) for
              itime in range(len(start_times))]
     
@@ -822,8 +822,6 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     assert ntimes > 0, "No data above elevation limit"
     
     # print('%d integrations of duration %.1f s processed in %d chunks' % (ntimes, integration_time, nchunks))
-    
-    mid = create_named_configuration("MID", rmax=rmax)
     
     bvis_graph = [
         rsexecute.execute(create_blockvisibility)(mid, rtimes[itime], frequency=frequency,

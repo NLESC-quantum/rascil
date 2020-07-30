@@ -21,7 +21,6 @@ dask-worker-space
 *.so
 *.egg
 /rascil/data_models/.idea
-*.fits
 /sourcetree.txt
 /docs/api
 */*/notebooks/*_files
@@ -68,3 +67,6 @@ venv/
 coverage/
 
 rtd-docs/build/
+
+examples/*/*.fits
+

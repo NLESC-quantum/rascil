@@ -42,7 +42,7 @@ class TestConfigurations(unittest.TestCase):
                                      polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_named_configurations(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LOWBD1', 'LOWR3', 'ASKAP', 'MID', 'MIDR5']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LOWBD1', 'LOWR3', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.size() > 0.0
             #print("Config ", config, " has centre", self.config.location.geodetic)

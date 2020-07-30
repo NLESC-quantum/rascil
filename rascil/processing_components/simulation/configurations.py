@@ -230,6 +230,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         LOWBD2-core
         LOW == LOWR3
         MID == MIDR5
+        MEERKAT+
         ASKAP
         LOFAR
         VLAA
@@ -253,6 +254,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
 
     low_location = EarthLocation(lon=116.76444824*u.deg, lat=-26.824722084*u.deg, height=300.0)
     mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=0.0)
+    meerkat_location = EarthLocation(lon=21.44388889*u.deg, lat=--30.7110565*u.deg, height=1086.6)
     if name == 'LOWBD2':
         location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
@@ -286,6 +288,12 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid.cfg"),
                                                vp_type={"M0":"MEERKAT", "SKA":"MID"},
             mount='azel', name=name, location=location, **kwargs)
+    elif name == 'MEERKAT+':
+        location = meerkat_location
+        log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid.cfg"),
+                                               vp_type={"m0": "MEERKAT", "s0": "MID"},
+                                               mount='azel', name=name, location=location, **kwargs)
     elif name == 'ASKAP':
         location = EarthLocation(lon=+116.6356824*u.deg, lat=-26.7013006*u.deg, height=377.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))

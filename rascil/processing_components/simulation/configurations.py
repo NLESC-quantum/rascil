@@ -253,7 +253,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     check_data_directory()
 
     low_location = EarthLocation(lon=116.76444824*u.deg, lat=-26.824722084*u.deg, height=300.0)
-    mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=0.0)
+    mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=1053.000000)
     meerkat_location = EarthLocation(lon=21.44388889*u.deg, lat=-30.7110565*u.deg, height=1086.6)
     if name == 'LOWBD2':
         location = low_location

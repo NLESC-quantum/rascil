@@ -4,7 +4,7 @@
 
 __all__ = ['plot_visibility', 'plot_visibility_pol', 'find_times_above_elevation_limit', 'plot_uvcoverage',
            'plot_azel', 'plot_gaintable', 'plot_pointingtable', 'find_pb_width_null',
-           'create_simulation_components', 'plot_pa']
+           'create_simulation_components', 'create_mid_simulation_components', 'plot_pa']
 
 import logging
 
@@ -477,3 +477,80 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
                                     equinox='J2000')
     
     return original_components, offset_direction
+
+
+def create_mid_simulation_components(phasecentre, frequency, flux_limit,
+                                 pbradius, pb_npixel, pb_cellsize, show=False, fov=10,
+                                 polarisation_frame=PolarisationFrame("stokesI"),
+                                 filter_by_primary_beam=True, flux_max=10.0):
+    """ Construct components for simulation
+
+    :param context: singlesource or null or s3sky
+    :param phasecentre: Centre of components
+    :param frequency: Frequency
+    :param pbtype: Type of primary beam
+    :param offset_dir: Offset in ra, dec degrees
+    :param flux_limit: Lower limit flux
+    :param pbradius: Radius of components in radians
+    :param pb_npixel: Number of pixels in the primary beam model
+    :param pb_cellsize: Cellsize in primary beam model
+    :param fov: FOV in degrees (used to select catalog)
+    :param flux_max: Maximum flux in model before application of primary beam
+    :param filter_by_primary_beam: Filter components by primary beam
+    :param polarisation_frame:
+    :param show:
+
+    :return:
+    """
+    
+    # Make a skymodel from S3
+    max_flux = 0.0
+    total_flux = 0.0
+    log.info("create_simulation_components: Constructing s3sky components")
+    from rascil.processing_components.simulation import create_test_skycomponents_from_s3
+    
+    all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 100.0,
+                                                       phasecentre=phasecentre,
+                                                       polarisation_frame=polarisation_frame,
+                                                       frequency=numpy.array(frequency),
+                                                       radius=pbradius,
+                                                       fov=fov)
+    original_components = filter_skycomponents_by_flux(all_components, flux_max=flux_max)
+    log.info("create_simulation_components: %d components before application of primary beam" %
+             (len(original_components)))
+    
+    if filter_by_primary_beam:
+        pbmodel = create_image(npixel=pb_npixel,
+                               cellsize=pb_cellsize,
+                               phasecentre=phasecentre,
+                               frequency=frequency,
+                               polarisation_frame=PolarisationFrame("stokesI"))
+        stokesi_components = [copy_skycomponent(o) for o in original_components]
+        for s in stokesi_components:
+            s.flux = s.flux[:, 0][..., numpy.newaxis]
+            s.polarisation_frame = PolarisationFrame("stokesI")
+        
+        pb = create_pb(pbmodel, "MID_GAUSS", pointingcentre=phasecentre, use_local=False)
+        pb_applied_components = [copy_skycomponent(c) for c in stokesi_components]
+        pb_applied_components = apply_beam_to_skycomponent(pb_applied_components, pb)
+        filtered_components = []
+        for icomp, comp in enumerate(pb_applied_components):
+            if comp.flux[0, 0] > flux_limit:
+                total_flux += comp.flux[0, 0]
+                if abs(comp.flux[0, 0]) > max_flux:
+                    max_flux = abs(comp.flux[0, 0])
+                filtered_components.append(original_components[icomp])
+        log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
+                 (len(filtered_components), flux_limit))
+        log.info("create_simulation_components: Strongest components is %g (Jy)" % max_flux)
+        log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)
+        original_components = [copy_skycomponent(c) for c in filtered_components]
+        if show:
+            plt.clf()
+            show_image(pb, components=original_components)
+            plt.show(block=False)
+    
+    log.info("create_simulation_components: Created %d components" % len(original_components))
+    
+    return original_components
+

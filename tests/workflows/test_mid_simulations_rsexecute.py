@@ -349,9 +349,9 @@ class TestMIDSimulations(unittest.TestCase):
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.0011985935603045592, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.008178761999466974, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 4.993869071636252e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.011599869287926223, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.0008548038778960262, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 7.997081228052794e-05, 5, err_msg=str(qa))
     
     @unittest.skip("Not deterministic")
     def test_random(self):

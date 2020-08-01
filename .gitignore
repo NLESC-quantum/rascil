@@ -28,17 +28,9 @@ dask-worker-space
 */*/scripts/*.rst
 /docs/src/examples/notebooks
 
-examples/ska_simulations/surface_simulation.rst
+examples/ska_simulations/mid_simulation.rst
 
-examples/ska_simulations/pointing_simulation.rst
-
-docs/src/examples/ska_simulations/pointing_simulation.rst
-
-docs/src/examples/ska_simulations/surface_simulation.rst
-
-examples/ska_simulations/atmospheric_simulation.rst
-
-docs/src/examples/ska_simulations/atmospheric_simulation.rst
+docs/src/examples/ska_simulations/mid_simulation.rst
 
 dist/
 
@@ -70,3 +62,21 @@ rtd-docs/build/
 
 examples/*/*.fits
 
+
+docs/src/examples/scripts/imaging.rst
+
+docs/src/examples/scripts/dprepb_rsexecute_pipeline.rst
+
+docs/src/examples/scripts/imaging_sim2.rst
+
+docs/src/examples/scripts/primary_beam_zernikes.rst
+
+examples/scripts/random_zernikes.png
+
+examples/scripts/dprepb_rsexecute_pipeline.txt
+
+examples/scripts/imaging.txt
+
+examples/scripts/imaging_sim2.txt
+
+examples/scripts/primary_beam_zernikes.txt

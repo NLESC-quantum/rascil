@@ -13,7 +13,7 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 
 log = logging.getLogger('logger')
 
@@ -36,7 +36,7 @@ class TestConfigurations(unittest.TestCase):
     def createVis(self, config, dec=-35.0, rmax=None):
         self.config = create_named_configuration(config, rmax=rmax)
         self.phasecentre = SkyCoord(ra=+15 * u.deg, dec=dec * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_visibility(self.config, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.config, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'))

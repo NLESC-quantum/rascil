@@ -30,11 +30,9 @@ from rascil.processing_components.util import skycoord_to_lmn, simulate_point
 from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
     hadec_to_azel
 from rascil.processing_components.util.geometry import calculate_transit_time
-from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_transit_time, \
-    calculate_blockvisibility_hourangles, calculate_blockvisibility_azel
+from rascil.processing_components.util.uvw_coordinates import uvw_ha_dec
 
 log = logging.getLogger('logger')
-
 
 def vis_summary(vis: Union[Visibility, BlockVisibility]):
     """Return string summarizing the Visibility
@@ -282,7 +280,6 @@ def create_blockvisibility(config: Configuration,
         
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination
-        ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
             rtimes[itime] = stime.mjd * 86400.0 + ha * 86164.1 / (2.0 * numpy.pi)
@@ -290,12 +287,13 @@ def create_blockvisibility(config: Configuration,
             rflags[itime, ...] = 1
             
             # Loop over all pairs of antennas. Note that a2>a1
+            ant_pos = uvw_ha_dec(ants_xyz, ha, phasecentre.dec.rad)
             for a1 in range(nants):
                 rweight[itime, a1, a1, ...] = 0.0
                 rflags[itime, a1, a1, ...] = 1.0
                 for a2 in range(a1 + 1, nants):
-                    ruvw[itime, a2, a1, :] = (ant_pos[a2, :] - ant_pos[a1, :])
-                    ruvw[itime, a1, a2, :] = (ant_pos[a1, :] - ant_pos[a2, :])
+                    ruvw[itime, a2, a1, :] = ant_pos[a2, :] - ant_pos[a1, :]
+                    ruvw[itime, a1, a2, :] = ant_pos[a1, :] - ant_pos[a2, :]
                     rflags[itime, a2, a1, ...] = 0
 
             if itime > 0:

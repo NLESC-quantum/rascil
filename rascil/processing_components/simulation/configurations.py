@@ -148,11 +148,6 @@ def create_configuration_from_MIDfile(antfile: str, location=None,
     # X Y Z Diam Station
     # 9.36976 35.48262 1052.99987 13.50 M001
     antxyz = numpy.genfromtxt(antfile, skip_header=5, usecols=[0, 1, 2], delimiter=" ")
-    
-    antxyz = xyz_at_latitude(antxyz, location.lat.rad)
-    antxyz += [location.geocentric[0].to(u.m).value,
-               location.geocentric[1].to(u.m).value,
-               location.geocentric[2].to(u.m).value]
 
     nants = antxyz.shape[0]
     assert antxyz.shape[1] == 3, "Antenna array has wrong shape %s" % antxyz.shape

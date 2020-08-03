@@ -3,6 +3,7 @@
 """
 
 __all__ = ['plot_visibility', 'plot_visibility_pol', 'find_times_above_elevation_limit', 'plot_uvcoverage',
+           'plot_uwcoverage', 'plot_vwcoverage',
            'plot_azel', 'plot_gaintable', 'plot_pointingtable', 'find_pb_width_null',
            'create_simulation_components', 'create_mid_simulation_components', 'plot_pa']
 
@@ -122,7 +123,6 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
     plt.show(block=False)
 
 
-
 def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kwargs):
     """ Standard plot of uv coverage
 
@@ -149,6 +149,70 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
             plt.plot(-u.value, -v.value, '.', color='b', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
+    plt.title(title)
+    if plot_file is not None:
+        plt.savefig(plot_file)
+    plt.show(block=False)
+
+
+def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kwargs):
+    """ Standard plot of uw coverage
+
+    :param vis_list:
+    :param plot_file:
+    :param kwargs:
+    :return:
+    """
+    
+    for ivis, vis in enumerate(vis_list):
+        u = numpy.array(vis.u[...].flat)
+        w = numpy.array(vis.w[...].flat)
+        if isinstance(vis, BlockVisibility):
+            k = (vis.frequency / constants.c).value
+            u = numpy.array(numpy.outer(u, k).flat)
+            w = numpy.array(numpy.outer(w, k).flat)
+            plt.plot(u, w, '.', color='b', markersize=0.2)
+            plt.plot(-u, -w, '.', color='b', markersize=0.2)
+        else:
+            k = vis.frequency / constants.c
+            u = u * k
+            w = w * k
+            plt.plot(u.value, w.value, '.', color='b', markersize=0.2)
+            plt.plot(-u.value, -w.value, '.', color='b', markersize=0.2)
+    plt.xlabel('U (wavelengths)')
+    plt.ylabel('W (wavelengths)')
+    plt.title(title)
+    if plot_file is not None:
+        plt.savefig(plot_file)
+    plt.show(block=False)
+
+
+def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kwargs):
+    """ Standard plot of vw coverage
+
+    :param vis_list:
+    :param plot_file:
+    :param kwargs:
+    :return:
+    """
+    
+    for ivis, vis in enumerate(vis_list):
+        v = numpy.array(vis.v[...].flat)
+        w = numpy.array(vis.w[...].flat)
+        if isinstance(vis, BlockVisibility):
+            k = (vis.frequency / constants.c).value
+            v = numpy.array(numpy.outer(v, k).flat)
+            w = numpy.array(numpy.outer(w, k).flat)
+            plt.plot(v, w, '.', color='b', markersize=0.2)
+            plt.plot(-v, -w, '.', color='b', markersize=0.2)
+        else:
+            k = vis.frequency / constants.c
+            v = v * k
+            w = w * k
+            plt.plot(v.value, w.value, '.', color='b', markersize=0.2)
+            plt.plot(-v.value, -w.value, '.', color='b', markersize=0.2)
+    plt.xlabel('V (wavelengths)')
+    plt.ylabel('W (wavelengths)')
     plt.title(title)
     if plot_file is not None:
         plt.savefig(plot_file)

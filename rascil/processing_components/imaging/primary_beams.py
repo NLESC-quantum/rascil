@@ -118,6 +118,13 @@ def create_vp(model=None, telescope='MID', pointingcentre=None, padding=4, use_l
         real_vp.data = real_vp.data + 1j * imag_vp.data
         real_vp.data /= numpy.max(numpy.abs(real_vp.data))
         return real_vp
+    elif telescope == 'MEERKAT+_B2':
+        log.debug("create_vp: Using MEERKAT+ voltage pattern")
+        real_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_real.fits'))
+        imag_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_imag.fits'))
+        real_vp.data = real_vp.data + 1j * imag_vp.data
+        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        return real_vp
     elif telescope == 'MEERKAT':
         return create_vp_generic(model, pointingcentre=pointingcentre, diameter=15.0, blockage=0.0, use_local=use_local)
     elif telescope[0:3] == 'LOW':

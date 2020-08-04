@@ -46,9 +46,7 @@ using data files in the RASCIL data repository.
 .. toctree::
    :maxdepth: 1
 
-   examples/ska_simulations/surface_simulation.rst
-   examples/ska_simulations/pointing_simulation.rst
-   examples/ska_simulations/atmospheric_simulation.rst
+   examples/ska_simulations/mid_simulation.rst
 
 * :ref:`genindex`
 * :ref:`modindex`

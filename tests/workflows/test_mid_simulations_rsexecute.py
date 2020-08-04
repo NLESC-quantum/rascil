@@ -349,9 +349,9 @@ class TestMIDSimulations(unittest.TestCase):
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.0011985935603045592, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.008178761999466974, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 4.993869071636252e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.011445473611400483, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.0008291859313487538, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 7.309357923380019e-05, 5, err_msg=str(qa))
     
     @unittest.skip("Not deterministic")
     def test_random(self):
@@ -392,6 +392,6 @@ class TestMIDSimulations(unittest.TestCase):
                                              vis_polarisation_frame=PolarisationFrame("linear"))
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.0002831752169012511, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.00033531720328630637, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 6.809906386062164e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.0001622512379953144, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.00020435570818205958, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 6.285864254427538e-06, 5, err_msg=str(qa))

@@ -74,11 +74,11 @@ def create_configuration_from_file(antfile: str, location: EarthLocation = None,
 
     antxyz = numpy.genfromtxt(antfile, delimiter=",")
     assert antxyz.shape[1] == 3, ("Antenna array has wrong shape %s" % antxyz.shape)
-    latitude = location.geodetic[1].to(u.rad).value
-    antxyz = xyz_at_latitude(antxyz, latitude)
-    antxyz += [location.geocentric[0].to(u.m).value,
-               location.geocentric[1].to(u.m).value,
-               location.geocentric[2].to(u.m).value]
+    # latitude = location.geodetic[1].to(u.rad).value
+    # antxyz = xyz_at_latitude(antxyz, latitude)
+    # antxyz += [location.geocentric[0].to(u.m).value,
+    #            location.geocentric[1].to(u.m).value,
+    #            location.geocentric[2].to(u.m).value]
     
     nants = antxyz.shape[0]
     diameters = diameter * numpy.ones(nants)
@@ -148,11 +148,6 @@ def create_configuration_from_MIDfile(antfile: str, location=None,
     # X Y Z Diam Station
     # 9.36976 35.48262 1052.99987 13.50 M001
     antxyz = numpy.genfromtxt(antfile, skip_header=5, usecols=[0, 1, 2], delimiter=" ")
-    
-    antxyz = xyz_at_latitude(antxyz, location.lat.rad)
-    antxyz += [location.geocentric[0].to(u.m).value,
-               location.geocentric[1].to(u.m).value,
-               location.geocentric[2].to(u.m).value]
 
     nants = antxyz.shape[0]
     assert antxyz.shape[1] == 3, "Antenna array has wrong shape %s" % antxyz.shape
@@ -230,6 +225,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         LOWBD2-core
         LOW == LOWR3
         MID == MIDR5
+        MEERKAT+
         ASKAP
         LOFAR
         VLAA
@@ -252,7 +248,8 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     check_data_directory()
 
     low_location = EarthLocation(lon=116.76444824*u.deg, lat=-26.824722084*u.deg, height=300.0)
-    mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=0.0)
+    mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=1053.000000)
+    meerkat_location = EarthLocation(lon=21.44388889*u.deg, lat=-30.7110565*u.deg, height=1086.6)
     if name == 'LOWBD2':
         location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
@@ -286,6 +283,12 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid.cfg"),
                                                vp_type={"M0":"MEERKAT", "SKA":"MID"},
             mount='azel', name=name, location=location, **kwargs)
+    elif name == 'MEERKAT+':
+        location = meerkat_location
+        log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/mkatplus.cfg"),
+                                               vp_type={"m0": "MEERKAT", "s0": "MID"},
+                                               mount='azel', name=name, location=location, **kwargs)
     elif name == 'ASKAP':
         location = EarthLocation(lon=+116.6356824*u.deg, lat=-26.7013006*u.deg, height=377.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))

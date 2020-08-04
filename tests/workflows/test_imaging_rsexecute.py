@@ -59,11 +59,11 @@ class TestImaging(unittest.TestCase):
                     makegcfcf=False):
         
         self.npixel = 256
-        self.low = create_named_configuration('LOWBD2', rmax=300.0)
+        self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = freqwin
         self.bvis_list = list()
         self.ntimes = 5
-        self.cellsize = 0.001
+        self.cellsize = 0.0005
         # Choose the interval so that the maximum change in w is smallish
         integration_time = numpy.pi * (24 / (12 * 60))
         self.times = numpy.linspace(-integration_time * (self.ntimes // 2), integration_time * (self.ntimes // 2),
@@ -140,14 +140,14 @@ class TestImaging(unittest.TestCase):
         self.components = self.components_list[centre]
         
         if makegcfcf:
-            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=51, wstep=16.0,
+            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=101, wstep=8.0,
                                                             oversampling=4,
                                                             support=64,
                                                             use_aaf=True)]
             self.gcfcf_clipped = [(self.gcfcf[0][0], apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
                                                                                             fractional_level=1e-3))]
             
-            self.gcfcf_joint = [create_awterm_convolutionfunction(self.model, nw=11, wstep=16.0,
+            self.gcfcf_joint = [create_awterm_convolutionfunction(self.model, nw=21, wstep=8.0,
                                                                   oversampling=4,
                                                                   support=64,
                                                                   use_aaf=True)]
@@ -249,7 +249,7 @@ class TestImaging(unittest.TestCase):
     @unittest.skip("Facets need overlap")
     def test_predict_facets_wstack(self):
         self.actualSetUp()
-        self._predict_base(context='facets_wstack', fluxthreshold=15.0, facets=8, vis_slices=51)
+        self._predict_base(context='facets_wstack', fluxthreshold=15.0, facets=8, vis_slices=101)
     
     def test_predict_timeslice(self):
         self.actualSetUp()
@@ -262,12 +262,12 @@ class TestImaging(unittest.TestCase):
     
     def test_predict_wprojection(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=4.1,
+        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=5.0,
                            gcfcf=self.gcfcf)
     
     def test_predict_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=4.1,
+        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=5.0,
                            gcfcf=self.gcfcf_clipped)
     
     def test_predict_wstack(self):
@@ -445,8 +445,8 @@ class TestImaging(unittest.TestCase):
                                  (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.01765642693884) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.15210157431819687) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13900620710891567) < 1e-7, str(qa)
     
     def test_restored_list_noresidual(self):
         self.actualSetUp(zerow=True)
@@ -486,8 +486,8 @@ class TestImaging(unittest.TestCase):
                                  (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_4facets_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.01765642693884) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.15210157431819687) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13900620710891565) < 1e-7, str(qa)
         
         restored_4facets_image_list[centre].data -= restored_1facets_image_list[centre].data
         if self.persist:
@@ -510,7 +510,7 @@ class TestImaging(unittest.TestCase):
             qa = qa_image(r[0])
             assert numpy.abs(qa.data['max'] - 0.15513038832438183) < 1.0, str(qa)
             assert numpy.abs(qa.data['min'] + 0.4607090445091728) < 1.0, str(qa)
-            assert numpy.abs(r[1] - 65565.) < 1e-7, r
+            assert numpy.abs(r[1] - 415950.) < 1e-7, r
 
 
 if __name__ == '__main__':

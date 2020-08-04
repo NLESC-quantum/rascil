@@ -196,13 +196,13 @@ def calculate_residual_from_gaintables_rsexecute_workflow(bvis_list, components,
                                                           **kwargs):
     """ Calculate residual between two gaintables
     
-    :param bvis_list: 
+    :param bvis_list:
     :param components:
-    :param model_list: 
-    :param no_error_gtl: 
-    :param error_gtl: 
-    :param kwargs: 
-    :return: 
+    :param model_list:
+    :param no_error_gtl:
+    :param error_gtl:
+    :param kwargs:
+    :return:
     """
     error_dirty_list = \
         calculate_residual_dft_rsexecute_workflow(bvis_list, components, model_list, error_gtl)
@@ -344,7 +344,7 @@ def calculate_residual_dft_rsexecute_workflow(sub_bvis_list, sub_components, sub
 
 
 def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
-                                                                  sub_components,
+                                                           sub_components,
                                                                   sub_model_list,
                                                                   no_error_gt_list,
                                                                   error_gt_list,
@@ -451,7 +451,8 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
     # One pointing table per visibility
     
     error_gt_list = [
-        rsexecute.execute(create_gaintable_from_screen)(vis, sub_components,
+        rsexecute.execute(create_gaintable_from_screen)(vis,
+                                                        sub_components,
                                                         r0=r0,
                                                         screen=screen, height=height,
                                                         type_atmosphere=type_atmosphere,
@@ -473,7 +474,8 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
     return no_error_gt_list, error_gt_list
 
 
-def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_components,
+def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list,
+                                                        sub_components,
                                                         sub_vp_list,
                                                         use_radec=False,
                                                         pointing_error=0.0,
@@ -568,7 +570,8 @@ def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_compo
 
 
 def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
-                                                       sub_components, vp_directory,
+                                                       sub_components,
+                                                       vp_directory,
                                                        use_radec=False,
                                                        elevation_sampling=5.0, show=False,
                                                        basename=''):
@@ -729,15 +732,17 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
     
     def find_vp_actual(bvis, band) -> List[Image]:
         vp_types = numpy.unique(bvis.configuration.vp_type)
-        telescope = "MID_FEKO_{}".format(band)
-        vp = create_vp(telescope=telescope)
-        vp = normalise_vp(vp)
-        vp_list = [vp]
+        vp_list = []
         for vp_type in vp_types:
             if vp_type == "MEERKAT":
-                vp = create_vp_generic(vp, diameter=15.0)
-                vp = normalise_vp(vp)
-                vp_list.append(vp)
+                vp = create_vp(telescope="MEERKAT+_{band}".format(band=band))
+            elif vp_type == "MID":
+                vp = create_vp(telescope="MID_FEKO_{band}".format(band=band))
+            else:
+                raise ValueError("Voltage pattern {} not known".format(vp_type))
+            vp = normalise_vp(vp)
+            vp_list.append(vp)
+
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list
     
@@ -771,7 +776,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
 
 
 def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range, time_chunk, integration_time,
-                                                      polarisation_frame=None, zerow=False):
+                                                      polarisation_frame=None, zerow=False, configuration='MID'):
     """ Create the standard MID simulation
     
     :param band: B1, B2, or Ku
@@ -800,17 +805,17 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
         raise ValueError("Unknown band %s" % band)
     
     channel_bandwidth = numpy.array([1e7])
-    
-    mid_location = EarthLocation(lon=21.443803*u.deg, lat=-30.712925*u.deg, height=0.0)
-    
+
+    mid = create_named_configuration(configuration, rmax=rmax)
+
     # Do each time_chunk in parallel
     start_times = numpy.arange(time_range[0] * 3600, time_range[1] * 3600, time_chunk)
     end_times = start_times + time_chunk
     
-    start_times = find_times_above_elevation_limit(start_times, end_times,
-                                                   location=mid_location,
-                                                   phasecentre=phasecentre,
-                                                   elevation_limit=15.0)
+    # start_times = find_times_above_elevation_limit(start_times, end_times,
+    #                                                location=mid.location,
+    #                                                phasecentre=phasecentre,
+    #                                                elevation_limit=15.0)
     times = [numpy.arange(start_times[itime], end_times[itime], integration_time) for
              itime in range(len(start_times))]
     
@@ -822,8 +827,6 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     assert ntimes > 0, "No data above elevation limit"
     
     # print('%d integrations of duration %.1f s processed in %d chunks' % (ntimes, integration_time, nchunks))
-    
-    mid = create_named_configuration("MID", rmax=rmax)
     
     bvis_graph = [
         rsexecute.execute(create_blockvisibility)(mid, rtimes[itime], frequency=frequency,

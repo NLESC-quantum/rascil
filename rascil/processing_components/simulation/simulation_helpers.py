@@ -3,8 +3,9 @@
 """
 
 __all__ = ['plot_visibility', 'plot_visibility_pol', 'find_times_above_elevation_limit', 'plot_uvcoverage',
+           'plot_uwcoverage', 'plot_vwcoverage',
            'plot_azel', 'plot_gaintable', 'plot_pointingtable', 'find_pb_width_null',
-           'create_simulation_components', 'plot_pa']
+           'create_simulation_components', 'create_mid_simulation_components', 'plot_pa']
 
 import logging
 
@@ -122,7 +123,6 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
     plt.show(block=False)
 
 
-
 def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kwargs):
     """ Standard plot of uv coverage
 
@@ -140,7 +140,6 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
             u = numpy.array(numpy.outer(u, k).flat)
             v = numpy.array(numpy.outer(v, k).flat)
             plt.plot(u, v, '.', color='b', markersize=0.2)
-            plt.plot(-u, -v, '.', color='b', markersize=0.2)
         else:
             k = vis.frequency / constants.c
             u = u * k
@@ -149,6 +148,68 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
             plt.plot(-u.value, -v.value, '.', color='b', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
+    plt.title(title)
+    if plot_file is not None:
+        plt.savefig(plot_file)
+    plt.show(block=False)
+
+
+def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kwargs):
+    """ Standard plot of uw coverage
+
+    :param vis_list:
+    :param plot_file:
+    :param kwargs:
+    :return:
+    """
+    
+    for ivis, vis in enumerate(vis_list):
+        u = numpy.array(vis.u[...].flat)
+        w = numpy.array(vis.w[...].flat)
+        if isinstance(vis, BlockVisibility):
+            k = (vis.frequency / constants.c).value
+            u = numpy.array(numpy.outer(u, k).flat)
+            w = numpy.array(numpy.outer(w, k).flat)
+            plt.plot(u, w, '.', color='b', markersize=0.2)
+        else:
+            k = vis.frequency / constants.c
+            u = u * k
+            w = w * k
+            plt.plot(u.value, w.value, '.', color='b', markersize=0.2)
+            plt.plot(-u.value, -w.value, '.', color='b', markersize=0.2)
+    plt.xlabel('U (wavelengths)')
+    plt.ylabel('W (wavelengths)')
+    plt.title(title)
+    if plot_file is not None:
+        plt.savefig(plot_file)
+    plt.show(block=False)
+
+
+def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kwargs):
+    """ Standard plot of vw coverage
+
+    :param vis_list:
+    :param plot_file:
+    :param kwargs:
+    :return:
+    """
+    
+    for ivis, vis in enumerate(vis_list):
+        v = numpy.array(vis.v[...].flat)
+        w = numpy.array(vis.w[...].flat)
+        if isinstance(vis, BlockVisibility):
+            k = (vis.frequency / constants.c).value
+            v = numpy.array(numpy.outer(v, k).flat)
+            w = numpy.array(numpy.outer(w, k).flat)
+            plt.plot(v, w, '.', color='b', markersize=0.2)
+        else:
+            k = vis.frequency / constants.c
+            v = v * k
+            w = w * k
+            plt.plot(v.value, w.value, '.', color='b', markersize=0.2)
+            plt.plot(-v.value, -w.value, '.', color='b', markersize=0.2)
+    plt.xlabel('V (wavelengths)')
+    plt.ylabel('W (wavelengths)')
     plt.title(title)
     if plot_file is not None:
         plt.savefig(plot_file)
@@ -477,3 +538,80 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
                                     equinox='J2000')
     
     return original_components, offset_direction
+
+
+def create_mid_simulation_components(phasecentre, frequency, flux_limit,
+                                 pbradius, pb_npixel, pb_cellsize, show=False, fov=10,
+                                 polarisation_frame=PolarisationFrame("stokesI"),
+                                 filter_by_primary_beam=True, flux_max=10.0):
+    """ Construct components for simulation
+
+    :param context: singlesource or null or s3sky
+    :param phasecentre: Centre of components
+    :param frequency: Frequency
+    :param pbtype: Type of primary beam
+    :param offset_dir: Offset in ra, dec degrees
+    :param flux_limit: Lower limit flux
+    :param pbradius: Radius of components in radians
+    :param pb_npixel: Number of pixels in the primary beam model
+    :param pb_cellsize: Cellsize in primary beam model
+    :param fov: FOV in degrees (used to select catalog)
+    :param flux_max: Maximum flux in model before application of primary beam
+    :param filter_by_primary_beam: Filter components by primary beam
+    :param polarisation_frame:
+    :param show:
+
+    :return:
+    """
+    
+    # Make a skymodel from S3
+    max_flux = 0.0
+    total_flux = 0.0
+    log.info("create_simulation_components: Constructing s3sky components")
+    from rascil.processing_components.simulation import create_test_skycomponents_from_s3
+    
+    all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 100.0,
+                                                       phasecentre=phasecentre,
+                                                       polarisation_frame=polarisation_frame,
+                                                       frequency=numpy.array(frequency),
+                                                       radius=pbradius,
+                                                       fov=fov)
+    original_components = filter_skycomponents_by_flux(all_components, flux_max=flux_max)
+    log.info("create_simulation_components: %d components before application of primary beam" %
+             (len(original_components)))
+    
+    if filter_by_primary_beam:
+        pbmodel = create_image(npixel=pb_npixel,
+                               cellsize=pb_cellsize,
+                               phasecentre=phasecentre,
+                               frequency=frequency,
+                               polarisation_frame=PolarisationFrame("stokesI"))
+        stokesi_components = [copy_skycomponent(o) for o in original_components]
+        for s in stokesi_components:
+            s.flux = s.flux[:, 0][..., numpy.newaxis]
+            s.polarisation_frame = PolarisationFrame("stokesI")
+        
+        pb = create_pb(pbmodel, "MID_GAUSS", pointingcentre=phasecentre, use_local=False)
+        pb_applied_components = [copy_skycomponent(c) for c in stokesi_components]
+        pb_applied_components = apply_beam_to_skycomponent(pb_applied_components, pb)
+        filtered_components = []
+        for icomp, comp in enumerate(pb_applied_components):
+            if comp.flux[0, 0] > flux_limit:
+                total_flux += comp.flux[0, 0]
+                if abs(comp.flux[0, 0]) > max_flux:
+                    max_flux = abs(comp.flux[0, 0])
+                filtered_components.append(original_components[icomp])
+        log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
+                 (len(filtered_components), flux_limit))
+        log.info("create_simulation_components: Strongest components is %g (Jy)" % max_flux)
+        log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)
+        original_components = [copy_skycomponent(c) for c in filtered_components]
+        if show:
+            plt.clf()
+            show_image(pb, components=original_components)
+            plt.show(block=False)
+    
+    log.info("create_simulation_components: Created %d components" % len(original_components))
+    
+    return original_components
+

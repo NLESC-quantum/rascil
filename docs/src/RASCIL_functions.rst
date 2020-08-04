@@ -1,36 +1,8 @@
+.. Functions
+
 
 .. toctree::
    :maxdepth: 2
-
-Structure
-*********
-
-Those familiar with other calibration and imaging packages will find the following information useful in navigating the
-RASCIL. Not all functions are listed here but are contained in the API.
-
-The long form of the name is given for all entries but all function names are unique so a given function can be
-accessed using the very top level import::
-
-   import rascil.data_models
-   import rascil.processing_components
-   import rascil.workflows
-
-
-Data containers used by RASCIL
-==============================
-
-RASCIL holds data in python Classes. The bulk data is usually kept in a python structured array, and the meta data as
-attributes.
-
-See :py:mod:`rascil.data_models.memory_data_models` for the following definitions:
-
-* Image (data and WCS header): :py:class:`rascil.data_models.memory_data_models.Image`
-* Skycomponent (data for a point source or a Gaussian source): :py:class:`rascil.data_models.memory_data_models.Skycomponent`
-* SkyModel (collection of SkyComponents and Images): :py:class:`rascil.data_models.memory_data_models.SkyModel`
-* Antenna-based visibility table, shape (nants, nants, nchan, npol), length ntime): :py:class:`rascil.data_models.memory_data_models.BlockVisibility`
-* Baseline based visibility tables shape (npol,), length nvis :py:class:`rascil.data_models.memory_data_models.Visibility`
-* Telescope Configuration: :py:class:`rascil.data_models.memory_data_models.Configuration`
-* GainTable for gain solutions (as e.g. output from solve_gaintable): :py:class:`rascil.data_models.memory_data_models.GainTable`
 
 Functions
 =========
@@ -105,7 +77,7 @@ Image
 * Image operations: :py:func:`rascil.processing_components.image.operations`
 * Import from FITS: :py:func:`rascil.processing_components.image.operations.import_image_from_fits`
 * Export from FITS: :py:func:`rascil.processing_components.image.operations.export_image_to_fits`
-* Reproject coordinate system: :py:func:`rascil.processing_components.image.operations.reproject_image`
+* Re-project coordinate system: :py:func:`rascil.processing_components.image.operations.reproject_image`
 * Smooth image: :py:func:`rascil.processing_components.image.operations.smooth_image`
 * FFT: :py:func:`rascil.processing_components.image.operations.fft_image`
 * Remove continuum: :py:func:`rascil.processing_components.image.operations.remove_continuum_image`
@@ -122,43 +94,6 @@ Visibility
 * Remove continuum: :py:func:`rascil.processing_components.visibility.operations.remove_continuum_blockvisibility`
 * Integrate across channels: :py:func:`rascil.processing_components.visibility.operations.integrate_visibility_by_channel`
 * Coalesce (i.e. BDA) :py:func:`rascil.processing_components.visibility.coalesce.coalesce_visibility`
-* Decoalesce (i.e. BDA) :py:func:`rascil.processing_components.visibility.coalesce.decoalesce_visibility`
-
-Workflows
-=========
-
-Workflows coordinate processing using the data models, processing components, and processing library. These are high
-level functions, and are available in an rsexecute (i.e. dask) version and sometimes a scalar version.
-
-Calibration workflows
----------------------
-
-* Calibrate workflow: :py:func:`rascil.workflows.rsexecute.calibration.calibrate_list_rsexecute_workflow`
-
-
-Imaging workflows
------------------
-
-* Invert: :py:func:`rascil.workflows.rsexecute.imaging.invert_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.imaging.invert_list_serial_workflow`
-* Predict: :py:func:`rascil.workflows.rsexecute.imaging.predict_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.imaging.predict_list_serial_workflow`
-* Deconvolve: :py:func:`rascil.workflows.rsexecute.imaging.deconvolve_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.imaging.deconvolve_list_serial_workflow`
-
-Pipeline workflows
-------------------
-
-* ICAL: :py:func:`rascil.workflows.rsexecute.pipelines.ical_list_rsexecute_workflow`
-* Continuum imaging: :py:func:`rascil.workflows.rsexecute.pipelines.continuum_imaging_list_rsexecute_workflow`
-* Spectral line imaging: :py:func:`rascil.workflows.rsexecute.pipelines.spectral_line_imaging_list_rsexecute_workflow`
-* MPCCAL: :py:func:`rascil.workflows.rsexecute.pipelines.mpccal_skymodel_list_rsexecute_workflow`
-
-Simulation workflows
---------------------
-
-* Testing and simulation support: :py:func:`rascil.workflows.rsexecute.simulation.simulate_list_rsexecute_workflow`
-Execution
----------
-
-* Execution framework (an interface to Dask): :py:func:`rascil.workflows.rsexecute.execution_support`
-
+* De-coalesce (i.e. BDA) :py:func:`rascil.processing_components.visibility.coalesce.decoalesce_visibility`
 
 

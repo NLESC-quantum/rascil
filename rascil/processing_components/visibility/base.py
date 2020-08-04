@@ -149,7 +149,7 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
             
             # TODO: optimise loop
             # Loop over all pairs of antennas. Note that a2>a1
-            ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
+            ant_pos = uvw_ha_dec(ants_xyz, ha, phasecentre.dec.rad)
             for a1 in range(nants):
                 for a2 in range(a1 + 1, nants):
                     rantenna1[row:row + nch] = a1
@@ -199,7 +199,7 @@ def create_blockvisibility(config: Configuration,
                            integration_time=1.0,
                            channel_bandwidth=1e6,
                            zerow=False,
-                           elevation_limit=None,
+                           elevation_limit=15.0 * numpy.pi / 180.0,
                            source='unknown',
                            meta=None,
                            utc_time=None,
@@ -295,6 +295,7 @@ def create_blockvisibility(config: Configuration,
                     ruvw[itime, a2, a1, :] = ant_pos[a2, :] - ant_pos[a1, :]
                     ruvw[itime, a1, a2, :] = ant_pos[a1, :] - ant_pos[a2, :]
                     rflags[itime, a2, a1, ...] = 0
+                    rflags[itime, a1, a2, ...] = 1
 
             if itime > 0:
                 rintegrationtime[itime] = rtimes[itime] - rtimes[itime - 1]

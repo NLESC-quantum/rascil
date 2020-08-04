@@ -140,7 +140,6 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
             u = numpy.array(numpy.outer(u, k).flat)
             v = numpy.array(numpy.outer(v, k).flat)
             plt.plot(u, v, '.', color='b', markersize=0.2)
-            plt.plot(-u, -v, '.', color='b', markersize=0.2)
         else:
             k = vis.frequency / constants.c
             u = u * k
@@ -172,7 +171,6 @@ def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kw
             u = numpy.array(numpy.outer(u, k).flat)
             w = numpy.array(numpy.outer(w, k).flat)
             plt.plot(u, w, '.', color='b', markersize=0.2)
-            plt.plot(-u, -w, '.', color='b', markersize=0.2)
         else:
             k = vis.frequency / constants.c
             u = u * k
@@ -204,7 +202,6 @@ def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kw
             v = numpy.array(numpy.outer(v, k).flat)
             w = numpy.array(numpy.outer(w, k).flat)
             plt.plot(v, w, '.', color='b', markersize=0.2)
-            plt.plot(-v, -w, '.', color='b', markersize=0.2)
         else:
             k = vis.frequency / constants.c
             v = v * k

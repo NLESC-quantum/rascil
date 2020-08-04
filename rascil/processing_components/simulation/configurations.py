@@ -74,11 +74,11 @@ def create_configuration_from_file(antfile: str, location: EarthLocation = None,
 
     antxyz = numpy.genfromtxt(antfile, delimiter=",")
     assert antxyz.shape[1] == 3, ("Antenna array has wrong shape %s" % antxyz.shape)
-    latitude = location.geodetic[1].to(u.rad).value
-    antxyz = xyz_at_latitude(antxyz, latitude)
-    antxyz += [location.geocentric[0].to(u.m).value,
-               location.geocentric[1].to(u.m).value,
-               location.geocentric[2].to(u.m).value]
+    # latitude = location.geodetic[1].to(u.rad).value
+    # antxyz = xyz_at_latitude(antxyz, latitude)
+    # antxyz += [location.geocentric[0].to(u.m).value,
+    #            location.geocentric[1].to(u.m).value,
+    #            location.geocentric[2].to(u.m).value]
     
     nants = antxyz.shape[0]
     diameters = diameter * numpy.ones(nants)

@@ -445,8 +445,8 @@ class TestImaging(unittest.TestCase):
                                  (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.01087581913858) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.15484205673668028) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13900620710891567) < 1e-7, str(qa)
     
     def test_restored_list_noresidual(self):
         self.actualSetUp(zerow=True)
@@ -486,8 +486,8 @@ class TestImaging(unittest.TestCase):
                                  (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_4facets_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.01087581913856) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.1548420567366809) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13900620710891565) < 1e-7, str(qa)
         
         restored_4facets_image_list[centre].data -= restored_1facets_image_list[centre].data
         if self.persist:
@@ -510,7 +510,7 @@ class TestImaging(unittest.TestCase):
             qa = qa_image(r[0])
             assert numpy.abs(qa.data['max'] - 0.15513038832438183) < 1.0, str(qa)
             assert numpy.abs(qa.data['min'] + 0.4607090445091728) < 1.0, str(qa)
-            assert numpy.abs(r[1] - 65565.) < 1e-7, r
+            assert numpy.abs(r[1] - 415950.) < 1e-7, r
 
 
 if __name__ == '__main__':

@@ -254,7 +254,7 @@ def create_blockvisibility(config: Configuration,
     
     assert ntimes > 0, "No unflagged points"
     if elevation_limit is not None:
-        log.info('create_visibility: flagged %d/%d times below elevation limit %f (rad)' %
+        log.info('create_blockvisibility: flagged %d/%d times below elevation limit %f (rad)' %
                  (n_flagged, ntimes, elevation_limit))
     else:
         log.debug('create_blockvisibility: created %d times' % (ntimes))

@@ -1,12 +1,4 @@
-"""Simulation of the effect of errors on MID observations
-
-This measures the change in a dirty imagethe induced by various errors:
-    - The sky can be a point source at the half power point or a realistic sky constructed from S3-SEX catalog.
-    - The observation is by MID over a range of hour angles
-    - Processing can be divided into chunks of time (default 1800s)
-    - Dask is used to distribute the processing over a number of workers.
-    - Various plots are produced, The primary output is a csv file containing information about the statistics of
-    the residual images.
+"""Time creation and writing of MeasurementSet
 
 """
 import logging
@@ -38,13 +30,11 @@ def simulation(args):
     if args.duration == "short":
         integration_time = 1.0
         time_range = [-180.0 / 3600.0, 180.0 / 3600.0]
-        time_chunk = 12.0
     elif args.duration == "medium":
         integration_time = 10.0
         time_range = [-0.5, 0.5]
-        time_chunk = 100.0
     elif args.duration == "long":
-        integration_time = 60.0
+        integration_time = 10.0
         time_range = [-4.0, 4.0]
     else:
         args.duration = "custom"

@@ -13,7 +13,7 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 
 log = logging.getLogger('logger')
 
@@ -36,13 +36,13 @@ class TestConfigurations(unittest.TestCase):
     def createVis(self, config, dec=-35.0, rmax=None):
         self.config = create_named_configuration(config, rmax=rmax)
         self.phasecentre = SkyCoord(ra=+15 * u.deg, dec=dec * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_visibility(self.config, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.config, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_named_configurations(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LOWBD1', 'LOWR3', 'ASKAP', 'MID', 'MIDR5']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LOWBD1', 'LOWR3', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.size() > 0.0
             #print("Config ", config, " has centre", self.config.location.geodetic)
@@ -50,13 +50,23 @@ class TestConfigurations(unittest.TestCase):
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
             self.createVis(config, +35.0)
             assert self.config.size() > 0.0
+            assert len(self.config.vp_type) == len(self.config.names)
 
     
-    def test_SKA_configurations(self):
-        for config in ['MID', 'MIDR5', 'LOW', 'LOWR3']:
+    def test_SKA_MID_configurations(self):
+        for config in ['MID', 'MIDR5']:
             self.config = create_named_configuration(config)
             assert self.config.size() > 0.0
-    
+            assert len(self.config.vp_type) == len(self.config.names)
+            assert "MEERKAT" in numpy.unique(self.config.vp_type)
+            assert "MID" in numpy.unique(self.config.vp_type)
+
+    def test_SKA_LOW_configurations(self):
+        for config in ['LOW', 'LOWR3']:
+            self.config = create_named_configuration(config)
+            assert self.config.size() > 0.0
+            assert "LOW" in numpy.unique(self.config.vp_type)
+
     def test_clip_configuration(self):
         for rmax in [100.0, 3000.0, 1000.0, 3000.0, 10000.0, 30000.0, 100000.0]:
             self.config = create_named_configuration('LOWBD2', rmax=rmax)

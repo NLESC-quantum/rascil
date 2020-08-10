@@ -10,26 +10,30 @@ This measures the change in a dirty imagethe induced by various errors:
 
 """
 import logging
+import numpy
 import os
 import sys
 import unittest
-
-import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from rascil.data_models import PolarisationFrame, SkyModel
 from rascil.data_models.parameters import rascil_path, rascil_data_path
-from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image.operations import qa_image, export_image_to_fits
+from rascil.processing_components.image.operations import qa_image, export_image_to_fits, import_image_from_fits
 from rascil.processing_components.imaging.base import create_image_from_visibility, advise_wide_field
 from rascil.processing_components.imaging.primary_beams import create_vp
 from rascil.processing_components.simulation.simulation_helpers import find_pb_width_null, create_simulation_components
+from rascil.processing_components.visibility import copy_visibility, export_blockvisibility_to_ms, \
+    concatenate_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.workflows.rsexecute.imaging.imaging_rsexecute import weight_list_rsexecute_workflow
+from rascil.workflows.rsexecute.imaging.imaging_rsexecute import weight_list_rsexecute_workflow, \
+    sum_predict_results_rsexecute, subtract_list_rsexecute_workflow, invert_list_rsexecute_workflow
 from rascil.workflows.rsexecute.simulation.simulation_rsexecute import \
-    calculate_residual_from_gaintables_rsexecute_workflow, create_surface_errors_gaintable_rsexecute_workflow, \
+    create_surface_errors_gaintable_rsexecute_workflow, \
     create_pointing_errors_gaintable_rsexecute_workflow, create_standard_mid_simulation_rsexecute_workflow, \
-    create_polarisation_gaintable_rsexecute_workflow
+    create_polarisation_gaintable_rsexecute_workflow, create_heterogeneous_gaintable_rsexecute_workflow, \
+    create_atmospheric_errors_gaintable_rsexecute_workflow
+from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymodel_list_rsexecute_workflow
 
 results_dir = rascil_path('test_results')
 
@@ -40,13 +44,13 @@ mpl_logger = logging.getLogger("matplotlib")
 mpl_logger.setLevel(logging.WARNING)
 
 
-class TestPointingSimulation(unittest.TestCase):
+class TestMIDSimulations(unittest.TestCase):
     
     def setUp(self) -> None:
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        rsexecute.set_client(use_dask=True)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
     
-    def simulation(self, args, time_series='wind', band='B2',
+    def simulation(self, args, mode='wind_pointing', band='B2',
                    image_polarisation_frame=PolarisationFrame("stokesI"),
                    vis_polarisation_frame=PolarisationFrame("stokesI")):
         
@@ -57,12 +61,12 @@ class TestPointingSimulation(unittest.TestCase):
         integration_time = args.integration_time
         time_range = args.time_range
         time_chunk = args.time_chunk
-        offset_dir = args.offset_dir
+        offset_dir = [1.0, 0.0]
         pbtype = args.pbtype
         pbradius = args.pbradius
         rmax = args.rmax
         flux_limit = args.flux_limit
-        npixel = args.npixel
+        npixel = 1024
         vp_directory = args.vp_directory
         
         # Simulation specific parameters
@@ -86,10 +90,10 @@ class TestPointingSimulation(unittest.TestCase):
         
         phasecentre = SkyCoord(ra=ra * u.deg, dec=declination * u.deg, frame='icrs', equinox='J2000')
         
-        bvis_graph = create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range, time_chunk,
-                                                                       integration_time,
-                                                                       polarisation_frame=vis_polarisation_frame)
-        future_bvis_list = rsexecute.persist(bvis_graph)
+        bvis_list = create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range, time_chunk,
+                                                                      integration_time,
+                                                                      polarisation_frame=vis_polarisation_frame)
+        bvis_list = rsexecute.persist(bvis_list)
         
         # We need the HWHM of the primary beam, and the location of the nulls
         HWHM_deg, null_az_deg, null_el_deg = find_pb_width_null(pbtype, frequency)
@@ -98,7 +102,7 @@ class TestPointingSimulation(unittest.TestCase):
         
         FOV_deg = 8.0 * 1.36e9 / frequency[0]
         
-        advice_list = rsexecute.execute(advise_wide_field)(future_bvis_list[0], guard_band_image=1.0, delA=0.02,
+        advice_list = rsexecute.execute(advise_wide_field)(bvis_list[0], guard_band_image=1.0, delA=0.02,
                                                            verbose=False)
         advice = rsexecute.compute(advice_list, sync=True)
         pb_npixel = 256
@@ -119,21 +123,21 @@ class TestPointingSimulation(unittest.TestCase):
                                                                    nchan=nfreqwin, cellsize=pb_cellsize,
                                                                    phasecentre=phasecentre,
                                                                    polarisation_frame=image_polarisation_frame,
-                                                                   override_cellsize=False) for bv in future_bvis_list]
+                                                                   override_cellsize=False) for bv in bvis_list]
         vp_list = [rsexecute.execute(create_vp)(vp, pbtype, pointingcentre=phasecentre, use_local=not use_radec)
                    for vp in vp_list]
         future_vp_list = rsexecute.persist(vp_list)
         
         a2r = numpy.pi / (3600.0 * 1800)
         
-        if time_series == '':
+        if mode == 'random_pointing':
             # Random pointing errors
             global_pointing_error = global_pe
             static_pointing_error = static_pe
             pointing_error = dynamic_pe
             
             no_error_gtl, error_gtl = \
-                create_pointing_errors_gaintable_rsexecute_workflow(future_bvis_list, original_components,
+                create_pointing_errors_gaintable_rsexecute_workflow(bvis_list, original_components,
                                                                     sub_vp_list=future_vp_list,
                                                                     use_radec=use_radec,
                                                                     pointing_error=a2r * pointing_error,
@@ -141,149 +145,235 @@ class TestPointingSimulation(unittest.TestCase):
                                                                     global_pointing_error=a2r * global_pointing_error,
                                                                     seed=seed,
                                                                     show=False, basename=basename)
-        elif time_series == 'wind':
+        elif mode == 'wind_pointing':
             # Wind-induced pointing errors
             no_error_gtl, error_gtl = \
-                create_pointing_errors_gaintable_rsexecute_workflow(future_bvis_list, original_components,
+                create_pointing_errors_gaintable_rsexecute_workflow(bvis_list, original_components,
                                                                     sub_vp_list=future_vp_list,
                                                                     use_radec=use_radec,
-                                                                    time_series=time_series,
-                                                                    time_series_type='precision',
+                                                                    time_series="wind",
+                                                                    time_series_type="precision",
                                                                     seed=seed,
                                                                     show=False, basename=basename)
-        elif time_series == 'gravity':
+        elif mode == 'troposphere':
+            screen = import_image_from_fits(args.screen)
+            no_error_gtl, error_gtl = \
+                create_atmospheric_errors_gaintable_rsexecute_workflow(bvis_list,
+                                                                       original_components,
+                                                                       r0=args.r0,
+                                                                       screen=screen,
+                                                                       height=args.height,
+                                                                       type_atmosphere=args.mode,
+                                                                       show=args.show == "True",
+                                                                       basename=mode)
+        elif mode == 'ionosphere':
+            screen = import_image_from_fits(args.screen)
+            no_error_gtl, error_gtl = \
+                create_atmospheric_errors_gaintable_rsexecute_workflow(bvis_list,
+                                                                       original_components,
+                                                                       r0=args.r0,
+                                                                       screen=screen,
+                                                                       height=args.height,
+                                                                       type_atmosphere=args.mode,
+                                                                       show=args.show == "True",
+                                                                       basename=mode)
+        
+        elif mode == 'surface':
             # Dish surface sag due to gravity
             no_error_gtl, error_gtl = \
-                create_surface_errors_gaintable_rsexecute_workflow(band, future_bvis_list, original_components,
+                create_surface_errors_gaintable_rsexecute_workflow(band, bvis_list, original_components,
                                                                    vp_directory=vp_directory, use_radec=use_radec,
                                                                    show=False, basename=basename)
-        elif time_series == 'polarisation':
+        elif mode == 'heterogeneous':
+            # Different antennas
+            no_error_gtl, error_gtl = \
+                create_heterogeneous_gaintable_rsexecute_workflow(band, bvis_list, original_components,
+                                                                  use_radec=use_radec,
+                                                                  show=False, basename=basename)
+        elif mode == 'polarisation':
             # Polarised beams
             no_error_gtl, error_gtl = \
-                create_polarisation_gaintable_rsexecute_workflow(band, future_bvis_list, original_components,
-                                                                 basename="Polarisation gain table",
+                create_polarisation_gaintable_rsexecute_workflow(band, bvis_list, original_components,
+                                                                 basename=basename,
                                                                  show=False)
         else:
-            raise ValueError("Unknown type of error %s" % time_series)
+            raise ValueError("Unknown type of error %s" % mode)
+        
+        error_sm_list = [[
+            rsexecute.execute(SkyModel, nout=1)(components=[original_components[i]],
+                                                gaintable=error_gtl[ibv][i])
+            for i, _ in enumerate(original_components)] for ibv, bv in enumerate(bvis_list)]
+        
+        no_error_sm_list = [[
+            rsexecute.execute(SkyModel, nout=1)(components=[original_components[i]],
+                                                gaintable=no_error_gtl[ibv][i])
+            for i, _ in enumerate(original_components)] for ibv, bv in enumerate(bvis_list)]
+        
+        # Predict_skymodel_list_rsexecute_workflow calculates the BlockVis for each of a list of
+        # SkyModels. We want to add these across SkyModels and then concatenate BlockVis
+        error_bvis_list = [rsexecute.execute(copy_visibility)(bvis, zero=True) for bvis in bvis_list]
+        error_bvis_list = \
+            [sum_predict_results_rsexecute(predict_skymodel_list_rsexecute_workflow(bvis, error_sm_list[ibvis],
+                                                                                    docal=True, context='2d'))
+             for ibvis, bvis in enumerate(error_bvis_list)]
+        
+        no_error_bvis_list = [rsexecute.execute(copy_visibility)(bvis, zero=True) for bvis in bvis_list]
+        no_error_bvis_list = \
+            [sum_predict_results_rsexecute(predict_skymodel_list_rsexecute_workflow(bvis, no_error_sm_list[ibvis],
+                                                                                    docal=True, context='2d'))
+             for ibvis, bvis in enumerate(no_error_bvis_list)]
+        
+        error_bvis = rsexecute.execute(concatenate_visibility, nout=1)(error_bvis_list)
+        no_error_bvis = rsexecute.execute(concatenate_visibility, nout=1)(no_error_bvis_list)
+        difference_bvis = subtract_list_rsexecute_workflow([error_bvis], [no_error_bvis])
+        difference_bvis = rsexecute.execute(concatenate_visibility)(difference_bvis)
         
         # Perform uniform weighting
-        future_remodel_list = [rsexecute.execute(create_image_from_visibility)(v, npixel=npixel,
-                                                                               frequency=frequency,
-                                                                               nchan=nfreqwin, cellsize=cellsize,
-                                                                               phasecentre=offset_direction,
-                                                                               polarisation_frame=image_polarisation_frame)
-                               for v in future_bvis_list]
+        model_list = [rsexecute.execute(create_image_from_visibility)(difference_bvis, npixel=npixel,
+                                                                      frequency=frequency,
+                                                                      nchan=nfreqwin, cellsize=cellsize,
+                                                                      phasecentre=offset_direction,
+                                                                      polarisation_frame=image_polarisation_frame)]
         
-        future_bvis_list = weight_list_rsexecute_workflow(future_bvis_list, future_remodel_list)
+        bvis_list = weight_list_rsexecute_workflow([difference_bvis], model_list)
+        bvis_list = rsexecute.compute(bvis_list, sync=True)
         
         # Now make all the residual images
         # Make one image per component
-        future_model_list = [rsexecute.execute(create_image_from_visibility)(future_bvis_list[0], npixel=npixel,
-                                                                             frequency=frequency,
-                                                                             nchan=nfreqwin, cellsize=cellsize,
-                                                                             phasecentre=offset_direction,
-                                                                             polarisation_frame=image_polarisation_frame)
-                             for i, _ in enumerate(original_components)]
-        residual = \
-            calculate_residual_from_gaintables_rsexecute_workflow(future_bvis_list, original_components,
-                                                                  future_model_list,
-                                                                  no_error_gtl, error_gtl)
+        result = invert_list_rsexecute_workflow(bvis_list, model_list, context='2d')
         
         # Actually compute the graph assembled above
-        error_dirty, sumwt = rsexecute.compute(residual, sync=True)
+        error_dirty, sumwt = rsexecute.compute(result[0], sync=True)
         
-        return error_dirty, sumwt
+        if self.persist:
+            export_image_to_fits(error_dirty,
+                                 "{}/test_mid_simulations_{}_dirty.fits".format(rascil_path("test_results"), mode))
+            export_blockvisibility_to_ms("{}/test_mid_simulations_{}_difference.ms".format(rascil_path("test_results"),
+                                                                                           mode),
+                                         bvis_list)
+            return error_dirty, sumwt
     
     def get_args(self):
         
-        # Get command line inputs
         import argparse
         
-        parser = argparse.ArgumentParser(description='Simulate pointing errors')
+        parser = argparse.ArgumentParser(description='Simulate SKA-MID direction dependent errors')
+        
         parser.add_argument('--context', type=str, default='s3sky', help='s3sky or singlesource or null')
         
         # Observation definition
-        parser.add_argument('--ra', type=float, default=+15.0, help='Right ascension (degrees)')
-        parser.add_argument('--declination', type=float, default=-45.0, help='Declination (degrees)')
-        parser.add_argument('--rmax', type=float, default=2e3, help='Maximum distance of station from centre (m)')
+        parser.add_argument('--ra', type=float, default=0.0, help='Right ascension (degrees)')
+        parser.add_argument('--declination', type=float, default=-40.0, help='Declination (degrees)')
+        parser.add_argument('--rmax', type=float, default=1e3, help='Maximum distance of station from centre (m)')
         parser.add_argument('--band', type=str, default='B2', help="Band")
-        parser.add_argument('--integration_time', type=float, default=600, help='Integration time (s)')
-        parser.add_argument('--time_range', type=float, nargs=2, default=[-4.0, 4.0], help='Time range in hours')
+        parser.add_argument('--integration_time', type=float, default=3600, help='Integration time (s)')
+        parser.add_argument('--time_range', type=float, nargs=2, default=[-4.0, 4.0], help='Time range in hour angle')
+        parser.add_argument('--image_pol', type=str, default='stokesIQUV', help='RASCIL polarisation frame for image')
+        parser.add_argument('--vis_pol', type=str, default='linear',
+                            help='RASCIL polarisation frame for visibility')
         
-        parser.add_argument('--npixel', type=int, default=256, help='Number of pixels in image')
-        parser.add_argument('--use_natural', type=str, default='True', help='Use natural weighting?')
-        
-        parser.add_argument('--snapshot', type=str, default='False', help='Do snapshot only?')
-        parser.add_argument('--opposite', type=str, default='False',
-                            help='Move source to opposite side of pointing centre')
-        parser.add_argument('--offset_dir', type=float, nargs=2, default=[1.0, 0.0], help='Multipliers for null offset')
         parser.add_argument('--pbradius', type=float, default=1.5, help='Radius of sources to include (in HWHM)')
         parser.add_argument('--pbtype', type=str, default='MID', help='Primary beam model: MID or MID_GAUSS')
         parser.add_argument('--seed', type=int, default=18051955, help='Random number seed')
-        parser.add_argument('--flux_limit', type=float, default=0.3, help='Flux limit (Jy)')
+        parser.add_argument('--flux_limit', type=float, default=0.01, help='Flux limit (Jy)')
         
         # Control parameters
         parser.add_argument('--use_radec', type=str, default="False", help='Calculate in RADEC (false)?')
         parser.add_argument('--shared_directory', type=str, default=rascil_data_path('configurations'),
                             help='Location of configuration files')
+        parser.add_argument('--results', type=str, default='./', help='Directory for results')
         
+        # Noniso parameters
+        parser.add_argument('--r0', type=float, default=5e3, help='R0 (meters)')
+        parser.add_argument('--height', type=float, default=3e5, help='Height of layer (meters)')
+        parser.add_argument('--screen', type=str, default=rascil_data_path('models/test_mpc_screen.fits'),
+                            help='Location of atmospheric phase screen')
         # Dask parameters
-        parser.add_argument('--nnodes', type=int, default=1, help='Number of nodes')
-        parser.add_argument('--nthreads', type=int, default=4, help='Number of threads')
-        parser.add_argument('--memory', type=int, default=8, help='Memory per worker (GB)')
-        parser.add_argument('--nworkers', type=int, default=8, help='Number of workers')
-        parser.add_argument('--serial', type=str, default='False', help='Use serial processing?')
+        parser.add_argument('--nthreads', type=int, default=1, help='Number of threads')
+        parser.add_argument('--processes', type=int, default=1, help='Number of processes')
+        parser.add_argument('--memory', type=str, default=None, help='Memory per worker (GB)')
+        parser.add_argument('--nworkers', type=int, default=4, help='Number of workers')
+        parser.add_argument('--cores', type=int, default=4, help='Number of cores')
+        parser.add_argument('--use_dask', type=str, default='True', help='Use dask processing?')
         
         # Simulation parameters
-        parser.add_argument('--time_chunk', type=float, default=8 * 3600.0, help="Time for a chunk (s)")
-        parser.add_argument('--time_series', type=str, default='wind', help="Type of time series")
+        parser.add_argument('--time_chunk', type=float, default=3600.0, help="Time for a chunk (s)")
+        parser.add_argument('--mode', type=str, default='wind',
+                            help="Mode of simulation: wind_pointing|random_pointing|polarisation|ionosphere|" \
+                                 "troposphere|heterogeneous")
+        parser.add_argument('--duration', type=str, default='long',
+                            help="Type of duration: long or medium or short")
+        parser.add_argument('--wind_conditions', type=str, default='precision',
+                            help="SKA definition of wind conditions: precision|standard|degraded")
         parser.add_argument('--global_pe', type=float, nargs=2, default=[0.0, 0.0], help='Global pointing error')
         parser.add_argument('--static_pe', type=float, nargs=2, default=[0.0, 0.0],
                             help='Multipliers for static errors')
         parser.add_argument('--dynamic_pe', type=float, default=1.0, help='Multiplier for dynamic errors')
-        parser.add_argument('--pointing_file', type=str, default=None, help="Pointing file")
         parser.add_argument('--pointing_directory', type=str, default=rascil_data_path('models'),
-                            help='Location of pointing files')
+                            help='Location of wind PSD pointing files')
         parser.add_argument('--vp_directory', type=str, default=rascil_data_path('models/interpolated'),
-                            help='Location of pointing files')
+                            help='Location of voltage pattern files')
+        parser.add_argument('--show', type=str, default='False', help='Show details of simulation?')
+        
+        ### SLURM
+        parser.add_argument('--use_slurm', type=str, default='False', help='Use SLURM?')
+        parser.add_argument('--slurm_project', type=str, default='SKA-SDP', help='SLURM project for accounting')
+        parser.add_argument('--slurm_queue', type=str, default='compute', help='SLURM queue')
+        parser.add_argument('--slurm_walltime', type=str, default='01:00:00', help='SLURM time limit')
         
         args = parser.parse_args([])
-        
         return args
     
+    @unittest.skip("Not deterministic")
     def test_wind(self):
         
         args = self.get_args()
         args.fluxlimit = 0.1
         
-        error_dirty, sumwt = self.simulation(args, 'wind')
+        error_dirty, sumwt = self.simulation(args, 'wind_pointing')
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 2.2886082148064566e-06, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -2.6968390524143016e-06, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 5.100754674086175e-07, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.00011024929534694913, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.00011024929534694913, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 8.356611096276117e-06, 5, err_msg=str(qa))
     
+    def test_heterogeneous(self):
+        
+        args = self.get_args()
+        args.fluxlimit = 0.1
+        
+        error_dirty, sumwt = self.simulation(args, 'heterogeneous',
+                                             image_polarisation_frame=PolarisationFrame("stokesIQUV"),
+                                             vis_polarisation_frame=PolarisationFrame("linear"))
+        
+        qa = qa_image(error_dirty)
+        
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.011445473611400483, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.0008291859313487538, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 7.309357923380019e-05, 5, err_msg=str(qa))
+    
+    @unittest.skip("Not deterministic")
     def test_random(self):
         
         args = self.get_args()
         args.fluxlimit = 0.1
         
-        error_dirty, sumwt = self.simulation(args, '')
+        error_dirty, sumwt = self.simulation(args, 'random_pointing')
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 5.47318841230375e-07, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -6.253389822092476e-07, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 1.277806020206335e-07, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 3.5821163782097796e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -6.485629243186776e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 3.7233114793261304e-06, 5, err_msg=str(qa))
     
-    def test_gravity(self):
+    def test_surface(self):
         
         args = self.get_args()
         args.fluxlimit = 0.1
         
         if os.path.isdir(rascil_path('models/interpolated')):
-            error_dirty, sumwt = self.simulation(args, 'gravity')
+            error_dirty, sumwt = self.simulation(args, 'surface')
             
             qa = qa_image(error_dirty)
             
@@ -301,10 +391,7 @@ class TestPointingSimulation(unittest.TestCase):
                                              image_polarisation_frame=PolarisationFrame("stokesIQUV"),
                                              vis_polarisation_frame=PolarisationFrame("linear"))
         qa = qa_image(error_dirty)
-
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.00011758791648388429, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.0001692675354270114, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 1.337878953935504e-05, 5, err_msg=str(qa))
         
-        if self.persist:
-            export_image_to_fits(error_dirty, "{}/test_mid_simulation_polarisation.fits".format(results_dir))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.0001622512379953144, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.00020435570818205958, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 6.285864254427538e-06, 5, err_msg=str(qa))

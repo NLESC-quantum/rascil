@@ -36,7 +36,7 @@ if __name__ == '__main__':
     log = logging.getLogger()
     print("Starting ska-pipelines simulation pipeline")
     
-    rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+    rsexecute.set_client(use_dask=True)
     print(rsexecute.client)
     rsexecute.run(init_logging)
     

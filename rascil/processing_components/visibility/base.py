@@ -30,11 +30,9 @@ from rascil.processing_components.util import skycoord_to_lmn, simulate_point
 from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
     hadec_to_azel
 from rascil.processing_components.util.geometry import calculate_transit_time
-from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_transit_time, \
-    calculate_blockvisibility_hourangles, calculate_blockvisibility_azel
+from rascil.processing_components.util.uvw_coordinates import uvw_ha_dec
 
 log = logging.getLogger('logger')
-
 
 def vis_summary(vis: Union[Visibility, BlockVisibility]):
     """Return string summarizing the Visibility
@@ -151,7 +149,7 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
             
             # TODO: optimise loop
             # Loop over all pairs of antennas. Note that a2>a1
-            ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
+            ant_pos = uvw_ha_dec(ants_xyz, ha, phasecentre.dec.rad)
             for a1 in range(nants):
                 for a2 in range(a1 + 1, nants):
                     rantenna1[row:row + nch] = a1
@@ -201,7 +199,7 @@ def create_blockvisibility(config: Configuration,
                            integration_time=1.0,
                            channel_bandwidth=1e6,
                            zerow=False,
-                           elevation_limit=None,
+                           elevation_limit=15.0 * numpy.pi / 180.0,
                            source='unknown',
                            meta=None,
                            utc_time=None,
@@ -256,7 +254,7 @@ def create_blockvisibility(config: Configuration,
     
     assert ntimes > 0, "No unflagged points"
     if elevation_limit is not None:
-        log.info('create_visibility: flagged %d/%d times below elevation limit %f (rad)' %
+        log.info('create_blockvisibility: flagged %d/%d times below elevation limit %f (rad)' %
                  (n_flagged, ntimes, elevation_limit))
     else:
         log.debug('create_blockvisibility: created %d times' % (ntimes))
@@ -265,7 +263,7 @@ def create_blockvisibility(config: Configuration,
     nchan = len(frequency)
     visshape = [ntimes, nants, nants, nchan, npol]
     rvis = numpy.zeros(visshape, dtype='complex')
-    rflags = numpy.zeros(visshape, dtype='int')
+    rflags = numpy.ones(visshape, dtype='int')
     rweight = numpy.ones(visshape)
     rimaging_weight = numpy.ones(visshape)
     rtimes = numpy.zeros([ntimes])
@@ -282,20 +280,23 @@ def create_blockvisibility(config: Configuration,
         
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination
-        ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
             rtimes[itime] = stime.mjd * 86400.0 + ha * 86164.1 / (2.0 * numpy.pi)
             rweight[itime, ...] = 1.0
-            rflags[itime, ...] = 0
+            rflags[itime, ...] = 1
             
             # Loop over all pairs of antennas. Note that a2>a1
+            ant_pos = uvw_ha_dec(ants_xyz, ha, phasecentre.dec.rad)
             for a1 in range(nants):
                 rweight[itime, a1, a1, ...] = 0.0
                 rflags[itime, a1, a1, ...] = 1.0
                 for a2 in range(a1 + 1, nants):
-                    ruvw[itime, a2, a1, :] = (ant_pos[a2, :] - ant_pos[a1, :])
-                    ruvw[itime, a1, a2, :] = (ant_pos[a1, :] - ant_pos[a2, :])
+                    ruvw[itime, a2, a1, :] = ant_pos[a2, :] - ant_pos[a1, :]
+                    ruvw[itime, a1, a2, :] = ant_pos[a1, :] - ant_pos[a2, :]
+                    rflags[itime, a2, a1, ...] = 0
+                    rflags[itime, a1, a2, ...] = 1
+
             if itime > 0:
                 rintegrationtime[itime] = rtimes[itime] - rtimes[itime - 1]
             itime += 1
@@ -863,7 +864,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             
             bv_times = numpy.zeros([ntimes])
             bv_vis = numpy.zeros([ntimes, nants, nants, nchan, npol]).astype('complex')
-            bv_flags = numpy.zeros([ntimes, nants, nants, nchan, npol]).astype('int')
+            bv_flags = numpy.ones([ntimes, nants, nants, nchan, npol]).astype('int')
             bv_weight = numpy.zeros([ntimes, nants, nants, nchan, npol])
             bv_imaging_weight = numpy.zeros([ntimes, nants, nants, nchan, npol])
             bv_uvw = numpy.zeros([ntimes, nants, nants, 3])
@@ -875,6 +876,8 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                 bv_vis[time_index, antenna2[row], antenna1[row], ...] = ms_vis[row, ...]
                 bv_flags[time_index, antenna2[row], antenna1[row], ...] = ms_flags[
                     row, ...]
+                if antenna2[row] < antenna1[row]:
+                    bv_flags[time_index, antenna2[row], antenna1[row], ...] = 1
                 bv_weight[time_index, antenna2[row], antenna1[row], :, ...] = ms_weight[
                     row, numpy.newaxis, ...]
                 bv_imaging_weight[time_index, antenna2[row], antenna1[row], :, ...] = \

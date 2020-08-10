@@ -96,7 +96,7 @@ def calculate_hourangles(location, utc_time, direction):
     # return site.target_hour_angle(utc_time, direction).wrap_at('180d')
 
 
-def calculate_transit_time(location, utc_time, direction, fraction_day=0.01):
+def calculate_transit_time(location, utc_time, direction, fraction_day=0.0001):
     """ Find the UTC time of the nearest transit
 
     :param fraction_day: Step in this fraction of day to find transit

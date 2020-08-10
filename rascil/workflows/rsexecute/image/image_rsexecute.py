@@ -22,7 +22,7 @@ def image_rsexecute_map_workflow(im, imfunction, facets=1, overlap=0, taper=None
 
     For example::
 
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=True)
         model = create_test_image(frequency=frequency, phasecentre=phasecentre, cellsize=0.001,
                                          polarisation_frame=PolarisationFrame('stokesI'))
         def imagerooter(im, **kwargs):
@@ -50,7 +50,7 @@ def sum_images_rsexecute(image_list, split=2):
 
     For example, to create a list of (dirty image, sumwt) tuples and then sum all::
 
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=True)
         dirty_list = invert_list_rsexecute_workflow(vis_list,
             template_model_imagelist=model_list, context='wstack', vis_slices=51)
         dirty_list = sum_image_rsexecute(dirty_list)

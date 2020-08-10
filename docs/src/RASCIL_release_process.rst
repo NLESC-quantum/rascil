@@ -24,7 +24,7 @@ The release process as follows:
 Steps:
 ------
 
- * Ensure that the current master builds on GitLab: https://gitlab.com/timcornwell/rascil/pipelines
+ * Ensure that the current master builds on GitLab: https://gitlab.com/ska-telescope/rascil/-/pipelines
  * Decide whether a release is warranted and what semantic version number it should be: https://semver.org
  * Update CHANGELOG.md for the relevant changes in this release, putting newer description at the top.
  * Check if  the documentation been updated

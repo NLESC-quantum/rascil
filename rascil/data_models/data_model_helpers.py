@@ -100,6 +100,7 @@ __all__ = ['convert_earthlocation_to_string',
 
 import ast
 import collections
+from typing import Union
 
 import astropy.units as u
 import h5py
@@ -175,6 +176,7 @@ def convert_configuration_to_hdf(config: Configuration, f):
     cf['configuration/mount'] = [numpy.string_(mount) for mount in config.mount]
     cf['configuration/offset'] = config.offset
     cf['configuration/stations'] = [numpy.string_(station) for station in config.stations]
+    cf['configuration/vp_type'] = [numpy.string_(vpt) for vpt in config.vp_type]
     return f
 
 
@@ -198,9 +200,11 @@ def convert_configuration_from_hdf(f):
     names = [str(n) for n in cf['configuration/names']]
     mount = [str(m) for m in cf['configuration/mount']]
     stations = [str(p) for p in cf['configuration/stations']]
+    vp_type = [str(p) for p in cf['configuration/vp_type']]
     offset = cf['configuration/offset']
     return Configuration(name=name, location=location, receptor_frame=receptor_frame, xyz=xyz, frame=frame,
-                         diameter=diameter, names=names, mount=mount, offset=offset, stations=stations)
+                         diameter=diameter, names=names, mount=mount, offset=offset, stations=stations,
+                         vp_type=vp_type)
 
 
 def convert_visibility_to_hdf(vis, f):
@@ -613,7 +617,7 @@ def convert_hdf_to_skycomponent(f):
     return sc
 
 
-def export_skycomponent_to_hdf5(sc: Skycomponent, filename):
+def export_skycomponent_to_hdf5(sc: Union[Skycomponent, list], filename):
     """ Export a Skycomponent to HDF5 format
 
     :param sc: SkyComponent

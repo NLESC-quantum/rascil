@@ -73,8 +73,9 @@ class TestVisibilityIterators(unittest.TestCase):
         for chunk, rows in enumerate(vis_wslice_iter(self.vis, nchunks)):
             assert len(rows)
             visslice = create_visibility_from_rows(self.vis, rows)
-            total_rows += visslice.nvis
-            assert numpy.sum(visslice.nvis) < self.vis.nvis
+            if visslice is not None:
+                total_rows += visslice.nvis
+                assert numpy.sum(visslice.nvis) < self.vis.nvis
         assert total_rows == self.vis.nvis, "Total rows iterated %d, Original rows %d" % (total_rows, self.vis.nvis)
 
 if __name__ == '__main__':

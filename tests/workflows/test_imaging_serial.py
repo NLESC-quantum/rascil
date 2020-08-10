@@ -130,15 +130,15 @@ class TestImaging(unittest.TestCase):
         self.components = self.components_list[centre]
         
         if makegcfcf:
-            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=61, wstep=16.0,
-                                                            oversampling=8,
+            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=101, wstep=8.0,
+                                                            oversampling=4,
                                                             support=64,
                                                             use_aaf=True)]
             self.gcfcf_clipped = [(self.gcfcf[0][0], apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
                                                                                             fractional_level=1e-3))]
             
-            self.gcfcf_joint = [create_awterm_convolutionfunction(self.model, nw=11, wstep=16.0,
-                                                                  oversampling=8,
+            self.gcfcf_joint = [create_awterm_convolutionfunction(self.model, nw=21, wstep=8.0,
+                                                                  oversampling=4,
                                                                   support=64,
                                                                   use_aaf=True)]
         
@@ -231,10 +231,10 @@ class TestImaging(unittest.TestCase):
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_ng(self):
         self.actualSetUp()
-        self._predict_base(context='ng', fluxthreshold=0.16)
+        self._predict_base(context='ng', fluxthreshold=0.62)
 
     @unittest.skip("Facets need overlap")
-    def test_predict_facets_wprojection(self, makegcfcf=True):
+    def test_predict_facets_wprojection(self):
         self.actualSetUp()
         self._predict_base(context='facets', extra='_wprojection', facets=8, fluxthreshold=15.0,
                            gcfcf=self.gcfcf_joint)
@@ -252,41 +252,41 @@ class TestImaging(unittest.TestCase):
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wsnapshots(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='wsnapshots', fluxthreshold=5.5,
+        self._predict_base(context='wsnapshots', fluxthreshold=6.7,
                            vis_slices=self.ntimes // 2, gcfcf=self.gcfcf_joint)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wprojection(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=3.2,
+        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=5.0,
                            gcfcf=self.gcfcf)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=3.3,
+        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=5.0,
                            gcfcf=self.gcfcf_clipped)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack(self):
         self.actualSetUp(block=False)
-        self._predict_base(context='wstack', fluxthreshold=3.3, vis_slices=101)
+        self._predict_base(context='wstack', fluxthreshold=3.3, vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_wprojection(self):
         self.actualSetUp(makegcfcf=True, block=False)
-        self._predict_base(context='wstack', extra='_wprojection', fluxthreshold=3.6, vis_slices=11,
+        self._predict_base(context='wstack', extra='_wprojection', fluxthreshold=4.1, vis_slices=11,
                            gcfcf=self.gcfcf_joint)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_spectral(self):
         self.actualSetUp(dospectral=True, block=False)
-        self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=101)
+        self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_spectral_pol(self):
         self.actualSetUp(dospectral=True, dopol=True, block=False)
-        self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=101)
+        self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_2d(self):
@@ -383,19 +383,19 @@ class TestImaging(unittest.TestCase):
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack(self):
         self.actualSetUp(block=False)
-        self._invert_base(context='wstack', positionthreshold=1.0, vis_slices=101)
+        self._invert_base(context='wstack', positionthreshold=1.0, vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack_spectral(self):
         self.actualSetUp(dospectral=True, block=False)
         self._invert_base(context='wstack', extra='_spectral', positionthreshold=2.0,
-                          vis_slices=101)
+                          vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack_spectral_pol(self):
         self.actualSetUp(dospectral=True, dopol=True, block=False)
         self._invert_base(context='wstack', extra='_spectral_pol', positionthreshold=2.0,
-                          vis_slices=101)
+                          vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_zero_list(self):
@@ -439,8 +439,8 @@ class TestImaging(unittest.TestCase):
                                               (self.dir))
         
         qa = qa_image(restored_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.00291168642293) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.1698056648051111) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13900620710891567) < 1e-7, str(qa)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_restored_list_noresidual(self):
@@ -477,8 +477,8 @@ class TestImaging(unittest.TestCase):
                                               (self.dir))
         
         qa = qa_image(restored_4facets_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.00291168642293) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.1698056648051111) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13900620710891565) < 1e-7, str(qa)
         
         restored_4facets_image_list[centre].data -= restored_1facets_image_list[centre].data
         if self.persist: export_image_to_fits(restored_4facets_image_list[centre],

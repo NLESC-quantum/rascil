@@ -49,7 +49,7 @@ class Configuration:
     def __init__(self, name='', data=None, location=None,
                  names="%s", xyz=None, mount="alt-az", frame="",
                  receptor_frame=ReceptorFrame("linear"),
-                 diameter=None, offset=None, stations="%s"):
+                 diameter=None, offset=None, stations="%s", vp_type=""):
         
         """Configuration object describing data for processing
 
@@ -64,12 +64,14 @@ class Configuration:
         :param diameter: Diameters of dishes/stations (m)
         :param offset: Axis offset (m)
         :param stations: Identifiers of the dishes/stations
+        :param vp_type: Type of voltage pattern (string)
         """
         if data is None and xyz is not None:
             desc = [('names', 'U12'),
                     ('xyz', 'f8', (3,)),
                     ('diameter', 'f8'),
                     ('mount', 'U12'),
+                    ('vp_type', 'U12'),
                     ('offset', 'f8', (3,)),
                     ('stations', 'U12')]
             nants = xyz.shape[0]
@@ -87,6 +89,7 @@ class Configuration:
             if isinstance(stations, str):
                 stations = [stations % ant for ant in range(nants)]
             data['stations'] = stations
+            data['vp_type'] = vp_type
         
         self.name = name
         self.data = data
@@ -107,7 +110,8 @@ class Configuration:
         s += "\tXYZ: %s\n" % self.xyz
         s += "\tAxis offset: %s\n" % self.offset
         s += "\tStations: %s\n" % self.stations
-        
+        s += "\tVoltage pattern type: %s\n" % self.vp_type
+
         return s
     
     def size(self):
@@ -116,12 +120,17 @@ class Configuration:
         size = 0
         size += self.data.size * sys.getsizeof(self.data)
         return size / 1024.0 / 1024.0 / 1024.0
-    
+
     @property
     def names(self):
         """ Names of the dishes/stations"""
         return self.data['names']
-    
+
+    @property
+    def vp_type(self):
+        """ Names of the voltage pattern type"""
+        return self.data['vp_type']
+
     @property
     def diameter(self):
         """ Diameter of dishes/stations (m)
@@ -882,8 +891,8 @@ class Visibility:
     as separate columns in a numpy structured array, The fundemental unit is a complex vector of polarisation.
 
     Visibility is defined to hold an observation with one direction.
-    Polarisation frame is the same for the entire data set and can be stokes, circular, linear
-    The configuration is also an attribute
+    Polarisation frame is the same for the entire data set and can be stokes, circular, linear.
+    The configuration is also an attribute.
 
     The phasecentre is the direct of delay tracking i.e. n=0. If uvw are rotated then this
     should be updated with the new delay tracking centre. This is important for wstack and wproject
@@ -1164,9 +1173,9 @@ class BlockVisibility:
     should be updated with the new delay tracking centre. This is important for wstack and wproject
     algorithms.
 
-    Polarisation frame is the same for the entire data set and can be stokesI, circular, linear
+    Polarisation frame is the same for the entire data set and can be stokesI, circular, linear.
 
-    The configuration is also an attribute
+    The configuration is also an attribute.
     """
     
     def __init__(self,

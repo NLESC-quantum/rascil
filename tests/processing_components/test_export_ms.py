@@ -14,6 +14,7 @@ from rascil.data_models.memory_data_models import Configuration
 from rascil.data_models.polarisation import ReceptorFrame
 
 from astropy.coordinates import EarthLocation
+import astropy.units as u
 from astropy.time import Time
 
 try:
@@ -56,7 +57,7 @@ class measurementset_tests(unittest.TestCase):
         channel_width = numpy.full_like(freq,20e6/512.)
 
         # Site and stands
-        obs = EarthLocation(lon="116.76444824", lat="-26.824722084", height=300.0)
+        obs = EarthLocation(lon=116.76444824*u.deg, lat=-26.824722084*u.deg, height=300.0)
 
         mount = numpy.array(['equat','equat','equat','equat','equat','equat','equat','equat','equat','equat'])
         names = numpy.array(['ak02','ak04','ak05','ak12','ak13','ak14','ak16','ak24','ak28','ak30'])
@@ -114,7 +115,7 @@ class measurementset_tests(unittest.TestCase):
 
 
         # Site and stands
-        obs = EarthLocation(lon="+116.6356824", lat="-26.70130064", height=377.0)
+        obs = EarthLocation(lon=+116.6356824*u.deg, lat=-26.70130064*u.deg, height=377.0)
 
         names = numpy.array(['A%02d' % i for i in range(36)])
         mount = numpy.array(['equat' for i in range(36)])

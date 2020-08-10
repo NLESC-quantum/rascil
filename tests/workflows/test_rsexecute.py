@@ -17,7 +17,7 @@ log.setLevel(logging.WARNING)
 class Testrsexecute(unittest.TestCase):
     
     def setUp(self):
-        rsexecute.set_client(use_dask=True, processes=True, threads_per_worker=1)
+        rsexecute.set_client(use_dask=True)
 
     def tearDown(self):
         rsexecute.close()

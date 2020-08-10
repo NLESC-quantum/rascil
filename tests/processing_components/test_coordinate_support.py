@@ -42,7 +42,7 @@ class TestCoordinates(unittest.TestCase):
         assert_allclose(transform(1, 0, 0, -90), [1, 0, 0], atol=1e-15)
         assert_allclose(transform(0, 1, 0, -90), [0, -1, 0], atol=1e-15)
         assert_allclose(transform(0, 0, 1, -90), [0, 0, -1], atol=1e-15)
-    
+
     def test_xyz_to_uvw(self):
         def transform(x, y, z, ha, dec):
             """

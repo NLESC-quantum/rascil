@@ -146,7 +146,7 @@ def spatial_mapping(cf, griddata, u, v, w):
     # Find the nearest grid point
     pwg_grid = numpy.round(pwg_pixel).astype('int')
     if numpy.min(pwg_grid) < 0:
-        print(w[0:10, 2])
+        print(w[0:10])
         print(cf.grid_wcs.sub([5]).__repr__())
     assert numpy.min(pwg_grid) >= 0, "W axis underflows: %f" % numpy.min(pwg_grid)
     assert numpy.max(pwg_grid) < cf.shape[2], "W axis overflows: %f" % numpy.max(pwg_grid)
@@ -156,7 +156,7 @@ def spatial_mapping(cf, griddata, u, v, w):
     pwc_pixel = cf.grid_wcs.sub([5]).wcs_world2pix(w, 0)[0]
     pwc_grid = numpy.round(pwc_pixel).astype('int')
     if numpy.min(pwc_grid) < 0:
-        print(w[0:10, 2])
+        print(w[0:10])
         print(cf.grid_wcs.sub([5]).__repr__())
     assert numpy.min(pwc_grid) >= 0, "W axis underflows: %f" % numpy.min(pwc_grid)
     assert numpy.max(pwc_grid) < cf.shape[2], "W axis overflows: %f" % numpy.max(pwc_grid)

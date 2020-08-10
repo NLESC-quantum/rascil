@@ -4,7 +4,7 @@
 
 __all__ = ['copy_skymodel', 'partition_skymodel_by_flux', 'show_skymodel', 'initialize_skymodel_voronoi',
            'calculate_skymodel_equivalent_image', 'update_skymodel_from_gaintables', 'update_skymodel_from_image',
-           'expand_skymodel_by_skycomponents']
+           'expand_skymodel_by_skycomponents', 'create_skymodel_from_skycomponents_gaintables']
 
 import logging
 
@@ -236,4 +236,19 @@ def expand_skymodel_by_skycomponents(sm, **kwargs):
                                gaintable=copy_gaintable(sm.gaintable),
                                mask=copy_image(sm.mask),
                                fixed=sm.fixed))
+    return result
+
+
+def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwargs):
+    """ Create a list of sky model from lists of components and gaintables
+
+    :param sm: SkyModel
+    :return: List of SkyModels
+    """
+    assert len(components) == len(gaintables)
+    result = [SkyModel(components=[copy_skycomponent(comp)],
+                       image=None,
+                       mask=None,
+                       gaintable=copy_gaintable(gaintables[icomp]))
+              for icomp, comp in enumerate(components)]
     return result

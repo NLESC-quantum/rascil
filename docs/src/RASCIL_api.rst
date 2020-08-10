@@ -14,7 +14,7 @@ Here is a quick guide to the layout of the package:
  - `data`: Data used
  - `tools`: package requirements, and [Docker](https://www.docker.com/) image building recipe
 
-The API is specified in the rascii directory.
+The API is specified in the rascil directory.
 
 .. toctree::
    :maxdepth: 1

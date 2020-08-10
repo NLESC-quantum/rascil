@@ -10,7 +10,7 @@ import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from rascil.data_models import BlockVisibility
+from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.griddata import apply_bounding_box_convolutionfunction
 from rascil.processing_components.griddata.kernels import create_awterm_convolutionfunction
@@ -59,11 +59,11 @@ class TestImaging(unittest.TestCase):
                     makegcfcf=False):
         
         self.npixel = 256
-        self.low = create_named_configuration('LOWBD2', rmax=300.0)
+        self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = freqwin
         self.bvis_list = list()
         self.ntimes = 5
-        self.cellsize = 0.001
+        self.cellsize = 0.0005
         # Choose the interval so that the maximum change in w is smallish
         integration_time = numpy.pi * (24 / (12 * 60))
         self.times = numpy.linspace(-integration_time * (self.ntimes // 2), integration_time * (self.ntimes // 2),
@@ -128,8 +128,10 @@ class TestImaging(unittest.TestCase):
         self.model = self.model_list[centre]
         
         self.cmodel = smooth_image(self.model)
-        if self.persist: export_image_to_fits(self.model, '%s/test_imaging_model.fits' % self.dir)
-        if self.persist: export_image_to_fits(self.cmodel, '%s/test_imaging_cmodel.fits' % self.dir)
+        if self.persist:
+            export_image_to_fits(self.model, '%s/test_imaging_model.fits' % self.dir)
+        if self.persist:
+            export_image_to_fits(self.cmodel, '%s/test_imaging_cmodel.fits' % self.dir)
         
         if add_errors and block:
             self.bvis_list = [rsexecute.execute(insert_unittest_errors)(self.bvis_list[i])
@@ -138,14 +140,14 @@ class TestImaging(unittest.TestCase):
         self.components = self.components_list[centre]
         
         if makegcfcf:
-            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=51, wstep=16.0,
+            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=101, wstep=8.0,
                                                             oversampling=4,
                                                             support=64,
                                                             use_aaf=True)]
             self.gcfcf_clipped = [(self.gcfcf[0][0], apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
                                                                                             fractional_level=1e-3))]
             
-            self.gcfcf_joint = [create_awterm_convolutionfunction(self.model, nw=11, wstep=16.0,
+            self.gcfcf_joint = [create_awterm_convolutionfunction(self.model, nw=21, wstep=8.0,
                                                                   oversampling=4,
                                                                   support=64,
                                                                   use_aaf=True)]
@@ -183,8 +185,9 @@ class TestImaging(unittest.TestCase):
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
         assert numpy.max(numpy.abs(dirty[0].data)), "Residual image is empty"
-        if self.persist: export_image_to_fits(dirty[0], '%s/test_imaging_predict_%s%s_%s_dirty.fits' %
-                                              (self.dir, context, extra, rsexecute.type()))
+        if self.persist:
+            export_image_to_fits(dirty[0], '%s/test_imaging_predict_%s%s_%s_dirty.fits' %
+                                 (self.dir, context, extra, rsexecute.type()))
         
         maxabs = numpy.max(numpy.abs(dirty[0].data))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (maxabs, fluxthreshold)
@@ -200,13 +203,13 @@ class TestImaging(unittest.TestCase):
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
         if self.persist:
-            if dopsf == True:
+            if dopsf:
                 export_image_to_fits(dirty[0], '%s/test_imaging_invert_%s%s_%s_psf.fits' %
-                                                (self.dir, context, extra, rsexecute.type()))
+                                     (self.dir, context, extra, rsexecute.type()))
             else:
                 export_image_to_fits(dirty[0], '%s/test_imaging_invert_%s%s_%s_dirty.fits' %
-                                                (self.dir, context, extra, rsexecute.type()))
-
+                                     (self.dir, context, extra, rsexecute.type()))
+        
         assert numpy.max(numpy.abs(dirty[0].data)), "Image is empty"
         
         if check_components:
@@ -238,7 +241,7 @@ class TestImaging(unittest.TestCase):
         self._predict_base(context='ng', fluxthreshold=0.62)
     
     @unittest.skip("Facets need overlap")
-    def test_predict_facets_wprojection(self, makegcfcf=True):
+    def test_predict_facets_wprojection(self):
         self.actualSetUp()
         self._predict_base(context='facets', extra='_wprojection', facets=8, fluxthreshold=15.0,
                            gcfcf=self.gcfcf_joint)
@@ -246,7 +249,7 @@ class TestImaging(unittest.TestCase):
     @unittest.skip("Facets need overlap")
     def test_predict_facets_wstack(self):
         self.actualSetUp()
-        self._predict_base(context='facets_wstack', fluxthreshold=15.0, facets=8, vis_slices=51)
+        self._predict_base(context='facets_wstack', fluxthreshold=15.0, facets=8, vis_slices=101)
     
     def test_predict_timeslice(self):
         self.actualSetUp()
@@ -259,12 +262,12 @@ class TestImaging(unittest.TestCase):
     
     def test_predict_wprojection(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=4.1,
+        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=5.0,
                            gcfcf=self.gcfcf)
     
     def test_predict_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=4.1,
+        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=5.0,
                            gcfcf=self.gcfcf_clipped)
     
     def test_predict_wstack(self):
@@ -285,41 +288,41 @@ class TestImaging(unittest.TestCase):
     def test_predict_wstack_spectral_pol(self):
         self.actualSetUp(dospectral=True, dopol=True, block=False)
         self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
-
+    
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
         self._invert_base(context='2d', positionthreshold=2.0, check_components=False)
-
+    
     def test_invert_2d_psf(self):
         self.actualSetUp(zerow=True)
         self._invert_base(context='2d', positionthreshold=2.0, check_components=False, dopsf=True)
-
+    
     def test_invert_2d_uniform(self):
         self.actualSetUp(zerow=True, makegcfcf=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
                                                         weighting='uniform')
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
-
+    
     def test_invert_2d_uniform_block(self):
         self.actualSetUp(zerow=True, makegcfcf=True, block=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
                                                         weighting='uniform')
         self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
         assert isinstance(self.bvis_list[0], BlockVisibility)
-
+    
     def test_invert_2d_robust(self):
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list,
                                                         weighting="robust", robustness=0.0)
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
-
+    
     def test_invert_2d_robust_block(self):
         self.actualSetUp(zerow=True, makegcfcf=True, block=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list,
                                                         weighting="robust", robustness=0.0)
         self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
         assert isinstance(self.bvis_list[0], BlockVisibility)
-
+    
     def test_invert_2d_uniform_nogcfcf(self):
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list)
@@ -391,7 +394,6 @@ class TestImaging(unittest.TestCase):
         self._invert_base(context='wstack', extra='_spectral', positionthreshold=2.0,
                           vis_slices=51)
     
-    @unittest.skip("Too much for CI/CD")
     def test_invert_wstack_spectral_pol(self):
         self.actualSetUp(dospectral=True, dopol=True, block=False)
         self._invert_base(context='wstack', extra='_spectral_pol', positionthreshold=2.0,
@@ -437,13 +439,14 @@ class TestImaging(unittest.TestCase):
         restored_image_list = restore_list_rsexecute_workflow(self.model_list, psf_image_list, residual_image_list,
                                                               psfwidth=1.0)
         restored_image_list = rsexecute.compute(restored_image_list, sync=True)
-        self.persist=True
-        if self.persist: export_image_to_fits(restored_image_list[centre], '%s/test_imaging_invert_%s_restored.fits' %
-                                              (self.dir, rsexecute.type()))
+        self.persist = True
+        if self.persist:
+            export_image_to_fits(restored_image_list[centre], '%s/test_imaging_invert_%s_restored.fits' %
+                                 (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.00471300022062) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.13833246479371353) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13900620710891567) < 1e-7, str(qa)
     
     def test_restored_list_noresidual(self):
         self.actualSetUp(zerow=True)
@@ -452,9 +455,10 @@ class TestImaging(unittest.TestCase):
         psf_image_list = invert_list_rsexecute_workflow(self.bvis_list, self.model_list, context='2d', dopsf=True)
         restored_image_list = restore_list_rsexecute_workflow(self.model_list, psf_image_list, psfwidth=1.0)
         restored_image_list = rsexecute.compute(restored_image_list, sync=True)
-        if self.persist: export_image_to_fits(restored_image_list[centre],
-                                              '%s/test_imaging_invert_%s_restored_noresidual.fits' %
-                                              (self.dir, rsexecute.type()))
+        if self.persist:
+            export_image_to_fits(restored_image_list[centre],
+                                 '%s/test_imaging_invert_%s_restored_noresidual.fits' %
+                                 (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_image_list[centre])
         assert numpy.abs(qa.data['max'] - 100.0) < 1e-7, str(qa)
@@ -476,18 +480,20 @@ class TestImaging(unittest.TestCase):
                                                                       restore_facets=1, psfwidth=1.0)
         restored_1facets_image_list = rsexecute.compute(restored_1facets_image_list, sync=True)
         
-        if self.persist: export_image_to_fits(restored_4facets_image_list[0],
-                                              '%s/test_imaging_invert_%s_restored_4facets.fits' %
-                                              (self.dir, rsexecute.type()))
+        if self.persist:
+            export_image_to_fits(restored_4facets_image_list[0],
+                                 '%s/test_imaging_invert_%s_restored_4facets.fits' %
+                                 (self.dir, rsexecute.type()))
         
         qa = qa_image(restored_4facets_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.00471300022062) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.13833246479371353) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.13900620710891565) < 1e-7, str(qa)
         
         restored_4facets_image_list[centre].data -= restored_1facets_image_list[centre].data
-        if self.persist: export_image_to_fits(restored_4facets_image_list[centre],
-                                              '%s/test_imaging_invert_%s_restored_4facets_error.fits' %
-                                              (self.dir, rsexecute.type()))
+        if self.persist:
+            export_image_to_fits(restored_4facets_image_list[centre],
+                                 '%s/test_imaging_invert_%s_restored_4facets_error.fits' %
+                                 (self.dir, rsexecute.type()))
         qa = qa_image(restored_4facets_image_list[centre])
         assert numpy.abs(qa.data['max']) < 1e-10, str(qa)
     
@@ -504,7 +510,7 @@ class TestImaging(unittest.TestCase):
             qa = qa_image(r[0])
             assert numpy.abs(qa.data['max'] - 0.15513038832438183) < 1.0, str(qa)
             assert numpy.abs(qa.data['min'] + 0.4607090445091728) < 1.0, str(qa)
-            assert numpy.abs(r[1] - 131130.) < 1e-7, r
+            assert numpy.abs(r[1] - 415950.) < 1e-7, r
 
 
 if __name__ == '__main__':

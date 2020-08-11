@@ -63,10 +63,10 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
     else:
         assert len(vp) == len(vp_types)
 
-    real_spline = [[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[0, pol, ...].real, kx=order, ky=order)
-                   for ivp, _ in enumerate(vp_types)] for pol in range(npol)]
-    imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[0, pol, ...].imag, kx=order, ky=order)
-                   for ivp, _ in enumerate(vp_types)] for pol in range(npol)]
+    real_spline = [[[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[chan, pol, ...].real, kx=order, ky=order)
+                   for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
+    imag_spline = [[[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[chan, pol, ...].imag, kx=order, ky=order)
+                   for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
     
     if not use_radec:
         assert isinstance(vis, BlockVisibility)
@@ -97,10 +97,9 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
                     
                     if elevation_centre >= elevation_limit:
                         
-                        antvp = numpy.zeros([nvp, npol], dtype='complex')
-                        antgain = numpy.zeros([nant, npol], dtype='complex')
-                        antvpwt = numpy.zeros([nvp, npol])
-                        antwt = numpy.zeros([nant, npol])
+                        antvp = numpy.zeros([nvp, nchan, npol], dtype='complex')
+                        antgain = numpy.zeros([nant, nchan, npol], dtype='complex')
+                        antwt = numpy.zeros([nant, nchan, npol])
 
                         # Calculate the azel of this component
                         azimuth_comp, elevation_comp = calculate_azel(v.configuration.location, utc_time,
@@ -124,12 +123,13 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
                             assert pixloc[1] < ny - 3
                             # Interpolate values for all voltage pattern types
                             for ivp, _ in enumerate(vp_types):
-                                for pol in range(npol):
-                                    antvp[ivp, pol] = real_spline[pol][ivp].ev(pixloc[1], pixloc[0]) \
-                                        + 1j * imag_spline[pol][ivp].ev(pixloc[1], pixloc[0])
-                                ag = antvp[ivp, :].reshape([2, 2])
-                                ag = numpy.linalg.inv(ag)
-                                antvp[ivp, :] = ag.reshape([4])
+                                for chan in range(nchan):
+                                    for pol in range(npol):
+                                        antvp[ivp, chan, pol] = real_spline[pol][chan][ivp].ev(pixloc[1], pixloc[0]) \
+                                            + 1j * imag_spline[pol][chan][ivp].ev(pixloc[1], pixloc[0])
+                                    ag = antvp[ivp, chan, :].reshape([2, 2])
+                                    ag = numpy.linalg.inv(ag)
+                                    antvp[ivp, chan, :] = ag.reshape([4])
                                 number_good += 1
                             for ant in range(nant):
                                 antgain[ant, ...] = antvp[vp_for_ant[ant],...]

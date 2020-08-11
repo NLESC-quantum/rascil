@@ -46,7 +46,8 @@ class TestAtmosphericScreen(unittest.TestCase):
             self.cellsize = 0.000015
         else:
             self.core = create_named_configuration('MID', rmax=300.0)
-            self.frequency = numpy.array([1.36e9])
+            # Note that the frequency is wrong since the test screen is really for the ionospheric case.
+            self.frequency = numpy.array([1.0e8])
             self.channel_bandwidth = numpy.array([1e8])
             self.cellsize = 0.00015
 

@@ -433,7 +433,7 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
                                                            height=3e5,
                                                            type_atmosphere='iono',
                                                            show=False, basename='',
-                                                           reference=True,
+                                                           reference_component=None,
                                                            **kwargs):
     """ Create gaintable for atmospheric errors
 
@@ -456,7 +456,7 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
                                                         r0=r0,
                                                         screen=screen, height=height,
                                                         type_atmosphere=type_atmosphere,
-                                                        reference=reference)
+                                                        reference_component=reference_component)
         for ivis, vis in enumerate(sub_bvis_list)]
         
     # Create the gain tables, one per Visibility and per component

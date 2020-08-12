@@ -685,8 +685,9 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
         if normalise:
             vpsym /= numpy.max(numpy.abs(vpsym))
         
-        vp.data[:, 1:2, ...] = 0.0 + 0.0j
         vp.data[:, 0, ...] = vpsym
+        vp.data[:, 1, ...] = 0.0 + 0.0j
+        vp.data[:, 2, ...] = 0.0 + 0.0j
         vp.data[:, 3, ...] = vpsym
         return vp
     
@@ -710,12 +711,8 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
     return no_error_gt_list, error_gt_list
 
 
-def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
-                                                     sub_components,
-                                                     use_radec=False,
-                                                     show=True,
-                                                     basename='',
-                                                     normalise=True):
+def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_components, use_radec=False, show=True,
+                                                      basename=''):
     """ Create gaintable for polarisation effects
 
     Compare with nominal and actual voltage patterns
@@ -726,7 +723,6 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
     :param use_radec: Use RADEC coordinate (False)
     :param show: Plot the results
     :param basename: Base name for the plots
-    :param normalise: Normalise peak of each receptor
     :return: (list of error-free gaintables, list of error gaintables) or graph
      """
     

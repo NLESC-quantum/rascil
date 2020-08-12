@@ -122,6 +122,9 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
         for icomp, comp in enumerate(sc):
             # axes of gaintable.gain are time, ant, nchan, nrec
             gaintables[icomp].gain[iha, :, :, :] = numpy.exp(1j * scr[icomp, ...])[..., numpy.newaxis, numpy.newaxis]
+            if gaintables[icomp].gain.shape[-1] == 2:
+                gaintables[icomp].gain[..., 0, 1] *= 0.0
+                gaintables[icomp].gain[..., 1, 0] *= 0.0
             gaintables[icomp].phasecentre = comp.direction
             
 

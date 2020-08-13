@@ -1,4 +1,4 @@
-.. Background
+.. _RASCIL_background:
 
 .. toctree::
    :maxdepth: 3

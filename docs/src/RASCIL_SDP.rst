@@ -1,5 +1,4 @@
-.. Documentation master
-
+.. _RASCIL_SDP:
 
 Module view
 ***********

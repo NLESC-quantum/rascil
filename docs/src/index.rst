@@ -32,7 +32,7 @@ More details can be found at: `SKA1 SDP Algorithm Reference Library (ARL) Report
 Subsequent to the conclusion of the SDP project, it became clear that ARL could play a larger role than being limited
 to a reference library. Hence, it was renamed to the Radio Astronomy Simulation, Calibration and Imaging Library
 (RASCIL) and is undergoing continued development. The Algorithm Reference Library (ARL) is now frozen.
-The background motivation and requirements of the ARL/RASCIL are detailed further in :ref:`RASCIL_background` .
+The background motivation and requirements of the ARL/RASCIL are detailed further in :ref:`Background <RASCIL_background>` .
 
 .. toctree::
    :maxdepth: 2

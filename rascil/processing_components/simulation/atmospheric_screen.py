@@ -1,4 +1,5 @@
-""" Functions for tropospheric and ionospheric modelling: see
+""" Functions for tropospheric and ionospheric modeling
+: see
 `SDP Memo 97 <http://ska-sdp.org/sites/default/files/attachments/direction_dependent_self_calibration_in_arl_-_signed.pdf>`_
 
 
@@ -51,9 +52,8 @@ def find_pierce_points(station_locations, ha, dec, phasecentre, height):
     return pierce_points
 
 
-def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, scale=1.0,
-                                 r0=5e3, type_atmosphere='ionosphere', reference_component=None,
-                                 **kwargs):
+def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, r0=5e3, type_atmosphere='ionosphere',
+                                 reference_component=None, **kwargs):
     """ Create gaintables from a screen calculated using ARatmospy
 
     Screen axes are ['XX', 'YY', 'TIME', 'FREQ']
@@ -64,7 +64,6 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
     :param height: Height (in m) of screen above telescope e.g. 3e5
     :param r0: r0 in meters
     :param type_atmosphere: 'ionosphere' or 'troposphere'
-    :param scale: Multiply the screen by this factor
     :param reference: Use the first component as a reference
     :return:
     """

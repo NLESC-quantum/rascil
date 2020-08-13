@@ -57,7 +57,6 @@ class TestMIDSimulations(unittest.TestCase):
         context = args.context
         ra = args.ra
         declination = args.declination
-        use_radec = args.use_radec == "True"
         integration_time = args.integration_time
         time_range = args.time_range
         time_chunk = args.time_chunk
@@ -124,7 +123,7 @@ class TestMIDSimulations(unittest.TestCase):
                                                                    phasecentre=phasecentre,
                                                                    polarisation_frame=image_polarisation_frame,
                                                                    override_cellsize=False) for bv in bvis_list]
-        vp_list = [rsexecute.execute(create_vp)(vp, pbtype, pointingcentre=phasecentre, use_local=not use_radec)
+        vp_list = [rsexecute.execute(create_vp)(vp, pbtype, pointingcentre=phasecentre)
                    for vp in vp_list]
         future_vp_list = rsexecute.persist(vp_list)
         
@@ -139,7 +138,6 @@ class TestMIDSimulations(unittest.TestCase):
             no_error_gtl, error_gtl = \
                 create_pointing_errors_gaintable_rsexecute_workflow(bvis_list, original_components,
                                                                     sub_vp_list=future_vp_list,
-                                                                    use_radec=use_radec,
                                                                     pointing_error=a2r * pointing_error,
                                                                     static_pointing_error=a2r * static_pointing_error,
                                                                     global_pointing_error=a2r * global_pointing_error,
@@ -150,7 +148,6 @@ class TestMIDSimulations(unittest.TestCase):
             no_error_gtl, error_gtl = \
                 create_pointing_errors_gaintable_rsexecute_workflow(bvis_list, original_components,
                                                                     sub_vp_list=future_vp_list,
-                                                                    use_radec=use_radec,
                                                                     time_series="wind",
                                                                     time_series_type="precision",
                                                                     seed=seed,
@@ -182,13 +179,12 @@ class TestMIDSimulations(unittest.TestCase):
             # Dish surface sag due to gravity
             no_error_gtl, error_gtl = \
                 create_surface_errors_gaintable_rsexecute_workflow(band, bvis_list, original_components,
-                                                                   vp_directory=vp_directory, use_radec=use_radec,
+                                                                   vp_directory=vp_directory,
                                                                    show=False, basename=basename)
         elif mode == 'heterogeneous':
             # Different antennas
             no_error_gtl, error_gtl = \
                 create_heterogeneous_gaintable_rsexecute_workflow(band, bvis_list, original_components,
-                                                                  use_radec=use_radec,
                                                                   show=False, basename=basename)
         elif mode == 'polarisation':
             # Polarised beams
@@ -278,7 +274,6 @@ class TestMIDSimulations(unittest.TestCase):
         parser.add_argument('--flux_limit', type=float, default=0.01, help='Flux limit (Jy)')
         
         # Control parameters
-        parser.add_argument('--use_radec', type=str, default="False", help='Calculate in RADEC (false)?')
         parser.add_argument('--shared_directory', type=str, default=rascil_data_path('configurations'),
                             help='Location of configuration files')
         parser.add_argument('--results', type=str, default='./', help='Directory for results')

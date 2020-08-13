@@ -334,9 +334,15 @@ def create_test_skycomponents_from_s3(polarisation_frame=PolarisationFrame("stok
             if r > 0:
                 ra = float(row[4]) / numpy.cos(phasecentre.dec.rad) + phasecentre.ra.deg
                 dec = float(row[5]) + phasecentre.dec.deg
-                if numpy.max(frequency) > 6.1E8:
+                if numpy.max(frequency) > 4.68e9:
+                    alpha = (float(row[13]) - float(row[12])) / numpy.log10(18000.0 / 4680.0)
+                    flux = numpy.power(10, float(row[12])) * numpy.power(frequency / 4.68e9, alpha)
+                elif numpy.max(frequency) > 1.4e9:
+                    alpha = (float(row[12]) - float(row[11])) / numpy.log10(4860.0 / 1400.0)
+                    flux = numpy.power(10, float(row[11])) * numpy.power(frequency / 1.4e9, alpha)
+                elif numpy.max(frequency) > 6.1E8:
                     alpha = (float(row[11]) - float(row[10])) / numpy.log10(1400.0 / 610.0)
-                    flux = numpy.power(10, float(row[10])) * numpy.power(frequency / 1.4e9, alpha)
+                    flux = numpy.power(10, float(row[10])) * numpy.power(frequency / 6.1e8, alpha)
                 else:
                     alpha = (float(row[10]) - float(row[9])) / numpy.log10(610.0 / 151.0)
                     flux = numpy.power(10, float(row[9])) * numpy.power(frequency / 1.51e8, alpha)

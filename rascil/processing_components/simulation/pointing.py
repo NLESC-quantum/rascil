@@ -41,13 +41,17 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     nant = vis.vis.shape[1]
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
     
+    nrec = gaintables[0].nrec
+    gnchan = gaintables[0].nchan
+    frequency = gaintables[9].frequency
+
+    
     nchan, npol, ny, nx = vp.data.shape
-    
-    real_spline = [RectBivariateSpline(range(ny), range(nx), vp.data[0, pol, ...].real, kx=order, ky=order)
-                   for pol in range(npol)]
-    imag_spline = [RectBivariateSpline(range(ny), range(nx), vp.data[0, pol, ...].imag, kx=order, ky=order)
-                   for pol in range(npol)]
-    
+    real_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data[chan, pol, ...].real, kx=order, ky=order)
+                     for chan in range(nchan)] for pol in range(npol)]
+    imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data[chan, pol, ...].imag, kx=order, ky=order)
+                     for chan in range(nchan)] for pol in range(npol)]
+
     assert npol == vis.npol, "Voltage pattern and visibility have incompatible polarisations"
     
     if not use_radec:
@@ -84,7 +88,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
 
                 if elevation_centre >= elevation_limit:
                     
-                    antgain = numpy.zeros([nant, npol], dtype='complex')
+                    antgain = numpy.zeros([nant, gnchan, npol], dtype='complex')
                     
                     # Calculate the azel of this component
                     utc_time = Time([numpy.average(v.time) / 86400.0], format='mjd', scale='utc')
@@ -107,23 +111,28 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                         wcs_azel.wcs.ctype[1] = 'DEC--SIN'
                         
                         try:
-                            worldloc = [azimuth_comp * r2d, elevation_comp * r2d,
-                                        vp.wcs.wcs.crval[2], vp.wcs.wcs.crval[3]]
-                            pixloc = wcs_azel.sub(2).wcs_world2pix([worldloc[:2]], 1)[0]
-                            assert pixloc[0] > 2
-                            assert pixloc[0] < nx - 3
-                            assert pixloc[1] > 2
-                            assert pixloc[1] < ny - 3
-                            for pol in range(npol):
-                                gain = real_spline[pol].ev(pixloc[1], pixloc[0]) + 1j * imag_spline[pol].ev(pixloc[1],
-                                                                                                            pixloc[0])
-                                antgain[ant, pol] = scale * gain
+                            gain = numpy.zeros([npol], dtype='complex')
+                            for gchan in range(gnchan):
+                                worldloc = [azimuth_comp * r2d, elevation_comp * r2d,
+                                            vp.wcs.wcs.crval[2], frequency[gchan]]
+                                pixloc = wcs_azel.wcs_world2pix([worldloc], 0)[0]
+                                assert pixloc[0] > 2
+                                assert pixloc[0] < nx - 3
+                                assert pixloc[1] > 2
+                                assert pixloc[1] < ny - 3
+                                chan = int(round(pixloc[3]))
+                                for pol in range(npol):
+                                    gain[pol] = real_spline[pol][chan].ev(pixloc[1], pixloc[0]) + \
+                                           1j * imag_spline[pol][chan].ev(pixloc[1],  pixloc[0])
+                                ag = gain.reshape([2, 2])
+                                ag = numpy.linalg.inv(ag)
+                                antgain[ant, gchan, :] = scale * ag.reshape([4])
                                 number_good += 1
                         except (ValueError, AssertionError):
                             number_bad += 1
-                            antgain[ant, :] = 1.0
+                            antgain[ant, :, :] = 1.0
                         
-                        gaintables[icomp].gain[iha, :, :, :] = antgain[:, numpy.newaxis, :].reshape([nant, nchan, nrec, nrec])
+                        gaintables[icomp].gain[iha, :, :, :] = antgain[:, :, :].reshape([nant, gnchan, nrec, nrec])
                         gaintables[icomp].phasecentre = comp.direction
                 else:
                     gaintables[icomp].gain[...] = 1.0 + 0.0j

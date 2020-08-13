@@ -42,8 +42,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     
     nrec = gaintables[0].nrec
     gnchan = gaintables[0].nchan
-    frequency = gaintables[9].frequency
-
+    frequency = gaintables[0].frequency
     
     nchan, npol, ny, nx = vp.data.shape
     real_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data[chan, pol, ...].real, kx=order, ky=order)
@@ -128,7 +127,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                             ag = numpy.linalg.inv(ag)
                             antgain[ant, gchan, :] = ag.reshape([4])
                             number_good += 1
-                    except (ValueError, AssertionError):
+                    except (ValueError, AssertionError, IndexError):
                         number_bad += 1
                         antgain[ant, :, :] = 1.0
                     

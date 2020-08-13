@@ -1,3 +1,0 @@
-#!/bin/bash
-source ./local/SKA/emerlin/pycharm/RASCIL/venv/bin/activate
-$2

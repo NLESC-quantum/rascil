@@ -724,6 +724,8 @@ try:
                                                        })
             col22 = tableutil.makearrcoldesc("DATA", 0j, 2,
                                              valuetype='complex',
+                                             datamanagertype='TiledShapeStMan',
+                                             datamanagergroup='TiledData',
                                              comment='The data column')
 
             desc = tableutil.maketabdesc([col1, col2, col3, col4, col5, col6, col7, col8, col9,
@@ -832,18 +834,18 @@ try:
                     tb.addrows(nBand * nBL)
 
                     matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
-
+                    nTotal_number = nBand * nBL
+                    fg = numpy.zeros((nBL, self.nStokes, self.nchan), dtype=numpy.bool)
+                    fc = numpy.zeros((nBL, self.nStokes, self.nchan, 1), dtype=numpy.bool)
+                    wg = numpy.ones((nBL, self.nStokes))
+                    sg = numpy.ones((nBL, self.nStokes)) * 9999
+                    tb.putcol('FLAG_ROW', [False, ] * nTotal_number, 0, nTotal_number)
+                    tb.putcol('FLAG', fg.transpose(0, 2, 1), 0, nTotal_number)
+                    tb.putcol('FLAG_CATEGORY', fc.transpose(0, 3, 2, 1), 0, nTotal_number)
+                    tb.putcol('WEIGHT', wg, 0, nTotal_number)
+                    tb.putcol('SIGMA', sg, 0, nTotal_number)
                     for j in range(nBand):
-                        fg = numpy.zeros((nBL, self.nStokes, self.nchan), dtype=numpy.bool)
-                        fc = numpy.zeros((nBL, self.nStokes, self.nchan, 1), dtype=numpy.bool)
-                        wg = numpy.ones((nBL, self.nStokes))
-                        sg = numpy.ones((nBL, self.nStokes)) * 9999
-
                         tb.putcol('UVW', uvwList, i, nBL)
-                        tb.putcol('FLAG', fg.transpose(0, 2, 1), i, nBL)
-                        tb.putcol('FLAG_CATEGORY', fc.transpose(0, 3, 2, 1), i, nBL)
-                        tb.putcol('WEIGHT', wg, i, nBL)
-                        tb.putcol('SIGMA', sg, i, nBL)
                         tb.putcol('ANTENNA1', ant1List, i, nBL)
                         tb.putcol('ANTENNA2', ant2List, i, nBL)
                         tb.putcol('ARRAY_ID', [0, ] * nBL, i, nBL)
@@ -852,7 +854,7 @@ try:
                         tb.putcol('FEED1', [0, ] * nBL, i, nBL)
                         tb.putcol('FEED2', [0, ] * nBL, i, nBL)
                         tb.putcol('FIELD_ID', sourceList, i, nBL)
-                        tb.putcol('FLAG_ROW', [False, ] * nBL, i, nBL)
+                        # tb.putcol('FLAG_ROW', [False, ] * nBL, i, nBL)
                         tb.putcol('INTERVAL', inttimeList, i, nBL)
                         tb.putcol('OBSERVATION_ID', [0, ] * nBL, i, nBL)
                         tb.putcol('PROCESSOR_ID', [-1, ] * nBL, i, nBL)

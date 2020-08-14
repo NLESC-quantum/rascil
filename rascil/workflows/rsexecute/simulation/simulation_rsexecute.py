@@ -708,7 +708,10 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
     return no_error_gt_list, error_gt_list
 
 
-def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_components, show=True,
+def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_components,
+                                                      get_vp,
+                                                      default_vp="MID",
+                                                      show=True,
                                                       basename=''):
     """ Create gaintable for polarisation effects
 
@@ -721,30 +724,25 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
     :param basename: Base name for the plots
     :return: (list of error-free gaintables, list of error gaintables) or graph
      """
-    
+     
     def find_vp_actual(bvis, band) -> List[Image]:
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
-            if vp_type == "MEERKAT":
-                vp = create_vp(telescope="MEERKAT_{band}".format(band=band))
-            elif vp_type == "MID":
-                vp = create_vp(telescope="MID_FEKO_{band}".format(band=band))
-            else:
-                raise ValueError("Voltage pattern {} not known".format(vp_type))
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
             vp = normalise_vp(vp)
             vp_list.append(vp)
-
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list
     
     def find_vp_nominal(bvis, band):
         vp_types = numpy.unique(bvis.configuration.vp_type)
-        # Use the SKA antennas as nominal
-        telescope = "MID_FEKO_{}".format(band)
-        vp = create_vp(telescope=telescope)
-        vp = normalise_vp(vp)
-        vp_list = len(vp_types) * [vp]
+        vp_list = []
+        for vp_type in vp_types:
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=default_vp, band=band)))
+            vp = normalise_vp(vp)
+            vp_list.append(vp)
+        assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list
     
     vp_nominal_list = [rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list]

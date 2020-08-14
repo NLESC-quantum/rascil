@@ -43,7 +43,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
 
     nrec = gaintables[0].nrec
     gnchan = gaintables[0].nchan
-    frequency = gaintables[9].frequency
+    frequency = gaintables[0].frequency
     
     if not isinstance(vp, collections.abc.Iterable):
         vp = [vp]

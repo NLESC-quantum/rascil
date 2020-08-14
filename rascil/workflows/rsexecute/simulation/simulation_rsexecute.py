@@ -650,7 +650,7 @@ def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
 
 def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
                                                      sub_components,
-                                                     actual_vp=None,
+                                                     get_vp,
                                                      show=True,
                                                      basename='',
                                                      normalise=True):
@@ -667,29 +667,34 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
     :return: (list of error-free gaintables, list of error gaintables) or graph
      """
     
-    def find_vp_actual(band) -> Image:
-        if actual_vp is None:
-            telescope = "MID_FEKO_{}".format(band)
-            vp = create_vp(telescope=telescope)
+    def find_vp_actual(bvis, band) -> List[Image]:
+        vp_types = numpy.unique(bvis.configuration.vp_type)
+        vp_list = []
+        for vp_type in vp_types:
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
             vp = normalise_vp(vp)
-        else:
-            vp = normalise_vp(actual_vp)
-        return vp
+            vp_list.append(vp)
+        assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
+        return vp_list
     
-    def find_vp_nominal(band):
-        vp = find_vp_actual(band)
-        vpsym = 0.5 * (vp.data[:, 0, ...] + vp.data[:, 3, ...])
-        if normalise:
-            vpsym /= numpy.max(numpy.abs(vpsym))
-        
-        vp.data[:, 0, ...] = vpsym
-        vp.data[:, 1, ...] = 0.0 + 0.0j
-        vp.data[:, 2, ...] = 0.0 + 0.0j
-        vp.data[:, 3, ...] = vpsym
-        return vp
-    
-    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(band) for bv in sub_bvis_list]
-    vp_actual_list = [rsexecute.execute(find_vp_actual)(band) for bv in sub_bvis_list]
+    def find_vp_nominal(bvis, band):
+        vp_types = numpy.unique(bvis.configuration.vp_type)
+        vp_list = []
+        for vp_type in vp_types:
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
+            vpsym = 0.5 * (vp.data[:, 0, ...] + vp.data[:, 3, ...])
+            if normalise:
+                vpsym /= numpy.max(numpy.abs(vpsym))
+            vp.data[:, 0, ...] = vpsym
+            vp.data[:, 1, ...] = 0.0 + 0.0j
+            vp.data[:, 2, ...] = 0.0 + 0.0j
+            vp.data[:, 3, ...] = vpsym
+            vp_list.append(vp)
+        assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
+        return vp_list
+
+    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list]
+    vp_actual_list = [rsexecute.execute(find_vp_actual)(bv, band) for bv in sub_bvis_list]
     
     # Create the gain tables, one per Visibility and per component
     no_error_gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)

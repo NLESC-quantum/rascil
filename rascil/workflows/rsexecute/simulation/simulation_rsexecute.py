@@ -727,7 +727,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
         vp_list = []
         for vp_type in vp_types:
             if vp_type == "MEERKAT":
-                vp = create_vp(telescope="MEERKAT+_{band}".format(band=band))
+                vp = create_vp(telescope="MEERKAT_{band}".format(band=band))
             elif vp_type == "MID":
                 vp = create_vp(telescope="MID_FEKO_{band}".format(band=band))
             else:

@@ -496,7 +496,7 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
                                                                 radius=pbradius,
                                                                 fov=fov)
         original_components = filter_skycomponents_by_flux(all_components, flux_max=flux_max)
-        log.info("create_simulation_components: %d components before application of primary beam" %
+        log.info("create_simulation_components: %d components before filtering with primary beam" %
                  (len(original_components)))
         
 
@@ -575,7 +575,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
                                                        radius=pbradius,
                                                        fov=fov)
     original_components = filter_skycomponents_by_flux(all_components, flux_max=flux_max)
-    log.info("create_simulation_components: %d components before application of primary beam" %
+    log.info("create_simulation_components: %d components before filtering with primary beam" %
              (len(original_components)))
 
     pbmodel = create_image(npixel=pb_npixel,

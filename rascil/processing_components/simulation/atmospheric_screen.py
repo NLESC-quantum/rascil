@@ -52,7 +52,7 @@ def find_pierce_points(station_locations, ha, dec, phasecentre, height):
     return pierce_points
 
 
-def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, r0=5e3, type_atmosphere='ionosphere',
+def create_gaintable_from_screen(vis, sc, screen, height=None, vis_slices=None, r0=5e3, type_atmosphere='ionosphere',
                                  reference_component=None, **kwargs):
     """ Create gaintables from a screen calculated using ARatmospy
 
@@ -68,6 +68,8 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, r
     :return:
     """
     assert isinstance(vis, BlockVisibility)
+    
+    assert height is not None, "Screen height must be specified"
     
     station_locations = vis.configuration.xyz
     

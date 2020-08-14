@@ -832,11 +832,8 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     return bvis_graph
 
 
-def create_standard_low_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range,
-                                                      time_chunk, integration_time,
-                                                      shared_directory,
-                                                      polarisation_frame=None,
-                                                      zerow=False):
+def create_standard_low_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range, time_chunk, integration_time,
+                                                      polarisation_frame=None, zerow=False):
     """ Create the standard LOW simulation
 
     :param band: B
@@ -845,7 +842,6 @@ def create_standard_low_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     :param time_range: Hour angle (in hours)
     :param time_chunk: Chunking of time in seconds
     :param integration_time:
-    :param shared_directory:
     :param polarisation_frame: Desired polarisation frame
     :param zerow: Set w to zero (False)
     :return:

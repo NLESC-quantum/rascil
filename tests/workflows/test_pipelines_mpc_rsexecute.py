@@ -141,7 +141,8 @@ class TestPipelineMPC(unittest.TestCase):
         self.screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
 
         all_gaintables = create_gaintable_from_screen(blockvis, all_components,
-                                                      rascil_data_path('models/test_mpc_screen.fits'))
+                                                      rascil_data_path('models/test_mpc_screen.fits'),
+                                                      height=3e5)
 
         gleam_skymodel_noniso = [SkyModel(components=[all_components[i]], gaintable=all_gaintables[i])
                                  for i, sm in enumerate(all_components)]

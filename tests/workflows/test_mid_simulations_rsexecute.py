@@ -14,6 +14,8 @@ import numpy
 import os
 import sys
 import unittest
+
+from functools import partial
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -48,7 +50,7 @@ class TestMIDSimulations(unittest.TestCase):
     
     def setUp(self) -> None:
         rsexecute.set_client(use_dask=True)
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
     
     def simulation(self, args, mode='wind_pointing', band='B2',
                    image_polarisation_frame=PolarisationFrame("stokesI"),
@@ -128,7 +130,10 @@ class TestMIDSimulations(unittest.TestCase):
         future_vp_list = rsexecute.persist(vp_list)
         
         a2r = numpy.pi / (3600.0 * 1800)
-        
+
+        def get_vp(telescope, vp_directory):
+            return create_vp(telescope=telescope)
+
         if mode == 'random_pointing':
             # Random pointing errors
             global_pointing_error = global_pe
@@ -185,13 +190,15 @@ class TestMIDSimulations(unittest.TestCase):
             # Different antennas
             no_error_gtl, error_gtl = \
                 create_heterogeneous_gaintable_rsexecute_workflow(band, bvis_list, original_components,
+                                                                  get_vp=partial(get_vp, vp_directory=""),
                                                                   show=False, basename=basename)
         elif mode == 'polarisation':
             # Polarised beams
             no_error_gtl, error_gtl = \
                 create_polarisation_gaintable_rsexecute_workflow(band, bvis_list, original_components,
+                                                                 get_vp=partial(get_vp, vp_directory=""),
                                                                  basename=basename,
-                                                                 show=False)
+                                                                 show=True)
         else:
             raise ValueError("Unknown type of error %s" % mode)
         
@@ -247,7 +254,7 @@ class TestMIDSimulations(unittest.TestCase):
             export_blockvisibility_to_ms("{}/test_mid_simulations_{}_difference.ms".format(rascil_path("test_results"),
                                                                                            mode),
                                          bvis_list)
-            return error_dirty, sumwt
+        return error_dirty, sumwt
     
     def get_args(self):
         
@@ -341,12 +348,12 @@ class TestMIDSimulations(unittest.TestCase):
         error_dirty, sumwt = self.simulation(args, 'heterogeneous',
                                              image_polarisation_frame=PolarisationFrame("stokesIQUV"),
                                              vis_polarisation_frame=PolarisationFrame("linear"))
-        
+
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.011445473611400483, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.0008291859313487538, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 7.309357923380019e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.00623984329556531, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.00040818314237699334, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 3.7690635591342266e-05, 5, err_msg=str(qa))
     
     @unittest.skip("Not deterministic")
     def test_random(self):
@@ -354,8 +361,10 @@ class TestMIDSimulations(unittest.TestCase):
         args = self.get_args()
         args.fluxlimit = 0.1
         
-        error_dirty, sumwt = self.simulation(args, 'random_pointing')
-        
+        error_dirty, sumwt = self.simulation(args, 'random_pointing',
+                                             image_polarisation_frame=PolarisationFrame("stokesIQUV"),
+                                             vis_polarisation_frame=PolarisationFrame("linear"))
+
         qa = qa_image(error_dirty)
         
         numpy.testing.assert_almost_equal(qa.data['max'], 3.5821163782097796e-05, 5, err_msg=str(qa))
@@ -368,8 +377,10 @@ class TestMIDSimulations(unittest.TestCase):
         args.fluxlimit = 0.1
         
         if os.path.isdir(rascil_path('models/interpolated')):
-            error_dirty, sumwt = self.simulation(args, 'surface')
-            
+            error_dirty, sumwt = self.simulation(args, 'surface',
+                                                 image_polarisation_frame=PolarisationFrame("stokesIQUV"),
+                                                 vis_polarisation_frame=PolarisationFrame("linear"))
+    
             qa = qa_image(error_dirty)
             
             numpy.testing.assert_almost_equal(qa.data['max'], 2.2055849698035616e-06, 5, err_msg=str(qa))
@@ -387,6 +398,6 @@ class TestMIDSimulations(unittest.TestCase):
                                              vis_polarisation_frame=PolarisationFrame("linear"))
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.0001622512379953144, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.00020435570818205958, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 6.285864254427538e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.00040750268943426154, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.0004592079325828478, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 9.32304949711272e-06, 5, err_msg=str(qa))

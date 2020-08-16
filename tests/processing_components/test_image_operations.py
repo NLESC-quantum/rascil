@@ -110,16 +110,16 @@ class TestImage(unittest.TestCase):
             polarisation_frame_from_wcs(wcs, shape)
 
     def test_polarisation_frame_from_wcs_jones(self):
-        vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_real.fits'))
-        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'))
+        vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_real.fits'), fixpol=False)
+        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'), fixpol=False)
         vp.data = vp.data + 1j * imag_vp.data
 
         polframe = polarisation_frame_from_wcs(vp.wcs, vp.shape)
+        permute = polframe.fits_to_rascil[polframe.type]
 
         newvp_data = vp.data.copy()
-        newvp_data[:, 3] = vp.data[:, 1]
-        newvp_data[:, 1] = vp.data[:, 2]
-        newvp_data[:, 2] = vp.data[:, 3]
+        for ip, p in enumerate(permute):
+            newvp_data[:,p,...] = vp.data[:,ip,...]
         vp.data = newvp_data
 
         assert vp.polarisation_frame == PolarisationFrame("linear")

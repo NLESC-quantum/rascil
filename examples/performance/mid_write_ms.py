@@ -2,14 +2,14 @@
 
 """
 import logging
-import pprint
 import sys
 
 import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from rascil.data_models import PolarisationFrame, export_blockvisibility_to_hdf5
+from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models.data_model_helpers import export_blockvisibility_to_hdf5
 from rascil.processing_components import create_named_configuration
 from rascil.processing_components.visibility import create_blockvisibility
 from rascil.processing_components.visibility.base import export_blockvisibility_to_ms
@@ -20,6 +20,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def simulation(args):
+    import pprint
     pp = pprint.PrettyPrinter()
     pp.pprint(vars(args))
     
@@ -34,7 +35,7 @@ def simulation(args):
         integration_time = 10.0
         time_range = [-0.5, 0.5]
     elif args.duration == "long":
-        integration_time = 10.0
+        integration_time = 60.0
         time_range = [-4.0, 4.0]
     else:
         args.duration = "custom"
@@ -91,22 +92,30 @@ def simulation(args):
                                          phasecentre=phasecentre,
                                          polarisation_frame=vis_polarisation_frame)
     ms_createtime = time.time() - start_time
-    log.info("Time to create BV = {:.3f} seconds".format(ms_createtime))
+    log.info("Time to create BlockVisibility = {:.3f} seconds".format(ms_createtime))
     
     print("Size of BlockVisibility = {:.3f} GB".format(entire_bvis.size()))
     
-    msfile = "ms_write.ms"
-    log.info("Writing BlockVisibility to MS")
-    export_blockvisibility_to_ms(msfile, [entire_bvis])
-    ms_writetime = time.time() - start_time
-    log.info("Time to write BlockVisibility as MS = {:.3f} seconds".format(ms_writetime))
-
     log.info("Writing BlockVisibility to HDF5")
     start_time = time.time()
     hdf5file = "ms_write.hdf5"
     export_blockvisibility_to_hdf5([entire_bvis], hdf5file)
     hdf5_writetime = time.time() - start_time
     log.info("Time to write BlockVisibility as HDF5 = {:.3f} seconds".format(hdf5_writetime))
+
+    msfile = "ms_write.ms"
+    log.info("Writing BlockVisibility to MS")
+    export_blockvisibility_to_ms(msfile, [entire_bvis])
+    ms_writetime = time.time() - start_time
+    log.info("Time to write BlockVisibility as MS = {:.3f} seconds".format(ms_writetime))
+
+    import casacore.tables as tables
+
+    t = tables.table(msfile)
+
+    import pprint
+    pp = pprint.PrettyPrinter()
+    pp.pprint(t.getdminfo())
 
     return True
 
@@ -121,10 +130,10 @@ def cli_parser():
     parser.add_argument('--rmax', type=float, default=2e5, help='Maximum distance of station from centre (m)')
     parser.add_argument('--band', type=str, default='B2', help="Band")
     parser.add_argument('--configuration', type=str, default='MID', help="Configuration: MID | MEERKAT+")
-    parser.add_argument('--nchan', type=int, default=1, help="Number of frequency channels")
+    parser.add_argument('--nchan', type=int, default=8, help="Number of frequency channels")
     parser.add_argument('--channel_width', type=float, default=None, help='Channel bandwidth (Hz)')
-    parser.add_argument('--integration_time', type=float, default=180, help='Integration time (s)')
-    parser.add_argument('--time_range', type=float, nargs=2, default=[-4.0, 4.0], help='Time range in hour angle')
+    parser.add_argument('--integration_time', type=float, default=600, help='Integration time (s)')
+    parser.add_argument('--time_range', type=float, nargs=2, default=[-1.0, 1.0], help='Time range in hour angle')
     parser.add_argument('--image_pol', type=str, default='stokesIQUV', help='RASCIL polarisation frame for image')
     parser.add_argument('--vis_pol', type=str, default='linear', help='RASCIL polarisation frame for visibility')
     parser.add_argument('--duration', type=str, default='long', help="Type of duration: long or medium or short")

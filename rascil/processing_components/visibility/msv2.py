@@ -665,21 +665,34 @@ try:
                 altitude = self.site_config.location.height.to('meter').value
 
             mapper = self.array[0]['mapper']
+            
+            ncorr = self.nStokes
+            nchan = self.nchan
 
-            col1 = tableutil.makearrcoldesc('UVW', 0.0, 1,
+            col1 = tableutil.makearrcoldesc('UVW', 0.0, 1, shape=[3], options=0,
                                             comment='Vector with uvw coordinates (in meters)',
+                                            datamanagergroup="UVW",
+                                            datamanagertype='TiledColumnStMan',
                                             keywords={'QuantumUnits': ['m', 'm', 'm'],
                                                       'MEASINFO': {'type': 'uvw', 'Ref': 'ITRF'}
                                                       })
-            col2 = tableutil.makearrcoldesc('FLAG', False, 2,
+            col2 = tableutil.makearrcoldesc('FLAG', False, 2, shape=[nchan, ncorr], options=4,
+                                            datamanagertype='TiledColumnStMan',
+                                            datamanagergroup='Data',
                                             comment='The data flags, array of bools with same shape as data')
-            col3 = tableutil.makearrcoldesc('FLAG_CATEGORY', False, 3,
+            col3 = tableutil.makearrcoldesc('FLAG_CATEGORY', False, 3, shape=[1, nchan, ncorr], options=4,
+                                            datamanagertype='TiledColumnStMan',
+                                            datamanagergroup='FlagCategory',
                                             comment='The flag category, NUM_CAT flags for each datum',
                                             keywords={'CATEGORY': ['', ]})
-            col4 = tableutil.makearrcoldesc('WEIGHT', 1.0, 1,
+            col4 = tableutil.makearrcoldesc('WEIGHT', 1.0, 1, shape=[ncorr],
+                                            datamanagertype='TiledColumnStMan',
+                                            datamanagergroup='Weight',
                                             valuetype='float',
                                             comment='Weight for each polarization spectrum')
-            col5 = tableutil.makearrcoldesc('SIGMA', 9999., 1,
+            col5 = tableutil.makearrcoldesc('SIGMA', 9999., 1, shape=[ncorr], options=4,
+                                            datamanagertype='TiledColumnStMan',
+                                            datamanagergroup='Sigma',
                                             valuetype='float',
                                             comment='Estimated rms noise for channel with unity bandpass response')
             col6 = tableutil.makescacoldesc('ANTENNA1', 0,
@@ -687,46 +700,60 @@ try:
             col7 = tableutil.makescacoldesc('ANTENNA2', 0,
                                             comment='ID of second antenna in interferometer')
             col8 = tableutil.makescacoldesc('ARRAY_ID', 0,
+                                            datamanagertype="IncrementalStMan",
                                             comment='ID of array or subarray')
             col9 = tableutil.makescacoldesc('DATA_DESC_ID', 0,
+                                            datamanagertype="IncrementalStMan",
                                             comment='The data description table index')
             col10 = tableutil.makescacoldesc('EXPOSURE', 0.0,
-                                             comment='he effective integration time',
+                                             comment='The effective integration time',
                                              keywords={'QuantumUnits': ['s', ]})
             col11 = tableutil.makescacoldesc('FEED1', 0,
+                                             datamanagertype="IncrementalStMan",
                                              comment='The feed index for ANTENNA1')
             col12 = tableutil.makescacoldesc('FEED2', 0,
+                                             datamanagertype="IncrementalStMan",
                                              comment='The feed index for ANTENNA2')
             col13 = tableutil.makescacoldesc('FIELD_ID', 0,
+                                             datamanagertype="IncrementalStMan",
                                              comment='Unique id for this pointing')
             col14 = tableutil.makescacoldesc('FLAG_ROW', False,
+                                             datamanagertype="IncrementalStMan",
                                              comment='Row flag - flag all data in this row if True')
             col15 = tableutil.makescacoldesc('INTERVAL', 0.0,
+                                             datamanagertype="IncrementalStMan",
                                              comment='The sampling interval',
                                              keywords={'QuantumUnits': ['s', ]})
             col16 = tableutil.makescacoldesc('OBSERVATION_ID', 0,
+                                             datamanagertype="IncrementalStMan",
                                              comment='ID for this observation, index in OBSERVATION table')
             col17 = tableutil.makescacoldesc('PROCESSOR_ID', -1,
+                                             datamanagertype="IncrementalStMan",
                                              comment='Id for backend processor, index in PROCESSOR table')
             col18 = tableutil.makescacoldesc('SCAN_NUMBER', 1,
+                                             datamanagertype="IncrementalStMan",
                                              comment='Sequential scan number from on-line system')
             col19 = tableutil.makescacoldesc('STATE_ID', -1,
+                                             datamanagertype="IncrementalStMan",
                                              comment='ID for this observing state')
             col20 = tableutil.makescacoldesc('TIME', 0.0,
                                              comment='Modified Julian Day',
+                                             datamanagertype="IncrementalStMan",
                                              keywords={'QuantumUnits': ['s', ],
                                                        'MEASINFO': {'type': 'epoch', 'Ref': 'UTC'}
                                                        })
             col21 = tableutil.makescacoldesc('TIME_CENTROID', 0.0,
                                              comment='Modified Julian Day',
+                                             datamanagertype="IncrementalStMan",
                                              keywords={'QuantumUnits': ['s', ],
                                                        'MEASINFO': {'type': 'epoch', 'Ref': 'UTC'}
                                                        })
-            col22 = tableutil.makearrcoldesc("DATA", 0j, 2,
-                                             valuetype='complex',
-                                             datamanagertype='TiledShapeStMan',
-                                             datamanagergroup='TiledData',
+            col22 = tableutil.makearrcoldesc("DATA", 0j, 2, shape=[nchan, ncorr], options=4,
+                                             valuetype='complex', keywords={"UNIT": "Jy"},
+                                             datamanagertype='TiledColumnStMan',
+                                             datamanagergroup="Data",
                                              comment='The data column')
+
 
             desc = tableutil.maketabdesc([col1, col2, col3, col4, col5, col6, col7, col8, col9,
                                           col10, col11, col12, col13, col14, col15, col16,

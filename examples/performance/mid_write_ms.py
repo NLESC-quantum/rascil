@@ -2,14 +2,14 @@
 
 """
 import logging
-import pprint
 import sys
 
 import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from rascil.data_models import PolarisationFrame, export_blockvisibility_to_hdf5
+from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models.data_model_helpers import export_blockvisibility_to_hdf5
 from rascil.processing_components import create_named_configuration
 from rascil.processing_components.visibility import create_blockvisibility
 from rascil.processing_components.visibility.base import export_blockvisibility_to_ms
@@ -20,6 +20,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def simulation(args):
+    import pprint
     pp = pprint.PrettyPrinter()
     pp.pprint(vars(args))
     
@@ -34,7 +35,7 @@ def simulation(args):
         integration_time = 10.0
         time_range = [-0.5, 0.5]
     elif args.duration == "long":
-        integration_time = 10.0
+        integration_time = 60.0
         time_range = [-4.0, 4.0]
     else:
         args.duration = "custom"

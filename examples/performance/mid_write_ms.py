@@ -115,7 +115,7 @@ def simulation(args):
 
     import pprint
     pp = pprint.PrettyPrinter()
-    pp.pprint(t.getdesc())
+    pp.pprint(t.getdminfo())
 
     return True
 
@@ -130,10 +130,10 @@ def cli_parser():
     parser.add_argument('--rmax', type=float, default=2e5, help='Maximum distance of station from centre (m)')
     parser.add_argument('--band', type=str, default='B2', help="Band")
     parser.add_argument('--configuration', type=str, default='MID', help="Configuration: MID | MEERKAT+")
-    parser.add_argument('--nchan', type=int, default=1, help="Number of frequency channels")
+    parser.add_argument('--nchan', type=int, default=8, help="Number of frequency channels")
     parser.add_argument('--channel_width', type=float, default=None, help='Channel bandwidth (Hz)')
     parser.add_argument('--integration_time', type=float, default=600, help='Integration time (s)')
-    parser.add_argument('--time_range', type=float, nargs=2, default=[-4.0, 4.0], help='Time range in hour angle')
+    parser.add_argument('--time_range', type=float, nargs=2, default=[-1.0, 1.0], help='Time range in hour angle')
     parser.add_argument('--image_pol', type=str, default='stokesIQUV', help='RASCIL polarisation frame for image')
     parser.add_argument('--vis_pol', type=str, default='linear', help='RASCIL polarisation frame for visibility')
     parser.add_argument('--duration', type=str, default='long', help="Type of duration: long or medium or short")

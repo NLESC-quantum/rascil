@@ -734,6 +734,7 @@ try:
                                              datamanagertype="IncrementalStMan",
                                              comment='Sequential scan number from on-line system')
             col19 = tableutil.makescacoldesc('STATE_ID', -1,
+                                             datamanagertype="IncrementalStMan",
                                              comment='ID for this observing state')
             col20 = tableutil.makescacoldesc('TIME', 0.0,
                                              comment='Modified Julian Day',

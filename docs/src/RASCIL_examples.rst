@@ -10,7 +10,7 @@ The best way to get familiar with RASCIL is via jupyter notebooks. For example::
 
    jupyter notebook examples/notebooks/imaging.ipynb
 
-See the jupyter note books below:
+See the jupyter notebooks below:
 
 .. toctree::
    :maxdepth: 3
@@ -22,6 +22,8 @@ See the jupyter note books below:
    examples/notebooks//bandpass-calibration_serial.rst
 
 In addition, there are other notebooks in examples/notebooks that are not built as part of this documentation.
+In some cases it may be necessary to add the following to the notebook to locate the RASCIL data
+:code:`%env RASCIL_DATA=~/rascil_data/data`
 
 Running scripts
 ***************

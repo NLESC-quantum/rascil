@@ -3,7 +3,7 @@
 Installation
 ============
 
-RASCIL can be run on a Linux or macos machine or cluster of machines, using python 3.7 or 3.8. At least 16GB physical
+RASCIL can be run on a Linux or macOS machine or cluster of machines, using python 3.7 or 3.8. At least 16GB physical
 memory is necessary to run the full test suite. In general more memory is better. RASCIL uses Dask for
 multi-processing and can make good use of multi-core and multi-node machines.
 
@@ -23,6 +23,7 @@ in a separate step::
     cd rascil_data
     curl https://ska-telescope.gitlab.io/rascil/rascil_data.tgz -o rascil_data.tgz
     tar zxf rascil_data.tgz
+    cd data
     export RASCIL_DATA=`pwd`
 
 If you wish to run the RASCIL examples or tests, use one of the steps below.
@@ -30,7 +31,7 @@ If you wish to run the RASCIL examples or tests, use one of the steps below.
 Installation via docker
 +++++++++++++++++++++++
 
-If you are familar with docker, an easy approach is to use docker:
+If you are familiar with docker, an easy approach is to use docker:
 
  .. toctree::
     installation/RASCIL_docker
@@ -45,7 +46,7 @@ RASCIL requires python 3.7 or 3.8.
 
 The installation steps are:
 
-- Use git to make a local clone of the Github respository::
+- Use git to make a local clone of the Github repository::
 
    git clone https://gitlab.com/ska-telescope/rascil
 
@@ -68,12 +69,15 @@ The installation steps are:
     git lfs install
     git-lfs pull
 
+If git-lfs is not already available, then lfs will not be recognised as a valid option for git in the second step.
+In this case, git-lfs can be installed via :code:`sudo apt install git-lfs` or from a `tar file <https://docs.github.com/en/github/managing-large-files/installing-git-large-file-storage>`_
+
 - Put the following definitions in your .bashrc::
 
     export RASCIL=/path/to/rascil
     export PYTHONPATH=$RASCIL:$PYTHONPATH
 
-"python setup.py install" installs in the correct site-packages location so the definition of PYTHONPATH is not needed
+:code:`python setup.py install` installs in the correct site-packages location so the definition of PYTHONPATH is not needed
 if you only don't intend to update or edit rascil in place. If you do intend to make changes, you will need the
 definition of PYTHONPATH.
 
@@ -86,7 +90,13 @@ your setup, these may already be in the right place. If not, you can download a 
     echo 'measures.directory: ~/casacore_data' > ~/.casarc
     rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic ~/casacore_data
 
-If you get errors about the UTC table being out of date, repeat the rsync.
+If you get errors about the UTC table being out of date, typically of the form::
+
+    2020-08-07 15:37:59 SEVERE MeasTable:...+ Leap second table TAI_UTC seems out-of-date.
+    2020-08-07 15:37:59 SEVERE MeasTable:...+ Until the table is updated (see the CASA documentation or your system admin),
+    2020-08-07 15:37:59 SEVERE MeasTable:...+ times and coordinates derived from UTC could be wrong by 1s or more.
+
+you should repeat the rsync.
 
 Installation via conda
 ++++++++++++++++++++++
@@ -111,6 +121,9 @@ Installation on specific machines
 Trouble-shooting
 ++++++++++++++++
 
+Testing
+^^^^^^^
+
 Check your installation by running a subset of the tests::
 
    pip install pytest pytest-xdist
@@ -121,9 +134,27 @@ Or the full set::
    py.test -n 4 tests
 
 - Ensure that pip is up-to-date. If not, some strange install errors may occur.
-- Check that the contents of the data directories have plausible contents. If gif-lfs has not been run successfully then the data files will just containe meta data, leading to strange run-time errors.
+- Check that the contents of the data directories have plausible contents. If gif-lfs has not been run successfully then the data files will just contain meta data, leading to strange run-time errors.
 - There may be some dependencies that require either conda (or brew install on a mac).
 
+Casacore installation
+^^^^^^^^^^^^^^^^^^^^^
 
+RASCIL requires python-casacore to be installed. This is included in the requirements for the RASCIL install and so
+should be installed automatically via pip. In some cases there may not be a compatible binary install (wheel) available
+via pip. If not, pip will download the source code of casacore and attempt a build from source. The most common failure
+mode during the source build is that it cannot find the boost-python libraries. These can be installed via pip. If
+errors like this occur, once rectified, re-installing python-casacore separately via pip may be required, prior to
+re-commencing the RASCIL install.
+Trouble-shooting problems with a source install can be difficult. If available, this can be avoided by using anaconda as
+the base for an environment. It supports python-casacore which can be installed with “conda install python-casacore”.
+It may also be possible to avoid some of the more difficult issues with building python-casacore by downloading CASA
+prior to the RASCIL install.
+
+RASCIL data in notebooks
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+In some case the notebooks may not automatically find the RASCIL data directory, in which case explicitly setting the
+RASCIL_DATA environment variable may be required: :code:`%env RASCIL_DATA=~/rascil_data/data`.
 
 .. _feedback: mailto:realtimcornwell@gmail.com

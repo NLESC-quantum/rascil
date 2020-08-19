@@ -585,21 +585,33 @@ def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
         if band == 'B1':
             dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB1/interpolated_elevation/"
             vpa = import_image_from_fits(
-                '%s/B1_%d_0565_real_interpolated.fits' % (dir, int(el)))
+                '%s/B1_%d_0565_real_interpolated.fits' % (dir, int(el)), fixpol=True)
+            assert vpa.data[0, 0, 512, 512] > 0.5
+            assert vpa.data[0, 1, 512, 512] < 0.5
+            assert vpa.data[0, 2, 512, 512] < 0.5
+            assert vpa.data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
-                '%s/B1_%d_0565_imag_interpolated.fits' % (dir, int(el)))
+                '%s/B1_%d_0565_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         elif band == 'B2':
             dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB2/interpolated_elevation/"
             vpa = import_image_from_fits(
-                '%s/B2_%d_1360_real_interpolated.fits' % (dir, int(el)))
+                '%s/B2_%d_1360_real_interpolated.fits' % (dir, int(el)), fixpol=True)
+            assert vpa.data[0, 0, 512, 512] > 0.5
+            assert vpa.data[0, 1, 512, 512] < 0.5
+            assert vpa.data[0, 2, 512, 512] < 0.5
+            assert vpa.data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
-                '%s/B2_%d_1360_imag_interpolated.fits' % (dir, int(el)))
+                '%s/B2_%d_1360_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         elif band == 'Ku':
             dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_Ku/interpolated_elevation/"
             vpa = import_image_from_fits(
-                '%s/Ku_%d_11700_real_interpolated.fits' % (dir, int(el)))
+                '%s/Ku_%d_11700_real_interpolated.fits' % (dir, int(el)), fixpol=True)
+            assert vpa.data[0, 0, 512, 512] > 0.5
+            assert vpa.data[0, 1, 512, 512] < 0.5
+            assert vpa.data[0, 2, 512, 512] < 0.5
+            assert vpa.data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
-                '%s/Ku_%d_11700_imag_interpolated.fits' % (dir, int(el)))
+                '%s/Ku_%d_11700_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         else:
             raise ValueError("Unknown band %s" % band)
         
@@ -742,12 +754,10 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
     
     def find_vp_nominal(bvis, band):
         vp_types = numpy.unique(bvis.configuration.vp_type)
-        vp_list = []
-        for vp_type in vp_types:
-            vp = copy_image(get_vp("{vp}_{band}".format(vp=default_vp, band=band)))
-            vp = normalise_vp(vp)
-            vp_list.append(vp)
-        assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
+        vp = copy_image(get_vp("{vp}_{band}".format(vp=default_vp, band=band)))
+        vp = normalise_vp(vp)
+        vp_list = len(vp_types) * [vp]
+        assert len(vp_list) == len(vp_types)
         return vp_list
     
     vp_nominal_list = [rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list]

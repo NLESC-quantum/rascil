@@ -112,7 +112,5 @@ class TestMSTests(unittest.TestCase):
         msoutfile = "%s/test_imaging_ms_pol_%dfreqwin.ms" % (self.dir, len(self.frequency))
         export_blockvisibility_to_ms(msoutfile, [self.bvis], source_name='M31')
 
-
-
 if __name__ == '__main__':
     unittest.main()

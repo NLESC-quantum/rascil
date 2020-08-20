@@ -92,7 +92,7 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
 
 
 
-def import_image_from_fits(fitsfile: str) -> Image:
+def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
     """ Read an Image from fits
     
     :param fitsfile: FITS file in storage
@@ -116,12 +116,14 @@ def import_image_from_fits(fitsfile: str) -> Image:
         try:
             fim.polarisation_frame = polarisation_frame_from_wcs(fim.wcs, fim.data.shape)
             # FITS and RASCIL polarisation conventions differ
-            new_data = fim.data.copy()
-            new_data[:, 3] = fim.data[:, 1]
-            new_data[:, 1] = fim.data[:, 2]
-            new_data[:, 2] = fim.data[:, 3]
-            fim.data = new_data
-        
+            if fixpol:
+                permute = fim.polarisation_frame.fits_to_rascil[fim.polarisation_frame.type]
+    
+                newim_data = fim.data.copy()
+                for ip, p in enumerate(permute):
+                    newim_data[:, p, ...] = fim.data[:, ip, ...]
+                fim.data = newim_data
+
         except ValueError:
             fim.polarisation_frame = PolarisationFrame('stokesI')
     
@@ -700,7 +702,7 @@ def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: Pol
     return fim
 
 
-def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
+def polarisation_frame_from_wcs(wcs, shape):
     """Convert wcs to polarisation_frame
 
     See FITS definition in Table 29 of https://fits.gsfc.nasa.gov/standard40/fits_standard40draft1.pdf

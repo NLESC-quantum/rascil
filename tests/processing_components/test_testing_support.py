@@ -132,9 +132,9 @@ class TestTesting_Support(unittest.TestCase):
                                                phasecentre=self.phasecentre,
                                                polarisation_frame=PolarisationFrame("stokesI"),
                                                frequency=self.frequency, radius=0.1)
-        assert len(sc) == 9, "Only expected nine sources, actually found %d" % len(sc)
-        assert sc[0].name == 'S3_36133023'
-        self.assertAlmostEqual(sc[0].flux[0, 0], 4.54336938, 7)
+        assert len(sc) == 5, "Expected 5 sources, actually found %d" % len(sc)
+        assert sc[0].name == 'S3_36315789'
+        self.assertAlmostEqual(sc[0].flux[0, 0], 3.6065651245943307, 7)
     
     def test_create_test_image_from_s3_low(self):
         im = create_test_image_from_s3(npixel=1024, channel_bandwidth=numpy.array([1e6]),

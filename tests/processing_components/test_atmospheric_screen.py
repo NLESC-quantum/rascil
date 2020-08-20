@@ -46,7 +46,8 @@ class TestAtmosphericScreen(unittest.TestCase):
             self.cellsize = 0.000015
         else:
             self.core = create_named_configuration('MID', rmax=300.0)
-            self.frequency = numpy.array([1.36e9])
+            # Note that the frequency is wrong since the test screen is really for the ionospheric case.
+            self.frequency = numpy.array([1.0e8])
             self.channel_bandwidth = numpy.array([1e8])
             self.cellsize = 0.00015
 
@@ -84,7 +85,7 @@ class TestAtmosphericScreen(unittest.TestCase):
 
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
 
-        gaintables = create_gaintable_from_screen(self.vis, actual_components, screen)
+        gaintables = create_gaintable_from_screen(self.vis, actual_components, screen, height=3e5)
         assert len(gaintables) == len(actual_components), len(gaintables)
         assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 
@@ -134,7 +135,8 @@ class TestAtmosphericScreen(unittest.TestCase):
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
 
         gaintables = create_gaintable_from_screen(self.vis, actual_components,
-                                                  rascil_data_path('models/test_mpc_screen.fits'))
+                                                  rascil_data_path('models/test_mpc_screen.fits'),
+                                                  height=3e5)
         assert len(gaintables) == len(actual_components), len(gaintables)
         assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 
@@ -165,7 +167,7 @@ class TestAtmosphericScreen(unittest.TestCase):
 
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
 
-        gaintables = create_gaintable_from_screen(self.vis, actual_components, screen)
+        gaintables = create_gaintable_from_screen(self.vis, actual_components, screen, height=3e5)
         assert len(gaintables) == len(actual_components), len(gaintables)
         assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 

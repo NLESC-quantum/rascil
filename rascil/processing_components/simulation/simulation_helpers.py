@@ -225,10 +225,10 @@ def plot_azel(bvis_list, plot_file=None, **kwargs):
     :return:
     """
     plt.clf()
-    r2d = 180.0 / numpy.pi
+    r2h = 12.0 / numpy.pi
     
     for ibvis, bvis in enumerate(bvis_list):
-        ha = calculate_blockvisibility_hourangles(bvis).value
+        ha = r2h * calculate_blockvisibility_hourangles(bvis).value
         az, el = calculate_blockvisibility_azel(bvis)
         if ibvis == 0:
             plt.plot(ha, az.deg, '.', color='r', label='Azimuth (deg)')
@@ -496,7 +496,7 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
                                                                 radius=pbradius,
                                                                 fov=fov)
         original_components = filter_skycomponents_by_flux(all_components, flux_max=flux_max)
-        log.info("create_simulation_components: %d components before application of primary beam" %
+        log.info("create_simulation_components: %d components before filtering with primary beam" %
                  (len(original_components)))
         
 
@@ -540,10 +540,9 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
     return original_components, offset_direction
 
 
-def create_mid_simulation_components(phasecentre, frequency, flux_limit,
-                                 pbradius, pb_npixel, pb_cellsize, show=False, fov=10,
-                                 polarisation_frame=PolarisationFrame("stokesI"),
-                                 filter_by_primary_beam=True, flux_max=10.0):
+def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradius, pb_npixel, pb_cellsize, show=False,
+                                     fov=10, polarisation_frame=PolarisationFrame("stokesI"), flux_max=10.0,
+                                     pb_type="MID"):
     """ Construct components for simulation
 
     :param context: singlesource or null or s3sky
@@ -557,7 +556,6 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit,
     :param pb_cellsize: Cellsize in primary beam model
     :param fov: FOV in degrees (used to select catalog)
     :param flux_max: Maximum flux in model before application of primary beam
-    :param filter_by_primary_beam: Filter components by primary beam
     :param polarisation_frame:
     :param show:
 
@@ -570,48 +568,51 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit,
     log.info("create_simulation_components: Constructing s3sky components")
     from rascil.processing_components.simulation import create_test_skycomponents_from_s3
     
-    all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 100.0,
+    all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 10.0,
                                                        phasecentre=phasecentre,
-                                                       polarisation_frame=polarisation_frame,
+                                                       polarisation_frame=PolarisationFrame("stokesI"),
                                                        frequency=numpy.array(frequency),
                                                        radius=pbradius,
                                                        fov=fov)
     original_components = filter_skycomponents_by_flux(all_components, flux_max=flux_max)
-    log.info("create_simulation_components: %d components before application of primary beam" %
+    log.info("create_simulation_components: %d components before filtering with primary beam" %
              (len(original_components)))
+
+    pbmodel = create_image(npixel=pb_npixel,
+                           cellsize=pb_cellsize,
+                           phasecentre=phasecentre,
+                           frequency=frequency,
+                           polarisation_frame=PolarisationFrame("stokesI"))
     
-    if filter_by_primary_beam:
-        pbmodel = create_image(npixel=pb_npixel,
-                               cellsize=pb_cellsize,
-                               phasecentre=phasecentre,
-                               frequency=frequency,
-                               polarisation_frame=PolarisationFrame("stokesI"))
-        stokesi_components = [copy_skycomponent(o) for o in original_components]
-        for s in stokesi_components:
-            s.flux = s.flux[:, 0][..., numpy.newaxis]
-            s.polarisation_frame = PolarisationFrame("stokesI")
-        
-        pb = create_pb(pbmodel, "MID_GAUSS", pointingcentre=phasecentre, use_local=False)
-        pb_applied_components = [copy_skycomponent(c) for c in stokesi_components]
-        pb_applied_components = apply_beam_to_skycomponent(pb_applied_components, pb)
-        filtered_components = []
-        for icomp, comp in enumerate(pb_applied_components):
-            if comp.flux[0, 0] > flux_limit:
-                total_flux += comp.flux[0, 0]
-                if abs(comp.flux[0, 0]) > max_flux:
-                    max_flux = abs(comp.flux[0, 0])
-                filtered_components.append(original_components[icomp])
-        log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
-                 (len(filtered_components), flux_limit))
-        log.info("create_simulation_components: Strongest components is %g (Jy)" % max_flux)
-        log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)
-        original_components = [copy_skycomponent(c) for c in filtered_components]
-        if show:
-            plt.clf()
-            show_image(pb, components=original_components)
-            plt.show(block=False)
+    pb = create_pb(pbmodel, pb_type, pointingcentre=phasecentre, use_local=False)
+    pb_applied_components = apply_beam_to_skycomponent(original_components, pb)
+
+    filtered_components = []
+    reference_component = -1
+    reference_flux = 0.0
+    for icomp, comp in enumerate(original_components):
+        if pb_applied_components[icomp].flux[0, 0] > flux_limit:
+            total_flux += pb_applied_components[icomp].flux[0, 0]
+            nchan, npol = comp.flux.shape
+            scomp = copy_skycomponent(comp)
+            npol = polarisation_frame.npol
+            iflux = numpy.zeros([nchan, npol])
+            iflux[:, 0] = scomp.flux[:, 0]
+            scomp.flux = iflux
+            scomp.polarisation_frame = polarisation_frame
+            filtered_components.append(scomp)
+            if scomp.flux[0,0] > reference_flux:
+                reference_component = len(filtered_components) - 1
+            
+    log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
+             (len(filtered_components), flux_limit))
+    log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)
+    if show:
+        plt.clf()
+        show_image(pb, components=filtered_components)
+        plt.show(block=False)
     
-    log.info("create_simulation_components: Created %d components" % len(original_components))
+    log.info("create_simulation_components: Created %d components" % len(filtered_components))
     
-    return original_components
+    return filtered_components, reference_component
 

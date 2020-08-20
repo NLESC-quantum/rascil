@@ -96,7 +96,7 @@ class TestPrimaryBeams(unittest.TestCase):
         self.createVis(freq=1.4e9)
         model = create_image_from_visibility(self.vis, npixel=self.npixel, cellsize=self.cellsize,
                                              override_cellsize=False)
-        for telescope in ['MID', 'MID_FEKO_B1', 'MID_FEKO_B2', 'MID_FEKO_Ku', 'MEERKAT+_B2']:
+        for telescope in ['MID', 'MID_FEKO_B1', 'MID_FEKO_B2', 'MID_FEKO_Ku', 'MEERKAT_B2']:
             beam = create_vp(model, telescope=telescope, padding=4)
             beam_data = beam.data
             beam.data = numpy.real(beam_data)

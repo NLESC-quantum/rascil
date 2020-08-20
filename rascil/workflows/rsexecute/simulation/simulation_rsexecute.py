@@ -433,7 +433,7 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
                                                            height=3e5,
                                                            type_atmosphere='iono',
                                                            show=False, basename='',
-                                                           reference=True,
+                                                           reference_component=None,
                                                            **kwargs):
     """ Create gaintable for atmospheric errors
 
@@ -456,7 +456,7 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
                                                         r0=r0,
                                                         screen=screen, height=height,
                                                         type_atmosphere=type_atmosphere,
-                                                        reference=reference)
+                                                        reference_component=reference_component)
         for ivis, vis in enumerate(sub_bvis_list)]
         
     # Create the gain tables, one per Visibility and per component
@@ -477,7 +477,6 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_co
 def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list,
                                                         sub_components,
                                                         sub_vp_list,
-                                                        use_radec=False,
                                                         pointing_error=0.0,
                                                         static_pointing_error=None,
                                                         global_pointing_error=None,
@@ -491,7 +490,6 @@ def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list,
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
     :param sub_vp_list: List of model voltage patterns (or graph)
-    :param use_radec: Use RADEC coordinate (False)
     :param pointing_error: rms pointing error
     :param static_pointing_error: static pointing error
     :param global_pointing_error: global pointing error
@@ -543,12 +541,10 @@ def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list,
     
     # Create the gain tables, one per Visibility and per component
     no_error_gt_list = [rsexecute.execute(simulate_gaintable_from_pointingtable)
-                        (bvis, sub_components, no_error_pt_list[ibv], sub_vp_list[ibv],
-                         use_radec=use_radec)
+                        (bvis, sub_components, no_error_pt_list[ibv], sub_vp_list[ibv])
                         for ibv, bvis in enumerate(sub_bvis_list)]
     error_gt_list = [rsexecute.execute(simulate_gaintable_from_pointingtable)
-                     (bvis, sub_components, error_pt_list[ibv], sub_vp_list[ibv],
-                      use_radec=use_radec)
+                     (bvis, sub_components, error_pt_list[ibv], sub_vp_list[ibv])
                      for ibv, bvis in enumerate(sub_bvis_list)]
     if show:
         tmp_gt_list = rsexecute.compute(error_gt_list, sync=True)
@@ -572,7 +568,6 @@ def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list,
 def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
                                                        sub_components,
                                                        vp_directory,
-                                                       use_radec=False,
                                                        elevation_sampling=5.0, show=False,
                                                        basename=''):
     """ Create gaintable for surface errors
@@ -580,7 +575,6 @@ def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
     :param vp_directory: Location of voltage patterns
-    :param use_radec: Use RADEC coordinate (False)
     :param elevation_sampling: Sampling in elevation (degrees)
     :param show: Plot the results
     :param basename: Base name for the plots
@@ -588,22 +582,36 @@ def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
      """
     
     def get_band_vp(band, el):
-        
         if band == 'B1':
+            dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB1/interpolated_elevation/"
             vpa = import_image_from_fits(
-                '%s/B1_%d_0565_real_interpolated.fits' % (vp_directory, int(el)))
+                '%s/B1_%d_0565_real_interpolated.fits' % (dir, int(el)), fixpol=True)
+            assert vpa.data[0, 0, 512, 512] > 0.5
+            assert vpa.data[0, 1, 512, 512] < 0.5
+            assert vpa.data[0, 2, 512, 512] < 0.5
+            assert vpa.data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
-                '%s/B1_%d_0565_imag_interpolated.fits' % (vp_directory, int(el)))
+                '%s/B1_%d_0565_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         elif band == 'B2':
+            dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB2/interpolated_elevation/"
             vpa = import_image_from_fits(
-                '%s/B2_%d_1360_real_interpolated.fits' % (vp_directory, int(el)))
+                '%s/B2_%d_1360_real_interpolated.fits' % (dir, int(el)), fixpol=True)
+            assert vpa.data[0, 0, 512, 512] > 0.5
+            assert vpa.data[0, 1, 512, 512] < 0.5
+            assert vpa.data[0, 2, 512, 512] < 0.5
+            assert vpa.data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
-                '%s/B2_%d_1360_imag_interpolated.fits' % (vp_directory, int(el)))
+                '%s/B2_%d_1360_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         elif band == 'Ku':
+            dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_Ku/interpolated_elevation/"
             vpa = import_image_from_fits(
-                '%s/Ku_%d_11700_real_interpolated.fits' % (vp_directory, int(el)))
+                '%s/Ku_%d_11700_real_interpolated.fits' % (dir, int(el)), fixpol=True)
+            assert vpa.data[0, 0, 512, 512] > 0.5
+            assert vpa.data[0, 1, 512, 512] < 0.5
+            assert vpa.data[0, 2, 512, 512] < 0.5
+            assert vpa.data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
-                '%s/Ku_%d_11700_imag_interpolated.fits' % (vp_directory, int(el)))
+                '%s/Ku_%d_11700_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         else:
             raise ValueError("Unknown band %s" % band)
         
@@ -636,11 +644,10 @@ def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [rsexecute.execute(simulate_gaintable_from_pointingtable)
                        (bvis, sub_components, nominal_pt_list[ibv],
-                        vp_nominal_list[ibv], use_radec=use_radec)
+                        vp_nominal_list[ibv])
                        for ibv, bvis in enumerate(sub_bvis_list)]
     actual_gt_list = [rsexecute.execute(simulate_gaintable_from_pointingtable)
-                      (bvis, sub_components, actual_pt_list[ibv], vp_actual_list[ibv],
-                       use_radec=use_radec)
+                      (bvis, sub_components, actual_pt_list[ibv], vp_actual_list[ibv])
                       for ibv, bvis in enumerate(sub_bvis_list)]
     if show:
         plot_file = 'gaintable_actual.png'
@@ -655,7 +662,7 @@ def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
 
 def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
                                                      sub_components,
-                                                     use_radec=False,
+                                                     get_vp,
                                                      show=True,
                                                      basename='',
                                                      normalise=True):
@@ -666,39 +673,47 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
     :param band: B1, B2 or Ku
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
-    :param use_radec: Use RADEC coordinate (False)
     :param show: Plot the results
     :param basename: Base name for the plots
     :param normalise: Normalise peak of each receptor
     :return: (list of error-free gaintables, list of error gaintables) or graph
      """
     
-    def find_vp_actual(band) -> Image:
-        telescope = "MID_FEKO_{}".format(band)
-        vp = create_vp(telescope=telescope)
-        vp = normalise_vp(vp)
-        return vp
+    def find_vp_actual(bvis, band) -> List[Image]:
+        vp_types = numpy.unique(bvis.configuration.vp_type)
+        vp_list = []
+        for vp_type in vp_types:
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
+            vp = normalise_vp(vp)
+            vp_list.append(vp)
+        assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
+        return vp_list
     
-    def find_vp_nominal(band):
-        vp = find_vp_actual(band)
-        vpsym = 0.5 * (vp.data[:, 0, ...] + vp.data[:, 3, ...])
-        if normalise:
-            vpsym /= numpy.max(numpy.abs(vpsym))
-        
-        vp.data[:, 1:2, ...] = 0.0 + 0.0j
-        vp.data[:, 0, ...] = vpsym
-        vp.data[:, 3, ...] = vpsym
-        return vp
-    
-    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(band) for bv in sub_bvis_list]
-    vp_actual_list = [rsexecute.execute(find_vp_actual)(band) for bv in sub_bvis_list]
+    def find_vp_nominal(bvis, band):
+        vp_types = numpy.unique(bvis.configuration.vp_type)
+        vp_list = []
+        for vp_type in vp_types:
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
+            vpsym = 0.5 * (vp.data[:, 0, ...] + vp.data[:, 3, ...])
+            if normalise:
+                vpsym /= numpy.max(numpy.abs(vpsym))
+            vp.data[:, 0, ...] = vpsym
+            vp.data[:, 1, ...] = 0.0 + 0.0j
+            vp.data[:, 2, ...] = 0.0 + 0.0j
+            vp.data[:, 3, ...] = vpsym
+            vp_list.append(vp)
+        assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
+        return vp_list
+
+    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list]
+    vp_actual_list = [rsexecute.execute(find_vp_actual)(bv, band) for bv in sub_bvis_list]
     
     # Create the gain tables, one per Visibility and per component
     no_error_gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)
-                        (bvis, sub_components, vp_nominal_list[ibv], use_radec=use_radec)
+                        (bvis, sub_components, vp_nominal_list[ibv])
                         for ibv, bvis in enumerate(sub_bvis_list)]
     error_gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)
-                     (bvis, sub_components, vp_actual_list[ibv], use_radec=use_radec)
+                     (bvis, sub_components, vp_actual_list[ibv])
                      for ibv, bvis in enumerate(sub_bvis_list)]
     if show:
         plot_file = 'voltage_pattern_gaintable.png'
@@ -710,12 +725,11 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
     return no_error_gt_list, error_gt_list
 
 
-def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
-                                                     sub_components,
-                                                     use_radec=False,
-                                                     show=True,
-                                                     basename='',
-                                                     normalise=True):
+def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_components,
+                                                      get_vp,
+                                                      default_vp="MID",
+                                                      show=True,
+                                                      basename=''):
     """ Create gaintable for polarisation effects
 
     Compare with nominal and actual voltage patterns
@@ -723,36 +737,27 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
     :param band: B1, B2 or Ku
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
-    :param use_radec: Use RADEC coordinate (False)
     :param show: Plot the results
     :param basename: Base name for the plots
-    :param normalise: Normalise peak of each receptor
     :return: (list of error-free gaintables, list of error gaintables) or graph
      """
-    
+     
     def find_vp_actual(bvis, band) -> List[Image]:
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
-            if vp_type == "MEERKAT":
-                vp = create_vp(telescope="MEERKAT+_{band}".format(band=band))
-            elif vp_type == "MID":
-                vp = create_vp(telescope="MID_FEKO_{band}".format(band=band))
-            else:
-                raise ValueError("Voltage pattern {} not known".format(vp_type))
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
             vp = normalise_vp(vp)
             vp_list.append(vp)
-
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list
     
     def find_vp_nominal(bvis, band):
         vp_types = numpy.unique(bvis.configuration.vp_type)
-        # Use the SKA antennas as nominal
-        telescope = "MID_FEKO_{}".format(band)
-        vp = create_vp(telescope=telescope)
+        vp = copy_image(get_vp("{vp}_{band}".format(vp=default_vp, band=band)))
         vp = normalise_vp(vp)
         vp_list = len(vp_types) * [vp]
+        assert len(vp_list) == len(vp_types)
         return vp_list
     
     vp_nominal_list = [rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list]
@@ -760,10 +765,10 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list,
     
     # Create the gain tables, one per Visibility and per component
     no_error_gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)
-                        (bvis, sub_components, vp_nominal_list[ibv], use_radec=use_radec)
+                        (bvis, sub_components, vp_nominal_list[ibv])
                         for ibv, bvis in enumerate(sub_bvis_list)]
     error_gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)
-                     (bvis, sub_components, vp_actual_list[ibv], use_radec=use_radec)
+                     (bvis, sub_components, vp_actual_list[ibv])
                      for ibv, bvis in enumerate(sub_bvis_list)]
     if show:
         plot_file = 'voltage_pattern_gaintable.png'
@@ -840,11 +845,8 @@ def create_standard_mid_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     return bvis_graph
 
 
-def create_standard_low_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range,
-                                                      time_chunk, integration_time,
-                                                      shared_directory,
-                                                      polarisation_frame=None,
-                                                      zerow=False):
+def create_standard_low_simulation_rsexecute_workflow(band, rmax, phasecentre, time_range, time_chunk, integration_time,
+                                                      polarisation_frame=None, zerow=False):
     """ Create the standard LOW simulation
 
     :param band: B
@@ -853,7 +855,6 @@ def create_standard_low_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     :param time_range: Hour angle (in hours)
     :param time_chunk: Chunking of time in seconds
     :param integration_time:
-    :param shared_directory:
     :param polarisation_frame: Desired polarisation frame
     :param zerow: Set w to zero (False)
     :return:

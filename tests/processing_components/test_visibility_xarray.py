@@ -33,18 +33,12 @@ class TestXVisibility(unittest.TestCase):
         self.compreldirection = self.compabsdirection.transform_to(pcof)
         self.comp = Skycomponent(direction=self.compreldirection, frequency=self.frequency, flux=self.flux)
     
-    def test_create_visibility(self):
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
-                                     channel_bandwidth=self.channel_bandwidth,
-                                     phasecentre=self.phasecentre,
-                                     polarisation_frame=PolarisationFrame("linear"),
-                                     weight=1.0)
-        assert self.vis.nvis == len(self.vis.time)
     
     def test_convert_visibility_to_xarray(self):
         self.vis = create_visibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre,
+                                     integration_time=30.0,
                                      polarisation_frame=PolarisationFrame("linear"),
                                      weight=1.0)
         assert self.vis.nvis == len(self.vis.time)

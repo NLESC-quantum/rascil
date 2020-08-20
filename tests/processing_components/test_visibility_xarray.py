@@ -45,6 +45,7 @@ class TestXVisibility(unittest.TestCase):
         xvis = convert_visibility_to_xvisibility(self.vis)
         print(xvis)
         assert xvis.sel({"polarisation":["XX", "YY"]}).data.shape[1] == 2
+        print(xvis.where(numpy.abs(xvis.uvw)< 10.0))
 
 if __name__ == '__main__':
     unittest.main()

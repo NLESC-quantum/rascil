@@ -123,9 +123,14 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                             for pol in range(npol):
                                 gain[pol] = real_spline[pol][chan].ev(pixloc[1], pixloc[0]) + \
                                        1j * imag_spline[pol][chan].ev(pixloc[1],  pixloc[0])
-                            ag = gain.reshape([2, 2])
-                            ag = numpy.linalg.inv(ag)
-                            antgain[ant, gchan, :] = ag.reshape([4])
+                            if nrec == 2:
+                                ag = gain.reshape([2, 2])
+                                ag = numpy.linalg.inv(ag)
+                                antgain[ant, gchan, :] = ag.reshape([4])
+                            elif nrec == 1:
+                                antgain[ant, gchan, 0] = 1.0/gain
+                            else:
+                                raise ValueError("Illegal number of receptors: {}".format(nrec))
                             number_good += 1
                     except (ValueError, AssertionError, IndexError):
                         number_bad += 1

@@ -9,7 +9,9 @@ __all__ = ['convert_visibility_to_xvisibility',
 import logging
 from typing import Union, List
 
-import numpy 
+import numpy
+
+from astropy.time import Time
 
 from rascil.data_models.memory_data_models import Visibility, QA
 from rascil.data_models.polarisation import PolarisationFrame
@@ -30,6 +32,9 @@ def convert_visibility_to_xvisibility(vis: Visibility) -> xarray.Dataset:
     xvis_dict = {}
     xvis_dict["data"] = xarray.DataArray(vis.vis, dims=["time", "polarisation"])
     xvis_dict["uvw"] = xarray.DataArray(vis.uvw, dims=["time", "location"])
+    xvis_dict["uvwdist"] = xarray.DataArray(vis.uvwdist, dims=["time"])
+    xvis_dict["datetime"] = \
+        xarray.DataArray(Time(vis.time / 86400.0, format='mjd', scale='utc').datetime64, dims=["time"])
     xvis_dict["weight"] = xarray.DataArray(vis.weight, dims=["time", "polarisation"])
     xvis_dict["imaging_weight"] = xarray.DataArray(vis.imaging_weight,
                                                    dims=["time", "polarisation"])

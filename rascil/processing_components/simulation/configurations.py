@@ -220,7 +220,6 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     """ Create standard configurations e.g. LOWBD2, MIDBD2
 
     Possible configurations are::
-        LOWBD1
         LOWBD2
         LOWBD2-core
         LOW == LOWR3
@@ -231,7 +230,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         VLAA
         VLAA_north
 
-    :param name: name of Configuration LOWBD2, LOWBD1, LOFAR, VLAA, ASKAP
+    :param name: name of Configuration MID, LOW, LOFAR, VLAA, ASKAP
     :param rmax: Maximum distance of station from the average (m)
     :return:
     
@@ -256,13 +255,6 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         fc = create_configuration_from_file(antfile=rascil_data_path("configurations/LOWBD2.csv"),
                                             location=location, mount='xy', names='LOWBD2_%d',
                                             vp_type="LOW",
-                                            diameter=35.0, name=name, **kwargs)
-    elif name == 'LOWBD1':
-        location = low_location
-        log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_file(antfile=rascil_data_path("configurations/LOWBD1.csv"),
-                                            vp_type="LOW",
-                                            location=location, mount='xy', names='LOWBD1_%d',
                                             diameter=35.0, name=name, **kwargs)
     elif name == 'LOWBD2-CORE':
         location = low_location
@@ -292,7 +284,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif name == 'ASKAP':
         location = EarthLocation(lon=+116.6356824*u.deg, lat=-26.7013006*u.deg, height=377.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_file(antfile=rascil_data_path("configurations/A27CR3P6B.in.csv"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/askap.cfg"),
                                             vp_type="ASKAP",
                                             mount='equatorial', names='ASKAP_%d',
                                             diameter=12.0, name=name, location=location, **kwargs)

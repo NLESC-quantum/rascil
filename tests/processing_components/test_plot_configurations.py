@@ -45,7 +45,7 @@ class TestPlotConfigurations(unittest.TestCase):
 
 
     def test_plot_configurations(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LOWBD1', 'LOWR3', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LOWR3', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.size() > 0.0
             plt.clf()

@@ -293,7 +293,7 @@ def create_blockvisibility(config: Configuration,
             nha = gast.to('rad').value - phasecentre.ra.to('rad').value
             ndec = c_itrs.spherical.lat.to('rad').value
             # Loop over all pairs of antennas. Note that a2>a1
-            ant_pos = uvw_ha_dec(ants_xyz, ha, phasecentre.dec.rad)
+            ant_pos = uvw_ha_dec(ants_xyz, nha, ndec)
             for a1 in range(nants):
                 rweight[itime, a1, a1, ...] = 0.0
                 rflags[itime, a1, a1, ...] = 1.0

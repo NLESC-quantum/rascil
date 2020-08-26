@@ -17,7 +17,7 @@ from typing import Union
 
 import numpy
 from astropy import units as u, constants as constants
-from astropy.coordinates import SkyCoord, EarthLocation,ITRS
+from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.units import Quantity
 from astropy.io import fits
 from astropy.time import Time
@@ -28,9 +28,10 @@ from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame, \
     correlate_polarisation
 from rascil.processing_components.util import skycoord_to_lmn, simulate_point
 from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
-    hadec_to_azel
+    hadec_to_azel, xyz_at_latitude
 from rascil.processing_components.util.geometry import calculate_transit_time
-from rascil.processing_components.util.uvw_coordinates import uvw_ha_dec
+from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_transit_time, \
+    calculate_blockvisibility_hourangles, calculate_blockvisibility_azel
 
 log = logging.getLogger('logger')
 
@@ -108,6 +109,7 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
     
     nch = len(frequency)
     ants_xyz = config.data['xyz']
+    ants_xyz = xyz_at_latitude(ants_xyz, latitude)
     nants = len(config.data['names'])
     nbaselines = int(nants * (nants - 1) / 2)
     ntimes = 0
@@ -149,7 +151,7 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
             
             # TODO: optimise loop
             # Loop over all pairs of antennas. Note that a2>a1
-            ant_pos = uvw_ha_dec(ants_xyz, ha, phasecentre.dec.rad)
+            ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
             for a1 in range(nants):
                 for a2 in range(a1 + 1, nants):
                     rantenna1[row:row + nch] = a1
@@ -237,6 +239,8 @@ def create_blockvisibility(config: Configuration,
     
     latitude = config.location.geodetic[1].to('rad').value
     ants_xyz = config.data['xyz']
+    ants_xyz = xyz_at_latitude(ants_xyz, latitude)
+
     nants = len(config.data['names'])
     
     ntimes = 0
@@ -287,7 +291,7 @@ def create_blockvisibility(config: Configuration,
             rflags[itime, ...] = 1
 
             # Loop over all pairs of antennas. Note that a2>a1
-            ant_pos = uvw_ha_dec(ants_xyz, ha, phasecentre.dec.rad)
+            ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
             for a1 in range(nants):
                 rweight[itime, a1, a1, ...] = 0.0
                 rflags[itime, a1, a1, ...] = 1.0

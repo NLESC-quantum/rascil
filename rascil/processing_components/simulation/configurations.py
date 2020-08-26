@@ -266,13 +266,13 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif (name == 'LOW') or (name == 'LOWR3'):
         location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1low.cfg"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1low_local.cfg"),
                                                vp_type="LOW",
                                           mount='xy', name=name, location=location, **kwargs)
     elif (name == 'MID') or (name == "MIDR5"):
         location = mid_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid.cfg"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1mid_local.cfg"),
                                                vp_type={"M0":"MEERKAT", "SKA":"MID"},
             mount='azel', name=name, location=location, **kwargs)
     elif name == 'MEERKAT+':
@@ -284,7 +284,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif name == 'ASKAP':
         location = EarthLocation(lon=+116.6356824*u.deg, lat=-26.7013006*u.deg, height=377.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/askap.cfg"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/askap_local.cfg"),
                                             vp_type="ASKAP",
                                             mount='equatorial', name=name, location=location, **kwargs)
     elif name == 'LOFAR':
@@ -296,7 +296,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif name == 'VLAA':
         location = EarthLocation(lon=-107.6184*u.deg, lat=34.0784*u.deg, height=2124.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_file(antfile=rascil_data_path("configurations/VLA_A_hor_xyz.csv"),
+        fc = create_configuration_from_file(antfile=rascil_data_path("configurations/vlaa_local.csv"),
                                             location=location,
                                             mount='azel',
                                             names='VLA_%d',
@@ -305,7 +305,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif name == 'VLAA_north':
         location = EarthLocation(lon=-107.6184*u.deg, lat=90.000*u.deg, height=0.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_file(antfile=rascil_data_path("configurations/VLA_A_hor_xyz.csv"),
+        fc = create_configuration_from_file(antfile=rascil_data_path("configurations/vlaa_local.csv"),
                                             location=location,
                                             mount='azel',
                                             names='VLA_%d',

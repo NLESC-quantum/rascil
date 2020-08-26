@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 from rascil.data_models import PolarisationFrame, rascil_path
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.visibility.base import create_blockvisibility, create_visibility
 from rascil.processing_components.simulation import plot_uvcoverage
 log = logging.getLogger('logger')
 
@@ -33,7 +33,7 @@ class TestPlotConfigurations(unittest.TestCase):
         self.channel_bandwidth = numpy.array([1e7])
         self.flux = numpy.array([[100.0]])
         self.phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
-        self.times = numpy.linspace(-4*3600, 4*3600.0, 100) * numpy.pi / 43200.0
+        self.times = numpy.linspace(-4*3600, 4*3600.0, 40) * numpy.pi / 43200.0
     
     def createVis(self, config, dec=-35.0, rmax=None):
         self.config = create_named_configuration(config, rmax=rmax)

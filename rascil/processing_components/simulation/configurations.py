@@ -220,7 +220,6 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     """ Create standard configurations e.g. LOWBD2, MIDBD2
 
     Possible configurations are::
-        LOWBD1
         LOWBD2
         LOWBD2-core
         LOW == LOWR3
@@ -231,7 +230,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         VLAA
         VLAA_north
 
-    :param name: name of Configuration LOWBD2, LOWBD1, LOFAR, VLAA, ASKAP
+    :param name: name of Configuration MID, LOW, LOFAR, VLAA, ASKAP
     :param rmax: Maximum distance of station from the average (m)
     :return:
     
@@ -257,13 +256,6 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
                                             location=location, mount='xy', names='LOWBD2_%d',
                                             vp_type="LOW",
                                             diameter=35.0, name=name, **kwargs)
-    elif name == 'LOWBD1':
-        location = low_location
-        log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_file(antfile=rascil_data_path("configurations/LOWBD1.csv"),
-                                            vp_type="LOW",
-                                            location=location, mount='xy', names='LOWBD1_%d',
-                                            diameter=35.0, name=name, **kwargs)
     elif name == 'LOWBD2-CORE':
         location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
@@ -274,7 +266,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif (name == 'LOW') or (name == 'LOWR3'):
         location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1low_local.cfg"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1low.cfg"),
                                                vp_type="LOW",
                                           mount='xy', name=name, location=location, **kwargs)
     elif (name == 'MID') or (name == "MIDR5"):
@@ -292,15 +284,15 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif name == 'ASKAP':
         location = EarthLocation(lon=+116.6356824*u.deg, lat=-26.7013006*u.deg, height=377.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_file(antfile=rascil_data_path("configurations/A27CR3P6B.in.csv"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/askap.cfg"),
                                             vp_type="ASKAP",
-                                            mount='equatorial', names='ASKAP_%d',
-                                            diameter=12.0, name=name, location=location, **kwargs)
+                                            mount='equatorial', name=name, location=location, **kwargs)
     elif name == 'LOFAR':
         location = EarthLocation(x=3826923.9 * u.m, y=460915.1 * u.m, z=5064643.2 * u.m)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         assert get_parameter(kwargs, "meta", False) is False
-        fc = create_LOFAR_configuration(antfile=rascil_data_path("configurations/LOFAR.csv"), location=location)
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/lofar.cfg"), location=location,
+                                               mount="xy", vp_type="LOFAR", name=name, **kwargs)
     elif name == 'VLAA':
         location = EarthLocation(lon=-107.6184*u.deg, lat=34.0784*u.deg, height=2124.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))

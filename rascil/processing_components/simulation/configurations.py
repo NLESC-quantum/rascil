@@ -266,7 +266,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif (name == 'LOW') or (name == 'LOWR3'):
         location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1low_local.cfg"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1low.cfg"),
                                                vp_type="LOW",
                                           mount='xy', name=name, location=location, **kwargs)
     elif (name == 'MID') or (name == "MIDR5"):
@@ -286,13 +286,13 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/askap.cfg"),
                                             vp_type="ASKAP",
-                                            mount='equatorial', names='ASKAP_%d',
-                                            diameter=12.0, name=name, location=location, **kwargs)
+                                            mount='equatorial', name=name, location=location, **kwargs)
     elif name == 'LOFAR':
         location = EarthLocation(x=3826923.9 * u.m, y=460915.1 * u.m, z=5064643.2 * u.m)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         assert get_parameter(kwargs, "meta", False) is False
-        fc = create_LOFAR_configuration(antfile=rascil_data_path("configurations/LOFAR.csv"), location=location)
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/lofar.cfg"), location=location,
+                                               mount="xy", vp_type="LOFAR", name=name, **kwargs)
     elif name == 'VLAA':
         location = EarthLocation(lon=-107.6184*u.deg, lat=34.0784*u.deg, height=2124.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))

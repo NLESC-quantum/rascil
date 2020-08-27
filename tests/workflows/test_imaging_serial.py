@@ -439,8 +439,8 @@ class TestImaging(unittest.TestCase):
                                               (self.dir))
         
         qa = qa_image(restored_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.13900620710891567) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00571826154011) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.16822683799834257) < 1e-7, str(qa)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_restored_list_noresidual(self):
@@ -477,8 +477,8 @@ class TestImaging(unittest.TestCase):
                                               (self.dir))
         
         qa = qa_image(restored_4facets_image_list[centre])
-        assert numpy.abs(qa.data['max'] - 100.01905101911612) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.13900620710891565) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.00571826154011) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.16822683799834257) < 1e-7, str(qa)
         
         restored_4facets_image_list[centre].data -= restored_1facets_image_list[centre].data
         if self.persist: export_image_to_fits(restored_4facets_image_list[centre],

@@ -278,7 +278,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif name == 'MEERKAT+':
         location = meerkat_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/mkatplus.cfg"),
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/mkatplus_local.cfg"),
                                                vp_type={"m0": "MEERKAT", "s0": "MID"},
                                                mount='azel', name=name, location=location, **kwargs)
     elif name == 'ASKAP':
@@ -291,7 +291,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         location = EarthLocation(x=3826923.9 * u.m, y=460915.1 * u.m, z=5064643.2 * u.m)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         assert get_parameter(kwargs, "meta", False) is False
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/lofar.cfg"), location=location,
+        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/lofar_local.cfg"), location=location,
                                                mount="xy", vp_type="LOFAR", name=name, **kwargs)
     elif name == 'VLAA':
         location = EarthLocation(lon=-107.6184*u.deg, lat=34.0784*u.deg, height=2124.0)

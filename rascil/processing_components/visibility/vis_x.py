@@ -3,8 +3,7 @@
 """
 
 __all__ = ['convert_blockvisibility_to_xvisibility',
-           'convert_xvisibility_to_blockvisibility',
-           'create_xvisibility']
+           'convert_xvisibility_to_blockvisibility']
 
 import logging
 

@@ -98,23 +98,18 @@ class XVisibility(xarray.Dataset):
         coords = {"time": time,
                   "baseline": baselines,
                   "frequency": frequency,
-                  "polarisation": polarisation_frame.names}
+                  "polarisation": polarisation_frame.names,
+                  "spatial": numpy.zeros([3], dtype='float')}
         
         datavars = dict()
         datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
         datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["imaging_weight"] = xarray.DataArray(imaging_weight, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
+                                                      dims=["time", "baseline", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
-        
         datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "spatial"])
-        datavars["uvdist"] = xarray.DataArray(numpy.hypot(uvw[..., 0], uvw[..., 1]),
-                                              dims=["time", "baseline"])
-
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
-        datavars["datetime"] = \
-            xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
-                             dims=["time"])
 
         attrs = dict()
         attrs['phasecentre'] = phasecentre  # Phase centre of observation
@@ -226,6 +221,18 @@ class XImage(xarray.DataArray):
         :param wcs: Astropy WCS object
         :param polarisation_frame: e.g. PolarisationFrame('stokesIQUV')
         """
+        dims = {"l", "m", "frequency", "polarisation", "time"}
+        
+        npol, nchan, ny, nx = data.shape
+        
+        coords = {"l":range(nx), "m":range(ny),
+                  "frequency": range(nchan),
+                  "polarisation":polarisation_frame.names,
+                  "time": None}
+
+        datavars = dict()
+        datavars["image"] = xarray.DataArray(data, coords=coords)
+
         attrs=dict()
         attrs['wcs'] = wcs
         attrs['polarisation_frame'] = polarisation_frame
@@ -238,43 +245,6 @@ def ximage_size(ximage):
     size = 0
     size += ximage.data.nbytes
     return size / 1024.0 / 1024.0 / 1024.0
-
-
-def ximage_nchan(ximage):
-    """ Number of channels
-    """
-    return ximage.data.shape[0]
-
-
-def ximage_npol(ximage):
-    """ Number of polarisations
-    """
-    return ximage.data.shape[1]
-
-
-def ximage_nheight(ximage):
-    """ Number of pixels height i.e. y
-    """
-    return ximage.data.shape[2]
-
-
-def ximage_nwidth(ximage):
-    """ Number of pixels width i.e. x
-    """
-    return ximage.data.shape[3]
-
-
-def ximage_frequency(ximage):
-    """ Frequency values
-    """
-    w = ximage.wcs.sub(['spectral'])
-    return w.wcs_pix2world(range(ximage.nchan), 0)[0]
-
-
-def ximage_shape(ximage):
-    """ Shape of data array
-    """
-    return ximage.data.shape
 
 def ximage_phasecentre(ximage):
     """ Phasecentre (from WCS)

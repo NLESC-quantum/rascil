@@ -43,8 +43,10 @@ class TestXVisibility(unittest.TestCase):
                                           weight=1.0)
 
         xvis = convert_blockvisibility_to_xvisibility(self.vis)
+        # Add some convenience columns
         xvis = xvis.assign(uvdist=numpy.hypot(xvis.uvw[:, 0], xvis.uvw[:, 1]))
-
+        xvis = xvis.assign(datetime=Time(xvis.time / 86400.0,
+                                         format='mjd', scale='utc').datetime64)
         print("\nInitial xvis")
         print(xvis)
         print("\nSlice of a DataArray")

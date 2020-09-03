@@ -13,7 +13,7 @@ from astropy.time import Time
 from rascil.data_models import Skycomponent, PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
-from rascil.processing_components.visibility.vis_x import convert_blockvisibility_to_xvisibility
+from rascil.processing_components.visibility.vis_xarray import convert_blockvisibility_to_xvisibility
 
 
 class TestXVisibility(unittest.TestCase):
@@ -35,14 +35,14 @@ class TestXVisibility(unittest.TestCase):
         self.comp = Skycomponent(direction=self.compreldirection, frequency=self.frequency, flux=self.flux)
     
     def test_convert_blockvisibility_to_xvisibility(self):
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+        vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
                                           integration_time=30.0,
                                           polarisation_frame=PolarisationFrame("linear"),
                                           weight=1.0)
 
-        xvis = convert_blockvisibility_to_xvisibility(self.vis)
+        xvis = convert_blockvisibility_to_xvisibility(vis)
         # Add some convenience columns
         xvis = xvis.assign(uvdist=numpy.hypot(xvis.uvw[:, 0], xvis.uvw[:, 1]))
         xvis = xvis.assign(datetime=Time(xvis.time / 86400.0,
@@ -52,16 +52,44 @@ class TestXVisibility(unittest.TestCase):
         print("\nSlice of a DataArray")
         print(xvis.vis[100:110, 0:1])
         print("\nSelection of the Dataset by polarisation")
-        print(xvis.sel({"polarisation": ["XX", "YY"]}))
-        print("\nBy antenna1")
-        print(xvis.where(xvis.antenna1 < 10).uvw)
-        print("\nBy uvdist")
-        print(xvis.where(xvis.uvdist < 40.0).uvw)
+        print(xvis.sel({"polarisation": ["XY", "YX"]}))
+        print("\nsel antenna1 yields smaller XVisibility")
+        print(xvis.sel({"antenna1":10}))
+        print("\nwhere antenna1 yields masked arrays")
+        print(xvis.where(xvis.antenna1 == 10))
+        print("\nBy uvdist yields masked arrays")
+        print(xvis.where(xvis.uvdist < 40.0))
         print("\nBy time")
-        print(xvis.where(xvis.datetime > numpy.datetime64("2020-01-01T23:00:00")).datetime)
+        print(xvis.where(xvis.datetime > numpy.datetime64("2020-01-01T23:00:00")))
         print("In bins of uvdist")
         for result in xvis.groupby_bins("uvdist", bins=25):
             print(result[0], result[1].sizes['stacked_time_spatial'])
+
+    def test_convert_blockvisibility_to_xvisibility_not_verbose(self):
+        vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+                                          channel_bandwidth=self.channel_bandwidth,
+                                          phasecentre=self.phasecentre,
+                                          integration_time=30.0,
+                                          polarisation_frame=PolarisationFrame("linear"),
+                                          weight=1.0)
+
+        xvis = convert_blockvisibility_to_xvisibility(vis)
+        # Add some convenience columns
+        xvis = xvis.assign(uvdist=numpy.hypot(xvis.uvw[:, 0], xvis.uvw[:, 1]))
+        xvis = xvis.assign(datetime=Time(xvis.time / 86400.0,
+                                         format='mjd', scale='utc').datetime64)
+        # Selection of the Dataset by polarisation
+        xvis.sel({"polarisation": ["XY", "YX"]})
+        # sel antenna1 yields smaller XVisibility
+        xvis.sel({"antenna1":10})
+        # where antenna1 yields masked arrays
+        xvis.where(xvis.antenna1 == 10)
+        # By uvdist yields masked arrays
+        xvis.where(xvis.uvdist < 40.0)
+        # By time
+        xvis.where(xvis.datetime > numpy.datetime64("2020-01-01T23:00:00"))
+        # In bins of uvdist
+        xvis.groupby_bins("uvdist", bins=25)
 
 
 if __name__ == '__main__':

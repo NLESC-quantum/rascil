@@ -35,7 +35,7 @@ def convert_blockvisibility_to_xvisibility(vis: BlockVisibility) -> XVisibility:
             for ant2 in range(ant1):
                 yield ant1, ant2
 
-    nant = 5
+    nant = vis.nants
     baselines = pandas.MultiIndex.from_tuples(gen_base(nant), names=('antenna1', 'antenna2'))
     nbaselines = len(baselines)
     

@@ -8,7 +8,6 @@ import unittest
 import astropy.units as u
 import numpy
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
 
 from rascil.data_models import Skycomponent, PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
@@ -43,10 +42,6 @@ class TestXVisibility(unittest.TestCase):
                                           weight=1.0)
 
         xvis = convert_blockvisibility_to_xvisibility(vis)
-        # Add some convenience columns
-        xvis = xvis.assign(uvdist=numpy.hypot(xvis.uvw[:, 0], xvis.uvw[:, 1]))
-        xvis = xvis.assign(datetime=Time(xvis.time / 86400.0,
-                                         format='mjd', scale='utc').datetime64)
         print("\nInitial xvis")
         print(xvis)
         print("\nSlice of a DataArray")
@@ -61,35 +56,29 @@ class TestXVisibility(unittest.TestCase):
         print(xvis.where(xvis.uvdist < 40.0))
         print("\nBy time")
         print(xvis.where(xvis.datetime > numpy.datetime64("2020-01-01T23:00:00")))
-        print("In bins of uvdist")
-        for result in xvis.groupby_bins("uvdist", bins=25):
-            print(result[0], result[1].sizes['stacked_time_spatial'])
-
-    def test_convert_blockvisibility_to_xvisibility_not_verbose(self):
-        vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                          channel_bandwidth=self.channel_bandwidth,
-                                          phasecentre=self.phasecentre,
-                                          integration_time=30.0,
-                                          polarisation_frame=PolarisationFrame("linear"),
-                                          weight=1.0)
-
-        xvis = convert_blockvisibility_to_xvisibility(vis)
-        # Add some convenience columns
-        xvis = xvis.assign(uvdist=numpy.hypot(xvis.uvw[:, 0], xvis.uvw[:, 1]))
-        xvis = xvis.assign(datetime=Time(xvis.time / 86400.0,
-                                         format='mjd', scale='utc').datetime64)
-        # Selection of the Dataset by polarisation
-        xvis.sel({"polarisation": ["XY", "YX"]})
-        # sel antenna1 yields smaller XVisibility
-        xvis.sel({"antenna1":10})
-        # where antenna1 yields masked arrays
-        xvis.where(xvis.antenna1 == 10)
-        # By uvdist yields masked arrays
-        xvis.where(xvis.uvdist < 40.0)
-        # By time
-        xvis.where(xvis.datetime > numpy.datetime64("2020-01-01T23:00:00"))
-        # In bins of uvdist
-        xvis.groupby_bins("uvdist", bins=25)
+        print("In bins of time")
+        for result in xvis.groupby("datetime"):
+            print(result[0], result[1].dims)
+        print("In 3 bins of datetime")
+        for result in xvis.groupby_bins(xvis.data["datetime"], bins=3):
+            print(result[0], result[1].dims)
+            
+        # Selection of the Dataset by polarisation 
+        newxvis = xvis.sel({"polarisation": ["XY", "YX"]})
+        # sel antenna1 yields smaller XVisibility 
+        newxvis = xvis.sel({"antenna1":10})
+        # where antenna1 yields masked arrays 
+        newxvis = xvis.where(xvis.antenna1 == 10)
+        # By uvdist yields masked arrays 
+        newxvis = xvis.where(xvis.uvdist < 40.0)
+        # By time 
+        newxvis = xvis.where(xvis.datetime > numpy.datetime64("2020-01-01T23:00:00"))
+        # In bins of time 
+        for result in xvis.groupby("datetime") :
+            print(result[0], result[1].dims)
+        # In 3 bins of datetime 
+        for result in xvis.groupby_bins(xvis.data["datetime"], bins=3):
+            print(result[0], result[1].dims)
 
 
 if __name__ == '__main__':

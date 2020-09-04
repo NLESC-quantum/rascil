@@ -9,6 +9,7 @@ import xarray
 import logging
 import sys
 import warnings
+import copy
 
 import numpy
 from astropy import units as u
@@ -24,7 +25,7 @@ from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 
 log = logging.getLogger('logger')
 
-class XVisibility(xarray.Dataset):
+class XVisibility():
     """ XVisibility table class similar to Visibility but using xarray
 
     XVisibility is defined to hold an observation with one direction.
@@ -91,9 +92,6 @@ class XVisibility(xarray.Dataset):
         :param source: Source name
         :param meta: Meta info
         """
-        super().__init__()
-        if imaging_weight is None:
-            imaging_weight = weight
 
         coords = {"time": time,
                   "baseline": baselines,
@@ -104,95 +102,213 @@ class XVisibility(xarray.Dataset):
         datavars = dict()
         datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
         datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
+        if imaging_weight is None:
+            imaging_weight = weight
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
                                                       dims=["time", "baseline", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
         datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "spatial"])
+        datavars["uvdist"] = xarray.DataArray(numpy.hypot(uvw[...,0], uvw[...,1]),
+                                              dims=["time", "baseline"])
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
-
-        attrs = dict()
-        attrs['phasecentre'] = phasecentre  # Phase centre of observation
-        attrs['configuration'] = configuration  # Antenna/station configuration
-        attrs['polarisation_frame'] = polarisation_frame
-        attrs['source'] = source
-        attrs['meta'] = meta
-
-        super().__init__(datavars, coords=coords, attrs=attrs)
         
-def xvisibility_size(xvis):
-    """ Return size in GB
-    """
-    size = 0
-    for col in xvis.data.dtype.fields.keys():
-        size += xvis.data[col].nbytes
-    return size / 1024.0 / 1024.0 / 1024.0
+        datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
+                                                dims="time")
+
+        self.phasecentre = phasecentre  # Phase centre of observation
+        self.configuration = configuration  # Antenna/station configuration
+        self.polarisation_frame = polarisation_frame
+        self.source = source
+        self.meta = meta
+
+        self.data=xarray.Dataset(datavars, coords=coords)
+
+    @property
+    def nchan(self):
+        """ Number of channels
+        """
+        return len(self.frequency)
+
+    @property
+    def npol(self):
+        """ Number of polarisations
+        """
+        return self.data.polarisation_frame.npol
+
+    @property
+    def nvis(self):
+        """ Number of visibilities (i.e. rows)
+        """
+        return self.data['vis'].shape[0]
+
+    @property
+    def uvw(self):
+        """ UVW coordinates (wavelengths) [nrows, 3]
+        """
+        return self.data['uvw']
+
+    @property
+    def u(self):
+        """ u coordinate (wavelengths) [nrows]
+        """
+        return self.data['uvw'][:, 0]
+
+    @property
+    def v(self):
+        """ v coordinate (wavelengths) [nrows]
+        """
+        return self.data['uvw'][:, 1]
+
+    @property
+    def w(self):
+        """ w coordinate (wavelengths) [nrows]
+        """
+        return self.data['uvw'][:, 2]
+
+    @property
+    def uvdist(self):
+        """ uv distance (wavelengths) [nrows]
+        """
+        return self.data["uvdist"]
+
+    @property
+    def time(self):
+        """ Time (UTC) [nrows]
+        """
+        return self.data['time']
+
+    @property
+    def datetime(self):
+        """ Date Time (UTC) [nrows]
+        """
+        return self.data['datetime']
+
+    @property
+    def integration_time(self):
+        """ Integration time [nrows]
+        """
+        return self.data['integration_time']
+
+    @property
+    def frequency(self):
+        """ Frequency values
+        """
+        return self.data['frequency']
+
+    @property
+    def channel_bandwidth(self):
+        """ Channel bandwidth values
+        """
+        return self.data['channel_bandwidth']
+
+    @property
+    def antenna1(self):
+        """ Antenna index
+        """
+        return self.data['antenna1']
+
+    @property
+    def antenna2(self):
+        """ Antenna index
+        """
+        return self.data['antenna2']
+
+    @property
+    def vis(self):
+        """Complex visibility [:, npol]
+        """
+        return self.data['vis']
+
+    @property
+    def flagged_vis(self):
+        """Flagged complex visibility [:, npol]
+        """
+        return self.data['vis'] * (1 - self.flags)
+
+    @property
+    def flags(self):
+        """flags [:, npol]
+        """
+        return self.data['flags']
+
+    @property
+    def weight(self):
+        """Weight [: npol]
+        """
+        return self.data['weight']
+
+    @property
+    def flagged_weight(self):
+        """Weight [: npol]
+        """
+        return self.data['weight'] * (1 - self.data['flags'])
+
+    @property
+    def imaging_weight(self):
+        """  Imaging weight [:, npol]
+        """
+        return self.data['imaging_weight']
+
+    @property
+    def flagged_imaging_weight(self):
+        """  Flagged Imaging weight [:, npol]
+        """
+        return self.data['imaging_weight'] * (1 - self.data['flags'])
 
 
-def xvisibility_nchan(xvis):
-    """ Number of channels
-    """
-    return len(xvis.frequency)
+    def sel(self, *args, **kwargs):
+        """ Use the xarray.sel operator to return selected XVisibility
 
+        :param selection:
+        :return:
+        """
+        newxvis = copy.deepcopy(self)
+        newxvis.data = newxvis.data.sel(*args, **kwargs)
+        return newxvis
 
-def xvisibility_npol(xvis):
-    """ Number of polarisations
-    """
-    return xvis.polarisation_frame.npol
+    def where(self, *args, **kwargs):
+        """ Use the xarray.where operator to return selected XVisibility, masked where condition fails
 
+        :param condition:
+        :return:
+        """
+        newxvis = copy.deepcopy(self)
+        newxvis.data = newxvis.data.where(*args, **kwargs)
+        return newxvis
 
-def xvisibility_nvis(xvis):
-    """ Number of visibilities (i.e. rows)
-    """
-    return xvis.data['vis'].shape[0]
+    def groupby(self, *args, **kwargs):
+        """ Use the xarray.groupby operator to return selected XVisibility
+
+        :param condition:
+        :return:
+        """
+        return [copy.deepcopy(newxvis) for newxvis in self.data.groupby(*args, **kwargs)]
+
+    def groupby_bins(self, *args, **kwargs):
+        """ Use the xarray.groupby_bins operator to return selected XVisibility
+
+        :param condition:
+        :return:
+        """
+        return [copy.deepcopy(newxvis) for newxvis in self.data.groupby_bins(*args, **kwargs)]
     
 
-def xvisibility_u(xvis):
-    """ u coordinate (wavelengths) [nrows]
-    """
-    return xvis.data['uvw'][:, 0]
+    def __str__(self):
+        """Default printer for XVisibility
 
+        """
+        s = "XVisibility.data:\n"
+        s += "{}\n".format(str(self.data))
+        s += "Attributes:\n"
+        s += "\tSource: %s\n" % self.source
+        s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
+        s += "\tPhasecentre: %s\n" % self.phasecentre
+        s += "\tConfiguration: %s\n" % self.configuration.name
+        s += "\tMetadata: %s\n" % self.meta
+        
+        return s
 
-def xvisibility_v(xvis):
-    """ v coordinate (wavelengths) [nrows]
-    """
-    return xvis.data['uvw'][:, 1]
-
-
-def xvisibility_w(xvis):
-    """ w coordinate (wavelengths) [nrows]
-    """
-    return xvis.data['uvw'][:, 2]
-
-
-def xvisibility_uvdist(xvis):
-    """ uv distance (wavelengths) [nrows]
-    """
-    return numpy.hypot(xvis.uvw[:,0], xvis.uvw[:1,])
-
-
-def xvisibility_uvwdist(xvis):
-    """ uvw distance (wavelengths) [nrows]
-    """
-    return numpy.hypot(xvis.u, xvis.v, xvis.w)
-
-
-def xvisibility_flagged_vis(xvis):
-    """Flagged complex visibility [:, npol]
-    """
-    return xvis.data['vis'] * (1 - xvis.flags)
-
-
-def xvisibility_flagged_weight(xvis):
-    """Weight [: npol]
-    """
-    return xvis.data['weight'] * (1 - xvis.data['flags'])
-
-
-def xvisibility_flagged_imaging_weight(xvis):
-    """  Flagged Imaging weight [:, npol]
-    """
-    return xvis.data['imaging_weight'] * (1 - xvis.data['flags'])
 
 
 class XImage(xarray.DataArray):

@@ -13,6 +13,7 @@ import copy
 
 import numpy
 from astropy import units as u
+from astropy import constants as const
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyDeprecationWarning
@@ -92,7 +93,9 @@ class XVisibility():
         :param source: Source name
         :param meta: Meta info
         """
-
+        k = (frequency / const.c).value
+        uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
+        
         coords = {"time": time,
                   "baseline": baselines,
                   "frequency": frequency,
@@ -108,8 +111,11 @@ class XVisibility():
                                                       dims=["time", "baseline", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
         datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "spatial"])
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "spatial", "frequency"]),
         datavars["uvdist"] = xarray.DataArray(numpy.hypot(uvw[...,0], uvw[...,1]),
                                               dims=["time", "baseline"])
+        datavars["uvdist_lambda"] = xarray.DataArray(numpy.hypot(uvw_lambda[...,0], uvw_lambda[...,1]),
+                                              dims=["time", "baseline", "frequency"])
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
         
@@ -150,27 +156,51 @@ class XVisibility():
 
     @property
     def u(self):
-        """ u coordinate (wavelengths) [nrows]
+        """ u coordinate (m) [nrows]
         """
-        return self.data['uvw'][:, 0]
+        return self.data['uvw'][..., 0]
 
     @property
     def v(self):
-        """ v coordinate (wavelengths) [nrows]
+        """ v coordinate (m) [nrows]
         """
-        return self.data['uvw'][:, 1]
+        return self.data['uvw'][..., 1]
 
     @property
     def w(self):
+        """ w coordinate (m) [nrows]
+        """
+        return self.data['uvw'][..., 2]
+
+    @property
+    def u_lambda(self):
+        """ u coordinate (wavelengths) [nrows]
+        """
+        return self.data['uvw_lambda'][..., 0]
+
+    @property
+    def v_lambda(self):
+        """ v coordinate (wavelengths) [nrows]
+        """
+        return self.data['uvw_lambda'][..., 1]
+
+    @property
+    def w_lambda(self):
         """ w coordinate (wavelengths) [nrows]
         """
-        return self.data['uvw'][:, 2]
+        return self.data['uvw_lambda'][..., 2]
 
     @property
     def uvdist(self):
-        """ uv distance (wavelengths) [nrows]
+        """ uv distance (m) [nrows]
         """
         return self.data["uvdist"]
+
+    @property
+    def uvdist_lambda(self):
+        """ uv distance (wavelengths) [nrows]
+        """
+        return self.data["uvdist_lambda"]
 
     @property
     def time(self):
@@ -300,7 +330,7 @@ class XVisibility():
         """
         s = "XVisibility.data:\n"
         s += "{}\n".format(str(self.data))
-        s += "Attributes:\n"
+        s += "XVisibility.attributes:\n"
         s += "\tSource: %s\n" % self.source
         s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
         s += "\tPhasecentre: %s\n" % self.phasecentre

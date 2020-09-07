@@ -103,6 +103,7 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
     if utc_time is None:
         utc_time_zero = Time("2020-01-01T00:00:00", format='isot', scale='utc')
 
+    # Support some possible scripts which has defined Time
     if isinstance(utc_time, Time):
         utc_time_zero = utc_time
         utc_time = None

@@ -103,6 +103,10 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
     if utc_time is None:
         utc_time_zero = Time("2020-01-01T00:00:00", format='isot', scale='utc')
 
+    if isinstance(utc_time, Time):
+        utc_time_zero = utc_time
+        utc_time = None
+
     if polarisation_frame is None:
         polarisation_frame = correlate_polarisation(config.receptor_frame)
     
@@ -238,6 +242,10 @@ def create_blockvisibility(config: Configuration,
     
     if utc_time is None:
         utc_time_zero = Time("2020-01-01T00:00:00", format='isot', scale='utc')
+
+    if isinstance(utc_time, Time):
+        utc_time_zero = utc_time
+        utc_time = None
 
     if polarisation_frame is None:
         polarisation_frame = correlate_polarisation(config.receptor_frame)

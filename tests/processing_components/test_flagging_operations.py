@@ -44,9 +44,9 @@ class TestFlaggingOperations(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       weight=1.0)
         bvis = flagging_blockvisibility(bvis, antenna=[1])
-        assert bvis.data['flags'][0, 1, 2, 0, 0] == 0
-        assert bvis.data['flags'][0, 2, 1, 0, 0] == 0
-        assert bvis.data['flags'][0, 2, 2, 0, 0] == 1
+        assert bvis.data['flags'][0, 1, 2, 0, 0] == 1
+        assert bvis.data['flags'][0, 2, 1, 0, 0] == 1
+        assert bvis.data['flags'][0, 3, 2, 0, 0] == 0
 
     def test_flagging_blockvisibility_multiple(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
@@ -55,10 +55,10 @@ class TestFlaggingOperations(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       weight=1.0)
         bvis = flagging_blockvisibility(bvis, antenna=[1, 3], channel=[0, 1], polarization=[0])
-        assert bvis.data['flags'][0, 1, 2, 0, 0] == 0
-        assert bvis.data['flags'][0, 2, 1, 0, 0] == 0
-        assert bvis.data['flags'][0, 2, 3, 0, 0] == 0
-        assert bvis.data['flags'][0, 3, 4, 2, 0] == 1
+        assert bvis.data['flags'][0, 1, 2, 0, 0] == 1
+        assert bvis.data['flags'][0, 2, 1, 0, 0] == 1
+        assert bvis.data['flags'][0, 2, 3, 0, 0] == 1
+        assert bvis.data['flags'][0, 4, 3, 2, 0] == 0
 
         # ft = create_flagtable_from_blockvisibility(bvis)
         # print(ft)

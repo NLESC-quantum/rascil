@@ -283,7 +283,7 @@ def create_blockvisibility(config: Configuration,
     # Do each hour angle in turn
     itime = 0
     if utc_time is None:
-        stime = calculate_transit_time(config.location, utc_time, phasecentre)
+        stime = calculate_transit_time(config.location, utc_time_zero, phasecentre)
         if stime.masked:
             stime = utc_time
 

@@ -35,23 +35,23 @@ def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):
     assert isinstance(antenna, list)
     if len(channel) == 0 and len(polarization) == 0:
         for ant in antenna:
-            bvis.data['flags'][:, ant, ...] = 0
-            bvis.data['flags'][:, :, ant, ...] = 0
+            bvis.data['flags'][:, ant, ...] = 1
+            bvis.data['flags'][:, :, ant, ...] = 1
     elif len(channel) == 0:
         for ant in antenna:
             for pol in polarization:
-                bvis.data['flags'][:, ant, :, :, pol] = 0
-                bvis.data['flags'][:, :, ant, :, pol] = 0
+                bvis.data['flags'][:, ant, :, :, pol] = 1
+                bvis.data['flags'][:, :, ant, :, pol] = 1
     elif len(polarization) == 0:
         for ant in antenna:
             for ch in channel:
-                bvis.data['flags'][:, ant, :, ch, :] = 0
-                bvis.data['flags'][:, :, ant, ch, :] = 0
+                bvis.data['flags'][:, ant, :, ch, :] = 1
+                bvis.data['flags'][:, :, ant, ch, :] = 1
     else:
         for ant in antenna:
             for ch in channel:
                 for pol in polarization:
-                    bvis.data['flags'][:, ant, :, ch, pol] = 0
-                    bvis.data['flags'][:, :, ant, ch, pol] = 0
+                    bvis.data['flags'][:, ant, :, ch, pol] = 1
+                    bvis.data['flags'][:, :, ant, ch, pol] = 1
 
     return bvis

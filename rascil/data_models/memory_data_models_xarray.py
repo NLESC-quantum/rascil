@@ -2,18 +2,16 @@
 
 """
 
-__all__ = ['XVisibility', 'XImage']
+__all__ = ['XBlockVisibility', 'XImage', 'XConfiguration']
 
-
-import xarray
-import logging
-import sys
-import warnings
 import copy
+import logging
+import warnings
 
 import numpy
-from astropy import units as u
+import xarray
 from astropy import constants as const
+from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 from astropy.utils.exceptions import AstropyDeprecationWarning
@@ -26,10 +24,132 @@ from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 
 log = logging.getLogger('logger')
 
-class XVisibility():
-    """ XVisibility table class similar to Visibility but using xarray
 
-    XVisibility is defined to hold an observation with one direction.
+class XConfiguration():
+    """ Describe a XConfiguration as locations in x,y,z, mount type, diameter, names, and
+        overall location
+    """
+    
+    def __init__(self, name='', location=None,
+                 names="%s", xyz=None, mount="alt-az", frame="",
+                 receptor_frame=ReceptorFrame("linear"),
+                 diameter=None, offset=None, stations="%s", vp_type=None):
+        
+        """Configuration object describing data for processing
+
+        :param name: Name of configuration e.g. 'LOWR3'
+        :param location: Location of array as an astropy EarthLocation
+        :param names: Names of the dishes/stations
+        :param xyz: Geocentric coordinates of dishes/stations
+        :param mount: Mount types of dishes/stations 'altaz' | 'xy' | 'equatorial'
+        :param frame: Reference frame of locations
+        :param receptor_frame: Receptor frame
+        :param diameter: Diameters of dishes/stations (m)
+        :param offset: Axis offset (m)
+        :param stations: Identifiers of the dishes/stations
+        :param vp_type: Type of voltage pattern (string)
+        """
+        __slots__ = ()
+        
+        nants = len(names)
+        if isinstance(stations, str):
+            stations = [stations % ant for ant in range(nants)]
+        if isinstance(names, str):
+            names = [names % ant for ant in range(nants)]
+        if isinstance(mount, str):
+            mount = numpy.repeat(mount, nants)
+        if offset is None:
+            offset = numpy.zeros([nants, 3])
+        if vp_type is None:
+            vp_type = numpy.repeat("", nants)
+        
+        coords = {
+            "id": range(nants),
+            "spatial": numpy.zeros([3])
+        }
+        
+        datavars = dict()
+        datavars["names"] = xarray.DataArray(names, dims=["id"])
+        datavars["xyz"] = xarray.DataArray(xyz, dims=["id", "spatial"])
+        datavars["diameter"] = xarray.DataArray(diameter, dims=["id"])
+        datavars["mount"] = xarray.DataArray(mount, dims=["id"])
+        datavars["vp_type"] = xarray.DataArray(vp_type, dims=["id"])
+        datavars["offset"] = xarray.DataArray(offset, dims=["id", "spatial"])
+        datavars["stations"] = xarray.DataArray(stations, dims=["id"])
+        
+        self.name = name  # Name of configuration
+        self.location = location  # EarthLocation
+        self.receptor_frame = receptor_frame
+        self.frame = frame
+        
+        self.data = xarray.Dataset(datavars, coords=coords)
+    
+    def __str__(self):
+        """Default printer for Configuration
+
+        """
+        s = "XConfiguration:\n"
+        s += "\tNumber of antennas/stations: %s\n" % len(self.names)
+        s += "\tNames: %s\n" % self.names
+        s += "\tDiameter: %s\n" % self.diameter
+        s += "\tMount: %s\n" % self.mount
+        s += "\tXYZ: %s\n" % self.xyz
+        s += "\tAxis offset: %s\n" % self.offset
+        s += "\tStations: %s\n" % self.stations
+        s += "\tVoltage pattern type: %s\n" % self.vp_type
+        
+        return s
+    
+    def size(self):
+        """ Return size in GB
+        """
+        size = self.data.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+    
+    @property
+    def names(self):
+        """ Names of the dishes/stations"""
+        return self.data['names']
+    
+    @property
+    def vp_type(self):
+        """ Names of the voltage pattern type"""
+        return self.data['vp_type']
+    
+    @property
+    def diameter(self):
+        """ Diameter of dishes/stations (m)
+        """
+        return self.data['diameter']
+    
+    @property
+    def xyz(self):
+        """ XYZ locations of dishes/stations [:,3] (m)
+        """
+        return self.data['xyz']
+    
+    @property
+    def mount(self):
+        """ Mount types of dishes/stations ('azel' | 'equatorial'
+        """
+        return self.data['mount']
+    
+    @property
+    def offset(self):
+        """ Axis offset [:, 3] (m)
+        """
+        return self.data['offset']
+    
+    @property
+    def stations(self):
+        """ Station/dish identifier (may be the same as names)"""
+        return self.data['stations']
+
+
+class XBlockVisibility():
+    """ XBlockVisibility table class similar to Visibility but using xarray
+
+    XBlockVisibility is defined to hold an observation with one direction.
     Polarisation frame is the same for the entire data set and can be stokes, circular, linear.
     The configuration is also an attribute.
 
@@ -37,7 +157,7 @@ class XVisibility():
     should be updated with the new delay tracking centre. This is important for wstack and wproject
     algorithms.
     
-    Here is an example of an XVisibility
+    Here is an example of an XBlockVisibility
     
             <xarray.XVisibility>
         Dimensions:            (baseline: 10, frequency: 3, polarisation: 4, spatial: 3, time: 16)
@@ -99,8 +219,8 @@ class XVisibility():
         coords = {"time": time,
                   "baseline": baselines,
                   "frequency": frequency,
-                  "polarisation": polarisation_frame.names,
-                  "spatial": numpy.zeros([3], dtype='float')}
+                  "polarisation": polarisation_frame.names
+                  }
         
         datavars = dict()
         datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
@@ -110,183 +230,176 @@ class XVisibility():
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
                                                       dims=["time", "baseline", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "spatial"])
-        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "spatial", "frequency"]),
-        datavars["uvdist"] = xarray.DataArray(numpy.hypot(uvw[...,0], uvw[...,1]),
-                                              dims=["time", "baseline"])
-        datavars["uvdist_lambda"] = xarray.DataArray(numpy.hypot(uvw_lambda[...,0], uvw_lambda[...,1]),
-                                              dims=["time", "baseline", "frequency"])
+        datavars["u"] = xarray.DataArray(uvw[..., 0], dims=["time", "baseline"])
+        datavars["v"] = xarray.DataArray(uvw[..., 1], dims=["time", "baseline"])
+        datavars["w"] = xarray.DataArray(uvw[..., 2], dims=["time", "baseline"])
+        datavars["u_lambda"] = xarray.DataArray(uvw_lambda[..., 0], dims=["time", "baseline", "frequency"])
+        datavars["v_lambda"] = xarray.DataArray(uvw_lambda[..., 1], dims=["time", "baseline", "frequency"])
+        datavars["w_lambda"] = xarray.DataArray(uvw_lambda[..., 2], dims=["time", "baseline", "frequency"])
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
         
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims="time")
-
+        
         self.phasecentre = phasecentre  # Phase centre of observation
         self.configuration = configuration  # Antenna/station configuration
         self.polarisation_frame = polarisation_frame
         self.source = source
         self.meta = meta
-
-        self.data=xarray.Dataset(datavars, coords=coords)
-
+        
+        self.data = xarray.Dataset(datavars, coords=coords)
+    
     @property
     def nchan(self):
         """ Number of channels
         """
         return len(self.frequency)
-
+    
     @property
     def npol(self):
         """ Number of polarisations
         """
         return self.data.polarisation_frame.npol
-
+    
     @property
     def nvis(self):
         """ Number of visibilities (i.e. rows)
         """
         return self.data['vis'].shape[0]
-
-    @property
-    def uvw(self):
-        """ UVW coordinates (wavelengths) [nrows, 3]
-        """
-        return self.data['uvw']
-
-    @property
-    def u(self):
-        """ u coordinate (m) [nrows]
-        """
-        return self.data['uvw'][..., 0]
-
-    @property
-    def v(self):
-        """ v coordinate (m) [nrows]
-        """
-        return self.data['uvw'][..., 1]
-
-    @property
-    def w(self):
-        """ w coordinate (m) [nrows]
-        """
-        return self.data['uvw'][..., 2]
-
-    @property
-    def u_lambda(self):
-        """ u coordinate (wavelengths) [nrows]
-        """
-        return self.data['uvw_lambda'][..., 0]
-
-    @property
-    def v_lambda(self):
-        """ v coordinate (wavelengths) [nrows]
-        """
-        return self.data['uvw_lambda'][..., 1]
-
-    @property
-    def w_lambda(self):
-        """ w coordinate (wavelengths) [nrows]
-        """
-        return self.data['uvw_lambda'][..., 2]
-
+    
     @property
     def uvdist(self):
-        """ uv distance (m) [nrows]
+        """ uv distance (m)
         """
-        return self.data["uvdist"]
-
+        return numpy.hypot(self.data["u"], self.data["v"])
+    
     @property
     def uvdist_lambda(self):
-        """ uv distance (wavelengths) [nrows]
+        """ uv distance (wavelengths)
         """
-        return self.data["uvdist_lambda"]
-
+        return numpy.hypot(self.data["u_lambda"], self.data["v_lambda"])
+    
+    @property
+    def u(self):
+        """ u (m)
+        """
+        return self.data["u"]
+    
+    @property
+    def v(self):
+        """ v (m)
+        """
+        return self.data["v"]
+    
+    @property
+    def w(self):
+        """ w (m)
+        """
+        return self.data["w"]
+    
+    @property
+    def u_lambda(self):
+        """ u (wavelengths)
+        """
+        return self.data["u_lambda"]
+    
+    @property
+    def v_lambda(self):
+        """ v (wavelengths)
+        """
+        return self.data["v_lambda"]
+    
+    @property
+    def w_lambda(self):
+        """ w (wavelengths)
+        """
+        return self.data["w_lambda"]
+    
     @property
     def time(self):
         """ Time (UTC) [nrows]
         """
         return self.data['time']
-
+    
     @property
     def datetime(self):
         """ Date Time (UTC) [nrows]
         """
         return self.data['datetime']
-
+    
     @property
     def integration_time(self):
         """ Integration time [nrows]
         """
         return self.data['integration_time']
-
+    
     @property
     def frequency(self):
         """ Frequency values
         """
         return self.data['frequency']
-
+    
     @property
     def channel_bandwidth(self):
         """ Channel bandwidth values
         """
         return self.data['channel_bandwidth']
-
+    
     @property
     def antenna1(self):
         """ Antenna index
         """
         return self.data['antenna1']
-
+    
     @property
     def antenna2(self):
         """ Antenna index
         """
         return self.data['antenna2']
-
+    
     @property
     def vis(self):
         """Complex visibility [:, npol]
         """
         return self.data['vis']
-
+    
     @property
     def flagged_vis(self):
         """Flagged complex visibility [:, npol]
         """
         return self.data['vis'] * (1 - self.flags)
-
+    
     @property
     def flags(self):
         """flags [:, npol]
         """
         return self.data['flags']
-
+    
     @property
     def weight(self):
         """Weight [: npol]
         """
         return self.data['weight']
-
+    
     @property
     def flagged_weight(self):
         """Weight [: npol]
         """
         return self.data['weight'] * (1 - self.data['flags'])
-
+    
     @property
     def imaging_weight(self):
         """  Imaging weight [:, npol]
         """
         return self.data['imaging_weight']
-
+    
     @property
     def flagged_imaging_weight(self):
         """  Flagged Imaging weight [:, npol]
         """
         return self.data['imaging_weight'] * (1 - self.data['flags'])
-
-
+    
     def sel(self, *args, **kwargs):
         """ Use the xarray.sel operator to return selected XVisibility
 
@@ -296,7 +409,7 @@ class XVisibility():
         newxvis = copy.deepcopy(self)
         newxvis.data = newxvis.data.sel(*args, **kwargs)
         return newxvis
-
+    
     def where(self, *args, **kwargs):
         """ Use the xarray.where operator to return selected XVisibility, masked where condition fails
 
@@ -306,7 +419,7 @@ class XVisibility():
         newxvis = copy.deepcopy(self)
         newxvis.data = newxvis.data.where(*args, **kwargs)
         return newxvis
-
+    
     def groupby(self, *args, **kwargs):
         """ Use the xarray.groupby operator to return selected XVisibility
 
@@ -314,7 +427,7 @@ class XVisibility():
         :return:
         """
         return [copy.deepcopy(newxvis) for newxvis in self.data.groupby(*args, **kwargs)]
-
+    
     def groupby_bins(self, *args, **kwargs):
         """ Use the xarray.groupby_bins operator to return selected XVisibility
 
@@ -323,7 +436,6 @@ class XVisibility():
         """
         return [copy.deepcopy(newxvis) for newxvis in self.data.groupby_bins(*args, **kwargs)]
     
-
     def __str__(self):
         """Default printer for XVisibility
 
@@ -340,8 +452,7 @@ class XVisibility():
         return s
 
 
-
-class XImage(xarray.DataArray):
+class XImage():
     """Image class with Image data (as a numpy.array) and the AstroPy `implementation of
     a World Coodinate System <http://docs.astropy.org/en/stable/wcs>`_
 
@@ -360,39 +471,105 @@ class XImage(xarray.DataArray):
 
     """
     
-    def __init__(self, data, wcs=None, polarisation_frame=None):
-        """ Create Image
+    def __init__(self, phasecentre, frequency, polarisation_frame=None,
+                 dtype=None, data=None, wcs=None):
+        """ Create an XImage
 
-        :param data: Data for image
-        :param wcs: Astropy WCS object
-        :param polarisation_frame: e.g. PolarisationFrame('stokesIQUV')
+        :param axes:
+        :param cellsize:
+        :param frequency:
+        :param phasecentre:
+        :param polarisation_frame:
+        :return: XImage
         """
-        dims = {"l", "m", "frequency", "polarisation", "time"}
         
-        npol, nchan, ny, nx = data.shape
+        nx, ny = data.shape[-2], data.shape[-1]
+        cellsize = numpy.abs(wcs.wcs.cdelt[1])
+        cx = phasecentre.ra.to("deg").value
+        cy = phasecentre.dec.to("deg").value
         
-        coords = {"l":range(nx), "m":range(ny),
-                  "frequency": range(nchan),
-                  "polarisation":polarisation_frame.names,
-                  "time": None}
+        dims = ["frequency", "polarisation", "lat", "lon"]
+        coords = {
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "lat": numpy.linspace(cy - cellsize * ny // 2, cy + cellsize * ny // 2, ny),
+            "lon": numpy.linspace(cx - cellsize * nx // 2, cx + cellsize * nx // 2, nx)
+        }
+        
+        self.wcs = wcs
+        self.polarisation_frame = polarisation_frame
+        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+        self.ra, self.dec = wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
+        
+        nchan = len(frequency)
+        npol = polarisation_frame.npol
+        if dtype is None:
+            dtype = "float"
+        
+        if data is None:
+            data = numpy.zeros([nchan, npol, ny, nx], dtype=dtype)
+        else:
+            assert data.shape == (nchan, npol, ny, nx), \
+                "Polarisation frame {} and data shape are incompatible".format(polarisation_frame.type)
+        
+        self.data = xarray.DataArray(data, dims=dims, coords=coords)
+    
+    def size(self):
+        """ Return size in GB
+        """
+        size = self.data.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+    
+    @property
+    def nchan(self):
+        """ Number of channels
+        """
+        return self.data.shape[0]
+    
+    @property
+    def npol(self):
+        """ Number of polarisations
+        """
+        return self.data.shape[1]
+    
+    @property
+    def nheight(self):
+        """ Number of pixels height i.e. y
+        """
+        return self.data.shape[2]
+    
+    @property
+    def nwidth(self):
+        """ Number of pixels width i.e. x
+        """
+        return self.data.shape[3]
+    
+    @property
+    def frequency(self):
+        """ Frequency values
+        """
+        w = self.wcs.sub(['spectral'])
+        return w.wcs_pix2world(range(self.nchan), 0)[0]
+    
+    @property
+    def shape(self):
+        """ Shape of data array
+        """
+        return self.data.shape
+    
+    @property
+    def phasecentre(self):
+        """ Phasecentre (from WCS)
+        """
+        return SkyCoord(self.wcs.wcs.crval[0] * u.deg, self.wcs.wcs.crval[1] * u.deg)
+    
+    def __str__(self):
+        """Default printer for Image
 
-        datavars = dict()
-        datavars["image"] = xarray.DataArray(data, coords=coords)
-
-        attrs=dict()
-        attrs['wcs'] = wcs
-        attrs['polarisation_frame'] = polarisation_frame
-
-        super().__init__(data=data, attrs=attrs)
-
-def ximage_size(ximage):
-    """ Return size in GB
-    """
-    size = 0
-    size += ximage.data.nbytes
-    return size / 1024.0 / 1024.0 / 1024.0
-
-def ximage_phasecentre(ximage):
-    """ Phasecentre (from WCS)
-    """
-    return SkyCoord(ximage.wcs.wcs.crval[0] * u.deg, ximage.wcs.wcs.crval[1] * u.deg)
+        """
+        s = "Image:\n"
+        s += "\tShape: %s\n" % str(self.data.shape)
+        s += "\tData type: %s\n" % str(self.data.dtype)
+        s += "\tWCS: %s\n" % self.wcs.__repr__()
+        s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
+        return s

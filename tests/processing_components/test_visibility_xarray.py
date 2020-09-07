@@ -9,10 +9,10 @@ import astropy.units as u
 import numpy
 from astropy.coordinates import SkyCoord
 
-from rascil.data_models import Skycomponent, PolarisationFrame
+from rascil.data_models import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
-from rascil.processing_components.visibility.vis_xarray import convert_blockvisibility_to_xvisibility
+from rascil.processing_components.visibility.vis_xarray import convert_blockvisibility_to_xblockvisibility
 
 
 class TestXVisibility(unittest.TestCase):
@@ -37,7 +37,7 @@ class TestXVisibility(unittest.TestCase):
                                           polarisation_frame=PolarisationFrame("linear"),
                                           weight=1.0)
 
-        xvis = convert_blockvisibility_to_xvisibility(vis)
+        xvis = convert_blockvisibility_to_xblockvisibility(vis)
         
         assert xvis.vis.shape == (16, 13695, 5, 4), xvis.vis.shape
         assert xvis.u.shape == (16, 13695), xvis.u.shape
@@ -51,8 +51,11 @@ class TestXVisibility(unittest.TestCase):
         print(xvis.data.sel({"polarisation": ["XY", "YX"]}))
         print("\nSelection of the Dataset by frequency")
         print(xvis.data.sel({"frequency": [1.0e8, 1.1e8]}))
-        print("\nSelection of the Dataset by w")
-        print(xvis.data.sel({"w": [0.0, 100.0]}))
+        
+        with self.assertRaises(ValueError):
+            print("\nSelection of the Dataset by w")
+            print(xvis.data.sel({"w": [0.0, 100.0]}))
+            
         print("\nsel antenna1 yields smaller XVisibility")
         print(xvis.sel({"antenna1":10}))
         print("\nwhere antenna1 yields masked arrays")

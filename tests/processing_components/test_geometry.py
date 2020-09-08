@@ -34,12 +34,12 @@ class TestGeometry(unittest.TestCase):
 
     def test_transit_time(self):
         transit_time = calculate_transit_time(self.location, self.utc_time, self.phasecentre)
-        numpy.testing.assert_array_almost_equal(transit_time.mjd, 58849.8958)
+        numpy.testing.assert_array_almost_equal(transit_time.mjd, 58849.895804)
 
     def test_transit_time_below_horizon(self):
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=+80.0 * u.deg, frame='icrs', equinox='J2000')
         transit_time = calculate_transit_time(self.location, self.utc_time, self.phasecentre)
-        numpy.testing.assert_array_almost_equal(transit_time.mjd, 58849.8958)
+        numpy.testing.assert_array_almost_equal(transit_time.mjd, 58849.895805)
 
 
 

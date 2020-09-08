@@ -96,7 +96,7 @@ def calculate_hourangles(location, utc_time, direction):
     # return site.target_hour_angle(utc_time, direction).wrap_at('180d')
 
 
-def calculate_transit_time(location, utc_time, direction, fraction_day=0.0001):
+def calculate_transit_time(location, utc_time, direction, fraction_day=1e-7):
     """ Find the UTC time of the nearest transit
 
     :param fraction_day: Step in this fraction of day to find transit
@@ -105,21 +105,24 @@ def calculate_transit_time(location, utc_time, direction, fraction_day=0.0001):
     :param direction: SkyCoord source
     :return: astropy Time
     """
+    import scipy.optimize._minimize
     assert isinstance(location, EarthLocation)
     assert isinstance(utc_time, Time)
     assert isinstance(direction, SkyCoord)
 
-    utc_times = Time(numpy.arange(0.0, 1.0, fraction_day) + utc_time.mjd, format='mjd', scale='utc')
-    _, els = calculate_azel(location, utc_times, direction)
-    elmax = - numpy.pi / 2.0
-    best = None
-    for i, el in enumerate(els):
-        if el.value > elmax:
-            elmax = el.value
-            best = i
-    if elmax < 0.0:
+    def transit(utc):
+        return -1 * calculate_azel(location, Time(utc, format='mjd', scale='utc'), direction)[1].value
+    
+    solution = scipy.optimize.minimize(transit,
+                                       x0=numpy.array([utc_time.mjd + 0.5]),
+                                       bounds=[(utc_time.mjd, utc_time.mjd+1.0)],
+                                       tol=fraction_day)
+    time_transit = solution['x']
+    if not solution['success']:
+        log.warning("Failed to find transit time to specified accuracy")
+    if solution['fun'] > 0.0:
         log.warning("Source is always below horizon")
-    return utc_times[best]
+    return Time(time_transit[0], format='mjd', scale='utc')
     
     # from astroplan import Observer
     # site = Observer(location)

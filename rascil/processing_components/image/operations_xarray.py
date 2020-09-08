@@ -798,9 +798,7 @@ def copy_ximage(im: XImage):
     :param im:
     :return: XImage
     """
-    
-    return XImage(im.phasecentre, frequency=im.frequency, polarisation_frame=im.polarisation_frame,
-                  dtype=im.data.dtype, data=im.data, wcs=im.wcs)
+    return copy.deepcopy(im)
 
 
 def create_empty_ximage_like(im: XImage) -> XImage:
@@ -814,9 +812,10 @@ def create_empty_ximage_like(im: XImage) -> XImage:
     See also
         :py:func:`rascil.processing_components.image.base.copy_ximage`
     """
-    empty = numpy.empty_like(im.data.values)
-    return XImage(im.phasecentre, frequency=im.frequency, polarisation_frame=im.polarisation_frame,
-                  dtype=im.data.dtype, data=empty, wcs=im.wcs)
+    
+    empty = copy_ximage(im)
+    empty.data[...] = 0.0
+    return empty
 
 
 def fft_ximage(im, template_ximage=None):

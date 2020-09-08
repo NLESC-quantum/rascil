@@ -440,7 +440,7 @@ class XBlockVisibility():
         """Default printer for XVisibility
 
         """
-        s = "XVisibility.data:\n"
+        s = "XVisibility.xarray.Dataset:\n"
         s += "{}\n".format(str(self.data))
         s += "XVisibility.attributes:\n"
         s += "\tSource: %s\n" % self.source

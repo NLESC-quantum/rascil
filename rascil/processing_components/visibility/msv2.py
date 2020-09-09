@@ -19,7 +19,7 @@ log = logging.getLogger('logger')
 
 try:
     from casacore.tables import table, tableutil
-
+    from casacore.measures import measures
 
     class WriteMs(BaseData):
         """
@@ -385,18 +385,20 @@ try:
             tb = table("%s/OBSERVATION" % self.basename, desc, nrow=1, ack=False)
 
             # from astropy.time import Time
-            utcStart = Time(self.data[0].obstime, format='mjd',scale='utc')
-            tStart = utcStart.mjd
-            utcStop = Time(self.data[-1].obstime, format='mjd', scale='utc')
-            tStop = utcStop.mjd
+            # utcStart = Time(self.data[0].obstime, format='mjd',scale='utc')
+            # tStart = utcStart.mjd
+            # utcStop = Time(self.data[-1].obstime, format='mjd', scale='utc')
+            # tStop = utcStop.mjd
+            tStart = self.data[0].obstime
+            tStop = self.data[-1].obstime
 
-            tb.putcell('TIME_RANGE', 0, [tStart * 86400, tStop * 86400])
+            tb.putcell('TIME_RANGE', 0, [tStart, tStop])
             tb.putcell('LOG', 0, 'Not provided')
             tb.putcell('SCHEDULE', 0, 'Not provided')
             tb.putcell('FLAG_ROW', 0, False)
             tb.putcell('OBSERVER', 0, 'FENGWANG')
             tb.putcell('PROJECT', 0, 'SKASIM')
-            tb.putcell('RELEASE_DATE', 0, tStop * 86400)
+            tb.putcell('RELEASE_DATE', 0, tStop)
             tb.putcell('SCHEDULE_TYPE', 0, 'None')
             tb.putcell('TELESCOPE_NAME', 0, self.siteName)
 
@@ -840,7 +842,8 @@ try:
                     # timeList = [utc - astro.MJD_OFFSET for bl in dataSet.baselines]
                     inttimeList = [dataSet.inttime for bl in dataSet.baselines]
                     #timeList = [(utc0/86400.0 - 2400000.5) * 86400 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
-                    timeList = [utc0 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+                    # timeList = [utc + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+                    timeList = [dataSet.obstime + dataSet.inttime / 2.0 for bl in dataSet.baselines]
 
                     ### Add in the new new source ID and name
                     sourceList = [sourceID for bl in dataSet.baselines]

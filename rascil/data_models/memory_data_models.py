@@ -84,9 +84,8 @@ class Configuration():
         
         coords = {
             "id": list(range(nants)),
-            "spatial": numpy.zeros([3])
+            "spatial": ["X", "Y", "Z"]
         }
-        print(coords)
         datavars = dict()
         datavars["names"] = xarray.DataArray(names, coords={"id": list(range(nants))}, dims=["id"])
         datavars["xyz"] = xarray.DataArray(xyz, coords=coords, dims=["id", "spatial"])

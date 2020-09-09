@@ -15,7 +15,6 @@ from typing import Union
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 
-from rascil.processing_components.util.coordinate_support import xyz_at_latitude
 from rascil.data_models.memory_data_models import Configuration
 from rascil.data_models.parameters import rascil_data_path, get_parameter
 from rascil.processing_components.util.installation_checks import check_data_directory

@@ -28,8 +28,12 @@ from copy import deepcopy
 from typing import Union
 
 import numpy
+import xarray
+import xarray
+from astropy import constants as const
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.wcs import FITSFixedWarning
 
@@ -41,20 +45,19 @@ from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 log = logging.getLogger('logger')
 
 
-class Configuration:
-    """ Describe a Configuration as locations in x,y,z, mount type, diameter, names, and
+class Configuration():
+    """ Describe a XConfiguration as locations in x,y,z, mount type, diameter, names, and
         overall location
     """
     
-    def __init__(self, name='', data=None, location=None,
+    def __init__(self, name='', location=None,
                  names="%s", xyz=None, mount="alt-az", frame="",
                  receptor_frame=ReceptorFrame("linear"),
-                 diameter=None, offset=None, stations="%s", vp_type=""):
+                 diameter=None, offset=None, stations="%s", vp_type=None):
         
         """Configuration object describing data for processing
 
         :param name: Name of configuration e.g. 'LOWR3'
-        :param data: Data array (used in copying)
         :param location: Location of array as an astropy EarthLocation
         :param names: Names of the dishes/stations
         :param xyz: Geocentric coordinates of dishes/stations
@@ -66,43 +69,47 @@ class Configuration:
         :param stations: Identifiers of the dishes/stations
         :param vp_type: Type of voltage pattern (string)
         """
-        if data is None and xyz is not None:
-            desc = [('names', 'U12'),
-                    ('xyz', 'f8', (3,)),
-                    ('diameter', 'f8'),
-                    ('mount', 'U12'),
-                    ('vp_type', 'U12'),
-                    ('offset', 'f8', (3,)),
-                    ('stations', 'U12')]
-            nants = xyz.shape[0]
+
+        nants = len(names)
+        if isinstance(stations, str):
+            stations = [stations % ant for ant in range(nants)]
             if isinstance(names, str):
                 names = [names % ant for ant in range(nants)]
             if isinstance(mount, str):
                 mount = numpy.repeat(mount, nants)
-            data = numpy.zeros(shape=[nants], dtype=desc)
-            data['names'] = names
-            data['xyz'] = xyz
-            data['mount'] = mount
-            data['diameter'] = diameter
-            if offset is not None:
-                data['offset'] = offset
-            if isinstance(stations, str):
-                stations = [stations % ant for ant in range(nants)]
-            data['stations'] = stations
-            data['vp_type'] = vp_type
+        if offset is None:
+            offset = numpy.zeros([nants, 3])
+        if vp_type is None:
+            vp_type = numpy.repeat("", nants)
         
-        self.name = name
-        self.data = data
-        self.location = location
-        self.frame = frame
+        coords = {
+            "id": list(range(nants)),
+            "spatial": numpy.zeros([3])
+        }
+        print(coords)
+        datavars = dict()
+        datavars["names"] = xarray.DataArray(names, coords={"id": list(range(nants))}, dims=["id"])
+        datavars["xyz"] = xarray.DataArray(xyz, coords=coords, dims=["id", "spatial"])
+        print(datavars["xyz"])
+        datavars["diameter"] = xarray.DataArray(diameter, coords={"id": list(range(nants))}, dims=["id"])
+        datavars["mount"] = xarray.DataArray(mount, coords={"id": list(range(nants))}, dims=["id"])
+        datavars["vp_type"] = xarray.DataArray(vp_type, coords={"id": list(range(nants))}, dims=["id"])
+        datavars["offset"] = xarray.DataArray(offset, coords=coords, dims=["id", "spatial"])
+        datavars["stations"] = xarray.DataArray(stations, coords={"id": list(range(nants))}, dims=["id"])
+        
+        self.name = name  # Name of configuration
+        self.location = location  # EarthLocation
         self.receptor_frame = receptor_frame
+        self.frame = frame
+        
+        self.data = xarray.Dataset(datavars, coords=coords)
     
     def __str__(self):
         """Default printer for Configuration
 
         """
         s = "Configuration:\n"
-        s += "\nName: %s\n" % self.name
+        s += "\nNames: %s\n" % self.name
         s += "\tNumber of antennas/stations: %s\n" % len(self.names)
         s += "\tNames: %s\n" % self.names
         s += "\tDiameter: %s\n" % self.diameter
@@ -117,8 +124,7 @@ class Configuration:
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.size * sys.getsizeof(self.data)
+        size = self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
 
     @property

@@ -154,7 +154,7 @@ def create_configuration_from_MIDfile(antfile: str, location=None,
 
     anames = numpy.genfromtxt(antfile, dtype='str', skip_header=5, usecols=[4], delimiter=" ")
     mounts = numpy.repeat(mount, nants)
-    diameters = numpy.genfromtxt(antfile, dtype='str', skip_header=5, usecols=[3], delimiter=" ")
+    diameters = numpy.genfromtxt(antfile, dtype='str', skip_header=5, usecols=[3], delimiter=" ").astype('float')
 
     antxyz, diameters, anames, mounts = limit_rmax(antxyz, diameters, anames, mounts, rmax)
 

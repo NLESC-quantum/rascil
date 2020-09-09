@@ -10,6 +10,7 @@ import warnings
 
 import numpy
 import xarray
+import xarray
 from astropy import constants as const
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -25,7 +26,7 @@ from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 log = logging.getLogger('logger')
 
 
-class XConfiguration():
+class Configuration():
     """ Describe a XConfiguration as locations in x,y,z, mount type, diameter, names, and
         overall location
     """

@@ -28,7 +28,7 @@ from copy import deepcopy
 from typing import Union
 
 import numpy
-import xarray
+import pandas
 import xarray
 from astropy import constants as const
 from astropy import units as u
@@ -89,7 +89,6 @@ class Configuration():
         datavars = dict()
         datavars["names"] = xarray.DataArray(names, coords={"id": list(range(nants))}, dims=["id"])
         datavars["xyz"] = xarray.DataArray(xyz, coords=coords, dims=["id", "spatial"])
-        print(datavars["xyz"])
         datavars["diameter"] = xarray.DataArray(diameter, coords={"id": list(range(nants))}, dims=["id"])
         datavars["mount"] = xarray.DataArray(mount, coords={"id": list(range(nants))}, dims=["id"])
         datavars["vp_type"] = xarray.DataArray(vp_type, coords={"id": list(range(nants))}, dims=["id"])
@@ -1208,44 +1207,82 @@ class BlockVisibility:
         :param source: Source name
         :param meta: Meta info
         """
-        if meta is None:
-            meta = dict()
-        if data is None and vis is not None:
-            ntimes, nants, _, nchan, npol = vis.shape
-            assert vis.shape == weight.shape
-            if isinstance(frequency, list):
-                frequency = numpy.array(frequency)
-            assert len(frequency) == nchan
-            if isinstance(channel_bandwidth, list):
-                channel_bandwidth = numpy.array(channel_bandwidth)
-            assert len(channel_bandwidth) == nchan
-            desc = [('index', 'i8'),
-                    ('uvw', 'f8', (nants, nants, 3)),
-                    ('time', 'f8'),
-                    ('integration_time', 'f8'),
-                    ('vis', 'c16', (nants, nants, nchan, npol)),
-                    ('flags', 'i8', (nants, nants, nchan, npol)),
-                    ('weight', 'f8', (nants, nants, nchan, npol)),
-                    ('imaging_weight', 'f8', (nants, nants, nchan, npol))]
-            data = numpy.zeros(shape=[ntimes], dtype=desc)
-            data['index'] = list(range(ntimes))
-            data['uvw'] = uvw
-            data['time'] = time  # MJD in seconds
-            data['integration_time'] = integration_time  # seconds
-            data['vis'] = vis
-            data['flags'] = flags
-            data['weight'] = weight
-            data['imaging_weight'] = imaging_weight
+
+        ntimes, nant, _, nchan, npol = vis.shape
+
+        def gen_base(nant):
+            for ant1 in range(1, nant):
+                for ant2 in range(ant1):
+                    yield ant1, ant2
+
+        baselines = pandas.MultiIndex.from_tuples(gen_base(nant), names=('antenna1', 'antenna2'))
+        nbaselines = len(baselines)
+
+        def upper_triangle(x):
+            x_reshaped = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype=x.dtype)
+            for itime, _ in enumerate(time):
+                for ibaseline, baseline in enumerate(baselines):
+                    ant1 = baseline[0]
+                    ant2 = baseline[1]
+                    for chan, freq in enumerate(frequency):
+                        for ipol, pol in enumerate(polarisation_frame.names):
+                            x_reshaped[itime, ibaseline, chan, ipol] = \
+                                x[itime, ant2, ant1, chan, ipol]
+            return x_reshaped
+
+        def uvw_reshape(uvw):
+            uvw_reshaped = numpy.zeros([ntimes, nbaselines, 3])
+            for itime, _ in enumerate(time):
+                for ibaseline, baseline in enumerate(baselines):
+                    ant1 = baseline[0]
+                    ant2 = baseline[1]
+                    uvw_reshaped[itime, ibaseline, :] = uvw[itime, ant2, ant1]
+            return uvw_reshaped
         
-        self.data = data  # numpy structured array
-        self.frequency = frequency
-        self.channel_bandwidth = channel_bandwidth
+        uvw = uvw_reshape(uvw)
+        vis = upper_triangle(vis)
+        weight = upper_triangle(weight)
+        flags = upper_triangle(flags)
+
+        k = (frequency / const.c).value
+        uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
+
+        coords = {"time": time,
+                  "baseline": baselines,
+                  "frequency": frequency,
+                  "polarisation": polarisation_frame.names
+                  }
+
+        datavars = dict()
+        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
+        if imaging_weight is None:
+            imaging_weight = weight
+        imaging_weight = upper_triangle(imaging_weight)
+
+        datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
+                                                      dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["u"] = xarray.DataArray(uvw[..., 0], dims=["time", "baseline"])
+        datavars["v"] = xarray.DataArray(uvw[..., 1], dims=["time", "baseline"])
+        datavars["w"] = xarray.DataArray(uvw[..., 2], dims=["time", "baseline"])
+        datavars["u_lambda"] = xarray.DataArray(uvw_lambda[..., 0], dims=["time", "baseline", "frequency"])
+        datavars["v_lambda"] = xarray.DataArray(uvw_lambda[..., 1], dims=["time", "baseline", "frequency"])
+        datavars["w_lambda"] = xarray.DataArray(uvw_lambda[..., 2], dims=["time", "baseline", "frequency"])
+        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
+        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
+
+        datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
+                                                dims="time")
+
         self.phasecentre = phasecentre  # Phase centre of observation
         self.configuration = configuration  # Antenna/station configuration
         self.polarisation_frame = polarisation_frame
         self.source = source
         self.meta = meta
-    
+
+        self.data = xarray.Dataset(datavars, coords=coords)
+
     def __str__(self):
         """Default printer for BlockVisibility
 
@@ -1270,17 +1307,26 @@ class BlockVisibility:
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        for col in self.data.dtype.fields.keys():
-            size += self.data[col].nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
+        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
     
     @property
     def nchan(self):
         """ Number of channels
         """
         return self.data['vis'].shape[3]
-    
+
+    @property
+    def frequency(self):
+        """ Number of channels
+        """
+        return self.data['frequency']
+
+    @property
+    def channel_bandwidth(self):
+        """ Number of channels
+        """
+        return self.data['channel_bandwidth']
+
     @property
     def npol(self):
         """ Number of polarisations
@@ -1387,7 +1433,7 @@ class BlockVisibility:
     def nvis(self):
         """ Number of visibilities (in total)
         """
-        return self.data.size
+        return numpy.product(self.data.vis.shape)
 
 
 class FlagTable:

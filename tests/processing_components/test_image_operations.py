@@ -31,6 +31,7 @@ class TestImage(unittest.TestCase):
         self.dir = rascil_path('test_results')
 
         self.m31image = create_test_image(cellsize=0.0001)
+        assert numpy.max(self.m31image.data) > 0.0, "Test image is empty"
         self.cellsize = 180.0 * 0.0001 / numpy.pi
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -126,6 +127,7 @@ class TestImage(unittest.TestCase):
 
     def test_smooth_image(self):
         smooth = smooth_image(self.m31image)
+        assert numpy.max(smooth.data) > 0.0
         assert numpy.max(smooth.data) > numpy.max(self.m31image.data)
 
     def test_calculate_image_frequency_moments(self):
@@ -193,8 +195,8 @@ class TestImage(unittest.TestCase):
         padded = pad_image(m31image, [1, 1, 1024, 1024])
         assert padded.shape == (1, 1, 1024, 1024)
 
-        padded = pad_image(m31image, [3, 4, 2048, 2048])
-        assert padded.shape == (3, 4, 2048, 2048)
+        with self.assertRaises(AssertionError):
+            padded = pad_image(m31image, [3, 4, 2048, 2048])
 
         with self.assertRaises(ValueError):
             padded = pad_image(m31image, [1, 1, 100, 100])
@@ -221,7 +223,8 @@ class TestImage(unittest.TestCase):
         m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9], canonical=True)
         padded = pad_image(m31image, [1, 1, 512, 512])
         padded.data = numpy.repeat(padded.data, repeats=4, axis=1)
-        padded.polarisation_frame = PolarisationFrame("stokesIQUV")
+        padded = create_image_from_array(padded.data, polarisation_frame=PolarisationFrame("stokesIQUV"),
+                                         wcs=padded.wcs)
         padded.data[:, 1:, ...] = 0.0
         applied = apply_voltage_pattern_to_image(padded, vp)
         unapplied = apply_voltage_pattern_to_image(applied, vp, inverse=True, min_det=1e-12)

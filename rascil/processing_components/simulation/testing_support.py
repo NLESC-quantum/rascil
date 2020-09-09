@@ -626,29 +626,29 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
     :return: Image
     """
 
+    newwcs = WCS(naxis=4)
+
+    newwcs.wcs.crpix = [im.wcs.wcs.crpix[0] + 1.0, im.wcs.wcs.crpix[1] + 1.0, 1.0, 1.0]
+    newwcs.wcs.cdelt = [im.wcs.wcs.cdelt[0], im.wcs.wcs.cdelt[1], 1.0, 1.0]
+    newwcs.wcs.crval = [im.wcs.wcs.crval[0], im.wcs.wcs.crval[1], 1.0, frequency[0]]
+    newwcs.wcs.ctype = [im.wcs.wcs.ctype[0], im.wcs.wcs.ctype[1], 'STOKES', 'FREQ']
+
+    phasecentre = SkyCoord(newwcs.wcs.crval[0] * u.deg, newwcs.wcs.crval[1] * u.deg)
+
+    nchan = len(frequency)
+    npol = polarisation_frame.npol
+
+    fshape = [nchan, npol, im.data.shape[-2], im.data.shape[-1]]
+    data = numpy.zeros(fshape)
+    log.info("replicate_image: replicating shape %s to %s" % (im.data.shape, data.shape))
     if len(im.data.shape) == 2:
-        fim = Image()
-
-        newwcs = WCS(naxis=4)
-
-        newwcs.wcs.crpix = [im.wcs.wcs.crpix[0] + 1.0, im.wcs.wcs.crpix[1] + 1.0, 1.0, 1.0]
-        newwcs.wcs.cdelt = [im.wcs.wcs.cdelt[0], im.wcs.wcs.cdelt[1], 1.0, 1.0]
-        newwcs.wcs.crval = [im.wcs.wcs.crval[0], im.wcs.wcs.crval[1], 1.0, frequency[0]]
-        newwcs.wcs.ctype = [im.wcs.wcs.ctype[0], im.wcs.wcs.ctype[1], 'STOKES', 'FREQ']
-
-        nchan = len(frequency)
-        npol = polarisation_frame.npol
-        fim.polarisation_frame = polarisation_frame
-
-        fim.wcs = newwcs
-        fshape = [nchan, npol, im.data.shape[1], im.data.shape[0]]
-        fim.data = numpy.zeros(fshape)
-        log.info("replicate_image: replicating shape %s to %s" % (im.data.shape, fim.data.shape))
-        for i3 in range(nchan):
-            fim.data[i3, 0, :, :] = im.data[:, :]
-        return fim
+        data[...] = im.data[numpy.newaxis, numpy.newaxis, ...]
     else:
-        return im
+        for pol in range(npol):
+            data[:, pol] = im.data[:, 0]
+        
+    return Image(data=data, phasecentre=phasecentre, polarisation_frame=polarisation_frame, wcs=newwcs,
+                 frequency=frequency)
 
 
 def create_blockvisibility_iterator(config: Configuration, times: numpy.array, frequency: numpy.array,

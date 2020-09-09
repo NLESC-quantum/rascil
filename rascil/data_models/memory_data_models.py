@@ -421,7 +421,7 @@ class PointingTable:
         return s
 
 
-class Image:
+class Image():
     """Image class with Image data (as a numpy.array) and the AstroPy `implementation of
     a World Coodinate System <http://docs.astropy.org/en/stable/wcs>`_
 
@@ -440,38 +440,57 @@ class Image:
 
     """
     
-    def __init__(self, data=None, wcs=None, polarisation_frame=None):
-        """ Create Image
+    def __init__(self, phasecentre, frequency, polarisation_frame=None,
+                 dtype=None, data=None, wcs=None):
+        """ Create an XImage
 
-        :param data: Data for image
-        :param wcs: Astropy WCS object
-        :param polarisation_frame: e.g. PolarisationFrame('stokesIQUV')
+        :param axes:
+        :param cellsize:
+        :param frequency:
+        :param phasecentre:
+        :param polarisation_frame:
+        :return: XImage
         """
-        self.data = data
+        
+        nx, ny = data.shape[-2], data.shape[-1]
+        cellsize = numpy.abs(wcs.wcs.cdelt[1])
+        cx = phasecentre.ra.to("deg").value
+        cy = phasecentre.dec.to("deg").value
+        
+        dims = ["frequency", "polarisation", "lat", "lon"]
+        coords = {
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "lat": numpy.linspace(cy - cellsize * ny // 2, cy + cellsize * ny // 2, ny),
+            "lon": numpy.linspace(cx - cellsize * nx // 2, cx + cellsize * nx // 2, nx)
+        }
+        
         self.wcs = wcs
         self.polarisation_frame = polarisation_frame
+        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+        self.ra, self.dec = wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
+        
+        nchan = len(frequency)
+        npol = polarisation_frame.npol
+        if dtype is None:
+            dtype = "float"
+        
+        if data is None:
+            data = numpy.zeros([nchan, npol, ny, nx], dtype=dtype)
+        else:
+            if data.shape==(ny, nx):
+                data = data.reshape([1, 1, ny, nx])
+            assert data.shape == (nchan, npol, ny, nx), \
+                "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
+                                                                                  data.shape)
+        
+        self.data = xarray.DataArray(data, dims=dims, coords=coords)
     
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.nbytes
+        size = self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-    
-    def __copy__(self):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        return result
-    
-    # noinspection PyArgumentList
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
     
     @property
     def nchan(self):
@@ -1182,8 +1201,7 @@ class BlockVisibility:
     The configuration is also an attribute.
     """
     
-    def __init__(self,
-                 data=None, frequency=None, channel_bandwidth=None,
+    def __init__(self, frequency=None, channel_bandwidth=None,
                  phasecentre=None, configuration=None, uvw=None,
                  time=None, vis=None, weight=None, integration_time=None,
                  flags=None,

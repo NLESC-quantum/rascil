@@ -457,13 +457,18 @@ class Image():
         cx = phasecentre.ra.to("deg").value
         cy = phasecentre.dec.to("deg").value
         
+        assert cellsize > 0.0, "Cellsize must be positive"
+        
         dims = ["frequency", "polarisation", "lat", "lon"]
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
-            "lat": numpy.linspace(cy - cellsize * ny // 2, cy + cellsize * ny // 2, ny),
-            "lon": numpy.linspace(cx - cellsize * nx // 2, cx + cellsize * nx // 2, nx)
+            "lat": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny),
+            "lon": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx)
         }
+
+        assert coords["lon"][0] != coords["lon"][-1]
+        assert coords["lat"][0] != coords["lat"][-1]
         
         self.wcs = wcs
         self.polarisation_frame = polarisation_frame
@@ -540,6 +545,7 @@ class Image():
 
         """
         s = "Image:\n"
+        s += "{}\n".format(str(self.data))
         s += "\tShape: %s\n" % str(self.data.shape)
         s += "\tData type: %s\n" % str(self.data.dtype)
         s += "\tWCS: %s\n" % self.wcs.__repr__()

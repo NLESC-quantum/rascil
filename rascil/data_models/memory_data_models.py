@@ -464,16 +464,16 @@ class Image():
         
         assert cellsize > 0.0, "Cellsize must be positive"
         
-        dims = ["frequency", "polarisation", "lat", "lon"]
+        dims = ["frequency", "polarisation", "m", "l"]
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
-            "lat": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny),
-            "lon": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx)
+            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny),
+            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx)
         }
 
-        assert coords["lon"][0] != coords["lon"][-1]
-        assert coords["lat"][0] != coords["lat"][-1]
+        assert coords["l"][0] != coords["l"][-1]
+        assert coords["m"][0] != coords["m"][-1]
         
         self.wcs = wcs
         self.polarisation_frame = polarisation_frame
@@ -1279,7 +1279,8 @@ class BlockVisibility:
         coords = {"time": time,
                   "baseline": baselines,
                   "frequency": frequency,
-                  "polarisation": polarisation_frame.names
+                  "polarisation": polarisation_frame.names,
+                  "uvw_index": ["u", "v", "w"]
                   }
 
         datavars = dict()
@@ -1292,8 +1293,8 @@ class BlockVisibility:
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
                                                       dims=["time", "baseline", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "spatial"])
-        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "spatial"])
+        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"])
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "uvw_index"])
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         if integration_time is None:
             integration_time = numpy.ones_like(time)

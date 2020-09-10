@@ -20,6 +20,8 @@ probably more useful.
 
 """
 
+__all__ = ['PolarisationFrame', 'ReceptorFrame']
+
 import logging
 
 import numpy

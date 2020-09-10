@@ -19,8 +19,6 @@ __all__ = ['Configuration',
            'assert_vis_gt_compatible'
            ]
 
-
-
 import logging
 import sys
 import warnings
@@ -69,7 +67,7 @@ class Configuration():
         :param stations: Identifiers of the dishes/stations
         :param vp_type: Type of voltage pattern (string)
         """
-
+        
         nants = len(names)
         if isinstance(stations, str):
             stations = [stations % ant for ant in range(nants)]
@@ -116,7 +114,7 @@ class Configuration():
         s += "\tAxis offset: %s\n" % self.offset
         s += "\tStations: %s\n" % self.stations
         s += "\tVoltage pattern type: %s\n" % self.vp_type
-
+        
         return s
     
     def size(self):
@@ -124,22 +122,22 @@ class Configuration():
         """
         size = self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-
+    
     @property
     def names(self):
         """ Names of the dishes/stations"""
         return self.data['names']
-
+    
     @property
     def nants(self):
         """ Names of the dishes/stations"""
         return len(self.data['names'])
-
+    
     @property
     def vp_type(self):
         """ Names of the voltage pattern type"""
         return self.data['vp_type']
-
+    
     @property
     def diameter(self):
         """ Diameter of dishes/stations (m)
@@ -157,17 +155,18 @@ class Configuration():
         """ Mount types of dishes/stations ('azel' | 'equatorial'
         """
         return self.data['mount']
-
+    
     @property
     def offset(self):
         """ Axis offset [:, 3] (m)
         """
         return self.data['offset']
-
+    
     @property
     def stations(self):
         """ Station/dish identifier (may be the same as names)"""
         return self.data['stations']
+
 
 class GainTable:
     """ Gain table with data_models: time, antenna, gain[:, chan, rec, rec], weight columns
@@ -471,7 +470,7 @@ class Image():
             "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny),
             "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx)
         }
-
+        
         assert coords["l"][0] != coords["l"][-1]
         assert coords["m"][0] != coords["m"][-1]
         
@@ -488,7 +487,7 @@ class Image():
         if data is None:
             data = numpy.zeros([nchan, npol, ny, nx], dtype=dtype)
         else:
-            if data.shape==(ny, nx):
+            if data.shape == (ny, nx):
                 data = data.reshape([1, 1, ny, nx])
             assert data.shape == (nchan, npol, ny, nx), \
                 "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
@@ -741,7 +740,7 @@ class ConvolutionFunction:
         def nwidth(self):
             """ Number of pixels width i.e. x
             """
-
+        
         return self.data.shape[3]
     
     @property
@@ -1067,7 +1066,7 @@ class Visibility:
         """ Number of channels
         """
         return len(self.frequency)
-
+    
     @property
     def npol(self):
         """ Number of polarisations
@@ -1151,43 +1150,43 @@ class Visibility:
         """ Antenna index
         """
         return self.data['antenna2']
-
+    
     @property
     def vis(self):
         """Complex visibility [:, npol]
         """
         return self.data['vis']
-
+    
     @property
     def flagged_vis(self):
         """Flagged complex visibility [:, npol]
         """
         return self.data['vis'] * (1 - self.flags)
-
+    
     @property
     def flags(self):
         """flags [:, npol]
         """
         return self.data['flags']
-
+    
     @property
     def weight(self):
         """Weight [: npol]
         """
         return self.data['weight']
-
+    
     @property
     def flagged_weight(self):
         """Weight [: npol]
         """
         return self.data['weight'] * (1 - self.data['flags'])
-
+    
     @property
     def imaging_weight(self):
         """  Imaging weight [:, npol]
         """
         return self.data['imaging_weight']
-
+    
     @property
     def flagged_imaging_weight(self):
         """  Flagged Imaging weight [:, npol]
@@ -1236,17 +1235,17 @@ class BlockVisibility:
         :param source: Source name
         :param meta: Meta info
         """
-
+        
         ntimes, nant, _, nchan, npol = vis.shape
-
+        
         def gen_base(nant):
             for ant1 in range(1, nant):
                 for ant2 in range(ant1):
                     yield ant1, ant2
-
+        
         baselines = pandas.MultiIndex.from_tuples(gen_base(nant), names=('antenna1', 'antenna2'))
         nbaselines = len(baselines)
-
+        
         def upper_triangle(x):
             x_reshaped = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype=x.dtype)
             for itime, _ in enumerate(time):
@@ -1258,7 +1257,7 @@ class BlockVisibility:
                             x_reshaped[itime, ibaseline, chan, ipol] = \
                                 x[itime, ant2, ant1, chan, ipol]
             return x_reshaped
-
+        
         def uvw_reshape(uvw):
             uvw_reshaped = numpy.zeros([ntimes, nbaselines, 3])
             for itime, _ in enumerate(time):
@@ -1272,45 +1271,43 @@ class BlockVisibility:
         vis = upper_triangle(vis)
         weight = upper_triangle(weight)
         flags = upper_triangle(flags)
-
-        k = (frequency / const.c).value
-        uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
-
-        coords = {"time": time,
-                  "baseline": baselines,
-                  "frequency": frequency,
-                  "polarisation": polarisation_frame.names,
-                  "uvw_index": ["u", "v", "w"]
-                  }
-
-        datavars = dict()
-        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
         if imaging_weight is None:
             imaging_weight = weight
         imaging_weight = upper_triangle(imaging_weight)
+        if integration_time is None:
+            integration_time = numpy.ones_like(time)
 
+        k = (frequency / const.c).value
+        uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
+        
+        coords = {
+            "time": time,
+            "baseline": baselines,
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "uvw_index": ["u", "v", "w"]
+        }
+        
+        datavars = dict()
+        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
                                                       dims=["time", "baseline", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
         datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"])
         datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "uvw_index"])
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
-        if integration_time is None:
-            integration_time = numpy.ones_like(time)
         datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
-
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims="time")
-
+        self.data = xarray.Dataset(datavars, coords=coords)
+        
         self.phasecentre = phasecentre  # Phase centre of observation
         self.configuration = configuration  # Antenna/station configuration
         self.polarisation_frame = polarisation_frame
         self.source = source
         self.meta = meta
-
-        self.data = xarray.Dataset(datavars, coords=coords)
-
+    
     def __str__(self):
         """Default printer for BlockVisibility
 
@@ -1342,19 +1339,19 @@ class BlockVisibility:
         """ Number of channels
         """
         return len(self.data['frequency'])
-
+    
     @property
     def frequency(self):
         """ Number of channels
         """
         return self.data['frequency']
-
+    
     @property
     def channel_bandwidth(self):
         """ Number of channels
         """
         return self.data['channel_bandwidth']
-
+    
     @property
     def npol(self):
         """ Number of polarisations
@@ -1366,19 +1363,19 @@ class BlockVisibility:
         """ Number of antennas
         """
         return self.configuration.nants
-
+    
     @property
     def uvw(self):
         """ UVW coordinates (metres) [nrows, nbaseline, 3]
         """
         return self.data['uvw']
-
+    
     @property
     def uvw_lambda(self):
         """ UVW coordinates (wavelengths) [nrows, nbaseline, nchan, 3]
         """
         return self.data['uvw_lambda']
-
+    
     @property
     def u(self):
         """ u coordinate (metres) [nrows, nbaseline]
@@ -1396,25 +1393,25 @@ class BlockVisibility:
         """ w coordinate (metres) [nrows, nbaseline]
         """
         return self.data['uvw'][..., 2]
-
+    
     @property
     def u_lambda(self):
         """ u coordinate (wavelengths) [nrows, nbaseline]
         """
         return self.data['uvw_lambda'][..., 0]
-
+    
     @property
     def v_lambda(self):
         """ v coordinate (wavelengths) [nrows, nbaseline]
         """
         return self.data['uvw_lambda'][..., 1]
-
+    
     @property
     def w_lambda(self):
         """ w coordinate (wavelengths) [nrows, nbaseline]
         """
         return self.data['uvw_lambda'][..., 2]
-
+    
     @property
     def uvdist(self):
         """ uv distance (metres) [nrows, nbaseline]
@@ -1426,49 +1423,49 @@ class BlockVisibility:
         """ uv distance (metres) [nrows, nbaseline]
         """
         return numpy.hypot(self.u, self.v, self.w)
-
+    
     @property
     def vis(self):
         """ Complex visibility [nrows, nbaseline, ncha, npol]
         """
         return self.data['vis']
-
+    
     @property
     def flagged_vis(self):
         """Flagged complex visibility [nrows, nbaseline, ncha, npol]
         """
         return self.data['vis'] * (1 - self.flags)
-
+    
     @property
     def flags(self):
         """ Flags [nrows, nbaseline, nchan]
         """
         return self.data['flags']
-
+    
     @property
     def weight(self):
         """ Weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['weight']
-
+    
     @property
     def flagged_weight(self):
         """Weight [: npol]
         """
         return self.data['weight'] * (1 - self.data['flags'])
-
+    
     @property
     def imaging_weight(self):
         """ Imaging_weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['imaging_weight']
-
+    
     @property
     def flagged_imaging_weight(self):
         """ Flagged Imaging_weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['imaging_weight'] * (1 - self.data['flags'])
-
+    
     @property
     def time(self):
         """ Time (UTC) [nrows]
@@ -1496,7 +1493,7 @@ class FlagTable:
 
     The configuration is also an attribute
     """
-
+    
     def __init__(self, data=None, flags=None, frequency=None, channel_bandwidth=None,
                  configuration=None, time=None, integration_time=None,
                  polarisation_frame=None):
@@ -1521,13 +1518,13 @@ class FlagTable:
             data['time'] = time  # MJD in seconds
             data['integration_time'] = integration_time  # seconds
             data['flags'] = flags
-
+        
         self.data = data  # numpy structured array
         self.frequency = frequency
         self.channel_bandwidth = channel_bandwidth
         self.polarisation_frame = polarisation_frame
         self.configuration = configuration  # Antenna/station configuration
-
+    
     def __str__(self):
         """Default printer for FlagTable
 
@@ -1541,9 +1538,9 @@ class FlagTable:
         s += "\tNumber of polarisations: %s\n" % self.npol
         s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
         s += "\tConfiguration: %s\n" % self.configuration.name
-
+        
         return s
-
+    
     def size(self):
         """ Return size in GB
         """
@@ -1551,37 +1548,37 @@ class FlagTable:
         for col in self.data.dtype.fields.keys():
             size += self.data[col].nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-
+    
     @property
     def npol(self):
         """ Number of polarisations
         """
         return self.data['flags'].shape[-1]
-
+    
     @property
     def nchan(self):
         """ Number of channels
         """
         return self.data['flags'].shape[-1]
-
+    
     @property
     def nants(self):
         """ Number of antennas
         """
         return self.data['vis'].shape[1]
-
+    
     @property
     def flags(self):
         """ Flags [nrows, nbaseline, nchan, npol]
         """
         return self.data['flags']
-
+    
     @property
     def time(self):
         """ Time (UTC) [nrows]
         """
         return self.data['time']
-
+    
     @property
     def integration_time(self):
         """ Integration time [nrows]

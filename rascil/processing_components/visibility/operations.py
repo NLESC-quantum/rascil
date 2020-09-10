@@ -23,8 +23,7 @@ from typing import Union, List
 
 import numpy
 
-from rascil.data_models.memory_data_models import BlockVisibility, Visibility, \
-    QA
+from rascil.data_models.memory_data_models import BlockVisibility, Visibility, QA
 from rascil.data_models.polarisation import convert_linear_to_stokes, \
     convert_circular_to_stokesI, convert_linear_to_stokesI, \
     convert_circular_to_stokes, PolarisationFrame
@@ -255,7 +254,7 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
     mask = xwt > 0.0
     x[mask] = vis.vis[mask] / modelvis.vis[mask]
     
-    pointsource_vis = BlockVisibility(data=None, flags=vis.flags,
+    pointsource_vis = BlockVisibility(flags=vis.flags,
                                       frequency=vis.frequency,
                                       channel_bandwidth=vis.channel_bandwidth,
                                       phasecentre=vis.phasecentre,
@@ -278,13 +277,10 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
     assert isinstance(vis, BlockVisibility), vis
     
     vis_shape = list(vis.vis.shape)
-    ntimes, nants, _, nchan, npol = vis_shape
+    ntimes, nant, _, nchan, npol = vis_shape
     vis_shape[-2] = 1
-    newvis = BlockVisibility(data=None,
-                             frequency=numpy.ones([1]) * numpy.average(
-                                 vis.frequency),
-                             channel_bandwidth=numpy.ones([1]) * numpy.sum(
-                                 vis.channel_bandwidth),
+    newvis = BlockVisibility(frequency=numpy.ones([1]) * numpy.average(vis.frequency.values),
+                             channel_bandwidth=numpy.ones([1]) * numpy.sum(vis.channel_bandwidth.values),
                              phasecentre=vis.phasecentre,
                              configuration=vis.configuration,
                              uvw=vis.uvw,

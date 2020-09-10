@@ -1295,6 +1295,8 @@ class BlockVisibility:
         datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "spatial"])
         datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "spatial"])
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
+        if integration_time is None:
+            integration_time = numpy.ones_like(time)
         datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
 
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
@@ -1363,13 +1365,19 @@ class BlockVisibility:
         """ Number of antennas
         """
         return self.configuration.nants
-        
+
     @property
     def uvw(self):
         """ UVW coordinates (metres) [nrows, nbaseline, 3]
         """
         return self.data['uvw']
-    
+
+    @property
+    def uvw_lambda(self):
+        """ UVW coordinates (wavelengths) [nrows, nbaseline, nchan, 3]
+        """
+        return self.data['uvw_lambda']
+
     @property
     def u(self):
         """ u coordinate (metres) [nrows, nbaseline]

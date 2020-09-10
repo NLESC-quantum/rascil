@@ -107,7 +107,7 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
     latitude = config.location.geodetic[1].to('rad').value
     
     nch = len(frequency)
-    ants_xyz = config.data['xyz']
+    ants_xyz = config.data['xyz'].values
     nants = len(config.data['names'])
     nbaselines = int(nants * (nants - 1) / 2)
     ntimes = 0
@@ -1073,7 +1073,7 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
         else:
             raise KeyError("Polarisation not understood: %s" % str(corr_type))
         
-        configuration = Configuration(name='', data=None, location=None,
+        configuration = Configuration(name='', location=None,
                                       names=antenna_name, xyz=antenna_xyz,
                                       mount=antenna_mount, frame=None,
                                       receptor_frame=polarisation_frame,
@@ -1179,8 +1179,13 @@ def calculate_visibility_phasor(direction, vis):
     :param vis:
     :return:
     """
+    nrows, nchan, npol = vis.vis.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
-    phasor = simulate_point(vis.uvw, l, m)[..., numpy.newaxis]
+    s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+
+    phasor = numpy.ones([nrows, nchan, npol], dtype='complex')
+    phasor[...] = \
+        numpy.exp(-2j * numpy.pi * numpy.einsum("rfs,s->rbf", vis.uvw_lambda.values, s))[..., numpy.newaxis]
     return phasor
 
 
@@ -1191,11 +1196,11 @@ def calculate_blockvisibility_phasor(direction, vis):
     :param vis:
     :return:
     """
-    ntimes, nant, _, nchan, npol = vis.vis.shape
-    k = numpy.array(vis.frequency) / constants.c.to('m s^-1').value
+    ntimes, nbaseline, nchan, npol = vis.vis.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
-    uvw = vis.uvw[..., numpy.newaxis] * k
-    phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')
-    for chan in range(nchan):
-        phasor[:, :, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
+    s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+
+    phasor = numpy.ones([ntimes, nbaseline, nchan, npol], dtype='complex')
+    phasor[...] = \
+        numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,s->tbf", vis.uvw_lambda.values, s))[..., numpy.newaxis]
     return phasor

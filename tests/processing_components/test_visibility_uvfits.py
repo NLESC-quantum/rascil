@@ -45,6 +45,7 @@ class TestCreateMS(unittest.TestCase):
     #         assert v.vis.data.shape[-1] == 4
     #         assert v.polarisation_frame.type == "circular"
     
+    @unittest.skip("Visibility with xarray not yet implemented")
     def test_create_list_spectral(self):
         
         uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")
@@ -80,6 +81,7 @@ class TestCreateMS(unittest.TestCase):
             assert v.vis.data.shape[-2] == 1
             assert v.polarisation_frame.type == "linear"
 
+    @unittest.skip("Visibility with xarray not yet implemented")
     def test_invert(self):
         
         uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")

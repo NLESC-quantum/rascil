@@ -131,6 +131,11 @@ class Configuration():
         return self.data['names']
 
     @property
+    def nants(self):
+        """ Names of the dishes/stations"""
+        return len(self.data['names'])
+
+    @property
     def vp_type(self):
         """ Names of the voltage pattern type"""
         return self.data['vp_type']
@@ -1287,12 +1292,8 @@ class BlockVisibility:
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
                                                       dims=["time", "baseline", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["u"] = xarray.DataArray(uvw[..., 0], dims=["time", "baseline"])
-        datavars["v"] = xarray.DataArray(uvw[..., 1], dims=["time", "baseline"])
-        datavars["w"] = xarray.DataArray(uvw[..., 2], dims=["time", "baseline"])
-        datavars["u_lambda"] = xarray.DataArray(uvw_lambda[..., 0], dims=["time", "baseline", "frequency"])
-        datavars["v_lambda"] = xarray.DataArray(uvw_lambda[..., 1], dims=["time", "baseline", "frequency"])
-        datavars["w_lambda"] = xarray.DataArray(uvw_lambda[..., 2], dims=["time", "baseline", "frequency"])
+        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "spatial"])
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "spatial"])
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
 
@@ -1337,7 +1338,7 @@ class BlockVisibility:
     def nchan(self):
         """ Number of channels
         """
-        return self.data['vis'].shape[3]
+        return len(self.data['frequency'])
 
     @property
     def frequency(self):
@@ -1355,71 +1356,89 @@ class BlockVisibility:
     def npol(self):
         """ Number of polarisations
         """
-        return self.data['vis'].shape[4]
+        return self.polarisation_frame.npol
     
     @property
     def nants(self):
         """ Number of antennas
         """
-        return self.data['vis'].shape[1]
-    
+        return self.configuration.nants
+        
     @property
     def uvw(self):
-        """ UVW coordinates (metres) [nrows, nant, nant, 3]
+        """ UVW coordinates (metres) [nrows, nbaseline, 3]
         """
         return self.data['uvw']
     
     @property
     def u(self):
-        """ u coordinate (metres) [nrows, nant, nant]
+        """ u coordinate (metres) [nrows, nbaseline]
         """
         return self.data['uvw'][..., 0]
     
     @property
     def v(self):
-        """ v coordinate (metres) [nrows, nant, nant]
+        """ v coordinate (metres) [nrows, nbaseline]
         """
         return self.data['uvw'][..., 1]
     
     @property
     def w(self):
-        """ w coordinate (metres) [nrows, nant, nant]
+        """ w coordinate (metres) [nrows, nbaseline]
         """
         return self.data['uvw'][..., 2]
-    
+
+    @property
+    def u_lambda(self):
+        """ u coordinate (wavelengths) [nrows, nbaseline]
+        """
+        return self.data['uvw_lambda'][..., 0]
+
+    @property
+    def v_lambda(self):
+        """ v coordinate (wavelengths) [nrows, nbaseline]
+        """
+        return self.data['uvw_lambda'][..., 1]
+
+    @property
+    def w_lambda(self):
+        """ w coordinate (wavelengths) [nrows, nbaseline]
+        """
+        return self.data['uvw_lambda'][..., 2]
+
     @property
     def uvdist(self):
-        """ uv distance (metres) [nrows, nant, nant]
+        """ uv distance (metres) [nrows, nbaseline]
         """
         return numpy.hypot(self.u, self.v)
     
     @property
     def uvwdist(self):
-        """ uv distance (metres) [nrows, nant, nant]
+        """ uv distance (metres) [nrows, nbaseline]
         """
         return numpy.hypot(self.u, self.v, self.w)
 
     @property
     def vis(self):
-        """ Complex visibility [nrows, nant, nant, ncha, npol]
+        """ Complex visibility [nrows, nbaseline, ncha, npol]
         """
         return self.data['vis']
 
     @property
     def flagged_vis(self):
-        """Flagged complex visibility [nrows, nant, nant, ncha, npol]
+        """Flagged complex visibility [nrows, nbaseline, ncha, npol]
         """
         return self.data['vis'] * (1 - self.flags)
 
     @property
     def flags(self):
-        """ Flags [nrows, nant, nant, nchan]
+        """ Flags [nrows, nbaseline, nchan]
         """
         return self.data['flags']
 
     @property
     def weight(self):
-        """ Weight[nrows, nant, nant, ncha, npol]
+        """ Weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['weight']
 
@@ -1431,13 +1450,13 @@ class BlockVisibility:
 
     @property
     def imaging_weight(self):
-        """ Imaging_weight[nrows, nant, nant, ncha, npol]
+        """ Imaging_weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['imaging_weight']
 
     @property
     def flagged_imaging_weight(self):
-        """ Flagged Imaging_weight[nrows, nant, nant, ncha, npol]
+        """ Flagged Imaging_weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['imaging_weight'] * (1 - self.data['flags'])
 
@@ -1479,7 +1498,7 @@ class FlagTable:
         :param channel_bandwidth: Channel bandwidth [nchan]
         :param configuration: Configuration
         :param time: Time (UTC) [ntimes]
-        :param flags: Flags [ntimes, nant, nant, nchan]
+        :param flags: Flags [ntimes, nbaseline, nchan]
         :param integration_time: Integration time [ntimes]
         """
         if data is None and flags is not None:
@@ -1544,7 +1563,7 @@ class FlagTable:
 
     @property
     def flags(self):
-        """ Flags [nrows, nant, nant, nchan]
+        """ Flags [nrows, nbaseline, nchan, npol]
         """
         return self.data['flags']
 

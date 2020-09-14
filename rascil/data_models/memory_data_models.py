@@ -1057,11 +1057,6 @@ class Visibility:
         return size / 1024.0 / 1024.0 / 1024.0
     
     @property
-    def index(self):
-        """ Index into BlockVisibility"""
-        return self.data['index']
-    
-    @property
     def nchan(self):
         """ Number of channels
         """
@@ -1214,7 +1209,7 @@ class BlockVisibility:
     def __init__(self, frequency=None, channel_bandwidth=None,
                  phasecentre=None, configuration=None, uvw=None,
                  time=None, vis=None, weight=None, integration_time=None,
-                 flags=None,
+                 flags=None, baselines=None,
                  polarisation_frame=PolarisationFrame('stokesI'),
                  imaging_weight=None, source='anonymous', meta=None):
         """BlockVisibility
@@ -1236,44 +1231,10 @@ class BlockVisibility:
         :param meta: Meta info
         """
         
-        ntimes, nant, _, nchan, npol = vis.shape
-        
-        def gen_base(nant):
-            for ant1 in range(1, nant):
-                for ant2 in range(ant1):
-                    yield ant1, ant2
-        
-        baselines = pandas.MultiIndex.from_tuples(gen_base(nant), names=('antenna1', 'antenna2'))
-        nbaselines = len(baselines)
-        
-        def upper_triangle(x):
-            x_reshaped = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype=x.dtype)
-            for itime, _ in enumerate(time):
-                for ibaseline, baseline in enumerate(baselines):
-                    ant1 = baseline[0]
-                    ant2 = baseline[1]
-                    for chan, freq in enumerate(frequency):
-                        for ipol, pol in enumerate(polarisation_frame.names):
-                            x_reshaped[itime, ibaseline, chan, ipol] = \
-                                x[itime, ant2, ant1, chan, ipol]
-            return x_reshaped
-        
-        def uvw_reshape(uvw):
-            uvw_reshaped = numpy.zeros([ntimes, nbaselines, 3])
-            for itime, _ in enumerate(time):
-                for ibaseline, baseline in enumerate(baselines):
-                    ant1 = baseline[0]
-                    ant2 = baseline[1]
-                    uvw_reshaped[itime, ibaseline, :] = uvw[itime, ant2, ant1]
-            return uvw_reshaped
-        
-        uvw = uvw_reshape(uvw)
-        vis = upper_triangle(vis)
-        weight = upper_triangle(weight)
-        flags = upper_triangle(flags)
+        ntimes, nbaselines, nchan, npol = vis.shape
+
         if imaging_weight is None:
             imaging_weight = weight
-        imaging_weight = upper_triangle(imaging_weight)
         if integration_time is None:
             integration_time = numpy.ones_like(time)
 

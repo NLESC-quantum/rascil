@@ -8,12 +8,13 @@ __all__ = ['vis_summary', 'copy_visibility', 'create_visibility',
            'create_blockvisibility', 'phaserotate_visibility',
            'export_blockvisibility_to_ms',
            'create_visibility_from_ms', 'create_visibility_from_uvfits',
-           'list_ms']
+           'list_ms', 'generate_baselines', 'get_baseline']
 
 import copy
 import logging
 import re
 from typing import Union
+import pandas
 
 import numpy
 from astropy import units as u, constants as constants
@@ -33,6 +34,36 @@ from rascil.processing_components.util.geometry import calculate_transit_time
 from rascil.processing_components.util.uvw_coordinates import uvw_ha_dec
 
 log = logging.getLogger('logger')
+
+# This convention agrees with that in the MS reader
+# Note that ant2 > ant1
+def generate_baselines(nant):
+    """ Generate mapping from antennas to baselines
+    
+    :param nant:
+    :return:
+    """
+    for ant1 in range(0, nant):
+        for ant2 in range(ant1, nant):
+            yield ant1, ant2
+            
+def get_baseline(ant1, ant2, baselines, nant):
+    """ Given the antenna numbers work out the baseline number. Takes 200ms to look
+    up all baselines for a 512 element array. Nevertheless there may be a better way
+    to do this.
+    
+    :param ant1:
+    :param ant2:
+    :param baselines:
+    :param nant:
+    :return:
+    """
+    for ibaseline, baseline in enumerate(baselines):
+        if baseline == (ant1, ant2):
+            return ibaseline
+    raise ValueError("Illegal antenna pair {}-{}".format(ant1, ant2))
+    
+
 
 def vis_summary(vis: Union[Visibility, BlockVisibility]):
     """Return string summarizing the Visibility
@@ -54,11 +85,7 @@ def copy_visibility(vis: Union[Visibility, BlockVisibility], zero=False) -> Unio
     """
     assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
     
-    newvis = copy.copy(vis)
-    newvis.data = numpy.copy(vis.data)
-    if isinstance(vis, Visibility):
-        newvis.cindex = vis.cindex
-        newvis.blockvis = vis.blockvis
+    newvis = copy.deepcopy(vis)
     if zero:
         newvis.data['vis'][...] = 0.0
     return newvis
@@ -238,7 +265,11 @@ def create_blockvisibility(config: Configuration,
     latitude = config.location.geodetic[1].to('rad').value
     ants_xyz = config.data['xyz']
     nants = len(config.data['names'])
-    
+
+
+    baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
+    nbaselines = len(baselines)
+
     ntimes = 0
     n_flagged = 0
     
@@ -261,14 +292,14 @@ def create_blockvisibility(config: Configuration,
     
     npol = polarisation_frame.npol
     nchan = len(frequency)
-    visshape = [ntimes, nants, nants, nchan, npol]
+    visshape = [ntimes, nbaselines, nchan, npol]
     rvis = numpy.zeros(visshape, dtype='complex')
     rflags = numpy.ones(visshape, dtype='int')
     rweight = numpy.ones(visshape)
     rimaging_weight = numpy.ones(visshape)
     rtimes = numpy.zeros([ntimes])
     rintegrationtime = numpy.zeros([ntimes])
-    ruvw = numpy.zeros([ntimes, nants, nants, 3])
+    ruvw = numpy.zeros([ntimes, nbaselines, 3])
     
     # Do each hour angle in turn
     itime = 0
@@ -288,14 +319,14 @@ def create_blockvisibility(config: Configuration,
             
             # Loop over all pairs of antennas. Note that a2>a1
             ant_pos = uvw_ha_dec(ants_xyz.values, ha, phasecentre.dec.rad)
-            for a1 in range(nants):
-                rweight[itime, a1, a1, ...] = 0.0
-                rflags[itime, a1, a1, ...] = 1.0
-                for a2 in range(a1 + 1, nants):
-                    ruvw[itime, a2, a1, :] = ant_pos[a2, :] - ant_pos[a1, :]
-                    ruvw[itime, a1, a2, :] = ant_pos[a1, :] - ant_pos[a2, :]
-                    rflags[itime, a2, a1, ...] = 0
-                    rflags[itime, a1, a2, ...] = 1
+            ibaseline = 0
+            for a1 in range(1, nants):
+                rweight[itime, ibaseline, ...] = 0.0
+                rflags[itime, ibaseline, ...] = 1.0
+                for a2 in range(a1):
+                    ruvw[itime, ibaseline, :] = ant_pos[a2, :] - ant_pos[a1, :]
+                    rflags[itime, ibaseline, ...] = 0
+                    ibaseline +=1
 
             if itime > 0:
                 rintegrationtime[itime] = rtimes[itime] - rtimes[itime - 1]
@@ -308,8 +339,9 @@ def create_blockvisibility(config: Configuration,
     rchannel_bandwidth = channel_bandwidth
     if zerow:
         ruvw[..., 2] = 0.0
+        
     vis = BlockVisibility(uvw=ruvw, time=rtimes, frequency=frequency, vis=rvis,
-                          weight=rweight,
+                          weight=rweight, baselines=baselines,
                           imaging_weight=rimaging_weight, flags=rflags,
                           integration_time=rintegrationtime,
                           channel_bandwidth=rchannel_bandwidth,
@@ -535,10 +567,12 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         
         antennas2 = antennas
         
-        for i in range(0, n_ant - 1):
-            for j in range(i + 1, n_ant):
-                bl_list.append((antennas[i], antennas2[j]))
+        bl_list = list(generate_baselines(n_ant))
         
+        # for i in range(0, n_ant - 1):
+        #     for j in range(i + 1, n_ant):
+        #         bl_list.append((antennas[i], antennas2[j]))
+        #
         tbl.set_geometry(vis.configuration, antennas)
         nbaseline = len(bl_list)
         ntimes = len(vis.data['time'])
@@ -547,30 +581,37 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         ms_uvw = numpy.zeros([ntimes, nbaseline, 3])
         time = vis.data['time']
         int_time = vis.data['integration_time']
-        bv_vis = vis.data['vis']
-        bv_uvw = vis.data['uvw']
-        
-        for row, _ in enumerate(time):
-            # MS has shape [row, npol, nchan]
-            # BV has shape [ntimes, nants, nants, nchan, npol]
-            bl = 0
-            for i in range(0, n_ant - 1):
-                for j in range(i + 1, n_ant):
-                    ms_vis[row, bl, ...] = bv_vis[row, j, i, ...]
-                    ms_uvw[row, bl, :] = bv_uvw[row, j, i, :]
-                    bl += 1
+        # bv_vis = vis.data['vis']
+        # bv_uvw = vis.data['uvw']
+        #
+        # Now easier since the BlockVisibility is baseline oriented
+        # for row, _ in enumerate(time):
+        #     # MS has shape [row, npol, nchan]
+        #     # BV has shape [ntimes, nants, nants, nchan, npol]
+        #     bl = 0
+        #     for i in range(0, n_ant - 1):
+        #         for j in range(i + 1, n_ant):
+        #             bl_list.append((antennas[i], antennas2[j]))
+        #             ms_vis[row, bl, ...] = bv_vis[row, j, i, ...]
+        #             ms_uvw[row, bl, :] = bv_uvw[row, j, i, :]
+        #             bl += 1
         
         for ntime, time in enumerate(vis.data['time']):
             for ipol, pol in enumerate(polarization):
                 if int_time[ntime] is not None:
                     tbl.add_data_set(time, int_time[ntime], bl_list,
-                                     ms_vis[ntime, ..., ipol], pol=pol,
+                                     vis.data['vis'].values[ntime, ..., ipol],
+                                     pol=pol,
                                      source=source_name,
-                                     phasecentre=vis.phasecentre, uvw=ms_uvw[ntime, :, :])
+                                     phasecentre=vis.phasecentre,
+                                     uvw=vis['uvw'].values[ntime, :, :])
                 else:
-                    tbl.add_data_set(time, 0, bl_list, ms_vis[ntime, ..., ipol], pol=pol,
-                                     source=source_name, phasecentre=vis.phasecentre,
-                                     uvw=ms_uvw[ntime, :, :])
+                    tbl.add_data_set(time, 0, bl_list,
+                                     vis.data['vis'].values[ntime, ..., ipol],
+                                     pol=pol,
+                                     source=source_name,
+                                     phasecentre=vis.phasecentre,
+                                     uvw=vis['uvw'].values[ntime, :, :])
     tbl.write()
 
 
@@ -827,17 +868,18 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             stations = numpy.array(anttab.getcol('STATION'))[names != '']
             names = numpy.array(anttab.getcol('NAME'))[names != '']
             nants = len(names)
-
             
             antenna1 = list(map(lambda i: ant_map[i], antenna1))
             antenna2 = list(map(lambda i: ant_map[i], antenna2))
-
+            
+            baselines = list(generate_baselines(nants))
+            nbaselines = len(baselines)
             
             location = EarthLocation(x=Quantity(xyz[0][0], 'm'),
                                      y=Quantity(xyz[0][1], 'm'),
                                      z=Quantity(xyz[0][2], 'm'))
 
-            configuration = Configuration(name='', data=None, location=location,
+            configuration = Configuration(name='', location=location,
                                           names=names, xyz=xyz, mount=mount, frame="geocentric",
                                           receptor_frame=ReceptorFrame("linear"),
                                           diameter=diameter, offset=offset, stations=stations)
@@ -863,29 +905,29 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             assert ntimes == len(numpy.unique(time_index_row)), "Error in finding data times"
             
             bv_times = numpy.zeros([ntimes])
-            bv_vis = numpy.zeros([ntimes, nants, nants, nchan, npol]).astype('complex')
-            bv_flags = numpy.ones([ntimes, nants, nants, nchan, npol]).astype('int')
-            bv_weight = numpy.zeros([ntimes, nants, nants, nchan, npol])
-            bv_imaging_weight = numpy.zeros([ntimes, nants, nants, nchan, npol])
-            bv_uvw = numpy.zeros([ntimes, nants, nants, 3])
+            bv_vis = numpy.zeros([ntimes, nbaselines, nchan, npol]).astype('complex')
+            bv_flags = numpy.ones([ntimes, nbaselines, nchan, npol]).astype('int')
+            bv_weight = numpy.zeros([ntimes, nbaselines, nchan, npol])
+            bv_imaging_weight = numpy.zeros([ntimes, nbaselines, nchan, npol])
+            bv_uvw = numpy.zeros([ntimes, nbaselines, 3])
             bv_integration_time = numpy.zeros([ntimes])
-            
+
             for row, _ in enumerate(time):
+                ibaseline = get_baseline(antenna1[row], antenna2[row], baselines,
+                                         nants)
                 time_index = time_index_row[row]
                 bv_times[time_index] = time[row]
-                bv_vis[time_index, antenna2[row], antenna1[row], ...] = ms_vis[row, ...]
-                bv_flags[time_index, antenna2[row], antenna1[row], ...] = ms_flags[
-                    row, ...]
-                if antenna2[row] < antenna1[row]:
-                    bv_flags[time_index, antenna2[row], antenna1[row], ...] = 1
-                bv_weight[time_index, antenna2[row], antenna1[row], :, ...] = ms_weight[
+                bv_vis[time_index, ibaseline, ...] = ms_vis[row, ...]
+                bv_flags[time_index, ibaseline, ...] = ms_flags[row, ...]
+                bv_weight[time_index, ibaseline, :, ...] = ms_weight[
                     row, numpy.newaxis, ...]
-                bv_imaging_weight[time_index, antenna2[row], antenna1[row], :, ...] = \
+                bv_imaging_weight[time_index, ibaseline, :, ...] = \
                     ms_weight[row, numpy.newaxis, ...]
-                bv_uvw[time_index, antenna2[row], antenna1[row], :] = uvw[row, :]
+                bv_uvw[time_index, ibaseline, :] = uvw[row, :]
                 bv_integration_time[time_index] = integration_time[row]
             
             vis_list.append(BlockVisibility(uvw=bv_uvw,
+                                            baselines=baselines,
                                             time=bv_times,
                                             frequency=cfrequency,
                                             channel_bandwidth=cchannel_bandwidth,

@@ -75,20 +75,18 @@ class export_ms_RASCIL_test(unittest.TestCase):
                                                weight=1.0, polarisation_frame=PolarisationFrame('stokesI'),
                                                channel_bandwidth=channelbandwidth)
 
-        vt = convert_blockvisibility_to_visibility(bvis)
-
-        advice = advise_wide_field(vt, guard_band_image=3.0, delA=0.1, facets=1, wprojection_planes=1,
+        advice = advise_wide_field(bvis, guard_band_image=3.0, delA=0.1, facets=1, wprojection_planes=1,
                                    oversampling_synthesised_beam=4.0)
         cellsize = advice['cellsize']
 
 
         m31image = create_test_image(frequency=frequency, cellsize=cellsize)
         nchan, npol, ny, nx = m31image.data.shape
-        m31image.wcs.wcs.crval[0] = vt.phasecentre.ra.deg
-        m31image.wcs.wcs.crval[1] = vt.phasecentre.dec.deg
+        m31image.wcs.wcs.crval[0] = bvis.phasecentre.ra.deg
+        m31image.wcs.wcs.crval[1] = bvis.phasecentre.dec.deg
         m31image.wcs.wcs.crpix[0] = float(nx // 2)
         m31image.wcs.wcs.crpix[1] = float(ny // 2)
-        vt = predict_list_serial_workflow([vt], [m31image], context='2d')[0]
+        bvis = predict_list_serial_workflow([bvis], [m31image], context='2d')[0]
         # uvdist = numpy.sqrt(vt.data['uvw'][:, 0] ** 2 + vt.data['uvw'][:, 1] ** 2)
         #
         # model = create_image_from_visibility(vt, cellsize=cellsize, npixel=512)
@@ -103,10 +101,7 @@ class export_ms_RASCIL_test(unittest.TestCase):
         # export_image_to_fits(dirty, '%s/imaging_dirty.fits' % (results_dir))
         # export_image_to_fits(psf, '%s/imaging_psf.fits' % (results_dir))
 
-        v = convert_visibility_to_blockvisibility(vt)
-        vis_list=[]
-        vis_list.append(v)
-        export_blockvisibility_to_ms(msoutfile, vis_list, source_name='M31')
+        export_blockvisibility_to_ms(msoutfile, [bvis], source_name='M31')
 
 class export_measurementset_test_suite(unittest.TestSuite):
     """A unittest.TestSuite class which tests exporting measurementset

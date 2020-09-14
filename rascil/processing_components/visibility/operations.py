@@ -171,12 +171,13 @@ def subtract_visibility(vis, model_vis, inplace=False):
                                                     model_vis.vis.shape)
     
     if inplace:
-        vis.data['vis'] = vis.data['vis'] - model_vis.data['vis']
+        vis.data['vis'].values = vis.data['vis'].values - \
+                                 model_vis.data['vis'].values
         return vis
     else:
         residual_vis = copy_visibility(vis)
-        residual_vis.data['vis'] = residual_vis.data['vis'] - model_vis.data[
-            'vis']
+        residual_vis.data['vis'].values = residual_vis.data['vis'].values \
+                                          - model_vis.data['vis'].values
         return residual_vis
 
 
@@ -252,7 +253,7 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
     x = numpy.zeros_like(vis.vis)
     xwt = numpy.abs(modelvis.vis) ** 2 * vis.flagged_weight
     mask = xwt > 0.0
-    x[mask] = vis.vis[mask] / modelvis.vis[mask]
+    x[mask] = vis.vis.values[mask] / modelvis.vis.values[mask]
     
     pointsource_vis = BlockVisibility(flags=vis.flags,
                                       frequency=vis.frequency,

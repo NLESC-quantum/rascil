@@ -140,9 +140,8 @@ def visibility_scatter_channel(vis: BlockVisibility) -> List[BlockVisibility]:
         vis_shape = numpy.array(v.data['vis'].shape)
         vis_shape[3] = 1
         
-        vis = BlockVisibility(data=None,
-                              frequency=numpy.array([v.frequency[chan]]),
-                              channel_bandwidth=numpy.array([v.channel_bandwidth[chan]]),
+        vis = BlockVisibility(channel_bandwidth=numpy.array([v.channel_bandwidth[chan]]),
+                              baselines=v.baselines,
                               phasecentre=v.phasecentre,
                               configuration=v.configuration,
                               uvw=v.uvw,
@@ -177,8 +176,8 @@ def visibility_gather_channel(vis_list: List[BlockVisibility],
         gathered_frequency = numpy.concatenate([v.frequency for v in vis_list])
         gathered_channel_bandwidth = numpy.concatenate([v.channel_bandwidth for v in vis_list])
         
-        vis = BlockVisibility(data=None,
-                              frequency=gathered_frequency,
+        vis = BlockVisibility(frequency=gathered_frequency,
+                              baselines=v.baselines,
                               channel_bandwidth=gathered_channel_bandwidth,
                               phasecentre=vis_list[0].phasecentre,
                               configuration=vis_list[0].configuration,

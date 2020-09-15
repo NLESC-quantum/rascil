@@ -26,7 +26,6 @@ from copy import deepcopy
 from typing import Union
 
 import numpy
-import pandas
 import xarray
 from astropy import constants as const
 from astropy import units as u
@@ -43,13 +42,13 @@ from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 log = logging.getLogger('logger')
 
 
-class Configuration():
+class Configuration:
     """ Describe a XConfiguration as locations in x,y,z, mount type, diameter, names, and
         overall location
     """
     
     def __init__(self, name='', location=None,
-                 names="%s", xyz=None, mount="alt-az", frame="",
+                 names=None, xyz=None, mount="alt-az", frame="",
                  receptor_frame=ReceptorFrame("linear"),
                  diameter=None, offset=None, stations="%s", vp_type=None):
         
@@ -105,7 +104,7 @@ class Configuration():
 
         """
         s = "Configuration:\n"
-        s += "\nNames: %s\n" % self.name
+        s += "\nName: %s\n" % self.name
         s += "\tNumber of antennas/stations: %s\n" % len(self.names)
         s += "\tNames: %s\n" % self.names
         s += "\tDiameter: %s\n" % self.diameter
@@ -425,7 +424,7 @@ class PointingTable:
         return s
 
 
-class Image():
+class Image:
     """Image class with Image data (as a numpy.array) and the AstroPy `implementation of
     a World Coodinate System <http://docs.astropy.org/en/stable/wcs>`_
 
@@ -1318,13 +1317,25 @@ class BlockVisibility:
         """ Number of polarisations
         """
         return self.polarisation_frame.npol
-    
+
     @property
     def nants(self):
         """ Number of antennas
         """
         return self.configuration.nants
-    
+
+    @property
+    def baselines(self):
+        """ Baselines
+        """
+        return self.data["baseline"]
+
+    @property
+    def nbaselines(self):
+        """ Number of Baselines
+        """
+        return len(self.data["baseline"])
+
     @property
     def uvw(self):
         """ UVW coordinates (metres) [nrows, nbaseline, 3]

@@ -14,26 +14,27 @@ import copy
 import logging
 import re
 from typing import Union
-import pandas
 
 import numpy
+import pandas
 from astropy import units as u, constants as constants
 from astropy.coordinates import SkyCoord, EarthLocation
-from astropy.units import Quantity
 from astropy.io import fits
 from astropy.time import Time
+from astropy.units import Quantity
 
 from rascil.data_models.memory_data_models import Visibility, BlockVisibility, \
     Configuration
 from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame, \
     correlate_polarisation
-from rascil.processing_components.util import skycoord_to_lmn, simulate_point
+from rascil.processing_components.util import skycoord_to_lmn
 from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
     hadec_to_azel
 from rascil.processing_components.util.geometry import calculate_transit_time
 from rascil.processing_components.util.uvw_coordinates import uvw_ha_dec
 
 log = logging.getLogger('logger')
+
 
 # This convention agrees with that in the MS reader
 # Note that ant2 > ant1
@@ -46,7 +47,8 @@ def generate_baselines(nant):
     for ant1 in range(0, nant):
         for ant2 in range(ant1, nant):
             yield ant1, ant2
-            
+
+
 def get_baseline(ant1, ant2, baselines, nant):
     """ Given the antenna numbers work out the baseline number. Takes 200ms to look
     up all baselines for a 512 element array. Nevertheless there may be a better way
@@ -62,7 +64,6 @@ def get_baseline(ant1, ant2, baselines, nant):
         if baseline == (ant1, ant2):
             return ibaseline
     raise ValueError("Illegal antenna pair {}-{}".format(ant1, ant2))
-    
 
 
 def vis_summary(vis: Union[Visibility, BlockVisibility]):
@@ -265,11 +266,10 @@ def create_blockvisibility(config: Configuration,
     latitude = config.location.geodetic[1].to('rad').value
     ants_xyz = config.data['xyz']
     nants = len(config.data['names'])
-
-
+    
     baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
     nbaselines = len(baselines)
-
+    
     ntimes = 0
     n_flagged = 0
     
@@ -326,8 +326,8 @@ def create_blockvisibility(config: Configuration,
                 for a2 in range(a1):
                     ruvw[itime, ibaseline, :] = ant_pos[a2, :] - ant_pos[a1, :]
                     rflags[itime, ibaseline, ...] = 0
-                    ibaseline +=1
-
+                    ibaseline += 1
+            
             if itime > 0:
                 rintegrationtime[itime] = rtimes[itime] - rtimes[itime - 1]
             itime += 1
@@ -339,7 +339,7 @@ def create_blockvisibility(config: Configuration,
     rchannel_bandwidth = channel_bandwidth
     if zerow:
         ruvw[..., 2] = 0.0
-        
+    
     vis = BlockVisibility(uvw=ruvw, time=rtimes, frequency=frequency, vis=rvis,
                           weight=rweight, baselines=baselines,
                           imaging_weight=rimaging_weight, flags=rflags,
@@ -454,6 +454,7 @@ def phaserotate_visibility(vis: Union[Visibility, BlockVisibility],
     elif isinstance(vis, BlockVisibility):
         
         phasor = calculate_blockvisibility_phasor(newphasecentre, newvis)
+        assert vis.data['vis'].shape == phasor.shape
         
         if inverse:
             newvis.data['vis'] *= phasor
@@ -465,10 +466,9 @@ def phaserotate_visibility(vis: Union[Visibility, BlockVisibility],
         # join smoothly at the edges. If we change the tangent then we will have to reproject to get
         # the results on the same image, in which case overlaps or gaps are difficult to deal with.
         if not tangent:
-            # UVW is shape [nants, nants, 3], we want [nants * nants, 3]
-            nrows, nants, _, _ = vis.uvw.shape
-            uvw_linear = vis.uvw.reshape([nrows * nants * nants, 3])
+            nrows, nbl, _ = vis.uvw.shape
             if inverse:
+                uvw_linear = vis.uvw.values.reshape([nrows * nbl, 3])
                 xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad,
                                  dec=newvis.phasecentre.dec.rad)
                 uvw_linear = \
@@ -476,13 +476,14 @@ def phaserotate_visibility(vis: Union[Visibility, BlockVisibility],
                                dec=newphasecentre.dec.rad)[...]
             else:
                 # This is the original (non-inverse) code
+                uvw_linear = newvis.uvw.values.reshape([nrows * nbl, 3])
                 xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad,
                                  dec=newvis.phasecentre.dec.rad)
                 uvw_linear = \
                     xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad,
                                dec=newphasecentre.dec.rad)[...]
             newvis.phasecentre = newphasecentre
-            newvis.data['uvw'][...] = uvw_linear.reshape([nrows, nants, nants, 3])
+            newvis.data['uvw'][...] = uvw_linear.reshape([nrows, nbl, 3])
         return newvis
     else:
         raise ValueError("vis argument neither Visibility or BlockVisibility")
@@ -551,7 +552,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         else:
             raise ValueError(
                 "Unknown visibility polarisation %s" % (vis.polarisation_frame.type))
-
+        
         tbl.set_stokes(polarization)
         tbl.set_frequency(vis.frequency, vis.channel_bandwidth)
         n_ant = len(vis.configuration.xyz)
@@ -585,16 +586,6 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         # bv_uvw = vis.data['uvw']
         #
         # Now easier since the BlockVisibility is baseline oriented
-        # for row, _ in enumerate(time):
-        #     # MS has shape [row, npol, nchan]
-        #     # BV has shape [ntimes, nants, nants, nchan, npol]
-        #     bl = 0
-        #     for i in range(0, n_ant - 1):
-        #         for j in range(i + 1, n_ant):
-        #             bl_list.append((antennas[i], antennas2[j]))
-        #             ms_vis[row, bl, ...] = bv_vis[row, j, i, ...]
-        #             ms_uvw[row, bl, :] = bv_uvw[row, j, i, :]
-        #             bl += 1
         
         for ntime, time in enumerate(vis.data['time']):
             for ipol, pol in enumerate(polarization):
@@ -750,7 +741,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                         ms_vis = ms.getcolslice(datacolumn, blc=blc, trc=trc)
                         ms_flags = ms.getcolslice('FLAG', blc=blc, trc=trc)
                         ms_weight = ms.getcol('WEIGHT')
-
+                    
                     except IndexError:
                         raise IndexError("channel number exceeds max. within ms")
                 
@@ -776,7 +767,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                     ms_weight = ms.getcol('WEIGHT')[:, :]
                 except IndexError:
                     raise IndexError("channel number exceeds max. within ms")
-
+            
             if average_channels:
                 weight = ms_weight[:, numpy.newaxis, :] * (1.0 - ms_flags)
                 ms_vis = numpy.sum(weight * ms_vis, axis=-2)[..., numpy.newaxis, :]
@@ -786,14 +777,14 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                 ms_flags = sumwt
                 ms_flags[ms_flags <= 0.0] = 1.0
                 ms_flags[ms_flags > 0.0] = 0.0
-
+            
             uvw = -1 * ms.getcol('UVW')
             antenna1 = ms.getcol('ANTENNA1')
             antenna2 = ms.getcol('ANTENNA2')
             integration_time = ms.getcol('INTERVAL')
             
             time = (otime - integration_time / 2.0)
-
+            
             start_time = numpy.min(time) / 86400.0
             end_time = numpy.max(time) / 86400.0
             
@@ -809,7 +800,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                 cfrequency = numpy.array([numpy.average(cfrequency)])
                 cchannel_bandwidth = numpy.array([numpy.sum(cchannel_bandwidth)])
                 nchan = cfrequency.shape[0]
-
+            
             # Get polarisation info
             poltab = table('%s/POLARIZATION' % msname, ack=False)
             corr_type = poltab.getcol('CORR_TYPE')[polid]
@@ -855,7 +846,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                     actual += 1
                 else:
                     ant_map.append(-1)
-            #assert actual > 0, "Dish/station names are all blank - cannot load"
+            # assert actual > 0, "Dish/station names are all blank - cannot load"
             if actual == 0:
                 ant_map = list(range(len(names)))
                 names = numpy.repeat("No name", len(names))
@@ -878,7 +869,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             location = EarthLocation(x=Quantity(xyz[0][0], 'm'),
                                      y=Quantity(xyz[0][1], 'm'),
                                      z=Quantity(xyz[0][2], 'm'))
-
+            
             configuration = Configuration(name='', location=location,
                                           names=names, xyz=xyz, mount=mount, frame="geocentric",
                                           receptor_frame=ReceptorFrame("linear"),
@@ -911,10 +902,10 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             bv_imaging_weight = numpy.zeros([ntimes, nbaselines, nchan, npol])
             bv_uvw = numpy.zeros([ntimes, nbaselines, 3])
             bv_integration_time = numpy.zeros([ntimes])
-
+            
             for row, _ in enumerate(time):
-                ibaseline = get_baseline(antenna1[row], antenna2[row], baselines,
-                                         nants)
+                ibaseline = get_baseline(antenna1[row], antenna2[row], baselines, nants)
+                print(ibaseline)
                 time_index = time_index_row[row]
                 bv_times[time_index] = time[row]
                 bv_vis[time_index, ibaseline, ...] = ms_vis[row, ...]
@@ -1087,6 +1078,9 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
         
         nants = len(antenna_xyz)
 
+        baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
+        nbaselines = len(baselines)
+        
         # Put offset into same shape as for MS
         antenna_offset = numpy.c_[antenna_offset, numpy.zeros(nants), numpy.zeros(nants)]
         
@@ -1147,36 +1141,32 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
         nchan = len(channum)
         vis_list = list()
         for spw_index in range(nspw):
-            bv_vis = numpy.zeros([ntimes, nants, nants, nchan, npol]).astype('complex')
-            bv_flags = numpy.zeros([ntimes, nants, nants, nchan, npol]).astype('int')
-            bv_weight = numpy.zeros([ntimes, nants, nants, nchan, npol])
-            bv_uvw = numpy.zeros([ntimes, nants, nants, 3])
+            bv_vis = numpy.zeros([ntimes, nbaselines, nchan, npol]).astype('complex')
+            bv_flags = numpy.zeros([ntimes, nbaselines, nchan, npol]).astype('int')
+            bv_weight = numpy.zeros([ntimes, nbaselines, nchan, npol])
+            bv_uvw = numpy.zeros([ntimes, nbaselines, 3])
             for time_index, time in enumerate(bv_times):
                 for antenna1 in range(nants - 1):
                     for antenna2 in range(antenna1 + 1, nants):
+                        ibaseline = get_baseline(antenna1, antenna2, baselines, nants)
                         for channel_no, channel_index in enumerate(channum):
                             for pol_index in range(npol):
-                                bv_vis[
-                                    time_index, antenna2, antenna1, channel_no, pol_index] = complex(
+                                bv_vis[time_index, ibaseline, channel_no, pol_index] = complex(
                                     _vis[row, :, :, spw_index, channel_index, pol_index,
                                     0],
                                     _vis[row, :, :, spw_index, channel_index, pol_index,
                                     1])
                                 bv_weight[
-                                    time_index, antenna2, antenna1, channel_no, pol_index] = _vis[
-                                                                                             row,
-                                                                                             :,
-                                                                                             :,
-                                                                                             spw_index,
-                                                                                             channel_index,
-                                                                                             pol_index,
-                                                                                             2]
-                        bv_uvw[time_index, antenna2, antenna1, 0] = uu[
-                                                                        row] * constants.c.value
-                        bv_uvw[time_index, antenna2, antenna1, 1] = vv[
-                                                                        row] * constants.c.value
-                        bv_uvw[time_index, antenna2, antenna1, 2] = ww[
-                                                                        row] * constants.c.value
+                                    time_index, ibaseline, channel_no, pol_index] = _vis[row,
+                                                                                    :,
+                                                                                    :,
+                                                                                    spw_index,
+                                                                                    channel_index,
+                                                                                    pol_index,
+                                                                                    2]
+                        bv_uvw[time_index, ibaseline, 0] = uu[row] * constants.c.value
+                        bv_uvw[time_index, ibaseline, 1] = vv[row] * constants.c.value
+                        bv_uvw[time_index, ibaseline, 2] = ww[row] * constants.c.value
                         row += 1
             
             # Convert negative weights to flags
@@ -1185,6 +1175,7 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
             
             vis_list.append(BlockVisibility(uvw=bv_uvw,
                                             time=bv_times,
+                                            baselines=baselines,
                                             frequency=freq[spw_index][channum],
                                             channel_bandwidth=freq_delt[channum],
                                             vis=bv_vis, flags=bv_flags,
@@ -1221,13 +1212,14 @@ def calculate_visibility_phasor(direction, vis):
     :param vis:
     :return:
     """
-    nrows, nchan, npol = vis.vis.shape
+    assert isinstance(vis, Visibility)
+    nrows, npol = vis.vis.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
     s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
-
-    phasor = numpy.ones([nrows, nchan, npol], dtype='complex')
+    
+    phasor = numpy.ones([nrows, npol], dtype='complex')
     phasor[...] = \
-        numpy.exp(-2j * numpy.pi * numpy.einsum("rfs,s->rbf", vis.uvw_lambda.values, s))[..., numpy.newaxis]
+        numpy.exp(-2j * numpy.pi * numpy.einsum("rs,s->r", vis.uvw, s))[..., numpy.newaxis]
     return phasor
 
 
@@ -1238,10 +1230,11 @@ def calculate_blockvisibility_phasor(direction, vis):
     :param vis:
     :return:
     """
+    assert isinstance(vis, BlockVisibility)
     ntimes, nbaseline, nchan, npol = vis.vis.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
     s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
-
+    
     phasor = numpy.ones([ntimes, nbaseline, nchan, npol], dtype='complex')
     phasor[...] = \
         numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,s->tbf", vis.uvw_lambda.values, s))[..., numpy.newaxis]

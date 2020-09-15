@@ -68,6 +68,38 @@ class TestVisibilityDFTOperations(unittest.TestCase):
         assert_allclose(rotatedvis.vis, vismodel2.vis, rtol=3e-6)
         assert_allclose(rotatedvis.uvw, vismodel2.uvw, rtol=3e-6)
 
+    def test_phase_rotation_stokesi_block(self):
+        # Define the component and give it some spectral behaviour
+        f = numpy.array([100.0])
+        self.flux = numpy.array([f, 0.8 * f, 0.6 * f])
+
+        # The phase centre is absolute and the component is specified relative (for now).
+        # This means that the component should end up at the position phasecentre+compredirection
+        self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
+        self.compabsdirection = SkyCoord(ra=+181.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
+        pcof = self.phasecentre.skyoffset_frame()
+        self.compreldirection = self.compabsdirection.transform_to(pcof)
+        self.comp = Skycomponent(direction=self.compreldirection, frequency=self.frequency, flux=self.flux,
+                                 polarisation_frame=PolarisationFrame("stokesI"))
+
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+                                     channel_bandwidth=self.channel_bandwidth,
+                                     phasecentre=self.phasecentre, weight=1.0,
+                                     polarisation_frame=PolarisationFrame("stokesI"))
+        self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
+        # Predict visibilities with new phase centre independently
+        ha_diff = -(self.compabsdirection.ra - self.phasecentre.ra).to(u.rad).value
+        vispred = create_blockvisibility(self.lowcore, self.times + ha_diff, self.frequency,
+                                    channel_bandwidth=self.channel_bandwidth,
+                                    phasecentre=self.compabsdirection, weight=1.0,
+                                    polarisation_frame=PolarisationFrame("stokesI"))
+        vismodel2 = dft_skycomponent_visibility(vispred, self.comp)
+
+        # Should yield the same results as rotation
+        rotatedvis = phaserotate_visibility(self.vismodel, newphasecentre=self.compabsdirection, tangent=False)
+        assert_allclose(rotatedvis.vis, vismodel2.vis, rtol=3e-6)
+        assert_allclose(rotatedvis.uvw, vismodel2.uvw, rtol=3e-6)
+
     def test_phase_rotation_stokesiquv(self):
         self.vis = create_visibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
@@ -77,6 +109,25 @@ class TestVisibilityDFTOperations(unittest.TestCase):
         # Predict visibilities with new phase centre independently
         ha_diff = -(self.compabsdirection.ra - self.phasecentre.ra).to(u.rad).value
         vispred = create_visibility(self.lowcore, self.times + ha_diff, self.frequency,
+                                    channel_bandwidth=self.channel_bandwidth,
+                                    phasecentre=self.compabsdirection, weight=1.0,
+                                    polarisation_frame=PolarisationFrame("stokesIQUV"))
+        vismodel2 = dft_skycomponent_visibility(vispred, self.comp)
+
+        # Should yield the same results as rotation
+        rotatedvis = phaserotate_visibility(self.vismodel, newphasecentre=self.compabsdirection, tangent=False)
+        assert_allclose(rotatedvis.vis, vismodel2.vis, rtol=3e-6)
+        assert_allclose(rotatedvis.uvw, vismodel2.uvw, rtol=3e-6)
+
+    def test_phase_rotation_stokesiquv_block(self):
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+                                     channel_bandwidth=self.channel_bandwidth,
+                                     phasecentre=self.phasecentre, weight=1.0,
+                                     polarisation_frame=PolarisationFrame("stokesIQUV"))
+        self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
+        # Predict visibilities with new phase centre independently
+        ha_diff = -(self.compabsdirection.ra - self.phasecentre.ra).to(u.rad).value
+        vispred = create_blockvisibility(self.lowcore, self.times + ha_diff, self.frequency,
                                     channel_bandwidth=self.channel_bandwidth,
                                     phasecentre=self.compabsdirection, weight=1.0,
                                     polarisation_frame=PolarisationFrame("stokesIQUV"))

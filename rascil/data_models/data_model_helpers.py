@@ -286,10 +286,9 @@ def convert_hdf_to_blockvisibility(f):
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
     frequency = f.attrs['frequency']
     channel_bandwidth = f.attrs['channel_bandwidth']
-    data = numpy.array(f['data'])
     source = f.attrs['source']
     meta = ast.literal_eval(f.attrs['meta'])
-    vis = BlockVisibility(data=data, polarisation_frame=polarisation_frame,
+    vis = BlockVisibility(polarisation_frame=polarisation_frame,
                           phasecentre=phasecentre, frequency=frequency,
                           channel_bandwidth=channel_bandwidth, source=source,
                           meta=meta)

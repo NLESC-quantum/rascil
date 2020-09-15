@@ -374,6 +374,7 @@ def create_low_test_beam(model: Image, use_local=True) -> Image:
         
         model2dwcs = model.wcs.sub(2).deepcopy()
         model2dshape = [model.shape[2], model.shape[3]]
+        model2dwcs.array_shape=model2dshape
         beam2dwcs = beam.wcs.sub(2).deepcopy()
         
         # The frequency axis is the second to last in the beam
@@ -386,13 +387,13 @@ def create_low_test_beam(model: Image, use_local=True) -> Image:
         beam2dwcs.wcs.ctype = model.wcs.sub(2).wcs.ctype
         model2dwcs.wcs.crpix = [model.shape[2] // 2 + 1, model.shape[3] // 2 + 1]
         
-        beam2d = create_image_from_array(beam.data[0, 0, :, :], beam2dwcs, model.polarisation_frame)
-        reprojected_beam2d, footprint = reproject_image(beam2d, model2dwcs, shape=model2dshape)
-        assert numpy.max(footprint.data) > 0.0, "No overlap between beam and model"
+        beam2d = create_image_from_array(beam.data[0, 0, :, :].values, beam2dwcs, model.polarisation_frame)
+        reprojected_beam2d, footprint = reproject_image(beam2d, model2dwcs, shape=model.data.shape)
+        assert numpy.max(footprint.data.values) > 0.0, "No overlap between beam and model"
         
-        reprojected_beam2d.data[footprint.data <= 0.0] = 0.0
+        reprojected_beam2d.data.values[footprint.data.values <= 0.0] = 0.0
         for pol in range(npol):
-            reprojected_beam.data[chan, pol, :, :] = reprojected_beam2d.data[:, :]
+            reprojected_beam.data.values[chan, pol, :, :] = reprojected_beam2d.data.values[0, 0, :, :]
     
     set_pb_header(reprojected_beam, use_local=use_local)
     return reprojected_beam

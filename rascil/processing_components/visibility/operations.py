@@ -22,7 +22,7 @@ import logging
 from typing import Union, List
 
 import numpy
-
+import xarray
 from rascil.data_models.memory_data_models import BlockVisibility, Visibility, QA
 from rascil.data_models.polarisation import convert_linear_to_stokes, \
     convert_circular_to_stokesI, convert_linear_to_stokesI, \
@@ -33,7 +33,7 @@ log = logging.getLogger('logger')
 
 
 def append_visibility(vis: Union[Visibility, BlockVisibility],
-                      othervis: Union[Visibility, BlockVisibility]) \
+                      othervis: Union[Visibility, BlockVisibility], dim='time') \
         -> Union[Visibility, BlockVisibility]:
     """Append othervis to vis
     
@@ -57,7 +57,11 @@ def append_visibility(vis: Union[Visibility, BlockVisibility],
     if isinstance(vis, BlockVisibility):
         assert numpy.max(numpy.abs(vis.frequency - othervis.frequency)) < 1e-6
     
-    vis.data = numpy.hstack((vis.data, othervis.data))
+    if isinstance(vis, Visibility):
+        assert dim == 'time', "Append visibility only possible on time axis"
+        vis.data = numpy.hstack((vis.data, othervis.data))
+    else:
+        vis.data = xarray.concat((vis, othervis), dim=dim)
     return vis
 
 
@@ -142,6 +146,7 @@ def concatenate_blockvisibility_frequency(bvis_list):
                              imaging_weight=imaging_weight, uvw=uvw, time=time,
                              integration_time=integration_time,
                              frequency=frequency,
+                             baselines=vis.baselines,
                              channel_bandwidth=channel_bandwidth,
                              polarisation_frame=bvis_list[0].polarisation_frame,
                              source=bvis_list[0].source,
@@ -190,7 +195,7 @@ def qa_visibility(vis: Union[Visibility, BlockVisibility], context=None) -> QA:
     """
     assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
     
-    avis = numpy.abs(vis.vis)
+    avis = numpy.abs(vis.data["vis"].values)
     data = {'maxabs': numpy.max(avis),
             'minabs': numpy.min(avis),
             'rms': numpy.std(avis),
@@ -248,23 +253,25 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
     :param modelvis:
     :return:
     """
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, BlockVisibility), vis
     
-    x = numpy.zeros_like(vis.vis)
-    xwt = numpy.abs(modelvis.vis) ** 2 * vis.flagged_weight
+    x = numpy.zeros_like(vis.vis.values)
+    xwt = numpy.abs(modelvis.vis.values) ** 2 * vis.flagged_weight.values
     mask = xwt > 0.0
     x[mask] = vis.vis.values[mask] / modelvis.vis.values[mask]
     
-    pointsource_vis = BlockVisibility(flags=vis.flags,
-                                      frequency=vis.frequency,
-                                      channel_bandwidth=vis.channel_bandwidth,
+    pointsource_vis = BlockVisibility(flags=vis.flags.values,
+                                      baselines=vis.baselines,
+                                      frequency=vis.frequency.values,
+                                      channel_bandwidth=vis.channel_bandwidth.values,
                                       phasecentre=vis.phasecentre,
                                       configuration=vis.configuration,
-                                      uvw=vis.uvw, time=vis.time,
-                                      integration_time=vis.integration_time,
+                                      uvw=vis.uvw, time=vis.time.values,
+                                      integration_time=vis.integration_time.values,
                                       vis=x,
                                       weight=xwt, source=vis.source,
-                                      meta=vis.meta)
+                                      meta=vis.meta,
+                                      polarisation_frame=vis.polarisation_frame)
     return pointsource_vis
 
 
@@ -278,10 +285,11 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
     assert isinstance(vis, BlockVisibility), vis
     
     vis_shape = list(vis.vis.shape)
-    ntimes, nant, _, nchan, npol = vis_shape
+    ntimes, nbaselines, nchan, npol = vis_shape
     vis_shape[-2] = 1
     newvis = BlockVisibility(frequency=numpy.ones([1]) * numpy.average(vis.frequency.values),
                              channel_bandwidth=numpy.ones([1]) * numpy.sum(vis.channel_bandwidth.values),
+                             baselines=vis.baselines,
                              phasecentre=vis.phasecentre,
                              configuration=vis.configuration,
                              uvw=vis.uvw,
@@ -296,17 +304,15 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
                              source=vis.source,
                              meta=vis.meta)
     
-    newvis.data['flags'][..., 0, :] = numpy.sum(vis.flags, axis=-2)
-    newvis.data['flags'][newvis.data['flags'] < nchan] = 0
-    newvis.data['flags'][newvis.data['flags'] > 1] = 1
+    newvis.data['flags'].values[..., 0, :] = numpy.sum(vis.flags.values, axis=-2)
+    newvis.data['flags'].values[newvis.data['flags'].values < nchan] = 0
+    newvis.data['flags'].values[newvis.data['flags'].values > 1] = 1
     
-    newvis.data['vis'][..., 0, :] = numpy.sum(vis.data['vis'] * vis.flagged_weight, axis=-2)
-    newvis.data['weight'][..., 0, :] = numpy.sum(vis.flagged_weight, axis=-2)
-    newvis.data['imaging_weight'][..., 0, :] = numpy.sum(
-        vis.flagged_imaging_weight, axis=-2)
-    mask = newvis.flagged_weight > 0.0
-    newvis.data['vis'][mask] = newvis.data['vis'][mask] / newvis.flagged_weight[
-        mask]
+    newvis.data['vis'][..., 0, :] = numpy.sum(vis.data['vis'].values * vis.flagged_weight.values, axis=-2)
+    newvis.data['weight'][..., 0, :] = numpy.sum(vis.flagged_weight.values, axis=-2)
+    newvis.data['imaging_weight'][..., 0, :] = numpy.sum(vis.flagged_imaging_weight.values, axis=-2)
+    mask = newvis.flagged_weight.values > 0.0
+    newvis.data['vis'].values[mask] = newvis.data['vis'].values[mask] / newvis.flagged_weight.values[mask]
     
     return newvis
 

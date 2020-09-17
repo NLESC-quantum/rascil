@@ -54,7 +54,7 @@ class TestGridDataKernels(unittest.TestCase):
         # if self.persist:
         #     export_image_to_fits(cf_image, "%s/test_convolutionfunction_box_cf.fits" % self.dir)
         #
-        peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf.data)), cf.shape)
+        peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf.data.values)), cf.shape)
         assert numpy.abs(cf.data[peak_location] - 1.0) < 1e-15, "Peak is incorrect %s" % str(
             cf.data[peak_location] - 1.0)
         assert peak_location == (0, 0, 0, 0, 0, 2, 2), peak_location

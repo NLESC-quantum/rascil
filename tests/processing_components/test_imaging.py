@@ -314,11 +314,17 @@ class TestImaging2D(unittest.TestCase):
     
     def test_invert_wterm(self):
         self.actualSetUp(zerow=False)
+        gcfcf = create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
+                                                  oversampling=4, support=100, use_aaf=True)
+        self._invert_base(name='invert_wterm', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
+
+    def test_invert_wterm_clipped(self):
+        self.actualSetUp(zerow=False)
         gcf, cf = create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
                                                   oversampling=4, support=100, use_aaf=True)
         cf_clipped = apply_bounding_box_convolutionfunction(cf, 1e-4)
         gcfcf = (gcf, cf_clipped)
-        self._invert_base(name='invert_wterm', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
+        self._invert_base(name='invert_wterm_clipped', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
 
     def test_invert_spec_wterm(self):
         self.persist = True

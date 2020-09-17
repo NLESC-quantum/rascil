@@ -685,106 +685,6 @@ class GridData:
         return s
 
 
-class GridData_old:
-    """Class to hold Gridded data for Fourier processing
-    - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
-
-    The conventions for indexing in WCS and numpy are opposite.
-    - In astropy.wcs, the order is (longitude, latitude, polarisation, frequency)
-    - in numpy, the order is (frequency, polarisation, depth, latitude, longitude)
-
-    .. warning::
-        The polarisation_frame is kept in two places, the WCS and the polarisation_frame
-        variable. The latter should be considered definitive.
-
-    """
-    
-    def __init__(self, data=None, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
-        """Create Griddata
-        
-        :param data: Data for griddata
-        :param grid_wcs: Astropy WCS object for the grid
-        :param projection_wcs: Astropy WCS object for the projection
-        :param polarisation_frame: Polarisation_frame e.g. PolarisationFrame('linear')
-        """
-        self.data = data
-        self.grid_wcs = grid_wcs
-        self.projection_wcs = projection_wcs
-        self.polarisation_frame = polarisation_frame
-    
-    def size(self):
-        """ Return size in GB
-        """
-        size = 0
-        size += self.data.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-    
-    def __copy__(self):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        return result
-    
-    # noinspection PyArgumentList
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
-    
-    @property
-    def nchan(self):
-        """ Number of channels
-        """
-        return self.data.shape[0]
-    
-    @property
-    def npol(self):
-        """ Number of polarisations
-        """
-        return self.data.shape[1]
-    
-    @property
-    def ndepth(self):
-        """ Number of pixels deep i.e. z
-        """
-        return self.data.shape[4]
-    
-    @property
-    def frequency(self):
-        """ Frequency values
-        """
-        w = self.grid_wcs.sub(['spectral'])
-        return w.wcs_pix2world(range(self.nchan), 0)[0]
-    
-    @property
-    def shape(self):
-        """ Shape of data array
-        """
-        assert len(self.data.shape) == 5
-        return self.data.shape
-    
-    @property
-    def phasecentre(self):
-        """ Phasecentre (from projection WCS)
-
-        """
-        return SkyCoord(self.projection_wcs.wcs.crval[0] * u.deg, self.projection_wcs.wcs.crval[1] * u.deg)
-    
-    def __str__(self):
-        """Default printer for GriddedData
-
-        """
-        s = "Gridded data:\n"
-        s += "\tShape: %s\n" % str(self.data.shape)
-        s += "\tGrid WCS: %s\n" % self.grid_wcs
-        s += "\tProjection WCS: %s\n" % self.projection_wcs
-        s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
-        return s
-
-
 class ConvolutionFunction:
     """Class to hold Convolution function for Fourier processing
     - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
@@ -798,7 +698,7 @@ class ConvolutionFunction:
 
     """
     
-    def __init__(self, data=None, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
+    def __init__(self, data, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
         """Create ConvolutionFunction
 
         :param data: Data for cf
@@ -806,32 +706,59 @@ class ConvolutionFunction:
         :param projection_wcs: Astropy WCS object for the projection
         :param polarisation_frame: Polarisation_frame e.g. PolarisationFrame('linear')
         """
-        self.data = data
+        nchan, npol, nw, oversampling, _, support, _ = data.shape
+        frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
+
+        assert npol == polarisation_frame.npol
+        cellsize = numpy.abs(projection_wcs.wcs.cdelt[1])
+        cellsize_rad = numpy.deg2rad(cellsize)
+        du = 1.0 / cellsize_rad
+        dv = 1.0 / cellsize_rad
+        ddu = 1.0 / cellsize_rad / oversampling
+        ddv = 1.0 / cellsize_rad / oversampling
+        cu = grid_wcs.wcs.crval[0]
+        cv = grid_wcs.wcs.crval[1]
+        cdu = oversampling // 2
+        cdv = oversampling // 2
+        cw = 0.0
+
+        assert cellsize > 0.0, "Cellsize must be positive"
+
+        dims = ["frequency", "polarisation", "w", "dv", "du", "v", "u"]
+        coords = {
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "w": numpy.zeros([1]),
+            "dv": numpy.linspace(cdv - ddv * oversampling / 2, cdv + ddv * oversampling / 2, oversampling),
+            "du": numpy.linspace(cdu - ddu * oversampling / 2, cdu + ddu * oversampling / 2, oversampling),
+            "v": numpy.linspace(cv - dv * support / 2, cv + dv * support / 2, support),
+            "u": numpy.linspace(cu - du * support / 2, cu + du * support / 2, support)
+        }
+
+        assert coords["u"][0] != coords["u"][-1]
+        assert coords["v"][0] != coords["v"][-1]
+
         self.grid_wcs = grid_wcs
         self.projection_wcs = projection_wcs
         self.polarisation_frame = polarisation_frame
-    
+
+        nchan = len(frequency)
+        npol = polarisation_frame.npol
+        if data is None:
+            data = numpy.zeros([nchan, npol, nw, oversampling, oversampling, support, support], dtype='complex')
+        else:
+            assert data.shape == (nchan, npol, nw, oversampling, oversampling, support, support), \
+                "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
+                                                                                  data.shape)
+
+        self.data = xarray.DataArray(data, dims=dims, coords=coords)
+
     def size(self):
         """ Return size in GB
         """
         size = 0
         size += self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-    
-    def __copy__(self):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        return result
-    
-    # noinspection PyArgumentList
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
     
     @property
     def nchan(self):

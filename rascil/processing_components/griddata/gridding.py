@@ -83,8 +83,7 @@ def convolution_mapping_visibility(vis, griddata, frequency, cf, channel_toleran
     return pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction, pfreq_grid
 
 
-def convolution_mapping_blockvisibility(vis, griddata, frequency, cf,
-                                        channel_tolerance=1e-8):
+def convolution_mapping_blockvisibility(vis, griddata, frequency, cf, channel_tolerance=1e-8):
     """Find the mappings between visibility, griddata, and convolution function
 
     :param vis:
@@ -116,10 +115,8 @@ def spatial_mapping(cf, griddata, u, v, w):
     :return:
     """
 
-    numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[0],
-                                      cf.grid_wcs.wcs.cdelt[0], 7)
-    numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[1],
-                                      cf.grid_wcs.wcs.cdelt[1], 7)
+    numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[0], cf.grid_wcs.wcs.cdelt[0], 7)
+    numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[1], cf.grid_wcs.wcs.cdelt[1], 7)
     ####### UV mapping
     # We use the grid_wcs's to do the coordinate conversion
     # Find the nearest grid points

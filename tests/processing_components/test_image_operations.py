@@ -171,7 +171,7 @@ class TestImage(unittest.TestCase):
         self.assertAlmostEqual(numpy.max(im.data.real), 1.0, 7)
 
     def test_fftim(self):
-        self.m31image = create_test_image(cellsize=0.001, frequency=[1e8], canonical=True)
+        self.m31image = create_test_image(cellsize=0.001, frequency=[1e8])
         m31_fft = fft_image(self.m31image)
         m31_fft_ifft = fft_image(m31_fft, self.m31image)
         numpy.testing.assert_array_almost_equal(self.m31image.data, m31_fft_ifft.data.real, 12)
@@ -181,7 +181,7 @@ class TestImage(unittest.TestCase):
     def test_fftim_factors(self):
         for i in [3, 5, 7]:
             npixel = 256 * i
-            m31image = create_test_image(cellsize=0.001, frequency=[1e8], canonical=True)
+            m31image = create_test_image(cellsize=0.001, frequency=[1e8])
             padded = pad_image(m31image, [1, 1, npixel, npixel])
             assert padded.shape == (1, 1, npixel, npixel)
             padded_fft = fft_image(padded)
@@ -191,7 +191,7 @@ class TestImage(unittest.TestCase):
             if self.persist: export_image_to_fits(padded_fft, fitsfile='%s/test_m31_fft_%d.fits' % (self.dir, npixel))
 
     def test_pad_image(self):
-        m31image = create_test_image(cellsize=0.001, frequency=[1e8], canonical=True)
+        m31image = create_test_image(cellsize=0.001, frequency=[1e8])
         padded = pad_image(m31image, [1, 1, 1024, 1024])
         assert padded.shape == (1, 1, 1024, 1024)
 
@@ -220,7 +220,7 @@ class TestImage(unittest.TestCase):
         vp.data = vp.data[:,:,256:768,256:768]
         # vp = scale_and_rotate_image(vp, 30.0 * numpy.pi / 180.0, [1.0, 2.0])
         cellsize = vp.wcs.wcs.cdelt[1] * numpy.pi / 180.0
-        m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9], canonical=True)
+        m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9])
         padded = pad_image(m31image, [1, 1, 512, 512])
         padded.data = numpy.repeat(padded.data, repeats=4, axis=1)
         padded = create_image_from_array(padded.data, polarisation_frame=PolarisationFrame("stokesIQUV"),

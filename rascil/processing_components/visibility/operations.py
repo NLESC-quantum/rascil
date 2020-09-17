@@ -61,7 +61,7 @@ def append_visibility(vis: Union[Visibility, BlockVisibility],
         assert dim == 'time', "Append visibility only possible on time axis"
         vis.data = numpy.hstack((vis.data, othervis.data))
     else:
-        vis.data = xarray.concat((vis, othervis), dim=dim)
+        vis.data = xarray.concat((vis.data, othervis.data), dim=dim)
     return vis
 
 

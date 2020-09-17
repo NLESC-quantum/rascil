@@ -110,8 +110,8 @@ class TestImageGatherScatters(unittest.TestCase):
 
     def test_scatter_gather_channel(self):
         for nchan in [128, 16]:
-            m31cube = create_test_image(polarisation_frame=PolarisationFrame('stokesI'),
-                                        frequency=numpy.linspace(1e8, 1.1e8, nchan))
+            m31cube = create_test_image(frequency=numpy.linspace(1e8, 1.1e8, nchan),
+                                        polarisation_frame=PolarisationFrame('stokesI'))
             
             for subimages in [16, 8, 2, 1]:
                 image_list = image_scatter_channels(m31cube, subimages=subimages)
@@ -121,8 +121,8 @@ class TestImageGatherScatters(unittest.TestCase):
     
     def test_gather_channel(self):
         for nchan in [128, 16]:
-            m31cube = create_test_image(polarisation_frame=PolarisationFrame('stokesI'),
-                                        frequency=numpy.linspace(1e8, 1.1e8, nchan))
+            m31cube = create_test_image(frequency=numpy.linspace(1e8, 1.1e8, nchan),
+                                        polarisation_frame=PolarisationFrame('stokesI'))
             image_list = image_scatter_channels(m31cube, subimages=nchan)
             m31cuberec = image_gather_channels(image_list, None, subimages=nchan)
             assert m31cube.shape == m31cuberec.shape

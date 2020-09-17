@@ -80,7 +80,7 @@ class export_ms_RASCIL_test(unittest.TestCase):
         cellsize = advice['cellsize']
 
 
-        m31image = create_test_image(frequency=frequency, cellsize=cellsize)
+        m31image = create_test_image(cellsize=cellsize, frequency=frequency)
         nchan, npol, ny, nx = m31image.data.shape
         m31image.wcs.wcs.crval[0] = bvis.phasecentre.ra.deg
         m31image.wcs.wcs.crval[1] = bvis.phasecentre.dec.deg

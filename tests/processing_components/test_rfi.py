@@ -35,9 +35,7 @@ class TestRFISim(unittest.TestCase):
         perth = EarthLocation(lon=115.8605*u.deg, lat=-31.9505*u.deg, height=0.0)
         
         rmax = 1000.0
-        low = create_named_configuration('LOWR3', rmax=rmax)
-        antskip = 33
-        low.data = low.data[::antskip]
+        low = create_named_configuration('LOWR3', rmax=rmax, skip=33)
         nants = len(low.names)
         
         # Calculate the power spectral density of the DTV station: Watts/Hz

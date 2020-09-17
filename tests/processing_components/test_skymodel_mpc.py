@@ -50,8 +50,7 @@ class TestSkymodelMPC(unittest.TestCase):
                                   phasecentre=self.phasecentre)
     
     def test_expand_skymodel_by_skycomponents(self):
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
         
         beam = create_low_test_beam(beam, use_local=False)
         

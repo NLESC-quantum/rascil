@@ -68,8 +68,7 @@ class TestAtmosphericScreen(unittest.TestCase):
     def test_create_gaintable_from_screen_ionosphere(self):
         self.actualSetup("ionosphere")
         screen = rascil_data_path('models/test_mpc_screen.fits')
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
 
@@ -91,8 +90,7 @@ class TestAtmosphericScreen(unittest.TestCase):
     def test_create_gaintable_from_screen_troposphere(self):
         self.actualSetup("troposphere")
         screen = rascil_data_path('models/test_mpc_screen.fits')
-        beam = create_test_image(cellsize=0.00015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.00015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
 
@@ -118,8 +116,7 @@ class TestAtmosphericScreen(unittest.TestCase):
     def test_grid_gaintable_to_screen(self):
         self.actualSetup()
         screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
 
@@ -149,8 +146,7 @@ class TestAtmosphericScreen(unittest.TestCase):
     def test_plot_gaintable_to_screen(self):
         self.actualSetup()
         screen = rascil_data_path('models/test_mpc_screen.fits')
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
 

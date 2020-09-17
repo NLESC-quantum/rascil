@@ -264,30 +264,31 @@ def create_image_from_visibility(vis: Union[BlockVisibility, Visibility], **kwar
     phasecentre = get_parameter(kwargs, "phasecentre", vis.phasecentre)
 
     # Spectral processing options
-    ufrequency = numpy.unique(vis.frequency)
+    ufrequency = numpy.unique(vis.frequency.values)
     vnchan = len(ufrequency)
 
-    frequency = get_parameter(kwargs, "frequency", vis.frequency)
+    frequency = get_parameter(kwargs, "frequency", vis.frequency.values)
     inchan = get_parameter(kwargs, "nchan", vnchan)
     reffrequency = frequency[0] * units.Hz
-    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", 0.99999999999 * vis.channel_bandwidth[0]) * units.Hz
+    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", 0.99999999999 * \
+                                      vis.channel_bandwidth.values[0]) * units.Hz
 
     if (inchan == vnchan) and vnchan > 1:
         log.debug(
             "create_image_from_visibility: Defining %d channel Image at %s, starting frequency %s, and bandwidth %s"
             % (inchan, imagecentre, reffrequency, channel_bandwidth))
     elif (inchan == 1) and vnchan > 1:
-        assert numpy.abs(channel_bandwidth.value) > 0.0, "Channel width must be non-zero for mfs mode"
+        assert numpy.abs(channel_bandwidth.values) > 0.0, "Channel width must be non-zero for mfs mode"
         log.debug("create_image_from_visibility: Defining single channel MFS Image at %s, starting frequency %s, "
                   "and bandwidth %s"
                   % (imagecentre, reffrequency, channel_bandwidth))
     elif inchan > 1 and vnchan > 1:
-        assert numpy.abs(channel_bandwidth.value) > 0.0, "Channel width must be non-zero for mfs mode"
+        assert numpy.abs(channel_bandwidth.values) > 0.0, "Channel width must be non-zero for mfs mode"
         log.debug("create_image_from_visibility: Defining multi-channel MFS Image at %s, starting frequency %s, "
                   "and bandwidth %s"
                   % (imagecentre, reffrequency, channel_bandwidth))
     elif (inchan == 1) and (vnchan == 1):
-        assert numpy.abs(channel_bandwidth.value) > 0.0, "Channel width must be non-zero for mfs mode"
+        assert numpy.abs(channel_bandwidth) > 0.0, "Channel width must be non-zero for mfs mode"
         log.debug("create_image_from_visibility: Defining single channel Image at %s, starting frequency %s, "
                   "and bandwidth %s"
                   % (imagecentre, reffrequency, channel_bandwidth))
@@ -297,7 +298,7 @@ def create_image_from_visibility(vis: Union[BlockVisibility, Visibility], **kwar
 
     # Image sampling options
     npixel = get_parameter(kwargs, "npixel", 512)
-    uvmax = numpy.max((numpy.abs(vis.data['uvw'][..., 0:1])))
+    uvmax = numpy.max((numpy.abs(vis.uvw.values[..., 0:1])))
     if isinstance(vis, BlockVisibility):
         uvmax *= numpy.max(frequency) / constants.c.to('m s^-1').value
     log.debug("create_image_from_visibility: uvmax = %f wavelengths" % uvmax)
@@ -358,21 +359,22 @@ def advise_wide_field(vis: Union[BlockVisibility, Visibility], delA=0.02,
     """
 
     isblock = isinstance(vis, BlockVisibility)
+    assert isinstance(vis, BlockVisibility)
 
-    max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis.frequency)
+    max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis.frequency.values)
     if verbose:
         log.info("advise_wide_field: (max_wavelength) Maximum wavelength %.3f (meters)" % (max_wavelength))
 
-    min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis.frequency)
+    min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis.frequency.values)
     if verbose:
         log.info("advise_wide_field: (min_wavelength) Minimum wavelength %.3f (meters)" % (min_wavelength))
 
     if isblock:
-        maximum_baseline = numpy.max(numpy.abs(vis.uvw)) / min_wavelength  # Wavelengths
-        maximum_w = numpy.max(numpy.abs(vis.w)) / min_wavelength  # Wavelengths
+        maximum_baseline = numpy.max(numpy.abs(vis.uvw.values)) / min_wavelength  # Wavelengths
+        maximum_w = numpy.max(numpy.abs(vis.w.values)) / min_wavelength  # Wavelengths
     else:
-        maximum_baseline = numpy.max(numpy.abs(vis.uvw))  # Wavelengths
-        maximum_w = numpy.max(numpy.abs(vis.w))  # Wavelengths
+        maximum_baseline = numpy.max(numpy.abs(vis.uvw.values))  # Wavelengths
+        maximum_w = numpy.max(numpy.abs(vis.w.values))  # Wavelengths
 
     if verbose:
         log.info("advise_wide_field: (maximum_baseline) Maximum baseline %.1f (wavelengths)" % (maximum_baseline))
@@ -381,7 +383,7 @@ def advise_wide_field(vis: Union[BlockVisibility, Visibility], delA=0.02,
     if verbose:
         log.info("advise_wide_field: (maximum_w) Maximum w %.1f (wavelengths)" % (maximum_w))
 
-    diameter = numpy.min(vis.configuration.diameter)
+    diameter = numpy.min(vis.configuration.diameter.values)
     if verbose:
         log.info("advise_wide_field: (diameter) Station/dish diameter %.1f (meters)" % (diameter))
     assert diameter > 0.0, "Station/dish diameter must be greater than zero"
@@ -479,16 +481,16 @@ def advise_wide_field(vis: Union[BlockVisibility, Visibility], delA=0.02,
     if verbose:
         log.info("advice_wide_field: (time_sampling_primary_beam) Time sampling for primary beam = %.1f (s)" % (time_sampling_primary_beam))
 
-    freq_sampling_image = numpy.max(vis.frequency) * (synthesized_beam / image_fov)
+    freq_sampling_image = numpy.max(vis.frequency.values) * (synthesized_beam / image_fov)
     if verbose:
         log.info("advice_wide_field: (freq_sampling_image) Frequency sampling for full image = %.1f (Hz)" % (freq_sampling_image))
 
     if facets > 1:
-        freq_sampling_facet = numpy.max(vis.frequency) * (synthesized_beam / facet_fov)
+        freq_sampling_facet = numpy.max(vis.frequency.values) * (synthesized_beam / facet_fov)
         if verbose:
             log.info("advice_wide_field: (freq_sampling_facet) Frequency sampling for facet = %.1f (Hz)" % (freq_sampling_facet))
 
-    freq_sampling_primary_beam = numpy.max(vis.frequency) * (synthesized_beam / primary_beam_fov)
+    freq_sampling_primary_beam = numpy.max(vis.frequency.values) * (synthesized_beam / primary_beam_fov)
     if verbose:
         log.info("advice_wide_field: (freq_sampling_primary_beam) Frequency sampling for primary beam = %.1f (Hz)" % (freq_sampling_primary_beam))
 

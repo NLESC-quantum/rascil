@@ -47,8 +47,7 @@ class TestImageDeconvolution(unittest.TestCase):
         self.vis.data['vis'] *= 0.0
         
         # Create model
-        self.test_model = create_test_image(cellsize=0.001, phasecentre=self.vis.phasecentre,
-                                            frequency=self.frequency)
+        self.test_model = create_test_image(cellsize=0.001, frequency=self.frequency, phasecentre=self.vis.phasecentre)
         self.vis = predict_2d(self.vis, self.test_model)
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
         self.model = create_image_from_visibility(self.vis, npixel=512, cellsize=0.001,

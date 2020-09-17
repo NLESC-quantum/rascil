@@ -128,7 +128,7 @@ def create_vp(model=None, telescope='MID', pointingcentre=None, padding=4, use_l
     elif telescope == 'MEERKAT':
         return create_vp_generic(model, pointingcentre=pointingcentre, diameter=15.0, blockage=0.0, use_local=use_local)
     elif telescope[0:3] == 'LOW':
-        return create_low_test_vp(model)
+        return create_low_test_vp(model, use_local=use_local)
     elif telescope[0:3] == 'VLA':
         return create_vp_generic(model, pointingcentre=pointingcentre, diameter=25.0, blockage=1.8, use_local=use_local)
     elif telescope[0:5] == 'ASKAP':
@@ -370,8 +370,6 @@ def create_low_test_vp(model: Image, use_local=True) -> Image:
     """
     
     beam = import_image_from_fits(rascil_data_path('models/SKA1_LOW_beam.fits'))
-    beam.data.values = numpy.sqrt(beam.data.values).astype('complex')
-    
     # Scale the image cellsize to account for the different in frequencies. Eventually we will want to
     # use a frequency cube
     log.debug("create_low_test_beam: LOW voltage pattern is defined at %.3f MHz" % (beam.wcs.wcs.crval[2] * 1e-6))
@@ -384,6 +382,8 @@ def create_low_test_vp(model: Image, use_local=True) -> Image:
     reprojected_beam = create_empty_image_like(model)
     reprojected_beam.data.values = reprojected_beam.data.values.astype('complex')
     
+    
+    npol = model.polarisation_frame.npol
     for chan in range(nchan):
         
         model_1chan_wcs = model.wcs.deepcopy()
@@ -399,7 +399,8 @@ def create_low_test_vp(model: Image, use_local=True) -> Image:
         beam_1chan_wcs.wcs.crval = model.wcs.wcs.crval
         beam_1chan_wcs.wcs.ctype = model.wcs.wcs.ctype
         
-        beam_1chan = create_image_from_array(numpy.real(beam.data.values[0, :, :, :][numpy.newaxis,...]),
+        beam_pol = numpy.repeat(beam.data.values[0, :, :, :], npol, axis=0)[numpy.newaxis,...]
+        beam_1chan = create_image_from_array(beam_pol,
                                               beam_1chan_wcs, model.polarisation_frame)
         reprojected_beam_1chan, footprint = reproject_image(beam_1chan, model_1chan_wcs, shape=model_1chan_shape)
         assert numpy.max(footprint.data.values) > 0.0, "No overlap between beam and model"

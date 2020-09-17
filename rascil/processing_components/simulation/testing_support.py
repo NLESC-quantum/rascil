@@ -73,14 +73,13 @@ check_data_directory()
 log = logging.getLogger('logger')
 
 
-def create_test_image(canonical=True, cellsize=None, frequency=None, channel_bandwidth=None,
-                      phasecentre=None, polarisation_frame=PolarisationFrame("stokesI")) -> Image:
+def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, phasecentre=None,
+                      polarisation_frame=PolarisationFrame("stokesI")) -> Image:
     """Create a useful test image
 
     This is the test image M31 widely used in ALMA and other simulations. It is actually part of an Halpha region in
     M31.
 
-    :param canonical: Make the image into a 4 dimensional image
     :param cellsize:
     :param frequency: Frequency (array) in Hz
     :param channel_bandwidth: Channel bandwidth (array) in Hz
@@ -93,30 +92,28 @@ def create_test_image(canonical=True, cellsize=None, frequency=None, channel_ban
     if frequency is None:
         frequency = [1e8]
     im = import_image_from_fits(rascil_data_path("models/M31.MOD"))
-    if canonical:
+    if polarisation_frame is None:
+        im.polarisation_frame = PolarisationFrame("stokesI")
+    elif isinstance(polarisation_frame, PolarisationFrame):
+        im.polarisation_frame = polarisation_frame
+    else:
+        raise ValueError("polarisation_frame is not valid")
 
-        if polarisation_frame is None:
-            im.polarisation_frame = PolarisationFrame("stokesI")
-        elif isinstance(polarisation_frame, PolarisationFrame):
-            im.polarisation_frame = polarisation_frame
+    im = replicate_image(im, frequency=frequency, polarisation_frame=im.polarisation_frame)
+    if cellsize is not None:
+        im.wcs.wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
+        im.wcs.wcs.cdelt[1] = +180.0 * cellsize / numpy.pi
+    if frequency is not None:
+        im.wcs.wcs.crval[3] = frequency[0]
+    if channel_bandwidth is not None:
+        im.wcs.wcs.cdelt[3] = channel_bandwidth[0]
+    else:
+        if len(frequency) > 1:
+            im.wcs.wcs.cdelt[3] = frequency[1] - frequency[0]
         else:
-            raise ValueError("polarisation_frame is not valid")
-
-        im = replicate_image(im, frequency=frequency, polarisation_frame=im.polarisation_frame)
-        if cellsize is not None:
-            im.wcs.wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
-            im.wcs.wcs.cdelt[1] = +180.0 * cellsize / numpy.pi
-        if frequency is not None:
-            im.wcs.wcs.crval[3] = frequency[0]
-        if channel_bandwidth is not None:
-            im.wcs.wcs.cdelt[3] = channel_bandwidth[0]
-        else:
-            if len(frequency) > 1:
-                im.wcs.wcs.cdelt[3] = frequency[1] - frequency[0]
-            else:
-                im.wcs.wcs.cdelt[3] = 0.001 * frequency[0]
-        im.wcs.wcs.radesys = 'ICRS'
-        im.wcs.wcs.equinox = 2000.00
+            im.wcs.wcs.cdelt[3] = 0.001 * frequency[0]
+    im.wcs.wcs.radesys = 'ICRS'
+    im.wcs.wcs.equinox = 2000.00
 
     if phasecentre is not None:
         im.wcs.wcs.crval[0] = phasecentre.ra.deg

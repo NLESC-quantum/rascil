@@ -41,8 +41,7 @@ advice = advise_wide_field(vt, guard_band_image=3.0, delA=0.1,
 cellsize = advice['cellsize']
 
 # Read the venerable test image, constructing a RASCIL Image
-m31image = create_test_image(frequency=frequency, cellsize=cellsize,
-                             phasecentre=vt.phasecentre)
+m31image = create_test_image(cellsize=cellsize, frequency=frequency, phasecentre=vt.phasecentre)
 
 # Predict the visibility for the Image
 vt = predict_2d(vt, m31image, context='2d')

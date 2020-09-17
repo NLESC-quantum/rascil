@@ -58,19 +58,15 @@ class TestTesting_Support(unittest.TestCase):
                                      polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_create_test_image(self):
-        im = create_test_image(canonical=False)
-        assert len(im.data.shape) == 2
-        im = create_test_image(canonical=True)
+        im = create_test_image()
         assert len(im.data.shape) == 4
-        im = create_test_image(canonical=True, frequency=numpy.array([1e8]),
-                               polarisation_frame=PolarisationFrame(
-                                   'stokesI'))
+        im = create_test_image(frequency=numpy.array([1e8]), polarisation_frame=PolarisationFrame(
+            'stokesI'))
         assert len(im.data.shape) == 4
         assert im.data.shape[0] == 1
         assert im.data.shape[1] == 1
-        im = create_test_image(canonical=True, frequency=numpy.array([1e8]),
-                               polarisation_frame=PolarisationFrame(
-                                   'stokesIQUV'))
+        im = create_test_image(frequency=numpy.array([1e8]), polarisation_frame=PolarisationFrame(
+            'stokesIQUV'))
         assert len(im.data.shape) == 4
         assert im.data.shape[0] == 1
         assert im.data.shape[1] == 4
@@ -88,9 +84,9 @@ class TestTesting_Support(unittest.TestCase):
         if self.persist: export_image_to_fits(im, '%s/test_test_support_low_gleam.fits' % (self.dir))
         
         comp = sm.components
-        assert len(comp) == 79, len(comp)
-        assert comp[0].name == 'GLEAM J004616-420739', comp[0].name
-        assert comp[-1].name == 'GLEAM J011535-314620', comp[-1].name
+        assert len(comp) == 45, len(comp)
+        assert comp[0].name == 'GLEAM J003826-385949', comp[0].name
+        assert comp[-1].name == 'GLEAM J011412-321730', comp[-1].name
     
     def test_create_low_test_image_from_gleam(self):
         im = create_low_test_image_from_gleam(npixel=256, cellsize=0.001,
@@ -179,11 +175,9 @@ class TestTesting_Support(unittest.TestCase):
         if self.persist: export_image_to_fits(im, '%s/test_test_support_low_s3.fits' % (self.dir))
     
     def test_create_low_test_beam(self):
-        im = create_test_image(canonical=True, cellsize=0.002,
-                               frequency=numpy.array([1e8 - 5e7, 1e8, 1e8 + 5e7]),
-                               channel_bandwidth=numpy.array([5e7, 5e7, 5e7]),
-                               polarisation_frame=PolarisationFrame("stokesIQUV"),
-                               phasecentre=self.phasecentre)
+        im = create_test_image(cellsize=0.002, frequency=numpy.array([1e8 - 5e7, 1e8, 1e8 + 5e7]),
+                               channel_bandwidth=numpy.array([5e7, 5e7, 5e7]), phasecentre=self.phasecentre,
+                               polarisation_frame=PolarisationFrame("stokesIQUV"))
         bm = create_low_test_beam(model=im)
         if self.persist: export_image_to_fits(bm, '%s/test_test_support_low_beam.fits' % (self.dir))
         
@@ -219,8 +213,7 @@ class TestTesting_Support(unittest.TestCase):
         assert fullvis.nvis == totalnvis
     
     def test_create_vis_iter_with_model(self):
-        model = create_test_image(canonical=True, cellsize=0.001, frequency=self.frequency,
-                                  phasecentre=self.phasecentre)
+        model = create_test_image(cellsize=0.001, frequency=self.frequency, phasecentre=self.phasecentre)
         comp = Skycomponent(direction=self.phasecentre, frequency=self.frequency, flux=self.flux,
                             polarisation_frame=PolarisationFrame('stokesI'))
         vis_iter = create_blockvisibility_iterator(self.config, self.times, self.frequency,
@@ -233,7 +226,7 @@ class TestTesting_Support(unittest.TestCase):
         fullvis = None
         totalnvis = 0
         for i, bvis in enumerate(vis_iter):
-            assert bvis.phasecentre == self.phasecentre
+            assert bvis.phasecentre.separation(self.phasecentre).value < 1e-15
             assert bvis.nvis
             if i == 0:
                 fullvis = bvis
@@ -244,6 +237,7 @@ class TestTesting_Support(unittest.TestCase):
         
         assert fullvis.nvis == totalnvis
     
+    @unittest.skip("Coalesce not supported yet")
     def test_predict_sky_components_coalesce(self):
         sc = create_low_test_skycomponents_from_gleam(flux_limit=10.0,
                                                       polarisation_frame=PolarisationFrame("stokesI"),

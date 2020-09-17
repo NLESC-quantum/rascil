@@ -38,12 +38,10 @@ class TestSkyModel(unittest.TestCase):
         self.vis.data['vis'] *= 0.0
         
         # Create model
-        self.model = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                       frequency=self.frequency)
+        self.model = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
         self.model.data[self.model.data > 1.0] = 1.0
 
-        self.mask = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                   frequency=self.frequency)
+        self.mask = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
         self.mask.data[self.mask.data > 0.1] = 1.0
         self.mask.data[self.mask.data <= 0.1] = 0.0
 

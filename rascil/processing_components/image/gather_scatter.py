@@ -85,8 +85,8 @@ def image_gather_facets(image_list: List[Image], im: Image, facets=1, overlap=0,
                 sum_flat_facet.data[...] += flats[i].data[...]
                 i += 1
     
-            out.data[sum_flats.data > 0.0] /= sum_flats.data[sum_flats.data > 0.0]
-            out.data[sum_flats.data <= 0.0] = 0.0
+            out.data.values[sum_flats.data.values > 0.0] /= sum_flats.data.values[sum_flats.data.values > 0.0]
+            out.data.values[sum_flats.data.values <= 0.0] = 0.0
         
             return out
     else:

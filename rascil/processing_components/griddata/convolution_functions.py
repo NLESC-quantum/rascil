@@ -134,7 +134,7 @@ def create_convolutionfunction_from_image(im: numpy.array, nz=1, zstep=1e15, zty
     cf_wcs.wcs.cdelt[5] = im.wcs.wcs.cdelt[2]
     cf_wcs.wcs.cdelt[6] = im.wcs.wcs.cdelt[3]
     
-    grid_data = im.data[..., numpy.newaxis, :, :].astype('complex')
+    grid_data = im.data.values[..., numpy.newaxis, :, :].astype('complex')
     grid_data[...] = 0.0
     
     nchan, npol, ny, nx = im.shape

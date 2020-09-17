@@ -53,8 +53,7 @@ class TestPointing(unittest.TestCase):
                                   phasecentre=self.phasecentre)
 
     def test_create_pointingtable(self):
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         for telescope in ['MID', 'LOW', 'ASKAP']:
             vp = create_vp(beam, telescope)

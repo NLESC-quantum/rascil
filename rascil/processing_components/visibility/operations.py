@@ -401,15 +401,14 @@ def convert_blockvisibility_to_stokes(vis):
     """
     poldef = vis.polarisation_frame
     if poldef == PolarisationFrame('linear'):
-        vis.data['vis'] = convert_linear_to_stokes(vis.data['vis'], polaxis=4)
-        vis.data['flags'] = \
-            numpy.logical_or(vis.flags[..., 0], vis.flags[..., 3])[
-                ..., numpy.newaxis]
+        vis.data['vis'].values[...]  = convert_linear_to_stokes(vis.data['vis'].values, polaxis=3)
+        vis.data['flags'].values[...] = \
+            numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[..., numpy.newaxis]
         vis.polarisation_frame = PolarisationFrame('stokesIQUV')
     elif poldef == PolarisationFrame('circular'):
-        vis.data['vis'] = convert_circular_to_stokes(vis.data['vis'], polaxis=4)
-        vis.data['flags'] = \
-            numpy.logical_or(vis.flags[..., 0], vis.flags[..., 3])[
+        vis.data['vis'].values[...]  = convert_circular_to_stokes(vis.data['vis'].values, polaxis=3)
+        vis.data['flags'].values[...]  = \
+            numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
                 ..., numpy.newaxis]
         vis.polarisation_frame = PolarisationFrame('stokesIQUV')
     return vis
@@ -468,51 +467,52 @@ def convert_blockvisibility_to_stokesI(vis):
     polarisation_frame = PolarisationFrame('stokesI')
     poldef = vis.polarisation_frame
     if poldef == PolarisationFrame('linear'):
-        vis_data = convert_linear_to_stokesI(vis.data['vis'])
-        vis_flags = numpy.logical_or(vis.flags[..., 0], vis.flags[..., 3])[
+        vis_data = convert_linear_to_stokesI(vis.vis.values)
+        vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
             ..., numpy.newaxis]
-        vis_weight = (vis.flagged_weight[..., 0] + vis.flagged_weight[..., 3])[
+        vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 3])[
             ..., numpy.newaxis]
-        vis_imaging_weight = (vis.flagged_imaging_weight[..., 0] +
-                              vis.flagged_imaging_weight[..., 3])[
+        vis_imaging_weight = (vis.flagged_imaging_weight.values[..., 0] +
+                              vis.flagged_imaging_weight.values[..., 3])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('linearnp'):
-        vis_data = convert_linear_to_stokesI(vis.data['vis'])
-        vis_flags = numpy.logical_or(vis.flags[..., 0], vis.flags[..., 1])[
+        vis_data = convert_linear_to_stokesI(vis.vis.values)
+        vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 1])[
             ..., numpy.newaxis]
-        vis_weight = (vis.flagged_weight[..., 0] + vis.flagged_weight[..., 1])[
+        vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 1])[
             ..., numpy.newaxis]
-        vis_imaging_weight = (vis.flagged_imaging_weight[..., 0] +
-                              vis.flagged_imaging_weight[..., 1])[
+        vis_imaging_weight = (vis.flagged_imaging_weight.values[..., 0] +
+                              vis.flagged_imaging_weight.values[..., 1])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('circular'):
-        vis_data = convert_circular_to_stokesI(vis.data['vis'])
-        vis_flags = numpy.logical_or(vis.flags[..., 0], vis.flags[..., 3])[
+        vis_data = convert_circular_to_stokesI(vis.vis.values)
+        vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
             ..., numpy.newaxis]
-        vis_weight = (vis.flagged_weight[..., 0] + vis.flagged_weight[..., 3])[
+        vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 3])[
             ..., numpy.newaxis]
-        vis_imaging_weight = (vis.flagged_imaging_weight[..., 0] +
-                              vis.flagged_imaging_weight[..., 3])[
+        vis_imaging_weight = (vis.flagged_imaging_weight.values[..., 0] +
+                              vis.flagged_imaging_weight.values[..., 3])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('circularnp'):
-        vis_data = convert_circular_to_stokesI(vis.data['vis'])
-        vis_flags = numpy.logical_or(vis.flags[..., 0], vis.flags[..., 1])[
+        vis_data = convert_circular_to_stokesI(vis.vis.values)
+        vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 1])[
             ..., numpy.newaxis]
-        vis_weight = (vis.flagged_weight[..., 0] + vis.flagged_weight[..., 1])[
+        vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 1])[
             ..., numpy.newaxis]
-        vis_imaging_weight = (vis.flagged_imaging_weight[..., 0] +
-                              vis.flagged_imaging_weight[..., 1])[
+        vis_imaging_weight = (vis.flagged_imaging_weight.values[..., 0] +
+                              vis.flagged_imaging_weight.values[..., 1])[
             ..., numpy.newaxis]
     else:
         raise NameError("Polarisation frame %s unknown" % poldef)
     
-    return BlockVisibility(frequency=vis.frequency,
-                           channel_bandwidth=vis.channel_bandwidth,
+    return BlockVisibility(frequency=vis.frequency.values,
+                           channel_bandwidth=vis.channel_bandwidth.values,
                            phasecentre=vis.phasecentre,
-                           configuration=vis.configuration, uvw=vis.uvw,
-                           time=vis.time, vis=vis_data, flags=vis_flags,
+                           baselines=vis.baselines.values,
+                           configuration=vis.configuration, uvw=vis.uvw.values,
+                           time=vis.time.values, vis=vis_data, flags=vis_flags,
                            weight=vis_weight, imaging_weight=vis_imaging_weight,
-                           integration_time=vis.integration_time,
+                           integration_time=vis.integration_time.values,
                            polarisation_frame=polarisation_frame,
                            source=vis.source, meta=vis.meta)
 

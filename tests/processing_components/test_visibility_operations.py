@@ -236,7 +236,7 @@ class TestVisibilityOperations(unittest.TestCase):
         # Should yield the same results as rotation
         rotatedvis = phaserotate_visibility(self.vismodel, newphasecentre=self.compabsdirection, tangent=False)
         assert_allclose(rotatedvis.vis, vismodel2.vis, rtol=3e-6)
-        assert_allclose(rotatedvis.uvw, vismodel2.uvw, rtol=3e-6)
+        assert_allclose(rotatedvis.uvw_lambda, vismodel2.uvw_lambda, rtol=3e-6)
     
     def test_phase_rotation_inverse(self):
         self.vis = create_visibility(self.lowcore, self.times, self.frequency,
@@ -267,8 +267,8 @@ class TestVisibilityOperations(unittest.TestCase):
         rotatedvis = phaserotate_visibility(phaserotate_visibility(self.vismodel, there, tangent=False,
                                                                    inverse=False),
                                             self.phasecentre, tangent=False, inverse=False)
-        assert_allclose(rotatedvis.uvw, original_uvw, rtol=1e-7)
-        assert_allclose(rotatedvis.vis, original_vis, rtol=1e-7)
+        assert_allclose(rotatedvis.uvw.values, original_uvw.values, rtol=1e-7)
+        assert_allclose(rotatedvis.vis.values, original_vis.values, rtol=1e-7)
     
     def test_subtract(self):
         vis1 = create_blockvisibility(self.lowcore, self.times, self.frequency,

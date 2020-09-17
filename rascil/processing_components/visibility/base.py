@@ -8,7 +8,7 @@ __all__ = ['vis_summary', 'copy_visibility', 'create_visibility',
            'create_blockvisibility', 'phaserotate_visibility',
            'export_blockvisibility_to_ms',
            'create_visibility_from_ms', 'create_visibility_from_uvfits',
-           'list_ms', 'generate_baselines', 'get_baseline']
+           'list_ms', 'generate_baselines', 'get_baseline', 'calculate_blockvisibility_uvw_lambda']
 
 import copy
 import logging
@@ -19,6 +19,7 @@ import numpy
 import pandas
 from astropy import units as u, constants as constants
 from astropy.coordinates import SkyCoord, EarthLocation
+import astropy.constants as const
 from astropy.io import fits
 from astropy.time import Time
 from astropy.units import Quantity
@@ -424,66 +425,51 @@ def phaserotate_visibility(vis: Union[Visibility, BlockVisibility],
     
     if isinstance(vis, Visibility):
         phasor = calculate_visibility_phasor(newphasecentre, newvis)
-        
         if inverse:
             newvis.data['vis'] *= phasor
         else:
             newvis.data['vis'] *= numpy.conj(phasor)
-        
         # To rotate UVW, rotate into the global XYZ coordinate system and back. We have the option of
         # staying on the tangent plane or not. If we stay on the tangent then the raster will
         # join smoothly at the edges. If we change the tangent then we will have to reproject to get
         # the results on the same image, in which case overlaps or gaps are difficult to deal with.
         if not tangent:
             if inverse:
-                xyz = uvw_to_xyz(vis.data['uvw'], ha=-newvis.phasecentre.ra.rad,
-                                 dec=newvis.phasecentre.dec.rad)
-                newvis.data['uvw'][...] = \
-                    xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad,
-                               dec=newphasecentre.dec.rad)[...]
+                xyz = uvw_to_xyz(vis.data['uvw'], ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
+                newvis.data['uvw'][...] = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
             else:
                 # This is the original (non-inverse) code
-                xyz = uvw_to_xyz(newvis.data['uvw'], ha=-newvis.phasecentre.ra.rad,
-                                 dec=newvis.phasecentre.dec.rad)
-                newvis.data['uvw'][...] = \
-                    xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad,
-                               dec=newphasecentre.dec.rad)[...]
+                xyz = uvw_to_xyz(newvis.data['uvw'], ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
+                newvis.data['uvw'][...] = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
             newvis.phasecentre = newphasecentre
         return newvis
-    
     elif isinstance(vis, BlockVisibility):
-        
         phasor = calculate_blockvisibility_phasor(newphasecentre, newvis)
-        assert vis.data['vis'].shape == phasor.shape
-        
+        assert vis.data['vis'].values.shape == phasor.shape
         if inverse:
-            newvis.data['vis'] *= phasor
+            newvis.data['vis'].values *= phasor
         else:
-            newvis.data['vis'] *= numpy.conj(phasor)
-        
+            newvis.data['vis'].values *= numpy.conj(phasor)
         # To rotate UVW, rotate into the global XYZ coordinate system and back. We have the option of
         # staying on the tangent plane or not. If we stay on the tangent then the raster will
         # join smoothly at the edges. If we change the tangent then we will have to reproject to get
         # the results on the same image, in which case overlaps or gaps are difficult to deal with.
         if not tangent:
+            # The rotation can be done on the uvw (metres) values but we also have to update
+            # The wavelength dependent values
             nrows, nbl, _ = vis.uvw.shape
             if inverse:
                 uvw_linear = vis.uvw.values.reshape([nrows * nbl, 3])
-                xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad,
-                                 dec=newvis.phasecentre.dec.rad)
-                uvw_linear = \
-                    xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad,
-                               dec=newphasecentre.dec.rad)[...]
+                xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
+                uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
             else:
                 # This is the original (non-inverse) code
                 uvw_linear = newvis.uvw.values.reshape([nrows * nbl, 3])
-                xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad,
-                                 dec=newvis.phasecentre.dec.rad)
-                uvw_linear = \
-                    xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad,
-                               dec=newphasecentre.dec.rad)[...]
+                xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
+                uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
             newvis.phasecentre = newphasecentre
-            newvis.data['uvw'][...] = uvw_linear.reshape([nrows, nbl, 3])
+            newvis.data['uvw'].values[...] = uvw_linear.reshape([nrows, nbl, 3])
+            newvis = calculate_blockvisibility_uvw_lambda(newvis)
         return newvis
     else:
         raise ValueError("vis argument neither Visibility or BlockVisibility")
@@ -1231,7 +1217,7 @@ def calculate_blockvisibility_phasor(direction, vis):
     :return:
     """
     assert isinstance(vis, BlockVisibility)
-    ntimes, nbaseline, nchan, npol = vis.vis.shape
+    ntimes, nbaseline, nchan, npol = vis.vis.values.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
     s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
     
@@ -1239,3 +1225,14 @@ def calculate_blockvisibility_phasor(direction, vis):
     phasor[...] = \
         numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,s->tbf", vis.uvw_lambda.values, s))[..., numpy.newaxis]
     return phasor
+
+
+def calculate_blockvisibility_uvw_lambda(vis):
+    """ Recalculate the uvw_lambda values
+    
+    :param vis:
+    :return:
+    """
+    k = (vis.frequency.values / const.c).value
+    vis.uvw_lambda.values = numpy.einsum("tbs,k->tbks", vis.uvw.values, k)
+    return vis

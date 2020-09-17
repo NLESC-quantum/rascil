@@ -220,7 +220,7 @@ def add_image(im1: Image, im2: Image) -> Image:
     
     assert im1.polarisation_frame == im2.polarisation_frame
     
-    return create_image_from_array(im1.data + im2.data, im1.wcs, im1.polarisation_frame)
+    return create_image_from_array(im1.data.values + im2.data.values, im1.wcs, im1.polarisation_frame)
 
 
 def qa_image(im: Image, context="") -> QA:

@@ -425,10 +425,10 @@ class PointingTable:
 
 
 class Image:
-    """Image class with Image data (as a numpy.array) and the AstroPy `implementation of
+    """Image class with Image data (as an xarray.DataArray) and the AstroPy `implementation of
     a World Coodinate System <http://docs.astropy.org/en/stable/wcs>`_
 
-    Many operations can be done conveniently using numpy processing_components on Image.data_models.
+    Many operations can be done conveniently using numpy processing_components on Image.data.
 
     Most of the imaging processing_components require an image in canonical format:
     - 4 axes: RA, DEC, POL, FREQ
@@ -475,8 +475,6 @@ class Image:
         
         self.wcs = wcs
         self.polarisation_frame = polarisation_frame
-        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
-        self.ra, self.dec = wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
         
         nchan = len(frequency)
         npol = polarisation_frame.npol
@@ -488,7 +486,7 @@ class Image:
         else:
             if data.shape == (ny, nx):
                 data = data.reshape([1, 1, ny, nx])
-            assert data.shape == (nchan, npol, ny, nx), \
+            assert data.shape[1] == npol, \
                 "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
                                                                                   data.shape)
         
@@ -513,18 +511,6 @@ class Image:
         return self.data.shape[1]
     
     @property
-    def nheight(self):
-        """ Number of pixels height i.e. y
-        """
-        return self.data.shape[2]
-    
-    @property
-    def nwidth(self):
-        """ Number of pixels width i.e. x
-        """
-        return self.data.shape[3]
-    
-    @property
     def frequency(self):
         """ Frequency values
         """
@@ -543,6 +529,17 @@ class Image:
         """
         return SkyCoord(self.wcs.wcs.crval[0] * u.deg, self.wcs.wcs.crval[1] * u.deg)
     
+    @property
+    def ra_dec_mesh(self):
+        """ RA, Dec mesh
+
+        :return:
+        """
+        ny = self.data.shape[-2]
+        nx = self.data.shape[-1]
+        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+        return self.wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
+    
     def __str__(self):
         """Default printer for Image
 
@@ -557,6 +554,138 @@ class Image:
 
 
 class GridData:
+    """Class to hold Gridded data for Fourier processing
+    - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
+
+    The conventions for indexing in WCS and numpy are opposite.
+    - In astropy.wcs, the order is (longitude, latitude, polarisation, frequency)
+    - in numpy, the order is (frequency, polarisation, depth, latitude, longitude)
+
+    .. warning::
+        The polarisation_frame is kept in two places, the WCS and the polarisation_frame
+        variable. The latter should be considered definitive.
+
+    """
+    
+    def __init__(self, polarisation_frame=None,
+                 dtype=None, data=None, grid_wcs=None, projection_wcs=None):
+        """ Create a GridData
+
+        :param axes:
+        :param cellsize:
+        :param polarisation_frame:
+        :return: GridData
+        """
+        
+        nchan, npol, nw, ny, nx = data.shape
+        frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
+
+        assert npol == polarisation_frame.npol
+        cellsize = numpy.abs(projection_wcs.wcs.cdelt[1])
+        cellsize_rad = numpy.deg2rad(cellsize)
+        du = 1.0 / cellsize_rad
+        dv = 1.0 / cellsize_rad
+        cu = grid_wcs.wcs.crval[0]
+        cv = grid_wcs.wcs.crval[1]
+        cw = 0.0
+        
+        assert cellsize > 0.0, "Cellsize must be positive"
+        
+        dims = ["frequency", "polarisation", "w", "v", "u"]
+        coords = {
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "w": numpy.zeros([1]),
+            "v": numpy.linspace(cv - dv * ny / 2, cv + dv * ny / 2, ny),
+            "u": numpy.linspace(cu - du * nx / 2, cu + du * nx / 2, nx)
+        }
+        
+        assert coords["u"][0] != coords["u"][-1]
+        assert coords["v"][0] != coords["v"][-1]
+        
+        self.grid_wcs = grid_wcs
+        self.projection_wcs = projection_wcs
+        self.polarisation_frame = polarisation_frame
+        
+        nchan = len(frequency)
+        npol = polarisation_frame.npol
+        if dtype is None:
+            dtype = "float"
+        
+        if data is None:
+            data = numpy.zeros([nchan, npol, nw, ny, nx], dtype=dtype)
+        else:
+            if data.shape == (ny, nx):
+                data = data.reshape([1, 1, nw, ny, nx])
+            assert data.shape == (nchan, npol, nw, ny, nx), \
+                "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
+                                                                                  data.shape)
+        
+        self.data = xarray.DataArray(data, dims=dims, coords=coords)
+    
+    def size(self):
+        """ Return size in GB
+        """
+        size = self.data.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+    
+    @property
+    def nchan(self):
+        """ Number of channels
+        """
+        return self.data.shape[0]
+    
+    @property
+    def npol(self):
+        """ Number of polarisations
+        """
+        return self.data.shape[1]
+    
+    @property
+    def frequency(self):
+        """ Frequency values
+        """
+        w = self.grid_wcs.sub(['spectral'])
+        return w.wcs_pix2world(range(self.nchan), 0)[0]
+    
+    @property
+    def shape(self):
+        """ Shape of data array
+        """
+        return self.data.shape
+    
+    @property
+    def phasecentre(self):
+        """ Phasecentre (from WCS)
+        """
+        return SkyCoord(self.grid_wcs.wcs.crval[0] * u.deg, self.grid_wcs.wcs.crval[1] * u.deg)
+    
+    @property
+    def ra_dec_mesh(self):
+        """ RA, Dec mesh
+
+        :return:
+        """
+        ny = self.data.shape[-2]
+        nx = self.data.shape[-1]
+        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+        return self.projection_wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
+    
+    def __str__(self):
+        """Default printer for GridData
+
+        """
+        s = "GridData:\n"
+        s += "{}\n".format(str(self.data))
+        s += "\tShape: %s\n" % str(self.data.shape)
+        s += "\tData type: %s\n" % str(self.data.dtype)
+        s += "\tGrid WCS: %s\n" % self.grid_wcs.__repr__()
+        s += "\tProjection WCS: %s\n" % self.projection_wcs.__repr__()
+        s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
+        return s
+
+
+class GridData_old:
     """Class to hold Gridded data for Fourier processing
     - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
 
@@ -616,18 +745,6 @@ class GridData:
         """ Number of polarisations
         """
         return self.data.shape[1]
-    
-    @property
-    def nheight(self):
-        """ Number of pixels height i.e. y
-        """
-        return self.data.shape[2]
-    
-    @property
-    def nwidth(self):
-        """ Number of pixels width i.e. x
-        """
-        return self.data.shape[3]
     
     @property
     def ndepth(self):
@@ -727,20 +844,6 @@ class ConvolutionFunction:
         """ Number of polarisations
         """
         return self.data.shape[1]
-    
-    @property
-    def nheight(self):
-        """ Number of pixels height i.e. y
-        """
-        return self.data.shape[2]
-    
-    @property
-    def nwidth(self):
-        def nwidth(self):
-            """ Number of pixels width i.e. x
-            """
-        
-        return self.data.shape[3]
     
     @property
     def ndepth(self):

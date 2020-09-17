@@ -424,7 +424,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
                 # Now we want to left and right multiply by the Jones matrices
                 # comp_flux = vp.data[:, :, y, x] * comp_flux_cstokes * numpy.vp.data[:, :, y, x]
                 for chan in range(nchan):
-                    ej = vp.data[chan, :, y, x].reshape([2, 2])
+                    ej = vp.data.values[chan, :, y, x].reshape([2, 2])
                     cfs = comp_flux_cstokes[chan].reshape([2,2])
                     comp_flux[chan, :] = apply_jones(ej, cfs, inverse).reshape([4])
 

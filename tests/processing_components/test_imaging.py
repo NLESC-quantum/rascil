@@ -150,6 +150,10 @@ class TestImaging2D(unittest.TestCase):
         self.actualSetUp(zerow=True)
         self._predict_base(name='predict_2d')
 
+    def test_predict_2d_block(self):
+        self.actualSetUp(zerow=True, block=True)
+        self._predict_base(name='predict_2d_block')
+
     def test_predict_2d_point(self):
         self.actualSetUp(zerow=True)
         self.model.data[...] = 0.0
@@ -199,11 +203,15 @@ class TestImaging2D(unittest.TestCase):
     def test_predict_2d_IV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIV"))
         self._predict_base(name='predict_2d_IV')
-    
+
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
         self._invert_base(name='invert_2d', positionthreshold=2.0, check_components=True)
-    
+
+    def test_invert_2d_block(self):
+        self.actualSetUp(zerow=True, block=True)
+        self._invert_base(name='invert_2d_block', positionthreshold=2.0, check_components=True)
+
     def test_invert_2d_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         self._invert_base(name='invert_2d_IQUV', positionthreshold=2.0, check_components=True)

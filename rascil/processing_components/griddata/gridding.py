@@ -180,9 +180,12 @@ def grid_blockvisibility_to_griddata(vis, griddata, cf):
 
     vis_to_im = numpy.round(
         griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency, 0)[0]).astype('int')
-
+    
     nrows, nants, _, nvchan, nvpol = vis.vis.shape
     nichan, nipol, _, _, _ = griddata.data.shape
+
+    assert numpy.min(vis_to_im) >= 0, "Underflow in frequency axis {}".format(vis_to_im)
+    assert numpy.max(vis_to_im) < nichan, "Overflow in frequency axis {}".format(vis_to_im)
 
     fvist = vis.flagged_vis.reshape([nrows * nants * nants, nvchan, nvpol]).T
     fwtt = vis.flagged_imaging_weight.reshape([nrows * nants * nants, nvchan, nvpol]).T

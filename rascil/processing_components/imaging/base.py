@@ -277,7 +277,9 @@ def create_image_from_visibility(vis: Union[BlockVisibility, Visibility], **kwar
             "create_image_from_visibility: Defining %d channel Image at %s, starting frequency %s, and bandwidth %s"
             % (inchan, imagecentre, reffrequency, channel_bandwidth))
     elif (inchan == 1) and vnchan > 1:
-        assert numpy.abs(channel_bandwidth.value) > 0.0, "Channel width must be non-zero for mfs mode"
+        reffrequency = numpy.mean(vis.frequency) * units.Hz
+        channel_bandwidth = numpy.sum(vis.channel_bandwidth) * units.Hz
+        assert numpy.abs(channel_bandwidth) > 0.0, "Channel width must be non-zero for mfs mode"
         log.debug("create_image_from_visibility: Defining single channel MFS Image at %s, starting frequency %s, "
                   "and bandwidth %s"
                   % (imagecentre, reffrequency, channel_bandwidth))

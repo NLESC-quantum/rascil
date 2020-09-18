@@ -7,7 +7,7 @@ order in the WCS is reversed so the grid_WCS describes UU, VV, WW, STOKES, FREQ 
 
 """
 
-__all__ = ['flagging_blockvisibility']
+__all__ = ['flagging_blockvisibility', 'flagging_blockvisibility_with_bl']
 
 import logging
 
@@ -20,6 +20,7 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import create_image_from_array
 
 log = logging.getLogger('logger')
+
 
 def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):
     """Flagging BlockVisibility
@@ -54,4 +55,20 @@ def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):
                     bvis.data['flags'][:, ant, :, ch, pol] = 1
                     bvis.data['flags'][:, :, ant, ch, pol] = 1
 
+    return bvis
+
+
+def flagging_blockvisibility_with_bl(bvis, baseline=[]):
+    """Flagging BlockVisibility with Baseline (nant, nant, channel, pol)
+
+    :param bvis: BlockVisibility
+    :param polarization:
+    :return: BlockVisibility
+    """
+
+    assert isinstance(bvis, BlockVisibility), bvis
+    assert isinstance(baseline, list)
+    if len(baseline) == 0:
+        for ant1, ant2 in baseline:
+            bvis.data['flags'][:, ant1, ant2, :, :] = 1
     return bvis

@@ -85,15 +85,15 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8):
     
     nchan, npol, _, _ = im.shape
     
-    cf.data = numpy.zeros([nchan, npol, 1, oversampling, oversampling, support, support]).astype('complex')
+    cf.data.values = numpy.zeros([nchan, npol, 1, oversampling, oversampling, support, support]).astype('complex')
     for y in range(oversampling):
         for x in range(oversampling):
-            cf.data[:, :, 0, y, x, :, :] = numpy.outer(kernel[y, :], kernel[x, :])[numpy.newaxis, numpy.newaxis, ...]
+            cf.data.values[:, :, 0, y, x, :, :] = numpy.outer(kernel[y, :], kernel[x, :])[numpy.newaxis, numpy.newaxis, ...]
     
     for y in range(oversampling):
         for x in range(oversampling):
-            norm = numpy.sum(numpy.real(cf.data[:, :, 0, y, x, :, :]), axis=(-2, -1))[..., numpy.newaxis, numpy.newaxis]
-            cf.data[:, :, 0, y, x, :, :] /= norm
+            norm = numpy.sum(numpy.real(cf.data.values[:, :, 0, y, x, :, :]), axis=(-2, -1))[..., numpy.newaxis, numpy.newaxis]
+            cf.data.values[:, :, 0, y, x, :, :] /= norm
     
     # Now calculate the griddata correction function as an image with the same coordinates as the image
     # which is necessary so that the correction function can be applied directly to the image
@@ -106,6 +106,8 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8):
     gcf_data = numpy.zeros_like(im.data)
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
     gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
+    
+    cf.check()
     
     return gcf_image, cf
 
@@ -133,12 +135,12 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     
     assert isinstance(im, Image)
     # Calculate the template convolution kernel.
-    cf = create_convolutionfunction_from_image(im, oversampling=oversampling, support=support)
+    cf = create_convolutionfunction_from_image(im, nz=nw, oversampling=oversampling, support=support)
     
     cf_shape = list(cf.data.shape)
     assert nw > 0, "Number of w planes must be greater than zero"
     cf_shape[2] = nw
-    cf.data = numpy.zeros(cf_shape).astype('complex')
+    cf.data.values = numpy.zeros(cf_shape).astype('complex')
     
     cf.grid_wcs.wcs.crpix[4] = nw // 2 + 1.0
     cf.grid_wcs.wcs.cdelt[4] = wstep
@@ -157,7 +159,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     qnx = nx // oversampling
     qny = ny // oversampling
     
-    cf.data[...] = 0.0
+    cf.data.values[...] = 0.0
     
     subim = copy_image(im)
     ccell = onx * numpy.abs(d2r * subim.wcs.wcs.cdelt[0]) / qnx
@@ -206,24 +208,26 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
                 xend = x + xcen - (support * oversampling) // 2 - oversampling // 2
                 
                 # uu = range(xbeg, xend, -oversampling)
-                cf.data[..., z, y, x, :, :] = paddedplane.data.values[...,
+                cf.data.values[..., z, y, x, :, :] = paddedplane.data.values[...,
                                               ybeg:yend:-oversampling,
                                               xbeg:xend:-oversampling]
                 # for chan in range(nchan):
                 #     for pol in range(npol):
                 #         cf.data[chan, pol, z, y, x, :, :] = paddedplane.data[chan, pol, :, :][vv, :][:, uu]
     
+    cf.check()
+    
     if normalise:
         norm = numpy.zeros([nchan, npol, oversampling, oversampling])
         for y in range(oversampling):
             for x in range(oversampling):
                 # uu = range(xbeg, xend, -oversampling)
-                norm[..., y, x] = numpy.sum(numpy.real(cf.data[:, :, 0, y, x, :, :]), axis=(-2, -1))
+                norm[..., y, x] = numpy.sum(numpy.real(cf.data.values[:, :, 0, y, x, :, :]), axis=(-2, -1))
         for z, _ in enumerate(w_list):
             for y in range(oversampling):
                 for x in range(oversampling):
-                    cf.data[:, :, z, y, x] /= norm[..., y, x][..., numpy.newaxis, numpy.newaxis]
-    cf.data = numpy.conjugate(cf.data)
+                    cf.data.values[:, :, z, y, x] /= norm[..., y, x][..., numpy.newaxis, numpy.newaxis]
+    cf.data.values = numpy.conjugate(cf.data.values)
     
     if use_aaf:
         pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6)
@@ -292,7 +296,7 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     
     if use_aaf:
         this_pswf_gcf, _ = create_pswf_convolutionfunction(subim, oversampling=1, support=6)
-        rvp.data /= this_pswf_gcf.data
+        rvp.data.values /= this_pswf_gcf.data.values
     
     # We might need to work with a larger image
     padded_shape = [nchan, npol, ny, nx]
@@ -323,63 +327,3 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
         pswf_gcf.data[...] = 1.0
     
     return pswf_gcf, cf
-
-
-def convert_image_to_kernel(im: Image, oversampling, kernelwidth):
-    """ Convert an image to a griddata kernel
-
-    :param im: Image to be converted
-    :param oversampling: Oversampling of Image spatially
-    :param kernelwidth: Kernel width to be extracted
-    :return: numpy.ndarray[nchan, npol, oversampling, oversampling, kernelwidth, kernelwidth]
-    """
-    naxis = len(im.shape)
-    
-    assert numpy.max(numpy.abs(im.data)) > 0.0, "Image is empty"
-    
-    nchan, npol, ny, nx = im.shape
-    assert nx % oversampling == 0, "Oversampling must be even"
-    assert ny % oversampling == 0, "Oversampling must be even"
-    
-    assert kernelwidth < nx and kernelwidth < ny, "Specified kernel width %d too large"
-    
-    assert im.wcs.wcs.ctype[0] == 'UU', 'Axis type %s inappropriate for construction of kernel' % im.wcs.wcs.ctype[0]
-    assert im.wcs.wcs.ctype[1] == 'VV', 'Axis type %s inappropriate for construction of kernel' % im.wcs.wcs.ctype[1]
-    newwcs = WCS(naxis=naxis + 2)
-    for axis in range(2):
-        newwcs.wcs.ctype[axis] = im.wcs.wcs.ctype[axis]
-        newwcs.wcs.crpix[axis] = kernelwidth // 2
-        newwcs.wcs.crval[axis] = 0.0
-        newwcs.wcs.cdelt[axis] = im.wcs.wcs.cdelt[axis] * oversampling
-        
-        newwcs.wcs.ctype[axis + 2] = im.wcs.wcs.ctype[axis]
-        newwcs.wcs.crpix[axis + 2] = oversampling // 2
-        newwcs.wcs.crval[axis + 2] = 0.0
-        newwcs.wcs.cdelt[axis + 2] = im.wcs.wcs.cdelt[axis]
-        
-        # Now do Stokes and Frequency
-        newwcs.wcs.ctype[axis + 4] = im.wcs.wcs.ctype[axis + 2]
-        newwcs.wcs.crpix[axis + 4] = im.wcs.wcs.crpix[axis + 2]
-        newwcs.wcs.crval[axis + 4] = im.wcs.wcs.crval[axis + 2]
-        newwcs.wcs.cdelt[axis + 4] = im.wcs.wcs.cdelt[axis + 2]
-    
-    newdata_shape = [nchan, npol, oversampling, oversampling, kernelwidth, kernelwidth]
-    
-    newdata = numpy.zeros(newdata_shape, dtype=im.data.dtype)
-    
-    assert oversampling * kernelwidth < ny
-    assert oversampling * kernelwidth < nx
-    
-    ystart = ny // 2 - oversampling * kernelwidth // 2
-    xstart = nx // 2 - oversampling * kernelwidth // 2
-    yend = ny // 2 + oversampling * kernelwidth // 2
-    xend = nx // 2 + oversampling * kernelwidth // 2
-    for chan in range(nchan):
-        for pol in range(npol):
-            for y in range(oversampling):
-                slicey = slice(yend + y, ystart + y, -oversampling)
-                for x in range(oversampling):
-                    slicex = slice(xend + x, xstart + x, -oversampling)
-                    newdata[chan, pol, y, x, ...] = im.data[chan, pol, slicey, slicex]
-    
-    return create_image_from_array(newdata, newwcs, polarisation_frame=im.polarisation_frame)

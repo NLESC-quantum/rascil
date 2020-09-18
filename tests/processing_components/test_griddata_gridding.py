@@ -168,10 +168,10 @@ class TestGridDataGridding(unittest.TestCase):
             export_image_to_fits(pb, "%s/test_gridding_aterm_pb.fits" % self.dir)
         gcf, cf = create_awterm_convolutionfunction(self.model, make_pb=make_pb, nw=1, oversampling=16, support=16,
                                                     use_aaf=False)
-        cf_image = convert_convolutionfunction_to_image(cf)
-        cf_image.data = numpy.real(cf_image.data)
-        if self.persist:
-            export_image_to_fits(cf_image, "%s/test_gridding_aterm_cf.fits" % self.dir)
+        # cf_image = convert_convolutionfunction_to_image(cf)
+        # cf_image.data = numpy.real(cf_image.data)
+        # if self.persist:
+        #     export_image_to_fits(cf_image, "%s/test_gridding_aterm_cf.fits" % self.dir)
         griddata = create_griddata_from_image(self.model, self.vis)
         griddata, sumwt = grid_visibility_to_griddata(self.vis, griddata=griddata, cf=cf)
         cim = fft_griddata_to_image(griddata, gcf)
@@ -197,7 +197,7 @@ class TestGridDataGridding(unittest.TestCase):
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_aterm_noover.fits' % self.dir)
         self.check_peaks(im, 96.79834384000333)
-    
+
     def test_griddata_invert_box(self):
         self.actualSetUp(zerow=True)
         gcf, cf = create_box_convolutionfunction(self.model)
@@ -209,7 +209,19 @@ class TestGridDataGridding(unittest.TestCase):
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_box.fits' % self.dir)
         self.check_peaks(im, 96.7983438400033, tol=1e-7)
-    
+
+    def test_griddata_invert_box_block(self):
+        self.actualSetUp(zerow=True, block=True)
+        gcf, cf = create_box_convolutionfunction(self.model)
+        griddata = create_griddata_from_image(self.model, self.vis)
+        griddata, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=griddata, cf=cf)
+        cim = fft_griddata_to_image(griddata, gcf)
+        cim = normalize_sumwt(cim, sumwt)
+        im = convert_polimage_to_stokes(cim)
+        if self.persist:
+            export_image_to_fits(im, '%s/test_gridding_dirty_box.fits' % self.dir)
+        self.check_peaks(im, 96.7983438400033, tol=1e-7)
+
     def check_peaks(self, im, peak, tol=1e-6):
         assert numpy.abs(im.data[self.peak] - peak) < tol, im.data[self.peak]
     
@@ -218,10 +230,10 @@ class TestGridDataGridding(unittest.TestCase):
         gcf, cf = create_awterm_convolutionfunction(self.model, nw=100, wstep=8.0, oversampling=4, support=32,
                                                     use_aaf=True)
         
-        cf_image = convert_convolutionfunction_to_image(cf)
-        cf_image.data = numpy.real(cf_image.data)
-        if self.persist:
-            export_image_to_fits(cf_image, "%s/test_gridding_wterm_cf.fits" % self.dir)
+        # cf_image = convert_convolutionfunction_to_image(cf)
+        # cf_image.data = numpy.real(cf_image.data)
+        # if self.persist:
+        #     export_image_to_fits(cf_image, "%s/test_gridding_wterm_cf.fits" % self.dir)
         
         griddata = create_griddata_from_image(self.model, self.vis, nw=1)
         griddata, sumwt = grid_visibility_to_griddata(self.vis, griddata=griddata, cf=cf)
@@ -240,13 +252,13 @@ class TestGridDataGridding(unittest.TestCase):
             export_image_to_fits(pb, "%s/test_gridding_awterm_pb.fits" % self.dir)
         gcf, cf = create_awterm_convolutionfunction(self.model, make_pb=make_pb, nw=100, wstep=8.0,
                                                     oversampling=4, support=32, use_aaf=True)
-        print(cf.grid_wcs)
         # cf_image = convert_convolutionfunction_to_image(cf)
         # cf_image.data = numpy.real(cf_image.data)
         # if self.persist:
         #     export_image_to_fits(cf_image, "%s/test_gridding_awterm_cf.fits" % self.dir)
         
         griddata = create_griddata_from_image(self.model, self.vis)
+        print(cf.grid_wcs)
         print(griddata.grid_wcs)
         return True
         griddata, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=griddata, cf=cf)

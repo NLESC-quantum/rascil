@@ -42,10 +42,10 @@ class TestGridDataKernels(unittest.TestCase):
         make_vp = functools.partial(create_vp, telescope="MID_FEKO_B2")
         gcf, cf = create_vpterm_convolutionfunction(self.image, make_vp=make_vp, oversampling=16,
                                                     support=32, use_aaf=True)
-        cf_image = convert_convolutionfunction_to_image(cf)
-        cf_image.data = numpy.real(cf_image.data)
-        if self.persist:
-            export_image_to_fits(cf_image, "%s/test_convolutionfunction_aterm_vp_cf.fits" % self.dir)
+        # cf_image = convert_convolutionfunction_to_image(cf)
+        # cf_image.data = numpy.real(cf_image.data)
+        # if self.persist:
+        #     export_image_to_fits(cf_image, "%s/test_convolutionfunction_aterm_vp_cf.fits" % self.dir)
 
         # Tests for the VP convolution function are different because it does not peak
         # at the centre of the uv plane

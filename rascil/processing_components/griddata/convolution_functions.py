@@ -34,7 +34,7 @@ def convolutionfunction_sizeof(cf: ConvolutionFunction):
     return cf.size()
 
 
-def create_convolutionfunction_from_image(im: numpy.array, nz=1, zstep=1e15, ztype='WW', oversampling=8, support=16):
+def create_convolutionfunction_from_image(im, nz=1, zstep=1e15, ztype='WW', oversampling=8, support=16):
     """ Create a convolution function from an image
 
     The griddata has axes [chan, pol, z, dy, dx, y, x] where z, y, x are spatial axes in either sky or Fourier plane. The

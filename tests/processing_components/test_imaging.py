@@ -231,15 +231,7 @@ class TestImaging2D(unittest.TestCase):
     def test_invert_2d_IV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIV"))
         self._invert_base(name='invert_2d_IV', positionthreshold=2.0, check_components=True)
-    
-    def test_predict_2d_block(self):
-        self.actualSetUp(zerow=True, block=True)
-        self._predict_base(name='predict_2d_block')
-    
-    def test_invert_2d_block(self):
-        self.actualSetUp(zerow=True, block=True)
-        self._invert_base(name='invert_2d_block', positionthreshold=2.0, check_components=True)
-    
+        
     def test_predict_awterm(self):
         self.actualSetUp(zerow=False)
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)

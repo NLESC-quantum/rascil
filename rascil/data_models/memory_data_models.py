@@ -99,6 +99,13 @@ class Configuration:
         
         self.data = xarray.Dataset(datavars, coords=coords)
     
+    def check(self):
+        """ Check that the internals are ok
+
+        :return:
+        """
+        assert isinstance(self.data, xarray.Dataset)
+
     def __str__(self):
         """Default printer for Configuration
 
@@ -492,6 +499,13 @@ class Image:
         
         self.data = xarray.DataArray(data, dims=dims, coords=coords)
     
+    def check(self):
+        """ Check that the internals are ok
+
+        :return:
+        """
+        assert isinstance(self.data, xarray.DataArray)
+
     def size(self):
         """ Return size in GB
         """
@@ -579,6 +593,7 @@ class GridData:
         
         nchan, npol, nw, ny, nx = data.shape
         frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
+        wrange = grid_wcs.sub([3]).wcs_pix2world(range(nw), 0)[0]
 
         assert npol == polarisation_frame.npol
         cellsize = numpy.abs(projection_wcs.wcs.cdelt[1])
@@ -595,7 +610,7 @@ class GridData:
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
-            "w": numpy.zeros([1]),
+            "w": wrange,
             "v": numpy.linspace(cv - dv * ny / 2, cv + dv * ny / 2, ny),
             "u": numpy.linspace(cu - du * nx / 2, cu + du * nx / 2, nx)
         }
@@ -623,6 +638,13 @@ class GridData:
         
         self.data = xarray.DataArray(data, dims=dims, coords=coords)
     
+    def check(self):
+        """ Check that the internals are ok
+        
+        :return:
+        """
+        assert isinstance(self.data, xarray.DataArray)
+
     def size(self):
         """ Return size in GB
         """
@@ -728,7 +750,7 @@ class ConvolutionFunction:
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
-            "w": numpy.zeros([1]),
+            "w": numpy.zeros([nw]),
             "dv": numpy.linspace(cdv - ddv * oversampling / 2, cdv + ddv * oversampling / 2, oversampling),
             "du": numpy.linspace(cdu - ddu * oversampling / 2, cdu + ddu * oversampling / 2, oversampling),
             "v": numpy.linspace(cv - dv * support / 2, cv + dv * support / 2, support),
@@ -752,6 +774,13 @@ class ConvolutionFunction:
                                                                                   data.shape)
 
         self.data = xarray.DataArray(data, dims=dims, coords=coords)
+
+    def check(self):
+        """ Check that the internals are ok
+
+        :return:
+        """
+        assert isinstance(self.data, xarray.DataArray)
 
     def size(self):
         """ Return size in GB
@@ -1298,6 +1327,13 @@ class BlockVisibility:
         self.source = source
         self.meta = meta
     
+    def check(self):
+        """ Check that the internals are ok
+
+        :return:
+        """
+        assert isinstance(self.data, xarray.Dataset)
+
     def __str__(self):
         """Default printer for BlockVisibility
 

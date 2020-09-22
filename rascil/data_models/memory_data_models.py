@@ -751,10 +751,14 @@ class ConvolutionFunction:
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
             "w": numpy.zeros([nw]),
-            "dv": numpy.linspace(cdv - ddv * oversampling / 2, cdv + ddv * oversampling / 2, oversampling),
-            "du": numpy.linspace(cdu - ddu * oversampling / 2, cdu + ddu * oversampling / 2, oversampling),
-            "v": numpy.linspace(cv - dv * support / 2, cv + dv * support / 2, support),
-            "u": numpy.linspace(cu - du * support / 2, cu + du * support / 2, support)
+            "dv": numpy.linspace(cdv - ddv * oversampling / 2, cdv + ddv * oversampling / 2, oversampling,
+                                 endpoint=False),
+            "du": numpy.linspace(cdu - ddu * oversampling / 2, cdu + ddu * oversampling / 2, oversampling,
+                                 endpoint=False),
+            "v": numpy.linspace(cv - dv * support / 2, cv + dv * support / 2, support,
+                                 endpoint=False),
+            "u": numpy.linspace(cu - du * support / 2, cu + du * support / 2, support,
+                                 endpoint=False)
         }
 
         assert coords["u"][0] != coords["u"][-1]

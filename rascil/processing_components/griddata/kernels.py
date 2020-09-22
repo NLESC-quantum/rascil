@@ -150,45 +150,44 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     # nx = max(maxsupport, 2 * oversampling * support)
     # ny = max(maxsupport, 2 * oversampling * support)
     #
-    qnx = onx * oversampling
-    qny = ony * oversampling
     
     cf.data.values[...] = 0.0
     
+    qnx = onx * oversampling
+    qny = ony * oversampling
     subim_wcs = im.wcs.deepcopy()
-    subim_wcs.wcs.crpix[0] = qnx // 2 + 1.0
-    subim_wcs.wcs.crpix[1] = qny // 2 + 1.0
-
+    subim_wcs.wcs.crpix[0] = onx // 2 + 1.0
+    subim_wcs.wcs.crpix[1] = ony // 2 + 1.0
     paddedim = create_image_from_array(numpy.zeros([nchan, npol, qny, qnx]), wcs=subim_wcs,
                                     polarisation_frame=im.polarisation_frame)
     
     if use_aaf:
-        this_pswf_gcf, _ = create_pswf_convolutionfunction(paddedim, oversampling=1, support=6,
+        this_pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6,
                                                            polarisation_frame=polarisation_frame)
         norm = 1.0 / this_pswf_gcf.data
     else:
         norm = 1.0
     
     if make_pb is not None:
-        pb = make_pb(paddedim)
+        pb = make_pb(im)
         
         if pa is not None:
-            rpb = convert_azelvp_to_radec(pb, paddedim, pa)
+            rpb = convert_azelvp_to_radec(pb, im, pa)
         else:
-            rpb = convert_azelvp_to_radec(pb, paddedim, 0.0)
+            rpb = convert_azelvp_to_radec(pb, im, 0.0)
         
         norm *= rpb.data
     
     # We might need to work with a larger image
-    # padded_shape = [nchan, npol, ny, nx]
-    thisplane = copy_image(paddedim)
+    padded_shape = [nchan, npol, qny, qnx]
+    thisplane = copy_image(im)
     thisplane.data.values = numpy.zeros(thisplane.shape, dtype='complex')
     for z, w in enumerate(w_list):
         thisplane.data.values[...] = 0.0 + 0.0j
         thisplane = create_w_term_like(thisplane, w, dopol=True)
         thisplane.data.values *= norm
-#        paddedplane = pad_image(thisplane, padded_shape)
-        grid = fft_image(thisplane)
+        paddedplane = pad_image(thisplane, padded_shape)
+        grid = fft_image(paddedplane)
 
         ycen, xcen = qny // 2, qnx // 2
         for y in range(oversampling):

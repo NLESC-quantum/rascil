@@ -44,7 +44,7 @@ class TestImaging2D(unittest.TestCase):
     def actualSetUp(self, freqwin=1, block=False, dospectral=True,
                     image_pol=PolarisationFrame('stokesI'), zerow=False):
         
-        self.npixel = 512
+        self.npixel = 256
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = freqwin
         self.vis = list()
@@ -138,6 +138,9 @@ class TestImaging2D(unittest.TestCase):
         
         if self.persist: export_image_to_fits(dirty[0], '%s/test_imaging_%s_dirty.fits' %
                                               (self.dir, name))
+
+        dirtymax = numpy.max(numpy.abs(dirty[0].data))
+        assert dirtymax < 200.0, "Dirty image peak {} is implausibly high".format(dirtymax)
         
         for pol in range(dirty[0].npol):
             assert numpy.max(numpy.abs(dirty[0].data[:, pol])), "Dirty image pol {} is empty".format(pol)

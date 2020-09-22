@@ -13,17 +13,18 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 
 __all__ = ['create_convolutionfunction_from_image', 'copy_convolutionfunction',
            'convolutionfunction_sizeof', 'calculate_bounding_box_convolutionfunction',
-           'apply_bounding_box_convolutionfunction', 'qa_convolutionfunction']
+           'apply_bounding_box_convolutionfunction', 'qa_convolutionfunction',
+           'export_convolutionfunction_to_fits']
+
 import copy
 import logging
 
 import numpy
+from astropy.io import fits
 from astropy.wcs import WCS
 
 from rascil.data_models.memory_data_models import ConvolutionFunction
 from rascil.data_models.memory_data_models import QA
-from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image.operations import create_image_from_array
 
 log = logging.getLogger('logger')
 
@@ -63,7 +64,7 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     # WCS Coords are [x, y, dy, dx, z, pol, chan] where x, y, z are spatial axes in real space or Fourier space
     # Array Coords are [chan, pol, z, dy, dx, y, x] where x, y, z are spatial axes in real space or Fourier space
     cf_wcs = WCS(naxis=7)
-
+    
     cf_wcs.wcs.axis_types[0] = 0
     cf_wcs.wcs.axis_types[1] = 0
     cf_wcs.wcs.axis_types[2] = 0
@@ -71,7 +72,7 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     cf_wcs.wcs.axis_types[4] = 0
     cf_wcs.wcs.axis_types[5] = im.wcs.wcs.axis_types[2]
     cf_wcs.wcs.axis_types[6] = im.wcs.wcs.axis_types[3]
-
+    
     cf_wcs.wcs.ctype[0] = 'UU'
     cf_wcs.wcs.ctype[1] = 'VV'
     cf_wcs.wcs.ctype[2] = 'DUU'
@@ -133,7 +134,8 @@ def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     nx = newcf.data.shape[-1]
     ny = newcf.data.shape[-2]
     mask = numpy.max(numpy.abs(newcf.data.values), axis=(0, 1, 2, 3, 4))
-    coords = numpy.argwhere(mask > fractional_level * numpy.max(numpy.abs(cf.data.values)))
+    mask /= numpy.max(mask)
+    coords = numpy.argwhere(mask > fractional_level)
     crpx = int(numpy.round(cf.grid_wcs.wcs.crpix[0]))
     crpy = int(numpy.round(cf.grid_wcs.wcs.crpix[1]))
     x0, y0 = coords.min(axis=0, initial=cf.data.shape[-1])
@@ -193,6 +195,7 @@ def qa_convolutionfunction(cf, context="") -> QA:
     qa = QA(origin="qa_image", data=data, context=context)
     return qa
 
+
 def copy_convolutionfunction(cf):
     """Make a copy of a convolution function
     
@@ -201,3 +204,19 @@ def copy_convolutionfunction(cf):
     """
     assert isinstance(cf, ConvolutionFunction), cf
     return copy.deepcopy(cf)
+
+
+def export_convolutionfunction_to_fits(cf: ConvolutionFunction, fitsfile: str = 'cf.fits'):
+    """ Write a convolution function to fits
+
+    :param cf: Convolu
+    :param fitsfile: Name of output fits file in storage
+    :returns: None
+
+    See also
+        :py:func:`rascil.processing_components.image.operations.import_image_from_array`
+
+    """
+    assert isinstance(cf, ConvolutionFunction), cf
+    return fits.writeto(filename=fitsfile, data=numpy.real(cf.data.values), header=cf.grid_wcs.to_header(),
+                        overwrite=True)

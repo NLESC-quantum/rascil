@@ -70,11 +70,10 @@ def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs:
                     polarisation_frame=polarisation_frame)
 
 
-def create_griddata_from_image(im, vis, nw=1, wstep=1e15):
+def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     """ Create a GridData from an image
 
-    :param vis:
-    :param im: Image
+    :param im: Template Image
     :param nw: Number of w planes
     :param wstep: Increment in w
     :return: GridData
@@ -123,13 +122,13 @@ def create_griddata_from_image(im, vis, nw=1, wstep=1e15):
     nchan, npol, ny, nx = im.shape
     grid_data = numpy.zeros([nchan, npol, nw, ny, nx], dtype='complex')
 
-    if vis is not None:
-        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs,
-                                          projection_wcs=projection_wcs,
-                                          polarisation_frame=vis.polarisation_frame)
+    if polarisation_frame is not None:
+        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs.deepcopy(),
+                                          projection_wcs=projection_wcs.deepcopy(),
+                                          polarisation_frame=polarisation_frame)
     else:
-        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs,
-                                          projection_wcs=projection_wcs,
+        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs.deepcopy(),
+                                          projection_wcs=projection_wcs.deepcopy(),
                                           polarisation_frame=im.polarisation_frame)
 
 

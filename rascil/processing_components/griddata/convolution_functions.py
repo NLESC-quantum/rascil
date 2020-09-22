@@ -12,7 +12,7 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 """
 
 __all__ = ['create_convolutionfunction_from_image', 'copy_convolutionfunction',
-           'convolutionfunction_sizeof', 'calculate_bounding_box_convolutionfunction', 'convert_convolutionfunction_to_image',
+           'convolutionfunction_sizeof', 'calculate_bounding_box_convolutionfunction',
            'apply_bounding_box_convolutionfunction', 'qa_convolutionfunction']
 import copy
 import logging
@@ -34,7 +34,8 @@ def convolutionfunction_sizeof(cf: ConvolutionFunction):
     return cf.size()
 
 
-def create_convolutionfunction_from_image(im, nz=1, zstep=1e15, ztype='WW', oversampling=8, support=16):
+def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', oversampling=8, support=16,
+                                          polarisation_frame=None):
     """ Create a convolution function from an image
 
     The griddata has axes [chan, pol, z, dy, dx, y, x] where z, y, x are spatial axes in either sky or Fourier plane. The
@@ -45,9 +46,9 @@ def create_convolutionfunction_from_image(im, nz=1, zstep=1e15, ztype='WW', over
     Convolution function holds the original sky plane projection in the projection_wcs.
 
     :param im: Template Image
-    :param nz: Number of z axes, usually z is W
-    :param zstep: Step in z, usually z is W
-    :param ztype: Type of z, usually 'WW'
+    :param nw: Number of z axes, usually z is W
+    :param wstep: Step in z, usually z is W
+    :param wtype: Type of z, usually 'WW'
     :param oversampling: Oversampling (size of dy, dx axes)
     :param support: Support of final convolution function (size of y, x axes)
     :return: Convolution Function
@@ -75,7 +76,7 @@ def create_convolutionfunction_from_image(im, nz=1, zstep=1e15, ztype='WW', over
     cf_wcs.wcs.ctype[1] = 'VV'
     cf_wcs.wcs.ctype[2] = 'DUU'
     cf_wcs.wcs.ctype[3] = 'DVV'
-    cf_wcs.wcs.ctype[4] = ztype
+    cf_wcs.wcs.ctype[4] = wtype
     cf_wcs.wcs.ctype[5] = im.wcs.wcs.ctype[2]
     cf_wcs.wcs.ctype[6] = im.wcs.wcs.ctype[3]
     
@@ -91,7 +92,7 @@ def create_convolutionfunction_from_image(im, nz=1, zstep=1e15, ztype='WW', over
     cf_wcs.wcs.crpix[1] = float(support // 2) + 1.0
     cf_wcs.wcs.crpix[2] = float(oversampling // 2) + 1.0
     cf_wcs.wcs.crpix[3] = float(oversampling // 2) + 1.0
-    cf_wcs.wcs.crpix[4] = float(nz // 2 + 1)
+    cf_wcs.wcs.crpix[4] = float(nw // 2 + 1)
     cf_wcs.wcs.crpix[5] = im.wcs.wcs.crpix[2]
     cf_wcs.wcs.crpix[6] = im.wcs.wcs.crpix[3]
     
@@ -101,25 +102,24 @@ def create_convolutionfunction_from_image(im, nz=1, zstep=1e15, ztype='WW', over
     cf_wcs.wcs.cdelt[1] = 1.0 / (im.shape[2] * d2r * im.wcs.wcs.cdelt[1])
     cf_wcs.wcs.cdelt[2] = cf_wcs.wcs.cdelt[0] / oversampling
     cf_wcs.wcs.cdelt[3] = cf_wcs.wcs.cdelt[1] / oversampling
-    cf_wcs.wcs.cdelt[4] = zstep
+    cf_wcs.wcs.cdelt[4] = wstep
     cf_wcs.wcs.cdelt[5] = im.wcs.wcs.cdelt[2]
     cf_wcs.wcs.cdelt[6] = im.wcs.wcs.cdelt[3]
     
     nchan, npol, ny, nx = im.shape
     
-    cf_data = numpy.zeros([nchan, npol, nz, oversampling, oversampling, support, support], dtype='complex')
+    cf_data = numpy.zeros([nchan, npol, nw, oversampling, oversampling, support, support], dtype='complex')
     
-    return ConvolutionFunction(data=cf_data, projection_wcs=im.wcs.deepcopy(), grid_wcs=cf_wcs,
-                               polarisation_frame=im.polarisation_frame)
-
-
-def convert_convolutionfunction_to_image(cf):
-    """ Convert ConvolutionFunction to an image
-    
-    :param cf:
-    :return:
-    """
-    return create_image_from_array(cf.data, cf.grid_wcs, cf.polarisation_frame)
+    if polarisation_frame is not None:
+        return ConvolutionFunction(data=cf_data,
+                                   grid_wcs=cf_wcs.deepcopy(),
+                                   projection_wcs=im.wcs.deepcopy(),
+                                   polarisation_frame=polarisation_frame)
+    else:
+        return ConvolutionFunction(data=cf_data,
+                                   grid_wcs=cf_wcs.deepcopy(),
+                                   projection_wcs=im.wcs.deepcopy(),
+                                   polarisation_frame=im.polarisation_frame)
 
 
 def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
@@ -132,8 +132,8 @@ def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     newcf = copy_convolutionfunction(cf)
     nx = newcf.data.shape[-1]
     ny = newcf.data.shape[-2]
-    mask = numpy.max(numpy.abs(newcf.data), axis=(0, 1, 2, 3, 4))
-    coords = numpy.argwhere(mask > fractional_level * numpy.max(numpy.abs(cf.data)))
+    mask = numpy.max(numpy.abs(newcf.data.values), axis=(0, 1, 2, 3, 4))
+    coords = numpy.argwhere(mask > fractional_level * numpy.max(numpy.abs(cf.data.values)))
     crpx = int(numpy.round(cf.grid_wcs.wcs.crpix[0]))
     crpy = int(numpy.round(cf.grid_wcs.wcs.crpix[1]))
     x0, y0 = coords.min(axis=0, initial=cf.data.shape[-1])
@@ -143,7 +143,9 @@ def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     y0 -= 1
     x1 = crpx + dx - 1
     y1 = crpy + dy - 1
-    newcf.data = newcf.data[..., y0:y1, x0:x1]
+    newcf = ConvolutionFunction(data=newcf.data.values[..., y0:y1, x0:x1], grid_wcs=newcf.grid_wcs,
+                                projection_wcs=newcf.projection_wcs,
+                                polarisation_frame=newcf.polarisation_frame)
     nny, nnx = newcf.data.shape[-2], newcf.data.shape[-1]
     newcf.grid_wcs.wcs.crpix[0] += nnx / 2 - nx / 2
     newcf.grid_wcs.wcs.crpix[1] += nny / 2 - ny / 2
@@ -163,9 +165,9 @@ def calculate_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     :return: list of bounding boxes
     """
     bboxes = list()
-    threshold = fractional_level * numpy.max(numpy.abs(cf.data))
+    threshold = fractional_level * numpy.max(numpy.abs(cf.data.values))
     for z in range(cf.data.shape[2]):
-        mask = numpy.max(numpy.abs(cf.data[:, :, z, ...]), axis=(0, 1, 2, 3))
+        mask = numpy.max(numpy.abs(cf.data.values[:, :, z, ...]), axis=(0, 1, 2, 3))
         coords = numpy.argwhere(mask > threshold)
         x0, y0 = coords.min(axis=0, initial=cf.data.shape[-1])
         x1, y1 = coords.max(axis=0, initial=cf.data.shape[-1])

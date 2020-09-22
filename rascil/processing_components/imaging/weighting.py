@@ -43,15 +43,15 @@ def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.
 
     assert image_is_canonical(model)
     if gcfcf is None:
-        gcfcf = create_pswf_convolutionfunction(model)
+        gcfcf = create_pswf_convolutionfunction(model, polarisation_frame=vis.polarisation_frame)
 
     if isinstance(vis, Visibility):
     
-        griddata = create_griddata_from_image(model, vis)
+        griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
         griddata, sumwt = grid_visibility_weight_to_griddata(vis, griddata, gcfcf[1])
         vis = griddata_visibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
     else:
-        griddata = create_griddata_from_image(model, vis)
+        griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
         griddata, sumwt = grid_blockvisibility_weight_to_griddata(vis, griddata, gcfcf[1])
         vis = griddata_blockvisibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
 

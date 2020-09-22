@@ -126,11 +126,12 @@ def predict_2d(vis: Union[BlockVisibility, Visibility], model: Image, gcfcf=None
     if gcfcf is None:
         gcf, cf = create_pswf_convolutionfunction(model,
                                                   support=get_parameter(kwargs, "support", 8),
-                                                  oversampling=get_parameter(kwargs, "oversampling", 127))
+                                                  oversampling=get_parameter(kwargs, "oversampling", 127),
+                                                  polarisation_frame=vis.polarisation_frame)
     else:
         gcf, cf = gcfcf
 
-    griddata = create_griddata_from_image(model, vis)
+    griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
     polmodel = convert_stokes_to_polimage(model, vis.polarisation_frame)
     griddata = fft_image_to_griddata(polmodel, griddata, gcf)
     if isinstance(vis, Visibility):
@@ -176,11 +177,12 @@ def invert_2d(vis: Visibility, im: Image, dopsf: bool = False, normalize: bool =
     if gcfcf is None:
         gcf, cf = create_pswf_convolutionfunction(im,
                                                   support=get_parameter(kwargs, "support", 8),
-                                                  oversampling=get_parameter(kwargs, "oversampling", 127))
+                                                  oversampling=get_parameter(kwargs, "oversampling", 127),
+                                                  polarisation_frame=vis.polarisation_frame)
     else:
         gcf, cf = gcfcf
 
-    griddata = create_griddata_from_image(im, svis)
+    griddata = create_griddata_from_image(im, polarisation_frame=vis.polarisation_frame)
     if isinstance(vis, Visibility):
         griddata, sumwt = grid_visibility_to_griddata(svis, griddata=griddata, cf=cf)
     else:

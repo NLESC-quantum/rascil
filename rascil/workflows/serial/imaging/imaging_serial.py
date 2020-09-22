@@ -76,7 +76,8 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=
             return None
     
     if gcfcf is None:
-        gcfcf = [create_pswf_convolutionfunction(m) for m in model_imagelist]
+        gcfcf = [create_pswf_convolutionfunction(m, polarisation_frame=vis_list[i].polarisation_frame)
+                 for i, m in enumerate(model_imagelist)]
     
     # Loop over all frequency windows
     if facets == 1:
@@ -182,7 +183,7 @@ def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False,
     
     # If we are doing facets, we need to create the gcf for each image
     if gcfcf is None and facets == 1:
-        gcfcf = [create_pswf_convolutionfunction(template_model_imagelist[0])]
+        gcfcf = [create_pswf_convolutionfunction(template_model_imagelist[0], vis_list[0].polarisation_frame)]
     
     # Loop over all vis_lists independently
     results_vislist = list()
@@ -441,12 +442,13 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
     centre = len(model_imagelist) // 2
     
     if gcfcf is None:
-        gcfcf = [create_pswf_convolutionfunction(model_imagelist[centre])]
+        gcfcf = [create_pswf_convolutionfunction(model_imagelist[centre],
+                                                 polarisation_frame=vis_list[0].polarisation_frame)]
     
     def grid_wt(vis, model, g):
         if vis is not None:
             if model is not None:
-                griddata = create_griddata_from_image(model, vis)
+                griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
                 if isinstance(vis, BlockVisibility):
                     griddata = grid_blockvisibility_weight_to_griddata(vis, griddata, g[0][1])
                 else:
@@ -466,7 +468,7 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
             if vis is not None:
                 # Ensure that the griddata has the right axes so that the convolution
                 # function mapping works
-                agd = create_griddata_from_image(model, vis)
+                agd = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
                 agd.data = gd[0].data
                 if isinstance(vis, BlockVisibility):
                     vis = griddata_blockvisibility_reweight(vis, agd, g[0][1])

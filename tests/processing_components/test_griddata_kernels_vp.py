@@ -13,7 +13,6 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_image
-from rascil.processing_components.griddata import convert_convolutionfunction_to_image
 from rascil.processing_components.griddata.kernels import create_vpterm_convolutionfunction
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.primary_beams import create_vp
@@ -41,7 +40,8 @@ class TestGridDataKernels(unittest.TestCase):
                                   polarisation_frame=PolarisationFrame("stokesIQUV"))
         make_vp = functools.partial(create_vp, telescope="MID_FEKO_B2")
         gcf, cf = create_vpterm_convolutionfunction(self.image, make_vp=make_vp, oversampling=16,
-                                                    support=32, use_aaf=True)
+                                                    support=32, use_aaf=True,
+                                  polarisation_frame=PolarisationFrame("linear"))
         # cf_image = convert_convolutionfunction_to_image(cf)
         # cf_image.data = numpy.real(cf_image.data)
         # if self.persist:

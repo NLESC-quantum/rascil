@@ -66,7 +66,7 @@ def predict_wstack_single(vis, model, remove=True, gcfcf=None, **kwargs) -> Visi
 
     gcf, cf = gcfcf
 
-    griddata = create_griddata_from_image(model, vis)
+    griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
     griddata = fft_image_to_griddata(workimage, griddata, gcf)
     vis = degrid_visibility_from_griddata(vis, griddata=griddata, cf=cf)
 
@@ -113,7 +113,7 @@ def invert_wstack_single(vis: Visibility, im: Image, dopsf, normalize=True, remo
 
     gcf, cf = gcfcf
 
-    griddata = create_griddata_from_image(im, vis)
+    griddata = create_griddata_from_image(im, polarisation_frame=vis.polarisation_frame)
     griddata, sumwt = grid_visibility_to_griddata(vis, griddata=griddata, cf=cf)
     cim = fft_griddata_to_image(griddata, gcf)
     cim = normalize_sumwt(cim, sumwt)

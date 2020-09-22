@@ -21,7 +21,7 @@ from rascil.processing_components.imaging.primary_beams import convert_azelvp_to
 log = logging.getLogger('logger')
 
 
-def create_box_convolutionfunction(im, oversampling=1, support=1):
+def create_box_convolutionfunction(im, oversampling=1, support=1, polarisation_frame=None):
     """ Fill a box car function into a ConvolutionFunction
 
     Also returns the griddata correction function as an image
@@ -31,7 +31,7 @@ def create_box_convolutionfunction(im, oversampling=1, support=1):
     :return: griddata correction Image, griddata kernel as ConvolutionFunction
     """
     assert isinstance(im, Image)
-    cf = create_convolutionfunction_from_image(im, oversampling=1, support=4)
+    cf = create_convolutionfunction_from_image(im, oversampling=1, support=4, polarisation_frame=polarisation_frame)
     
     nchan, npol, _, _ = im.shape
     
@@ -54,7 +54,7 @@ def create_box_convolutionfunction(im, oversampling=1, support=1):
     return gcf_image, cf
 
 
-def create_pswf_convolutionfunction(im, oversampling=127, support=8):
+def create_pswf_convolutionfunction(im, oversampling=127, support=8, polarisation_frame=None):
     """ Fill an Anti-Aliasing filter into a ConvolutionFunction
 
     Fill the Prolate Spheroidal Wave Function into a GriData with the specified oversampling. Only the inner
@@ -73,7 +73,8 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8):
     
     width = support - 2
     # Calculate the convolution kernel. We oversample in u,v space by the factor oversampling
-    cf = create_convolutionfunction_from_image(im, oversampling=oversampling, support=support)
+    cf = create_convolutionfunction_from_image(im, oversampling=oversampling, support=support,
+                                               polarisation_frame=polarisation_frame)
     
     kernel = numpy.zeros([oversampling, support])
     for grid in range(1, support - 1):
@@ -113,7 +114,7 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8):
 
 
 def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversampling=9, support=8, use_aaf=True,
-                                      maxsupport=512, pa=None, normalise=True):
+                                      maxsupport=512, pa=None, normalise=True, polarisation_frame=None):
     """ Fill AW projection kernel into a GridData.
 
     :param im: Image template
@@ -135,16 +136,9 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     
     assert isinstance(im, Image)
     # Calculate the template convolution kernel.
-    cf = create_convolutionfunction_from_image(im, nz=nw, oversampling=oversampling, support=support)
+    cf = create_convolutionfunction_from_image(im, nw=nw, wstep=wstep, oversampling=oversampling, support=support,
+                                               polarisation_frame=polarisation_frame)
     
-    cf_shape = list(cf.data.shape)
-    assert nw > 0, "Number of w planes must be greater than zero"
-    cf_shape[2] = nw
-    cf.data.values = numpy.zeros(cf_shape).astype('complex')
-    
-    cf.grid_wcs.wcs.crpix[4] = nw // 2 + 1.0
-    cf.grid_wcs.wcs.cdelt[4] = wstep
-    cf.grid_wcs.wcs.ctype[4] = 'WW'
     if numpy.abs(wstep) > 0.0:
         w_list = cf.grid_wcs.sub([5]).wcs_pix2world(range(nw), 0)[0]
     else:
@@ -153,62 +147,64 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     assert isinstance(oversampling, int)
     assert oversampling > 0
     
-    nx = max(maxsupport, 2 * oversampling * support)
-    ny = max(maxsupport, 2 * oversampling * support)
-    
-    qnx = nx // oversampling
-    qny = ny // oversampling
+    # nx = max(maxsupport, 2 * oversampling * support)
+    # ny = max(maxsupport, 2 * oversampling * support)
+    #
+    qnx = onx * oversampling
+    qny = ony * oversampling
     
     cf.data.values[...] = 0.0
     
-    subim = copy_image(im)
-    ccell = onx * numpy.abs(d2r * subim.wcs.wcs.cdelt[0]) / qnx
-    
-    subim = create_image_from_array(numpy.zeros([nchan, npol, qny, qnx]), wcs=im.wcs,
+    subim_wcs = im.wcs.deepcopy()
+    subim_wcs.wcs.crpix[0] = qnx // 2 + 1.0
+    subim_wcs.wcs.crpix[1] = qny // 2 + 1.0
+
+    paddedim = create_image_from_array(numpy.zeros([nchan, npol, qny, qnx]), wcs=subim_wcs,
                                     polarisation_frame=im.polarisation_frame)
-    subim.wcs.wcs.cdelt[0] = -ccell / d2r
-    subim.wcs.wcs.cdelt[1] = +ccell / d2r
-    subim.wcs.wcs.crpix[0] = qnx // 2 + 1.0
-    subim.wcs.wcs.crpix[1] = qny // 2 + 1.0
     
     if use_aaf:
-        this_pswf_gcf, _ = create_pswf_convolutionfunction(subim, oversampling=1, support=6)
+        this_pswf_gcf, _ = create_pswf_convolutionfunction(paddedim, oversampling=1, support=6,
+                                                           polarisation_frame=polarisation_frame)
         norm = 1.0 / this_pswf_gcf.data
     else:
         norm = 1.0
     
     if make_pb is not None:
-        pb = make_pb(subim)
+        pb = make_pb(paddedim)
         
         if pa is not None:
-            rpb = convert_azelvp_to_radec(pb, subim, pa)
+            rpb = convert_azelvp_to_radec(pb, paddedim, pa)
         else:
-            rpb = convert_azelvp_to_radec(pb, subim, 0.0)
+            rpb = convert_azelvp_to_radec(pb, paddedim, 0.0)
         
         norm *= rpb.data
     
     # We might need to work with a larger image
-    padded_shape = [nchan, npol, ny, nx]
-    thisplane = copy_image(subim)
+    # padded_shape = [nchan, npol, ny, nx]
+    thisplane = copy_image(paddedim)
     thisplane.data.values = numpy.zeros(thisplane.shape, dtype='complex')
     for z, w in enumerate(w_list):
         thisplane.data.values[...] = 0.0 + 0.0j
         thisplane = create_w_term_like(thisplane, w, dopol=True)
         thisplane.data.values *= norm
-        paddedplane = pad_image(thisplane, padded_shape)
-        paddedplane = fft_image(paddedplane)
-        
-        ycen, xcen = ny // 2, nx // 2
+#        paddedplane = pad_image(thisplane, padded_shape)
+        grid = fft_image(thisplane)
+
+        ycen, xcen = qny // 2, qnx // 2
         for y in range(oversampling):
             ybeg = y + ycen + (support * oversampling) // 2 - oversampling // 2
             yend = y + ycen - (support * oversampling) // 2 - oversampling // 2
+            assert ybeg >= 0, "Convolutionfunction does not fit into image"
+            assert yend < qny, "Convolutionfunction does not fit into image"
             # vv = range(ybeg, yend, -oversampling)
             for x in range(oversampling):
                 xbeg = x + xcen + (support * oversampling) // 2 - oversampling // 2
                 xend = x + xcen - (support * oversampling) // 2 - oversampling // 2
-                
+                assert xbeg >= 0, "Convolutionfunction does not fit into image"
+                assert xend < qnx, "Convolutionfunction does not fit into image"
+
                 # uu = range(xbeg, xend, -oversampling)
-                cf.data.values[..., z, y, x, :, :] = paddedplane.data.values[...,
+                cf.data.values[..., z, y, x, :, :] = grid.data.values[...,
                                               ybeg:yend:-oversampling,
                                               xbeg:xend:-oversampling]
                 # for chan in range(nchan):
@@ -230,7 +226,8 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     cf.data.values = numpy.conjugate(cf.data.values)
     
     if use_aaf:
-        pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6)
+        pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6,
+                                                      polarisation_frame=polarisation_frame)
     else:
         pswf_gcf = create_empty_image_like(im)
         pswf_gcf.data[...] = 1.0
@@ -239,7 +236,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
 
 
 def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=6, use_aaf=False,
-                                      maxsupport=512, pa=None, normalise=True):
+                                      maxsupport=512, pa=None, normalise=True, polarisation_frame=None):
     """ Fill voltage pattern kernel projection kernel into a GridData.
     
     The makes the convolution function for gridding polarised data with a voltage
@@ -250,9 +247,9 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     :param oversampling: Oversampling of the convolution function in uv space
     :return: griddata correction Image, griddata kernel as GridData
     """
-    if oversampling % 2 == 0:
-        log.info("Setting oversampling to next greatest odd number {}".format(oversampling))
-        oversampling += 1
+    # if oversampling % 2 == 0:
+    #     log.info("Setting oversampling to next greatest odd number {}".format(oversampling))
+    #     oversampling += 1
     
     d2r = numpy.pi / 180.0
     
@@ -262,7 +259,8 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     
     assert isinstance(im, Image)
     # Calculate the template convolution kernel.
-    cf = create_convolutionfunction_from_image(im, oversampling=oversampling, support=support)
+    cf = create_convolutionfunction_from_image(im, oversampling=oversampling, support=support,
+                                               polarisation_frame=polarisation_frame)
     
     cf_shape = list(cf.data.shape)
     cf.data = numpy.zeros(cf_shape).astype('complex')
@@ -295,7 +293,8 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
         rvp = convert_azelvp_to_radec(vp, subim, 0.0)
     
     if use_aaf:
-        this_pswf_gcf, _ = create_pswf_convolutionfunction(subim, oversampling=1, support=6)
+        this_pswf_gcf, _ = create_pswf_convolutionfunction(subim, oversampling=1, support=6,
+                                                           polarisation_frame=polarisation_frame)
         rvp.data.values /= this_pswf_gcf.data.values
     
     # We might need to work with a larger image
@@ -321,7 +320,8 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     cf.data = numpy.conjugate(cf.data)
     
     if use_aaf:
-        pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6)
+        pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6,
+                                                      polarisation_frame=polarisation_frame)
     else:
         pswf_gcf = create_empty_image_like(im)
         pswf_gcf.data[...] = 1.0

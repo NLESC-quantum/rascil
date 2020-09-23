@@ -73,7 +73,7 @@ class measurementset_tests(unittest.TestCase):
             [-2556552.97431815,  5097767.23612874, -2847354.29540396],
             [-2557348.40370367,  5097170.17682775, -2847716.21368966]])
 
-        site_config = Configuration(name='ASKAP', data=None, location= obs,
+        site_config = Configuration(name='ASKAP', location= obs,
                                         names=names, xyz=xyz, mount=mount, frame=None,
                                         receptor_frame=ReceptorFrame("linear"),
                                         diameter=diameter)
@@ -157,7 +157,7 @@ class measurementset_tests(unittest.TestCase):
                    [-3400.00000, -1532.000000, 0.0000],
                    [-2596.000000, +1468.000000, 0.0000]])
 
-        site_config = Configuration(name='ASKAP', data=None, location=obs,
+        site_config = Configuration(name='ASKAP', location=obs,
                                     names=names, xyz=xyz, mount=mount, frame=None,
                                     receptor_frame=ReceptorFrame("linear"),
                                     diameter=diameter)

@@ -1350,12 +1350,10 @@ class BlockVisibility:
         s += "\tVisibility shape: %s\n" % str(self.vis.shape)
         s += "\tNumber of flags: %s\n" % str(numpy.sum(self.flags))
         s += "\tNumber of channels: %d\n" % len(self.frequency)
-        s += "\tFrequency: %s\n" % self.frequency
-        s += "\tChannel bandwidth: %s\n" % self.channel_bandwidth
-        s += "\tNumber of polarisations: %s\n" % self.npol
         s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
         s += "\tConfiguration: %s\n" % self.configuration.name
         s += "\tMetadata: %s\n" % self.meta
+        s += "\txarray.Dataset: %s\n" % str(self.data)
         
         return s
     

@@ -85,7 +85,7 @@ try:
             else:
                 arrayX, arrayY, arrayZ = 0, 0, 0
 
-            xyz = site_config.xyz[:]
+            xyz = site_config.xyz.values[:]
 
             # Create the stand mapper
             # No use if don't need to consider antenna name
@@ -216,17 +216,17 @@ try:
             tb.putcol('STATION', [self.siteName, ] * self.nant, 0, self.nant)
 
             for i, ant in enumerate(self.array[0]['ants']):
-                tb.putcell('OFFSET', i, self.site_config.data['offset'][i])
+                tb.putcell('OFFSET', i, self.site_config.data['offset'].values[i])
                 # tb.putcell('OFFSET', i, [0.0, 0.0, 0.0])
                 tb.putcell('POSITION', i, [ant.x + self.array[0]['center'][0],
                                            ant.y + self.array[0]['center'][1],
                                            ant.z + self.array[0]['center'][2]])
                 # tb.putcell('TYPE', i, self.site_config.mount[i])
-                tb.putcell('DISH_DIAMETER', i, self.site_config.data['diameter'][i])
+                tb.putcell('DISH_DIAMETER', i, self.site_config.data['diameter'].values[i])
                 # tb.putcell('FLAG_ROW', i, False)
-                tb.putcell('MOUNT', i, self.site_config.data['mount'][i])
+                tb.putcell('MOUNT', i, self.site_config.data['mount'].values[i])
                 tb.putcell('NAME', i, ant.getName())
-                tb.putcell('STATION', i, self.site_config.data['stations'][i])
+                tb.putcell('STATION', i, self.site_config.data['stations'].values[i])
                 # tb.putcell('STATION', i, self.siteName)
 
             tb.flush()
@@ -385,18 +385,20 @@ try:
             tb = table("%s/OBSERVATION" % self.basename, desc, nrow=1, ack=False)
 
             # from astropy.time import Time
-            utcStart = Time(self.data[0].obstime, format='mjd',scale='utc')
-            tStart = utcStart.mjd
-            utcStop = Time(self.data[-1].obstime, format='mjd', scale='utc')
-            tStop = utcStop.mjd
+            # utcStart = Time(self.data[0].obstime, format='mjd',scale='utc')
+            # tStart = utcStart.mjd
+            # utcStop = Time(self.data[-1].obstime, format='mjd', scale='utc')
+            # tStop = utcStop.mjd
+            tStart = self.data[0].obstime
+            tStop = self.data[-1].obstime
 
-            tb.putcell('TIME_RANGE', 0, [tStart * 86400, tStop * 86400])
+            tb.putcell('TIME_RANGE', 0, [tStart, tStop])
             tb.putcell('LOG', 0, 'Not provided')
             tb.putcell('SCHEDULE', 0, 'Not provided')
             tb.putcell('FLAG_ROW', 0, False)
             tb.putcell('OBSERVER', 0, 'FENGWANG')
             tb.putcell('PROJECT', 0, 'SKASIM')
-            tb.putcell('RELEASE_DATE', 0, tStop * 86400)
+            tb.putcell('RELEASE_DATE', 0, tStop)
             tb.putcell('SCHEDULE_TYPE', 0, 'None')
             tb.putcell('TELESCOPE_NAME', 0, self.siteName)
 
@@ -767,7 +769,7 @@ try:
                 # Sort the data by packed baseline
                 try:
                     order
-                except NameError:
+                except (NameError, UnboundLocalError):
                     order = dataSet.argsort(mapper=mapper, shift=16)
 
                 # Deal with defininig the values of the new data set
@@ -840,7 +842,8 @@ try:
                     # timeList = [utc - astro.MJD_OFFSET for bl in dataSet.baselines]
                     inttimeList = [dataSet.inttime for bl in dataSet.baselines]
                     #timeList = [(utc0/86400.0 - 2400000.5) * 86400 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
-                    timeList = [utc0 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+                    # timeList = [utc + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+                    timeList = [dataSet.obstime + dataSet.inttime / 2.0 for bl in dataSet.baselines]
 
                     ### Add in the new new source ID and name
                     sourceList = [sourceID for bl in dataSet.baselines]

@@ -368,11 +368,11 @@ def create_visibility_from_rows(vis: Union[Visibility, BlockVisibility],
     if rows is None or numpy.sum(rows) == 0:
         return None
     
-    assert len(
-        rows) == vis.nvis, "Length of rows does not agree with length of visibility"
-    
     if isinstance(vis, Visibility):
-        
+    
+        assert len(
+            rows) == vis.nvis, "Length of rows does not agree with length of visibility"
+    
         if makecopy:
             newvis = copy_visibility(vis)
             if vis.cindex is not None and len(rows) == len(vis.cindex):
@@ -389,13 +389,15 @@ def create_visibility_from_rows(vis: Union[Visibility, BlockVisibility],
                 vis.cindex = vis.cindex[rows]
             return vis
     else:
-        
+    
+        assert len(rows) == len(vis.time.values), "Length of rows does not agree with length of visibility"
+    
         if makecopy:
             newvis = copy_visibility(vis)
-            newvis.data = copy.deepcopy(vis.data[rows])
+            newvis.data = copy.deepcopy(vis.data.sel({"time":vis.time[rows]}))
             return newvis
         else:
-            vis.data = copy.deepcopy(vis.data[rows])
+            vis.data = copy.deepcopy(vis.data.sel({"time":vis.time[rows]}))
             
             return vis
 
@@ -540,12 +542,12 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
                 "Unknown visibility polarisation %s" % (vis.polarisation_frame.type))
         
         tbl.set_stokes(polarization)
-        tbl.set_frequency(vis.frequency, vis.channel_bandwidth)
+        tbl.set_frequency(vis.frequency.values, vis.channel_bandwidth.values)
         n_ant = len(vis.configuration.xyz)
         
         antennas = []
-        names = vis.configuration.names
-        xyz = vis.configuration.xyz
+        names = vis.configuration.names.values
+        xyz = vis.configuration.xyz.values
         for i in range(len(names)):
             antennas.append(Antenna(i, Stand(names[i], xyz[i, 0], xyz[i, 1], xyz[i, 2])))
         
@@ -553,21 +555,22 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         bl_list = []
         
         antennas2 = antennas
+
+        # for ant1 in range(0, nant):
+        #     for ant2 in range(ant1, nant):
+        #         yield ant1, ant2
+
+        for a1 in range(0, n_ant - 1):
+            for a2 in range(a1 + 1, n_ant):
+                bl_list.append((antennas[a1], antennas2[a2]))
         
-        bl_list = list(generate_baselines(n_ant))
-        
-        # for i in range(0, n_ant - 1):
-        #     for j in range(i + 1, n_ant):
-        #         bl_list.append((antennas[i], antennas2[j]))
-        #
         tbl.set_geometry(vis.configuration, antennas)
         nbaseline = len(bl_list)
         ntimes = len(vis.data['time'])
         
         ms_vis = numpy.zeros([ntimes, nbaseline, nchan, npol]).astype('complex')
         ms_uvw = numpy.zeros([ntimes, nbaseline, 3])
-        time = vis.data['time']
-        int_time = vis.data['integration_time']
+        int_time = vis.data['integration_time'].values
         # bv_vis = vis.data['vis']
         # bv_uvw = vis.data['uvw']
         #
@@ -576,14 +579,14 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         for ntime, time in enumerate(vis.data['time']):
             for ipol, pol in enumerate(polarization):
                 if int_time[ntime] is not None:
-                    tbl.add_data_set(time, int_time[ntime], bl_list,
+                    tbl.add_data_set(time.values, int_time[ntime], bl_list,
                                      vis.data['vis'].values[ntime, ..., ipol],
                                      pol=pol,
                                      source=source_name,
                                      phasecentre=vis.phasecentre,
-                                     uvw=vis['uvw'].values[ntime, :, :])
+                                     uvw=vis.data['uvw'].values[ntime, :, :])
                 else:
-                    tbl.add_data_set(time, 0, bl_list,
+                    tbl.add_data_set(time.values, 0, bl_list,
                                      vis.data['vis'].values[ntime, ..., ipol],
                                      pol=pol,
                                      source=source_name,
@@ -849,9 +852,9 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             antenna1 = list(map(lambda i: ant_map[i], antenna1))
             antenna2 = list(map(lambda i: ant_map[i], antenna2))
             
-            baselines = list(generate_baselines(nants))
+            baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
             nbaselines = len(baselines)
-            
+
             location = EarthLocation(x=Quantity(xyz[0][0], 'm'),
                                      y=Quantity(xyz[0][1], 'm'),
                                      z=Quantity(xyz[0][2], 'm'))
@@ -891,7 +894,6 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             
             for row, _ in enumerate(time):
                 ibaseline = get_baseline(antenna1[row], antenna2[row], baselines, nants)
-                print(ibaseline)
                 time_index = time_index_row[row]
                 bv_times[time_index] = time[row]
                 bv_vis[time_index, ibaseline, ...] = ms_vis[row, ...]

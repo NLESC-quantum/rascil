@@ -77,14 +77,9 @@ class TestMSTests(unittest.TestCase):
                                                self.vis_pol,
                                                self.phasecentre, block=block)
         
-        self.vis = convert_blockvisibility_to_visibility(self.bvis)
-        
-        self.model = create_unittest_model(self.vis, self.image_pol, npixel=self.npixel, nchan=freqwin)
-        
+        self.model = create_unittest_model(self.bvis, self.image_pol, npixel=self.npixel, nchan=freqwin)
         self.components = create_unittest_components(self.model, flux)
-        
         self.model = insert_skycomponent(self.model, self.components)
-        
         self.bvis = dft_skycomponent_visibility(self.bvis, self.components)
     
     

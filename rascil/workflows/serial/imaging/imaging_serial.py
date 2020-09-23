@@ -13,14 +13,13 @@ import logging
 
 import numpy
 
-from rascil.data_models.memory_data_models import Image, Visibility, BlockVisibility
+from rascil.data_models.memory_data_models import Image, BlockVisibility
 from rascil.data_models.parameters import get_parameter
 from rascil.processing_components.image.operations import copy_image, create_empty_image_like
 from rascil.workflows.shared.imaging import imaging_context
 from rascil.workflows.shared.imaging import sum_invert_results, remove_sumwt, sum_predict_results, \
     threshold_list
-from rascil.processing_components.griddata import grid_visibility_weight_to_griddata, \
-    griddata_visibility_reweight, griddata_merge_weights, \
+from rascil.processing_components.griddata import griddata_merge_weights, \
     grid_blockvisibility_weight_to_griddata, griddata_blockvisibility_reweight
 from rascil.processing_components.griddata import create_pswf_convolutionfunction
 from rascil.processing_components.griddata import create_griddata_from_image
@@ -69,7 +68,7 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=
     
     def predict_ignore_none(vis, model, g):
         if vis is not None:
-            assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
+            assert isinstance(vis, BlockVisibility), vis
             assert isinstance(model, Image), model
             return predict(vis, model, context=context, gcfcf=g, **kwargs)
         else:

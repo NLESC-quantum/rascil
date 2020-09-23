@@ -255,7 +255,7 @@ def plot_gaintable_on_screen(vis, gaintables, height=3e5, gaintable_slices=None,
     
     t2r = numpy.pi / 43200.0
     
-    # The time in the Visibility is hour angle in seconds!
+    # The time in the BlockVisibility is UTC in seconds
     plt.clf()
     for gaintable in gaintables:
         time_zero = numpy.average(gaintable.time)

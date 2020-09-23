@@ -15,19 +15,19 @@ import logging
 
 import numpy
 
-from rascil.data_models.memory_data_models import Visibility, Image
+from rascil.data_models.memory_data_models import Image, BlockVisibility
 from rascil.processing_components.image import copy_image, create_w_term_like, \
     image_is_canonical, convert_stokes_to_polimage, convert_polimage_to_stokes
-from rascil.processing_components.griddata import grid_visibility_to_griddata, \
-    degrid_visibility_from_griddata, fft_griddata_to_image, fft_image_to_griddata, \
+from rascil.processing_components.griddata import grid_blockvisibility_to_griddata, \
+    degrid_blockvisibility_from_griddata, fft_griddata_to_image, fft_image_to_griddata, \
     create_griddata_from_image
 from rascil.processing_components.visibility.base import copy_visibility
-from rascil.processing_components.imaging import normalize_sumwt, fill_vis_for_psf
+from rascil.processing_components.imaging import normalize_sumwt, fill_blockvis_for_psf
 
 log = logging.getLogger('logger')
 
 
-def predict_wstack_single(vis, model, remove=True, gcfcf=None, **kwargs) -> Visibility:
+def predict_wstack_single(vis, model, remove=True, gcfcf=None, **kwargs) -> BlockVisibility:
     """ Predict using a single w slices.
     
     This processes a single w plane, rotating out the w beam for the average w
@@ -41,12 +41,12 @@ def predict_wstack_single(vis, model, remove=True, gcfcf=None, **kwargs) -> Visi
 
     If images constructed from slices in w are added after applying a w-dependent image plane correction, the w term will be corrected.
 
-    :param vis: Visibility to be predicted
+    :param vis: blockvisibility to be predicted
     :param model: model image
     :return: resulting visibility (in place works)
     """
 
-    assert isinstance(vis, Visibility), "wstack requires Visibility format not BlockVisibility"
+    assert isinstance(vis, BlockVisibility), "wstack requires BlockVisibility"
     assert image_is_canonical(model)
 
     vis.data['vis'][...] = 0.0
@@ -68,7 +68,7 @@ def predict_wstack_single(vis, model, remove=True, gcfcf=None, **kwargs) -> Visi
 
     griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
     griddata = fft_image_to_griddata(workimage, griddata, gcf)
-    vis = degrid_visibility_from_griddata(vis, griddata=griddata, cf=cf)
+    vis = degrid_blockvisibility_from_griddata(vis, griddata=griddata, cf=cf)
 
     if remove:
         vis.data['uvw'][..., 2] += w_average
@@ -76,7 +76,7 @@ def predict_wstack_single(vis, model, remove=True, gcfcf=None, **kwargs) -> Visi
     return vis
 
 
-def invert_wstack_single(vis: Visibility, im: Image, dopsf, normalize=True, remove=True,
+def invert_wstack_single(vis: BlockVisibility, im: Image, dopsf, normalize=True, remove=True,
                          gcfcf=None, **kwargs) -> (Image, numpy.ndarray):
     """Process single w slice
     
@@ -89,7 +89,7 @@ def invert_wstack_single(vis: Visibility, im: Image, dopsf, normalize=True, remo
 
     If images constructed from slices in w are added after applying a w-dependent image plane correction, the w term will be corrected.
 
-    :param vis: Visibility to be inverted
+    :param vis: blockvisibility to be inverted
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
     :param normalize: Normalize by the sum of weights (True)
@@ -101,10 +101,10 @@ def invert_wstack_single(vis: Visibility, im: Image, dopsf, normalize=True, remo
     
     kwargs['imaginary'] = True
     
-    assert isinstance(vis, Visibility), "wstack requires Visibility format not BlockVisibility"
+    assert isinstance(vis, BlockVisibility), "wstack requires BlockVisibility"
     
     if dopsf:
-        vis = fill_vis_for_psf(vis)
+        vis = fill_blockvis_for_psf(vis)
     
     # We might want to do wprojection so we remove the average w
     w_average = numpy.average(vis.w)
@@ -114,7 +114,7 @@ def invert_wstack_single(vis: Visibility, im: Image, dopsf, normalize=True, remo
     gcf, cf = gcfcf
 
     griddata = create_griddata_from_image(im, polarisation_frame=vis.polarisation_frame)
-    griddata, sumwt = grid_visibility_to_griddata(vis, griddata=griddata, cf=cf)
+    griddata, sumwt = grid_blockvisibility_to_griddata(vis, griddata=griddata, cf=cf)
     cim = fft_griddata_to_image(griddata, gcf)
     cim = normalize_sumwt(cim, sumwt)
 

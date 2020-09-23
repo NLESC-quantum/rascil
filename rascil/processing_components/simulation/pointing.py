@@ -57,7 +57,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
         
         assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
         
-        # The time in the Visibility is hour angle in seconds!
+        # The time in the Visibility is UTC in seconds
         number_bad = 0
         number_good = 0
         
@@ -135,7 +135,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
         assert vp.wcs.wcs.ctype[0] == 'RA---SIN', vp.wcs.wcs.ctype[0]
         assert vp.wcs.wcs.ctype[1] == 'DEC--SIN', vp.wcs.wcs.ctype[1]
         
-        # The time in the Visibility is hour angle in seconds!
+        # The time in the Visibility is UTC in seconds
         number_bad = 0
         number_good = 0
         

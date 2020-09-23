@@ -2,29 +2,33 @@
 Base simple visibility operations, placed here to avoid circular dependencies
 """
 
-__all__ = ['vis_summary', 'copy_visibility', 'create_visibility',
+__all__ = ['vis_summary',
+           'copy_visibility',
            'create_visibility_from_rows',
-           'create_blockvisibility_from_ms', 'create_blockvisibility_from_uvfits',
-           'create_blockvisibility', 'phaserotate_visibility',
+           'create_blockvisibility_from_ms',
+           'create_blockvisibility_from_uvfits',
+           'create_blockvisibility',
+           'phaserotate_visibility',
            'export_blockvisibility_to_ms',
-           'create_visibility_from_ms', 'create_visibility_from_uvfits',
-           'list_ms', 'generate_baselines', 'get_baseline', 'calculate_blockvisibility_uvw_lambda']
+           'list_ms',
+           'generate_baselines',
+           'get_baseline',
+           'calculate_blockvisibility_uvw_lambda']
 
 import copy
 import logging
 import re
-from typing import Union
 
+import astropy.constants as const
 import numpy
 import pandas
 from astropy import units as u, constants as constants
 from astropy.coordinates import SkyCoord, EarthLocation
-import astropy.constants as const
 from astropy.io import fits
 from astropy.time import Time
 from astropy.units import Quantity
 
-from rascil.data_models.memory_data_models import Visibility, BlockVisibility, \
+from rascil.data_models.memory_data_models import BlockVisibility, \
     Configuration
 from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame, \
     correlate_polarisation
@@ -67,156 +71,29 @@ def get_baseline(ant1, ant2, baselines, nant):
     raise ValueError("Illegal antenna pair {}-{}".format(ant1, ant2))
 
 
-def vis_summary(vis: Union[Visibility, BlockVisibility]):
-    """Return string summarizing the Visibility
+def vis_summary(vis: BlockVisibility):
+    """Return string summarizing the BlockVisibility
 
-    :param vis: Visibility or BlockVisibility
+    :param vis: BlockVisibility
     :return: string
     """
     return "%d rows, %.3f GB" % (vis.nvis, vis.size())
 
 
-def copy_visibility(vis: Union[Visibility, BlockVisibility], zero=False) -> Union[
-    Visibility, BlockVisibility]:
+def copy_visibility(vis: BlockVisibility, zero=False) -> BlockVisibility:
     """Copy a visibility
 
     Performs a deepcopy of the data array
-    :param vis: Visibility or BlockVisibility
-    :returns: Visibility or BlockVisibility
+    :param vis: BlockVisibility
+    :returns: BlockVisibility
 
     """
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, BlockVisibility), vis
     
     newvis = copy.deepcopy(vis)
     if zero:
         newvis.data['vis'][...] = 0.0
     return newvis
-
-
-def create_visibility(config: Configuration, times: numpy.array, frequency: numpy.array,
-                      channel_bandwidth, phasecentre: SkyCoord,
-                      weight: float, polarisation_frame=PolarisationFrame('stokesI'),
-                      integration_time=1.0,
-                      zerow=False, elevation_limit=15.0 * numpy.pi / 180.0,
-                      source='unknown', meta=None,
-                      utc_time=None) -> Visibility:
-    """ Create a Visibility from Configuration, hour angles, and direction of source
-
-    Note that we keep track of the integration time for BDA purposes
-    
-    The input times are hour angles in radians, these are converted to UTC MJD in seconds, using utc_time as
-    the approximate time.
-
-
-
-    :param config: Configuration of antennas
-    :param times: hour angles in radians
-    :param frequency: frequencies (Hz] [nchan]
-    :param weight: weight of a single sample
-    :param phasecentre: phasecentre of observation (SkyCoord)
-    :param channel_bandwidth: channel bandwidths: (Hz] [nchan]
-    :param integration_time: Integration time ('auto' or value in s)
-    :param polarisation_frame: PolarisationFrame('stokesI')
-    :param integration_time: in seconds
-    :param zerow: bool - set w to zero
-    :param elevation_limit: in degrees
-    :param source: Source name
-    :param meta: Meta data as a dictionary
-    :param utc_time: Time of ha definition. Default is Time("2020-01-01T00:00:00", format='isot', scale='utc')
-    :return: Visibility
-    """
-    assert phasecentre is not None, "Must specify phase centre"
-    
-    if utc_time is None:
-        utc_time = Time("2020-01-01T00:00:00", format='isot', scale='utc')
-    
-    if polarisation_frame is None:
-        polarisation_frame = correlate_polarisation(config.receptor_frame)
-    
-    latitude = config.location.geodetic[1].to('rad').value
-    
-    nch = len(frequency)
-    ants_xyz = config.data['xyz'].values
-    nants = len(config.data['names'])
-    nbaselines = int(nants * (nants - 1) / 2)
-    ntimes = 0
-    for iha, ha in enumerate(times):
-        
-        # Calculate the positions of the antennas as seen for this hour angle
-        # and declination
-        _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
-        if elevation_limit is None or (elevation > elevation_limit):
-            ntimes += 1
-    
-    npol = polarisation_frame.npol
-    nrows = nbaselines * ntimes * nch
-    nrowsperintegration = nbaselines * nch
-    rvis = numpy.zeros([nrows, npol], dtype='complex')
-    rflags = numpy.zeros([nrows, npol], dtype='int')
-    rweight = numpy.ones([nrows, npol])
-    rtimes = numpy.zeros([nrows])
-    rfrequency = numpy.zeros([nrows])
-    rchannel_bandwidth = numpy.zeros([nrows])
-    rantenna1 = numpy.zeros([nrows], dtype='int')
-    rantenna2 = numpy.zeros([nrows], dtype='int')
-    ruvw = numpy.zeros([nrows, 3])
-    
-    n_flagged = 0
-    
-    # Do each hour angle in turn
-    row = 0
-    stime = calculate_transit_time(config.location, utc_time, phasecentre)
-    if stime.masked:
-        stime = utc_time
-    for iha, ha in enumerate(times):
-        
-        # Calculate the positions of the antennas as seen for this hour angle
-        # and declination
-        _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
-        if elevation_limit is None or (elevation > elevation_limit):
-            rtimes[row:row + nrowsperintegration] = stime.mjd * 86400.0 + ha * 86164.1 / (2.0 * numpy.pi)
-            
-            # TODO: optimise loop
-            # Loop over all pairs of antennas. Note that a2>a1
-            ant_pos = uvw_ha_dec(ants_xyz, ha, phasecentre.dec.rad)
-            for a1 in range(nants):
-                for a2 in range(a1 + 1, nants):
-                    rantenna1[row:row + nch] = a1
-                    rantenna2[row:row + nch] = a2
-                    rweight[row:row + nch, ...] = 1.0
-                    rflags[row:row + nch, ...] = 0
-                    
-                    # Loop over all frequencies and polarisations
-                    for ch in range(nch):
-                        # noinspection PyUnresolvedReferences
-                        k = frequency[ch] / constants.c.value
-                        ruvw[row, :] = (ant_pos[a2, :] - ant_pos[a1, :]) * k
-                        rfrequency[row] = frequency[ch]
-                        rchannel_bandwidth[row] = channel_bandwidth[ch]
-                        row += 1
-    
-    if zerow:
-        ruvw[..., 2] = 0.0
-    assert row == nrows
-    rintegration_time = numpy.full_like(rtimes, integration_time)
-    vis = Visibility(uvw=ruvw, time=rtimes, antenna1=rantenna1, antenna2=rantenna2,
-                     frequency=rfrequency, vis=rvis, flags=rflags,
-                     weight=rweight, imaging_weight=rweight,
-                     integration_time=rintegration_time,
-                     channel_bandwidth=rchannel_bandwidth,
-                     polarisation_frame=polarisation_frame, source=source, meta=meta)
-    vis.phasecentre = phasecentre
-    vis.configuration = config
-    log.info("create_visibility: %s" % (vis_summary(vis)))
-    assert isinstance(vis, Visibility), "vis is not a Visibility: %r" % vis
-    if elevation_limit is not None:
-        log.info(
-            'create_visibility: flagged %d/%d visibilities below elevation limit %f (rad)' %
-            (n_flagged, vis.nvis, elevation_limit))
-    else:
-        log.debug('create_visibility: created %d visibilities' % (vis.nvis))
-    
-    return vis
 
 
 def create_blockvisibility(config: Configuration,
@@ -355,66 +232,44 @@ def create_blockvisibility(config: Configuration,
     return vis
 
 
-def create_visibility_from_rows(vis: Union[Visibility, BlockVisibility],
+def create_visibility_from_rows(vis: BlockVisibility,
                                 rows: numpy.ndarray, makecopy=True):
-    """ Create a Visibility from selected rows
+    """ Create a BlockVisibility from selected rows
 
-    :param vis: Visibility or BlockVisibility
+    :param vis: BlockVisibility
     :param rows: Boolean array of row selction
     :param makecopy: Make a deep copy (True)
-    :return: Visibility or BlockVisibility
+    :return: BlockVisibility or BlockVisibility
     """
     
     if rows is None or numpy.sum(rows) == 0:
         return None
     
-    if isinstance(vis, Visibility):
+    assert len(rows) == len(vis.time.values), "Length of rows does not agree with length of visibility"
     
-        assert len(
-            rows) == vis.nvis, "Length of rows does not agree with length of visibility"
-    
-        if makecopy:
-            newvis = copy_visibility(vis)
-            if vis.cindex is not None and len(rows) == len(vis.cindex):
-                newvis.cindex = vis.cindex[rows]
-            else:
-                newvis.cindex = None
-            if vis.blockvis is not None:
-                newvis.blockvis = vis.blockvis
-            newvis.data = copy.deepcopy(vis.data[rows])
-            return newvis
-        else:
-            vis.data = copy.deepcopy(vis.data[rows])
-            if vis.cindex is not None:
-                vis.cindex = vis.cindex[rows]
-            return vis
+    if makecopy:
+        newvis = copy_visibility(vis)
+        newvis.data = copy.deepcopy(vis.data.sel({"time": vis.time[rows]}))
+        return newvis
     else:
-    
-        assert len(rows) == len(vis.time.values), "Length of rows does not agree with length of visibility"
-    
-        if makecopy:
-            newvis = copy_visibility(vis)
-            newvis.data = copy.deepcopy(vis.data.sel({"time":vis.time[rows]}))
-            return newvis
-        else:
-            vis.data = copy.deepcopy(vis.data.sel({"time":vis.time[rows]}))
-            
-            return vis
+        vis.data = copy.deepcopy(vis.data.sel({"time": vis.time[rows]}))
+        
+        return vis
 
 
-def phaserotate_visibility(vis: Union[Visibility, BlockVisibility],
+def phaserotate_visibility(vis: BlockVisibility,
                            newphasecentre: SkyCoord, tangent=True,
-                           inverse=False) -> Union[Visibility, BlockVisibility]:
+                           inverse=False) -> BlockVisibility:
     """ Phase rotate from the current phase centre to a new phase centre
 
     If tangent is False the uvw are recomputed and the visibility phasecentre is updated.
     Otherwise only the visibility phases are adjusted
 
-    :param vis: Visibility or BlockVisibility to be rotated
+    :param vis: BlockVisibility to be rotated
     :param newphasecentre: SkyCoord of new phasecentre
     :param tangent: Stay on the same tangent plane? (True)
     :param inverse: Actually do the opposite
-    :return: Visibility or BlockVisibility
+    :return: BlockVisibility or BlockVisibility
     """
     l, m, n = skycoord_to_lmn(newphasecentre, vis.phasecentre)
     
@@ -425,56 +280,33 @@ def phaserotate_visibility(vis: Union[Visibility, BlockVisibility],
     # Make a new copy
     newvis = copy_visibility(vis)
     
-    if isinstance(vis, Visibility):
-        phasor = calculate_visibility_phasor(newphasecentre, newvis)
-        if inverse:
-            newvis.data['vis'] *= phasor
-        else:
-            newvis.data['vis'] *= numpy.conj(phasor)
-        # To rotate UVW, rotate into the global XYZ coordinate system and back. We have the option of
-        # staying on the tangent plane or not. If we stay on the tangent then the raster will
-        # join smoothly at the edges. If we change the tangent then we will have to reproject to get
-        # the results on the same image, in which case overlaps or gaps are difficult to deal with.
-        if not tangent:
-            if inverse:
-                xyz = uvw_to_xyz(vis.data['uvw'], ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
-                newvis.data['uvw'][...] = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
-            else:
-                # This is the original (non-inverse) code
-                xyz = uvw_to_xyz(newvis.data['uvw'], ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
-                newvis.data['uvw'][...] = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
-            newvis.phasecentre = newphasecentre
-        return newvis
-    elif isinstance(vis, BlockVisibility):
-        phasor = calculate_blockvisibility_phasor(newphasecentre, newvis)
-        assert vis.data['vis'].values.shape == phasor.shape
-        if inverse:
-            newvis.data['vis'].values *= phasor
-        else:
-            newvis.data['vis'].values *= numpy.conj(phasor)
-        # To rotate UVW, rotate into the global XYZ coordinate system and back. We have the option of
-        # staying on the tangent plane or not. If we stay on the tangent then the raster will
-        # join smoothly at the edges. If we change the tangent then we will have to reproject to get
-        # the results on the same image, in which case overlaps or gaps are difficult to deal with.
-        if not tangent:
-            # The rotation can be done on the uvw (metres) values but we also have to update
-            # The wavelength dependent values
-            nrows, nbl, _ = vis.uvw.shape
-            if inverse:
-                uvw_linear = vis.uvw.values.reshape([nrows * nbl, 3])
-                xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
-                uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
-            else:
-                # This is the original (non-inverse) code
-                uvw_linear = newvis.uvw.values.reshape([nrows * nbl, 3])
-                xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
-                uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
-            newvis.phasecentre = newphasecentre
-            newvis.data['uvw'].values[...] = uvw_linear.reshape([nrows, nbl, 3])
-            newvis = calculate_blockvisibility_uvw_lambda(newvis)
-        return newvis
+    phasor = calculate_blockvisibility_phasor(newphasecentre, newvis)
+    assert vis.data['vis'].values.shape == phasor.shape
+    if inverse:
+        newvis.data['vis'].values *= phasor
     else:
-        raise ValueError("vis argument neither Visibility or BlockVisibility")
+        newvis.data['vis'].values *= numpy.conj(phasor)
+    # To rotate UVW, rotate into the global XYZ coordinate system and back. We have the option of
+    # staying on the tangent plane or not. If we stay on the tangent then the raster will
+    # join smoothly at the edges. If we change the tangent then we will have to reproject to get
+    # the results on the same image, in which case overlaps or gaps are difficult to deal with.
+    if not tangent:
+        # The rotation can be done on the uvw (metres) values but we also have to update
+        # The wavelength dependent values
+        nrows, nbl, _ = vis.uvw.shape
+        if inverse:
+            uvw_linear = vis.uvw.values.reshape([nrows * nbl, 3])
+            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
+            uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
+        else:
+            # This is the original (non-inverse) code
+            uvw_linear = newvis.uvw.values.reshape([nrows * nbl, 3])
+            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
+            uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
+        newvis.phasecentre = newphasecentre
+        newvis.data['uvw'].values[...] = uvw_linear.reshape([nrows, nbl, 3])
+        newvis = calculate_blockvisibility_uvw_lambda(newvis)
+    return newvis
 
 
 def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
@@ -555,11 +387,11 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         bl_list = []
         
         antennas2 = antennas
-
+        
         # for ant1 in range(0, nant):
         #     for ant2 in range(ant1, nant):
         #         yield ant1, ant2
-
+        
         for a1 in range(0, n_ant - 1):
             for a2 in range(a1 + 1, n_ant):
                 bl_list.append((antennas[a1], antennas2[a2]))
@@ -854,7 +686,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             
             baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
             nbaselines = len(baselines)
-
+            
             location = EarthLocation(x=Quantity(xyz[0][0], 'm'),
                                      y=Quantity(xyz[0][1], 'm'),
                                      z=Quantity(xyz[0][2], 'm'))
@@ -921,36 +753,6 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                                             source=source, meta=meta))
         tab.close()
     return vis_list
-
-
-def create_visibility_from_ms(msname, channum=None, start_chan=None, end_chan=None, average_channels=False,
-                              ack=False):
-    """ Minimal MS to BlockVisibility converter
-
-    The MS format is much more general than the RASCIL BlockVisibility so we cut many corners. This requires casacore to be
-    installed. If not an exception ModuleNotFoundError is raised.
-
-    Creates a list of BlockVisibility's, split by field and spectral window
-
-    Reading of a subset of channels is possible using either start_chan and end_chan or channnum. Using start_chan
-    and end_chan is preferred since it only reads the channels required. Channum is more flexible and can be used to
-    read a random list of channels.
-    
-    :param msname: File name of MS
-    :param channum: range of channels e.g. range(17,32), default is None meaning all
-    :param start_chan: Starting channel to read
-    :param end_chan: End channel to read
-    :param average_channels: Average all channels read
-    :return:
-    """
-    from rascil.processing_components.visibility.coalesce import \
-        convert_blockvisibility_to_visibility
-    return [convert_blockvisibility_to_visibility(v)
-            for v in create_blockvisibility_from_ms(msname=msname, channum=channum,
-                                                    start_chan=start_chan,
-                                                    end_chan=end_chan,
-                                                    average_channels=average_channels,
-                                                    ack=ack)]
 
 
 def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum=None):
@@ -1065,7 +867,7 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
                 antenna_diameter = antenna_diameter[:antnum]
         
         nants = len(antenna_xyz)
-
+        
         baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
         nbaselines = len(baselines)
         
@@ -1173,42 +975,6 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
                                             phasecentre=phasecentre,
                                             polarisation_frame=polarisation_frame))
     return vis_list
-
-
-def create_visibility_from_uvfits(fitsname, channum=None, ack=False, antnum=None):
-    """ Minimal UVFITS to BlockVisibility converter
-
-    Creates a list of BlockVisibility's, split by field and spectral window
-
-    :param fitsname: File name of UVFITS file
-    :param channum: range of channels e.g. range(17,32), default is None meaning all
-    :param antnum: the number of antenna
-    :return:
-    """
-    from rascil.processing_components.visibility.coalesce import \
-        convert_blockvisibility_to_visibility
-    return [convert_blockvisibility_to_visibility(v)
-            for v in
-            create_blockvisibility_from_uvfits(fitsname=fitsname, channum=channum,
-                                               ack=ack, antnum=antnum)]
-
-
-def calculate_visibility_phasor(direction, vis):
-    """ Calculate the phasor for a direction for a Visibility
-
-    :param direction:
-    :param vis:
-    :return:
-    """
-    assert isinstance(vis, Visibility)
-    nrows, npol = vis.vis.shape
-    l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
-    s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
-    
-    phasor = numpy.ones([nrows, npol], dtype='complex')
-    phasor[...] = \
-        numpy.exp(-2j * numpy.pi * numpy.einsum("rs,s->r", vis.uvw, s))[..., numpy.newaxis]
-    return phasor
 
 
 def calculate_blockvisibility_phasor(direction, vis):

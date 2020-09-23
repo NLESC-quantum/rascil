@@ -19,8 +19,15 @@ This and related modules contain various approachs for dealing with the wide-fie
 extra phase term in the Fourier transform cannot be ignored.
 """
 
-__all__ = ['shift_vis_to_image', 'normalize_sumwt', 'predict_2d', 'invert_2d', 'predict_skycomponent_visibility',
-           'create_image_from_visibility', 'advise_wide_field', 'visibility_recentre', 'fill_vis_for_psf']
+__all__ = ['shift_vis_to_image',
+           'normalize_sumwt',
+           'predict_2d',
+           'invert_2d',
+           'predict_skycomponent_visibility',
+           'create_image_from_visibility',
+           'advise_wide_field',
+           'visibility_recentre',
+           'fill_blockvis_for_psf']
 
 import logging
 from typing import List, Union
@@ -31,12 +38,12 @@ import astropy.wcs as wcs
 import numpy
 from astropy.wcs.utils import pixel_to_skycoord
 
-from rascil.data_models.memory_data_models import Visibility, BlockVisibility, Image, Skycomponent
+from rascil.data_models.memory_data_models import BlockVisibility, Image, Skycomponent
 from rascil.data_models.parameters import get_parameter
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
-from rascil.processing_components.griddata.gridding import grid_visibility_to_griddata, \
+from rascil.processing_components.griddata.gridding import  \
     grid_blockvisibility_to_griddata, fft_griddata_to_image, fft_image_to_griddata, \
-    degrid_visibility_from_griddata, degrid_blockvisibility_from_griddata
+    degrid_blockvisibility_from_griddata
 from rascil.processing_components.griddata.kernels import create_pswf_convolutionfunction
 from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.image import create_image_from_array, convert_polimage_to_stokes, \
@@ -46,19 +53,18 @@ from rascil.processing_components.visibility.base import copy_visibility, phaser
 log = logging.getLogger('logger')
 
 
-def shift_vis_to_image(vis: Union[Visibility, BlockVisibility], im: Image, tangent: bool = True, inverse: bool = False) \
-        -> Union[Visibility, BlockVisibility]:
+def shift_vis_to_image(vis: BlockVisibility, im: Image, tangent: bool = True, inverse: bool = False) \
+        -> BlockVisibility:
     """Shift visibility in place to the phase centre of the Image
 
-    :param vis: Visibility or BlockVisibility
+    :param vis: BlockVisibility
     :param im: Image model used to determine phase centre
     :param tangent: Is the shift purely on the tangent plane True|False
     :param inverse: Do the inverse operation True|False
     :return: visibility with phase shift applied and phasecentre updated
 
     """
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), "vis is not a Visibility or " \
-                                                                            "BlockVisibility: %r" % vis
+    assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
 
     nchan, npol, ny, nx = im.data.shape
 
@@ -103,14 +109,13 @@ def normalize_sumwt(im: Image, sumwt) -> Image:
     return im
 
 
-def predict_2d(vis: Union[BlockVisibility, Visibility], model: Image, gcfcf=None,
-               **kwargs) -> Union[BlockVisibility, Visibility]:
+def predict_2d(vis: BlockVisibility, model: Image, gcfcf=None, **kwargs) -> BlockVisibility:
     """ Predict using convolutional degridding.
 
     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
     this function. Any shifting needed is performed here.
 
-    :param vis: Visibility to be predicted
+    :param vis: blockvisibility to be predicted
     :param model: model image
     :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
     :return: resulting visibility (in place works)
@@ -119,7 +124,7 @@ def predict_2d(vis: Union[BlockVisibility, Visibility], model: Image, gcfcf=None
     if model is None:
         return vis
 
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, BlockVisibility), vis
 
     _, _, ny, nx = model.data.shape
 
@@ -134,10 +139,7 @@ def predict_2d(vis: Union[BlockVisibility, Visibility], model: Image, gcfcf=None
     griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
     polmodel = convert_stokes_to_polimage(model, vis.polarisation_frame)
     griddata = fft_image_to_griddata(polmodel, griddata, gcf)
-    if isinstance(vis, Visibility):
-        vis = degrid_visibility_from_griddata(vis, griddata=griddata, cf=cf)
-    else:
-        vis = degrid_blockvisibility_from_griddata(vis, griddata=griddata, cf=cf)
+    vis = degrid_blockvisibility_from_griddata(vis, griddata=griddata, cf=cf)
 
     # Now we can shift the visibility from the image frame to the original visibility frame
     svis = shift_vis_to_image(vis, model, tangent=True, inverse=True)
@@ -145,7 +147,7 @@ def predict_2d(vis: Union[BlockVisibility, Visibility], model: Image, gcfcf=None
     return svis
 
 
-def invert_2d(vis: Visibility, im: Image, dopsf: bool = False, normalize: bool = True,
+def invert_2d(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: bool = True,
               gcfcf=None, **kwargs) -> (Image, numpy.ndarray):
     """ Invert using 2D convolution function, using the specified convolution function
 
@@ -154,7 +156,7 @@ def invert_2d(vis: Visibility, im: Image, dopsf: bool = False, normalize: bool =
     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms
     of this function. Any shifting needed is performed here.
 
-    :param vis: Visibility to be inverted
+    :param vis: blockvisibility to be inverted
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
     :param normalize: Normalize by the sum of weights (True)
@@ -162,15 +164,12 @@ def invert_2d(vis: Visibility, im: Image, dopsf: bool = False, normalize: bool =
     :return: resulting image
 
     """
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, BlockVisibility), vis
 
     svis = copy_visibility(vis)
 
     if dopsf:
-        if isinstance(vis, BlockVisibility):
-            svis = fill_blockvis_for_psf(svis)
-        else:
-            svis = fill_vis_for_psf(svis)
+        svis = fill_blockvis_for_psf(svis)
 
     svis = shift_vis_to_image(svis, im, tangent=True, inverse=False)
 
@@ -183,11 +182,7 @@ def invert_2d(vis: Visibility, im: Image, dopsf: bool = False, normalize: bool =
         gcf, cf = gcfcf
 
     griddata = create_griddata_from_image(im, polarisation_frame=vis.polarisation_frame)
-    if isinstance(vis, Visibility):
-        griddata, sumwt = grid_visibility_to_griddata(svis, griddata=griddata, cf=cf)
-    else:
-        griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
-
+    griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
     result = fft_griddata_to_image(griddata, gcf)
 
     if normalize:
@@ -196,33 +191,6 @@ def invert_2d(vis: Visibility, im: Image, dopsf: bool = False, normalize: bool =
     result = convert_polimage_to_stokes(result, **kwargs)
 
     return result, sumwt
-
-
-def fill_vis_for_psf(svis):
-    """ Fill the visibility for calculation of PSF
-
-    :param im:
-    :param svis:
-    :return: visibility with unit vis
-    """
-    if svis.polarisation_frame == PolarisationFrame("linear"):
-        svis.data['vis'][..., 0] = 1.0 + 0.0j
-        svis.data['vis'][..., 1:3] = 0.0 + 0.0j
-        svis.data['vis'][..., 3] = 1.0 + 0.0j
-    elif svis.polarisation_frame == PolarisationFrame("circular"):
-        svis.data['vis'][..., 0] = 1.0 + 0.0j
-        svis.data['vis'][..., 1:3] = 0.0 + 0.0j
-        svis.data['vis'][..., 3] = 1.0 + 0.0j
-    elif svis.polarisation_frame == PolarisationFrame("linearnp"):
-        svis.data['vis'][...] = 1.0 + 0.0j
-    elif svis.polarisation_frame == PolarisationFrame("circularnp"):
-        svis.data['vis'][...] = 1.0 + 0.0j
-    elif svis.polarisation_frame == PolarisationFrame("stokesI"):
-        svis.data['vis'][...] = 1.0 + 0.0j
-    else:
-        raise ValueError("Cannot calculate PSF for {}".format(svis.polarisation_frame))
-    
-    return svis
 
 
 def fill_blockvis_for_psf(svis):
@@ -252,15 +220,15 @@ def fill_blockvis_for_psf(svis):
     return svis
 
 
-def predict_skycomponent_visibility(vis: Union[Visibility, BlockVisibility],
-                                    sc: Union[Skycomponent, List[Skycomponent]]) -> Union[Visibility, BlockVisibility]:
-    """Predict the visibility from a Skycomponent, add to existing visibility, for Visibility or BlockVisibility
+def predict_skycomponent_visibility(vis: BlockVisibility,
+                                    sc: Union[Skycomponent, List[Skycomponent]]) -> BlockVisibility:
+    """Predict the visibility from a Skycomponent, add to existing visibility, for BlockVisibility
 
     Now replaced by dft_skycomponent_visibility
 
-    :param vis: Visibility or BlockVisibility
+    :param vis: BlockVisibility
     :param sc: Skycomponent or list of SkyComponents
-    :return: Visibility or BlockVisibility
+    :return: BlockVisibility or BlockVisibility
     """
 
     log.warning("predict_skycomponent_visibility: deprecated - please use dft_skycomponent_visibility")
@@ -268,8 +236,8 @@ def predict_skycomponent_visibility(vis: Union[Visibility, BlockVisibility],
     return dft_skycomponent_visibility(vis, sc)
 
 
-def create_image_from_visibility(vis: Union[BlockVisibility, Visibility], **kwargs) -> Image:
-    """Make an empty image from params and Visibility
+def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
+    """Make an empty image from params and BlockVisibility
     
     This makes an empty, template image consistent with the visibility, allowing optional overriding of select
     parameters. This is a convenience function and does not transform the visibilities.
@@ -287,34 +255,24 @@ def create_image_from_visibility(vis: Union[BlockVisibility, Visibility], **kwar
     See also
         :py:func:`rascil.processing_components.image.operations.create_image`
     """
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), \
-        "vis is not a Visibility or a BlockVisibility: %r" % (vis)
+    assert isinstance(vis, BlockVisibility), \
+        "vis is not a BlockVisibility: %r" % (vis)
     
-    isblock = isinstance(vis, BlockVisibility)
-
     log.debug("create_image_from_visibility: Parsing parameters to get definition of WCS")
 
     imagecentre = get_parameter(kwargs, "imagecentre", vis.phasecentre)
     phasecentre = get_parameter(kwargs, "phasecentre", vis.phasecentre)
 
     # Spectral processing options
-    if isblock:
-        ufrequency = numpy.unique(vis.frequency.values)
-        frequency = get_parameter(kwargs, "frequency", vis.frequency.values)
-    else:
-        ufrequency = numpy.unique(vis.frequency)
-        frequency = get_parameter(kwargs, "frequency", vis.frequency)
+    ufrequency = numpy.unique(vis.frequency.values)
+    frequency = get_parameter(kwargs, "frequency", vis.frequency.values)
 
     vnchan = len(ufrequency)
 
     inchan = get_parameter(kwargs, "nchan", vnchan)
     reffrequency = frequency[0] * units.Hz
-    if isblock:
-        channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", 0.99999999999 * \
+    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", 0.99999999999 * \
                                       vis.channel_bandwidth.values[0]) * units.Hz
-    else:
-        channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", 0.99999999999 * \
-                                      vis.channel_bandwidth[0]) * units.Hz
 
 
     if (inchan == vnchan) and vnchan > 1:
@@ -382,7 +340,7 @@ def create_image_from_visibility(vis: Union[BlockVisibility, Visibility], **kwar
     return create_image_from_array(numpy.zeros(shape), wcs=w, polarisation_frame=pol_frame)
 
 
-def advise_wide_field(vis: Union[BlockVisibility, Visibility], delA=0.02,
+def advise_wide_field(vis: BlockVisibility, delA=0.02,
                       oversampling_synthesised_beam=3.0,
                       guard_band_image=6.0, facets=1, wprojection_planes=1, verbose=True):
     """ Advise on parameters for wide field imaging.
@@ -404,28 +362,16 @@ def advise_wide_field(vis: Union[BlockVisibility, Visibility], delA=0.02,
     :return: dict of advice
     """
 
-    isblock = isinstance(vis, BlockVisibility)
-
-    if isblock:
-        max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis.frequency.values)
-    else:
-        max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis.frequency)
+    max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis.frequency.values)
     if verbose:
         log.info("advise_wide_field: (max_wavelength) Maximum wavelength %.3f (meters)" % (max_wavelength))
 
-    if isblock:
-        min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis.frequency.values)
-    else:
-        min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis.frequency)
+    min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis.frequency.values)
     if verbose:
         log.info("advise_wide_field: (min_wavelength) Minimum wavelength %.3f (meters)" % (min_wavelength))
 
-    if isblock:
-        maximum_baseline = numpy.max(numpy.abs(vis.uvw.values)) / min_wavelength  # Wavelengths
-        maximum_w = numpy.max(numpy.abs(vis.w.values)) / min_wavelength  # Wavelengths
-    else:
-        maximum_baseline = numpy.max(numpy.abs(vis.uvw))  # Wavelengths
-        maximum_w = numpy.max(numpy.abs(vis.w))  # Wavelengths
+    maximum_baseline = numpy.max(numpy.abs(vis.uvw.values)) / min_wavelength  # Wavelengths
+    maximum_w = numpy.max(numpy.abs(vis.w.values)) / min_wavelength  # Wavelengths
 
     if verbose:
         log.info("advise_wide_field: (maximum_baseline) Maximum baseline %.1f (wavelengths)" % (maximum_baseline))
@@ -532,11 +478,8 @@ def advise_wide_field(vis: Union[BlockVisibility, Visibility], delA=0.02,
     if verbose:
         log.info("advice_wide_field: (time_sampling_primary_beam) Time sampling for primary beam = %.1f (s)" % (time_sampling_primary_beam))
 
-    if isblock:
-        max_freq = numpy.max(vis.frequency.values)
-    else:
-        max_freq = numpy.max(vis.frequency)
-        
+    max_freq = numpy.max(vis.frequency.values)
+    
     freq_sampling_image = max_freq * (synthesized_beam / image_fov)
     if verbose:
         log.info("advice_wide_field: (freq_sampling_image) Frequency sampling for full image = %.1f (Hz)" % (freq_sampling_image))

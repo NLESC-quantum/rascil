@@ -22,7 +22,6 @@ from rascil.processing_components.simulation import create_test_image_from_s3, c
     create_test_skycomponents_from_s3
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_visibility, create_blockvisibility, copy_visibility
-from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 from rascil.processing_components.visibility.operations import append_visibility
 
 log = logging.getLogger('logger')
@@ -237,24 +236,6 @@ class TestTesting_Support(unittest.TestCase):
         
         assert fullvis.nvis == totalnvis
     
-    @unittest.skip("Coalesce not supported yet")
-    def test_predict_sky_components_coalesce(self):
-        sc = create_low_test_skycomponents_from_gleam(flux_limit=10.0,
-                                                      polarisation_frame=PolarisationFrame("stokesI"),
-                                                      frequency=self.frequency, kind='cubic',
-                                                      phasecentre=SkyCoord("17h20m31s", "-00d58m45s"),
-                                                      radius=0.1)
-        self.config = create_named_configuration('LOWBD2-CORE')
-        self.phasecentre = SkyCoord("17h20m31s", "-00d58m45s")
-        sampling_time = 3.76
-        self.times = numpy.arange(0.0, + 300 * sampling_time, sampling_time)
-        self.vis = create_blockvisibility(self.config, self.times, self.frequency, phasecentre=self.phasecentre,
-                                          weight=1.0, polarisation_frame=PolarisationFrame('stokesI'),
-                                          channel_bandwidth=self.channel_bandwidth)
-        self.vis = dft_skycomponent_visibility(self.vis, sc)
-        cvt = convert_blockvisibility_to_visibility(self.vis)
-        assert cvt.cindex is not None
-
 
 if __name__ == '__main__':
     unittest.main()

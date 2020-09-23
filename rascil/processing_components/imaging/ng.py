@@ -10,7 +10,6 @@ This performs all necessary w term corrections, to high precision.
 __all__ = ['predict_ng', 'invert_ng']
 
 import logging
-from typing import Union
 
 import numpy
 
@@ -21,7 +20,7 @@ from rascil.data_models.polarisation import convert_pol_frame
 from rascil.processing_components.image.operations import copy_image, \
     image_is_canonical
 from rascil.processing_components.imaging.base import shift_vis_to_image, \
-    normalize_sumwt, fill_vis_for_psf
+    normalize_sumwt, fill_blockvis_for_psf
 from rascil.processing_components.visibility.base import copy_visibility
 
 

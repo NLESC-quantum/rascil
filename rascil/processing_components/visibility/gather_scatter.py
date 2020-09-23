@@ -1,4 +1,4 @@
-""" Visibility iterators for iterating through a BlockVisibility or Visibility.
+""" BlockVisibility iterators for iterating through a BlockVisibility or BlockVisibility.
 
 A typical use would be to make a sequence of snapshot visibilitys::
 
@@ -20,20 +20,20 @@ from typing import List
 
 import numpy
 
-from rascil.data_models.memory_data_models import Visibility, BlockVisibility
+from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.visibility.base import create_visibility_from_rows
 from rascil.processing_components.visibility.iterators import vis_timeslice_iter, vis_wslice_iter
 
 log = logging.getLogger('logger')
 
 
-def visibility_scatter(vis: Visibility, vis_iter, vis_slices=1) -> List[Visibility]:
+def visibility_scatter(vis: BlockVisibility, vis_iter, vis_slices=1) -> List[BlockVisibility]:
     """Scatter a visibility into a list of subvisibilities
     
     If vis_iter is over time then the type of the output visibilities will be the same as input
-    If vis_iter is over w then the type of the output visibilities will always be Visibility
+    If vis_iter is over w then the type of the output visibilities will always be BlockVisibility
 
-    :param vis: Visibility
+    :param vis: blockvisibility
     :param vis_iter: visibility iterator
     :param vis_slices: Number of slices to be made
     :return: list of subvisibilitys
@@ -52,7 +52,7 @@ def visibility_scatter(vis: Visibility, vis_iter, vis_slices=1) -> List[Visibili
     return visibility_list
 
 
-def visibility_gather(visibility_list: List[Visibility], vis: Visibility, vis_iter, vis_slices=None) -> Visibility:
+def visibility_gather(visibility_list: List[BlockVisibility], vis: BlockVisibility, vis_iter, vis_slices=None) -> BlockVisibility:
     """Gather a list of subvisibilities back into a visibility
     
     The iterator setup must be the same as used in the scatter.
@@ -86,18 +86,18 @@ def visibility_gather(visibility_list: List[Visibility], vis: Visibility, vis_it
     return vis
 
 
-def visibility_scatter_w(vis: Visibility, vis_slices=1) -> List[Visibility]:
-    """ Scatter a Visibility over w
+def visibility_scatter_w(vis: BlockVisibility, vis_slices=1) -> List[BlockVisibility]:
+    """ Scatter a BlockVisibility over w
 
     :param vis:
     :param vis_slices: Number of w slices
     :return:
     """
-    assert isinstance(vis, Visibility), vis
+    assert isinstance(vis, BlockVisibility), vis
     return visibility_scatter(vis, vis_iter=vis_wslice_iter, vis_slices=vis_slices)
 
-def visibility_scatter_time(vis: Visibility, vis_slices=1) -> List[Visibility]:
-    """ Scatter a Visibility over time
+def visibility_scatter_time(vis: BlockVisibility, vis_slices=1) -> List[BlockVisibility]:
+    """ Scatter a BlockVisibility over time
 
     :param vis:
     :param vis_slices: Number of time slices
@@ -106,25 +106,25 @@ def visibility_scatter_time(vis: Visibility, vis_slices=1) -> List[Visibility]:
     return visibility_scatter(vis, vis_iter=vis_timeslice_iter, vis_slices=vis_slices)
 
 
-def visibility_gather_w(visibility_list: List[Visibility], vis: Visibility, vis_slices=1) -> Visibility:
-    """ Gather from a list of Visibility over w
+def visibility_gather_w(visibility_list: List[BlockVisibility], vis: BlockVisibility, vis_slices=1) -> BlockVisibility:
+    """ Gather from a list of BlockVisibility over w
 
     :param visibility_list: List of visibility
     :param vis: output visibility
     :param vis_slices: Number of w slices
-    :return: Visibility
+    :return: BlockVisibility
     """
-    assert isinstance(vis, Visibility), vis
+    assert isinstance(vis, BlockVisibility), vis
     return visibility_gather(visibility_list, vis, vis_iter=vis_wslice_iter, vis_slices=vis_slices)
 
 
-def visibility_gather_time(visibility_list: List[Visibility], vis: Visibility, vis_slices=1) -> Visibility:
-    """ Gather from a list of Visibility over time
+def visibility_gather_time(visibility_list: List[BlockVisibility], vis: BlockVisibility, vis_slices=1) -> BlockVisibility:
+    """ Gather from a list of BlockVisibility over time
 
     :param visibility_list: List of visibility
     :param vis: output visibility
     :param vis_slices: Number of time slices
-    :return: Visibility
+    :return: BlockVisibility
     """
     return visibility_gather(visibility_list, vis, vis_iter=vis_timeslice_iter, vis_slices=vis_slices)
 
@@ -132,7 +132,7 @@ def visibility_scatter_channel(vis: BlockVisibility) -> List[BlockVisibility]:
     """ Scatter channels to separate visibilities
     
     :param vis:
-    :return: List of Visibility
+    :return: List of BlockVisibility
     """
     assert isinstance(vis, BlockVisibility), vis
 
@@ -163,8 +163,8 @@ def visibility_gather_channel(vis_list: List[BlockVisibility],
                               vis: BlockVisibility = None):
     """ Gather a visibility by channel
     
-    :param vis_list: List of Visibility
-    :param vis: Template output Visibility
+    :param vis_list: List of BlockVisibility
+    :param vis: Template output BlockVisibility
     :return:
     """
     
@@ -177,7 +177,7 @@ def visibility_gather_channel(vis_list: List[BlockVisibility],
         gathered_channel_bandwidth = numpy.concatenate([v.channel_bandwidth for v in vis_list])
         
         vis = BlockVisibility(frequency=gathered_frequency,
-                              baselines=v.baselines,
+                              baselines=vis_list[0].baselines,
                               channel_bandwidth=gathered_channel_bandwidth,
                               phasecentre=vis_list[0].phasecentre,
                               configuration=vis_list[0].configuration,

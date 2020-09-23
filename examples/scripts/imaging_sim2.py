@@ -10,7 +10,6 @@ from rascil.data_models import PolarisationFrame, rascil_data_path
 from rascil.processing_components import create_blockvisibility_from_ms, \
     export_image_to_fits, qa_image, \
     deconvolve_cube, restore_cube, create_image_from_visibility, \
-    convert_blockvisibility_to_visibility, \
     convert_visibility_to_stokes
 from rascil.workflows import invert_list_serial_workflow
 

@@ -16,7 +16,6 @@ from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import copy_visibility, create_visibility, create_blockvisibility, \
     create_visibility_from_rows, phaserotate_visibility, generate_baselines
-from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 from rascil.processing_components.visibility.operations import append_visibility, qa_visibility, \
     subtract_visibility, divide_visibility
 
@@ -75,14 +74,6 @@ class TestVisibilityOperations(unittest.TestCase):
         self.vis = create_visibility(self.lowcore, self.times, self.frequency, phasecentre=self.phasecentre,
                                      weight=1.0, channel_bandwidth=self.channel_bandwidth)
         assert self.vis.nvis == len(self.vis.time)
-    
-    @unittest.skip("Not implemented for new BV")
-    def test_convert_blockvisibility(self):
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency, phasecentre=self.phasecentre,
-                                          weight=1.0, channel_bandwidth=self.channel_bandwidth)
-        vis = convert_blockvisibility_to_visibility(self.vis)
-        assert vis.nvis == len(vis.time)
-        assert numpy.unique(vis.time).size == self.vis.time.size  # pylint: disable=no-member
     
     @unittest.skip("Not implemented for new BV")
     def test_create_visibility_from_rows_makecopy(self):

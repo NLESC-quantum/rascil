@@ -15,7 +15,6 @@ from rascil.processing_components.imaging.base import create_image_from_visibili
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
-from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 from rascil.workflows.rsexecute.image.image_rsexecute import image_rsexecute_map_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
@@ -56,9 +55,8 @@ if __name__ == '__main__':
                                                             channel_bandwidth=channel_bandwidth,
                                                             phasecentre=phasecentre, weight=1.0,
                                                             polarisation_frame=PolarisationFrame('stokesI'))
-    vis_graph = rsexecute.execute(convert_blockvisibility_to_visibility)(bvis_graph)
     
-    model_graph = rsexecute.execute(create_image_from_visibility)(vis_graph, npixel=4096, cellsize=0.001,
+    model_graph = rsexecute.execute(create_image_from_visibility)(bvis_graph, npixel=4096, cellsize=0.001,
                                                                    override_cellsize=False)
     beam = image_rsexecute_map_workflow(model_graph, create_pb, facets=16, pointingcentre=phasecentre,
                                          telescope='MID')

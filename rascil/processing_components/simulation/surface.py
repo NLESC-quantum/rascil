@@ -153,7 +153,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
         assert vp.wcs.wcs.ctype[0] == 'RA---SIN', vp.wcs.wcs.ctype[0]
         assert vp.wcs.wcs.ctype[1] == 'DEC--SIN', vp.wcs.wcs.ctype[1]
         
-        # The time in the Visibility is hour angle in seconds!
+        # The time in the Visibility is UTC in seconds
         number_bad = 0
         number_good = 0
         
@@ -246,7 +246,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
         assert isinstance(vis, BlockVisibility)
         assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
         
-        # The time in the Visibility is hour angle in seconds!
+        # The time in the Visibility is UTC in seconds
         number_bad = 0
         number_good = 0
         
@@ -345,7 +345,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
         
         for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
             
-            # The time in the Visibility is hour angle in seconds!
+            # The time in the Visibility is UTC in seconds
             r2d = 180.0 / numpy.pi
             # For each hourangle, we need to calculate the location of a component
             # in AZELGEO. With that we can then look up the relevant gain from the

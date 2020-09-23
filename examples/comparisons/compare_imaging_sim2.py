@@ -9,7 +9,6 @@ from rascil.processing_components.visibility.base import create_blockvisibility_
 from rascil.processing_components.image.operations import export_image_to_fits, qa_image
 from rascil.processing_components.image.deconvolution import deconvolve_cube, restore_cube
 from rascil.processing_components.imaging.base import create_image_from_visibility
-from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 from rascil.processing_components.visibility.operations import convert_visibility_to_stokes
 
 from rascil.workflows.serial.imaging.imaging_serial import invert_list_serial_workflow
@@ -32,8 +31,7 @@ if __name__ == '__main__':
     try:
         bvt = create_blockvisibility_from_ms(rascil_data_path('vis/sim-2.ms'), channum=[35, 36, 37, 38, 39])[0]
         bvt.configuration.diameter[...] = 35.0
-        vt = convert_blockvisibility_to_visibility(bvt)
-        vt = convert_visibility_to_stokes(vt)
+        vt = convert_visibility_to_stokes(bvt)
         
         cellsize = 20.0 * numpy.pi / (180.0 * 3600.0)
         npixel = 512

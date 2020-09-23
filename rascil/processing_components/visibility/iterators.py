@@ -1,4 +1,4 @@
-""" Visibility iterators for iterating through a BlockVisibility or Visibility.
+""" Visibility iterators for iterating through a BlockVisibility.
 
 A typical use would be to make a sequence of snapshot images::
 
@@ -12,17 +12,15 @@ A typical use would be to make a sequence of snapshot images::
 __all__ = ['vis_null_iter', 'vis_timeslice_iter', 'vis_timeslices', 'vis_wslice_iter', 'vis_wslices']
 
 import logging
-from typing import Union
-
 
 import numpy
 
-from rascil.data_models.memory_data_models import Visibility, BlockVisibility
+from rascil.data_models.memory_data_models import BlockVisibility
 
 log = logging.getLogger('logger')
 
 
-def vis_null_iter(vis: Union[Visibility, BlockVisibility], vis_slices=1) -> numpy.ndarray:
+def vis_null_iter(vis: BlockVisibility, vis_slices=1) -> numpy.ndarray:
     """Null iterator returning true for all rows
     
     :param vis:
@@ -30,11 +28,11 @@ def vis_null_iter(vis: Union[Visibility, BlockVisibility], vis_slices=1) -> nump
     :return:
     """
     assert vis is not None
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, BlockVisibility), vis
     yield numpy.ones_like(vis.time, dtype=bool)
 
 
-def vis_timeslice_iter(vis: Union[Visibility, BlockVisibility], vis_slices=None) -> numpy.ndarray:
+def vis_timeslice_iter(vis: BlockVisibility, vis_slices=None) -> numpy.ndarray:
     """ Time slice iterator
 
     :param vis:
@@ -42,7 +40,7 @@ def vis_timeslice_iter(vis: Union[Visibility, BlockVisibility], vis_slices=None)
     :return: Boolean array with selected rows=True
     """
     assert vis is not None
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, BlockVisibility), vis
     timemin = numpy.min(vis.time)
     timemax = numpy.max(vis.time)
     
@@ -68,14 +66,14 @@ def vis_timeslice_iter(vis: Union[Visibility, BlockVisibility], vis_slices=None)
             yield rows
 
 
-def vis_timeslices(vis: Union[Visibility, BlockVisibility], timeslice='auto') -> int:
+def vis_timeslices(vis: BlockVisibility, timeslice='auto') -> int:
     """ Calculate number of time slices in a visibility
 
-    :param vis: Visibility
+    :param vis: blockvisibility
     :param timeslice: 'auto' or float (seconds)
     :return: Number of slices
     """
-    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, BlockVisibility), vis
 
     timemin = numpy.min(vis.time)
     timemax = numpy.max(vis.time)
@@ -92,26 +90,26 @@ def vis_timeslices(vis: Union[Visibility, BlockVisibility], timeslice='auto') ->
         return numpy.ceil(timemax - timemin) / timeslice
 
 
-def vis_wslices(vis: Visibility, wslice=10.0) -> int:
+def vis_wslices(vis: BlockVisibility, wslice=10.0) -> int:
     """ Calculate number of w slices (or stack) in a visibility
 
-    :param vis: Visibility
+    :param vis: blockvisibility
     :param wslice: width of w slice (in lambda)
     :return: Number of slices
     """
-    assert isinstance(vis, Visibility), vis
+    assert isinstance(vis, BlockVisibility), vis
     wmaxabs = numpy.max(numpy.abs(vis.w))
     
     return 1 + 2 * numpy.round(wmaxabs / wslice).astype('int')
 
-def vis_wslice_iter(vis: Visibility, vis_slices=1) -> numpy.ndarray:
+def vis_wslice_iter(vis: BlockVisibility, vis_slices=1) -> numpy.ndarray:
     """ W slice iterator
 
     :param vis:
     :param vis_slices: Number of slices
     :return: Boolean array with selected rows=True
     """
-    assert isinstance(vis, Visibility), vis
+    assert isinstance(vis, BlockVisibility), vis
     wmaxabs = numpy.max(numpy.abs(vis.w))
     
     boxes = numpy.linspace(- wmaxabs, +wmaxabs, vis_slices)

@@ -18,7 +18,7 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
     create_unittest_model, create_unittest_components
 from rascil.processing_components.skycomponent.operations import find_skycomponents, find_nearest_skycomponent, \
     insert_skycomponent
-from rascil.processing_components.visibility import copy_visibility, convert_blockvisibility_to_visibility
+from rascil.processing_components.visibility import copy_visibility
 
 try:
     import nifty_gridder

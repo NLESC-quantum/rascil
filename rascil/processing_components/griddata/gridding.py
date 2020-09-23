@@ -12,16 +12,11 @@ stokesIQUV is only done in the image plane.
 """
 
 __all__ = ['convolution_mapping_visibility',
-           'grid_visibility_to_griddata',
            'grid_blockvisibility_to_griddata',
-           'degrid_visibility_from_griddata',
            'degrid_blockvisibility_from_griddata',
-           'grid_visibility_weight_to_griddata',
-           'griddata_merge_weights',
-           'griddata_visibility_reweight',
            'fft_griddata_to_image',
-           'degrid_visibility_from_griddata',
            'fft_image_to_griddata',
+           'griddata_merge_weights',
            'grid_blockvisibility_weight_to_griddata',
            'griddata_blockvisibility_reweight']
 
@@ -31,7 +26,7 @@ import astropy.constants as constants
 import numpy
 import numpy.testing
 
-from rascil.data_models.memory_data_models import BlockVisibility, Visibility, GridData, ConvolutionFunction, \
+from rascil.data_models.memory_data_models import BlockVisibility, GridData, ConvolutionFunction, \
     Image
 from rascil.processing_components.fourier_transforms import ifft, fft
 from rascil.processing_components.griddata.operations import copy_griddata
@@ -39,54 +34,6 @@ from rascil.processing_components.image.operations import create_image_from_arra
 from rascil.processing_components.visibility.base import copy_visibility
 
 log = logging.getLogger('logger')
-
-
-def convolution_mapping_visibility(vis, griddata, frequency, cf, channel_tolerance=1e-8):
-    """Find the mappings between visibility, griddata, and convolution function
-
-    :param vis:
-    :param griddata:
-    :param cf:
-    :param channel_tolerance:
-    :return:
-    """
-
-    assert isinstance(vis, Visibility), vis
-    assert isinstance(griddata, GridData)
-    assert isinstance(cf, ConvolutionFunction)
-    cf.check()
-    assert vis.polarisation_frame == griddata.polarisation_frame
-    assert cf.polarisation_frame == griddata.polarisation_frame
-
-    u = vis.uvw[:, 0]
-    v = vis.uvw[:, 1]
-    w = vis.uvw[:, 2]
-
-    pu_grid, pu_offset, pv_grid, pv_offset, pwc_fraction, pwc_grid, pwg_fraction, pwg_grid = \
-        spatial_mapping(cf, griddata, u, v, w)
-
-    ###### Frequency mapping
-    pfreq_pixel = griddata.grid_wcs.sub([5]).wcs_world2pix(frequency, 0)[0]
-    # Find the nearest grid point
-    pfreq_grid = numpy.round(pfreq_pixel).astype('int')
-    assert numpy.min(pfreq_grid) >= 0, "Frequency axis underflows: %f" % numpy.max(
-        pfreq_grid)
-    assert numpy.max(pfreq_grid) < cf.shape[
-        0], "Frequency axis overflows: %f" % numpy.max(pfreq_grid)
-    pfreq_fraction = pfreq_pixel - pfreq_grid
-    # If we are doing spectral imaging, check the tolerances
-    is_spectral = cf.shape[0] > 1
-    if is_spectral and (numpy.max(numpy.abs(pfreq_fraction)) > channel_tolerance):
-        print(
-            "convolution_mapping_visibility: alignment of visibility and image frequency grids exceeds tolerance %s" %
-            (numpy.max(pfreq_fraction)))
-        log.warning(
-            "convolution_mapping_visibility: alignment of visibility and image frequency grids exceeds tolerance %s" %
-            (numpy.max(pfreq_fraction)))
-
-    ######  TODO: Polarisation mapping
-
-    return pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction, pfreq_grid
 
 
 def convolution_mapping_blockvisibility(vis, griddata, frequency, cf, channel_tolerance=1e-8):
@@ -177,7 +124,7 @@ def spatial_mapping(cf, griddata, u, v, w):
 def grid_blockvisibility_to_griddata(vis, griddata, cf):
     """Grid Visibility onto a GridData
 
-    :param vis: Visibility to be gridded
+    :param vis: blockvisibility to be gridded
     :param griddata: GridData
     :param cf: Convolution function
     :return: GridData
@@ -233,48 +180,6 @@ def grid_blockvisibility_to_griddata(vis, griddata, cf):
     return griddata, sumwt
 
 
-def grid_visibility_to_griddata(vis, griddata, cf):
-    """Grid Visibility onto a GridData
-
-    :param vis: Visibility to be gridded
-    :param griddata: GridData
-    :param cf: Convolution function
-    :return: GridData
-    """
-
-    assert isinstance(vis, Visibility), vis
-    assert isinstance(griddata, GridData)
-    assert isinstance(cf, ConvolutionFunction)
-    cf.check()
-
-    assert vis.polarisation_frame == griddata.polarisation_frame
-
-    nchan, npol, nz, oversampling, _, support, _ = cf.shape
-    sumwt = numpy.zeros([nchan, npol])
-    pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction, pfreq_grid = \
-        convolution_mapping_visibility(vis, griddata, vis.frequency, cf)
-    _, _, _, _, _, gv, gu = cf.shape
-    coords = zip(vis.vis * vis.flagged_imaging_weight,
-                 vis.flagged_imaging_weight,
-                 pfreq_grid, pu_grid,
-                 pu_offset, pv_grid, pv_offset, pwg_grid, pwc_grid)
-    griddata.data.values[...] = 0.0
-
-    # Do this in place to avoid creating a new copy. Doing the conjugation outside the loop
-    # reduces run time immensely
-    ccf = numpy.conjugate(cf.data.values)
-
-    du = gu // 2
-    dv = gv // 2
-    for v, vwt, chan, uu, uuf, vv, vvf, zzg, zzc in coords:
-        griddata.data.values[chan, :, zzg, (vv - dv):(vv + dv), (uu - du):(uu + du)] += \
-            ccf[chan, :, zzc, vvf, uuf, :, :] * v[:, numpy.newaxis, numpy.newaxis]
-        sumwt[chan, :] += vwt
-
-    cf.data.values = numpy.conjugate(cf.data.values)
-    return griddata, sumwt
-
-
 def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
     """Grid BlockVisibility weight onto a GridData
 
@@ -323,38 +228,6 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
     return griddata, sumwt
 
     
-def grid_visibility_weight_to_griddata(vis, griddata: GridData, cf):
-    """Grid Visibility weight onto a GridData
-
-    :param vis: Visibility to be gridded
-    :param griddata: GridData
-    :return: GridData
-    """
-    assert isinstance(vis, Visibility), vis
-    assert isinstance(griddata, GridData)
-    assert isinstance(cf, ConvolutionFunction)
-    cf.check()
-    assert vis.polarisation_frame == griddata.polarisation_frame
-    assert cf.polarisation_frame == griddata.polarisation_frame
-
-    nchan, npol, nw, ny, nx = griddata.shape
-    sumwt = numpy.zeros([nchan, npol])
-    pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction, pfreq_grid = \
-        convolution_mapping_visibility(vis, griddata, vis.frequency, cf)
-    _, _, _, _, _, gv, gu = cf.shape
-    coords = zip(vis.flagged_imaging_weight, pfreq_grid, pu_grid, pv_grid, pwg_grid)
-    griddata.data[...] = 0.0
-
-    real_gd = numpy.real(griddata.data.values)
-    for vwt, chan, xx, yy, zzg in coords:
-        real_gd[chan, :, zzg, yy, xx] += vwt
-        sumwt[chan, :] += vwt
-
-    griddata.data.values = real_gd.astype("complex")
-
-    return griddata, sumwt
-
-
 def griddata_merge_weights(gd_list, algorithm='uniform'):
     """ Merge weights into one grid
     
@@ -382,78 +255,14 @@ def griddata_merge_weights(gd_list, algorithm='uniform'):
     return (gd, sumwt)
 
 
-def griddata_visibility_reweight(vis, griddata, cf, weighting="uniform", robustness=0.0):
-    """Reweight visibility weight using the weights in griddata
-
-    :param weighting:
-    :param vis: Visibility to be reweighted
-    :param griddata: GridData holding gridded weights
-    :param cf: Convolution function
-    :return: Visibility with imaging_weights corrected
-    """
-    assert isinstance(vis, Visibility), vis
-    assert isinstance(griddata, GridData)
-    assert isinstance(cf, ConvolutionFunction)
-    cf.check()
-    assert vis.polarisation_frame == griddata.polarisation_frame
-    assert cf.polarisation_frame == griddata.polarisation_frame
-
-    assert weighting in ["natural", "uniform", "robust"], "Weighting {} not supported".format(weighting)
-
-    real_gd = numpy.real(griddata.data.values)
-
-    vis_to_im = numpy.round(
-        griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency, 0)[0]).astype('int')
-
-    nrows, nvpol = vis.vis.shape
-    fwtt = vis.flagged_imaging_weight.T
-    nvchan = len(numpy.unique(vis.frequency))
-    if weighting == "uniform":
-        for pol in range(nvpol):
-            for vchan in range(nvchan):
-                imchan = vis_to_im[vchan]
-                frequency = vis.frequency[vchan]
-                pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction, pfreq_grid = \
-                    convolution_mapping_visibility(vis, griddata, frequency, cf)
-                for row in range(nrows):
-                    wt = real_gd[imchan, pol, pwg_grid[row], pv_grid[row], pu_grid[row]]
-                    if wt > 0.0:
-                        fwtt[pol, row] /= wt
-    
-        vis.data['imaging_weight'][...] = fwtt.T
-
-    elif weighting == "robust":
-        # Equation 3.15, 3.16 in Briggs thesis
-        sumlocwt = numpy.sum(real_gd)
-        sumwt = numpy.sum(vis.flagged_weight)
-        f2 = (5.0 * numpy.power(10.0, -robustness))**2 * sumwt / sumlocwt
-        for pol in range(nvpol):
-            for vchan in range(nvchan):
-                imchan = vis_to_im[vchan]
-                frequency = vis.frequency[vchan]
-                pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction, pfreq_grid = \
-                    convolution_mapping_visibility(vis, griddata, frequency, cf)
-                for row in range(nrows):
-                    wt = real_gd[imchan, pol, pwg_grid[row], pv_grid[row], pu_grid[row]]
-                    if wt > 0.0:
-                        fwtt[pol, row] /= (1 + f2 * wt)
-    
-        vis.data['imaging_weight'][...] = fwtt.T
-    elif weighting == "natural":
-        vis.data['imaging_weight'][...] = vis.data['weight'][...]
-        
-
-    return vis
-
-
 def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", robustness=0.0):
     """Reweight blockvisibility weight using the weights in griddata
 
     :param weighting:
-    :param vis: Visibility to be reweighted
+    :param vis: blockvisibility to be reweighted
     :param griddata: GridData holding gridded weights
     :param cf: Convolution function
-    :return: Visibility with imaging_weights corrected
+    :return: BlockVisibility with imaging_weights corrected
     """
     assert isinstance(vis, BlockVisibility), vis
     assert isinstance(griddata, GridData)
@@ -512,11 +321,11 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
 def degrid_blockvisibility_from_griddata(vis, griddata, cf, **kwargs):
     """Degrid blockVisibility from a GridData
 
-    :param vis: Visibility to be degridded
+    :param vis: blockvisibility to be degridded
     :param griddata: GridData containing image
     :param cf: Convolution function (as GridData)
     :param kwargs:
-    :return: Visibility
+    :return: BlockVisibility
     """
     assert isinstance(vis, BlockVisibility), vis
     assert isinstance(griddata, GridData)
@@ -575,51 +384,6 @@ def degrid_blockvisibility_from_griddata(vis, griddata, cf, **kwargs):
 
     newvis.data['vis'][...] = fvist.T.reshape([nrows, nbaselines, nvchan, nvpol])
 
-    return newvis
-
-
-def degrid_visibility_from_griddata(vis, griddata, cf, **kwargs):
-    """Degrid Visibility from a GridData
-
-    :param vis: Visibility to be degridded
-    :param griddata: GridData containing image
-    :param cf: Convolution function (as GridData)
-    :param kwargs:
-    :return: Visibility
-    """
-    assert isinstance(vis, Visibility), vis
-    assert isinstance(griddata, GridData)
-    assert isinstance(cf, ConvolutionFunction)
-    cf.check()
-    assert vis.polarisation_frame == griddata.polarisation_frame
-    assert cf.polarisation_frame == griddata.polarisation_frame
-
-    nchan, npol, nz, oversampling, _, support, _ = cf.shape
-    pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction, pfreq_grid = \
-        convolution_mapping_visibility(vis, griddata, vis.frequency, cf)
-    _, _, _, _, _, gv, gu = cf.shape
-
-    newvis = copy_visibility(vis)
-
-    # coords = zip(pfreq_grid, pu_grid, pu_offset, pv_grid, pv_offset, pw_grid)
-
-    du = gu // 2
-    dv = gv // 2
-
-    nvis = vis.vis.shape[0]
-
-    for ivis in range(nvis):
-        chan, uu, uuf, vv, vvf, zzg, zzc = pfreq_grid[ivis], pu_grid[ivis], pu_offset[
-            ivis], pv_grid[ivis], pv_offset[ivis], pwg_grid[ivis], pwc_grid[ivis]
-        # Use einsum to replace the following:
-        # newvis.vis[i,:] = numpy.sum(griddata.data[chan, :, zzg, (vv - dv):(vv + dv), (uu - du):(uu + du)] *
-        #                              cf.data[chan, :, zzc, vvf, uuf, :, :], axis=(1, 2))
-
-        newvis.vis[ivis, :] = numpy.einsum('ijk,ijk->i',
-                                            griddata.data.values[chan, :, zzg,
-                                            (vv - dv):(vv + dv), (uu - du):(uu + du)],
-                                            cf.data.values[chan, :, zzc, vvf, uuf, :, :])
-        # assert numpy.abs(numpy.sum(cf.data[chan, :, zzc, vvf, uuf, :, :].real) - 1.0) < 1e-12
     return newvis
 
 

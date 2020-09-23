@@ -66,7 +66,7 @@ from rascil.processing_components.imaging import predict_2d, dft_skycomponent_vi
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.operations import create_skycomponent, insert_skycomponent, \
     apply_beam_to_skycomponent, filter_skycomponents_by_flux
-from rascil.processing_components.visibility.base import create_blockvisibility, create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.util.installation_checks import check_data_directory
 
 check_data_directory()
@@ -678,7 +678,7 @@ def create_blockvisibility_iterator(config: Configuration, times: numpy.array, f
     :param model: Model image to be inserted
     :param components: Components to be inserted
     :param sleep_time: Time to sleep between yields
-    :return: Visibility
+    :return: BlockVisibility
 
     """
     for time in times:
@@ -765,12 +765,8 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
 
 def ingest_unittest_visibility(config, frequency, channel_bandwidth, times, vis_pol, phasecentre, block=False,
                                zerow=False):
-    if block:
-        vt = create_blockvisibility(config, times, frequency, channel_bandwidth=channel_bandwidth,
+    vt = create_blockvisibility(config, times, frequency, channel_bandwidth=channel_bandwidth,
                                     phasecentre=phasecentre, weight=1.0, polarisation_frame=vis_pol, zerow=zerow)
-    else:
-        vt = create_visibility(config, times, frequency, channel_bandwidth=channel_bandwidth,
-                               phasecentre=phasecentre, weight=1.0, polarisation_frame=vis_pol, zerow=zerow)
     vt.data['vis'][...] = 0.0
     return vt
 

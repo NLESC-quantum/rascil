@@ -16,7 +16,6 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation import ingest_unittest_visibility, \
     create_unittest_model, create_unittest_components
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
-from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 
 try:
     import casacore

@@ -14,8 +14,6 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.visibility.base import create_blockvisibility_from_uvfits, create_visibility_from_uvfits
 from rascil.processing_components.visibility.operations import integrate_visibility_by_channel
 from rascil.processing_components.imaging.base import invert_2d, create_image_from_visibility
-from rascil.processing_components.visibility.coalesce import convert_visibility_to_blockvisibility, \
-    convert_blockvisibility_to_visibility
 from rascil.processing_components.image.operations import export_image_to_fits
 
 
@@ -90,8 +88,7 @@ class TestCreateMS(unittest.TestCase):
         nchan = 192
         for schan in range(0, nchan, nchan_ave):
             max_chan = min(nchan, schan + nchan_ave)
-            bv = create_blockvisibility_from_uvfits(uvfitsfile, range(schan, max_chan))[0]
-            vis = convert_blockvisibility_to_visibility(bv)
+            vis = create_blockvisibility_from_uvfits(uvfitsfile, range(schan, max_chan))[0]
             from rascil.processing_components.visibility.operations import convert_visibility_to_stokesI
             vis = convert_visibility_to_stokesI(vis)
             model = create_image_from_visibility(vis, npixel=256, polarisation_frame=PolarisationFrame('stokesI'))

@@ -24,8 +24,8 @@ from rascil.processing_components import create_gaintable_from_blockvisibility, 
     export_image_to_fits, \
     remove_neighbouring_components, find_skycomponents, \
     calculate_skymodel_equivalent_image, \
-    initialize_skymodel_voronoi, convert_blockvisibility_to_visibility, \
-    convert_visibility_to_blockvisibility, import_image_from_fits, qa_image, show_image, \
+    initialize_skymodel_voronoi, \
+    import_image_from_fits, qa_image, show_image, \
     advise_wide_field, \
     create_low_test_beam, create_gaintable_from_screen, grid_gaintable_to_screen, \
     plot_gaintable_on_screen, \
@@ -114,8 +114,7 @@ if __name__ == '__main__':
         polarisation_frame=PolarisationFrame("stokesI"),
         zerow=True)
 
-    vis = convert_blockvisibility_to_visibility(block_vis)
-    advice = advise_wide_field(vis, guard_band_image=2.0, delA=0.02)
+    advice = advise_wide_field(block_vis, guard_band_image=2.0, delA=0.02)
 
     cellsize = advice['cellsize']
     vis_slices = advice['vis_slices']
@@ -129,11 +128,9 @@ if __name__ == '__main__':
         cellsize=cellsize,
         phasecentre=phasecentre)
 
-    vis.data['imaging_weight'][...] = vis.data['weight'][...]
-    vis = weight_list_serial_workflow([vis], [small_model])[0]
-    vis = taper_list_serial_workflow([vis], 3 * cellsize)[0]
-
-    block_vis = convert_visibility_to_blockvisibility(vis)
+    block_vis.data['imaging_weight'][...] = block_vis.data['weight'][...]
+    block_vis = weight_list_serial_workflow([block_vis], [small_model])[0]
+    block_vis = taper_list_serial_workflow([block_vis], 3 * cellsize)[0]
 
     #######################################################################################################
     ### Generate the component model from the GLEAM catalog, including application of the primary beam. Read the

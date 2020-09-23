@@ -9,14 +9,10 @@ __all__ = ['convert_earthlocation_to_string',
            'convert_direction_from_string',
            'convert_configuration_to_hdf',
            'convert_configuration_from_hdf',
-           'convert_visibility_to_hdf',
-           'convert_hdf_to_visibility',
            'convert_blockvisibility_to_hdf',
            'convert_hdf_to_blockvisibility',
            'convert_flagtable_to_hdf',
            'convert_hdf_to_flagtable',
-           'export_visibility_to_hdf5',
-           'import_visibility_from_hdf5',
            'export_blockvisibility_to_hdf5',
            'import_blockvisibility_from_hdf5',
            'convert_gaintable_to_hdf',
@@ -55,14 +51,10 @@ __all__ = ['convert_earthlocation_to_string',
            'convert_direction_from_string',
            'convert_configuration_to_hdf',
            'convert_configuration_from_hdf',
-           'convert_visibility_to_hdf',
-           'convert_hdf_to_visibility',
            'convert_blockvisibility_to_hdf',
            'convert_hdf_to_blockvisibility',
            'convert_flagtable_to_hdf',
            'convert_hdf_to_flagtable',
-           'export_visibility_to_hdf5',
-           'import_visibility_from_hdf5',
            'export_blockvisibility_to_hdf5',
            'import_blockvisibility_from_hdf5',
            'export_flagtable_to_hdf5',
@@ -109,7 +101,7 @@ from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.units import Quantity
 from astropy.wcs import WCS
 
-from rascil.data_models.memory_data_models import Visibility, BlockVisibility, Configuration, \
+from rascil.data_models.memory_data_models import BlockVisibility, Configuration, \
     GainTable, SkyModel, Skycomponent, Image, GridData, ConvolutionFunction, PointingTable, FlagTable
 from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 
@@ -207,48 +199,6 @@ def convert_configuration_from_hdf(f):
                          vp_type=vp_type)
 
 
-def convert_visibility_to_hdf(vis, f):
-    """ Convert visibility to HDF
-
-    :param vis: Visibility
-    :param f: HDF root
-    :return: HDF root
-    """
-    assert isinstance(vis, Visibility)
-
-    f.attrs['RASCIL_data_model'] = 'Visibility'
-    f.attrs['nvis'] = vis.nvis
-    f.attrs['npol'] = vis.npol
-    f.attrs['phasecentre_coords'] = vis.phasecentre.to_string()
-    f.attrs['phasecentre_frame'] = vis.phasecentre.frame.name
-    f.attrs['polarisation_frame'] = vis.polarisation_frame.type
-    f.attrs['source'] = vis.source
-    f.attrs['meta'] = str(vis.meta)
-    f['data'] = vis.data
-    f = convert_configuration_to_hdf(vis.configuration, f)
-    return f
-
-
-def convert_hdf_to_visibility(f):
-    """ Convert HDF root to visibility
-
-    :param f:
-    :return:
-    """
-    assert f.attrs['RASCIL_data_model'] == "Visibility", "Not a Visibility"
-    s = f.attrs['phasecentre_coords'].split()
-    ss = [float(s[0]), float(s[1])] * u.deg
-    phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['phasecentre_frame'])
-    polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
-    data = numpy.array(f['data'])
-    source = str(f.attrs['source'])
-    meta = ast.literal_eval(f.attrs['meta'])
-    vis = Visibility(data=data, polarisation_frame=polarisation_frame,
-                     phasecentre=phasecentre, source=source, meta=meta)
-    vis.configuration = convert_configuration_from_hdf(f)
-    return vis
-
-
 def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     """ Convert blockvisibility to HDF
 
@@ -326,40 +276,6 @@ def convert_hdf_to_flagtable(f):
     vis = FlagTable(data=data, frequency=frequency, channel_bandwidth=channel_bandwidth)
     vis.configuration = convert_configuration_from_hdf(f)
     return vis
-
-
-def export_visibility_to_hdf5(vis, filename):
-    """ Export a Visibility to HDF5 format
-
-    :param vis:
-    :param filename:
-    :return:
-    """
-
-    if not isinstance(vis, collections.abc.Iterable):
-        vis = [vis]
-    with h5py.File(filename, 'w') as f:
-        f.attrs['number_data_models'] = len(vis)
-        for i, v in enumerate(vis):
-            vf = f.create_group('Visibility%d' % i)
-            convert_visibility_to_hdf(v, vf)
-        f.flush()
-
-
-def import_visibility_from_hdf5(filename):
-    """Import a Visibility from HDF5 format
-
-    :param filename:
-    :return: If only one then a Visibility, otherwise a list of Visibilitys
-    """
-
-    with h5py.File(filename, 'r') as f:
-        nvislist = f.attrs['number_data_models']
-        vislist = [convert_hdf_to_visibility(f['Visibility%d' % i]) for i in range(nvislist)]
-        if nvislist == 1:
-            return vislist[0]
-        else:
-            return vislist
 
 
 def export_blockvisibility_to_hdf5(vis, filename):

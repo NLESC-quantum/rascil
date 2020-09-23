@@ -1,4 +1,4 @@
-""" Visibility operations
+""" BlockVisibility fitting
 
 """
 
@@ -16,7 +16,7 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
     
     Uses the scipy.optimize.minimize function.
     
-    :param vis: Visibility
+    :param vis: blockvisibility
     :param sc: Initial component
     :param tol: Tolerance of fit
     :param niter: Number of iterations

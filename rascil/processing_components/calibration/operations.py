@@ -32,7 +32,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     If the visibility data are polarised e.g. polarisation_frame("linear") then the inverse operator
     represents an actual inverse of the gains.
 
-    :param vis: Visibility to have gains applied
+    :param vis: blockvisibility to have gains applied
     :param gt: Gaintable to be applied
     :param inverse: Apply the inverse (default=False)
     :return: input vis with gains applied

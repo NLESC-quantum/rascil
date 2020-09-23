@@ -41,7 +41,7 @@ class TestImaging2D(unittest.TestCase):
         
         self.persist = os.getenv("RASCIL_PERSIST", True)
     
-    def actualSetUp(self, freqwin=1, block=False, dospectral=True,
+    def actualSetUp(self, freqwin=1, dospectral=True,
                     image_pol=PolarisationFrame('stokesI'), zerow=False):
         
         self.npixel = 256
@@ -87,7 +87,6 @@ class TestImaging2D(unittest.TestCase):
                                               self.times,
                                               self.vis_pol,
                                               self.phasecentre,
-                                              block=block,
                                               zerow=zerow)
         
         self.model = create_unittest_model(self.vis, self.image_pol, npixel=self.npixel, nchan=freqwin)
@@ -154,10 +153,6 @@ class TestImaging2D(unittest.TestCase):
         self.actualSetUp(zerow=True)
         self._predict_base(name='predict_2d')
     
-    def test_predict_2d_block(self):
-        self.actualSetUp(zerow=True, block=True)
-        self._predict_base(name='predict_2d_block')
-    
     def test_predict_2d_point(self):
         self.actualSetUp(zerow=True)
         self.model.data[...] = 0.0
@@ -166,27 +161,8 @@ class TestImaging2D(unittest.TestCase):
         vis = predict_2d(self.vis, self.model)
         assert numpy.max(numpy.abs(vis.vis - 1.0)) < 1e-12, numpy.max(numpy.abs(vis.vis - 1.0))
     
-    def test_predict_2d_point_block(self):
-        self.actualSetUp(zerow=True, block=True)
-        self.model.data[...] = 0.0
-        nchan, npol, ny, nx = self.model.shape
-        self.model.data[0, 0, ny // 2, nx // 2] = 1.0
-        vis = predict_2d(self.vis, self.model)
-        assert numpy.max(numpy.abs(vis.vis - 1.0)) < 1e-12
-    
     def test_predict_2d_point_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
-        self.model.data[...] = 0.0
-        nchan, npol, ny, nx = self.model.shape
-        self.model.data[0, 0, ny // 2, nx // 2] = 1.0
-        vis = predict_2d(self.vis, self.model)
-        assert numpy.max(numpy.abs(vis.vis[..., 0] - 1.0)) < 1e-12
-        assert numpy.max(numpy.abs(vis.vis[..., 1])) < 1e-12
-        assert numpy.max(numpy.abs(vis.vis[..., 2])) < 1e-12
-        assert numpy.max(numpy.abs(vis.vis[..., 3] - 1.0)) < 1e-12
-    
-    def test_predict_2d_point_block_IQUV(self):
-        self.actualSetUp(zerow=True, block=True, image_pol=PolarisationFrame("stokesIQUV"))
         self.model.data[...] = 0.0
         nchan, npol, ny, nx = self.model.shape
         self.model.data[0, 0, ny // 2, nx // 2] = 1.0
@@ -211,10 +187,6 @@ class TestImaging2D(unittest.TestCase):
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
         self._invert_base(name='invert_2d', positionthreshold=2.0, check_components=True)
-    
-    def test_invert_2d_block(self):
-        self.actualSetUp(zerow=True, block=True)
-        self._invert_base(name='invert_2d_block', positionthreshold=2.0, check_components=True)
     
     def test_invert_2d_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
@@ -288,26 +260,6 @@ class TestImaging2D(unittest.TestCase):
                                                   polarisation_frame=self.vis_pol)
         self._invert_base(name='invert_awterm_spec_IQUV', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
     
-    def test_predict_awterm_block(self):
-        self.actualSetUp(zerow=False, block=True)
-        make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
-        gcf, cf = create_awterm_convolutionfunction(self.model, make_pb=make_pb, nw=50, wstep=16.0,
-                                                    oversampling=4, support=100, use_aaf=True,
-                                                    polarisation_frame=self.vis_pol)
-        cf_clipped = apply_bounding_box_convolutionfunction(cf, 1e-4)
-        gcfcf = (gcf, cf_clipped)
-        self._predict_base(fluxthreshold=35.0, name='predict_awterm_block', gcfcf=gcfcf)
-    
-    def test_invert_awterm_block(self):
-        self.actualSetUp(zerow=False, block=True)
-        make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
-        gcf, cf = create_awterm_convolutionfunction(self.model, make_pb=make_pb, nw=50, wstep=16.0,
-                                                    oversampling=4, support=100, use_aaf=True,
-                                                    polarisation_frame=self.vis_pol)
-        cf_clipped = apply_bounding_box_convolutionfunction(cf, 1e-4)
-        gcfcf = (gcf, cf_clipped)
-        self._invert_base(name='invert_awterm_block', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
-    
     def test_predict_wterm(self):
         self.actualSetUp(zerow=False)
         gcf, cf = create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
@@ -351,16 +303,7 @@ class TestImaging2D(unittest.TestCase):
         if self.persist: export_image_to_fits(psf[0], '%s/test_imaging_2d_psf.fits' % (self.dir))
         
         assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
-    
-    def test_invert_psf_block(self):
-        self.actualSetUp(zerow=False, block=True)
-        psf = invert_2d(self.vis, self.model, dopsf=True)
-        error = numpy.max(psf[0].data) - 1.0
-        assert abs(error) < 1.0e-12, error
-        if self.persist: export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_block.fits' % (self.dir))
         
-        assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
-    
     def test_invert_psf_weighting(self):
         self.actualSetUp(zerow=False)
         for weighting in ["natural", "uniform", "robust"]:
@@ -372,28 +315,6 @@ class TestImaging2D(unittest.TestCase):
                 export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_%s.fits' % (self.dir, weighting))
             assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
     
-    def test_invert_psf_weighting_block(self):
-        self.actualSetUp(zerow=False, block=True)
-        for weighting in ["natural", "uniform", "robust"]:
-            self.vis = weight_visibility(self.vis, self.model, weighting=weighting, robustness=-1.0)
-            psf = invert_2d(self.vis, self.model, dopsf=True)
-            error = numpy.max(psf[0].data) - 1.0
-            assert abs(error) < 1.0e-12, error
-            if self.persist:
-                export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_block_%s.fits' % (self.dir, weighting))
-            assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
-    
-    def test_invert_psf_weighting_block_IQUV(self):
-        self.actualSetUp(zerow=False, block=True, image_pol=PolarisationFrame('stokesIQUV'))
-        for weighting in ["natural", "uniform", "robust"]:
-            self.vis = weight_visibility(self.vis, self.model, weighting=weighting, robustness=-1.0)
-            psf = invert_2d(self.vis, self.model, dopsf=True)
-            error = numpy.max(psf[0].data) - 1.0
-            assert abs(error) < 1.0e-12, error
-            if self.persist:
-                export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_block_%s_IQUV.fits' % (self.dir, weighting))
-            assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
-
 
 if __name__ == '__main__':
     unittest.main()

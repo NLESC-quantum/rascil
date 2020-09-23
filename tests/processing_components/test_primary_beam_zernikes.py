@@ -19,7 +19,7 @@ from rascil.processing_components.image.operations import export_image_to_fits, 
 from rascil.processing_components.imaging.base import create_image_from_visibility
 from rascil.processing_components.imaging.primary_beams import create_pb, create_vp, create_vp_generic_numeric
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 
 log = logging.getLogger('logger')
 
@@ -46,7 +46,7 @@ class TestPrimaryBeams(unittest.TestCase):
         
         self.config = create_named_configuration(config, rmax=rmax)
         self.phasecentre = SkyCoord(ra=+15 * u.deg, dec=dec * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_visibility(self.config, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.config, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'))

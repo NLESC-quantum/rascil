@@ -122,8 +122,8 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     psf_support = get_parameter(kwargs, 'psf_support', max(dirty.shape[2] // 2, dirty.shape[3] // 2))
     if (psf_support <= psf.shape[2] // 2) and ((psf_support <= psf.shape[3] // 2)):
         centre = [psf.shape[2] // 2, psf.shape[3] // 2]
-        psf.data.values = psf.data.values[..., (centre[0] - psf_support):(centre[0] + psf_support),
-                   (centre[1] - psf_support):(centre[1] + psf_support)]
+        psf.data = psf.data.isel({"l":slice((centre[0] - psf_support), (centre[0] + psf_support)),
+                                  "m":slice((centre[0] - psf_support), (centre[0] + psf_support))})
         log.info('deconvolve_cube %s: PSF support = +/- %d pixels' % (prefix, psf_support))
         log.info('deconvolve_cube %s: PSF shape %s' % (prefix, str(psf.data.values.shape)))
     
@@ -358,7 +358,7 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
 
     # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
     norm = 2.0 * numpy.pi * size ** 2
-    gk = Gaussian2DKernel(size)
+    gk = Gaussian2DKernel(size.value)
     for chan in range(model.shape[0]):
         for pol in range(model.shape[1]):
             restored.data.values[chan, pol, :, :] = norm * convolve_fft(model.data.values[chan, pol, :, :], gk,

@@ -10,8 +10,8 @@ from dask.distributed import Client
 
 # These are the RASCIL functions we need
 from rascil.data_models import PolarisationFrame, rascil_path, rascil_data_path
-from rascil.processing_components import create_visibility_from_ms, \
-    create_visibility_from_rows, append_visibility, convert_visibility_to_stokes, \
+from rascil.processing_components import create_blockvisibility_from_ms, \
+    create_blockvisibility_from_rows, append_visibility, convert_visibility_to_stokes, \
     vis_select_uvrange, deconvolve_cube, restore_cube, export_image_to_fits, qa_image, \
     image_gather_channels, create_image_from_visibility
 from rascil.workflows import invert_list_rsexecute_workflow
@@ -95,12 +95,12 @@ if __name__ == '__main__':
     # Define a function to be executed by Dask to load the data, combine it, and select
     # only the short baselines. We load each channel separately.
     def load_ms(c):
-        v1 = create_visibility_from_ms(input_vis[0], start_chan=c, end_chan=c)[0]
-        v2 = create_visibility_from_ms(input_vis[1], start_chan=c, end_chan=c)[0]
+        v1 = create_blockvisibility_from_ms(input_vis[0], start_chan=c, end_chan=c)[0]
+        v2 = create_blockvisibility_from_ms(input_vis[1], start_chan=c, end_chan=c)[0]
         vf = append_visibility(v1, v2)
         vf.configuration.diameter[...] = 35.0
         rows = vis_select_uvrange(vf, 0.0, uvmax=uvmax)
-        return create_visibility_from_rows(vf, rows)
+        return create_blockvisibility_from_rows(vf, rows)
 
 
     # Construct the graph to load the data and persist the graph on the Dask cluster.

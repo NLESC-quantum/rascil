@@ -14,7 +14,7 @@ from rascil.processing_components.visibility.gather_scatter import visibility_ga
     visibility_scatter_time, visibility_scatter_w, visibility_scatter_channel, \
     visibility_gather_channel
 from rascil.processing_components.visibility.iterators import vis_wslices, vis_timeslices
-from rascil.processing_components.visibility.base import create_visibility, create_blockvisibility
+from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility
 
 import logging
 
@@ -40,7 +40,7 @@ class TestVisibilityGatherScatter(unittest.TestCase):
         if times is not None:
             self.times = times
             
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre,
                                      weight=1.0)

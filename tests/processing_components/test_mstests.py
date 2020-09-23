@@ -41,7 +41,7 @@ class TestMSTests(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
         self.dir = rascil_path('test_results')
     
-    def actualSetUp(self, freqwin=1, block=True, dopol=False):
+    def actualSetUp(self, freqwin=1, dopol=False):
         
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
@@ -74,7 +74,7 @@ class TestMSTests(unittest.TestCase):
                                                self.channelwidth,
                                                self.times,
                                                self.vis_pol,
-                                               self.phasecentre, block=block)
+                                               self.phasecentre)
         
         self.model = create_unittest_model(self.bvis, self.image_pol, npixel=self.npixel, nchan=freqwin)
         self.components = create_unittest_components(self.model, flux)

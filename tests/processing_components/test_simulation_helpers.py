@@ -12,7 +12,7 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.processing_components.simulation import create_named_configuration, plot_azel, plot_uvcoverage, \
     plot_uwcoverage, plot_vwcoverage
-from rascil.processing_components.visibility.base import create_blockvisibility, create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility
 
 
 class TestSimulationHelpers(unittest.TestCase):
@@ -48,7 +48,7 @@ class TestSimulationHelpers(unittest.TestCase):
         plot_vwcoverage([self.vis])
 
     def test_plot_uvcoverage(self):
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
                                           weight=1.0)

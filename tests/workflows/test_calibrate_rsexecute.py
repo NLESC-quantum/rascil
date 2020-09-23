@@ -84,7 +84,7 @@ class TestCalibrateGraphs(unittest.TestCase):
                                                                    [self.channelwidth[i]],
                                                                    self.times,
                                                                    self.vis_pol,
-                                                                   self.phasecentre, block=True,
+                                                                   self.phasecentre,
                                                                    zerow=zerow)
              for i in range(nfreqwin)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)

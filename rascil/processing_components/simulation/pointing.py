@@ -17,7 +17,7 @@ from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.data_models.memory_data_models import PointingTable
 from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
-from rascil.processing_components.visibility import create_visibility_from_rows
+from rascil.processing_components.visibility import create_blockvisibility_from_rows
 from rascil.processing_components.util.geometry import calculate_azel
 from rascil.processing_components.visibility.iterators import vis_timeslice_iter
 
@@ -67,7 +67,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
         # in AZELGEO. With that we can then look up the relevant gain from the
         # voltage pattern
         for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
-            v = create_visibility_from_rows(vis, rows)
+            v = create_blockvisibility_from_rows(vis, rows)
             pt_rows = (pt.time == v.time)
             assert numpy.sum(pt_rows) > 0
             pointing_ha = pt.pointing[pt_rows]
@@ -149,7 +149,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
         # in AZELGEO. With that we can then look up the relevant gain from the
         # voltage pattern
         for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
-            v = create_visibility_from_rows(vis, rows)
+            v = create_blockvisibility_from_rows(vis, rows)
             ha = numpy.average(v.time)
             pt_rows = (pt.time == ha)
             pointing_ha = pt.pointing[pt_rows]

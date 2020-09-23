@@ -26,6 +26,7 @@ import logging
 from typing import List, Union
 
 import numpy
+from scipy import interpolate
 
 from rascil.data_models.memory_data_models import BlockVisibility, Skycomponent, assert_same_chan_pol
 from rascil.data_models.polarisation import convert_pol_frame
@@ -51,15 +52,31 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         sc = [sc]
 
     for comp in sc:
-
         assert_same_chan_pol(vis, comp)
         assert isinstance(comp, Skycomponent), comp
         flux = comp.flux
         if comp.polarisation_frame != vis.polarisation_frame:
             flux = convert_pol_frame(flux, comp.polarisation_frame, vis.polarisation_frame)
 
+        if comp.frequency.all() == vis.frequency.all():
+            vflux = flux
+        else:
+            nchan, npol = flux.shape
+            nvchan = len(vis.frequency)
+            vflux = numpy.zeros([nvchan, npol])
+            if nchan > 1:
+                for pol in range(flux.shape[1]):
+                    fint = interpolate.interp1d(comp.frequency, comp.flux[:, pol], kind="cubic")
+                    vflux[:, pol] = fint(vis.frequency.values)
+            else:
+                # Just take the value since we cannot interpolate. Might want to put some
+                # test here
+                vflux = flux
+
+
         phasor = calculate_blockvisibility_phasor(comp.direction, vis)
-        vis.data['vis'] += flux * phasor
+        # vis.data.values['vis'] += flux * phasor
+        vis.data['vis'].values += numpy.einsum("fp,...fp->...fp", vflux, phasor)
 
     return vis
 

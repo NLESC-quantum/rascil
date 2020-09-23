@@ -13,7 +13,7 @@ from rascil.processing_components.image import export_image_to_fits, qa_image, c
 from rascil.processing_components.imaging import create_image_from_visibility
 from rascil.processing_components.imaging import create_vp_generic_numeric
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility import create_visibility
+from rascil.processing_components.visibility import create_blockvisibility
 
 log = logging.getLogger('logger')
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     assert len(config.names) == nants
     assert len(config.mount) == nants
 
-    vis = create_visibility(config, times, frequency,
+    vis = create_blockvisibility(config, times, frequency,
                             channel_bandwidth=channel_bandwidth,
                             phasecentre=phasecentre, weight=1.0,
                             polarisation_frame=PolarisationFrame('stokesI'))

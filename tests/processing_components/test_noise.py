@@ -14,7 +14,7 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation.noise import addnoise_visibility
-from rascil.processing_components.visibility.base import create_visibility, create_blockvisibility, copy_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility, copy_visibility
 
 log = logging.getLogger('logger')
 
@@ -40,7 +40,8 @@ class TestNoise(unittest.TestCase):
         assert len(self.config.mount) == nants
     
     def test_addnoise_visibility(self):
-        self.vis = create_visibility(self.config, self.times, self.frequency, phasecentre=self.phasecentre,
+        self.vis = create_blockvisibility(config=self.config, times=self.times, frequency=self.frequency,
+                                          phasecentre=self.phasecentre,
                                      weight=1.0, integration_time=300.0, polarisation_frame=PolarisationFrame('stokesIQUV'),
                                      channel_bandwidth=self.channel_bandwidth)
         original = copy_visibility(self.vis)

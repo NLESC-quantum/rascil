@@ -41,7 +41,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     def tearDown(self):
         pass
     
-    def actualSetUp(self, add_errors=False, freqwin=3, block=False, dospectral=True, dopol=False,
+    def actualSetUp(self, add_errors=False, freqwin=3, dospectral=True, dopol=False,
                     zerow=True):
         
         self.npixel = 256

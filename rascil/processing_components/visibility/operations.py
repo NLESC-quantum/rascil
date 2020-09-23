@@ -318,7 +318,7 @@ def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=Non
     assert isinstance(vis, BlockVisibility), vis
     
     vis_shape = list(vis.vis.shape)
-    ntimes, nants, _, nchan, npol = vis_shape
+    ntimes, nbaselines, nchan, npol = vis_shape
     
     newvis_list = list()
     ochannels = range(nchan)

@@ -1003,14 +1003,13 @@ class BlockVisibility:
                  imaging_weight=None, source='anonymous', meta=None):
         """BlockVisibility
 
-        :param data: Structured data (used in copying)
         :param frequency: Frequency [nchan]
         :param channel_bandwidth: Channel bandwidth [nchan]
         :param phasecentre: Phasecentre (SkyCoord)
         :param configuration: Configuration
         :param uvw: UVW coordinates (m) [:, nant, nant, 3]
         :param time: Time (UTC) [:]
-        :param vis: Complex visibility [:, nant, nant, nchan, npol]
+        :param baselines: List of baselines
         :param flags: Flags [:, nant, nant, nchan]
         :param weight: [:, nant, nant, nchan, npol]
         :param imaging_weight: [:, nant, nant, nchan, npol]
@@ -1261,7 +1260,8 @@ class FlagTable:
     The configuration is also an attribute
     """
     
-    def __init__(self, data=None, flags=None, frequency=None, channel_bandwidth=None,
+    def __init__(self, baselines=None, flags=None,
+                 frequency=None, channel_bandwidth=None,
                  configuration=None, time=None, integration_time=None,
                  polarisation_frame=None):
         """FlagTable
@@ -1274,21 +1274,21 @@ class FlagTable:
         :param flags: Flags [ntimes, nbaseline, nchan]
         :param integration_time: Integration time [ntimes]
         """
-        if data is None and flags is not None:
-            ntimes, nants, _, nchan, npol = flags.shape
-            assert len(frequency) == nchan
-            assert len(channel_bandwidth) == nchan
-            desc = [('time', 'f8'),
-                    ('integration_time', 'f8'),
-                    ('flags', 'i8', (nants, nants, nchan, npol))]
-            data = numpy.zeros(shape=[ntimes], dtype=desc)
-            data['time'] = time  # MJD in seconds
-            data['integration_time'] = integration_time  # seconds
-            data['flags'] = flags
-        
-        self.data = data  # numpy structured array
-        self.frequency = frequency
-        self.channel_bandwidth = channel_bandwidth
+        coords = {
+            "time": time,
+            "baseline": baselines,
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+        }
+
+        datavars = dict()
+        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
+        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
+        datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
+                                                dims="time")
+        self.data = xarray.Dataset(datavars, coords=coords)
+
         self.polarisation_frame = polarisation_frame
         self.configuration = configuration  # Antenna/station configuration
     
@@ -1307,50 +1307,71 @@ class FlagTable:
         s += "\tConfiguration: %s\n" % self.configuration.name
         
         return s
-    
+
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        for col in self.data.dtype.fields.keys():
-            size += self.data[col].nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-    
+        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
+
     @property
-    def npol(self):
-        """ Number of polarisations
+    def time(self):
+        """ Time
         """
-        return self.data['flags'].shape[-1]
-    
+        return self.data['time']
+
+    @property
+    def datetime(self):
+        """ DateTime
+        """
+        return self.data['datetime']
+
+    @property
+    def flags(self):
+        """ Flags [nrows, nbaseline, ncha, npol]
+        """
+        return self.data['flags']
+
     @property
     def nchan(self):
         """ Number of channels
         """
-        return self.data['flags'].shape[-1]
-    
+        return len(self.data['frequency'])
+
+    @property
+    def frequency(self):
+        """ Number of channels
+        """
+        return self.data['frequency']
+
+    @property
+    def channel_bandwidth(self):
+        """ Number of channels
+        """
+        return self.data['channel_bandwidth']
+
+    @property
+    def npol(self):
+        """ Number of polarisations
+        """
+        return self.polarisation_frame.npol
+
     @property
     def nants(self):
         """ Number of antennas
         """
-        return self.data['vis'].shape[1]
-    
+        return self.configuration.nants
+
     @property
-    def flags(self):
-        """ Flags [nrows, nbaseline, nchan, npol]
+    def baselines(self):
+        """ Baselines
         """
-        return self.data['flags']
-    
+        return self.data["baseline"]
+
     @property
-    def time(self):
-        """ Time (UTC) [nrows]
+    def nbaselines(self):
+        """ Number of Baselines
         """
-        return self.data['time']
-    
-    @property
-    def integration_time(self):
-        """ Integration time [nrows]
-        """
-        return self.data['integration_time']
+        return len(self.data["baseline"])
 
 
 class QA:

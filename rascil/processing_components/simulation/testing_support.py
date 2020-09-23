@@ -20,7 +20,7 @@ Functions that aid testing in various ways. A typical use would be::
                                                       cellsize=0.001,
                                                       polarisation_frame=PolarisationFrame('stokesI')
         
-        vis = create_visibility(lowcore, times=times, frequency=frequency,
+        vis = create_blockvisibility(lowcore, times=times, frequency=frequency,
                                      channel_bandwidth=channel_bandwidth,
                                      phasecentre=phasecentre, weight=1,
                                      polarisation_frame=PolarisationFrame('stokesI'),
@@ -763,8 +763,7 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
     return gt
 
 
-def ingest_unittest_visibility(config, frequency, channel_bandwidth, times, vis_pol, phasecentre, block=False,
-                               zerow=False):
+def ingest_unittest_visibility(config, frequency, channel_bandwidth, times, vis_pol, phasecentre, zerow=False):
     vt = create_blockvisibility(config, times, frequency, channel_bandwidth=channel_bandwidth,
                                     phasecentre=phasecentre, weight=1.0, polarisation_frame=vis_pol, zerow=zerow)
     vt.data['vis'][...] = 0.0

@@ -11,7 +11,7 @@ GridData, ConvolutionFunction and Vis/BlockVis always have the same Polarisation
 stokesIQUV is only done in the image plane.
 """
 
-__all__ = ['convolution_mapping_visibility',
+__all__ = ['convolution_mapping_blockvisibility',
            'grid_blockvisibility_to_griddata',
            'degrid_blockvisibility_from_griddata',
            'fft_griddata_to_image',
@@ -122,7 +122,7 @@ def spatial_mapping(cf, griddata, u, v, w):
 
 
 def grid_blockvisibility_to_griddata(vis, griddata, cf):
-    """Grid Visibility onto a GridData
+    """Grid BlockVisibility onto a GridData
 
     :param vis: blockvisibility to be gridded
     :param griddata: GridData
@@ -245,7 +245,7 @@ def griddata_merge_weights(gd_list, algorithm='uniform'):
 
     for i, g in enumerate(gd_list):
         if i != centre:
-            gd.data += g[0].data
+            gd.data.values += g[0].data.values
             sumwt += g[1]
         frequency += g[0].grid_wcs.wcs.crval[4]
         bandwidth += g[0].grid_wcs.wcs.cdelt[4]

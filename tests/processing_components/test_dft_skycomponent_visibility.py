@@ -14,7 +14,7 @@ from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility, idft_visibility_skycomponent
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility, create_blockvisibility, \
+from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility, \
     phaserotate_visibility
 
 
@@ -50,14 +50,14 @@ class TestVisibilityDFTOperations(unittest.TestCase):
         self.comp = Skycomponent(direction=self.compreldirection, frequency=self.frequency, flux=self.flux,
                                  polarisation_frame=PolarisationFrame("stokesI"))
 
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame("stokesI"))
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
         # Predict visibilities with new phase centre independently
         ha_diff = -(self.compabsdirection.ra - self.phasecentre.ra).to(u.rad).value
-        vispred = create_visibility(self.lowcore, self.times + ha_diff, self.frequency,
+        vispred = create_blockvisibility(self.lowcore, self.times + ha_diff, self.frequency,
                                     channel_bandwidth=self.channel_bandwidth,
                                     phasecentre=self.compabsdirection, weight=1.0,
                                     polarisation_frame=PolarisationFrame("stokesI"))
@@ -101,14 +101,14 @@ class TestVisibilityDFTOperations(unittest.TestCase):
         assert_allclose(rotatedvis.uvw, vismodel2.uvw, rtol=3e-6)
 
     def test_phase_rotation_stokesiquv(self):
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame("stokesIQUV"))
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
         # Predict visibilities with new phase centre independently
         ha_diff = -(self.compabsdirection.ra - self.phasecentre.ra).to(u.rad).value
-        vispred = create_visibility(self.lowcore, self.times + ha_diff, self.frequency,
+        vispred = create_blockvisibility(self.lowcore, self.times + ha_diff, self.frequency,
                                     channel_bandwidth=self.channel_bandwidth,
                                     phasecentre=self.compabsdirection, weight=1.0,
                                     polarisation_frame=PolarisationFrame("stokesIQUV"))
@@ -150,7 +150,7 @@ class TestVisibilityDFTOperations(unittest.TestCase):
 
     def test_dft_idft_stokesiquv_visibility(self):
         for vpol in [PolarisationFrame("linear"), PolarisationFrame("circular")]:
-            self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+            self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                          channel_bandwidth=self.channel_bandwidth,
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame("stokesIQUV"))

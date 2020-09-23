@@ -54,12 +54,9 @@ def addnoise_visibility(vis, t_sys=None, eta=None):
                                             vis.configuration.diameter[0], t_sys=t_sys, eta=eta)
     log.debug('addnoise_visibility: RMS noise value (first integration, first channel): %g' % sigma[0, 0])
     for row in range(vis.nvis):
-        for ant1 in range(vis.nants):
-            for ant2 in range(ant1, vis.nants):
-                for pol in range(vis.npol):
-                    vis.data["vis"][row, ant2, ant1, :, pol].real += numpy.random.normal(0, sigma[row, ...])
-                    vis.data["vis"][row, ant2, ant1, :, pol].imag += numpy.random.normal(0, sigma[row, ...])
-                    vis.data["vis"][row, ant1, ant2, :, pol] = \
-                        numpy.conjugate(vis.data["vis"][row, ant2, ant1, :, pol])
+        for baseline in range(vis.baselines):
+            for pol in range(vis.npol):
+                vis.data["vis"][row, baseline, :, pol].real += numpy.random.normal(0, sigma[row, ...])
+                vis.data["vis"][row, baseline, :, pol].imag += numpy.random.normal(0, sigma[row, ...])
     
     return vis

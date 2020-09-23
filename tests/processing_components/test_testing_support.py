@@ -21,7 +21,7 @@ from rascil.processing_components.simulation import create_test_image_from_s3, c
     create_low_test_skycomponents_from_gleam, create_low_test_skymodel_from_gleam, \
     create_test_skycomponents_from_s3
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility, create_blockvisibility, copy_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility, copy_visibility
 from rascil.processing_components.visibility.operations import append_visibility
 
 log = logging.getLogger('logger')
@@ -51,7 +51,7 @@ class TestTesting_Support(unittest.TestCase):
     def createVis(self, config, dec=-35.0, rmax=None):
         self.config = create_named_configuration(config, rmax=rmax)
         self.phasecentre = SkyCoord(ra=+15 * u.deg, dec=dec * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_visibility(self.config, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.config, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'))

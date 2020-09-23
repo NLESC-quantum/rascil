@@ -9,7 +9,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models import PolarisationFrame, rascil_path
-from rascil.processing_components import create_visibility, export_image_to_fits, \
+from rascil.processing_components import create_blockvisibility, export_image_to_fits, \
     deconvolve_cube, restore_cube, create_named_configuration, create_test_image, \
     create_image_from_visibility, advise_wide_field, invert_2d, predict_2d
 
@@ -31,7 +31,7 @@ frequency = numpy.array([1e8])
 channel_bandwidth = numpy.array([1e6])
 phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-45.0 * u.deg, frame='icrs',
                        equinox='J2000')
-vt = create_visibility(lowr3, times, frequency, channel_bandwidth=channel_bandwidth,
+vt = create_blockvisibility(lowr3, times, frequency, channel_bandwidth=channel_bandwidth,
                        weight=1.0, phasecentre=phasecentre,
                        polarisation_frame=PolarisationFrame('stokesI'))
 

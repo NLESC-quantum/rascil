@@ -15,7 +15,7 @@ from scipy.interpolate import RectBivariateSpline
 from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
-from rascil.processing_components.visibility import create_visibility_from_rows
+from rascil.processing_components.visibility import create_blockvisibility_from_rows
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 from rascil.processing_components.util.geometry import calculate_azel
 from rascil.processing_components.visibility.iterators import vis_timeslice_iter
@@ -82,7 +82,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
         # in AZELGEO. With that we can then look up the relevant gain from the
         # voltage pattern
         for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
-            v = create_visibility_from_rows(vis, rows)
+            v = create_blockvisibility_from_rows(vis, rows)
             if v is not None:
                 utc_time = Time([numpy.average(v.time)/86400.0], format='mjd', scale='utc')
                 azimuth_centre, elevation_centre = calculate_azel(v.configuration.location, utc_time,
@@ -153,7 +153,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
         assert vp.wcs.wcs.ctype[0] == 'RA---SIN', vp.wcs.wcs.ctype[0]
         assert vp.wcs.wcs.ctype[1] == 'DEC--SIN', vp.wcs.wcs.ctype[1]
         
-        # The time in the Visibility is UTC in seconds
+        # The time in the BlockVisibility is UTC in seconds
         number_bad = 0
         number_good = 0
         
@@ -167,7 +167,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, scale=
         # in AZELGEO. With that we can then look up the relevant gain from the
         # voltage pattern
         for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
-            v = create_visibility_from_rows(vis, rows)
+            v = create_blockvisibility_from_rows(vis, rows)
             ha = numpy.average(v.time)
             
             for icomp, comp in enumerate(sc):
@@ -246,7 +246,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
         assert isinstance(vis, BlockVisibility)
         assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
         
-        # The time in the Visibility is UTC in seconds
+        # The time in the BlockVisibility is UTC in seconds
         number_bad = 0
         number_good = 0
         
@@ -271,7 +271,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
         # in AZELGEO. With that we can then look up the relevant gain from the
         # voltage pattern
         for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
-            v = create_visibility_from_rows(vis, rows)
+            v = create_blockvisibility_from_rows(vis, rows)
             ha = numpy.average(calculate_blockvisibility_hourangles(v).to('rad').value)
             
             # Calculate the az el for this hourangle and the phasecentre declination
@@ -345,12 +345,12 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
         
         for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
             
-            # The time in the Visibility is UTC in seconds
+            # The time in the BlockVisibility is UTC in seconds
             r2d = 180.0 / numpy.pi
             # For each hourangle, we need to calculate the location of a component
             # in AZELGEO. With that we can then look up the relevant gain from the
             # voltage pattern
-            v = create_visibility_from_rows(vis, rows)
+            v = create_blockvisibility_from_rows(vis, rows)
             ha = numpy.average(calculate_blockvisibility_hourangles(v))
             
             for icomp, comp in enumerate(sc):

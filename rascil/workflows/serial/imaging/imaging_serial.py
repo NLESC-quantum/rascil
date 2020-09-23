@@ -29,7 +29,7 @@ from rascil.processing_components.image import image_scatter_facets, image_gathe
 from rascil.processing_components.image import calculate_image_frequency_moments
 from rascil.processing_components.imaging import normalize_sumwt
 from rascil.processing_components.imaging import  taper_visibility_gaussian
-from rascil.processing_components.visibility import copy_visibility, create_visibility_from_rows
+from rascil.processing_components.visibility import copy_visibility, create_blockvisibility_from_rows
 from rascil.processing_components.visibility import visibility_scatter, visibility_gather
 
 log = logging.getLogger('logger')
@@ -89,7 +89,7 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=
             # Loop over sub visibility
             vis_predicted = copy_visibility(sub_vis_list, zero=True)
             for rows in vis_iter(sub_vis_list, vis_slices):
-                row_vis = create_visibility_from_rows(sub_vis_list, rows)
+                row_vis = create_blockvisibility_from_rows(sub_vis_list, rows)
                 row_vis_predicted = predict_ignore_none(row_vis, model_imagelist[ivis], g)
                 if row_vis_predicted is not None:
                     vis_predicted.data['vis'][rows, ...] = row_vis_predicted.data['vis']
@@ -197,7 +197,7 @@ def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False,
             result_sumwt = numpy.zeros([template_model_imagelist[ivis].nchan,
                                         template_model_imagelist[ivis].npol])
             for rows in vis_iter(sub_vis_list, vis_slices):
-                row_vis = create_visibility_from_rows(sub_vis_list, rows)
+                row_vis = create_blockvisibility_from_rows(sub_vis_list, rows)
                 result = invert_ignore_none(row_vis, template_model_imagelist[ivis], g)
                 if result is not None:
                     result_image.data += result[1][:, :, numpy.newaxis, numpy.newaxis] * result[0].data

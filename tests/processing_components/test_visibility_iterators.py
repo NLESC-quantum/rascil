@@ -9,7 +9,7 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.iterators import vis_timeslice_iter, vis_wslice_iter, vis_null_iter, vis_timeslices, vis_wslices
-from rascil.processing_components.visibility.base import create_visibility, create_visibility_from_rows
+from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility_from_rows
 
 import logging
 log = logging.getLogger('logger')
@@ -31,7 +31,7 @@ class TestVisibilityIterators(unittest.TestCase):
         if times is not None:
             self.times = times
         
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth, phasecentre=self.phasecentre,
                                      weight=1.0)
         self.vis.data['vis'][:, 0] = self.vis.time
@@ -49,7 +49,7 @@ class TestVisibilityIterators(unittest.TestCase):
         assert nchunks > 1
         total_rows = 0
         for chunk, rows in enumerate(vis_timeslice_iter(self.vis, nchunks)):
-            visslice = create_visibility_from_rows(self.vis, rows)
+            visslice = create_blockvisibility_from_rows(self.vis, rows)
             total_rows += visslice.nvis
             assert visslice.vis[0].real == visslice.time[0]
             assert len(rows)
@@ -72,7 +72,7 @@ class TestVisibilityIterators(unittest.TestCase):
         total_rows = 0
         for chunk, rows in enumerate(vis_wslice_iter(self.vis, nchunks)):
             assert len(rows)
-            visslice = create_visibility_from_rows(self.vis, rows)
+            visslice = create_blockvisibility_from_rows(self.vis, rows)
             if visslice is not None:
                 total_rows += visslice.nvis
                 assert numpy.sum(visslice.nvis) < self.vis.nvis

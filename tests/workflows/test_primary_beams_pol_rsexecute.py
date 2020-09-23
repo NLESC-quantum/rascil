@@ -21,7 +21,7 @@ from rascil.processing_components.simulation import create_named_configuration, 
 from rascil.processing_components.skycomponent import apply_voltage_pattern_to_skycomponent, \
     filter_skycomponents_by_flux
 from rascil.processing_components.visibility import create_blockvisibility, vis_timeslice_iter, \
-    create_visibility_from_rows
+    create_blockvisibility_from_rows
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines import continuum_imaging_list_rsexecute_workflow
 from rascil.workflows.rsexecute.imaging import weight_list_rsexecute_workflow
@@ -126,7 +126,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         if split_times:
             bvis_list = list()
             for rows in vis_timeslice_iter(bvis, vis_slices=8):
-                bvis_list.append(create_visibility_from_rows(bvis, rows))
+                bvis_list.append(create_blockvisibility_from_rows(bvis, rows))
         else:
             bvis_list = [bvis]
 

@@ -51,7 +51,7 @@ class TestImaging(unittest.TestCase):
     def tearDown(self):
         pass
     
-    def actualSetUp(self, add_errors=False, freqwin=3, block=True, dospectral=True, dopol=False, zerow=False,
+    def actualSetUp(self, add_errors=False, freqwin=3, dospectral=True, dopol=False, zerow=False,
                     makegcfcf=False):
         
         self.npixel = 256
@@ -205,7 +205,7 @@ class TestImaging(unittest.TestCase):
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_2d_block(self):
-        self.actualSetUp(zerow=True, block=True)
+        self.actualSetUp(zerow=Truecreate_blockvisibility)
         self._predict_base(context='2d', extr='_block', fluxthreshold=3.0)
 
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
@@ -274,18 +274,18 @@ class TestImaging(unittest.TestCase):
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_wprojection(self):
-        self.actualSetUp(makegcfcf=True, block=False)
+        self.actualSetUp(makegcfcf=True)
         self._predict_base(context='wstack', extra='_wprojection', fluxthreshold=4.1, vis_slices=11,
                            gcfcf=self.gcfcf_joint)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_spectral(self):
-        self.actualSetUp(dospectral=True, block=False)
+        self.actualSetUp(dospectral=True)
         self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack_spectral_pol(self):
-        self.actualSetUp(dospectral=True, dopol=True, block=False)
+        self.actualSetUp(dospectral=True, dopol=True)
         self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
@@ -307,7 +307,7 @@ class TestImaging(unittest.TestCase):
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_2d_uniform_block(self):
-        self.actualSetUp(zerow=True, makegcfcf=True, block=True)
+        self.actualSetUp(zerow=True, makegcfcf=Truecreate_blockvisibility)
         self.bvis_list = weight_list_serial_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
                                                      weighting='uniform')
         assert isinstance(self.bvis_list[0], BlockVisibility)
@@ -376,7 +376,7 @@ class TestImaging(unittest.TestCase):
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wprojection_wstack(self):
-        self.actualSetUp(makegcfcf=True, block=False)
+        self.actualSetUp(makegcfcf=True)
         self._invert_base(context='wstack', extra='_wprojection', positionthreshold=1.0, vis_slices=11,
                           gcfcf=self.gcfcf_joint)
     
@@ -387,13 +387,13 @@ class TestImaging(unittest.TestCase):
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack_spectral(self):
-        self.actualSetUp(dospectral=True, block=False)
+        self.actualSetUp(dospectral=True)
         self._invert_base(context='wstack', extra='_spectral', positionthreshold=2.0,
                           vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack_spectral_pol(self):
-        self.actualSetUp(dospectral=True, dopol=True, block=False)
+        self.actualSetUp(dospectral=True, dopol=True)
         self._invert_base(context='wstack', extra='_spectral_pol', positionthreshold=2.0,
                           vis_slices=51)
     

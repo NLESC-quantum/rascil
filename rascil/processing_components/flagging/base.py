@@ -5,7 +5,7 @@ Simple flagging operations (Still in development)
 __all__ = ['flagtable_summary',
            'copy_flagtable',
            'create_flagtable_from_blockvisibility',
-           'create_flagtable_from_rows',
+           'select_flagtable',
            'qa_flagtable']
 
 import copy
@@ -57,21 +57,16 @@ def create_flagtable_from_blockvisibility(bvis: BlockVisibility, **kwargs) -> Fl
                      polarisation_frame=bvis.polarisation_frame)
 
 
-def create_flagtable_from_rows(ft: FlagTable, rows: numpy.ndarray):
-    """ Create a FlagTable from selected rows
-
-    :param ft: FlagTable
-    :param rows: Boolean array of row selection
-    :return: FlagTable
+def select_flagtable(ft, selection):
+    """ Select subset of FlagTable using xarray syntax
+    
+    :param selection:
+    :return:
     """
+    newft = copy.copy(ft)
+    newft.data = ft.data.sel(selection)
+    return newft
 
-    if rows is None or numpy.sum(rows) == 0:
-        return None
-
-    assert len(rows) == len(ft.data), "Length of rows does not agree with length of flagtable"
-
-    return FlagTable(ft.data[rows], frequency=ft.frequency, channel_bandwidth=ft.channel_bandwidth,
-                     configuration=ft.configuration)
 
 
 def qa_flagtable(ft: FlagTable, context=None) -> QA:

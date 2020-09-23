@@ -96,6 +96,7 @@ from typing import Union
 
 import astropy.units as u
 import h5py
+
 import numpy
 from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.units import Quantity
@@ -218,7 +219,10 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     f.attrs['source'] = vis.source
     f.attrs['meta'] = str(vis.meta)
     f.attrs['channel_bandwidth'] = vis.channel_bandwidth
-    f['data'] = vis.data
+    datavars = ["vis", "weight", "imaging_weight", "flags",
+                "uvw", "channel_bandwidth", "integration_time"]
+    for var in datavars:
+        f["xarray_{}".format(var)] = vis.data[var].values
     f = convert_configuration_to_hdf(vis.configuration, f)
     return f
 
@@ -238,6 +242,8 @@ def convert_hdf_to_blockvisibility(f):
     channel_bandwidth = f.attrs['channel_bandwidth']
     source = f.attrs['source']
     meta = ast.literal_eval(f.attrs['meta'])
+    
+    
     vis = BlockVisibility(polarisation_frame=polarisation_frame,
                           phasecentre=phasecentre, frequency=frequency,
                           channel_bandwidth=channel_bandwidth, source=source,
@@ -579,6 +585,10 @@ def convert_image_to_hdf(im: Image, f):
         f['data'] = im.data
         f.attrs['wcs'] = numpy.string_(im.wcs.to_header_string())
         f.attrs['polarisation_frame'] = im.polarisation_frame.type
+        f.attrs['phasecentre_coords'] = im.phasecentre.to_string()
+        f.attrs['phasecentre_frame'] = im.phasecentre.frame.name
+        f.attrs['polarisation_frame'] = im.polarisation_frame.type
+        f.attrs['frequency'] = im.frequency
 
     return f
 
@@ -593,7 +603,12 @@ def convert_hdf_to_image(f):
         data = numpy.array(f['data'])
         polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
         wcs = WCS(f.attrs['wcs'])
-        im = Image(data, wcs=wcs, polarisation_frame=polarisation_frame)
+        frequency = numpy.array(f.attrs['frequency'])
+        data = numpy.array(f['data'])
+        s = f.attrs['phasecentre_coords'].split()
+        ss = [float(s[0]), float(s[1])] * u.deg
+        phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['phasecentre_frame'])
+        im = Image(data=data, phasecentre=phasecentre, frequency=frequency, wcs=wcs, polarisation_frame=polarisation_frame)
         return im
     else:
         return None

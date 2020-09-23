@@ -156,7 +156,7 @@ class TestGridDataKernels(unittest.TestCase):
         
         cf_clipped = apply_bounding_box_convolutionfunction(cf, fractional_level=5e-2)
         peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf_clipped.data.values)), cf_clipped.shape)
-        assert peak_location == (0, 0, 10, 4, 4, 22, 22), peak_location
+        assert peak_location == (0, 0, 10, 4, 4, 23, 23), peak_location
         # cf_image = convert_convolutionfunction_to_image(cf_clipped)
         # cf_image.data = numpy.real(cf_image.data)
         # if self.persist:
@@ -192,7 +192,7 @@ class TestGridDataKernels(unittest.TestCase):
         # if self.persist:
         #     export_image_to_fits(cf_image, "%s/test_convolutionfunction_aterm_clipped_cf.fits" % self.dir)
         peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf_clipped.data.values)), cf_clipped.shape)
-        assert peak_location == (0, 0, 0, 8, 8, 6, 6), peak_location
+        assert peak_location == (0, 0, 0, 8, 8, 7, 7), peak_location
     
     def test_compare_wterm_symmetry(self):
         _, cf = create_awterm_convolutionfunction(self.image, nw=11, wstep=8, oversampling=8,

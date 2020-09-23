@@ -39,11 +39,11 @@ class TestSkyModel(unittest.TestCase):
         
         # Create model
         self.model = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
-        self.model.data[self.model.data > 1.0] = 1.0
+        self.model.data.values[self.model.data.values > 1.0] = 1.0
 
         self.mask = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
-        self.mask.data[self.mask.data > 0.1] = 1.0
-        self.mask.data[self.mask.data <= 0.1] = 0.0
+        self.mask.data.values[self.mask.data.values > 0.1] = 1.0
+        self.mask.data.values[self.mask.data.values <= 0.1] = 0.0
 
 
     def test_create(self):
@@ -65,8 +65,8 @@ class TestSkyModel(unittest.TestCase):
         
         assert numpy.max(numpy.abs(sm_fluxes - sm_copy_fluxes)) < 1e-7
         
-        assert numpy.abs(numpy.max(sm.mask.data - 1.0)) < 1e-7
-        assert numpy.abs(numpy.min(sm.mask.data - 0.0)) < 1e-7
+        assert numpy.abs(numpy.max(sm.mask.data.values - 1.0)) < 1e-7
+        assert numpy.abs(numpy.min(sm.mask.data.values - 0.0)) < 1e-7
 
     def test_filter(self):
         fluxes = numpy.linspace(0, 1.0, 11)

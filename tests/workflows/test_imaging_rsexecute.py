@@ -55,7 +55,7 @@ class TestImaging(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
     
-    def actualSetUp(self, add_errors=False, freqwin=3, block=True, dospectral=True, dopol=False, zerow=False,
+    def actualSetUp(self, add_errors=False, freqwin=3, dospectral=True, dopol=False, zerow=False,
                     makegcfcf=False):
         
         self.npixel = 256
@@ -97,7 +97,6 @@ class TestImaging(unittest.TestCase):
                                                                         self.times,
                                                                         self.vis_pol,
                                                                         self.phasecentre,
-                                                                        block=block,
                                                                         zerow=zerow)
                           for freqwin, _ in enumerate(self.frequency)]
         
@@ -133,7 +132,7 @@ class TestImaging(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.cmodel, '%s/test_imaging_cmodel.fits' % self.dir)
         
-        if add_errors and block:
+        if add_errors:
             self.bvis_list = [rsexecute.execute(insert_unittest_errors)(self.bvis_list[i])
                               for i, _ in enumerate(self.frequency)]
         
@@ -218,11 +217,7 @@ class TestImaging(unittest.TestCase):
     def test_predict_2d(self):
         self.actualSetUp(zerow=True)
         self._predict_base(context='2d', fluxthreshold=3.0)
-    
-    def test_predict_2d_block(self):
-        self.actualSetUp(zerow=True, block=True)
-        self._predict_base(context='2d', extr='_block', fluxthreshold=3.0)
-    
+        
     @unittest.skip("Facets need overlap")
     def test_predict_facets(self):
         self.actualSetUp()
@@ -271,22 +266,22 @@ class TestImaging(unittest.TestCase):
                            gcfcf=self.gcfcf_clipped)
     
     def test_predict_wstack(self):
-        self.actualSetUp(block=False)
+        self.actualSetUp()
         self._predict_base(context='wstack', fluxthreshold=3.3, vis_slices=51)
     
     def test_predict_wstack_wprojection(self):
-        self.actualSetUp(makegcfcf=True, block=False)
+        self.actualSetUp(makegcfcf=True)
         self._predict_base(context='wstack', extra='_wprojection', fluxthreshold=4.1, vis_slices=11,
                            gcfcf=self.gcfcf_joint)
     
     @unittest.skip("Too much for CI/CD")
     def test_predict_wstack_spectral(self):
-        self.actualSetUp(dospectral=True, block=False)
+        self.actualSetUp(dospectral=True)
         self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
     
     @unittest.skip("Too much for CI/CD")
     def test_predict_wstack_spectral_pol(self):
-        self.actualSetUp(dospectral=True, dopol=True, block=False)
+        self.actualSetUp(dospectral=True, dopol=True)
         self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
     
     def test_invert_2d(self):
@@ -302,26 +297,12 @@ class TestImaging(unittest.TestCase):
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
                                                         weighting='uniform')
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
-    
-    def test_invert_2d_uniform_block(self):
-        self.actualSetUp(zerow=True, makegcfcf=True, block=True)
-        self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
-                                                        weighting='uniform')
-        self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
-        assert isinstance(self.bvis_list[0], BlockVisibility)
-    
+        
     def test_invert_2d_robust(self):
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list,
                                                         weighting="robust", robustness=0.0)
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
-    
-    def test_invert_2d_robust_block(self):
-        self.actualSetUp(zerow=True, makegcfcf=True, block=True)
-        self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list,
-                                                        weighting="robust", robustness=0.0)
-        self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
-        assert isinstance(self.bvis_list[0], BlockVisibility)
     
     def test_invert_2d_uniform_nogcfcf(self):
         self.actualSetUp(zerow=True)
@@ -352,7 +333,7 @@ class TestImaging(unittest.TestCase):
     
     @unittest.skip("Facets need overlap")
     def test_invert_facets_wstack(self):
-        self.actualSetUp(block=False)
+        self.actualSetUp()
         self._invert_base(context='facets_wstack', positionthreshold=1.0, check_components=False, facets=4,
                           vis_slices=51)
     
@@ -381,21 +362,21 @@ class TestImaging(unittest.TestCase):
                           gcfcf=self.gcfcf_clipped)
     
     def test_invert_wprojection_wstack(self):
-        self.actualSetUp(makegcfcf=True, block=False)
+        self.actualSetUp(makegcfcf=True)
         self._invert_base(context='wstack', extra='_wprojection', positionthreshold=1.0, vis_slices=11,
                           gcfcf=self.gcfcf_joint)
     
     def test_invert_wstack(self):
-        self.actualSetUp(block=False)
+        self.actualSetUp()
         self._invert_base(context='wstack', positionthreshold=1.0, vis_slices=51)
     
     def test_invert_wstack_spectral(self):
-        self.actualSetUp(dospectral=True, block=False)
+        self.actualSetUp(dospectral=True)
         self._invert_base(context='wstack', extra='_spectral', positionthreshold=2.0,
                           vis_slices=51)
     
     def test_invert_wstack_spectral_pol(self):
-        self.actualSetUp(dospectral=True, dopol=True, block=False)
+        self.actualSetUp(dospectral=True, dopol=True)
         self._invert_base(context='wstack', extra='_spectral_pol', positionthreshold=2.0,
                           vis_slices=51)
     

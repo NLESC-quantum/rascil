@@ -45,7 +45,7 @@ class TestImagingNG(unittest.TestCase):
         
         self.verbosity = 0
     
-    def actualSetUp(self, freqwin=1, block=True, dospectral=True,
+    def actualSetUp(self, freqwin=1, dospectral=True,
                     image_pol=PolarisationFrame('stokesI'), zerow=False, mfs=False):
         
         self.npixel = 256
@@ -91,7 +91,6 @@ class TestImagingNG(unittest.TestCase):
                                                    self.times,
                                                    self.blockvis_pol,
                                                    self.phasecentre,
-                                                   block=block,
                                                    zerow=zerow)
         
         self.model = create_unittest_model(self.blockvis, self.image_pol, npixel=self.npixel, nchan=freqwin)

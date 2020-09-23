@@ -30,10 +30,5 @@ class TestGridData(unittest.TestCase):
         assert m31model_by_image.shape[3] == self.m31image.shape[2]
         assert m31model_by_image.shape[4] == self.m31image.shape[3]
     
-    @unittest.skip("Requires ND Image")
-    def test_convert_griddata_to_image(self):
-        m31model_by_image = create_griddata_from_image(self.m31image)
-        m31_converted = convert_griddata_to_image(m31model_by_image)
-    
 if __name__ == '__main__':
     unittest.main()

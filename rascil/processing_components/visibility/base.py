@@ -4,7 +4,7 @@ Base simple visibility operations, placed here to avoid circular dependencies
 
 __all__ = ['vis_summary',
            'copy_visibility',
-           'create_visibility_from_rows',
+           'create_blockvisibility_from_rows',
            'create_blockvisibility_from_ms',
            'create_blockvisibility_from_uvfits',
            'create_blockvisibility',
@@ -232,7 +232,7 @@ def create_blockvisibility(config: Configuration,
     return vis
 
 
-def create_visibility_from_rows(vis: BlockVisibility,
+def create_blockvisibility_from_rows(vis: BlockVisibility,
                                 rows: numpy.ndarray, makecopy=True):
     """ Create a BlockVisibility from selected rows
 

@@ -19,7 +19,7 @@ from rascil.processing_components.image.deconvolution import deconvolve_cube, re
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.simulation import create_test_image
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.imaging.base import predict_2d, invert_2d, create_image_from_visibility
 
 log = logging.getLogger('logger')
@@ -40,7 +40,7 @@ class TestImageDeconvolution(unittest.TestCase):
         self.frequency = numpy.array([1e8])
         self.channel_bandwidth = numpy.array([1e6])
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'), zerow=True)

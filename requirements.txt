@@ -21,4 +21,5 @@ ConfigParser
 tabulate
 pandas
 xarray
+netcdf4
 

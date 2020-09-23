@@ -29,11 +29,7 @@ def get_frequency_map(vis, im: Image = None):
         assert image_is_canonical(im)
 
         spectral_mode = 'mfs'
-        if vis.frequency_map is None:
-            vfrequencymap = numpy.zeros_like(vis.frequency, dtype='int')
-            vis.frequencymap = vfrequencymap
-        else:
-            vfrequencymap = vis.frequency_map
+        vfrequencymap = numpy.zeros_like(vis.frequency, dtype='int')
 
     else:
         assert image_is_canonical(im)

@@ -3,8 +3,8 @@
 A typical use would be to make a sequence of snapshot visibilitys::
 
     for rows in vis_timeslice_iter(vt, vis_slices=vis_slices):
-        visslice = create_visibility_from_rows(vt, rows)
-        dirtySnapshot = create_visibility_from_visibility(visslice, npixel=512, cellsize=0.001, npol=1)
+        visslice = create_blockvisibility_from_rows(vt, rows)
+        dirtySnapshot = create_blockvisibility_from_visibility(visslice, npixel=512, cellsize=0.001, npol=1)
         dirtySnapshot, sumwt = invert_2d(visslice, dirtySnapshot, '2d')
         show_image(dirtySnapshot)
 
@@ -21,7 +21,7 @@ from typing import List
 import numpy
 
 from rascil.data_models.memory_data_models import BlockVisibility
-from rascil.processing_components.visibility.base import create_visibility_from_rows
+from rascil.processing_components.visibility.base import create_blockvisibility_from_rows
 from rascil.processing_components.visibility.iterators import vis_timeslice_iter, vis_wslice_iter
 
 log = logging.getLogger('logger')
@@ -46,7 +46,7 @@ def visibility_scatter(vis: BlockVisibility, vis_iter, vis_slices=1) -> List[Blo
     
     visibility_list = list()
     for i, rows in enumerate(vis_iter(vis, vis_slices=vis_slices)):
-        subvis = create_visibility_from_rows(vis, rows)
+        subvis = create_blockvisibility_from_rows(vis, rows)
         visibility_list.append(subvis)
     
     return visibility_list
@@ -78,9 +78,9 @@ def visibility_gather(visibility_list: List[BlockVisibility], vis: BlockVisibili
         assert i < len(visibility_list), "Gather not consistent with scatter for slice %d" % i
         sum_rows = numpy.sum(numpy.array(rows)).astype('int')
         if visibility_list[i] is not None and sum_rows > 0:
-            assert sum_rows == visibility_list[i].nvis, \
-                "Mismatch in number of rows (%d, %d) in gather for slice %d" % \
-            (int(sum_rows), visibility_list[i].nvis, i)
+            # assert sum_rows == visibility_list[i].nvis, \
+            #     "Mismatch in number of rows (%d, %d) in gather for slice %d" % \
+            #     (int(sum_rows), visibility_list[i].nvis, i)
             vis.data[rows] = visibility_list[i].data[...]
     
     return vis

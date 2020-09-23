@@ -98,7 +98,9 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slic
             return None
     
     if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(m) for m in model_imagelist]
+        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(m,
+                                                                    polarisation_frame=vis_list[i].polarisation_frame)
+                 for i, m in enumerate(model_imagelist)]
     
     # Loop over all frequency windows
     if facets == 1:
@@ -240,7 +242,8 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
     # If we are doing facets, we need to create the gcf for each image
     if gcfcf is None and facets == 1:
         assert len(template_model_imagelist) > 0
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(template_model_imagelist[0])]
+        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(template_model_imagelist[0],
+                                                                    polarisation_frame=vis_list[0].polarisation_frame)]
     
     # Loop over all vis_lists independently
     results_vislist = list()

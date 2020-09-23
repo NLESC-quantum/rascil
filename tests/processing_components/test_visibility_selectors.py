@@ -10,7 +10,7 @@ import astropy.units as u
 
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility import vis_select_uvrange, vis_select_wrange
-from rascil.processing_components.visibility.base import create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 
 import logging
 log = logging.getLogger('logger')
@@ -29,7 +29,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         self.channel_bandwidth = numpy.array([1e8])
         self.phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
 
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth, phasecentre=self.phasecentre,
                                      weight=1.0)
 

@@ -52,8 +52,7 @@ from rascil.processing_components.skycomponent import insert_skycomponent
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility import calculate_blockvisibility_hourangles
 from rascil.processing_components.visibility import copy_visibility
-from rascil.processing_components.visibility import create_blockvisibility, \
-    create_visibility
+from rascil.processing_components.visibility import create_blockvisibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import \
     invert_list_rsexecute_workflow, sum_predict_results_rsexecute, predict_list_rsexecute_workflow, \
@@ -96,7 +95,7 @@ def simulate_list_rsexecute_workflow(config='LOWBD2',
     :return: graph of vis_list with different frequencies in different elements
     """
     if format == 'vis':
-        create_vis = create_visibility
+        create_vis = create_blockvisibility
     else:
         create_vis = create_blockvisibility
     

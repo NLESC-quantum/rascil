@@ -9,7 +9,7 @@ import logging
 import numpy
 
 from rascil.data_models import rascil_path, rascil_data_path, BlockVisibility
-from rascil.processing_components.visibility.base import create_blockvisibility_from_ms, create_visibility_from_ms
+from rascil.processing_components.visibility.base import create_blockvisibility_from_ms, create_blockvisibility_from_ms
 from rascil.processing_components.visibility.operations import integrate_visibility_by_channel
 
 log = logging.getLogger('logger')
@@ -52,7 +52,7 @@ class TestCreateMS(unittest.TestCase):
         nchan = 192
         for schan in range(0, nchan, nchan_ave):
             max_chan = min(nchan, schan + nchan_ave)
-            v = create_visibility_from_ms(msfile, range(schan, max_chan))
+            v = create_blockvisibility_from_ms(msfile, range(schan, max_chan))
             vis_by_channel.append(v[0])
     
         assert len(vis_by_channel) == 12
@@ -91,7 +91,7 @@ class TestCreateMS(unittest.TestCase):
         nchan = 192
         for schan in range(0, nchan, nchan_ave):
             max_chan = min(nchan, schan + nchan_ave)
-            v = create_visibility_from_ms(msfile, start_chan=schan, end_chan=max_chan - 1)
+            v = create_blockvisibility_from_ms(msfile, start_chan=schan, end_chan=max_chan - 1)
             nchannels = len(numpy.unique(v[0].frequency))
             assert nchannels == nchan_ave
             vis_by_channel.append(v[0])
@@ -116,7 +116,7 @@ class TestCreateMS(unittest.TestCase):
         nchan = 192
         for schan in range(0, nchan, nchan_ave):
             max_chan = min(nchan, schan + nchan_ave)
-            v = create_visibility_from_ms(msfile, start_chan=schan, end_chan=max_chan - 1, average_channels=True)
+            v = create_blockvisibility_from_ms(msfile, start_chan=schan, end_chan=max_chan - 1, average_channels=True)
             nchannels = len(numpy.unique(v[0].frequency))
             assert nchannels == 1
             vis_by_channel.append(v[0])
@@ -141,7 +141,7 @@ class TestCreateMS(unittest.TestCase):
         nchan = 8
         for schan in range(0, nchan, nchan_ave):
             max_chan = min(nchan, schan + nchan_ave)
-            v = create_visibility_from_ms(msfile, start_chan=schan, end_chan=schan)
+            v = create_blockvisibility_from_ms(msfile, start_chan=schan, end_chan=schan)
             vis_by_channel.append(v[0])
     
         assert len(vis_by_channel) == 8, len(vis_by_channel)

@@ -292,11 +292,11 @@ class GainTable:
 
         """
         s = "GainTable:\n"
+        s += "Dataset: {}".format(self.data)
         s += "\tTimes: %s\n" % str(self.ntimes)
         s += "\tData shape: %s\n" % str(self.data.shape)
         s += "\tReceptor frames: %s\n" % str(self.receptors)
         s += "\tPhasecentre: %s\n" % str(self.phasecentre)
-        s += "Data: {}".format(self.data)
         
         return s
 
@@ -353,13 +353,31 @@ class PointingTable:
         self.pointing_frame = pointing_frame
         self.pointingcentre = pointingcentre
         self.configuration = configuration
+        
+        ntimes, nants, nchan, nrec, _ = pointing.shape
+        antennas = range(nants)
+        coords = {
+            "time": time,
+            "antenna": antennas,
+            "frequency": frequency,
+            "receptor": receptor_frame.names,
+            "angle": ["az", "el"]
+        }
+
+        datavars = dict()
+        datavars["pointing"] = xarray.DataArray(pointing, dims=["time", "antenna", "frequency", "receptor", "angle"])
+        datavars["nominal"] = xarray.DataArray(nominal, dims=["time", "antenna", "frequency", "receptor", "angle"])
+        datavars["weight"] = xarray.DataArray(weight, dims=["time", "antenna", "frequency", "receptor", "angle"])
+        datavars["residual"] = xarray.DataArray(residual, dims=["time", "frequency", "receptor", "angle"])
+        datavars["interval"] = xarray.DataArray(interval, dims=["time"])
+        datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64, dims="time")
+        self.data = xarray.Dataset(datavars, coords=coords)
+
     
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.size * sys.getsizeof(self.data)
-        return size / 1024.0 / 1024.0 / 1024.0
+        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
     
     @property
     def time(self):
@@ -425,6 +443,7 @@ class PointingTable:
 
         """
         s = "PointingTable:\n"
+        s += "Dataset: {}".format(self.data)
         s += "\tTimes: %s\n" % str(self.ntimes)
         s += "\tData shape: %s\n" % str(self.data.shape)
         s += "\tReceptor frame: %s\n" % str(self.receptor_frame.type)

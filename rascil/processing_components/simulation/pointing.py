@@ -233,7 +233,7 @@ def simulate_pointingtable(pt: PointingTable, pointing_error, static_pointing_er
         static_pointing_error = [0.0, 0.0]
     
     r2s = 180.0 * 3600.0 / numpy.pi
-    pt.data['pointing'] = numpy.zeros(pt.data['pointing'].shape)
+    pt.data['pointing'].values = numpy.zeros(pt.data['pointing'].shape)
     
     ntimes, nant, nchan, nrec, _ = pt.data['pointing'].shape
     if pointing_error > 0.0:

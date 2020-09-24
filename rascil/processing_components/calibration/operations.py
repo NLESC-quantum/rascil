@@ -5,7 +5,7 @@ merging gaintables.
 
 __all__ = ['gaintable_summary', 'qa_gaintable', 'apply_gaintable', 'append_gaintable',
            'create_gaintable_from_blockvisibility', 'create_gaintable_from_blockvisibility',
-           'create_gaintable_from_rows', 'copy_gaintable']
+           'gaintable_select', 'create_gaintable_from_rows', 'copy_gaintable']
 
 import copy
 import logging
@@ -41,6 +41,8 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
     assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
     
+    ntimes, nants, nchan, nrec, _ = gt.gain.shape
+    
     assert_vis_gt_compatible(vis, gt)
     
     if inverse:
@@ -55,22 +57,23 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     # row_numbers = numpy.array(list(range(len(vis.time))), dtype='int')
     row_numbers = numpy.arange(len(vis.time))
     done = numpy.zeros(len(row_numbers), dtype='int')
-    for row in range(gt.ntimes):
+    for row in range(ntimes):
         vis_rows = numpy.abs(vis.time - gt.time[row]) < gt.interval[row] / 2.0
         vis_rows = row_numbers[vis_rows]
         if len(vis_rows) > 0:
             
             # Lookup the gain for this set of visibilities
-            gain = gt.data['gain'][row]
-            cgain = numpy.conjugate(gt.data['gain'][row])
-            gainwt = gt.data['weight'][row]
+            gain = gt.data['gain'].values[row]
+            cgain = numpy.conjugate(gt.data['gain'].values[row])
+            gainwt = gt.data['weight'].values[row]
             
             # The shape of the mueller matrix is
             nant, nchan, nrec, _ = gain.shape
+            baselines = vis.baselines.values
             
-            original = vis.vis[vis_rows]
-            applied = copy.copy(vis.vis[vis_rows])
-            appliedwt = copy.copy(vis.weight[vis_rows])
+            original = vis.vis.values[vis_rows]
+            applied = copy.copy(vis.vis.values[vis_rows])
+            appliedwt = copy.copy(vis.weight.values[vis_rows])
             if vis.npol == 1:
                 if inverse:
                     # lgain = numpy.ones_like(gain)
@@ -102,12 +105,14 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 smueller1 = numpy.einsum('ijlm,kjlm->jik', lgain, numpy.conjugate(lgain))
 
                 for sub_vis_row in range(original.shape[0]):
-                    for chan in range(nchan):
-                        applied[sub_vis_row, :, :, chan, 0] = \
-                            original[sub_vis_row, :, :, chan, 0] * smueller1[chan, :, :]
-                        antantwt = numpy.einsum('i,j->ij',gainwt[:, chan, 0, 0], gainwt[:, chan, 0, 0])
-                        appliedwt[sub_vis_row, :, :, chan, 0] = antantwt
-                        applied[sub_vis_row, :, :, chan, 0][antantwt == 0.0] = 0.0
+                    for ibaseline, baseline in enumerate(baselines):
+                        for chan in range(nchan):
+                            applied[sub_vis_row, ibaseline, chan, 0] = \
+                                original[sub_vis_row, ibaseline, chan, 0] * smueller1[chan, baseline[0], baseline[1]]
+                            antantwt = gainwt[baseline[0], chan, 0, 0] * gainwt[baseline[1], chan, 0, 0]
+                            appliedwt[sub_vis_row, baseline, chan, 0] = \
+                                gainwt[baseline[0], chan, 0, 0] * gainwt[baseline[1], chan, 0, 0]
+                            applied[sub_vis_row, baseline, chan, 0][antantwt == 0.0] = 0.0
 
                 # smueller1 = numpy.einsum('ijlm,kjlm->ikj', lgain, numpy.conjugate(lgain))
                 # for sub_vis_row in range(original.shape[0]):
@@ -122,7 +127,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 if inverse:
                     igain = gain.copy()
                     cigain = cgain.copy()
-                    for a1 in range(vis.nants):
+                    for a1 in range(nants):
                         for chan in range(nchan):
                             try:
                                 igain[a1, chan, :, :] = numpy.linalg.inv(gain[a1, chan, :, :])
@@ -132,28 +137,27 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                 has_inverse_ant[a1, chan] = False
         
                     for sub_vis_row in range(original.shape[0]):
-                        for a1 in range(vis.nants - 1):
-                            for a2 in range(a1 + 1, vis.nants):
-                                for chan in range(nchan):
-                                    if has_inverse_ant[a1, chan] and has_inverse_ant[a2, chan]:
-                                        cfs = numpy.diag(original[sub_vis_row, a2, a1, chan, ...])
-                                        applied[sub_vis_row, a2, a1, chan, ...] = \
-                                            numpy.diag(igain[a1, chan, :, :] @ cfs @ cigain[a2, chan, :, :]).reshape([2])
+                        for ibaseline, baseline in enumerate(baselines):
+                            for chan in range(nchan):
+                                    if has_inverse_ant[baseline[0], chan] and has_inverse_ant[baseline[1], chan]:
+                                        cfs = numpy.diag(original[sub_vis_row, baseline[0], baseline[1], chan, ...])
+                                        applied[sub_vis_row, ibaseline, chan, ...] = \
+                                            numpy.diag(igain[baseline[0], chan, :, :] @ \
+                                                       cfs @ cigain[baseline[1], chan, :, :]).reshape([2])
                 else:
                     for sub_vis_row in range(original.shape[0]):
-                        for a1 in range(vis.nants - 1):
-                            for a2 in range(a1 + 1, vis.nants):
-                                for chan in range(nchan):
-                                    cfs = numpy.diag(original[sub_vis_row, a2, a1, chan, ...])
-                                    applied[sub_vis_row, a2, a1, chan, ...] = \
-                                        numpy.diag(gain[a1, chan, :, :] @ cfs @ cgain[a2, chan, :, :]).reshape([2])
+                        for ibaseline, baseline in enumerate(baselines):
+                            for chan in range(nchan):
+                                    cfs = numpy.diag(original[sub_vis_row, ibaseline, chan, ...])
+                                    applied[sub_vis_row, ibaseline, chan, ...] = \
+                                        numpy.diag(gain[baseline[0], chan, :, :] @ cfs @ cgain[baseline[1], chan, :, :]).reshape([2])
 
             elif vis.npol == 4:
                 has_inverse_ant = numpy.zeros([nant, nchan], dtype='bool')
                 if inverse:
                     igain = gain.copy()
                     cigain = cgain.copy()
-                    for a1 in range(vis.nants):
+                    for a1 in range(nants):
                         for chan in range(nchan):
                             try:
                                 igain[a1, chan, :, :] = numpy.linalg.inv(gain[a1, chan, :, :])
@@ -163,21 +167,19 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                 has_inverse_ant[a1, chan] = False
                
                     for sub_vis_row in range(original.shape[0]):
-                        for a1 in range(vis.nants - 1):
-                            for a2 in range(a1 + 1, vis.nants):
-                                for chan in range(nchan):
-                                    if has_inverse_ant[a1, chan] and has_inverse_ant[a2, chan]:
-                                        cfs = original[sub_vis_row, a2, a1, chan, ...].reshape([2,2])
-                                        applied[sub_vis_row, a2, a1, chan, ...] = \
-                                            (igain[a1, chan, :, :] @ cfs @ cigain[a2, chan, :, :]).reshape([4])
+                        for ibaseline, baseline in enumerate(baselines):
+                            for chan in range(nchan):
+                                if has_inverse_ant[baseline[0], chan] and has_inverse_ant[baseline[1], chan]:
+                                    cfs = original[sub_vis_row, ibaseline, chan, ...].reshape([2,2])
+                                    applied[sub_vis_row, ibaseline, chan, ...] = \
+                                        (igain[baseline[0], chan, :, :] @ cfs @ cigain[baseline[1], chan, :, :]).reshape([4])
                 else:
                     for sub_vis_row in range(original.shape[0]):
-                        for a1 in range(vis.nants - 1):
-                            for a2 in range(a1 + 1, vis.nants):
-                                for chan in range(nchan):
-                                    cfs = original[sub_vis_row, a2, a1, chan, ...].reshape([2, 2])
-                                    applied[sub_vis_row, a2, a1, chan, ...] = \
-                                        (gain[a1, chan, :, :] @ cfs @ cgain[a2, chan, :, :]).reshape([4])
+                        for ibaseline, baseline in enumerate(baselines):
+                            for chan in range(nchan):
+                                cfs = original[sub_vis_row, ibaseline, chan, ...].reshape([2, 2])
+                                applied[sub_vis_row, ibaseline, chan, ...] = \
+                                    (gain[baseline[0], chan, :, :] @ cfs @ cgain[baseline[1], chan, :, :]).reshape([4])
             
             else:
                 times = Time(vis.time / 86400.0, format='mjd', scale='utc')
@@ -200,7 +202,7 @@ def gaintable_summary(gt: GainTable):
     :returns: string
 
     """
-    return "%s rows, %.3f GB" % (gt.data.shape, gt.size())
+    return "%.3f GB" % (gt.size())
 
 
 def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
@@ -223,7 +225,7 @@ def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
         utimes = numpy.unique(vis.time)
         gain_interval = vis.integration_time
     else:
-        utimes = vis.time[0] + timeslice * numpy.unique(numpy.round((vis.time - vis.time[0]) / timeslice))
+        utimes = vis.time.values[0] + timeslice * numpy.unique(numpy.round((vis.time.values - vis.time.values[0]) / timeslice))
         gain_interval = timeslice * numpy.ones_like(utimes)
     
     ntimes = len(utimes)
@@ -288,6 +290,17 @@ def copy_gaintable(gt: GainTable, zero=False):
         newgt.data['gt'][...] = 0.0
     return newgt
 
+
+def gaintable_select(gt, selection):
+    """ Select subset of GainTable using xarray syntax
+
+    :param ft:
+    :param selection:
+    :return:
+    """
+    newgt = copy.copy(gt)
+    newgt.data = gt.data.sel(selection)
+    return newgt
 
 def create_gaintable_from_rows(gt: GainTable, rows: numpy.ndarray, makecopy=True) \
         -> Union[GainTable, None]:

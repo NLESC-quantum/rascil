@@ -14,7 +14,7 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 __all__ = ['create_convolutionfunction_from_image', 'copy_convolutionfunction',
            'convolutionfunction_sizeof', 'calculate_bounding_box_convolutionfunction',
            'apply_bounding_box_convolutionfunction', 'qa_convolutionfunction',
-           'export_convolutionfunction_to_fits']
+           'export_convolutionfunction_to_fits', 'convolutionfunction_select']
 
 import copy
 import logging
@@ -28,6 +28,17 @@ from rascil.data_models.memory_data_models import QA
 
 log = logging.getLogger('logger')
 
+
+def convolutionfunction_select(cf, selection):
+    """ Select subset of ConvolutionFunction using xarray syntax
+
+    :param cf:
+    :param selection:
+    :return:
+    """
+    newcf = copy.copy(cf)
+    newcf.data = cf.data.sel(selection)
+    return newcf
 
 def convolutionfunction_sizeof(cf: ConvolutionFunction):
     """ Return size in GB

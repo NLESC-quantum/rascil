@@ -26,7 +26,8 @@ __all__ = ['add_image',
            'show_image',
            'smooth_image',
            "scale_and_rotate_image",
-           "apply_voltage_pattern_to_image"]
+           "apply_voltage_pattern_to_image",
+           "image_select"]
 
 import copy
 import logging
@@ -51,6 +52,16 @@ from rascil.processing_components.fourier_transforms import w_beam, fft, ifft
 warnings.simplefilter('ignore', FITSFixedWarning)
 log = logging.getLogger('logger')
 
+def image_select(im, selection):
+    """ Select subset of Image using xarray syntax
+
+    :param im:
+    :param selection:
+    :return:
+    """
+    newim = copy.copy(im)
+    newim.data = im.data.sel(selection)
+    return newim
 
 
 def image_is_canonical(im: Image):

@@ -43,6 +43,19 @@ log = logging.getLogger('logger')
 
 # This convention agrees with that in the MS reader
 # Note that ant2 > ant1
+
+def blockvisibility_select(bvis, selection):
+    """ Select subset of BlockVisibility using xarray syntax
+
+    :param bvis:
+    :param selection:
+    :return:
+    """
+    newft = copy.copy(bvis)
+    newft.data = bvis.data.sel(selection)
+    return newft
+
+
 def generate_baselines(nant):
     """ Generate mapping from antennas to baselines
     

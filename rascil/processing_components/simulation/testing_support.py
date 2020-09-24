@@ -746,19 +746,19 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
                     amp = amp / numpy.average(amp)
                 amps[time, ant, ...] = amp[..., numpy.newaxis, numpy.newaxis]
 
-    gt.data['gain'] = amps * numpy.exp(0 + 1j * phases)
+    gt.data['gain'].values = amps * numpy.exp(0 + 1j * phases)
     nrec = gt.data['gain'].shape[-1]
     if nrec > 1:
         if leakage > 0.0:
-            leak = numpy.random.normal(0, leakage, gt.data['gain'][..., 0, 0].shape) + 1j * \
-                   numpy.random.normal(0, leakage, gt.data['gain'][..., 0, 0].shape)
-            gt.data['gain'][..., 0, 1] = gt.data['gain'][..., 0, 0] * leak
-            leak = numpy.random.normal(0, leakage, gt.data['gain'][..., 1, 1].shape) + 1j * \
-                   numpy.random.normal(0, leakage, gt.data['gain'][..., 1, 1].shape)
-            gt.data['gain'][..., 1, 0] = gt.data['gain'][..., 1, 1] * leak
+            leak = numpy.random.normal(0, leakage, gt.data['gain'].values[..., 0, 0].shape) + 1j * \
+                   numpy.random.normal(0, leakage, gt.data['gain'].values[..., 0, 0].shape)
+            gt.data['gain'].values[..., 0, 1] = gt.data['gain'][..., 0, 0] * leak
+            leak = numpy.random.normal(0, leakage, gt.data['gain'].values[..., 1, 1].shape) + 1j * \
+                   numpy.random.normal(0, leakage, gt.data['gain'].values[..., 1, 1].shape)
+            gt.data['gain'].values[..., 1, 0] = gt.data['gain'][..., 1, 1].values * leak
         else:
-            gt.data['gain'][..., 0, 1] = 0.0
-            gt.data['gain'][..., 1, 0] = 0.0
+            gt.data['gain'].values[..., 0, 1] = 0.0
+            gt.data['gain'].values[..., 1, 0] = 0.0
 
     return gt
 

@@ -12,7 +12,7 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 """
 
 __all__ = ['griddata_sizeof', 'create_griddata_from_image', 'create_griddata_from_array', 'copy_griddata',
-           'convert_griddata_to_image', 'qa_griddata']
+           'convert_griddata_to_image', 'qa_griddata', 'griddata_select']
 
 import copy
 import logging
@@ -26,6 +26,18 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import create_image_from_array
 
 log = logging.getLogger('logger')
+
+
+def griddata_select(gd, selection):
+    """ Select subset of GridData using xarray syntax
+
+    :param gd:
+    :param selection:
+    :return:
+    """
+    newgd = copy.copy(gd)
+    newgd.data = gd.data.sel(selection)
+    return newgd
 
 
 def copy_griddata(gd):

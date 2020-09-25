@@ -50,7 +50,7 @@ class TestVisibilityOperations(unittest.TestCase):
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame("linear"))
-        assert self.vis.nvis == len(self.vis.time)
+        assert self.vis.shape[0] == len(self.vis.time)
         assert self.vis.nvis == len(self.vis.frequency)
     
     def test_create_blockvisibility_from_rows1(self):
@@ -160,24 +160,6 @@ class TestVisibilityOperations(unittest.TestCase):
     
     def test_phase_rotation_identity(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                     channel_bandwidth=self.channel_bandwidth,
-                                     phasecentre=self.phasecentre, weight=1.0,
-                                     polarisation_frame=PolarisationFrame("stokesIQUV"))
-        self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
-        newphasecenters = [SkyCoord(182, -35, unit=u.deg), SkyCoord(182, -30, unit=u.deg),
-                           SkyCoord(177, -30, unit=u.deg), SkyCoord(176, -35, unit=u.deg),
-                           SkyCoord(216, -35, unit=u.deg), SkyCoord(180, -70, unit=u.deg)]
-        for newphasecentre in newphasecenters:
-            # Phase rotating back should not make a difference
-            original_vis = self.vismodel.vis
-            original_uvw = self.vismodel.uvw
-            rotatedvis = phaserotate_visibility(phaserotate_visibility(self.vismodel, newphasecentre, tangent=False),
-                                                self.phasecentre, tangent=False)
-            assert_allclose(rotatedvis.uvw, original_uvw, rtol=1e-7)
-            assert_allclose(rotatedvis.vis, original_vis, rtol=1e-7)
-    
-    def test_phase_rotation_identity_block(self):
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame("stokesIQUV"))
@@ -194,26 +176,8 @@ class TestVisibilityOperations(unittest.TestCase):
             assert_allclose(rotatedvis.uvw, original_uvw, rtol=1e-7)
             assert_allclose(rotatedvis.vis, original_vis, rtol=1e-7)
     
-    def test_phase_rotation(self):
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                     channel_bandwidth=self.channel_bandwidth,
-                                     phasecentre=self.phasecentre, weight=1.0,
-                                     polarisation_frame=PolarisationFrame("stokesIQUV"))
-        self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
-        # Predict visibilities with new phase centre independently
-        ha_diff = -(self.compabsdirection.ra - self.phasecentre.ra).to(u.rad).value
-        vispred = create_blockvisibility(self.lowcore, self.times + ha_diff, self.frequency,
-                                    channel_bandwidth=self.channel_bandwidth,
-                                    phasecentre=self.compabsdirection, weight=1.0,
-                                    polarisation_frame=PolarisationFrame("stokesIQUV"))
-        vismodel2 = dft_skycomponent_visibility(vispred, self.comp)
-        
-        # Should yield the same results as rotation
-        rotatedvis = phaserotate_visibility(self.vismodel, newphasecentre=self.compabsdirection, tangent=False)
-        assert_allclose(rotatedvis.vis, vismodel2.vis, rtol=3e-6)
-        assert_allclose(rotatedvis.uvw, vismodel2.uvw, rtol=3e-6)
     
-    def test_phase_rotation_block(self):
+    def test_phase_rotation(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
@@ -232,23 +196,8 @@ class TestVisibilityOperations(unittest.TestCase):
         assert_allclose(rotatedvis.vis, vismodel2.vis, rtol=3e-6)
         assert_allclose(rotatedvis.uvw_lambda, vismodel2.uvw_lambda, rtol=3e-6)
     
-    def test_phase_rotation_inverse(self):
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                     channel_bandwidth=self.channel_bandwidth,
-                                     phasecentre=self.phasecentre, weight=1.0,
-                                     polarisation_frame=PolarisationFrame("stokesIQUV"))
-        self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
-        there = SkyCoord(ra=+250.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
-        # Phase rotating back should not make a difference
-        original_vis = self.vismodel.vis
-        original_uvw = self.vismodel.uvw
-        rotatedvis = phaserotate_visibility(phaserotate_visibility(self.vismodel, there, tangent=False,
-                                                                   inverse=False),
-                                            self.phasecentre, tangent=False, inverse=False)
-        assert_allclose(rotatedvis.uvw, original_uvw, rtol=1e-7)
-        assert_allclose(rotatedvis.vis, original_vis, rtol=1e-7)
-    
-    def test_phase_rotation_inverse_block(self):
+
+    def test_phase_rotation_inverse_(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
@@ -291,22 +240,6 @@ class TestVisibilityOperations(unittest.TestCase):
         assert qa.context == 'test_qa'
     
     def test_elevation(self):
-        self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=+15.0 * u.deg, frame='icrs', equinox='J2000')
-        self.times = (numpy.pi / 43200.0) * numpy.arange(-43200, +43200, 3600.0)
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                     channel_bandwidth=self.channel_bandwidth,
-                                     phasecentre=self.phasecentre, weight=1.0,
-                                     polarisation_frame=PolarisationFrame("stokesIQUV"),
-                                     elevation_limit=numpy.pi * 15.0 / 180.0)
-        n_elevation_limit = len(numpy.unique(self.vis.time))
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                     channel_bandwidth=self.channel_bandwidth,
-                                     phasecentre=self.phasecentre, weight=1.0,
-                                     polarisation_frame=PolarisationFrame("stokesIQUV"),
-                                     elevation_limit=None)
-        assert len(numpy.unique(self.vis.time)) >= n_elevation_limit
-    
-    def test_elevation_block(self):
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=+15.0 * u.deg, frame='icrs', equinox='J2000')
         self.times = (numpy.pi / 43200.0) * numpy.arange(-43200, +43200, 3600.0)
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,

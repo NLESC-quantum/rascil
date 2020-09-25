@@ -132,18 +132,6 @@ class TestGridDataGridding(unittest.TestCase):
             export_image_to_fits(im, '%s/test_gridding_dirty_pswf.fits' % self.dir)
         self.check_peaks(im, 96.79834384000331, tol=1e-7)
     
-    def test_griddata_invert_pswf_block(self):
-        self.actualSetUp(zerow=True, block=True)
-        gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
-        griddata = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
-        griddata, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=griddata, cf=cf)
-        cim = fft_griddata_to_image(griddata, gcf)
-        cim = normalize_sumwt(cim, sumwt)
-        im = convert_polimage_to_stokes(cim)
-        if self.persist:
-            export_image_to_fits(im, '%s/test_gridding_dirty_pswf_block.fits' % self.dir)
-        self.check_peaks(im, 96.7983438400033, tol=1e-7)
-    
     def test_griddata_invert_pswf_w(self):
         self.actualSetUp(zerow=False)
         gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
@@ -206,18 +194,6 @@ class TestGridDataGridding(unittest.TestCase):
             export_image_to_fits(im, '%s/test_gridding_dirty_box.fits' % self.dir)
         self.check_peaks(im, 96.7983438400033, tol=1e-7)
     
-    def test_griddata_invert_box_block(self):
-        self.actualSetUp(zerow=True, block=True)
-        gcf, cf = create_box_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
-        griddata = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
-        griddata, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=griddata, cf=cf)
-        cim = fft_griddata_to_image(griddata, gcf)
-        cim = normalize_sumwt(cim, sumwt)
-        im = convert_polimage_to_stokes(cim)
-        if self.persist:
-            export_image_to_fits(im, '%s/test_gridding_dirty_box.fits' % self.dir)
-        self.check_peaks(im, 96.7983438400033, tol=1e-7)
-    
     def check_peaks(self, im, peak, tol=1e-6):
         assert numpy.abs(im.data[self.peak] - peak) < tol, im.data[self.peak]
     
@@ -269,52 +245,6 @@ class TestGridDataGridding(unittest.TestCase):
         assert cf.grid_wcs.wcs.cdelt[1] == griddata.grid_wcs.wcs.cdelt[1], \
             str(cf.grid_wcs.wcs.cdelt[:2]) + str(griddata.grid_wcs.wcs.cdel[:2])
     
-    def test_griddata_invert_awterm_block(self):
-        self.actualSetUp(zerow=False)
-        make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
-        pb = make_pb(self.model)
-        if self.persist:
-            export_image_to_fits(pb, "%s/test_gridding_awterm_pb.fits" % self.dir)
-        gcf, cf = create_awterm_convolutionfunction(self.model, make_pb=make_pb, nw=100, wstep=8.0,
-                                                    oversampling=4, support=32, use_aaf=True,
-                                                    polarisation_frame=self.vis_pol)
-        # cf_image = convert_convolutionfunction_to_image(cf)
-        # cf_image.data = numpy.real(cf_image.data)
-        # if self.persist:
-        #     export_image_to_fits(cf_image, "%s/test_gridding_awterm_cf.fits" % self.dir)
-        
-        griddata = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
-        griddata, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=griddata, cf=cf)
-        cim = fft_griddata_to_image(griddata, gcf)
-        cim = normalize_sumwt(cim, sumwt)
-        im = convert_polimage_to_stokes(cim)
-        if self.persist:
-            export_image_to_fits(im, '%s/test_gridding_dirty_awterm.fits' % self.dir)
-        self.check_peaks(im, 96.87159049)
-    
-    def test_griddata_predict_pswf_block(self):
-        self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"), block=True)
-        gcf, cf = create_pswf_convolutionfunction(self.model, support=8, oversampling=255,
-                                                  polarisation_frame=self.vis_pol)
-        modelIQUV = convert_stokes_to_polimage(self.model, self.vis.polarisation_frame)
-        griddata = create_griddata_from_image(modelIQUV, polarisation_frame=self.vis_pol)
-        griddata = fft_image_to_griddata(modelIQUV, griddata, gcf)
-        newvis = degrid_blockvisibility_from_griddata(self.vis, griddata=griddata, cf=cf)
-        newvis.data['vis'][...] -= self.vis.data['vis'][...]
-        qa = qa_visibility(newvis)
-        assert qa.data['rms'] < 1.06, str(qa)
-    
-    def test_griddata_predict_box_block(self):
-        self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"), block=True)
-        gcf, cf = create_box_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
-        modelIQUV = convert_stokes_to_polimage(self.model, self.vis.polarisation_frame)
-        griddata = create_griddata_from_image(modelIQUV, polarisation_frame=self.vis_pol)
-        griddata = fft_image_to_griddata(modelIQUV, griddata, gcf)
-        newvis = degrid_blockvisibility_from_griddata(self.vis, griddata=griddata, cf=cf)
-        newvis.data['vis'][...] -= self.vis.data['vis'][...]
-        qa = qa_visibility(newvis)
-        assert qa.data['rms'] < 58.0, str(qa)
-    
     @unittest.skip("Not reliable")
     def test_griddata_predict_aterm(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
@@ -358,36 +288,6 @@ class TestGridDataGridding(unittest.TestCase):
         qa = qa_visibility(newvis)
         assert qa.data['rms'] < 160.5, str(qa)
         self.plot_vis(newvis, 'awterm')
-    
-    def test_griddata_visibility_weight(self):
-        self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
-        gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
-        gd = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
-        gd_list = [grid_visibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)]
-        gd, sumwt = griddata_merge_weights(gd_list, algorithm='uniform')
-        self.vis = griddata_visibility_reweight(self.vis, gd, cf)
-        gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
-        cim = fft_griddata_to_image(gd, gcf)
-        cim = normalize_sumwt(cim, sumwt)
-        im = convert_polimage_to_stokes(cim)
-        if self.persist:
-            export_image_to_fits(im, '%s/test_gridding_dirty_2d_uniform.fits' % self.dir)
-        self.check_peaks(im, 98.83214280182796)
-    
-    def test_griddata_visibility_weight_IQ(self):
-        self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
-        gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
-        gd = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
-        gd_list = [grid_visibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)]
-        gd, sumwt = griddata_merge_weights(gd_list, algorithm='uniform')
-        self.vis = griddata_visibility_reweight(self.vis, gd, cf)
-        gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
-        cim = fft_griddata_to_image(gd, gcf)
-        cim = normalize_sumwt(cim, sumwt)
-        im = convert_polimage_to_stokes(cim)
-        if self.persist:
-            export_image_to_fits(im, '%s/test_gridding_dirty_2d_IQ_uniform.fits' % self.dir)
-        self.check_peaks(im, 98.83214280182796)
     
     def test_griddata_blockvisibility_weight(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))

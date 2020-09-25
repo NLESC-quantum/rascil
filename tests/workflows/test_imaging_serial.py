@@ -93,8 +93,7 @@ class TestImaging(unittest.TestCase):
                                                      self.times,
                                                     self.vis_pol,
                                                     self.phasecentre,
-                                                     block=block,
-                                                    zerow=zerow)
+                                                     zerow=zerow)
                          for freqwin, _ in enumerate(self.frequency)]
 
         self.model_list = [create_unittest_model(self.bvis_list[freqwin],
@@ -198,14 +197,10 @@ class TestImaging(unittest.TestCase):
         
         if check_components:
             self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)
+    
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_2d(self):
         self.actualSetUp(zerow=True)
-        self._predict_base(context='2d', fluxthreshold=3.0)
-    
-    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
-    def test_predict_2d_block(self):
-        self.actualSetUp(zerow=Truecreate_blockvisibility)
         self._predict_base(context='2d', extr='_block', fluxthreshold=3.0)
 
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
@@ -269,7 +264,7 @@ class TestImaging(unittest.TestCase):
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_predict_wstack(self):
-        self.actualSetUp(block=False)
+        self.actualSetUp()
         self._predict_base(context='wstack', fluxthreshold=3.3, vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
@@ -301,13 +296,6 @@ class TestImaging(unittest.TestCase):
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_2d_uniform(self):
         self.actualSetUp(zerow=True, makegcfcf=True)
-        self.bvis_list = weight_list_serial_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
-                                                        weighting='uniform')
-        self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
-    
-    @unittest.skipUnless(run_serial_tests, "don't run serial tests")
-    def test_invert_2d_uniform_block(self):
-        self.actualSetUp(zerow=True, makegcfcf=Truecreate_blockvisibility)
         self.bvis_list = weight_list_serial_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
                                                      weighting='uniform')
         assert isinstance(self.bvis_list[0], BlockVisibility)
@@ -341,7 +329,7 @@ class TestImaging(unittest.TestCase):
     @unittest.skip("Facets need overlap")
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_facets_wstack(self):
-        self.actualSetUp(block=False)
+        self.actualSetUp()
         self._invert_base(context='facets_wstack', positionthreshold=1.0, check_components=False, facets=4,
                           vis_slices=101)
     
@@ -382,7 +370,7 @@ class TestImaging(unittest.TestCase):
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
     def test_invert_wstack(self):
-        self.actualSetUp(block=False)
+        self.actualSetUp()
         self._invert_base(context='wstack', positionthreshold=1.0, vis_slices=51)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")

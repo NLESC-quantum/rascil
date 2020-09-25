@@ -58,7 +58,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         if comp.polarisation_frame != vis.polarisation_frame:
             flux = convert_pol_frame(flux, comp.polarisation_frame, vis.polarisation_frame)
 
-        if comp.frequency.all() == vis.frequency.all():
+        if numpy.array_equal(comp.frequency,vis.frequency.values):
             vflux = flux
         else:
             nchan, npol = flux.shape
@@ -103,7 +103,6 @@ def idft_visibility_skycomponent(vis: BlockVisibility,
         assert isinstance(comp, Skycomponent), comp
         assert_same_chan_pol(vis, comp)
         newcomp = copy_skycomponent(comp)
-
 
         phasor = numpy.conjugate(calculate_blockvisibility_phasor(comp.direction, vis))
         flux = numpy.sum(vis.flagged_weight.values * vis.flagged_vis.values * phasor, axis=(0, 1))

@@ -44,7 +44,7 @@ class TestSkycomponentInsert(unittest.TestCase):
             self.image_pol = PolarisationFrame("stokesI")
             self.pol_flux = numpy.array([1.0])
         
-        self.times = (numpy.pi / 12.0) * numpy.linspace(-3.0, 3.0, 7)
+        self.times = (numpy.pi / 12.0) * numpy.linspace(-3.0, 3.0, 6)
         self.image_frequency = numpy.linspace(0.9e8, 1.1e8, 5)
         self.image_channel_bandwidth = numpy.array(5*[5e6])
         self.component_frequency = numpy.linspace(0.8e8, 1.2e8, 7)

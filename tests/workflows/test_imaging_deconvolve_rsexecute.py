@@ -80,7 +80,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                                                                         [self.channelwidth[freqwin]],
                                                                         self.times,
                                                                         self.vis_pol,
-                                                                        self.phasecentre, block=block,
+                                                                        self.phasecentre,
                                                                         zerow=zerow)
                          for freqwin, _ in enumerate(self.frequency)]
         

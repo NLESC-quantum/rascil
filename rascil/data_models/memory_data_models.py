@@ -1103,7 +1103,13 @@ class BlockVisibility:
         """ Return size in GB
         """
         return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
-    
+
+    @property
+    def ntimes(self):
+        """ Number of times (i.e. rows) in this table
+        """
+        return len(self.data['time'])
+
     @property
     def nchan(self):
         """ Number of channels

@@ -8,3 +8,4 @@ from .operations import *
 from .pointing import *
 from .rcal import *
 from .solvers import *
+from .gaintable_selection import *

@@ -271,8 +271,7 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
 
     inchan = get_parameter(kwargs, "nchan", vnchan)
     reffrequency = frequency[0] * units.Hz
-    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", 0.99999999999 * \
-                                      vis.channel_bandwidth.values[0]) * units.Hz
+    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", vis.channel_bandwidth.values[0]) * units.Hz
 
 
     if (inchan == vnchan) and vnchan > 1:

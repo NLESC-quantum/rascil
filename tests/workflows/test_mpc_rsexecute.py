@@ -43,7 +43,7 @@ class TestMPC(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
 
-    def actualSetUp(self, freqwin=1create_blockvisibility, dopol=False, zerow=False):
+    def actualSetUp(self, freqwin=1, dopol=False, zerow=False):
         
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=550.0)
@@ -78,7 +78,7 @@ class TestMPC(unittest.TestCase):
                                                                              [self.channelwidth[freqwin]],
                                                                              self.times,
                                                                              self.vis_pol,
-                                                                             self.phasecentre, block=block,
+                                                                             self.phasecentre,
                                                                              zerow=zerow)
                               for freqwin, _ in enumerate(self.frequency)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)

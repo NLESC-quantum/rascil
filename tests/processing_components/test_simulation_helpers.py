@@ -35,18 +35,6 @@ class TestSimulationHelpers(unittest.TestCase):
         plot_azel([self.vis])
         plt.show(block=False)
 
-    def test_plot_uvcoverage_block(self):
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                          channel_bandwidth=self.channel_bandwidth,
-                                          phasecentre=self.phasecentre,
-                                          weight=1.0)
-        plt.clf()
-        plot_uvcoverage([self.vis])
-        plt.clf()
-        plot_uwcoverage([self.vis])
-        plt.clf()
-        plot_vwcoverage([self.vis])
-
     def test_plot_uvcoverage(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,

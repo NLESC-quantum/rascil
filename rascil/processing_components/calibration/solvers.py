@@ -21,6 +21,7 @@ import numpy
 from rascil.data_models.memory_data_models import BlockVisibility, GainTable, assert_vis_gt_compatible
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
 from rascil.processing_components.visibility.operations import divide_visibility
+from rascil.processing_components.visibility.visibility_selection import blockvisibility_select
 
 log = logging.getLogger('logger')
 
@@ -63,10 +64,23 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
         pointvis = vis
     
     for row in range(gt.ntimes):
-        vis_rows = numpy.abs(vis.time - gt.time[row]) < gt.interval[row] / 2.0
-        if numpy.sum(vis_rows) > 0:
-            x = numpy.sum((pointvis.vis[vis_rows] * pointvis.weight[vis_rows]) * (1 - pointvis.flags[vis_rows]), axis=0)
-            xwt = numpy.sum(pointvis.weight[vis_rows] * (1 - pointvis.flags[vis_rows]), axis=0)
+        time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
+        pointvis_sel = blockvisibility_select(pointvis, time_slice)
+        if pointvis.ntimes > 0:
+            x_b = numpy.sum((pointvis_sel.vis.values * pointvis_sel.weight.values)
+                          * (1 - pointvis_sel.flags.values), axis=0)
+            xwt_b = numpy.sum(pointvis_sel.weight.values * (1 - pointvis_sel.flags.values), axis=0)
+            nants = gt.nants
+            nchan = gt.nchan
+            npol = pointvis.npol
+            x = numpy.zeros([nants, nants, nchan, npol], dtype='complex')
+            xwt = numpy.zeros([nants, nants, nchan, npol])
+            for ibaseline, (a1, a2) in enumerate(pointvis.baselines.values):
+                x[a1, a2, ...] = x_b[ibaseline, ...]
+                xwt[a1, a2, ...] = xwt_b[ibaseline, ...]
+                x[a2, a1, ...] = numpy.conjugate(x_b[ibaseline, ...])
+                xwt[a2, a1, ...] = xwt_b[ibaseline, ...]
+
             mask = numpy.abs(xwt) > 0.0
             if numpy.sum(mask) > 0:
                 x_shape = x.shape
@@ -76,43 +90,52 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
                 x = x.reshape(x_shape)
                 
                 if vis.npol == 1:
-                    gt.data['gain'][row, ...], gt.data['weight'][row, ...], gt.data['residual'][row, ...] = \
-                        solve_antenna_gains_itsubs_scalar(gt.data['gain'][row, ...],
-                                                          gt.data['weight'][row, ...],
+                    gt.data['gain'].values[row, ...], gt.data['weight'].values[row, ...], \
+                    gt.data['residual'].values[row, ...] = \
+                        solve_antenna_gains_itsubs_scalar(gt.data['gain'].values[row, ...],
+                                                          gt.data['weight'].values[row, ...],
                                                           x, xwt, phase_only=phase_only, niter=niter,
                                                           tol=tol)
                 elif vis.npol == 2:
-                    gt.data['gain'][row, ...], gt.data['weight'][row, ...], gt.data['residual'][row, ...] = \
-                        solve_antenna_gains_itsubs_nocrossdata(gt.data['gain'][row, ...], gt.data['weight'][row, ...],
+                    gt.data['gain'].values[row, ...], \
+                    gt.data['weight'].values[row, ...], \
+                    gt.data['residual'].values[row, ...] = \
+                        solve_antenna_gains_itsubs_nocrossdata(gt.data['gain'].values[row, ...],
+                                                               gt.data['weight'].values[row, ...],
                                                                x, xwt, phase_only=phase_only, niter=niter,
                                                                tol=tol)
                 elif vis.npol == 4:
                     if crosspol:
-                        gt.data['gain'][row, ...], gt.data['weight'][row, ...], gt.data['residual'][row, ...] = \
-                            solve_antenna_gains_itsubs_matrix(gt.data['gain'][row, ...], gt.data['weight'][row, ...],
+                        gt.data['gain'].values[row, ...], \
+                        gt.data['weight'].values[row, ...], \
+                        gt.data['residual'].values[row, ...] = \
+                            solve_antenna_gains_itsubs_matrix(gt.data['gain'].values[row, ...],
+                                                              gt.data['weight'].values[row, ...],
                                                               x, xwt, phase_only=phase_only, niter=niter,
                                                               tol=tol)
                     else:
-                        gt.data['gain'][row, ...], gt.data['weight'][row, ...], gt.data['residual'][row, ...] = \
-                            solve_antenna_gains_itsubs_vector(gt.data['gain'][row, ...], gt.data['weight'][row, ...],
+                        gt.data['gain'].values[row, ...], gt.data['weight'].values[row, ...], \
+                        gt.data['residual'].values[row, ...] = \
+                            solve_antenna_gains_itsubs_vector(gt.data['gain'].values[row, ...],
+                                                              gt.data['weight'].values[row, ...],
                                                               x, xwt, phase_only=phase_only, niter=niter,
                                                               tol=tol)
                 
                 else:
-                    gt.data['gain'][row, ...], gt.data['weight'][row, ...], \
-                    gt.data['residual'][row, ...] = \
-                        solve_antenna_gains_itsubs_scalar(gt.data['gain'][row, ...],
-                                                          gt.data['weight'][row, ...],
+                    gt.data['gain'].values[row, ...], gt.data['weight'].values[row, ...], \
+                    gt.data['residual'].values[row, ...] = \
+                        solve_antenna_gains_itsubs_scalar(gt.data['gain'].values[row, ...],
+                                                          gt.data['weight'].values[row, ...],
                                                           x, xwt, phase_only=phase_only, niter=niter,
                                                           tol=tol)
                 
                 if normalise_gains and not phase_only:
-                    gabs = numpy.average(numpy.abs(gt.data['gain'][row]))
-                    gt.data['gain'][row] /= gabs
+                    gabs = numpy.average(numpy.abs(gt.data['gain'].values[row]))
+                    gt.data['gain'].values[row] /= gabs
             else:
-                gt.data['gain'][row, ...] = 1.0 + 0.0j
-                gt.data['weight'][row, ...] = 0.0
-                gt.data['residual'][row, ...] = 0.0
+                gt.data['gain'].values[row, ...] = 1.0 + 0.0j
+                gt.data['weight'].values[row, ...] = 0.0
+                gt.data['residual'].values[row, ...] = 0.0
         
         else:
             log.warning("Gaintable {0}, vis time mismatch {1}".format(gt.time, vis.time))

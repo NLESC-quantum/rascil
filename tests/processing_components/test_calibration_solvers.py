@@ -55,10 +55,10 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
 
     def test_solve_gaintable_stokesI(self):
-        self.actualSetup('stokesI', 'stokesI', f=[100.0], ntimes=300)
+        self.actualSetup('stokesI', 'stokesI', f=[100.0])
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
-        gt = simulate_gaintable(gt, phase_error=10.0, amplitude_error=0.1)
+        gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
         original = copy_visibility(self.vis)
         self.vis = apply_gaintable(self.vis, gt)
         gtsol = solve_gaintable(self.vis, original, phase_only=False, niter=200)

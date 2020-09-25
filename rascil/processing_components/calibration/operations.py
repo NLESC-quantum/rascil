@@ -18,7 +18,6 @@ from astropy.time import Time
 
 from rascil.data_models.memory_data_models import GainTable, BlockVisibility, QA, assert_vis_gt_compatible
 from rascil.data_models.polarisation import ReceptorFrame
-
 log = logging.getLogger('logger')
 
 
@@ -57,8 +56,10 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     # row_numbers = numpy.array(list(range(len(vis.time))), dtype='int')
     row_numbers = numpy.arange(len(vis.time))
     done = numpy.zeros(len(row_numbers), dtype='int')
+    from rascil.processing_components import blockvisibility_select, gaintable_select
+
     for row in range(ntimes):
-        vis_rows = numpy.abs(vis.time - gt.time[row]) < gt.interval[row] / 2.0
+        vis_rows = numpy.abs(vis.time.values - gt.time.values[row]) < gt.interval.values[row] / 2.0
         vis_rows = row_numbers[vis_rows]
         if len(vis_rows) > 0:
             
@@ -105,14 +106,14 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 smueller1 = numpy.einsum('ijlm,kjlm->jik', lgain, numpy.conjugate(lgain))
 
                 for sub_vis_row in range(original.shape[0]):
-                    for ibaseline, baseline in enumerate(baselines):
+                    for ibaseline, (a1, a2) in enumerate(baselines):
                         for chan in range(nchan):
                             applied[sub_vis_row, ibaseline, chan, 0] = \
-                                original[sub_vis_row, ibaseline, chan, 0] * smueller1[chan, baseline[0], baseline[1]]
-                            antantwt = gainwt[baseline[0], chan, 0, 0] * gainwt[baseline[1], chan, 0, 0]
-                            appliedwt[sub_vis_row, baseline, chan, 0] = \
-                                gainwt[baseline[0], chan, 0, 0] * gainwt[baseline[1], chan, 0, 0]
-                            applied[sub_vis_row, baseline, chan, 0][antantwt == 0.0] = 0.0
+                                original[sub_vis_row, ibaseline, chan, 0] * smueller1[chan, a1, a2]
+                            antantwt = gainwt[a1, chan, 0, 0] * gainwt[a2, chan, 0, 0]
+                            appliedwt[sub_vis_row, ibaseline, chan, 0] = \
+                                gainwt[a1, chan, 0, 0] * gainwt[a2, chan, 0, 0]
+                            #applied[sub_vis_row, ibaseline, chan, 0][antantwt == 0.0] = 0.0
 
                 # smueller1 = numpy.einsum('ijlm,kjlm->ikj', lgain, numpy.conjugate(lgain))
                 # for sub_vis_row in range(original.shape[0]):
@@ -137,20 +138,20 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                 has_inverse_ant[a1, chan] = False
         
                     for sub_vis_row in range(original.shape[0]):
-                        for ibaseline, baseline in enumerate(baselines):
+                        for ibaseline, (a1, a2) in enumerate(baselines):
                             for chan in range(nchan):
-                                    if has_inverse_ant[baseline[0], chan] and has_inverse_ant[baseline[1], chan]:
-                                        cfs = numpy.diag(original[sub_vis_row, baseline[0], baseline[1], chan, ...])
-                                        applied[sub_vis_row, ibaseline, chan, ...] = \
-                                            numpy.diag(igain[baseline[0], chan, :, :] @ \
-                                                       cfs @ cigain[baseline[1], chan, :, :]).reshape([2])
+                                if has_inverse_ant[a1, chan] and has_inverse_ant[a2, chan]:
+                                    cfs = numpy.diag(original[sub_vis_row, ibaseline, chan, ...])
+                                    applied[sub_vis_row, ibaseline, chan, ...] = \
+                                        numpy.diag(igain[a1, chan, :, :] @ \
+                                                   cfs @ cigain[a2, chan, :, :]).reshape([2])
                 else:
                     for sub_vis_row in range(original.shape[0]):
-                        for ibaseline, baseline in enumerate(baselines):
+                        for ibaseline, (a1, a2) in enumerate(baselines):
                             for chan in range(nchan):
                                     cfs = numpy.diag(original[sub_vis_row, ibaseline, chan, ...])
                                     applied[sub_vis_row, ibaseline, chan, ...] = \
-                                        numpy.diag(gain[baseline[0], chan, :, :] @ cfs @ cgain[baseline[1], chan, :, :]).reshape([2])
+                                        numpy.diag(gain[a1, chan, :, :] @ cfs @ cgain[a2, chan, :, :]).reshape([2])
 
             elif vis.npol == 4:
                 has_inverse_ant = numpy.zeros([nant, nchan], dtype='bool')
@@ -186,12 +187,8 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 print("No row in gaintable for visibility time range  {} to {}".format(times[0].isot, times[-1].isot))
                 log.warning("No row in gaintable for visibility row, time range  {} to {}".format(times[0].isot, times[-1].isot))
 
-            vis.data['vis'][vis_rows] = applied
-            for r in vis_rows:
-                done[r] = 1
-    
-    assert done.all() == 1, "Some rows were not calibrated"
-    
+            vis.vis.values[vis_rows] = applied
+
     return vis
 
 
@@ -335,9 +332,9 @@ def qa_gaintable(gt: GainTable, context=None) -> QA:
     :param gt:
     :return: QA
     """
-    agt = numpy.abs(gt.gain[gt.weight > 0.0])
-    pgt = numpy.angle(gt.gain[gt.weight > 0.0])
-    rgt = gt.residual[numpy.sum(gt.weight, axis=1) > 0.0]
+    agt = numpy.abs(gt.gain.values[gt.weight.values > 0.0])
+    pgt = numpy.angle(gt.gain.values[gt.weight.values > 0.0])
+    rgt = gt.residual.values[numpy.sum(gt.weight.values, axis=1) > 0.0]
     data = {'shape': gt.gain.shape,
             'maxabs-amp': numpy.max(agt),
             'minabs-amp': numpy.min(agt),

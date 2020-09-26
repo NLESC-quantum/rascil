@@ -9,3 +9,4 @@ from .pointing import *
 from .rcal import *
 from .solvers import *
 from .gaintable_selection import *
+from .pointingtable_selection import *

@@ -245,16 +245,13 @@ def create_blockvisibility_from_rows(vis: BlockVisibility,
     
     if rows is None or numpy.sum(rows) == 0:
         return None
-    
-    assert len(rows) == len(vis.time.values), "Length of rows does not agree with length of visibility"
-    
+        
     if makecopy:
         newvis = copy_visibility(vis)
         newvis.data = copy.deepcopy(vis.data.sel({"time": vis.time[rows]}))
         return newvis
     else:
         vis.data = copy.deepcopy(vis.data.sel({"time": vis.time[rows]}))
-        
         return vis
 
 

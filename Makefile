@@ -34,7 +34,7 @@ RASCIL_DATA = $(CURRENT_DIR)/data
 
 .DEFAULT_GOAL := help
 
-clean: cleantests
+clean:
 	$(PYTHON) setup.py clean --all
 	rm -rf dist
 

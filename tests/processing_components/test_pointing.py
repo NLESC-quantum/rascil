@@ -108,7 +108,7 @@ class TestPointing(unittest.TestCase):
         pt = simulate_pointingtable(pt, pointing_error=0.01, static_pointing_error=None,
                                     global_pointing_error=[0.0, 0.0])
         vp = create_vp(self.model, 'MID', use_local=False)
-        gt = simulate_gaintable_from_pointingtable(self.vis, [comp], pt, vp, use_radec=True)
+        gt = simulate_gaintable_from_pointingtable(self.vis, [comp], pt, vp)
         if self.doplot:
             import matplotlib.pyplot as plt
             plt.clf()

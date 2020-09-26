@@ -46,7 +46,7 @@ def vis_timeslice_iter(vis: BlockVisibility, vis_slices=None) -> numpy.ndarray:
     
     if isinstance(vis, BlockVisibility) and (vis_slices == "auto" or vis_slices is None):
         for ib in range(vis.nvis):
-            boxes = numpy.zeros([vis.nvis], dtype='bool')
+            boxes = numpy.zeros([vis.ntimes], dtype='bool')
             boxes[ib] = True
             yield boxes
     else:

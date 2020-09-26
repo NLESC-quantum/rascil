@@ -119,7 +119,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
         gt = simulate_gaintable(gt, phase_error=10.0, amplitude_error=0.0)
-        gt.data['gain'] = gt.gain[1,...]
+        gt.gain.values[...] = gt.gain.values[1,...]
         original = copy_visibility(self.vis)
         self.vis = apply_gaintable(self.vis, gt)
         gtsol = solve_gaintable(self.vis, original, phase_only=True, niter=200)

@@ -278,14 +278,14 @@ class GainTable:
         """ Number of receivers
 
         """
-        return self.data['receptor']
+        return len(self.data['receptor1'])
 
     @property
     def receptors(self):
         """ Receptors
 
         """
-        return self.data['receptor']
+        return self.data['receptor1']
 
     def __str__(self):
         """Default printer for GainTable
@@ -327,26 +327,6 @@ class PointingTable:
         :param pointingcentre: SkyCoord
         :param configuration: Configuration
         """
-        if data is None and pointing is not None:
-            nrec = receptor_frame.nrec
-            nrows = pointing.shape[0]
-            nants = pointing.shape[1]
-            nchan = pointing.shape[2]
-            assert len(frequency) == nchan, "Discrepancy in frequency channels"
-            desc = [('pointing', 'f16', (nants, nchan, nrec, 2)),
-                    ('nominal', 'f16', (nants, nchan, nrec, 2)),
-                    ('weight', 'f8', (nants, nchan, nrec, 2)),
-                    ('residual', 'f8', (nchan, nrec, 2)),
-                    ('time', 'f8'),
-                    ('interval', 'f8')]
-            data = numpy.zeros(shape=[nrows], dtype=desc)
-            data['pointing'] = pointing
-            data['weight'] = weight
-            data['time'] = time
-            data['interval'] = interval
-            data['residual'] = residual
-            data['nominal'] = nominal
-        
         self.data = data
         self.frequency = frequency
         self.receptor_frame = receptor_frame
@@ -372,6 +352,11 @@ class PointingTable:
         datavars["interval"] = xarray.DataArray(interval, dims=["time"])
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64, dims="time")
         self.data = xarray.Dataset(datavars, coords=coords)
+
+        self.receptor_frame = receptor_frame
+        self.pointing_frame = pointing_frame
+        self.pointingcentre = pointingcentre
+        self.configuration = configuration
 
     
     def size(self):

@@ -50,8 +50,7 @@ class TestVisibilityOperations(unittest.TestCase):
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame("linear"))
-        assert self.vis.shape[0] == len(self.vis.time)
-        assert self.vis.nvis == len(self.vis.frequency)
+        assert self.vis.vis.shape[0] == len(self.vis.time)
     
     def test_create_blockvisibility_from_rows1(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
@@ -60,7 +59,7 @@ class TestVisibilityOperations(unittest.TestCase):
         rows = self.vis.time > 150.0
         for makecopy in [True, False]:
             selected_vis = create_blockvisibility_from_rows(self.vis, rows, makecopy=makecopy)
-            assert selected_vis.nvis == numpy.sum(numpy.array(rows))
+            assert selected_vis.ntimes == numpy.sum(numpy.array(rows))
     
     def test_create_blockvisibility_from_rows_makecopy(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency, phasecentre=self.phasecentre,
@@ -68,7 +67,7 @@ class TestVisibilityOperations(unittest.TestCase):
         rows = self.vis.time > 150.0
         for makecopy in [True, False]:
             selected_vis = create_blockvisibility_from_rows(self.vis, rows, makecopy=makecopy)
-            assert selected_vis.nvis == numpy.sum(numpy.array(rows))
+            assert selected_vis.ntimes == numpy.sum(numpy.array(rows))
     
     def test_append_visibility_time(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,

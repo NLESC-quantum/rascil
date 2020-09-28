@@ -1,3 +1,17 @@
+0.1.10b0
+--------
+
+
+0.1.9
+-----
+
+* Documentation structure and content improved after review by othe SKA teams
+* Add MeerKAT+ configuration and MEERKAT_B2 voltage patterns
+* predict, restore of SkyModel now possible
+* Multiple changes to support ska-mid-simulations
+* Error in uvw calculations introduced and corrected. UVW calculations require
+configurations in local coordiates
+
 0.1.8
 -----
 

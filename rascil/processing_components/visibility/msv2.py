@@ -19,7 +19,7 @@ log = logging.getLogger('logger')
 
 try:
     from casacore.tables import table, tableutil
-
+    from casacore.measures import measures
 
     class WriteMs(BaseData):
         """

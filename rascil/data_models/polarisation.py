@@ -83,14 +83,14 @@ class PolarisationFrame:
 
     """
     fits_codes = {
-        'circular': [-1, -2, -3, -4],
-        'circularnp': [-1, -4],
-        'linear': [-5, -6, -7, -8],
-        'linearnp': [-5, -8],
-        'stokesIQUV': [1, 2, 3, 4],
-        'stokesIV': [1, 4],
-        'stokesIQ': [1, 2],
-        'stokesI': [1]
+        'circular': [-1, -2, -3, -4], # RR, LL, RL, LR
+        'circularnp': [-1, -2], # RR, LL,
+        'linear': [-5, -6, -7, -8], # XX, YY, XY, YX
+        'linearnp': [-5, -6], # XX, YY
+        'stokesIQUV': [1, 2, 3, 4], # I, Q, U, V
+        'stokesIV': [1, 4], # IV
+        'stokesIQ': [1, 2], # IQ
+        'stokesI': [1] # I
     }
     polarisation_frames = {
         'circular': {'RR': 0, 'RL': 1, 'LR': 2, 'LL': 3},
@@ -101,6 +101,17 @@ class PolarisationFrame:
         'stokesIV': {'I': 0, 'V': 1},
         'stokesIQ': {'I': 0, 'Q': 1},
         'stokesI': {'I': 0}
+    }
+    fits_to_rascil = {
+        'circular': [0, 3, 1, 2],  # RR, LL, RL, LR
+        'circularnp': [0, 1],  # RR, LL,
+        'linear': [0, 3, 1, 2],  # XX, YY, XY, YX
+        'linearnp': [0, 1],  # XX, YY
+        'stokesIQUV': [0, 1, 2, 3],  # I, Q, U, V
+        'stokesIV': [0, 1],  # IV
+        'stokesIQ': [0, 1],  # IQ
+        'stokesI': [0]  # I
+    
     }
     
     def __init__(self, name):

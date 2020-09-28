@@ -146,7 +146,7 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
                            for ibvis, bvis in enumerate(bvis_graph)]
                 vp_list = rsexecute.persist(vp_list)
                 gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)
-                           (bvis, original_components, vp_list[ibv], use_radec=False)
+                           (bvis, original_components, vp_list[ibv])
                            for ibv, bvis in enumerate(bvis_graph)]
                 gt_list = rsexecute.persist(gt_list)
                 bvis_plot_list = \

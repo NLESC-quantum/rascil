@@ -1,4 +1,5 @@
-""" Functions for tropospheric and ionospheric modelling: see
+""" Functions for tropospheric and ionospheric modeling
+: see
 `SDP Memo 97 <http://ska-sdp.org/sites/default/files/attachments/direction_dependent_self_calibration_in_arl_-_signed.pdf>`_
 
 
@@ -51,9 +52,8 @@ def find_pierce_points(station_locations, ha, dec, phasecentre, height):
     return pierce_points
 
 
-def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, scale=1.0,
-                                 r0=5e3, type_atmosphere='ionosphere', reference=False,
-                                 **kwargs):
+def create_gaintable_from_screen(vis, sc, screen, height=None, vis_slices=None, r0=5e3, type_atmosphere='ionosphere',
+                                 reference_component=None, **kwargs):
     """ Create gaintables from a screen calculated using ARatmospy
 
     Screen axes are ['XX', 'YY', 'TIME', 'FREQ']
@@ -64,21 +64,16 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
     :param height: Height (in m) of screen above telescope e.g. 3e5
     :param r0: r0 in meters
     :param type_atmosphere: 'ionosphere' or 'troposphere'
-    :param scale: Multiply the screen by this factor
     :param reference: Use the first component as a reference
     :return:
     """
     assert isinstance(vis, BlockVisibility)
     
+    assert height is not None, "Screen height must be specified"
+    
     station_locations = vis.configuration.xyz
     
     scale = numpy.power(r0/5000.0, -5.0/3.0)
-    if type_atmosphere == 'troposphere':
-        # In troposphere files, the units are phase in radians.
-        screen_to_phase = scale
-    else:
-        # In the ionosphere file, the units are dTEC.
-        screen_to_phase = - scale * 8.44797245e9 / numpy.array(vis.frequency)
 
     nant = station_locations.shape[0]
     t2r = numpy.pi / 43200.0
@@ -89,6 +84,8 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
     hdulist = fits.open(screen, memmap=True)
     screen_data = hdulist[0].data
     screen_wcs = WCS(screen)
+    screen_freq = screen_wcs.wcs.crval[3]
+    assert screen_data.shape[0] == 1, screen_data.shape
 
     number_bad = 0
     number_good = 0
@@ -97,7 +94,7 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
     for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
         v = create_blockvisibility_from_rows(vis, rows)
         ha = numpy.average(calculate_blockvisibility_hourangles(v)).to('deg').value * 43200.0 / 180.0
-        scr = numpy.zeros([ncomp, nant])
+        scr = numpy.zeros([ncomp, nant, vis.nchan])
         for icomp, comp in enumerate(sc):
             pp = find_pierce_points(station_locations, (comp.direction.ra.rad + t2r * ha) * units.rad,
                                     comp.direction.dec,
@@ -105,22 +102,30 @@ def create_gaintable_from_screen(vis, sc, screen, height=3e5, vis_slices=None, s
                                     phasecentre=vis.phasecentre)
             for ant in range(nant):
                 pp0 = pp[ant][0:2]
-                # Using narrow band approach - we should loop over frequency
                 try:
-                    worldloc = [pp0[0], pp0[1], ha, numpy.average(vis.frequency)]
+                    worldloc = [pp0[0], pp0[1], ha, 0]
                     pixloc = screen_wcs.wcs_world2pix([worldloc], 0).astype('int')[0]
-                    pixloc[3] = 0
-                    scr[icomp, ant] = screen_to_phase * screen_data[pixloc[3], pixloc[2], pixloc[1], pixloc[0]]
+                    if type_atmosphere == "ionosphere":
+                        # In the ionosphere file, the units are dTEC.
+                        dtec = screen_data[0, pixloc[2], pixloc[1], pixloc[0]]
+                        scr[icomp, ant, :] = - (scale * 8.44797245e9 / v.frequency) * dtec
+                    else:
+                        # In troposphere files, the units are phase in radians at the reference frequency
+                        phase = screen_data[0, pixloc[2], pixloc[1], pixloc[0]]
+                        scr[icomp, ant, :] = - (v.frequency / screen_freq) * phase
                     number_good += 1
                 except (ValueError, IndexError):
                     number_bad += 1
-                    scr[icomp, ant] = 0.0
-        if reference:
-            scr -= scr[0, :][numpy.newaxis, :]
+                    scr[icomp, ant, ...] = 0.0
+        if reference_component is not None:
+            scr -= scr[reference_component, ...][numpy.newaxis, ...]
 
         for icomp, comp in enumerate(sc):
             # axes of gaintable.gain are time, ant, nchan, nrec
-            gaintables[icomp].gain[iha, :, :, :] = numpy.exp(1j * scr[icomp])[..., numpy.newaxis, numpy.newaxis, numpy.newaxis]
+            gaintables[icomp].gain[iha, :, :, :] = numpy.exp(1j * scr[icomp, ...])[..., numpy.newaxis, numpy.newaxis]
+            if gaintables[icomp].gain.shape[-1] == 2:
+                gaintables[icomp].gain[..., 0, 1] *= 0.0
+                gaintables[icomp].gain[..., 1, 0] *= 0.0
             gaintables[icomp].phasecentre = comp.direction
             
 

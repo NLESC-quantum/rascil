@@ -34,9 +34,10 @@ from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame, \
     correlate_polarisation
 from rascil.processing_components.util import skycoord_to_lmn
 from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
-    hadec_to_azel
-from rascil.processing_components.util.geometry import calculate_transit_time
-from rascil.processing_components.util.uvw_coordinates import uvw_ha_dec
+    hadec_to_azel, xyz_at_latitude
+from rascil.processing_components.util.geometry import calculate_transit_time, utc_to_ms_epoch
+from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_transit_time, \
+    calculate_blockvisibility_hourangles, calculate_blockvisibility_azel
 
 log = logging.getLogger('logger')
 
@@ -137,13 +138,18 @@ def create_blockvisibility(config: Configuration,
     assert phasecentre is not None, "Must specify phase centre"
     
     if utc_time is None:
-        utc_time = Time("2020-01-01T00:00:00", format='isot', scale='utc')
-    
+        utc_time_zero = Time("2020-01-01T00:00:00", format='isot', scale='utc')
+    elif isinstance(utc_time, Time):
+        utc_time_zero = utc_time
+        utc_time = None
+
     if polarisation_frame is None:
         polarisation_frame = correlate_polarisation(config.receptor_frame)
     
     latitude = config.location.geodetic[1].to('rad').value
     ants_xyz = config.data['xyz']
+    ants_xyz = xyz_at_latitude(ants_xyz, latitude)
+
     nants = len(config.data['names'])
     
     baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
@@ -163,9 +169,10 @@ def create_blockvisibility(config: Configuration,
             n_flagged += 1
     
     assert ntimes > 0, "No unflagged points"
-    if elevation_limit is not None:
+
+    if elevation_limit is not None and n_flagged > 0:
         log.info('create_blockvisibility: flagged %d/%d times below elevation limit %f (rad)' %
-                 (n_flagged, ntimes, elevation_limit))
+                 (n_flagged, ntimes, 180.0 * elevation_limit / numpy.pi))
     else:
         log.debug('create_blockvisibility: created %d times' % (ntimes))
     
@@ -182,20 +189,24 @@ def create_blockvisibility(config: Configuration,
     
     # Do each hour angle in turn
     itime = 0
-    stime = calculate_transit_time(config.location, utc_time, phasecentre)
-    if stime.masked:
-        stime = utc_time
-    
+    if utc_time is None:
+        stime = calculate_transit_time(config.location, utc_time_zero, phasecentre)
+        if stime.masked:
+            stime = utc_time_zero
+
     for iha, ha in enumerate(times):
         
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
-            rtimes[itime] = stime.mjd * 86400.0 + ha * 86164.1 / (2.0 * numpy.pi)
+            if utc_time is None:
+                rtimes[itime] = stime.mjd * 86400.0 + ha * 86164.1 / (2.0 * numpy.pi)
+            else:
+                rtimes[itime] = utc_to_ms_epoch(utc_time[iha])
             rweight[itime, ...] = 1.0
             rflags[itime, ...] = 1
-            
+
             # Loop over all pairs of antennas. Note that a2>a1
             ant_pos = uvw_ha_dec(ants_xyz.values, ha, phasecentre.dec.rad)
             ibaseline = 0

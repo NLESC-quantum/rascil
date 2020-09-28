@@ -350,9 +350,11 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
             if 0 <= x < nx and 0 <= y < ny:
                 comp_flux = comp.flux * beam.data[:, :, y, x]
                 total_flux += comp_flux
-                newsc.append(Skycomponent(comp.direction, comp.frequency, comp.name, comp_flux,
-                                          shape=comp.shape,
-                                          polarisation_frame=comp.polarisation_frame))
+            else:
+                comp_flux = 0.0 * comp.flux
+            newsc.append(Skycomponent(comp.direction, comp.frequency, comp.name, comp_flux,
+                                      shape=comp.shape,
+                                      polarisation_frame=comp.polarisation_frame))
 
     log.debug('apply_beam_to_skycomponent: %d components with total flux %s' %
               (len(newsc), total_flux))

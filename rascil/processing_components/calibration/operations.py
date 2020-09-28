@@ -13,7 +13,7 @@ from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy.linalg
-#from astropy.visualization import time_support
+# from astropy.visualization import time_support
 from astropy.time import Time
 
 from rascil.data_models.memory_data_models import GainTable, BlockVisibility, QA, assert_vis_gt_compatible
@@ -79,11 +79,11 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 if inverse:
                     # lgain = numpy.ones_like(gain)
                     # lgain[numpy.abs(gain) > 0.0] = 1.0 / gain[numpy.abs(gain) > 0.0]
-                    lgain= numpy.ones_like(gain)
-                    numpy.putmask(lgain,numpy.abs(gain) > 0.0, 1.0 / gain)
+                    lgain = numpy.ones_like(gain)
+                    numpy.putmask(lgain, numpy.abs(gain) > 0.0, 1.0 / gain)
                 else:
                     lgain = gain
-
+                
                 # tlgain = lgain.T
                 # tclgain = numpy.conjugate(tlgain)
                 # smueller = numpy.ones([nchan, nant, nant], dtype='complex')
@@ -91,7 +91,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 #     smueller[chan, :, :] = numpy.ma.outer(tlgain[0, 0, chan, :],
                 #                                           tclgain[0, 0, chan, :]).reshape([nant, nant])
                 # numpy.testing.assert_allclose(smueller,smueller1,rtol=1e-5)
-
+                
                 # Original Code with Loop
                 # for sub_vis_row in range(original.shape[0]):
                 #     for chan in range(nchan):
@@ -100,11 +100,11 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 #         antantwt = numpy.outer(gainwt[:, chan, 0, 0], gainwt[:, chan, 0, 0])
                 #         appliedwt[sub_vis_row, :, :, chan, 0] = antantwt
                 #         applied[sub_vis_row, :, :, chan, 0][antantwt == 0.0] = 0.0
-
+                
                 # Optimized (SIM-423)
                 # smueller1 = numpy.ones([nchan, nant, nant], dtype='complex')
                 smueller1 = numpy.einsum('ijlm,kjlm->jik', lgain, numpy.conjugate(lgain))
-
+                
                 for sub_vis_row in range(original.shape[0]):
                     for ibaseline, (a1, a2) in enumerate(baselines):
                         for chan in range(nchan):
@@ -122,7 +122,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 #     antantwt = numpy.einsum('ik,jk->ijk',gainwt[:, :, 0, 0], gainwt[:, :, 0, 0])
                 #     appliedwt[sub_vis_row, :, :, :, 0] = antantwt
                 #     numpy.putmask(applied[sub_vis_row, :, :, :, 0], antantwt[:,:,:] == 0.0, 0.0)
-
+            
             elif vis.npol == 2:
                 has_inverse_ant = numpy.zeros([nant, nchan], dtype='bool')
                 if inverse:
@@ -136,7 +136,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                 has_inverse_ant[a1, chan] = True
                             except numpy.linalg.linalg.LinAlgError:
                                 has_inverse_ant[a1, chan] = False
-        
+                    
                     for sub_vis_row in range(original.shape[0]):
                         for ibaseline, (a1, a2) in enumerate(baselines):
                             for chan in range(nchan):
@@ -152,7 +152,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                     cfs = numpy.diag(original[sub_vis_row, ibaseline, chan, ...])
                                     applied[sub_vis_row, ibaseline, chan, ...] = \
                                         numpy.diag(gain[a1, chan, :, :] @ cfs @ cgain[a2, chan, :, :]).reshape([2])
-
+            
             elif vis.npol == 4:
                 has_inverse_ant = numpy.zeros([nant, nchan], dtype='bool')
                 if inverse:
@@ -166,7 +166,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                 has_inverse_ant[a1, chan] = True
                             except numpy.linalg.linalg.LinAlgError:
                                 has_inverse_ant[a1, chan] = False
-               
+                    
                     for sub_vis_row in range(original.shape[0]):
                         for ibaseline, baseline in enumerate(baselines):
                             for chan in range(nchan):

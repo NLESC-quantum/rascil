@@ -55,7 +55,7 @@ def calculate_blockvisibility_parallactic_angles(bvis):
     return calculate_parallactic_angles(location, utc_time, direction)
 
 
-def calculate_blockvisibility_transit_time(bvis, fraction_day=0.01):
+def calculate_blockvisibility_transit_time(bvis, fraction_day=1e-10):
     """ Find the UTC time of the nearest transit
 
     :param fraction_day:

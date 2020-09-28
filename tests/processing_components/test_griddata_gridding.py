@@ -142,7 +142,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_pswf_w.fits' % self.dir)
-        self.check_peaks(im, 96.87141590510089, tol=1e-7)
+        self.check_peaks(im, 97.13240718329408, tol=1e-7)
     
     def test_griddata_invert_aterm(self):
         self.actualSetUp(zerow=True)
@@ -163,7 +163,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_aterm.fits' % self.dir)
-        self.check_peaks(im, 96.7983438400033, tol=1e-7)
+        self.check_peaks(im, 97.10594988489598, tol=1e-7)
     
     def test_griddata_invert_aterm_noover(self):
         self.actualSetUp(zerow=True)
@@ -180,7 +180,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_aterm_noover.fits' % self.dir)
-        self.check_peaks(im, 96.79834384000333)
+        self.check_peaks(im, 97.10594988489598)
     
     def test_griddata_invert_box(self):
         self.actualSetUp(zerow=True)
@@ -192,7 +192,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_box.fits' % self.dir)
-        self.check_peaks(im, 96.7983438400033, tol=1e-7)
+        self.check_peaks(im, 97.10594988489598, tol=1e-7)
     
     def check_peaks(self, im, peak, tol=1e-6):
         assert numpy.abs(im.data[self.peak] - peak) < tol, im.data[self.peak]

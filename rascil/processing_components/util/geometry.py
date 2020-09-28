@@ -9,7 +9,7 @@ as astropy.
 """
 
 __all__ = ['calculate_transit_time', 'calculate_hourangles', 'calculate_parallactic_angles',
-           'calculate_azel']
+           'calculate_azel', 'utc_to_ms_epoch']
 
 import logging
 
@@ -165,3 +165,19 @@ def calculate_azel(location, utc_time, direction):
     # site = Observer(location=location)
     # altaz = site.altaz(utc_time, direction)
     # return altaz.az.wrap_at('180d'), altaz.alt
+
+
+def utc_to_ms_epoch(ts):
+    """ Convert an timestamp to seconds (epoch values)
+        epoch suitable for using in a Measurement Set
+
+    :param ts:  A timestamp object.
+    :result: The epoch time ``t`` in seconds suitable for fields in measurement sets.
+    """
+    # Use the casa measures
+    from casacore.measures import measures
+    dm = measures()
+    epoch = dm.epoch(rf='utc', v0=ts.iso)
+    epoch_d = epoch['m0']['value']
+    epoch_s = epoch_d * 24 * 60 * 60.0
+    return epoch_s

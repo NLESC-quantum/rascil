@@ -41,13 +41,16 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     nant = vis.nants
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
     
+    nrec = gaintables[0].nrec
+    gnchan = gaintables[0].nchan
+    frequency = gaintables[0].frequency
+    
     nchan, npol, ny, nx = vp.data.shape
-    
-    real_spline = [RectBivariateSpline(range(ny), range(nx), vp.data[0, pol, ...].real, kx=order, ky=order)
-                   for pol in range(npol)]
-    imag_spline = [RectBivariateSpline(range(ny), range(nx), vp.data[0, pol, ...].imag, kx=order, ky=order)
-                   for pol in range(npol)]
-    
+    real_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data[chan, pol, ...].real, kx=order, ky=order)
+                     for chan in range(nchan)] for pol in range(npol)]
+    imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data[chan, pol, ...].imag, kx=order, ky=order)
+                     for chan in range(nchan)] for pol in range(npol)]
+
     assert npol == vis.npol, "Voltage pattern and visibility have incompatible polarisations"
     
     assert isinstance(vis, BlockVisibility)

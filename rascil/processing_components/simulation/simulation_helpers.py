@@ -135,17 +135,11 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
     for ivis, vis in enumerate(vis_list):
         u = numpy.array(vis.u.values[...].flat)
         v = numpy.array(vis.v.values[...].flat)
-        if isinstance(vis, BlockVisibility):
-            k = (vis.frequency.values / constants.c).value
-            u = numpy.array(numpy.outer(u, k).flat)
-            v = numpy.array(numpy.outer(v, k).flat)
-            plt.plot(u, v, '.', color='b', markersize=0.2)
-        else:
-            k = vis.frequency.values / constants.c
-            u = u * k
-            v = v * k
-            plt.plot(u.value, v.value, '.', color='b', markersize=0.2)
-            plt.plot(-u.value, -v.value, '.', color='b', markersize=0.2)
+        k = (vis.frequency.values / constants.c).value
+        u = numpy.array(numpy.outer(u, k).flat)
+        v = numpy.array(numpy.outer(v, k).flat)
+        plt.plot(u, v, '.', color='b', markersize=0.2)
+        plt.plot(-u, -v, '.', color='b', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
     plt.title(title)
@@ -166,17 +160,11 @@ def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kw
     for ivis, vis in enumerate(vis_list):
         u = numpy.array(vis.u.values[...].flat)
         w = numpy.array(vis.w.values[...].flat)
-        if isinstance(vis, BlockVisibility):
-            k = (vis.frequency.values / constants.c).value
-            u = numpy.array(numpy.outer(u, k).flat)
-            w = numpy.array(numpy.outer(w, k).flat)
-            plt.plot(u, w, '.', color='b', markersize=0.2)
-        else:
-            k = vis.frequency.values / constants.c
-            u = u * k
-            w = w * k
-            plt.plot(u.value, w.value, '.', color='b', markersize=0.2)
-            plt.plot(-u.value, -w.value, '.', color='b', markersize=0.2)
+        k = (vis.frequency.values / constants.c).value
+        u = numpy.array(numpy.outer(u, k).flat)
+        w = numpy.array(numpy.outer(w, k).flat)
+        plt.plot(u, w, '.', color='b', markersize=0.2)
+        plt.plot(-u, -w, '.', color='b', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('W (wavelengths)')
     plt.title(title)
@@ -197,17 +185,11 @@ def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kw
     for ivis, vis in enumerate(vis_list):
         v = numpy.array(vis.v.values[...].flat)
         w = numpy.array(vis.w.values[...].flat)
-        if isinstance(vis, BlockVisibility):
-            k = (vis.frequency.values / constants.c).value
-            v = numpy.array(numpy.outer(v, k).flat)
-            w = numpy.array(numpy.outer(w, k).flat)
-            plt.plot(v, w, '.', color='b', markersize=0.2)
-        else:
-            k = vis.frequency.values / constants.c
-            v = v * k
-            w = w * k
-            plt.plot(v.value, w.value, '.', color='b', markersize=0.2)
-            plt.plot(-v.value, -w.value, '.', color='b', markersize=0.2)
+        k = (vis.frequency.values / constants.c).value
+        v = numpy.array(numpy.outer(v, k).flat)
+        w = numpy.array(numpy.outer(w, k).flat)
+        plt.plot(v, w, '.', color='b', markersize=0.2)
+        plt.plot(-v, -w, '.', color='b', markersize=0.2)
     plt.xlabel('V (wavelengths)')
     plt.ylabel('W (wavelengths)')
     plt.title(title)

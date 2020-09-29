@@ -209,14 +209,11 @@ def create_blockvisibility(config: Configuration,
 
             # Loop over all pairs of antennas. Note that a2>a1
             ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
-            ibaseline = 0
-            for a1 in range(1, nants):
+            for ibaseline, (a1, a2) in enumerate(baselines):
                 rweight[itime, ibaseline, ...] = 0.0
                 rflags[itime, ibaseline, ...] = 1.0
-                for a2 in range(a1):
-                    ruvw[itime, ibaseline, :] = ant_pos[a2, :] - ant_pos[a1, :]
-                    rflags[itime, ibaseline, ...] = 0
-                    ibaseline += 1
+                ruvw[itime, ibaseline, :] = ant_pos[a2, :] - ant_pos[a1, :]
+                rflags[itime, ibaseline, ...] = 0
             
             if itime > 0:
                 rintegrationtime[itime] = rtimes[itime] - rtimes[itime - 1]

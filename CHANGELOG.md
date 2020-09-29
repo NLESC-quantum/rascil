@@ -1,6 +1,9 @@
-0.1.10b0
---------
+0.1.10
+------
 
+* Faster calculation of transit time (used in create_blockvisibility)
+* Correct error in MFS setup
+* Flagging improvements
 
 0.1.9
 -----

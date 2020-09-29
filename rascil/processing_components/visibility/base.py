@@ -147,10 +147,10 @@ def create_blockvisibility(config: Configuration,
         polarisation_frame = correlate_polarisation(config.receptor_frame)
     
     latitude = config.location.geodetic[1].to('rad').value
-    ants_xyz = config.data['xyz']
+    ants_xyz = config.data['xyz'].values
     ants_xyz = xyz_at_latitude(ants_xyz, latitude)
 
-    nants = len(config.data['names'])
+    nants = len(config.data['names'].values)
     
     baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
     nbaselines = len(baselines)
@@ -208,7 +208,7 @@ def create_blockvisibility(config: Configuration,
             rflags[itime, ...] = 1
 
             # Loop over all pairs of antennas. Note that a2>a1
-            ant_pos = uvw_ha_dec(ants_xyz.values, ha, phasecentre.dec.rad)
+            ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
             ibaseline = 0
             for a1 in range(1, nants):
                 rweight[itime, ibaseline, ...] = 0.0

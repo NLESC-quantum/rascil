@@ -13,6 +13,7 @@ from rascil.data_models.parameters import rascil_path, rascil_data_path
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_image, create_empty_image_like
 from rascil.processing_components.image.operations import import_image_from_fits, export_image_to_fits
+from rascil.processing_components.xarray.operations import import_xarray_from_fits, export_xarray_to_fits
 from rascil.processing_components.imaging.primary_beams import create_low_test_beam
 from rascil.processing_components.simulation import create_low_test_skycomponents_from_gleam, \
     create_test_skycomponents_from_s3
@@ -63,7 +64,7 @@ class TestAtmosphericScreen(unittest.TestCase):
                                   phasecentre=self.phasecentre)
 
     def test_read_screen(self):
-        screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
         assert screen.data.shape == (1, 3, 2000, 2000), screen.data.shape
 
     def test_create_gaintable_from_screen_ionosphere(self):
@@ -116,7 +117,7 @@ class TestAtmosphericScreen(unittest.TestCase):
 
     def test_grid_gaintable_to_screen(self):
         self.actualSetup()
-        screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
         beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
@@ -128,17 +129,15 @@ class TestAtmosphericScreen(unittest.TestCase):
                                                                     radius=0.2)
 
         pb_gleam_components = apply_beam_to_skycomponent(gleam_components, beam)
-
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
-
         gaintables = create_gaintable_from_screen(self.vis, actual_components,
                                                   rascil_data_path('models/test_mpc_screen.fits'),
                                                   height=3e5)
         assert len(gaintables) == len(actual_components), len(gaintables)
         assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 
-        old_screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-        newscreen = create_empty_image_like(old_screen)
+        old_screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        newscreen = old_screen.copy(deep=True)
 
         newscreen, weights = grid_gaintable_to_screen(self.vis, gaintables, newscreen)
         assert numpy.max(numpy.abs(screen.data)) > 0.0

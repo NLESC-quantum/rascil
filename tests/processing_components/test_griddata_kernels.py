@@ -13,7 +13,7 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_image
-from rascil.processing_components.griddata import create_convolutionfunction_from_image, \
+from rascil.processing_components.griddata import \
     apply_bounding_box_convolutionfunction, calculate_bounding_box_convolutionfunction
 from rascil.processing_components.griddata.kernels import create_pswf_convolutionfunction, \
     create_awterm_convolutionfunction, create_box_convolutionfunction
@@ -37,13 +37,6 @@ class TestGridDataKernels(unittest.TestCase):
                                   polarisation_frame=PolarisationFrame("stokesIQUV"))
         self.persist = os.getenv("RASCIL_PERSIST", True)
     
-    def test_create_convolutionfunction(self):
-        cf = create_convolutionfunction_from_image(self.image, nw=1,
-                                  polarisation_frame=PolarisationFrame("linear"))
-        # cf_image = convert_convolutionfunction_to_image(cf)
-        # cf_image.data = numpy.real(cf_image.data)
-        # if self.persist:
-        #     export_image_to_fits(cf_image, "%s/test_convolutionfunction_cf.fits" % self.dir)
     
     def test_fill_box_to_convolutionfunction(self):
         gcf, cf = create_box_convolutionfunction(self.image,

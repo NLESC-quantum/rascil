@@ -58,7 +58,8 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         if comp.polarisation_frame != vis.polarisation_frame:
             flux = convert_pol_frame(flux, comp.polarisation_frame, vis.polarisation_frame)
 
-        if numpy.allclose(comp.frequency,vis.frequency.values, rtol=1e-15):
+        if len(comp.frequency) == len(vis.frequency) and \
+                numpy.allclose(comp.frequency,vis.frequency.values, rtol=1e-15):
             vflux = flux
         else:
             nchan, npol = flux.shape

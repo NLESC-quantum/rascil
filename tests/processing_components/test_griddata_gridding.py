@@ -43,7 +43,7 @@ class TestGridDataGridding(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
     
     def actualSetUp(self, zerow=True, image_pol=PolarisationFrame("stokesIQUV")):
         self.doplot = False
@@ -163,7 +163,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_aterm.fits' % self.dir)
-        self.check_peaks(im, 97.10594988489598, tol=1e-7)
+        self.check_peaks(im, 107.25695453, tol=1e-7)
     
     def test_griddata_invert_aterm_noover(self):
         self.actualSetUp(zerow=True)
@@ -303,7 +303,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_2d_uniform_block.fits' % self.dir)
-        self.check_peaks(im, 98.83214280182415)
+        self.check_peaks(im, 99.49402656)
     
     def test_griddata_blockvisibility_weight_I(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesI"))
@@ -319,7 +319,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_2d_IQ_uniform_block.fits' % self.dir)
-        self.check_peaks(im, 98.83214280182415)
+        self.check_peaks(im, 99.49402656)
     
     def test_griddata_blockvisibility_weight_IQ(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQ"))
@@ -335,7 +335,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_2d_IQ_uniform_block.fits' % self.dir)
-        self.check_peaks(im, 98.83214280182415)
+        self.check_peaks(im, 99.49402656)
     
     def plot_vis(self, newvis, title=''):
         if self.doplot:

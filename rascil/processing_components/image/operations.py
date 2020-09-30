@@ -103,7 +103,8 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
         return fits.writeto(filename=fitsfile, data=im.data.values, header=im.wcs.to_header(), overwrite=True)
 
 
-def import_image_from_fits(fitsfile: str) -> Image:
+
+def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
     """ Read an Image from fits
 
     :param fitsfile: FITS file in storage
@@ -127,12 +128,12 @@ def import_image_from_fits(fitsfile: str) -> Image:
         try:
             polarisation_frame = polarisation_frame_from_wcs(wcs, data.shape)
             # FITS and RASCIL polarisation conventions differ
-            if polarisation_frame.npol == 4:
-                new_data = data.copy()
-                new_data[:, 3] = data[:, 1]
-                new_data[:, 1] = data[:, 2]
-                new_data[:, 2] = data[:, 3]
-                data = new_data
+            if fixpol:
+                permute = polarisation_frame.fits_to_rascil[polarisation_frame.type]
+                newim_data = data.copy()
+                for ip, p in enumerate(permute):
+                    newim_data[:, p, ...] = data[:, ip, ...]
+                data = newim_data
         
         except ValueError:
             polarisation_frame = PolarisationFrame('stokesI')

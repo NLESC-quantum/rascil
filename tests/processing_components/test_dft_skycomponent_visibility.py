@@ -92,10 +92,10 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                               channel_bandwidth=self.channel_bandwidth,
                                               phasecentre=self.phasecentre, weight=1.0,
-                                              polarisation_frame=PolarisationFrame("stokesIQUV"))
+                                              polarisation_frame=vpol)
             self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
             rcomp, weights = idft_visibility_skycomponent(self.vismodel, self.comp)
-            assert_allclose(self.comp.flux, numpy.real(rcomp[0].flux), rtol=1e-11)
+            assert_allclose(self.comp.flux, numpy.real(rcomp[0].flux), rtol=1e-10)
 
 
 

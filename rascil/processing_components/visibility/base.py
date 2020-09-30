@@ -209,8 +209,7 @@ def create_blockvisibility(config: Configuration,
             # Loop over all pairs of antennas. Note that a2>a1
             ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
             for ibaseline, (a1, a2) in enumerate(baselines):
-                rweight[itime, ibaseline, ...] = 0.0
-                rflags[itime, ibaseline, ...] = 1.0
+                rweight[itime, ibaseline, ...] = weight
                 ruvw[itime, ibaseline, :] = ant_pos[a2, :] - ant_pos[a1, :]
                 rflags[itime, ibaseline, ...] = 0
             
@@ -392,21 +391,17 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         bl_list = []
         
         antennas2 = antennas
-        
+
         # for ant1 in range(0, nant):
         #     for ant2 in range(ant1, nant):
         #         yield ant1, ant2
-        
-        for a1 in range(0, n_ant - 1):
-            for a2 in range(a1 + 1, n_ant):
+
+        for a1 in range(0, n_ant):
+            for a2 in range(a1, n_ant):
                 bl_list.append((antennas[a1], antennas2[a2]))
-        
+                
         tbl.set_geometry(vis.configuration, antennas)
-        nbaseline = len(bl_list)
-        ntimes = len(vis.data['time'])
         
-        ms_vis = numpy.zeros([ntimes, nbaseline, nchan, npol]).astype('complex')
-        ms_uvw = numpy.zeros([ntimes, nbaseline, 3])
         int_time = vis.data['integration_time'].values
         # bv_vis = vis.data['vis']
         # bv_uvw = vis.data['uvw']

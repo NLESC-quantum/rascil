@@ -65,7 +65,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gtsol)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain.values - 1.0)) > 0.1
 
     def test_solve_gaintable_stokesI_phaseonly(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0])

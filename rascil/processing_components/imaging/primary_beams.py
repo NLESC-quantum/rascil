@@ -93,36 +93,36 @@ def create_vp(model=None, telescope='MID', pointingcentre=None, padding=4, use_l
         return create_vp_generic(model, pointingcentre=pointingcentre, diameter=15.0, blockage=0.0, use_local=use_local)
     elif telescope == 'MID_GRASP':
         log.debug("create_vp: Using GRASP model for MID voltage pattern")
-        real_vp = import_image_from_fits(rascil_data_path('models/MID_GRASP_VP_real.fits'))
-        imag_vp = import_image_from_fits(rascil_data_path('models/MID_GRASP_VP_imag.fits'))
+        real_vp = import_image_from_fits(rascil_data_path('models/MID_GRASP_VP_real.fits'), fixpol=fixpol)
+        imag_vp = import_image_from_fits(rascil_data_path('models/MID_GRASP_VP_imag.fits'), fixpol=fixpol)
         real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
         real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MID_FEKO_B1LOW' or telescope == 'MID_B1LOW':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
-        real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_real.fits'))
-        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_imag.fits'))
+        real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0365_real.fits'), fixpol=fixpol)
+        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0365_imag.fits'), fixpol=fixpol)
         real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
         real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MID_FEKO_B1' or telescope == 'MID_B1':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
-        real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_real.fits'))
-        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'))
+        real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_real.fits'), fixpol=fixpol)
+        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_imag.fits'), fixpol=fixpol)
         real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
         real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MID_FEKO_B2' or telescope == 'MID_B2':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
-        real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_Ku_45_12179_real.fits'))
-        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_Ku_45_12179_imag.fits'))
+        real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_real.fits'), fixpol=fixpol)
+        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'), fixpol=fixpol)
         real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
         real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
-    elif telescope == 'MEERKAT+_B2':
-        log.debug("create_vp: Using MEERKAT+ voltage pattern")
-        real_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_real.fits'))
-        imag_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_imag.fits'))
+    elif telescope == 'MID_FEKO_Ku' or telescope == 'MID_Ku':
+        log.debug("create_vp: Using FEKO model for MID voltage pattern")
+        real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_Ku_45_12179_real.fits'), fixpol=fixpol)
+        imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_Ku_45_12179_imag.fits'), fixpol=fixpol)
         real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
         real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
@@ -130,18 +130,18 @@ def create_vp(model=None, telescope='MID', pointingcentre=None, padding=4, use_l
         log.debug("create_vp: Using MEERKAT voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MEERKAT_B1':
         log.debug("create_vp: Using MID FEKO model for MEERKAT B1 voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope[0:3] == 'LOW':
-        return create_low_test_vp(model, use_local=use_local)
+        return create_low_test_vp(model)
     elif telescope[0:3] == 'VLA':
         return create_vp_generic(model, pointingcentre=pointingcentre, diameter=25.0, blockage=1.8, use_local=use_local)
     elif telescope[0:5] == 'ASKAP':

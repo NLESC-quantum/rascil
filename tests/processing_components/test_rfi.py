@@ -70,10 +70,9 @@ class TestRFISim(unittest.TestCase):
         times = numpy.arange(ntimes) * integration_time
 
         rmax = 1000.0
-        low = create_named_configuration('LOWR3', rmax=rmax)
+        antskip=33
+        low = create_named_configuration('LOWR3', rmax=rmax, skip=antskip)
         nants_start = len(low.names)
-        antskip = 33
-        low.data = low.data[::antskip]
         nants = len(low.names)
 
         # Perth transmitter

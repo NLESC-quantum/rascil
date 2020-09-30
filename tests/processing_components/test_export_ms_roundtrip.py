@@ -90,8 +90,8 @@ class measurementset_tests(unittest.TestCase):
         dirty_before, sumwt = invert_2d(vt, model, context='2d')
         #export_image_to_fits(dirty_before, '%s/imaging_dirty_before.fits' % (results_dir))
 
-        print("Before: Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
-              (dirty_before.data.max(), dirty_before.data.min(), sumwt))
+        #print("Before: Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
+        #      (dirty_before.data.max(), dirty_before.data.min(), sumwt))
 
         msname = "{dir}/test_roundtrip.ms".format(dir=results_dir)
         ms = export_blockvisibility_to_ms(msname, [vt])
@@ -101,14 +101,14 @@ class measurementset_tests(unittest.TestCase):
         model = create_image_from_visibility(vt_after, cellsize=cellsize, npixel=512)
         dirty_after, sumwt = invert_2d(vt_after, model, context='2d')
 
-        print("After: Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
-              (dirty_after.data.max(), dirty_after.data.min(), sumwt))
+        #print("After: Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
+        #      (dirty_after.data.max(), dirty_after.data.min(), sumwt))
 
         #export_image_to_fits(dirty_after, '%s/imaging_dirty_after.fits' % (results_dir))
 
-        error = numpy.max(numpy.abs(dirty_after.data - dirty_before.data))
-        print("Maximum difference in dirty image before, after writing to MS = {}".format(error))
+        error = numpy.max(numpy.abs(dirty_after.data - dirty_before.data))/numpy.max(numpy.abs(dirty_before.data))
+        #print("Maximum fractional difference in peak of dirty image before, after writing to MS = {}".format(error))
 
-        assert error < 1e-7, "Maximum difference in dirty image before, after writing to MS execeeds tolerance"
+        assert error < 1e-8, "Maximum fractional difference in peak of dirty image before, after writing to MS execeeds tolerance"
         
 

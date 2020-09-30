@@ -84,7 +84,9 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                 gt_sel = gaintable_select(gaintables[icomp], time_slice)
                 nrec = gt_sel.nrec
                 if elevation_centre >= elevation_limit:
-                    antgain = numpy.zeros([nant, npol], dtype='complex')
+                    
+                    antgain = numpy.zeros([nant, gnchan, npol], dtype='complex')
+                    
                     # Calculate the azel of this component
                     utc_time = Time([numpy.average(pt_sel.time) / 86400.0], format='mjd', scale='utc')
                     azimuth_comp, elevation_comp = calculate_azel(pt_sel.configuration.location, utc_time,
@@ -103,23 +105,35 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                         wcs_azel.wcs.ctype[1] = 'DEC--SIN'
                         
                         try:
-                            worldloc = [azimuth_comp * r2d, elevation_comp * r2d,
-                                        vp.wcs.wcs.crval[2], vp.wcs.wcs.crval[3]]
-                            pixloc = wcs_azel.sub(2).wcs_world2pix([worldloc[:2]], 1)[0]
-                            assert pixloc[0] > 2
-                            assert pixloc[0] < nx - 3
-                            assert pixloc[1] > 2
-                            assert pixloc[1] < ny - 3
-                            for pol in range(npol):
-                                gain = real_spline[pol].ev(pixloc[1], pixloc[0]) + 1j * imag_spline[pol].ev(pixloc[1],
-                                                                                                            pixloc[0])
-                                antgain[ant, pol] = scale * gain
+                            for gchan in range(gnchan):
+                                gain = numpy.zeros([npol], dtype='complex')
+                                worldloc = [azimuth_comp * r2d, elevation_comp * r2d,
+                                        vp.wcs.wcs.crval[2], frequency[gchan]]
+                                pixloc = wcs_azel.wcs_world2pix([worldloc], 0)[0]
+                                assert pixloc[0] > 2
+                                assert pixloc[0] < nx - 3
+                                assert pixloc[1] > 2
+                                assert pixloc[1] < ny - 3
+                                chan = int(round(pixloc[3]))
+                                if nchan == 1:
+                                    chan = 0
+                                for pol in range(npol):
+                                    gain[pol] = real_spline[pol][chan].ev(pixloc[1], pixloc[0]) + \
+                                           1j * imag_spline[pol][chan].ev(pixloc[1], pixloc[0])
+                                if nrec == 2:
+                                    ag = gain.reshape([2, 2])
+                                    ag = numpy.linalg.inv(ag)
+                                    antgain[ant, gchan, :] = ag.reshape([4])
+                                elif nrec == 1:
+                                    antgain[ant, gchan, 0] = 1.0 / gain
+                                else:
+                                    raise ValueError("Illegal number of receptors: {}".format(nrec))
                                 number_good += 1
-                        except (ValueError, AssertionError):
+                        except (ValueError, AssertionError, IndexError, numpy.linalg.LinAlgError):
                             number_bad += 1
-                            antgain[ant, :] = 1.0
-                        
-                        gt_sel.gain[:, :, :, :] = antgain[:, numpy.newaxis, :].reshape([nant, nchan, nrec, nrec])
+                            antgain[ant, :, :] = 1.0
+                           
+                        gt_sel.gain[:, :, :, :] = antgain[:, :, :].reshape([nant, gnchan, nrec, nrec])
                         gt_sel.phasecentre = comp.direction
                 else:
                     gt_sel.gain[...] = 1.0 + 0.0j

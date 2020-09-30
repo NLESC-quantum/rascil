@@ -209,7 +209,15 @@ def create_blockvisibility(config: Configuration,
             # Loop over all pairs of antennas. Note that a2>a1
             ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
             for ibaseline, (a1, a2) in enumerate(baselines):
-                rweight[itime, ibaseline, ...] = weight
+                if a1 != a2:
+                    rweight[itime, ibaseline, ...] = weight
+                    rimaging_weight[itime, ibaseline, ...] = weight
+                    rflags[itime, ibaseline, ...] = 0
+                else:
+                    rweight[itime, ibaseline, ...] = 0.0
+                    rimaging_weight[itime, ibaseline, ...] = 0.0
+                    rflags[itime, ibaseline, ...] = 1
+
                 ruvw[itime, ibaseline, :] = ant_pos[a2, :] - ant_pos[a1, :]
                 rflags[itime, ibaseline, ...] = 0
             

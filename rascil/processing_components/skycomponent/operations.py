@@ -247,14 +247,14 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     kernel.normalize()
 
     # Segment the average over all channels of Stokes I
-    image_sum = numpy.sum(im.data, axis=0)[0, ...] / float(im.shape[0])
+    image_sum = numpy.sum(im.data.values, axis=0)[0, ...] / float(im.shape[0])
     segments = segmentation.detect_sources(image_sum, threshold, npixels=npixels, filter_kernel=kernel)
     assert segments is not None, "Failed to find any components"
 
     log.info("find_skycomponents: Identified %d segments" % segments.nlabels)
 
     # Now compute source properties for all polarisations and frequencies
-    comp_tbl = [[segmentation.source_properties(im.data[chan, pol], segments,
+    comp_tbl = [[segmentation.source_properties(im.data.values[chan, pol], segments,
                                                 filter_kernel=kernel,
                                                 wcs=im.wcs.sub([1, 2])).to_table()
                  for pol in [0]]

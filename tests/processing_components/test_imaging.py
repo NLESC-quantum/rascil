@@ -100,8 +100,10 @@ class TestImaging2D(unittest.TestCase):
         # Calculate the model convolved with a Gaussian.
         
         self.cmodel = smooth_image(self.model)
-        if self.persist: export_image_to_fits(self.model, '%s/test_imaging_model.fits' % self.dir)
-        if self.persist: export_image_to_fits(self.cmodel, '%s/test_imaging_cmodel.fits' % self.dir)
+        if self.persist:
+            export_image_to_fits(self.model, '%s/test_imaging_model.fits' % self.dir)
+        if self.persist:
+            export_image_to_fits(self.cmodel, '%s/test_imaging_cmodel.fits' % self.dir)
     
     def _checkcomponents(self, dirty, fluxthreshold=0.6, positionthreshold=0.1):
         comps = find_skycomponents(dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5)
@@ -121,8 +123,9 @@ class TestImaging2D(unittest.TestCase):
         vis.data['vis'] = self.vis.data['vis'] - vis.data['vis']
         dirty = invert_2d(vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf)
         
-        if self.persist: export_image_to_fits(dirty[0], '%s/test_imaging_%s_residual.fits' %
-                                              (self.dir, name))
+        if self.persist:
+            export_image_to_fits(dirty[0], '%s/test_imaging_%s_residual.fits' %
+                                 (self.dir, name))
         for pol in range(dirty[0].npol):
             assert numpy.max(numpy.abs(dirty[0].data[:, pol])), "Residual image pol {} is empty".format(pol)
         
@@ -135,9 +138,10 @@ class TestImaging2D(unittest.TestCase):
         dirty = invert_2d(self.vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf,
                           **kwargs)
         
-        if self.persist: export_image_to_fits(dirty[0], '%s/test_imaging_%s_dirty.fits' %
-                                              (self.dir, name))
-
+        if self.persist:
+            export_image_to_fits(dirty[0], '%s/test_imaging_%s_dirty.fits' %
+                                 (self.dir, name))
+        
         dirtymax = numpy.max(numpy.abs(dirty[0].data))
         assert dirtymax < 200.0, "Dirty image peak {} is implausibly high".format(dirtymax)
         
@@ -216,7 +220,6 @@ class TestImaging2D(unittest.TestCase):
                                                   polarisation_frame=self.vis_pol)
         self._predict_base(fluxthreshold=35.0, name='predict_awterm', gcfcf=gcfcf)
     
-    @unittest.skip("Tested in rsexecute")
     def test_predict_awterm_spec(self):
         self.actualSetUp(zerow=False, freqwin=5)
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
@@ -225,7 +228,6 @@ class TestImaging2D(unittest.TestCase):
                                                   polarisation_frame=self.vis_pol)
         self._predict_base(fluxthreshold=35.0, name='predict_awterm_spec', gcfcf=gcfcf)
     
-    @unittest.skip("Tested in rsexecute")
     def test_predict_awterm_spec_IQUV(self):
         self.actualSetUp(zerow=False, freqwin=5, image_pol=PolarisationFrame("stokesIQUV"))
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
@@ -242,7 +244,6 @@ class TestImaging2D(unittest.TestCase):
                                                   polarisation_frame=self.vis_pol)
         self._invert_base(name='invert_awterm', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
     
-    @unittest.skip("Tested in rsexecute")
     def test_invert_awterm_spec(self):
         self.actualSetUp(zerow=False, freqwin=5)
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
@@ -251,7 +252,6 @@ class TestImaging2D(unittest.TestCase):
                                                   polarisation_frame=self.vis_pol)
         self._invert_base(name='invert_awterm_spec', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
     
-    @unittest.skip("Tested in rsexecute")
     def test_invert_awterm_spec_IQUV(self):
         self.actualSetUp(zerow=False, freqwin=5, image_pol=PolarisationFrame("stokesIQUV"))
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
@@ -300,10 +300,11 @@ class TestImaging2D(unittest.TestCase):
         psf = invert_2d(self.vis, self.model, dopsf=True)
         error = numpy.max(psf[0].data) - 1.0
         assert abs(error) < 1.0e-12, error
-        if self.persist: export_image_to_fits(psf[0], '%s/test_imaging_2d_psf.fits' % (self.dir))
+        if self.persist:
+            export_image_to_fits(psf[0], '%s/test_imaging_2d_psf.fits' % self.dir)
         
         assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
-        
+    
     def test_invert_psf_weighting(self):
         self.actualSetUp(zerow=False)
         for weighting in ["natural", "uniform", "robust"]:
@@ -314,7 +315,7 @@ class TestImaging2D(unittest.TestCase):
             if self.persist:
                 export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_%s.fits' % (self.dir, weighting))
             assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
-    
+
 
 if __name__ == '__main__':
     unittest.main()

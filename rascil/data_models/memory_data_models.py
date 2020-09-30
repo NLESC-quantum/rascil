@@ -235,13 +235,19 @@ class GainTable:
         """ Interval of validity [ntimes]
         """
         return self.data['interval']
-    
+
     @property
     def gain(self):
         """ Complex gain [ntimes, nants, nchan, nrec, nrec]
         """
         return self.data['gain']
-    
+
+    @property
+    def frequency(self):
+        """ Frequency [nchan]
+        """
+        return self.data['frequency']
+
     @property
     def weight(self):
         """ Weight of gain [ntimes, nants, nchan, nrec, nrec]

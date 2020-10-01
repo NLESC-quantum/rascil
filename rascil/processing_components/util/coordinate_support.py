@@ -129,7 +129,7 @@ def baselines(ants_uvw):
     res = []
     nants = ants_uvw.shape[0]
     for a1 in range(nants):
-        for a2 in range(a1 + 1, nants):
+        for a2 in range(a1, nants):
             res.append(ants_uvw[a2] - ants_uvw[a1])
     
     basel_uvw = numpy.array(res)

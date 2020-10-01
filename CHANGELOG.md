@@ -2,7 +2,8 @@
 0.2.0b0
 -------
 
-* Major upgrade breaking interfaces. Switched to use xarray instead of numpy to hold class data.
+* Major upgrade breaking interfaces. Switched to use xarray instead of numpy to hold class data
+* LOW test beam is now a uniformly weighted 38m diameter disk
 
 0.1.10b0
 --------

@@ -36,8 +36,6 @@ from rascil.processing_components.util import skycoord_to_lmn
 from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
     hadec_to_azel, xyz_at_latitude
 from rascil.processing_components.util.geometry import calculate_transit_time, utc_to_ms_epoch
-from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_transit_time, \
-    calculate_blockvisibility_hourangles, calculate_blockvisibility_azel
 
 log = logging.getLogger('logger')
 
@@ -48,11 +46,14 @@ log = logging.getLogger('logger')
 def generate_baselines(nant):
     """ Generate mapping from antennas to baselines
     
+    Note that we need to include autocorrelations since some input measurement sets
+    may contain autocorrelations
+    
     :param nant:
     :return:
     """
     for ant1 in range(0, nant):
-        for ant2 in range(ant1 + 1, nant):
+        for ant2 in range(ant1, nant):
             yield ant1, ant2
 
 
@@ -141,14 +142,14 @@ def create_blockvisibility(config: Configuration,
     elif isinstance(utc_time, Time):
         utc_time_zero = utc_time
         utc_time = None
-
+    
     if polarisation_frame is None:
         polarisation_frame = correlate_polarisation(config.receptor_frame)
     
     latitude = config.location.geodetic[1].to('rad').value
     ants_xyz = config.data['xyz'].values
     ants_xyz = xyz_at_latitude(ants_xyz, latitude)
-
+    
     nants = len(config.data['names'].values)
     
     baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
@@ -168,7 +169,7 @@ def create_blockvisibility(config: Configuration,
             n_flagged += 1
     
     assert ntimes > 0, "No unflagged points"
-
+    
     if elevation_limit is not None and n_flagged > 0:
         log.info('create_blockvisibility: flagged %d/%d times below elevation limit %f (rad)' %
                  (n_flagged, ntimes, 180.0 * elevation_limit / numpy.pi))
@@ -192,7 +193,7 @@ def create_blockvisibility(config: Configuration,
         stime = calculate_transit_time(config.location, utc_time_zero, phasecentre)
         if stime.masked:
             stime = utc_time_zero
-
+    
     for iha, ha in enumerate(times):
         
         # Calculate the positions of the antennas as seen for this hour angle
@@ -205,7 +206,7 @@ def create_blockvisibility(config: Configuration,
                 rtimes[itime] = utc_to_ms_epoch(utc_time[iha])
             rweight[itime, ...] = 1.0
             rflags[itime, ...] = 1
-
+            
             # Loop over all pairs of antennas. Note that a2>a1
             ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
             for ibaseline, (a1, a2) in enumerate(baselines):
@@ -217,7 +218,7 @@ def create_blockvisibility(config: Configuration,
                     rweight[itime, ibaseline, ...] = 0.0
                     rimaging_weight[itime, ibaseline, ...] = 0.0
                     rflags[itime, ibaseline, ...] = 1
-
+                
                 ruvw[itime, ibaseline, :] = ant_pos[a2, :] - ant_pos[a1, :]
                 rflags[itime, ibaseline, ...] = 0
             
@@ -247,8 +248,7 @@ def create_blockvisibility(config: Configuration,
     return vis
 
 
-def create_blockvisibility_from_rows(vis: BlockVisibility,
-                                rows: numpy.ndarray, makecopy=True):
+def create_blockvisibility_from_rows(vis: BlockVisibility, rows: numpy.ndarray, makecopy=True):
     """ Create a BlockVisibility from selected rows
 
     :param vis: BlockVisibility
@@ -259,7 +259,7 @@ def create_blockvisibility_from_rows(vis: BlockVisibility,
     
     if rows is None or numpy.sum(rows) == 0:
         return None
-        
+    
     if makecopy:
         newvis = copy_visibility(vis)
         newvis.data = copy.deepcopy(vis.data.sel({"time": vis.time[rows]}))
@@ -399,15 +399,15 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         bl_list = []
         
         antennas2 = antennas
-
+        
         # for ant1 in range(0, nant):
         #     for ant2 in range(ant1, nant):
         #         yield ant1, ant2
-
+        
         for a1 in range(0, n_ant):
-            for a2 in range(a1+1, n_ant):
+            for a2 in range(a1, n_ant):
                 bl_list.append((antennas[a1], antennas2[a2]))
-                
+        
         tbl.set_geometry(vis.configuration, antennas)
         
         int_time = vis.data['integration_time'].values
@@ -945,7 +945,7 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
             bv_uvw = numpy.zeros([ntimes, nbaselines, 3])
             for time_index, time in enumerate(bv_times):
                 for antenna1 in range(nants - 1):
-                    for antenna2 in range(antenna1 + 1, nants):
+                    for antenna2 in range(antenna1, nants):
                         ibaseline = get_baseline(antenna1, antenna2, baselines)
                         for channel_no, channel_index in enumerate(channum):
                             for pol_index in range(npol):

@@ -20,7 +20,6 @@ from rascil.processing_components.calibration.operations import create_gaintable
 from rascil.processing_components.visibility import blockvisibility_select
 from rascil.processing_components.calibration import pointingtable_select, gaintable_select
 from rascil.processing_components.util.geometry import calculate_azel
-from rascil.processing_components.visibility.iterators import vis_timeslice_iter
 
 log = logging.getLogger('logger')
 

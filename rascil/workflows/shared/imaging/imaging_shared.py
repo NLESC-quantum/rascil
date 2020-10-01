@@ -15,9 +15,7 @@ from rascil.processing_components.imaging import normalize_sumwt
 from rascil.processing_components.visibility import copy_visibility
 from rascil.processing_components.image import calculate_image_frequency_moments
 from rascil.processing_components.imaging import predict_2d, invert_2d
-from rascil.processing_components.visibility import  vis_null_iter, vis_timeslice_iter, vis_wslice_iter
 from rascil.processing_components.imaging import  predict_timeslice_single, invert_timeslice_single
-from rascil.processing_components.imaging import  predict_wstack_single, invert_wstack_single
 
 log = logging.getLogger('logger')
 
@@ -35,35 +33,21 @@ def imaging_contexts():
     """
     from rascil.processing_components.imaging.ng import predict_ng, invert_ng
     contexts = {'2d': {'predict': predict_2d,
-                       'invert': invert_2d,
-                       'vis_iterator': vis_null_iter},
+                       'invert': invert_2d},
                 'ng': {'predict': predict_ng,
-                       'invert': invert_ng,
-                       'vis_iterator': vis_null_iter},
+                       'invert': invert_ng},
                 'wprojection': {'predict': predict_2d,
-                       'invert': invert_2d,
-                       'vis_iterator': vis_null_iter},
+                       'invert': invert_2d},
                 'wsnapshots': {'predict': predict_timeslice_single,
-                       'invert': invert_timeslice_single,
-                       'vis_iterator': vis_timeslice_iter},
+                       'invert': invert_timeslice_single},
                 'facets': {'predict': predict_2d,
-                           'invert': invert_2d,
-                           'vis_iterator': vis_null_iter},
+                           'invert': invert_2d},
                 'facets_ng': {'predict': predict_ng,
-                           'invert': invert_ng,
-                           'vis_iterator': vis_null_iter},
+                           'invert': invert_ng},
                 'facets_timeslice': {'predict': predict_timeslice_single,
-                                     'invert': invert_timeslice_single,
-                                     'vis_iterator': vis_timeslice_iter},
-                'facets_wstack': {'predict': predict_wstack_single,
-                                  'invert': invert_wstack_single,
-                                  'vis_iterator': vis_wslice_iter},
+                                     'invert': invert_timeslice_single},
                 'timeslice': {'predict': predict_timeslice_single,
-                              'invert': invert_timeslice_single,
-                              'vis_iterator': vis_timeslice_iter},
-                'wstack': {'predict': predict_wstack_single,
-                           'invert': invert_wstack_single,
-                           'vis_iterator': vis_wslice_iter}}
+                              'invert': invert_timeslice_single}}
 
     return contexts
 

@@ -11,6 +11,7 @@ __all__ = ['create_skycomponent', 'filter_skycomponents_by_flux', 'filter_skycom
 
 import collections
 import logging
+import copy
 from typing import Union, List
 
 import astropy.units as u
@@ -313,10 +314,12 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     return comps
 
 
-def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam: Image) \
+def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam: Image,
+                               phasecentre=None) \
         -> Union[Skycomponent, List[Skycomponent]]:
     """ Apply a primary beam to a Skycomponent
 
+    :param phasecentre:
     :param beam: primary beam
     :param sc: SkyComponent or list of SkyComponents
     :return: List of skycomponents
@@ -334,7 +337,15 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    pixlocs = skycoord_to_pixel(skycoords, beam.wcs, origin=1, mode='wcs')
+    if beam.wcs.wcs.ctype[0] == 'RA---SIN':
+        pixlocs = skycoord_to_pixel(skycoords, beam.wcs, origin=1, mode='wcs')
+    else:
+        wcs = copy.deepcopy(beam.wcs)
+        wcs.wcs.ctype[0] = 'RA---SIN'
+        wcs.wcs.ctype[1] = 'DEC--SIN'
+        wcs.wcs.crval[0] =  phasecentre.ra.deg
+        wcs.wcs.crval[1] =  phasecentre.dec.deg
+        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode='wcs')
 
     newsc = []
     total_flux = numpy.zeros([nchan, npol])
@@ -348,7 +359,7 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
         if not numpy.isnan(pixloc).any():
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
-                comp_flux = comp.flux * beam.data[:, :, y, x]
+                comp_flux = comp.flux * beam.data[:, :, y, x].values
                 total_flux += comp_flux
             else:
                 comp_flux = 0.0 * comp.flux
@@ -365,7 +376,7 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
 
 
 def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], vp: Image,
-                                          inverse=False) \
+                                          inverse=False, phasecentre=None) \
         -> Union[Skycomponent, List[Skycomponent]]:
     """ Apply a voltage pattern to a Skycomponent
 
@@ -378,6 +389,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     Requires a complex Image with the correct ordering of polarisation axes:
     e.g. RR, LL, RL, LR or XX, YY, XY, YX
 
+    :param inverse:
     :param vp: voltage pattern as complex image
     :param sc: SkyComponent or list of SkyComponents
     :return: List of skycomponents
@@ -399,7 +411,16 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    pixlocs = skycoord_to_pixel(skycoords, vp.wcs, origin=1, mode='wcs')
+    if vp.wcs.wcs.ctype[0] == 'RA---SIN':
+        pixlocs = skycoord_to_pixel(skycoords, vp.wcs, origin=1, mode='wcs')
+    else:
+        assert phasecentre is not None, "Need to know the phasecentre"
+        wcs = copy.deepcopy(vp.wcs)
+        wcs.wcs.ctype[0] = 'RA---SIN'
+        wcs.wcs.ctype[1] = 'DEC--SIN'
+        wcs.wcs.crval[0] =  phasecentre.ra.deg
+        wcs.wcs.crval[1] =  phasecentre.dec.deg
+        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode='wcs')
 
     newsc = []
     total_flux = numpy.zeros([nchan, npol], dtype="complex")

@@ -73,7 +73,8 @@ class TestTesting_Support(unittest.TestCase):
     def test_create_low_test_skymodel_from_gleam(self):
         sm = create_low_test_skymodel_from_gleam(npixel=256, cellsize=0.001, frequency=self.frequency,
                                                  channel_bandwidth=self.channel_bandwidth, phasecentre=self.phasecentre,
-                                                 kind='cubic', flux_limit=0.3, flux_threshold=1.0)
+                                                 kind='cubic', flux_limit=0.3, flux_threshold=1.0,
+                                                 polarisation_frame=PolarisationFrame("stokesI"))
         
         im = sm.image
         assert im.data.shape[0] == 5
@@ -83,8 +84,8 @@ class TestTesting_Support(unittest.TestCase):
         if self.persist: export_image_to_fits(im, '%s/test_test_support_low_gleam.fits' % (self.dir))
         
         comp = sm.components
-        assert len(comp) == 45, len(comp)
-        assert comp[0].name == 'GLEAM J003826-385949', comp[0].name
+        assert len(comp) == 38, len(comp)
+        assert comp[0].name == 'GLEAM J005659-380954', comp[0].name
         assert comp[-1].name == 'GLEAM J011412-321730', comp[-1].name
     
     def test_create_low_test_image_from_gleam(self):

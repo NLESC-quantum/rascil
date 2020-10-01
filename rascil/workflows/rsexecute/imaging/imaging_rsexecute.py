@@ -27,7 +27,6 @@ from rascil.processing_components.image import image_scatter_facets, image_gathe
 from rascil.processing_components.image.operations import copy_image, create_empty_image_like
 from rascil.processing_components.imaging import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
-from rascil.processing_components.visibility import visibility_scatter, visibility_gather
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.shared.imaging import imaging_context, remove_sumwt, sum_predict_results, \
     threshold_list, sum_invert_results

@@ -63,9 +63,9 @@ from rascil.processing_components.image.operations import create_image_from_arra
 from rascil.processing_components.image.operations import import_image_from_fits
 from rascil.processing_components.imaging import predict_2d, dft_skycomponent_visibility, \
     create_image_from_visibility, advise_wide_field
-from rascil.processing_components.imaging.primary_beams import create_pb
+from rascil.processing_components.imaging.primary_beams import create_vp, create_pb
 from rascil.processing_components.skycomponent.operations import create_skycomponent, insert_skycomponent, \
-    apply_beam_to_skycomponent, filter_skycomponents_by_flux
+    apply_beam_to_skycomponent, filter_skycomponents_by_flux, apply_voltage_pattern_to_skycomponent
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.util.installation_checks import check_data_directory
 
@@ -509,7 +509,7 @@ def create_low_test_skymodel_from_gleam(npixel=512, polarisation_frame=Polarisat
 
     if applybeam:
         beam = create_pb(model, telescope=telescope, use_local=False)
-        sc = apply_beam_to_skycomponent(sc, beam)
+        sc = apply_beam_to_skycomponent(sc, beam, phasecentre=phasecentre)
 
     weaksc = filter_skycomponents_by_flux(sc, flux_max=flux_threshold)
     brightsc = filter_skycomponents_by_flux(sc, flux_min=flux_threshold)

@@ -216,16 +216,14 @@ def remove_continuum_blockvisibility(vis: BlockVisibility, degree=1,
     x = (vis.frequency - vis.frequency[nchan // 2]) / (
             vis.frequency[0] - vis.frequency[nchan // 2])
     for row in range(vis.nvis):
-        for ant2 in range(vis.nants):
-            for ant1 in range(vis.nants):
-                for pol in range(vis.polarisation_frame.npol):
-                    wt = numpy.sqrt(vis.flagged_weight[row, ant2, ant1, :, pol])
-                    if mask is not None:
-                        wt[mask] = 0.0
-                    fit = numpy.polyfit(x, vis.data['vis'][row, ant2, ant1, :,
-                                           pol], w=wt, deg=degree)
-                    prediction = numpy.polyval(fit, x)
-                    vis.data['vis'][row, ant2, ant1, :, pol] -= prediction
+        for ibaseline, baseline in enumerate(vis.baselines):
+            for pol in range(vis.polarisation_frame.npol):
+                wt = numpy.sqrt(vis.flagged_weight[row, ibaseline, :, pol])
+                if mask is not None:
+                    wt[mask] = 0.0
+                fit = numpy.polyfit(x, vis.data['vis'][row, ibaseline, :, pol], w=wt, deg=degree)
+                prediction = numpy.polyval(fit, x)
+                vis.data['vis'][row, ibaseline, :, pol] -= prediction
     return vis
 
 

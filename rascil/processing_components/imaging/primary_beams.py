@@ -381,50 +381,8 @@ def create_low_test_vp(model: Image, use_local=True) -> Image:
     :param model: Template image
     :return: Image
     """
+    return create_vp_generic(model, diameter=38.0, blockage=0.0, use_local=use_local)
     
-    beam = import_image_from_fits(rascil_data_path('models/SKA1_LOW_beam.fits'))
-    # Scale the image cellsize to account for the different in frequencies. Eventually we will want to
-    # use a frequency cube
-    log.debug("create_low_test_beam: LOW voltage pattern is defined at %.3f MHz" % (beam.wcs.wcs.crval[2] * 1e-6))
-    
-    nchan, npol, ny, nx = model.shape
-    
-    # We need to interpolate each frequency channel separately. The beam is assumed to just scale with
-    # frequency.
-    
-    reprojected_beam = create_empty_image_like(model)
-    reprojected_beam.data.values = reprojected_beam.data.values.astype('complex')
-    
-    
-    npol = model.polarisation_frame.npol
-    for chan in range(nchan):
-        
-        model_1chan_wcs = model.wcs.deepcopy()
-        model_1chan_shape = [1, model.shape[1], model.shape[2], model.shape[3]]
-        beam_1chan_wcs = beam.wcs.deepcopy()
-        
-        # The frequency axis is the second to last in the beam
-        frequency = model.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
-        fscale = beam.wcs.wcs.crval[2] / frequency
-        
-        beam_1chan_wcs.wcs.cdelt = fscale * beam.wcs.wcs.cdelt
-        beam_1chan_wcs.wcs.crpix = beam.wcs.wcs.crpix
-        beam_1chan_wcs.wcs.crval = model.wcs.wcs.crval
-        beam_1chan_wcs.wcs.ctype = model.wcs.wcs.ctype
-        
-        beam_pol = numpy.repeat(beam.data.values[0, :, :, :], npol, axis=0)[numpy.newaxis,...]
-        beam_1chan = create_image_from_array(beam_pol,
-                                              beam_1chan_wcs, model.polarisation_frame)
-        reprojected_beam_1chan, footprint = reproject_image(beam_1chan, model_1chan_wcs, shape=model_1chan_shape)
-        assert numpy.max(footprint.data.values) > 0.0, "No overlap between beam and model"
-        
-        reprojected_beam_1chan.data.values[footprint.data.values <= 0.0] = 0.0
-
-        reprojected_beam.data.values[chan, ...] = reprojected_beam_1chan.data.values[...].astype('complex')
-
-    set_pb_header(reprojected_beam, use_local=use_local)
-    return reprojected_beam
-
 def convert_azelvp_to_radec(vp, im, pa):
     """ Convert AZELGEO image to image coords at specific parallactic angle
     

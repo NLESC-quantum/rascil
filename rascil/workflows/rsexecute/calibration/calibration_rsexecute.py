@@ -7,9 +7,7 @@ __all__ = ['calibrate_list_rsexecute_workflow']
 from rascil.data_models import get_parameter, BlockVisibility
 
 from rascil.processing_components.calibration import apply_calibration_chain, solve_calibrate_chain
-from rascil.processing_components.visibility import visibility_gather_channel
-from rascil.processing_components.visibility import integrate_visibility_by_channel, \
-    divide_visibility
+from rascil.processing_components.visibility import integrate_visibility_by_channel, divide_visibility
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 

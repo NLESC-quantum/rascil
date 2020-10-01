@@ -52,7 +52,7 @@ def generate_baselines(nant):
     :return:
     """
     for ant1 in range(0, nant):
-        for ant2 in range(ant1, nant):
+        for ant2 in range(ant1 + 1, nant):
             yield ant1, ant2
 
 
@@ -405,7 +405,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         #         yield ant1, ant2
 
         for a1 in range(0, n_ant):
-            for a2 in range(a1, n_ant):
+            for a2 in range(a1+1, n_ant):
                 bl_list.append((antennas[a1], antennas2[a2]))
                 
         tbl.set_geometry(vis.configuration, antennas)

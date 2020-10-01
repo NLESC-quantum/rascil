@@ -358,7 +358,11 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
 
     # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
     norm = 2.0 * numpy.pi * size ** 2
-    gk = Gaussian2DKernel(size.value)
+    if isinstance(size, float):
+        gk = Gaussian2DKernel(size)
+    else:
+        gk = Gaussian2DKernel(size.value)
+        
     for chan in range(model.shape[0]):
         for pol in range(model.shape[1]):
             restored.data.values[chan, pol, :, :] = norm * convolve_fft(model.data.values[chan, pol, :, :], gk,

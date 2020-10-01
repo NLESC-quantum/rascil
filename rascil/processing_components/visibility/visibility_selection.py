@@ -28,17 +28,20 @@ def blockvisibility_select(bvis, selection):
     return newbvis
 
 
-def blockvisibility_where(bvis, condition, **kwargs):
+def blockvisibility_where(bvis, condition, make_copy=True, **kwargs):
     """ Select where a condition holds of BlockVisibility using xarray syntax
 
     :param bvis:
     :param condition:
     :return:
     """
-    newbvis = copy.copy(bvis)
-    newbvis.data = bvis.data.where(condition, **kwargs)
-    return newbvis
-
+    if make_copy:
+        newbvis = copy.copy(bvis)
+        newbvis.data = bvis.data.where(condition, **kwargs)
+        return newbvis
+    else:
+        bvis.data = bvis.data.where(condition, **kwargs)
+        return bvis
 
 def blockvisibility_groupby(bvis, coordinate, **kwargs):
     """ Group bu a coordinate condition holds of BlockVisibility using xarray syntax

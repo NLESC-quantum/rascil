@@ -5,19 +5,18 @@
 __all__ = ['imaging_context', 'imaging_contexts', 'sum_invert_results', 'remove_sumwt', 'threshold_list',
            'sum_predict_results']
 
-import numpy
-
 import logging
 
-from rascil.processing_components.image.operations import copy_image, create_empty_image_like
+import numpy
 
-from rascil.processing_components.imaging import normalize_sumwt
-from rascil.processing_components.visibility import copy_visibility
 from rascil.processing_components.image import calculate_image_frequency_moments
+from rascil.processing_components.image.operations import copy_image, create_empty_image_like
+from rascil.processing_components.imaging import normalize_sumwt
 from rascil.processing_components.imaging import predict_2d, invert_2d
-from rascil.processing_components.imaging import  predict_timeslice_single, invert_timeslice_single
+from rascil.processing_components.visibility import copy_visibility
 
 log = logging.getLogger('logger')
+
 
 def imaging_contexts():
     """Contains all the context information for imaging
@@ -37,18 +36,12 @@ def imaging_contexts():
                 'ng': {'predict': predict_ng,
                        'invert': invert_ng},
                 'wprojection': {'predict': predict_2d,
-                       'invert': invert_2d},
-                'wsnapshots': {'predict': predict_timeslice_single,
-                       'invert': invert_timeslice_single},
+                                'invert': invert_2d},
                 'facets': {'predict': predict_2d,
                            'invert': invert_2d},
                 'facets_ng': {'predict': predict_ng,
-                           'invert': invert_ng},
-                'facets_timeslice': {'predict': predict_timeslice_single,
-                                     'invert': invert_timeslice_single},
-                'timeslice': {'predict': predict_timeslice_single,
-                              'invert': invert_timeslice_single}}
-
+                              'invert': invert_ng}}
+    
     return contexts
 
 
@@ -86,9 +79,11 @@ def sum_invert_results_local(image_list):
     assert not first, "No invert results"
     return im, sumwt
 
+
 def sum_invert_results(image_list, normalize=True):
     """ Sum a set of invert results with appropriate weighting
 
+    :param normalize:
     :param image_list: List of [image, sum weights] pairs
     :return: image, sum of weights
     """
@@ -98,12 +93,12 @@ def sum_invert_results(image_list, normalize=True):
     im = create_empty_image_like(image_list[0][0])
     sumwt = image_list[0][1].copy()
     sumwt *= 0.0
-
+    
     for i, arg in enumerate(image_list):
         if arg is not None:
-            im.data += arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0].data
+            im.data.values += arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0].data.values
             sumwt += arg[1]
-
+    
     if normalize:
         im = normalize_sumwt(im, sumwt)
     return im, sumwt
@@ -131,7 +126,7 @@ def sum_predict_results(results):
                 sum_results = copy_visibility(result)
             else:
                 assert sum_results.data['vis'].shape == result.data['vis'].shape
-                sum_results.data['vis'] += result.data['vis']
+                sum_results.data['vis'].values += result.data['vis'].values
     
     return sum_results
 
@@ -139,6 +134,7 @@ def sum_predict_results(results):
 def threshold_list(imagelist, threshold, fractional_threshold, use_moment0=True, prefix=''):
     """ Find actual threshold for list of results, optionally using moment 0
 
+    :param prefix: Prefix in log messages
     :param imagelist:
     :param threshold: Absolute threshold
     :param fractional_threshold: Fractional  threshold
@@ -149,7 +145,7 @@ def threshold_list(imagelist, threshold, fractional_threshold, use_moment0=True,
     for i, result in enumerate(imagelist):
         if use_moment0:
             moments = calculate_image_frequency_moments(result)
-            this_peak = numpy.max(numpy.abs(moments.data[0, ...] / result.shape[0]))
+            this_peak = numpy.max(numpy.abs(moments.data.values[0, ...] / result.shape[0]))
             peak = max(peak, this_peak)
             log.info("threshold_list: using moment 0, sub_image %d, peak = %f," % (i, this_peak))
         else:
@@ -157,16 +153,15 @@ def threshold_list(imagelist, threshold, fractional_threshold, use_moment0=True,
             this_peak = numpy.max(numpy.abs(result.data[ref_chan]))
             peak = max(peak, this_peak)
             log.info("threshold_list: using refchan %d , sub_image %d, peak = %f," % (ref_chan, i, this_peak))
-
-    actual = max(peak * fractional_threshold, threshold)
     
+    actual = max(peak * fractional_threshold, threshold)
     
     if use_moment0:
         log.info("threshold_list %s: Global peak in moment 0 = %.6f, sub-image clean threshold will be %.6f" % (prefix,
-                                                                                                           peak,
-                                                                                                   actual))
+                                                                                                                peak,
+                                                                                                                actual))
     else:
         log.info("threshold_list %s: Global peak = %.6f, sub-image clean threshold will be %.6f" % (prefix, peak,
-                                                                                                   actual))
+                                                                                                    actual))
     
     return actual

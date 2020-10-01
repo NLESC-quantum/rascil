@@ -50,7 +50,7 @@ class TestImaging(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
     
     def tearDown(self):
         rsexecute.close()
@@ -139,10 +139,11 @@ class TestImaging(unittest.TestCase):
         self.components = self.components_list[centre]
         
         if makegcfcf:
-            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=101, wstep=8.0,
+            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
                                                             oversampling=4,
-                                                            support=64,
+                                                            support=100,
                                                             use_aaf=True)]
+            
             self.gcfcf_clipped = [(self.gcfcf[0][0], apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
                                                                                             fractional_level=1e-3))]
             
@@ -183,12 +184,12 @@ class TestImaging(unittest.TestCase):
                                                gcfcf=gcfcf, normalize=True, vis_slices=vis_slices, **kwargs)
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
-        assert numpy.max(numpy.abs(dirty[0].data)), "Residual image is empty"
+        assert numpy.max(numpy.abs(dirty[0].data.values)), "Residual image is empty"
         if self.persist:
             export_image_to_fits(dirty[0], '%s/test_imaging_predict_%s%s_%s_dirty.fits' %
                                  (self.dir, context, extra, rsexecute.type()))
         
-        maxabs = numpy.max(numpy.abs(dirty[0].data))
+        maxabs = numpy.max(numpy.abs(dirty[0].data.values))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (maxabs, fluxthreshold)
     
     def _invert_base(self, context, extra='', fluxthreshold=1.0, positionthreshold=1.0, check_components=True,
@@ -223,13 +224,6 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp()
         self._predict_base(context='facets', fluxthreshold=17.0, facets=8)
     
-    @unittest.skip("Timeslice predict needs better interpolation and facets need overlap")
-    def test_predict_facets_timeslice(self):
-        self.actualSetUp()
-        self._predict_base(context='facets_timeslice', fluxthreshold=19.0, facets=8,
-                           vis_slices=self.ntimes,
-                           overlap=16, taper="tukey")
-    
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_predict_ng(self):
         self.actualSetUp()
@@ -241,20 +235,6 @@ class TestImaging(unittest.TestCase):
         self._predict_base(context='facets', extra='_wprojection', facets=8, fluxthreshold=15.0,
                            gcfcf=self.gcfcf_joint)
     
-    @unittest.skip("Facets need overlap")
-    def test_predict_facets_wstack(self):
-        self.actualSetUp()
-        self._predict_base(context='facets_wstack', fluxthreshold=15.0, facets=8, vis_slices=101)
-    
-    def test_predict_timeslice(self):
-        self.actualSetUp()
-        self._predict_base(context='timeslice', fluxthreshold=5.5, vis_slices=self.ntimes)
-    
-    def test_predict_wsnapshots(self):
-        self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='wsnapshots', fluxthreshold=6.7,
-                           vis_slices=self.ntimes // 2, gcfcf=self.gcfcf_joint)
-    
     def test_predict_wprojection(self):
         self.actualSetUp(makegcfcf=True)
         self._predict_base(context='2d', extra='_wprojection', fluxthreshold=5.0,
@@ -264,25 +244,6 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp(makegcfcf=True)
         self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=5.0,
                            gcfcf=self.gcfcf_clipped)
-    
-    def test_predict_wstack(self):
-        self.actualSetUp()
-        self._predict_base(context='wstack', fluxthreshold=3.3, vis_slices=51)
-    
-    def test_predict_wstack_wprojection(self):
-        self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='wstack', extra='_wprojection', fluxthreshold=4.1, vis_slices=11,
-                           gcfcf=self.gcfcf_joint)
-    
-    @unittest.skip("Too much for CI/CD")
-    def test_predict_wstack_spectral(self):
-        self.actualSetUp(dospectral=True)
-        self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
-    
-    @unittest.skip("Too much for CI/CD")
-    def test_predict_wstack_spectral_pol(self):
-        self.actualSetUp(dospectral=True, dopol=True)
-        self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
     
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
@@ -319,38 +280,16 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp()
         self._invert_base(context='facets_ng', positionthreshold=2.0, check_components=True, facets=8)
     
-    @unittest.skip("Facets need overlap")
-    def test_invert_facets_timeslice(self):
-        self.actualSetUp()
-        self._invert_base(context='facets_timeslice', check_components=True, vis_slices=self.ntimes,
-                          positionthreshold=5.0, flux_threshold=1.0, facets=8)
-    
     @unittest.skip("Facets need overlap, wprojection needs kernel recalc")
     def test_invert_facets_wprojection(self):
         self.actualSetUp(makegcfcf=True)
         self._invert_base(context='facets', extra='_wprojection', check_components=True,
                           positionthreshold=2.0, facets=4, gcfcf=self.gcfcf)
     
-    @unittest.skip("Facets need overlap")
-    def test_invert_facets_wstack(self):
-        self.actualSetUp()
-        self._invert_base(context='facets_wstack', positionthreshold=1.0, check_components=False, facets=4,
-                          vis_slices=51)
-    
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_invert_ng(self):
         self.actualSetUp()
         self._invert_base(context='ng', positionthreshold=2.0, check_components=True)
-    
-    def test_invert_timeslice(self):
-        self.actualSetUp()
-        self._invert_base(context='timeslice', positionthreshold=1.0, check_components=True,
-                          vis_slices=self.ntimes)
-    
-    def test_invert_wsnapshots(self):
-        self.actualSetUp(makegcfcf=True)
-        self._invert_base(context='wsnapshots', positionthreshold=1.0,
-                          check_components=True, vis_slices=self.ntimes // 2, gcfcf=self.gcfcf_joint)
     
     def test_invert_wprojection(self):
         self.actualSetUp(makegcfcf=True)
@@ -361,25 +300,6 @@ class TestImaging(unittest.TestCase):
         self._invert_base(context='2d', extra='_wprojection_clipped', positionthreshold=2.0,
                           gcfcf=self.gcfcf_clipped)
     
-    def test_invert_wprojection_wstack(self):
-        self.actualSetUp(makegcfcf=True)
-        self._invert_base(context='wstack', extra='_wprojection', positionthreshold=1.0, vis_slices=11,
-                          gcfcf=self.gcfcf_joint)
-    
-    def test_invert_wstack(self):
-        self.actualSetUp()
-        self._invert_base(context='wstack', positionthreshold=1.0, vis_slices=51)
-    
-    def test_invert_wstack_spectral(self):
-        self.actualSetUp(dospectral=True)
-        self._invert_base(context='wstack', extra='_spectral', positionthreshold=2.0,
-                          vis_slices=51)
-    
-    def test_invert_wstack_spectral_pol(self):
-        self.actualSetUp(dospectral=True, dopol=True)
-        self._invert_base(context='wstack', extra='_spectral_pol', positionthreshold=2.0,
-                          vis_slices=51)
-    
     def test_zero_list(self):
         self.actualSetUp()
         
@@ -389,17 +309,18 @@ class TestImaging(unittest.TestCase):
         
         assert numpy.max(numpy.abs(vis_list[centre].vis)) < 1e-15, numpy.max(numpy.abs(vis_list[centre].vis))
         
-        predicted_vis_list = [rsexecute.execute(dft_skycomponent_visibility)(vis_list[freqwin],
-                                                                             self.components_list[freqwin])
+        predicted_vis_list = [rsexecute.execute(dft_skycomponent_visibility)
+                              (vis_list[freqwin], self.components_list[freqwin])
                               for freqwin, _ in enumerate(self.frequency)]
         predicted_vis_list = rsexecute.compute(predicted_vis_list, sync=True)
-        assert numpy.max(numpy.abs(predicted_vis_list[centre].vis)) > 0.0, \
-            numpy.max(numpy.abs(predicted_vis_list[centre].vis))
+        assert numpy.max(numpy.abs(predicted_vis_list[centre].vis.values)) > 0.0, \
+            numpy.max(numpy.abs(predicted_vis_list[centre].vis.values))
         
         diff_vis_list = subtract_list_rsexecute_workflow(self.bvis_list, predicted_vis_list)
         diff_vis_list = rsexecute.compute(diff_vis_list, sync=True)
         
-        assert numpy.max(numpy.abs(diff_vis_list[centre].vis)) < 1e-15, numpy.max(numpy.abs(diff_vis_list[centre].vis))
+        assert numpy.max(numpy.abs(diff_vis_list[centre].vis.values)) < 1e-15, \
+            numpy.max(numpy.abs(diff_vis_list[centre].vis.values))
     
     def test_residual_list(self):
         self.actualSetUp(zerow=True)
@@ -481,7 +402,8 @@ class TestImaging(unittest.TestCase):
     def test_sum_invert_list(self):
         self.actualSetUp(zerow=True)
         
-        residual_image_list = residual_list_rsexecute_workflow(self.bvis_list, self.model_list, context='2d')
+        residual_image_list = residual_list_rsexecute_workflow(self.bvis_list, self.model_list,
+                                                               context='2d')
         residual_image_list = rsexecute.compute(residual_image_list, sync=True)
         route2 = sum_invert_results(residual_image_list)
         route1 = sum_invert_results_rsexecute(residual_image_list)

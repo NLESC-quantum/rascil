@@ -23,7 +23,6 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rsexecute_workflow, \
     predict_list_rsexecute_workflow, subtract_list_rsexecute_workflow, \
     zero_list_rsexecute_workflow
-from rascil.workflows.serial.imaging import predict_list_serial_workflow, invert_list_serial_workflow
 from rascil.workflows.shared.imaging import remove_sumwt
 
 log = logging.getLogger('logger')

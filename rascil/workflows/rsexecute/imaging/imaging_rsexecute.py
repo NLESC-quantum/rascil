@@ -34,21 +34,17 @@ from rascil.workflows.shared.imaging import imaging_context, remove_sumwt, sum_p
 log = logging.getLogger('logger')
 
 
-def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=1, facets=1,
+def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1,
                                     gcfcf=None, **kwargs):
     """Predict, iterating over both the scattered vis_list and image
     
     The visibility and image are scattered, the visibility is predicted on each part, and then the
     parts are assembled.
 
-    Note that this call can be converted to a set of rsexecute calls to the serial
-    version, using argument use_serial_predict=True
-
     :param vis_list: list of vis (or graph)
     :param model_imagelist: list of models (or graph)
-    :param vis_slices: Number of vis slices (w stack or timeslice)
     :param facets: Number of facets (per axis)
-    :param context: Type of processing e.g. 2d, wstack, timeslice or facets
+    :param context: Type of processing e.g. 2d, ng, facets
     :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: List of vis_lists
@@ -68,19 +64,10 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slic
 
    """
     
-    if get_parameter(kwargs, "use_serial_predict", False):
-        from rascil.workflows.serial.imaging.imaging_serial import predict_list_serial_workflow
-        return [rsexecute.execute(predict_list_serial_workflow, nout=1) \
-                    (vis_list=[vis_list[i]],
-                     model_imagelist=[model_imagelist[i]], vis_slices=vis_slices,
-                     facets=facets, context=context, gcfcf=gcfcf, **kwargs)[0]
-                for i, _ in enumerate(vis_list)]
-    
     # Predict_2d does not clear the vis so we have to do it here.
     vis_list = zero_list_rsexecute_workflow(vis_list)
     
     c = imaging_context(context)
-    vis_iter = c['vis_iterator']
     predict = c['predict']
 
     if facets % 2 == 0 or facets == 1:
@@ -97,71 +84,26 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slic
             return None
     
     if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(m,
-                                                                    polarisation_frame=vis_list[i].polarisation_frame)
+        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)
+                 (m, polarisation_frame=vis_list[i].polarisation_frame)
                  for i, m in enumerate(model_imagelist)]
     
-    # Loop over all frequency windows
-    if facets == 1:
-        image_results_list = list()
-        for ivis, subvis in enumerate(vis_list):
-            if len(gcfcf) > 1:
-                g = gcfcf[ivis]
-            else:
-                g = gcfcf[0]
-            # Create the graph to divide the visibility into slices. This is by copy.
-            sub_vis_lists = rsexecute.execute(visibility_scatter, nout=vis_slices)(subvis,
-                                                                                   vis_iter, vis_slices)
-            
-            image_vis_lists = list()
-            # Loop over sub visibility
-            for sub_vis_list in sub_vis_lists:
-                # Predict visibility for this sub-visibility from this image
-                image_vis_list = rsexecute.execute(predict_ignore_none, pure=True, nout=1) \
-                    (sub_vis_list, model_imagelist[ivis], g)
-                # Sum all sub-visibilities
-                image_vis_lists.append(image_vis_list)
-            image_results_list.append(rsexecute.execute(visibility_gather, nout=1)
-                                      (image_vis_lists, subvis, vis_iter))
-        
-        result = image_results_list
-    else:
-        image_results_list_list = list()
-        for ivis, subvis in enumerate(vis_list):
-            # Create the graph to divide an image into facets. This is by reference.
-            facet_lists = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
-                model_imagelist[ivis],
-                facets=facets)
-            # Create the graph to divide the visibility into slices. This is by copy.
-            sub_vis_lists = rsexecute.execute(visibility_scatter, nout=vis_slices) \
-                (subvis, vis_iter, vis_slices)
-            
-            facet_vis_lists = list()
-            # Loop over sub visibility
-            for sub_vis_list in sub_vis_lists:
-                facet_vis_results = list()
-                # Loop over facets
-                for facet_list in facet_lists:
-                    # Predict visibility for this subvisibility from this facet
-                    facet_vis_list = rsexecute.execute(predict_ignore_none, pure=True, nout=1) \
-                        (sub_vis_list, facet_list, None)
-                    facet_vis_results.append(facet_vis_list)
-                # Sum the current sub-visibility over all facets
-                facet_vis_lists.append(rsexecute.execute(sum_predict_results)(facet_vis_results))
-            # Sum all sub-visibilities
-            image_results_list_list.append(
-                rsexecute.execute(visibility_gather, nout=1)(facet_vis_lists, subvis, vis_iter))
-        
-        result = image_results_list_list
-    return rsexecute.optimize(result)
+    # Loop over all windows
+    predict_results = []
+    for ivis, subvis in enumerate(vis_list):
+        # Create the graph to divide an image into facets. This is by reference.
+        facet_lists = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
+            model_imagelist[ivis], facets=facets)
+        # Loop over facets
+        facet_vis_results = [rsexecute.execute(predict_ignore_none, pure=True, nout=1) \
+                (subvis, facet_list, gcfcf[ifacet]) for ifacet, facet_list in enumerate(facet_lists)]
+        predict_results.append(rsexecute.execute(sum_predict_results)(facet_vis_results))
+    return rsexecute.optimize(predict_results)
 
 
 def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, dopsf=False, normalize=True,
                                    facets=1, overlap=0, taper="tukey", vis_slices=1, gcfcf=None, **kwargs):
     """ Sum results from invert, iterating over the scattered image and vis_list
-
-    Note that this call can be converted to a set of rsexecute calls to the serial
-    version, using argument use_serial_invert=True
 
     :param gcfcf:
     :param taper:
@@ -191,22 +133,10 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
 
    """
     
-    # Use serial invert for each element of the visibility list. This means that e.g. iteration
-    # through w-planes or timeslices is done sequentially thus not incurring the memory cost
-    # of doing all at once.
-    if get_parameter(kwargs, "use_serial_invert", False):
-        from rascil.workflows.serial.imaging.imaging_serial import invert_list_serial_workflow
-        return [rsexecute.execute(invert_list_serial_workflow, nout=1) \
-                    (vis_list=[vis_list[i]], template_model_imagelist=[template_model_imagelist[i]],
-                     context=context, dopsf=dopsf, normalize=normalize, vis_slices=vis_slices,
-                     facets=facets, gcfcf=gcfcf, **kwargs)[0]
-                for i, _ in enumerate(vis_list)]
-    
     if not isinstance(template_model_imagelist, collections.abc.Iterable):
         template_model_imagelist = [template_model_imagelist]
 
     c = imaging_context(context)
-    vis_iter = c['vis_iterator']
     invert = c['invert']
 
     if facets % 2 == 0 or facets == 1:
@@ -223,12 +153,12 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
             assert i < len(results), "Too few results in gather_image_iteration_results"
             if results[i] is not None:
                 assert len(results[i]) == 2, results[i]
-                dpatch.data[...] += results[i][0].data[...]
+                dpatch.data.values[...] += results[i][0].data.values[...]
                 sumwt += results[i][1]
                 i += 1
         flat = image_gather_facets(results, flat, facets=facets, overlap=overlap, taper=taper, return_flat=True)
-        result.data[flat.data > 0.5] /= flat.data[flat.data > 0.5]
-        result.data[flat.data <= 0.5] = 0.0
+        result.data.values[flat.data.values > 0.5] /= flat.data.values[flat.data.values > 0.5]
+        result.data.values[flat.data.values <= 0.5] = 0.0
         return result, sumwt
     
     def invert_ignore_none(vis, model, gg):
@@ -245,47 +175,17 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
                                                                     polarisation_frame=vis_list[0].polarisation_frame)]
     
     # Loop over all vis_lists independently
-    results_vislist = list()
-    if facets == 1:
-        for ivis, sub_vis_list in enumerate(vis_list):
-            if len(gcfcf) > 1:
-                g = gcfcf[ivis]
-            else:
-                g = gcfcf[0]
-            # Create the graph to divide the visibility into slices. This is by copy.
-            sub_sub_vis_lists = rsexecute.execute(visibility_scatter, nout=vis_slices) \
-                (sub_vis_list, vis_iter, vis_slices=vis_slices)
-            
-            # Iterate within each sub_sub_vis_list
-            vis_results = list()
-            for sub_sub_vis_list in sub_sub_vis_lists:
-                vis_results.append(rsexecute.execute(invert_ignore_none, pure=True)
-                                   (sub_sub_vis_list, template_model_imagelist[ivis], g))
-            results_vislist.append(sum_invert_results_rsexecute(vis_results))
+    invert_results = list()
+    for ivis, sub_vis_list in enumerate(vis_list):
+        # Create the graph to divide an image into facets. This is by reference.
+        facet_list = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
+            template_model_imagelist[ivis], facets=facets, overlap=overlap, taper=taper)
+        facet_results = [rsexecute.execute(invert_ignore_none, pure=True)
+                             (sub_vis_list, facet_list, None) for facet_list in facet_list]
+        invert_results.append(rsexecute.execute(gather_image_iteration_results, nout=1)
+                           (facet_results, template_model_imagelist[ivis]))
         
-        result = results_vislist
-    else:
-        for ivis, sub_vis_list in enumerate(vis_list):
-            # Create the graph to divide an image into facets. This is by reference.
-            facet_lists = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
-                template_model_imagelist[ivis], facets=facets, overlap=overlap, taper=taper)
-            # Create the graph to divide the visibility into slices. This is by copy.
-            sub_sub_vis_lists = rsexecute.execute(visibility_scatter, nout=vis_slices) \
-                (sub_vis_list, vis_iter, vis_slices=vis_slices)
-            
-            # Iterate within each vis_list
-            vis_results = list()
-            for sub_sub_vis_list in sub_sub_vis_lists:
-                facet_vis_results = list()
-                for facet_list in facet_lists:
-                    facet_vis_results.append(
-                        rsexecute.execute(invert_ignore_none, pure=True)(sub_sub_vis_list, facet_list, None))
-                vis_results.append(rsexecute.execute(gather_image_iteration_results, nout=1)
-                                   (facet_vis_results, template_model_imagelist[ivis]))
-            results_vislist.append(sum_invert_results_rsexecute(vis_results))
-        
-        result = results_vislist
-    return rsexecute.optimize(result)
+    return rsexecute.optimize(invert_results)
 
 
 def residual_list_rsexecute_workflow(vis, model_imagelist, context='2d', gcfcf=None, **kwargs):
@@ -369,9 +269,6 @@ def restore_list_rsexecute_workflow(model_imagelist, psf_imagelist, residual_ima
 def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, prefix='', mask=None, **kwargs):
     """Create a graph for deconvolution, adding to the model
 
-    Note that this call can be converted to a set of rsexecute calls to the serial
-    version, using argument use_serial_clean=True
-
     :param dirty_list: list of dirty images (or graph)
     :param psf_list: list of psfs (or graph)
     :param model_imagelist: list of models (or graph)
@@ -398,11 +295,6 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
     nchan = len(dirty_list)
     # Number of moments. 1 is the sum.
     nmoment = get_parameter(kwargs, "nmoment", 1)
-    
-    if get_parameter(kwargs, "use_serial_clean", False):
-        from rascil.workflows.serial.imaging.imaging_serial import deconvolve_list_serial_workflow
-        return rsexecute.execute(deconvolve_list_serial_workflow, nout=nchan) \
-            (dirty_list, psf_list, model_imagelist, prefix=prefix, mask=mask, **kwargs)
     
     def deconvolve(dirty, psf, model, facet, gthreshold, msk=None):
         if prefix == '':
@@ -593,10 +485,7 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
         if vis is not None:
             if model is not None:
                 griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
-                if isinstance(vis, BlockVisibility):
-                    griddata = grid_blockvisibility_weight_to_griddata(vis, griddata, g[0][1])
-                else:
-                    griddata = grid_visibility_weight_to_griddata(vis, griddata, g[0][1])
+                griddata = grid_blockvisibility_weight_to_griddata(vis, griddata, g[0][1])
                 
                 return griddata
             else:
@@ -618,10 +507,8 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
                 # function mapping works
                 agd = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
                 agd.data = gd[0].data
-                if isinstance(vis, BlockVisibility):
-                    vis = griddata_blockvisibility_reweight(vis, agd, g[0][1], weighting=weighting, robustness=robustness)
-                else:
-                    vis = griddata_visibility_reweight(vis, agd, g[0][1], weighting=weighting, robustness=robustness)
+                vis = griddata_blockvisibility_reweight(vis, agd, g[0][1], weighting=weighting,
+                                                        robustness=robustness)
                 return vis
             else:
                 return None

@@ -76,7 +76,7 @@ test:
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
 	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
-	tests/data_models tests/processing_components tests/workflows/test*serial.py \
+	tests/data_models tests/processing_components \
 	--verbose \
 	--junitxml unit-tests-other.xml \
 	--cov rascil \

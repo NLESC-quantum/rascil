@@ -1,3 +1,9 @@
+
+0.2.0b0
+-------
+
+* Major upgrade breaking interfaces. Switched to use xarray instead of numpy to hold class data.
+
 0.1.10b0
 --------
 

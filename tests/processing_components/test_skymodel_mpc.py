@@ -65,7 +65,7 @@ class TestSkymodelMPC(unittest.TestCase):
         
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
         
-        assert len(actual_components) == 15, len(actual_components)
+        assert len(actual_components) == 11, len(actual_components)
         sm = SkyModel(image=self.model, components=actual_components)
         assert len(sm.components) == len(actual_components)
         

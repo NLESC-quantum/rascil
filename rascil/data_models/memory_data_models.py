@@ -249,6 +249,18 @@ class GainTable:
         return self.data['frequency']
 
     @property
+    def receptor1(self):
+        """ Receptor name
+        """
+        return self.data['receptor1']
+
+    @property
+    def receptor2(self):
+        """ Receptor name
+        """
+        return self.data['receptor2']
+
+    @property
     def weight(self):
         """ Weight of gain [ntimes, nants, nchan, nrec, nrec]
 
@@ -1034,8 +1046,11 @@ class BlockVisibility:
             integration_time = numpy.ones_like(time)
         
         k = (frequency / const.c).value
-        uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
-        
+        if len(frequency) == 1:
+            uvw_lambda = (uvw * k)[...,numpy.newaxis,:]
+        else:
+            uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
+
         coords = {
             "time": time,
             "baseline": baselines,

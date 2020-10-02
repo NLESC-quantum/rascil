@@ -82,7 +82,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                    [self.channelwidth[i]],
                                                                    self.times,
                                                                    self.vis_pol,
-                                                                   self.phasecentrecreate_blockvisibility,
+                                                                   self.phasecentre,
                                                                    zerow=zerow)
              for i in range(nfreqwin)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
@@ -155,8 +155,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.02925433354757) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976687707018) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'].values - 100.02925433354757) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'].values + 0.07147976687707018) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, zerow=True, dopol=True)

@@ -414,7 +414,7 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     for moment in range(nmoment):
         for chan in range(nchan):
             weight = numpy.power((freq[chan] - reference_frequency) / reference_frequency, moment)
-            moment_data[moment, ...] += im.data[chan, ...] * weight
+            moment_data[moment, ...] += im.data.values[chan, ...] * weight
     
     moment_wcs = copy.deepcopy(im.wcs)
     moment_wcs.wcs.ctype[3] = 'MOMENT'

@@ -20,7 +20,7 @@ from rascil.processing_components.griddata import create_pswf_convolutionfunctio
 from rascil.processing_components.griddata import \
     grid_blockvisibility_weight_to_griddata, griddata_blockvisibility_reweight, \
     griddata_merge_weights
-from rascil.processing_components.image import calculate_image_frequency_moments
+from rascil.processing_components.image import calculate_image_frequency_moments, image_iselect
 from rascil.processing_components.image import deconvolve_cube, restore_cube
 from rascil.processing_components.image import image_scatter_facets, image_gather_facets, \
     image_scatter_channels, image_gather_channels
@@ -304,17 +304,17 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         
         if nmoment > 0:
             moment0 = calculate_image_frequency_moments(dirty)
-            this_peak = numpy.max(numpy.abs(moment0.data[0, ...])) / dirty.data.shape[0]
+            this_peak = numpy.max(numpy.abs(moment0.data.values[0, ...])) / dirty.data.shape[0]
         else:
             ref_chan = dirty.data.shape[0] // 2
-            this_peak = numpy.max(numpy.abs(dirty.data[ref_chan, ...]))
+            this_peak = numpy.max(numpy.abs(dirty.data.values[ref_chan, ...]))
         
         if this_peak > 1.1 * gthreshold:
             kwargs['threshold'] = gthreshold
             result, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
             if result.data.shape[0] == model.data.shape[0]:
-                result.data += model.data
+                result.data.values += model.data.values
             return result
         else:
             return copy_image(model)
@@ -354,16 +354,15 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
     psf_list_trimmed = rsexecute.execute(remove_sumwt, nout=nchan)(psf_list)
     
     def extract_psf(psf, facets):
-        spsf = create_empty_image_like(psf)
-        cx = spsf.shape[3] // 2
-        cy = spsf.shape[2] // 2
-        wx = spsf.shape[3] // facets
-        wy = spsf.shape[2] // facets
+        cx = psf.shape[3] // 2
+        cy = psf.shape[2] // 2
+        wx = psf.shape[3] // facets
+        wy = psf.shape[2] // facets
         xbeg = cx - wx // 2
         xend = cx + wx // 2
         ybeg = cy - wy // 2
         yend = cy + wy // 2
-        spsf.data = psf.data[..., ybeg:yend, xbeg:xend]
+        spsf = image_iselect(psf, {"l": slice(xbeg, xend), "m": slice(ybeg, yend)})
         spsf.wcs.wcs.crpix[0] -= xbeg
         spsf.wcs.wcs.crpix[1] -= ybeg
         return spsf
@@ -479,7 +478,9 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
 
    """
     if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(m, oversampling=1) for m in model_imagelist]
+        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)
+                 (m, polarisation_frame=vis_list[i].polarisation_frame)
+                 for i, m in enumerate(model_imagelist)]
     
     def grid_wt(vis, model, g):
         if vis is not None:

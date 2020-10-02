@@ -111,7 +111,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         if self.persist: export_image_to_fits(model, '%s/test_imaging_rsexecute_deconvolved_model.fits' % self.dir)
         if self.persist: export_image_to_fits(self.cmodel, '%s/test_imaging_rsexecute_deconvolved_cmodel.fits' % self.dir)
         
-        if add_errors and block:
+        if add_errors:
             self.vis_list = [rsexecute.execute(insert_unittest_errors)(self.vis_list[i])
                              for i, _ in enumerate(self.frequency)]
         

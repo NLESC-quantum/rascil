@@ -32,7 +32,7 @@ log.setLevel(logging.WARNING)
 class TestCalibrateGraphs(unittest.TestCase):
     
     def setUp(self):
-        rsexecute.set_client(use_dask=True)
+        rsexecute.set_client(use_dask=False)
     
         from rascil.data_models.parameters import rascil_path, rascil_data_path
         self.dir = rascil_path('test_results')

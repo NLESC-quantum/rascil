@@ -42,6 +42,8 @@ If use_dask is False then the named function is called immediately, and the exec
 
         rsexecute.set_client(use_dask=False)
 
+Note that debugging is easiest if Dask is switched off (use_dask=False)
+
 The pipeline workflow
 :py:func:`rascil.workflows.rsexecute.pipelines.continuum_imaging_list_rsexecute_workflow` is itself assembled using the
 execution framework (an interface to Dask): :py:func:`rascil.workflows.rsexecute.execution_support`.

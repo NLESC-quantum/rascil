@@ -53,8 +53,8 @@ def git_hash():
 
 def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_per_worker=1, memory=8,
                processes=True, order='frequency', nfreqwin=7, ntimes=3, rmax=750.0,
-               facets=1, wprojection_planes=1, use_dask=True, use_serial_imaging=True,
-               flux_limit=0.3, nmajor=5, dft_threshold=1.0, use_serial_clean=True,
+               facets=1, wprojection_planes=1, use_dask=True,
+               flux_limit=0.3, nmajor=5, dft_threshold=1.0,
                write_fits=False):
     """ Single trial for performance-timings
     
@@ -306,7 +306,6 @@ def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_pe
     dirty_list = invert_list_rsexecute_workflow(future_corrupted_bvis_list, future_model_list,
                                                  vis_slices=vis_slices,
                                                  context=context, facets=facets,
-                                                 use_serial_invert=use_serial_imaging,
                                                  gcfcf=gcfcf)
     results['size invert graph'] = get_size(dirty_list)
     lprint('Size of dirty graph is %.3E bytes' % (results['size invert graph']))
@@ -331,7 +330,6 @@ def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_pe
     tmp_bvis_list = predict_list_rsexecute_workflow(future_corrupted_bvis_list, future_model_list,
                                                     vis_slices=vis_slices,
                                                     context=context, facets=facets,
-                                                    use_serial_predict=use_serial_imaging,
                                                     gcfcf=gcfcf)
     result = rsexecute.compute(tmp_bvis_list, sync=True)
     # rsexecute.client.cancel(tmp_bvis_list)
@@ -374,9 +372,6 @@ def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_pe
                                               do_selfcal=True,
                                               calibration_context='T',
                                               controls=controls,
-                                              use_serial_predict=use_serial_imaging,
-                                              use_serial_invert=use_serial_imaging,
-                                              use_serial_clean=use_serial_clean,
                                               gcfcf=gcfcf)
     
     results['size ICAL graph'] = get_size(ical_list)
@@ -501,22 +496,6 @@ def main(args):
     if use_dask:
         print("Using Dask")
     
-    use_serial_imaging = args.use_serial_imaging == 'True'
-    results['use_serial_imaging'] = use_serial_imaging
-    
-    if use_serial_imaging:
-        print("Using serial imaging")
-    else:
-        print("Using distributed imaging")
-    
-    use_serial_clean = args.use_serial_clean == 'True'
-    results['use_serial_clean'] = use_serial_clean
-    
-    if use_serial_clean:
-        print("Using serial clean")
-    else:
-        print("Using distributed clean")
-    
     threads_per_worker = args.nthreads
     
     write_fits = args.write_fits == 'True'
@@ -563,8 +542,6 @@ def main(args):
                   'time predict',
                   'time overall',
                   'use_dask',
-                  'use_serial_clean',
-                  'use_serial_imaging',
                   'vis_slices',
                   'wprojection_planes']
     
@@ -576,7 +553,6 @@ def main(args):
     results = trial_case(results, use_dask=use_dask, nworkers=nworkers, rmax=rmax, context=context, memory=memory,
                          threads_per_worker=threads_per_worker, nfreqwin=nfreqwin, ntimes=ntimes,
                          flux_limit=flux_limit, nmajor=nmajor, dft_threshold=dft_threshold,
-                         use_serial_imaging=use_serial_imaging, use_serial_clean=use_serial_clean,
                          write_fits=write_fits)
     write_results(filename, fieldnames, results)
     
@@ -602,10 +578,6 @@ if __name__ == '__main__':
     parser.add_argument('--context', type=str, default='ng',
                         help='Imaging context: 2d|timeslice|wprojection|ng')
     parser.add_argument('--rmax', type=float, default=300.0, help='Maximum baseline (m)')
-    parser.add_argument('--use_serial_imaging', type=str, default='False',
-                        help='Use serial imaging?')
-    parser.add_argument('--use_serial_clean', type=str, default='False',
-                        help='Use serial clean?')
     parser.add_argument('--jobid', type=int, default=0, help='JOBID from slurm')
     parser.add_argument('--flux_limit', type=float, default=0.3, help='Flux limit for components')
     parser.add_argument('--dft_threshold', type=float, default=1.0, help='Flux above which DFT is used')

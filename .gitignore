@@ -84,3 +84,5 @@ examples/scripts/primary_beam_zernikes.txt
 test_results_master/
 
 .run/
+
+*.html

@@ -135,7 +135,9 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
     :return:
     """
     if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(model_imagelist[0])]
+        def make_gcfcf(m, v):
+            return create_pswf_convolutionfunction(m, polarisation_frame=v.polarisation_frame)
+        gcfcf = [rsexecute.execute(make_gcfcf)(model_imagelist[0], vis_list[0])]
     
     psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True,
                                                    vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)

@@ -37,10 +37,9 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     :return:
     """
     
-    nant = vis.vis.shape[1]
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
 
-    nrec = gaintables[0].nrec
+    nant = gaintables[0].nants
     gnchan = gaintables[0].nchan
     frequency = gaintables[0].frequency
     
@@ -49,14 +48,14 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
 
     nchan, npol, ny, nx = vp[0].data.shape
     
-    vp_types = numpy.unique(vis.configuration.vp_type)
+    vp_types = numpy.unique(vis.configuration.vp_type.values)
     
     nvp = len(vp_types)
     
     vp_for_ant = numpy.zeros([nant], dtype=int)
     for ivp in range(nvp):
         for ant in range(nant):
-            if vis.configuration.vp_type[ant] == vp_types[ivp]:
+            if vis.configuration.vp_type.values[ant] == vp_types[ivp]:
                 vp_for_ant[ant] = ivp
     
     # We construct interpolators for each voltage pattern type and for each polarisation, and for real, imaginary parts

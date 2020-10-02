@@ -72,10 +72,10 @@ def plot_visibility(vis_list, title='Visibility', y='amp', x='uvdist', plot_file
     plt.clf()
     for ivis, vis in enumerate(vis_list):
         if y == 'amp':
-            yvalue = numpy.abs(vis.flagged_vis[..., 0, 0]).flat
+            yvalue = numpy.abs(vis.flagged_vis.values[..., 0, 0]).flat
         else:
-            yvalue = numpy.angle(vis.flagged_vis[..., 0, 0]).flat
-        xvalue = vis.uvdist.flat
+            yvalue = numpy.angle(vis.flagged_visvalues[..., 0, 0]).flat
+        xvalue = vis.uvdist.values.flat
         plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color='b', markersize=0.2)
         if plot_zero:
             plt.plot(xvalue[yvalue == 0.0], yvalue[yvalue == 0.0], '.', color='r', markersize=0.2)
@@ -101,13 +101,13 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
         colors = ["red", "blue", "green", "purple"]
         for pol in range(vis.vis.shape[-1]):
             if y == 'amp':
-                yvalue = numpy.abs(vis.flagged_vis[..., 0, pol]).flat
+                yvalue = numpy.abs(vis.flagged_vis.values[..., 0, pol]).flat
             else:
-                yvalue = numpy.angle(vis.flagged_vis[..., 0, pol]).flat
+                yvalue = numpy.angle(vis.flagged_vis.values[..., 0, pol]).flat
             if x=="time":
-                xvalue = numpy.repeat(vis.time, len(yvalue))
+                xvalue = numpy.repeat(vis.time.values, len(yvalue))
             else:
-                xvalue = vis.uvdist.flat
+                xvalue = vis.uvdist.values.flat
             if ivis == 0:
                 plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[pol],
                          label=pols[pol])
@@ -265,7 +265,7 @@ def plot_gaintable(gt_list, title='', value='amp', plot_file='gaintable.png', **
     plt.clf()
     for igt, gt in enumerate(gt_list):
         nrec = gt[0].nrec
-        names = gt[0].receptor_frame.names
+        names = gt[0].receptor1.values
         if nrec > 1:
             recs = [0, 1]
         else:

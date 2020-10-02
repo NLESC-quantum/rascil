@@ -9,9 +9,8 @@ from rascil.processing_components.visibility.base import create_blockvisibility_
 from rascil.processing_components.image.operations import export_image_to_fits, qa_image
 from rascil.processing_components.image.deconvolution import deconvolve_cube, restore_cube
 from rascil.processing_components.imaging.base import create_image_from_visibility
-from rascil.processing_components.visibility.operations import convert_visibility_to_stokes
 
-from rascil.workflows.serial.imaging.imaging_serial import invert_list_serial_workflow
+from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rsexecute_workflow
 
 from rascil.data_models.polarisation import PolarisationFrame
 
@@ -29,17 +28,16 @@ if __name__ == '__main__':
     
     # Test requires that casa be installed
     try:
-        bvt = create_blockvisibility_from_ms(rascil_data_path('vis/sim-2.ms'), channum=[35, 36, 37, 38, 39])[0]
-        bvt.configuration.diameter[...] = 35.0
-        vt = convert_visibility_to_stokes(bvt)
+        vt = create_blockvisibility_from_ms(rascil_data_path('vis/sim-2.ms'), channum=[35, 36, 37, 38, 39])[0]
+        vt.configuration.diameter[...] = 35.0
         
         cellsize = 20.0 * numpy.pi / (180.0 * 3600.0)
         npixel = 512
         
         model = create_image_from_visibility(vt, cellsize=cellsize, npixel=npixel,
                                              polarisation_frame=PolarisationFrame('stokesIQUV'))
-        dirty, sumwt = invert_list_serial_workflow([vt], [model], context='2d')[0]
-        psf, sumwt = invert_list_serial_workflow([vt], [model], context='2d', dopsf=True)[0]
+        dirty, sumwt = invert_list_rsexecute_workflow([vt], [model], context='2d')[0]
+        psf, sumwt = invert_list_rsexecute_workflow([vt], [model], context='2d', dopsf=True)[0]
         export_image_to_fits(dirty, '%s/compare_imaging_sim2_dirty.fits' % (results_dir))
         export_image_to_fits(psf, '%s/compare_imaging_sim2_psf.fits' % (results_dir))
         

@@ -62,8 +62,7 @@ if __name__ == '__main__':
     
     imaging_context = 'ng'
     vis_slices = 1
-    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context=imaging_context,
-                                                vis_slices=vis_slices)
+    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context=imaging_context)
     
     log.info('About to run invert_list_rsexecute_workflow')
     result = rsexecute.compute(dirty_list, sync=True)

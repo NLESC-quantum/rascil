@@ -115,15 +115,9 @@ if __name__ == '__main__':
     model_list = rsexecute.persist(model_list)
 
     # Construct the graphs to make the dirty image and psf, and persist these to the cluster
-    dirty_list = invert_list_rsexecute_workflow(vis_list,
-                                                template_model_imagelist=model_list,
-                                                context=context,
-                                                vis_slices=vis_slices)
-    psf_list = invert_list_rsexecute_workflow(vis_list,
-                                              template_model_imagelist=model_list,
-                                              context=context,
-                                              dopsf=True,
-                                              vis_slices=vis_slices)
+    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context=context)
+    psf_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context=context,
+                                              dopsf=True)
 
 
     # Construct the graphs to do the clean and restoration, and gather the channel images

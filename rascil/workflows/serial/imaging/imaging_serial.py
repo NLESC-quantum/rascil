@@ -412,6 +412,7 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
                 agd = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
                 agd.data = gd[0].data
                 vis = griddata_blockvisibility_reweight(vis, agd, g[0][1])
+                return vis
             else:
                 return None
         else:

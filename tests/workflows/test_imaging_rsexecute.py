@@ -180,8 +180,8 @@ class TestImaging(unittest.TestCase):
         vis_list = subtract_list_rsexecute_workflow(self.bvis_list, vis_list)
         vis_list = rsexecute.compute(vis_list, sync=True)
         
-        dirty = invert_list_rsexecute_workflow(vis_list, self.model_list, context=context, dopsf=False,
-                                               gcfcf=gcfcf, normalize=True, vis_slices=vis_slices, **kwargs)
+        dirty = invert_list_rsexecute_workflow(vis_list, self.model_list, context=context, dopsf=False, normalize=True,
+                                               gcfcf=gcfcf, **kwargs)
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
         assert numpy.max(numpy.abs(dirty[0].data.values)), "Residual image is empty"
@@ -196,10 +196,8 @@ class TestImaging(unittest.TestCase):
                      facets=1, vis_slices=1, gcfcf=None, dopsf=False, **kwargs):
         
         centre = self.freqwin // 2
-        dirty = invert_list_rsexecute_workflow(self.bvis_list, self.model_list, context=context,
-                                               dopsf=dopsf, normalize=True, facets=facets,
-                                               vis_slices=vis_slices,
-                                               gcfcf=gcfcf, **kwargs)
+        dirty = invert_list_rsexecute_workflow(self.bvis_list, self.model_list, context=context, dopsf=dopsf,
+                                               normalize=True, facets=facets, gcfcf=gcfcf, **kwargs)
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
         if self.persist:

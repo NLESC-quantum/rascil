@@ -34,7 +34,7 @@ from rascil.workflows.shared.imaging import imaging_context, remove_sumwt, sum_p
 log = logging.getLogger('logger')
 
 
-def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1,
+def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1, overlap=0, taper="tukey",
                                     gcfcf=None, **kwargs):
     """Predict, iterating over both the scattered vis_list and image
     
@@ -69,7 +69,7 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1
     
     c = imaging_context(context)
     predict = c['predict']
-
+    
     if facets % 2 == 0 or facets == 1:
         actual_number_facets = facets
     else:
@@ -84,25 +84,26 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1
             return None
     
     if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)
-                 (m, polarisation_frame=vis_list[i].polarisation_frame)
-                 for i, m in enumerate(model_imagelist)]
+        assert len(model_imagelist) > 0
+        def make_gcfcf(m, v):
+            return create_pswf_convolutionfunction(m, polarisation_frame=v.polarisation_frame)
+        gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(model_imagelist)]
     
     # Loop over all windows
     predict_results = []
     for ivis, subvis in enumerate(vis_list):
         # Create the graph to divide an image into facets. This is by reference.
-        facet_lists = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
-            model_imagelist[ivis], facets=facets)
+        facet_list = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
+            model_imagelist[ivis], facets=facets, overlap=overlap, taper=taper)
         # Loop over facets
         facet_vis_results = [rsexecute.execute(predict_ignore_none, pure=True, nout=1) \
-                (subvis, facet_list, gcfcf[ifacet]) for ifacet, facet_list in enumerate(facet_lists)]
+                                 (subvis, facet, gcfcf[ifacet]) for ifacet, facet in enumerate(facet_list)]
         predict_results.append(rsexecute.execute(sum_predict_results)(facet_vis_results))
     return rsexecute.optimize(predict_results)
 
 
-def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, dopsf=False, normalize=True,
-                                   facets=1, overlap=0, taper="tukey", vis_slices=1, gcfcf=None, **kwargs):
+def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, dopsf=False, normalize=True, facets=1,
+                                   overlap=0, taper="tukey", gcfcf=None, **kwargs):
     """ Sum results from invert, iterating over the scattered image and vis_list
 
     :param gcfcf:
@@ -113,7 +114,6 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
     :param dopsf: Make the PSF instead of the dirty image
     :param facets: Number of facets
     :param normalize: Normalize by sumwt
-    :param vis_slices: Number of slices
     :param context: Imaging context
     :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
@@ -135,10 +135,10 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
     
     if not isinstance(template_model_imagelist, collections.abc.Iterable):
         template_model_imagelist = [template_model_imagelist]
-
+    
     c = imaging_context(context)
     invert = c['invert']
-
+    
     if facets % 2 == 0 or facets == 1:
         actual_number_facets = facets
     else:
@@ -169,10 +169,11 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
             return create_empty_image_like(model), numpy.zeros([model.nchan, model.npol])
     
     # If we are doing facets, we need to create the gcf for each image
-    if gcfcf is None and facets == 1:
+    if gcfcf is None:
         assert len(template_model_imagelist) > 0
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(template_model_imagelist[0],
-                                                                    polarisation_frame=vis_list[0].polarisation_frame)]
+        def make_gcfcf(m, v):
+            return create_pswf_convolutionfunction(m, polarisation_frame=v.polarisation_frame)
+        gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(template_model_imagelist)]
     
     # Loop over all vis_lists independently
     invert_results = list()
@@ -181,10 +182,10 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
         facet_list = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
             template_model_imagelist[ivis], facets=facets, overlap=overlap, taper=taper)
         facet_results = [rsexecute.execute(invert_ignore_none, pure=True)
-                             (sub_vis_list, facet_list, None) for facet_list in facet_list]
+                         (sub_vis_list, facet, gcfcf[ifacet]) for ifacet, facet in enumerate(facet_list)]
         invert_results.append(rsexecute.execute(gather_image_iteration_results, nout=1)
-                           (facet_results, template_model_imagelist[ivis]))
-        
+                              (facet_results, template_model_imagelist[ivis]))
+    
     return rsexecute.optimize(invert_results)
 
 
@@ -202,8 +203,7 @@ def residual_list_rsexecute_workflow(vis, model_imagelist, context='2d', gcfcf=N
     model_vis = predict_list_rsexecute_workflow(model_vis, model_imagelist, context=context,
                                                 gcfcf=gcfcf, **kwargs)
     residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
-    result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, dopsf=False, normalize=True,
-                                            context=context,
+    result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, context=context, dopsf=False, normalize=True,
                                             gcfcf=gcfcf, **kwargs)
     return rsexecute.optimize(result)
 

@@ -194,7 +194,6 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
     def test_apply_voltage_pattern_image_stokesI(self):
         result = self._test(test_vp=False, name="stokesI")
 
-    @unittest.skip("Too long for CI/CD")
     def test_apply_voltage_pattern_image_stokesI_long(self):
         result = self._test(test_vp=False, name="stokesI", time_range=[-4.0, +4.0])
 

@@ -16,8 +16,9 @@ from rascil.processing_components import create_named_configuration, grid_gainta
     create_low_test_skycomponents_from_gleam, apply_beam_to_skycomponent, filter_skycomponents_by_flux, \
     create_blockvisibility, create_empty_image_like
 from rascil.workflows import invert_list_rsexecute_workflow, restore_list_rsexecute_workflow, \
-    mpccal_skymodel_list_rsexecute_workflow, predict_skymodel_list_rsexecute_workflow, \
-    weight_list_serial_workflow, taper_list_serial_workflow
+    mpccal_skymodel_list_rsexecute_workflow, predict_skymodel_list_rsexecute_workflow
+from rascil.workflows.serial import weight_list_serial_workflow
+from rascil.processing_components.xarray import import_xarray_from_fits, export_xarray_to_fits
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger('logger')
@@ -78,15 +79,7 @@ class TestPipelineMPC(unittest.TestCase):
         times = numpy.linspace(-10.0, 10.0, ntimes) * numpy.pi / (3600.0 * 12.0)
 
         phasecentre = SkyCoord(ra=+0.0 * u.deg, dec=dec, frame='icrs', equinox='J2000')
-        low = create_named_configuration('LOWBD2', rmax=self.rmax)
-
-        centre = numpy.mean(low.xyz, axis=0)
-        distance = numpy.hypot(low.xyz[:, 0] - centre[0],
-                               low.xyz[:, 1] - centre[1],
-                               low.xyz[:, 2] - centre[2])
-        lowouter = low.data[distance > 1000.0][::6]
-        lowcore = low.data[distance < 1000.0][::3]
-        low.data = numpy.hstack((lowcore, lowouter))
+        low = create_named_configuration('LOWBD2', rmax=self.rmax, skip=6)
 
         blockvis = create_blockvisibility(low, times, frequency=frequency, channel_bandwidth=channel_bandwidth,
                                           weight=1.0, phasecentre=phasecentre,
@@ -138,7 +131,7 @@ class TestPipelineMPC(unittest.TestCase):
         if nvoronoi is not None:
             voronoi_components = [voronoi_components[0]]
 
-        self.screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        self.screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
 
         all_gaintables = create_gaintable_from_screen(blockvis, all_components,
                                                       rascil_data_path('models/test_mpc_screen.fits'),
@@ -227,11 +220,12 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 7.285739982375531) < 1e-7, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = create_empty_image_like(self.screen)
+        newscreen = self.screen.copy()
+        
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
-        if self.persist: export_image_to_fits(newscreen, rascil_path('test_results/test_mpccal_ical_many_screen.fits'))
-        if self.persist: export_image_to_fits(weights,
+        if self.persist: export_xarray_to_fits(newscreen, rascil_path('test_results/test_mpccal_ical_many_screen.fits'))
+        if self.persist: export_xarray_to_fits(weights,
                                               rascil_path('test_results/test_mpccal_ical_many_screenweights.fits'))
 
         rsexecute.close()
@@ -284,12 +278,12 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 1.100462744176149) < 1e-6, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = create_empty_image_like(self.screen)
+        newscreen = self.screen.copy()
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
-        if self.persist: export_image_to_fits(newscreen,
+        if self.persist: export_xarray_to_fits(newscreen,
                                               rascil_path('test_results/test_mpccal_ical_onesource_screen.fits'))
-        if self.persist: export_image_to_fits(weights,
+        if self.persist: export_xarray_to_fits(weights,
                                               rascil_path('test_results/test_mpccal_ical_onesource_screenweights.fits'))
 
         rsexecute.close()
@@ -339,11 +333,11 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 7.801039951014443) < 1e-7, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = create_empty_image_like(self.screen)
+        newscreen = self.screen.copy()
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
-        if self.persist: export_image_to_fits(newscreen, rascil_path('test_results/test_mpccal_screen.fits'))
-        if self.persist: export_image_to_fits(weights, rascil_path('test_results/test_mpccal_screenweights.fits'))
+        if self.persist: export_xarray_to_fits(newscreen, rascil_path('test_results/test_mpccal_screen.fits'))
+        if self.persist: export_xarray_to_fits(weights, rascil_path('test_results/test_mpccal_screenweights.fits'))
 
         rsexecute.close()
 
@@ -393,13 +387,13 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 7.497780123335668) < 1e-7, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = create_empty_image_like(self.screen)
+        newscreen = self.screen.copy()
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
         if self.persist:
-            export_image_to_fits(newscreen, rascil_path('test_results/test_mpccal_no_edge_screen.fits'))
+            export_xarray_to_fits(newscreen, rascil_path('test_results/test_mpccal_no_edge_screen.fits'))
         if self.persist:
-            export_image_to_fits(weights, rascil_path('test_results/test_mpccal_no_edge_screenweights.fits'))
+            export_xarray_to_fits(weights, rascil_path('test_results/test_mpccal_no_edge_screenweights.fits'))
 
         rsexecute.close()
 
@@ -449,11 +443,11 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 7.801039951014443) < 1e-7, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = create_empty_image_like(self.screen)
+        newscreen = self.screen.copy()
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
-        if self.persist: export_image_to_fits(newscreen, rascil_path('test_results/test_mpccal_no_edge_screen.fits'))
-        if self.persist: export_image_to_fits(weights,
+        if self.persist: export_xarray_to_fits(newscreen, rascil_path('test_results/test_mpccal_no_edge_screen.fits'))
+        if self.persist: export_xarray_to_fits(weights,
                                               rascil_path('test_results/test_mpccal_no_edge_screenweights.fits'))
 
         rsexecute.close()

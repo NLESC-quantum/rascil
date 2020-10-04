@@ -66,8 +66,7 @@ def make_images_workflow(args, bvis_list, state):
     model_list = rsexecute.persist(model_list)
     bvis_list = weight_list_rsexecute_workflow(bvis_list, model_list, weighting=args.weighting,
                                                robustness=args.robustness)
-    dirty_list = invert_list_rsexecute_workflow(bvis_list, template_model_imagelist=model_list,
-                                                context=imaging_context)
+    dirty_list = invert_list_rsexecute_workflow(bvis_list, template_model_imagelist=model_list, context=imaging_context)
     dirty_list = sum_invert_results_rsexecute(dirty_list)
     result = rsexecute.compute(dirty_list, sync=True)
     dirty, sumwt = result

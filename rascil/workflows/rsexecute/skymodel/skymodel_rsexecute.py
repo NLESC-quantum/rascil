@@ -372,7 +372,6 @@ def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d'
                                                          gcfcf=gcfcf,
                                                          **kwargs)
     else:
-        result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, dopsf=False, normalize=True,
-                                                context=context,
-                                                gcfcf=gcfcf, **kwargs)
+        result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, context=context, dopsf=False,
+                                                normalize=True, gcfcf=gcfcf, **kwargs)
     return rsexecute.optimize(result)

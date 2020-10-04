@@ -279,8 +279,8 @@ def calculate_residual_fft_rsexecute_workflow(sub_bvis_list, sub_components, sub
     """
     fft_bvis_list = predict_fft_components_rsexecute_workflow(sub_bvis_list, sub_components, sub_model_list, vp_list,
                                                               context=context, **kwargs)
-    return sum_invert_results_rsexecute(invert_list_rsexecute_workflow(fft_bvis_list, sub_model_list,
-                                                                       context=context, **kwargs))
+    return sum_invert_results_rsexecute(
+        invert_list_rsexecute_workflow(fft_bvis_list, sub_model_list, context=context, **kwargs))
 
 
 def predict_dft_rsexecute_workflow(sub_bvis_list, sub_components, gt_list, context='2d', **kwargs):
@@ -338,8 +338,8 @@ def calculate_residual_dft_rsexecute_workflow(sub_bvis_list, sub_components, sub
     """
     
     dft_bvis_list = predict_dft_rsexecute_workflow(sub_bvis_list, sub_components, gt_list, context=context)
-    return sum_invert_results_rsexecute(invert_list_rsexecute_workflow(dft_bvis_list, sub_model_list,
-                                                                       context=context, **kwargs))
+    return sum_invert_results_rsexecute(
+        invert_list_rsexecute_workflow(dft_bvis_list, sub_model_list, context=context, **kwargs))
 
 
 def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
@@ -423,8 +423,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
                                                          no_error_bvis_list[ibv])
                       for ibv, _ in enumerate(error_bvis_list)]
     
-    dirty_list = invert_list_rsexecute_workflow(error_vis_list, sub_model_list,
-                                                context=context, **kwargs)
+    dirty_list = invert_list_rsexecute_workflow(error_vis_list, sub_model_list, context=context, **kwargs)
     return dirty_list
 
 def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_components,
@@ -715,11 +714,10 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
                      (bvis, sub_components, vp_actual_list[ibv])
                      for ibv, bvis in enumerate(sub_bvis_list)]
     if show:
-        plot_file = 'voltage_pattern_gaintable.png'
         error_gt_list = rsexecute.compute(error_gt_list, sync=True)
-        plot_gaintable(error_gt_list, plot_file=plot_file, title=basename + " errors")
+        plot_gaintable(error_gt_list, title=basename + " errors")
         no_error_gt_list = rsexecute.compute(no_error_gt_list, sync=True)
-        plot_gaintable(no_error_gt_list, plot_file=plot_file, title=basename + " nominal")
+        plot_gaintable(no_error_gt_list, title=basename + " nominal")
     
     return no_error_gt_list, error_gt_list
 
@@ -770,11 +768,10 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
                      (bvis, sub_components, vp_actual_list[ibv])
                      for ibv, bvis in enumerate(sub_bvis_list)]
     if show:
-        plot_file = 'voltage_pattern_gaintable.png'
         error_gt_list = rsexecute.compute(error_gt_list, sync=True)
-        plot_gaintable(error_gt_list, plot_file=plot_file, title=basename + " errors")
+        plot_gaintable(error_gt_list, title=basename + " errors")
         no_error_gt_list = rsexecute.compute(no_error_gt_list, sync=True)
-        plot_gaintable(no_error_gt_list, plot_file=plot_file, title=basename + " nominal")
+        plot_gaintable(no_error_gt_list, title=basename + " nominal")
     
     return no_error_gt_list, error_gt_list
 

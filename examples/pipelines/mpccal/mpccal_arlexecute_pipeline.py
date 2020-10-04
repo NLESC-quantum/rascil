@@ -253,8 +253,7 @@ if __name__ == '__main__':
 
     combined_model = calculate_skymodel_equivalent_image(ical_skymodel)
     print(qa_image(combined_model, context='ICAL combined model'))
-    psf_obs = invert_list_rsexecute_workflow([future_vis], [future_model], context='2d',
-                                             dopsf=True)
+    psf_obs = invert_list_rsexecute_workflow([future_vis], [future_model], context='2d', dopsf=True)
     result = restore_list_rsexecute_workflow([combined_model], psf_obs, [(residual, 0.0)])
     result = rsexecute.compute(result, sync=True)
     ical_restored = result[0]
@@ -325,8 +324,7 @@ if __name__ == '__main__':
     mpccal_combined_model = insert_skycomponent(mpccal_combined_model, ical_components)
     print(qa_image(mpccal_combined_model, context='MPCCAL combined model'))
 
-    psf_obs = invert_list_rsexecute_workflow([future_vis], [future_model], context='2d',
-                                             dopsf=True)
+    psf_obs = invert_list_rsexecute_workflow([future_vis], [future_model], context='2d', dopsf=True)
     result = restore_list_rsexecute_workflow([mpccal_combined_model], psf_obs,
                                              [(mpccal_residual, 0.0)])
     result = rsexecute.compute(result, sync=True)

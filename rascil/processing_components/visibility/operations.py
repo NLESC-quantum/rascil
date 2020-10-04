@@ -88,8 +88,11 @@ def concatenate_visibility(vis_list, dim='time'):
     newvis = copy.deepcopy(vis_list[0])
     ds = [vis.data for vis in vis_list]
     newvis.data = xarray.concat(ds, dim=dim)
-    for var in ["uvw", "integration_time"]:
-        newvis.data[var] = newvis.data[var].isel({dim: 0})
+    
+    # If the dimension is frequency we need to remove the extraneous axis
+    if dim == "frequency":
+        for var in ["uvw", "integration_time"]:
+            newvis.data[var] = newvis.data[var].isel({dim: 0})
     return newvis
 
 

@@ -93,7 +93,7 @@ class TestSkyModel(unittest.TestCase):
         self.skymodel_list = rsexecute.compute(self.skymodel_list, sync=True)
         assert isinstance(self.skymodel_list[0].image, Image), self.skymodel_list[0].image
         assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
-        assert len(self.skymodel_list[0].components) == 26, len(self.skymodel_list[0].components)
+        assert len(self.skymodel_list[0].components) == 11, len(self.skymodel_list[0].components)
         assert numpy.max(numpy.abs(self.skymodel_list[0].image.data)) > 0.0, "Image is empty"
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
@@ -144,7 +144,7 @@ class TestSkyModel(unittest.TestCase):
             sm.image= None
             
         assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
-        assert len(self.skymodel_list[0].components) == 26, len(self.skymodel_list[0].components)
+        assert len(self.skymodel_list[0].components) == 11, len(self.skymodel_list[0].components)
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='2d')

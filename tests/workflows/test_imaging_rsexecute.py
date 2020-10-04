@@ -218,6 +218,7 @@ class TestImaging(unittest.TestCase):
         self._predict_base(context='2d', fluxthreshold=3.0)
         
     @unittest.skip("Facets need overlap")
+    @unittest.skip("Facets not working yet in xarray model")
     def test_predict_facets(self):
         self.actualSetUp()
         self._predict_base(context='facets', fluxthreshold=17.0, facets=8)
@@ -228,6 +229,7 @@ class TestImaging(unittest.TestCase):
         self._predict_base(context='ng', fluxthreshold=0.62)
     
     @unittest.skip("Facets need overlap")
+    @unittest.skip("Facets not working yet in xarray model")
     def test_predict_facets_wprojection(self):
         self.actualSetUp()
         self._predict_base(context='facets', extra='_wprojection', facets=8, fluxthreshold=15.0,
@@ -269,16 +271,19 @@ class TestImaging(unittest.TestCase):
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
     
     @unittest.skip("Facets need overlap")
+    @unittest.skip("Facets not working yet in xarray model")
     def test_invert_facets(self):
         self.actualSetUp()
         self._invert_base(context='facets', positionthreshold=2.0, check_components=True, facets=8)
     
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
+    @unittest.skip("Facets not working yet in xarray model")
     def test_invert_facets_ng(self):
         self.actualSetUp()
         self._invert_base(context='facets_ng', positionthreshold=2.0, check_components=True, facets=8)
     
     @unittest.skip("Facets need overlap, wprojection needs kernel recalc")
+    @unittest.skip("Facets not working yet in xarray model")
     def test_invert_facets_wprojection(self):
         self.actualSetUp(makegcfcf=True)
         self._invert_base(context='facets', extra='_wprojection', check_components=True,

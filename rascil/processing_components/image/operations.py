@@ -472,7 +472,7 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
     for moment in range(nmoment):
         for chan in range(nchan):
             weight = numpy.power((freq[chan] - reference_frequency) / reference_frequency, moment)
-            newim.data[chan, ...] += moment_image.data[moment, ...] * weight
+            newim.data.values[chan, ...] += moment_image.data.values[moment, ...] * weight
     
     assert image_is_canonical(newim)
     

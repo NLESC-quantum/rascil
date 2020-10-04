@@ -61,7 +61,7 @@ def find_times_above_elevation_limit(start_times, end_times, location, phasecent
     return valid_start_times
 
 
-def plot_visibility(vis_list, title='Visibility', y='amp', x='uvdist', plot_file=None, plot_zero=False, *kwargs):
+def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdist', plot_file=None, **kwargs):
     """ Standard plot of visibility
 
     :param vis_list:
@@ -70,15 +70,16 @@ def plot_visibility(vis_list, title='Visibility', y='amp', x='uvdist', plot_file
     :return:
     """
     plt.clf()
+    if colors is None:
+        colors = numpy.repeat(['b'], len(vis_list))
+        
     for ivis, vis in enumerate(vis_list):
         if y == 'amp':
             yvalue = numpy.abs(vis.flagged_vis.values[..., 0, 0]).flat
         else:
             yvalue = numpy.angle(vis.flagged_visvalues[..., 0, 0]).flat
         xvalue = vis.uvdist.values.flat
-        plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color='b', markersize=0.2)
-        if plot_zero:
-            plt.plot(xvalue[yvalue == 0.0], yvalue[yvalue == 0.0], '.', color='r', markersize=0.2)
+        plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[ivis], markersize=0.2)
 
     plt.xlabel(x)
     plt.ylabel(y)

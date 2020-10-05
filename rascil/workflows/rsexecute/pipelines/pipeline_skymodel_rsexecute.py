@@ -56,8 +56,8 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
         gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(m) for m in model_imagelist]
     
     # Create PSFs
-    psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True,
-                                                   facets=facets, gcfcf=gcfcf, **kwargs)
+    psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True, gcfcf=gcfcf,
+                                                   **kwargs)
     
     # Create a list of copied input visibilities
     model_vislist = [rsexecute.execute(copy_visibility, nout=1)(v, zero=True) for v in vis_list]
@@ -213,7 +213,7 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(vis_list, model_image
     """
     if continuum_model_imagelist is not None:
         vis_list = predict_list_rsexecute_workflow(vis_list, continuum_model_imagelist, context=context, gcfcf=gcfcf,
-                                                   vis_slices=vis_slices, facets=facets, **kwargs)
+                                                   vis_slices=vis_slices, **kwargs)
     
     return continuum_imaging_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context=context, gcfcf=gcfcf,
                                                               vis_slices=vis_slices, facets=facets, **kwargs)

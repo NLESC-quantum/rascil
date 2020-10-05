@@ -34,8 +34,7 @@ from rascil.workflows.shared.imaging import imaging_context, remove_sumwt, sum_p
 log = logging.getLogger('logger')
 
 
-def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1, overlap=0, taper="tukey",
-                                    gcfcf=None, **kwargs):
+def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=None, **kwargs):
     """Predict, iterating over both the scattered vis_list and image
     
     The visibility and image are scattered, the visibility is predicted on each part, and then the
@@ -43,7 +42,6 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1
 
     :param vis_list: list of vis (or graph)
     :param model_imagelist: list of models (or graph)
-    :param facets: Number of facets (per axis)
     :param context: Type of processing e.g. 2d, ng, facets
     :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
@@ -70,19 +68,6 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1
     c = imaging_context(context)
     predict = c['predict']
     
-    if facets % 2 == 0 or facets == 1:
-        actual_number_facets = facets
-    else:
-        actual_number_facets = facets - 1
-    
-    def predict_ignore_none(vis, model, g):
-        if vis is not None:
-            assert isinstance(vis, BlockVisibility), vis
-            assert isinstance(model, Image), model
-            return predict(vis, model, context=context, gcfcf=g, **kwargs)
-        else:
-            return None
-    
     if gcfcf is None:
         assert len(model_imagelist) > 0
         def make_gcfcf(m, v):
@@ -90,29 +75,27 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, facets=1
         gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(model_imagelist)]
     
     # Loop over all windows
-    predict_results = []
-    for ivis, subvis in enumerate(vis_list):
-        # Create the graph to divide an image into facets. This is by reference.
-        facet_list = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
-            model_imagelist[ivis], facets=facets, overlap=overlap, taper=taper)
-        # Loop over facets
-        facet_vis_results = [rsexecute.execute(predict_ignore_none, pure=True, nout=1) \
-                                 (subvis, facet, gcfcf[ifacet]) for ifacet, facet in enumerate(facet_list)]
-        predict_results.append(rsexecute.execute(sum_predict_results)(facet_vis_results))
+    assert len(model_imagelist) == len(vis_list)
+    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
+        predict_results = [rsexecute.execute(predict, pure=True, nout=1)
+                           (vis, model_imagelist[ivis], gcfcf=gcfcf[ivis], **kwargs)
+                           for ivis, vis in enumerate(vis_list)]
+    else:
+        predict_results = [rsexecute.execute(predict, pure=True, nout=1)
+                           (vis, model_imagelist[ivis], gcfcf=gcfcf[0], **kwargs)
+                           for ivis, vis in enumerate(vis_list)]
+
     return rsexecute.optimize(predict_results)
 
 
-def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, dopsf=False, normalize=True, facets=1,
-                                   overlap=0, taper="tukey", gcfcf=None, **kwargs):
+def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, dopsf=False,
+                                   normalize=True, gcfcf=None, **kwargs):
     """ Sum results from invert, iterating over the scattered image and vis_list
 
     :param gcfcf:
-    :param taper:
-    :param overlap:
     :param vis_list: list of vis (or graph)
     :param template_model_imagelist: list of template models (or graph)
     :param dopsf: Make the PSF instead of the dirty image
-    :param facets: Number of facets
     :param normalize: Normalize by sumwt
     :param context: Imaging context
     :param gcfcg: tuple containing grid correction and convolution function
@@ -132,41 +115,11 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
         dirty, sumwt = dirty_sumwt_list[centre]
 
    """
-    
     if not isinstance(template_model_imagelist, collections.abc.Iterable):
         template_model_imagelist = [template_model_imagelist]
     
     c = imaging_context(context)
     invert = c['invert']
-    
-    if facets % 2 == 0 or facets == 1:
-        actual_number_facets = facets
-    else:
-        actual_number_facets = max(1, (facets - 1))
-    
-    def gather_image_iteration_results(results, template_model):
-        result = create_empty_image_like(template_model)
-        flat = create_empty_image_like(template_model)
-        i = 0
-        sumwt = numpy.zeros([template_model.nchan, template_model.npol])
-        for dpatch in image_scatter_facets(result, facets=facets, overlap=overlap, taper=taper):
-            assert i < len(results), "Too few results in gather_image_iteration_results"
-            if results[i] is not None:
-                assert len(results[i]) == 2, results[i]
-                dpatch.data.values[...] += results[i][0].data.values[...]
-                sumwt += results[i][1]
-                i += 1
-        flat = image_gather_facets(results, flat, facets=facets, overlap=overlap, taper=taper, return_flat=True)
-        result.data.values[flat.data.values > 0.5] /= flat.data.values[flat.data.values > 0.5]
-        result.data.values[flat.data.values <= 0.5] = 0.0
-        return result, sumwt
-    
-    def invert_ignore_none(vis, model, gg):
-        if vis is not None:
-            return invert(vis, model, context=context, dopsf=dopsf, normalize=normalize,
-                          gcfcf=gg, **kwargs)
-        else:
-            return create_empty_image_like(model), numpy.zeros([model.nchan, model.npol])
     
     # If we are doing facets, we need to create the gcf for each image
     if gcfcf is None:
@@ -176,16 +129,18 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
         gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(template_model_imagelist)]
     
     # Loop over all vis_lists independently
-    invert_results = list()
-    for ivis, sub_vis_list in enumerate(vis_list):
-        # Create the graph to divide an image into facets. This is by reference.
-        facet_list = rsexecute.execute(image_scatter_facets, nout=actual_number_facets ** 2)(
-            template_model_imagelist[ivis], facets=facets, overlap=overlap, taper=taper)
-        facet_results = [rsexecute.execute(invert_ignore_none, pure=True)
-                         (sub_vis_list, facet, gcfcf[ifacet]) for ifacet, facet in enumerate(facet_list)]
-        invert_results.append(rsexecute.execute(gather_image_iteration_results, nout=1)
-                              (facet_results, template_model_imagelist[ivis]))
-    
+    assert len(template_model_imagelist) == len(vis_list)
+    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
+        assert len(gcfcf) == len(vis_list)
+        invert_results = [rsexecute.execute(invert, nout=2)(vis, template_model_imagelist[ivis], dopsf=dopsf,
+                                                            normalise=normalize, gcfcf=gcfcf[ivis], **kwargs)
+                          for ivis, vis in enumerate(vis_list)]
+    else:
+        invert_results = [rsexecute.execute(invert, nout=2)(vis, template_model_imagelist[ivis], dopsf=dopsf,
+                                                            normalise=normalize, gcfcf=gcfcf[0], **kwargs)
+                          for ivis, vis in enumerate(vis_list)]
+
+
     return rsexecute.optimize(invert_results)
 
 
@@ -200,8 +155,7 @@ def residual_list_rsexecute_workflow(vis, model_imagelist, context='2d', gcfcf=N
     :return: list of (image, sumwt) tuples or graph
     """
     model_vis = zero_list_rsexecute_workflow(vis)
-    model_vis = predict_list_rsexecute_workflow(model_vis, model_imagelist, context=context,
-                                                gcfcf=gcfcf, **kwargs)
+    model_vis = predict_list_rsexecute_workflow(model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs)
     residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
     result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, context=context, dopsf=False, normalize=True,
                                             gcfcf=gcfcf, **kwargs)

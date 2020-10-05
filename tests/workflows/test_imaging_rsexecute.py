@@ -50,7 +50,7 @@ class TestImaging(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
     
     def tearDown(self):
         rsexecute.close()
@@ -169,14 +169,12 @@ class TestImaging(unittest.TestCase):
             assert separation / cellsize < positionthreshold, "Component differs in position %.3f pixels" % \
                                                               separation / cellsize
     
-    def _predict_base(self, context='2d', extra='', fluxthreshold=1.0, facets=1, vis_slices=1,
-                      gcfcf=None, **kwargs):
+    def _predict_base(self, context='2d', extra='', fluxthreshold=1.0, gcfcf=None, **kwargs):
         centre = self.freqwin // 2
         
         vis_list = zero_list_rsexecute_workflow(self.bvis_list)
-        vis_list = predict_list_rsexecute_workflow(vis_list, self.model_list, context=context,
-                                                   vis_slices=vis_slices, facets=facets,
-                                                   gcfcf=gcfcf, **kwargs)
+        vis_list = predict_list_rsexecute_workflow(vis_list, self.model_list, context=context, gcfcf=gcfcf,
+                                                   **kwargs)
         vis_list = subtract_list_rsexecute_workflow(self.bvis_list, vis_list)
         vis_list = rsexecute.compute(vis_list, sync=True)
         
@@ -193,11 +191,11 @@ class TestImaging(unittest.TestCase):
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (maxabs, fluxthreshold)
     
     def _invert_base(self, context, extra='', fluxthreshold=1.0, positionthreshold=1.0, check_components=True,
-                     facets=1, vis_slices=1, gcfcf=None, dopsf=False, **kwargs):
+                     gcfcf=None, dopsf=False, **kwargs):
         
         centre = self.freqwin // 2
         dirty = invert_list_rsexecute_workflow(self.bvis_list, self.model_list, context=context, dopsf=dopsf,
-                                               normalize=True, facets=facets, gcfcf=gcfcf, **kwargs)
+                                               normalize=True, gcfcf=gcfcf, **kwargs)
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
         if self.persist:
@@ -217,33 +215,18 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp(zerow=True)
         self._predict_base(context='2d', fluxthreshold=3.0)
         
-    @unittest.skip("Facets need overlap")
-    @unittest.skip("Facets not working yet in xarray model")
-    def test_predict_facets(self):
-        self.actualSetUp()
-        self._predict_base(context='facets', fluxthreshold=17.0, facets=8)
-    
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_predict_ng(self):
         self.actualSetUp()
         self._predict_base(context='ng', fluxthreshold=0.62)
     
-    @unittest.skip("Facets need overlap")
-    @unittest.skip("Facets not working yet in xarray model")
-    def test_predict_facets_wprojection(self):
-        self.actualSetUp()
-        self._predict_base(context='facets', extra='_wprojection', facets=8, fluxthreshold=15.0,
-                           gcfcf=self.gcfcf_joint)
-    
     def test_predict_wprojection(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=5.0,
-                           gcfcf=self.gcfcf)
+        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=5.0, gcfcf=self.gcfcf)
     
     def test_predict_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=5.0,
-                           gcfcf=self.gcfcf_clipped)
+        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=5.0, gcfcf=self.gcfcf_clipped)
     
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
@@ -269,25 +252,7 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list)
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
-    
-    @unittest.skip("Facets need overlap")
-    @unittest.skip("Facets not working yet in xarray model")
-    def test_invert_facets(self):
-        self.actualSetUp()
-        self._invert_base(context='facets', positionthreshold=2.0, check_components=True, facets=8)
-    
-    @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
-    @unittest.skip("Facets not working yet in xarray model")
-    def test_invert_facets_ng(self):
-        self.actualSetUp()
-        self._invert_base(context='facets_ng', positionthreshold=2.0, check_components=True, facets=8)
-    
-    @unittest.skip("Facets need overlap, wprojection needs kernel recalc")
-    @unittest.skip("Facets not working yet in xarray model")
-    def test_invert_facets_wprojection(self):
-        self.actualSetUp(makegcfcf=True)
-        self._invert_base(context='facets', extra='_wprojection', check_components=True,
-                          positionthreshold=2.0, facets=4, gcfcf=self.gcfcf)
+        
     
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_invert_ng(self):
@@ -300,8 +265,7 @@ class TestImaging(unittest.TestCase):
     
     def test_invert_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
-        self._invert_base(context='2d', extra='_wprojection_clipped', positionthreshold=2.0,
-                          gcfcf=self.gcfcf_clipped)
+        self._invert_base(context='2d', extra='_wprojection_clipped', positionthreshold=2.0, gcfcf=self.gcfcf_clipped)
     
     def test_zero_list(self):
         self.actualSetUp()

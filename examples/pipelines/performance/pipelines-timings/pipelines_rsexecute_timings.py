@@ -304,7 +304,7 @@ def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_pe
     lprint("****** Starting dirty image calculation ******")
     start = time.time()
     dirty_list = invert_list_rsexecute_workflow(future_corrupted_bvis_list, future_model_list, context=context,
-                                                facets=facets, gcfcf=gcfcf)
+                                                gcfcf=gcfcf)
     results['size invert graph'] = get_size(dirty_list)
     lprint('Size of dirty graph is %.3E bytes' % (results['size invert graph']))
     end = time.time()
@@ -325,10 +325,8 @@ def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_pe
     
     lprint("****** Starting prediction ******")
     start = time.time()
-    tmp_bvis_list = predict_list_rsexecute_workflow(future_corrupted_bvis_list, future_model_list,
-                                                    vis_slices=vis_slices,
-                                                    context=context, facets=facets,
-                                                    gcfcf=gcfcf)
+    tmp_bvis_list = predict_list_rsexecute_workflow(future_corrupted_bvis_list, future_model_list, context=context,
+                                                    gcfcf=gcfcf, vis_slices=vis_slices)
     result = rsexecute.compute(tmp_bvis_list, sync=True)
     # rsexecute.client.cancel(tmp_bvis_list)
     end = time.time()

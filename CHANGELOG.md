@@ -2,8 +2,24 @@
 0.2.0b0
 -------
 
-* Major upgrade breaking interfaces. Switched to use xarray instead of numpy to hold class data
-* LOW test beam is now a uniformly weighted 38m diameter disk
+* This is a major upgrade breaking interfaces. We have switched to use xarray instead of numpy to hold class 
+  data. Thus for example myimage.data now returns an xarray.DataArray, and myblockvis.data returns
+  an xarray.DataSet. By appending .values, you can get the usual numpy arrays. Xarray has many 
+  capabilities that we intend to make use of in the future. The simplest description is that Xarray 
+  provides named coordinates such as time, frequency, l, m, baseline.
+* The Image class now holds an xarray.DataArray with axes "l", "m", "polarisation", "frequency"
+* There is now only one holder of visibilities: BlockVisibility. This is now baseline- rather than
+  antenna-oriented. The axes are "time", "baseline", "frequency", "polarisation".
+* All data classes now have selection operators such as blockvisibility_select, blockvisibility_where,
+  blockvisibility_groupby, blockvisibility_groupby_bins. The selections can be specified as dictionaries
+  holding slices.
+* To improve performance, all imaging algorithms have now moved from the workflows layer to be done in 
+  processing_components. The nifty gridder is recommended as the default algorithm, though 2d and awprojection 
+  are also available. predict_list_rsexecute_workflow and invert_list_rsexecute_workflow now simply
+  distribute processing across a list of BlockVisibility's. The available contexts are 2d, ng, and
+  awprojection.
+* Other workflows work as before.
+* The LOW test beam is now a uniformly weighted 38m diameter disk
 
 0.1.10b0
 --------

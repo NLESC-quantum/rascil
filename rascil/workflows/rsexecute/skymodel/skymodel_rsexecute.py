@@ -362,8 +362,7 @@ def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d'
                                                              context=context,
                                                              gcfcf=gcfcf, docal=True, **kwargs)
     else:
-        model_vis = predict_list_rsexecute_workflow(model_vis, model_imagelist, context=context,
-                                                    gcfcf=gcfcf, **kwargs)
+        model_vis = predict_list_rsexecute_workflow(model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs)
     residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
     
     if skymodel_list is not None:

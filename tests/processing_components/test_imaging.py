@@ -17,12 +17,12 @@ from rascil.processing_components import weight_visibility
 from rascil.processing_components.griddata import apply_bounding_box_convolutionfunction
 from rascil.processing_components.griddata.kernels import create_awterm_convolutionfunction
 from rascil.processing_components.image.operations import export_image_to_fits, smooth_image
-from rascil.processing_components.imaging.base import predict_2d, invert_2d
+from rascil.processing_components.imaging.base import predict_2d, invert_2d, predict_awprojection, invert_awprojection
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 from rascil.processing_components.imaging.primary_beams import create_pb_generic
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.simulation import ingest_unittest_visibility, \
-    create_unittest_model, create_unittest_components
+from rascil.processing_components.simulation import ingest_unittest_visibility, create_unittest_model, \
+    create_unittest_components
 from rascil.processing_components.skycomponent.operations import find_skycomponents, find_nearest_skycomponent, \
     insert_skycomponent
 
@@ -119,9 +119,16 @@ class TestImaging2D(unittest.TestCase):
     
     def _predict_base(self, fluxthreshold=1.0, name='predict_2d', gcfcf=None, **kwargs):
         
-        vis = predict_2d(self.vis, self.model, gcfcf=gcfcf, **kwargs)
+        if gcfcf is None:
+            vis = predict_2d(self.vis, self.model, gcfcf=gcfcf, **kwargs)
+        else:
+            vis = predict_awprojection(self.vis, self.model, gcfcf=gcfcf, **kwargs)
+
         vis.data['vis'] = self.vis.data['vis'] - vis.data['vis']
-        dirty = invert_2d(vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf)
+        if gcfcf is None:
+            dirty = invert_2d(vis, self.model, dopsf=False, normalize=True)
+        else:
+            dirty = invert_awprojection(vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf)
         
         if self.persist:
             export_image_to_fits(dirty[0], '%s/test_imaging_%s_residual.fits' %
@@ -135,9 +142,13 @@ class TestImaging2D(unittest.TestCase):
     def _invert_base(self, fluxthreshold=1.0, positionthreshold=1.0, check_components=True,
                      name='invert_2d', gcfcf=None, **kwargs):
         
-        dirty = invert_2d(self.vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf,
-                          **kwargs)
-        
+        if gcfcf is None:
+            dirty = invert_2d(self.vis, self.model, dopsf=False, normalize=True,
+                              **kwargs)
+        else:
+            dirty = invert_awprojection(self.vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf,
+                              **kwargs)
+
         if self.persist:
             export_image_to_fits(dirty[0], '%s/test_imaging_%s_dirty.fits' %
                                  (self.dir, name))

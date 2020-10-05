@@ -23,6 +23,8 @@ __all__ = ['shift_vis_to_image',
            'normalize_sumwt',
            'predict_2d',
            'invert_2d',
+           'predict_awprojection',
+           'invert_awprojection',
            'predict_skycomponent_visibility',
            'create_image_from_visibility',
            'advise_wide_field',
@@ -192,6 +194,37 @@ def invert_2d(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: b
 
     return result, sumwt
 
+def predict_awprojection(vis: BlockVisibility, model: Image, gcfcf=None, **kwargs) -> BlockVisibility:
+    """ Predict using convolutional degridding and an AW kernel
+
+    This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
+    this function. Any shifting needed is performed here.
+
+    :param vis: blockvisibility to be predicted
+    :param model: model image
+    :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
+    :return: resulting visibility (in place works)
+    """
+
+    assert gcfcf is not None, "gcfcf is required for awprojection"
+    return predict_2d(vis, model, gcfcf, **kwargs)
+
+def invert_awprojection(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: bool = True,
+              gcfcf=None, **kwargs) -> (Image, numpy.ndarray):
+    """ Invert using convolutional degridding and an AW kernel
+
+    Use the image im as a template. Do PSF in a separate call.
+
+    :param vis: blockvisibility to be inverted
+    :param im: image template (not changed)
+    :param dopsf: Make the psf instead of the dirty image
+    :param normalize: Normalize by the sum of weights (True)
+    :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
+    :return: resulting image
+
+    """
+    assert gcfcf is not None, "gcfcf is required for awprojection"
+    return invert_2d(vis, im, gcfcf=gcfcf, dopsf=dopsf, normalize=normalize, **kwargs)
 
 def fill_blockvis_for_psf(svis):
     """ Fill the visibility for calculation of PSF

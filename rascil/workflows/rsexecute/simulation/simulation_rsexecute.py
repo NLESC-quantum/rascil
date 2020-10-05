@@ -238,8 +238,7 @@ def predict_fft_components_rsexecute_workflow(sub_bvis_list, sub_components, sub
                       for im, m in enumerate(fft_model_list)]
     fft_bvis_list = [rsexecute.execute(copy_visibility, nout=1)(bvis, zero=True) for
                      bvis in sub_bvis_list]
-    fft_bvis_list = predict_list_rsexecute_workflow(fft_bvis_list, fft_model_list, context=context,
-                                                    **kwargs)
+    fft_bvis_list = predict_list_rsexecute_workflow(fft_bvis_list, fft_model_list, context=context, **kwargs)
     return fft_bvis_list
 
 
@@ -256,8 +255,7 @@ def predict_fft_image_rsexecute_workflow(sub_bvis_list, sub_model_list, vp_list,
                       for im, m in enumerate(sub_model_list)]
     fft_bvis_list = [rsexecute.execute(copy_visibility, nout=1)(bvis, zero=True) for
                      bvis in sub_bvis_list]
-    fft_bvis_list = predict_list_rsexecute_workflow(fft_bvis_list, fft_model_list, context=context,
-                                                    **kwargs)
+    fft_bvis_list = predict_list_rsexecute_workflow(fft_bvis_list, fft_model_list, context=context, **kwargs)
     return fft_bvis_list
 
 

@@ -12,7 +12,7 @@ import numpy
 from rascil.processing_components.image import calculate_image_frequency_moments
 from rascil.processing_components.image.operations import copy_image, create_empty_image_like
 from rascil.processing_components.imaging import normalize_sumwt
-from rascil.processing_components.imaging import predict_2d, invert_2d
+from rascil.processing_components.imaging import predict_2d, invert_2d, predict_awprojection, invert_awprojection
 from rascil.processing_components.visibility import copy_visibility
 
 log = logging.getLogger('logger')
@@ -24,8 +24,6 @@ def imaging_contexts():
     The fields are:
         predict: Predict function to be used
         invert: Invert function to be used
-        image_iterator: Iterator for traversing images
-        vis_iterator: Iterator for traversing visibilities
         inner: The innermost axis
     
     :return:
@@ -35,12 +33,8 @@ def imaging_contexts():
                        'invert': invert_2d},
                 'ng': {'predict': predict_ng,
                        'invert': invert_ng},
-                'wprojection': {'predict': predict_2d,
-                                'invert': invert_2d},
-                'facets': {'predict': predict_2d,
-                           'invert': invert_2d},
-                'facets_ng': {'predict': predict_ng,
-                              'invert': invert_ng}}
+                'wprojection': {'predict': predict_awprojection,
+                                'invert': invert_awprojection}}
     
     return contexts
 

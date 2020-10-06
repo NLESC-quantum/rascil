@@ -6,13 +6,15 @@ This executes a DPREPB pipeline: deconvolution of calibrated spectral line data.
 import argparse
 import logging
 
+import numpy
+
 from dask.distributed import Client
 
 # These are the RASCIL functions we need
 from rascil.data_models import PolarisationFrame, rascil_path, rascil_data_path
 from rascil.processing_components import create_blockvisibility_from_ms, \
-    create_blockvisibility_from_rows, append_visibility, convert_visibility_to_stokes, \
-    vis_select_uvrange, deconvolve_cube, restore_cube, export_image_to_fits, qa_image, \
+    blockvisibility_where, append_visibility, \
+    deconvolve_cube, restore_cube, export_image_to_fits, qa_image, \
     image_gather_channels, create_image_from_visibility
 from rascil.workflows import invert_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
@@ -28,8 +30,8 @@ if __name__ == '__main__':
                         help='Memory per worker (GB)')
     parser.add_argument('--npixel', type=int, default=256,
                         help='Number of pixels per axis')
-    parser.add_argument('--context', dest='context', default='wstack',
-                        help='Context: 2d|timeslice|wstack')
+    parser.add_argument('--context', dest='context', default='ng',
+                        help='Context: 2d|awprojection|ng')
     parser.add_argument('--nchan', type=int, default=40,
                         help='Number of channels to process')
     parser.add_argument('--scheduler', type=str, default=None, help='Dask scheduler')
@@ -74,16 +76,6 @@ if __name__ == '__main__':
     npixel = args.npixel
 
     context = args.context
-    if context == 'wstack':
-        vis_slices = 45
-        print('wstack processing')
-    elif context == 'timeslice':
-        print('timeslice processing')
-        vis_slices = 2
-    else:
-        print('2d processing')
-        context = '2d'
-        vis_slices = 1
 
     input_vis = [rascil_data_path('vis/sim-1.ms'), rascil_data_path('vis/sim-2.ms')]
 
@@ -99,8 +91,9 @@ if __name__ == '__main__':
         v2 = create_blockvisibility_from_ms(input_vis[1], start_chan=c, end_chan=c)[0]
         vf = append_visibility(v1, v2)
         vf.configuration.diameter[...] = 35.0
-        rows = vis_select_uvrange(vf, 0.0, uvmax=uvmax)
-        return create_blockvisibility_from_rows(vf, rows)
+        vf = blockvisibility_where(vf, vf.uvdist_lambda < uvmax)
+        print(vf)
+        return vf
 
 
     # Construct the graph to load the data and persist the graph on the Dask cluster.
@@ -115,9 +108,8 @@ if __name__ == '__main__':
     model_list = rsexecute.persist(model_list)
 
     # Construct the graphs to make the dirty image and psf, and persist these to the cluster
-    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context=context)
-    psf_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context=context,
-                                              dopsf=True)
+    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context="ng")
+    psf_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context="ng", dopsf=True)
 
 
     # Construct the graphs to do the clean and restoration, and gather the channel images

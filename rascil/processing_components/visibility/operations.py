@@ -75,7 +75,7 @@ def sort_visibility(vis, order=None):
 
 
 def concatenate_visibility(vis_list, dim='time'):
-    """Concatenate a list of visibilities, with an optional sort back to index order
+    """Concatenate a list of visibilities
 
     :param vis_list: List of vis
     :return: Concatendated visibility

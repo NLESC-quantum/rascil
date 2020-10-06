@@ -65,7 +65,6 @@ In addition there are notebooks that use components in workflows/notebooks.
 .. toctree::
    :titlesonly:
 
-   examples/notebooks/imaging-wterm_rsexecute.rst
    examples/notebooks/simple-dask_rsexecute.rst
    examples/notebooks/imaging-pipelines_rsexecute.rst
 

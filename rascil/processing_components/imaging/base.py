@@ -322,6 +322,7 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
                   "and bandwidth %s"
                   % (imagecentre, reffrequency, channel_bandwidth))
     elif (inchan == 1) and (vnchan == 1):
+        print(channel_bandwidth.shape)
         assert numpy.abs(channel_bandwidth) > 0.0, "Channel width must be non-zero for mfs mode"
         log.debug("create_image_from_visibility: Defining single channel Image at %s, starting frequency %s, "
                   "and bandwidth %s"

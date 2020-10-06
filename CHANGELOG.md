@@ -12,7 +12,7 @@
   antenna-oriented. The axes are "time", "baseline", "frequency", "polarisation".
 * All data classes now have selection operators such as blockvisibility_select, blockvisibility_where,
   blockvisibility_groupby, blockvisibility_groupby_bins. The selections can be specified as dictionaries
-  holding slices.
+  holding slices e.g. {"time":slice("2001-01-02T09:00:00.0", "2001-01-02T10:00:00.0")}
 * To improve performance, all imaging algorithms have now moved from the workflows layer to be done in 
   processing_components. The nifty gridder is recommended as the default algorithm, though 2d and awprojection 
   are also available. predict_list_rsexecute_workflow and invert_list_rsexecute_workflow now simply

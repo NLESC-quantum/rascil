@@ -6,6 +6,7 @@
 import unittest
 
 import astropy.units as u
+from astropy.time import Time
 import numpy
 from astropy.coordinates import SkyCoord
 from numpy.testing import assert_allclose
@@ -39,11 +40,12 @@ class TestVisibilityOperations(unittest.TestCase):
         self.comp = Skycomponent(direction=self.compreldirection, frequency=self.frequency, flux=self.flux)
     
     def test_create_blockvisibility(self):
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+        vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
                                           weight=1.0)
-        assert self.vis.vis.shape == (10, 13861, 3, 4), self.vis.vis.shape
+        print(vis)
+        assert vis.vis.shape == (10, 13861, 3, 4), vis.vis.shape
         
     def test_create_blockvisibility_polarisation(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
@@ -52,11 +54,11 @@ class TestVisibilityOperations(unittest.TestCase):
                                      polarisation_frame=PolarisationFrame("linear"))
         assert self.vis.vis.shape[0] == len(self.vis.time)
     
-    def test_create_blockvisibility_from_rows1(self):
+    def test_create_blockvisibility_from_rows(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0)
-        rows = self.vis.time > 150.0
+        rows = self.vis.time > 86400.0 * (Time("2020-01-01T21:32:27.057494405").utc.mjd)
         for makecopy in [True, False]:
             selected_vis = create_blockvisibility_from_rows(self.vis, rows, makecopy=makecopy)
             assert selected_vis.ntimes == numpy.sum(numpy.array(rows))
@@ -64,12 +66,12 @@ class TestVisibilityOperations(unittest.TestCase):
     def test_create_blockvisibility_from_rows_makecopy(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency, phasecentre=self.phasecentre,
                                           weight=1.0, channel_bandwidth=self.channel_bandwidth)
-        rows = self.vis.time > 150.0
+        rows = self.vis.time > 86400.0 * (Time("2020-01-01T21:32:27.057494405").utc.mjd)
         for makecopy in [True, False]:
             selected_vis = create_blockvisibility_from_rows(self.vis, rows, makecopy=makecopy)
             assert selected_vis.ntimes == numpy.sum(numpy.array(rows))
     
-    def test_append_visibility_time(self):
+    def test_append_visibility_row(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
@@ -80,12 +82,12 @@ class TestVisibilityOperations(unittest.TestCase):
                                                phasecentre=self.phasecentre,
                                                weight=1.0)
         this_shape = list(self.vis.vis.shape)
-        self.vis = append_visibility(self.vis, self.othervis, dim='time')
+        self.vis = append_visibility(self.vis, self.othervis, dim='row')
         other_shape = list(self.othervis.vis.shape)
         combined_shape = list(self.vis.vis.shape)
         assert combined_shape[0] == this_shape[0] + other_shape[0]
     
-    def test_append_visibility_frequency(self):
+    def test_append_visibility_channel(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
@@ -96,7 +98,7 @@ class TestVisibilityOperations(unittest.TestCase):
                                                phasecentre=self.phasecentre,
                                                weight=1.0)
         this_shape = list(self.vis.vis.shape)
-        self.vis = append_visibility(self.vis, self.othervis, dim='frequency')
+        self.vis = append_visibility(self.vis, self.othervis, dim='channel')
         other_shape = list(self.othervis.vis.shape)
         combined_shape = list(self.vis.vis.shape)
         assert combined_shape[2] == this_shape[2] + other_shape[2]

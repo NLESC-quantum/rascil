@@ -259,13 +259,14 @@ def create_blockvisibility_from_rows(vis: BlockVisibility, rows: numpy.ndarray, 
     
     if rows is None or numpy.sum(rows) == 0:
         return None
-    
+
+    arows = vis.rows[rows]
     if makecopy:
         newvis = copy_visibility(vis)
-        newvis.data = copy.deepcopy(vis.data.sel({"time": vis.time[rows]}))
+        newvis.data = copy.deepcopy(vis.data.isel({"row": arows}))
         return newvis
     else:
-        vis.data = copy.deepcopy(vis.data.sel({"time": vis.time[rows]}))
+        vis.data = copy.deepcopy(vis.data.isel({"row": arows}))
         return vis
 
 

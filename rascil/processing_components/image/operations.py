@@ -1015,7 +1015,7 @@ def create_w_term_like(im: Image, w, phasecentre=None, remove_shift=False, dopol
     else:
         wcentre = [im.wcs.wcs.crpix[0] - 1.0, im.wcs.wcs.crpix[1] - 1.0]
     
-    fim.data[:, :, ...] = w_beam(npixel, npixel * cellsize, w=w, cx=wcentre[0], cy=wcentre[1],
+    fim.data[:, :, ...].values = w_beam(npixel, npixel * cellsize, w=w, cx=wcentre[0], cy=wcentre[1],
                                  remove_shift=remove_shift)
     
     fov = npixel * cellsize

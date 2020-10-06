@@ -1050,29 +1050,41 @@ class BlockVisibility:
             uvw_lambda = (uvw * k)[...,numpy.newaxis,:]
         else:
             uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
+            
+        dims = ["row", "baseline", "channel", "polarisation", "uvw_index"]
 
         coords = {
-            "time": time,
+            "row": range(len(time)),
             "baseline": baselines,
-            "frequency": frequency,
+            "channel": range(len(frequency)),
             "polarisation": polarisation_frame.names,
             "uvw_index": ["u", "v", "w"]
         }
         
         datavars = dict()
-        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
-                                                      dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"])
-        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "uvw_index"])
-        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
-        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
+        datavars["time"] = xarray.DataArray(time, dims=["row"])
+        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["row"])
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
-                                                dims="time")
-        self.data = xarray.Dataset(datavars, coords=coords)
+                                                dims=["row"])
+        datavars["vis"] = xarray.DataArray(vis, dims=["row", "baseline", "channel", "polarisation"])
+        datavars["weight"] = xarray.DataArray(weight, dims=["row", "baseline", "channel", "polarisation"])
+        datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
+                                                      dims=["row", "baseline", "channel", "polarisation"])
+        datavars["flags"] = xarray.DataArray(flags, dims=["row", "baseline", "channel", "polarisation"])
         
+        datavars["uvw"] = xarray.DataArray(uvw, dims=["row", "baseline", "uvw_index"])
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["row", "baseline", "channel", "uvw_index"])
+        datavars["uvdist_lambda"] = xarray.DataArray(numpy.hypot(uvw_lambda[...,0], uvw_lambda[...,1]),
+                                                   dims=["row", "baseline", "channel"])
+
+        datavars["frequency"] = xarray.DataArray(frequency, dims=["channel"])
+        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["channel"])
+        
+
+        self.data = xarray.Dataset(datavars, coords=coords)
+        #self.data.set_coords(["time", "frequency"])
+
+
         self.phasecentre = phasecentre  # Phase centre of observation
         self.configuration = configuration  # Antenna/station configuration
         self.polarisation_frame = polarisation_frame
@@ -1093,11 +1105,6 @@ class BlockVisibility:
         s = "BlockVisibility:\n"
         s += "\tSource %s\n" % self.source
         s += "\tPhasecentre: %s\n" % self.phasecentre
-        s += "\tNumber of visibility blocks: %s\n" % self.nvis
-        s += "\tNumber of integrations: %s\n" % len(self.time)
-        s += "\tVisibility shape: %s\n" % str(self.vis.shape)
-        s += "\tNumber of flags: %s\n" % str(numpy.sum(self.flags))
-        s += "\tNumber of channels: %d\n" % len(self.frequency)
         s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
         s += "\tConfiguration: %s\n" % self.configuration.name
         s += "\tMetadata: %s\n" % self.meta
@@ -1109,6 +1116,12 @@ class BlockVisibility:
         """ Return size in GB
         """
         return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
+
+    @property
+    def rows(self):
+        """ Rows
+        """
+        return self.data['row']
 
     @property
     def ntimes(self):
@@ -1211,7 +1224,13 @@ class BlockVisibility:
         """ uv distance (metres) [nrows, nbaseline]
         """
         return numpy.hypot(self.u, self.v)
-    
+
+    @property
+    def uvdist_lambda(self):
+        """ uv distance (metres) [nrows, nbaseline]
+        """
+        return numpy.hypot(self.u_lambda, self.v_lambda)
+
     @property
     def uvwdist(self):
         """ uv distance (metres) [nrows, nbaseline]
@@ -1266,6 +1285,12 @@ class BlockVisibility:
         """
         return self.data['time']
     
+    @property
+    def datetime(self):
+        """ Time (UTC) [nrows]
+        """
+        return self.data['datetime']
+
     @property
     def integration_time(self):
         """ Integration time [nrows]

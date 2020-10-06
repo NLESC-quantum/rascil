@@ -38,7 +38,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        times = numpy.array([result[0] for result in blockvisibility_groupby(bvis, "time")])
+        times = numpy.array([result[0] for result in blockvisibility_groupby(bvis, "row")])
         assert times.all() == bvis.time.all()
 
     def test_blockvisibility_groupby_bins_time(self):

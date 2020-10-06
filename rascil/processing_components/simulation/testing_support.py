@@ -670,7 +670,7 @@ def create_blockvisibility_iterator(config: Configuration, times: numpy.array, f
         if i == 0:
             fullvis = vis
         else:
-            fullvis = append_visibility(fullvis, vis)
+            fullvis = concatenate_visibility(fullvis, vis)
 
 
     :param config: Configuration of antennas

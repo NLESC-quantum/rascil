@@ -1054,35 +1054,32 @@ class BlockVisibility:
         dims = ["row", "baseline", "channel", "polarisation", "uvw_index"]
 
         coords = {
-            "row": range(len(time)),
+            "time": time,
             "baseline": baselines,
-            "channel": range(len(frequency)),
+            "frequency": frequency,
             "polarisation": polarisation_frame.names,
             "uvw_index": ["u", "v", "w"]
         }
         
         datavars = dict()
-        datavars["time"] = xarray.DataArray(time, dims=["row"])
-        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["row"])
+        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
-                                                dims=["row"])
-        datavars["vis"] = xarray.DataArray(vis, dims=["row", "baseline", "channel", "polarisation"])
-        datavars["weight"] = xarray.DataArray(weight, dims=["row", "baseline", "channel", "polarisation"])
+                                                dims=["time"])
+        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
-                                                      dims=["row", "baseline", "channel", "polarisation"])
-        datavars["flags"] = xarray.DataArray(flags, dims=["row", "baseline", "channel", "polarisation"])
+                                                      dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
         
-        datavars["uvw"] = xarray.DataArray(uvw, dims=["row", "baseline", "uvw_index"])
-        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["row", "baseline", "channel", "uvw_index"])
+        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"])
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "uvw_index"])
         datavars["uvdist_lambda"] = xarray.DataArray(numpy.hypot(uvw_lambda[...,0], uvw_lambda[...,1]),
-                                                   dims=["row", "baseline", "channel"])
+                                                   dims=["time", "baseline", "frequency"])
 
-        datavars["frequency"] = xarray.DataArray(frequency, dims=["channel"])
-        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["channel"])
+        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         
 
         self.data = xarray.Dataset(datavars, coords=coords)
-        #self.data.set_coords(["time", "frequency"])
 
 
         self.phasecentre = phasecentre  # Phase centre of observation
@@ -1121,7 +1118,7 @@ class BlockVisibility:
     def rows(self):
         """ Rows
         """
-        return self.data['row']
+        return range(len(self.time))
 
     @property
     def ntimes(self):

@@ -28,7 +28,7 @@ from rascil.processing_components.image import image_scatter_facets, image_gathe
 from rascil.processing_components.image import calculate_image_frequency_moments
 from rascil.processing_components.imaging import normalize_sumwt
 from rascil.processing_components.imaging import taper_visibility_gaussian
-from rascil.processing_components.visibility import copy_visibility, create_blockvisibility_from_rows
+from rascil.processing_components.visibility import copy_visibility
 
 log = logging.getLogger('logger')
 

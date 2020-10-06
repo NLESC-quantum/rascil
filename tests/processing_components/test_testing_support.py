@@ -14,15 +14,14 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import export_image_to_fits
-from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.imaging.primary_beams import create_low_test_beam
 from rascil.processing_components.simulation import create_test_image_from_s3, create_test_image, \
     create_blockvisibility_iterator, create_low_test_image_from_gleam, \
     create_low_test_skycomponents_from_gleam, create_low_test_skymodel_from_gleam, \
     create_test_skycomponents_from_s3
+from rascil.processing_components import concatenate_visibility
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility, copy_visibility
-from rascil.processing_components.visibility.operations import append_visibility
 
 log = logging.getLogger('logger')
 
@@ -205,12 +204,12 @@ class TestTesting_Support(unittest.TestCase):
             assert vis.nvis
             if i == 0:
                 fullvis = copy_visibility(vis)
-                totalnvis = vis.nvis
+                totalnvis = vis.ntimes
             else:
-                fullvis = append_visibility(fullvis, vis)
-                totalnvis += vis.nvis
+                fullvis = concatenate_visibility([fullvis, vis])
+                totalnvis += vis.ntimes
         
-        assert fullvis.nvis == totalnvis
+        assert fullvis.ntimes == totalnvis
     
     def test_create_vis_iter_with_model(self):
         model = create_test_image(cellsize=0.001, frequency=self.frequency, phasecentre=self.phasecentre)
@@ -230,12 +229,12 @@ class TestTesting_Support(unittest.TestCase):
             assert bvis.nvis
             if i == 0:
                 fullvis = bvis
-                totalnvis = bvis.nvis
+                totalnvis = bvis.ntimes
             else:
-                fullvis = append_visibility(fullvis, bvis)
-                totalnvis += bvis.nvis
+                fullvis = concatenate_visibility([fullvis, bvis])
+                totalnvis += bvis.ntimes
         
-        assert fullvis.nvis == totalnvis
+        assert fullvis.ntimes == totalnvis
     
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ from dask.distributed import Client
 # These are the RASCIL functions we need
 from rascil.data_models import PolarisationFrame, rascil_path, rascil_data_path
 from rascil.processing_components import create_blockvisibility_from_ms, \
-    blockvisibility_where, append_visibility, \
+    blockvisibility_where, \
     deconvolve_cube, restore_cube, export_image_to_fits, qa_image, \
     image_gather_channels, create_image_from_visibility
 from rascil.workflows import invert_list_rsexecute_workflow
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     def load_ms(c):
         v1 = create_blockvisibility_from_ms(input_vis[0], start_chan=c, end_chan=c)[0]
         v2 = create_blockvisibility_from_ms(input_vis[1], start_chan=c, end_chan=c)[0]
-        vf = append_visibility(v1, v2)
+        vf = concatenate_visibility(v1, v2)
         vf.configuration.diameter[...] = 35.0
         vf = blockvisibility_where(vf, vf.uvdist_lambda < uvmax)
         print(vf)

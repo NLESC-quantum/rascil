@@ -17,7 +17,7 @@ from scipy.interpolate import RectBivariateSpline
 from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
-from rascil.processing_components.visibility import create_blockvisibility_from_rows, blockvisibility_select
+from rascil.processing_components.visibility import blockvisibility_select
 from rascil.processing_components.calibration import gaintable_select
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 from rascil.processing_components.util.geometry import calculate_azel

@@ -2,8 +2,7 @@
 
 """
 
-__all__ = ['append_visibility',
-           'sort_visibility',
+__all__ = ['sort_visibility',
            'concatenate_blockvisibility_frequency',
            'concatenate_visibility',
            'subtract_visibility',
@@ -30,35 +29,6 @@ from rascil.data_models.polarisation import convert_linear_to_stokes, \
 from rascil.processing_components.visibility import copy_visibility
 
 log = logging.getLogger('logger')
-
-
-def append_visibility(vis: BlockVisibility,
-                      othervis: BlockVisibility, dim='time') \
-        -> BlockVisibility:
-    """Append othervis to vis
-    
-    :param vis:
-    :param othervis:
-    :return: BlockVisibility vis + othervis
-    """
-    
-    if vis is None:
-        return othervis
-    
-    assert isinstance(vis, BlockVisibility), vis
-    
-    assert vis.polarisation_frame == othervis.polarisation_frame, "Polarisation frames differ"
-    assert abs(
-        vis.phasecentre.ra.value - othervis.phasecentre.ra.value) < 1e-15, "RAs differ"
-    assert abs(
-        vis.phasecentre.dec.value - othervis.phasecentre.dec.value) < 1e-15, "Declinations differ"
-    assert vis.phasecentre.separation(othervis.phasecentre).value < 1e-15, "Phasecentres differ"
-    assert vis.source == othervis.source, "Not the same source"
-    if isinstance(vis, BlockVisibility):
-        assert numpy.max(numpy.abs(vis.frequency - othervis.frequency)) < 1e-6
-    
-    vis.data = xarray.concat((vis.data, othervis.data), dim=dim)
-    return vis
 
 
 def sort_visibility(vis, order=None):

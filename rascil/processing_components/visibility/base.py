@@ -4,7 +4,6 @@ Base simple visibility operations, placed here to avoid circular dependencies
 
 __all__ = ['vis_summary',
            'copy_visibility',
-           'create_blockvisibility_from_rows',
            'create_blockvisibility_from_ms',
            'create_blockvisibility_from_uvfits',
            'create_blockvisibility',
@@ -22,6 +21,7 @@ import re
 import astropy.constants as const
 import numpy
 import pandas
+import xarray
 from astropy import units as u, constants as constants
 from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.io import fits
@@ -247,27 +247,6 @@ def create_blockvisibility(config: Configuration,
     
     return vis
 
-
-def create_blockvisibility_from_rows(vis: BlockVisibility, rows: numpy.ndarray, makecopy=True):
-    """ Create a BlockVisibility from selected rows
-
-    :param vis: BlockVisibility
-    :param rows: Boolean array of row selction
-    :param makecopy: Make a deep copy (True)
-    :return: BlockVisibility or BlockVisibility
-    """
-    
-    if rows is None or numpy.sum(rows) == 0:
-        return None
-
-    arows = vis.rows[rows]
-    if makecopy:
-        newvis = copy_visibility(vis)
-        newvis.data = copy.deepcopy(vis.data.isel({"row": arows}))
-        return newvis
-    else:
-        vis.data = copy.deepcopy(vis.data.isel({"row": arows}))
-        return vis
 
 
 def phaserotate_visibility(vis: BlockVisibility,

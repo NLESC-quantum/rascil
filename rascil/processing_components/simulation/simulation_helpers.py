@@ -123,6 +123,7 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
     plt.show(block=False)
 
 
+
 def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kwargs):
     """ Standard plot of uv coverage
 
@@ -139,13 +140,14 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
             k = (vis.frequency / constants.c).value
             u = numpy.array(numpy.outer(u, k).flat)
             v = numpy.array(numpy.outer(v, k).flat)
-            plt.plot(u, v, '.', color='b', markersize=0.2)
+            plt.plot(u, v, '.', color='b', markersize=0.4)
+            plt.plot(-u, -v, '.', color='b', markersize=0.4)
         else:
             k = vis.frequency / constants.c
             u = u * k
             v = v * k
-            plt.plot(u.value, v.value, '.', color='b', markersize=0.2)
-            plt.plot(-u.value, -v.value, '.', color='b', markersize=0.2)
+            plt.plot(u.value, v.value, '.', color='b', markersize=0.4)
+            plt.plot(-u.value, -v.value, '.', color='b', markersize=0.4)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
     plt.title(title)

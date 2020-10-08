@@ -218,7 +218,7 @@ class TestGridDataGridding(unittest.TestCase):
     
     def test_griddata_invert_wterm_noover(self):
         self.actualSetUp(zerow=False)
-        gcf, cf = create_awterm_convolutionfunction(self.model, nw=100, wstep=8.0, oversampling=4, support=32,
+        gcf, cf = create_awterm_convolutionfunction(self.model, nw=100, wstep=8.0, oversampling=1, support=32,
                                                     use_aaf=True, polarisation_frame=self.vis_pol)
         
         # cf_image = convert_convolutionfunction_to_image(cf)
@@ -233,7 +233,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_wterm.fits' % self.dir)
-        self.check_peaks(im, 97.1333825)
+        self.check_peaks(im, 97.1343833)
     
     def test_griddata_check_cf_grid_wcs(self):
         self.actualSetUp(zerow=False)
@@ -261,7 +261,7 @@ class TestGridDataGridding(unittest.TestCase):
     
     def test_griddata_predict_wterm(self):
         self.actualSetUp(zerow=False, image_pol=PolarisationFrame("stokesIQUV"))
-        gcf, cf = create_awterm_convolutionfunction(self.model, nw=100, wstep=10.0, oversampling=16, support=32,
+        gcf, cf = create_awterm_convolutionfunction(self.model, nw=11, wstep=80.0, oversampling=4, support=32,
                                                     use_aaf=True, polarisation_frame=self.vis_pol)
         modelIQUV = convert_stokes_to_polimage(self.model, self.vis.polarisation_frame)
         griddata = create_griddata_from_image(modelIQUV, polarisation_frame=self.vis_pol)
@@ -270,7 +270,7 @@ class TestGridDataGridding(unittest.TestCase):
         newvis.data['vis'][...] -= self.vis.data['vis'][...]
         qa = qa_visibility(newvis)
         self.plot_vis(newvis, 'wterm')
-        assert qa.data['rms'] < 11.0, str(qa)
+        assert qa.data['rms'] < 25.0, str(qa)
     
     def test_griddata_predict_awterm(self):
         self.actualSetUp(zerow=False, image_pol=PolarisationFrame("stokesIQUV"))

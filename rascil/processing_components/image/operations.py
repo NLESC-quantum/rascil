@@ -148,7 +148,10 @@ def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
 
         except ValueError:
             frequency = numpy.array([1e8])
-
+            
+    elif len(data.shape) == 2:
+        ny, nx = data.shape
+        data.reshape([1, 1, ny, nx])
 
     try:
         phasecentre = SkyCoord(wcs.wcs.crval[0] * u.deg, wcs.wcs.crval[1] * u.deg)
@@ -160,7 +163,7 @@ def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
     log.debug("import_image_from_fits: Max, min in %s = %.6f, %.6f" % (fitsfile, data.max(), data.min()))
 
     return Image(phasecentre, frequency=frequency, polarisation_frame=polarisation_frame,
-                  dtype=data.dtype, data=data, wcs=wcs)
+                  data=data, wcs=wcs)
 
 
 def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
@@ -213,7 +216,8 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
     
     else:
         raise ValueError("Cannot reproject image with shape {}".format(im.shape))
-    
+    rep = numpy.nan_to_num(rep)
+    foot = numpy.nan_to_num(foot)
     return create_image_from_array(rep, newwcs, im.polarisation_frame), create_image_from_array(foot, newwcs,
                                                                                                   im.polarisation_frame)
 
@@ -738,7 +742,7 @@ def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: Pol
         phasecentre = SkyCoord("0.0d", "0.0d")
 
     return Image(phasecentre, frequency=frequency, polarisation_frame=polarisation_frame,
-                  dtype=data.dtype, data=data, wcs=wcs)
+                  data=data, wcs=wcs)
 
 def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
     """Convert wcs to polarisation_frame

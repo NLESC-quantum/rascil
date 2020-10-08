@@ -476,7 +476,7 @@ class Image:
     """
     
     def __init__(self, phasecentre, frequency, polarisation_frame=None,
-                 dtype=None, data=None, wcs=None):
+                 data=None, wcs=None):
         """ Create an XImage
 
         :param frequency:
@@ -486,6 +486,7 @@ class Image:
         """
         
         assert not numpy.isnan(numpy.sum(data)), "NaNs present in image data"
+        
         nx, ny = data.shape[-2], data.shape[-1]
         cellsize = numpy.abs(wcs.wcs.cdelt[1])
         cx = phasecentre.ra.to("deg").value
@@ -506,6 +507,9 @@ class Image:
         
         nchan = len(frequency)
         npol = polarisation_frame.npol
+        
+        if len(data.shape) == 2:
+            data = data.reshape([nchan, npol, ny, nx])
         
         assert data.shape[0] == nchan, \
             "Number of frequency channels {} and data shape {} are incompatible"\

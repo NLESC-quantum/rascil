@@ -35,7 +35,7 @@ class TestImage(unittest.TestCase):
         self.cellsize = 180.0 * 0.0001 / numpy.pi
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
-    def test_create_image_(self):
+    def test_create_image(self):
         newimage = create_image(npixel=1024, cellsize=0.001, polarisation_frame=PolarisationFrame("stokesIQUV"),
                                 frequency=numpy.linspace(0.8e9, 1.2e9, 5),
                                 channel_bandwidth=1e7 * numpy.ones([5]))

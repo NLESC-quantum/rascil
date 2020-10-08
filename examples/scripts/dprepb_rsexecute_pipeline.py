@@ -11,11 +11,13 @@ import numpy
 from dask.distributed import Client
 
 # These are the RASCIL functions we need
-from rascil.data_models import PolarisationFrame, rascil_path, rascil_data_path
+from rascil.data_models import PolarisationFrame, rascil_data_path
 from rascil.processing_components import create_blockvisibility_from_ms, \
-    blockvisibility_where, \
+    concatenate_visibility, \
     deconvolve_cube, restore_cube, export_image_to_fits, qa_image, \
     image_gather_channels, create_image_from_visibility
+from rascil.processing_components.visibility import blockvisibility_where
+
 from rascil.workflows import invert_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
@@ -23,27 +25,18 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Benchmark pipelines in numpy and dask')
     parser.add_argument('--use_dask', type=str, default='True', help='Use Dask?')
-    parser.add_argument('--nworkers', type=int, default=4, help='Number of workers')
-    parser.add_argument('--threads', type=int, default=1,
-                        help='Number of threads per worker')
-    parser.add_argument('--memory', dest='memory', default=8,
-                        help='Memory per worker (GB)')
     parser.add_argument('--npixel', type=int, default=256,
                         help='Number of pixels per axis')
     parser.add_argument('--context', dest='context', default='ng',
                         help='Context: 2d|awprojection|ng')
     parser.add_argument('--nchan', type=int, default=40,
                         help='Number of channels to process')
-    parser.add_argument('--scheduler', type=str, default=None, help='Dask scheduler')
-
     args = parser.parse_args()
     print(args)
 
     # Put the results in current directory
     results_dir = './'
     dask_dir = './dask-work-space'
-
-
     # Since the processing is distributed over multiple processes we have to tell each Dask worker
     # where to send the log messages
     def init_logging():
@@ -57,17 +50,7 @@ if __name__ == '__main__':
     log = logging.getLogger()
     logging.info("Starting Imaging pipeline")
 
-    # Set up rsexecute to use Dask. This means that all computation is delayed until an
-    # explicit rsexecute.compute call. If use_dask is False, all calls are computed immediately.
-    # If running on a cluster, create a scheduler externally and pass in the IP address
-    if args.scheduler is not None:
-        c = Client(args.scheduler)
-        rsexecute.set_client(c)
-    else:
-        rsexecute.set_client(use_dask=args.use_dask == 'True',
-                             threads_per_worker=args.threads,
-                             n_workers=args.nworkers, local_directory=dask_dir)
-    print(rsexecute.client)
+    rsexecute.set_client(use_dask=args.use_dask)
     rsexecute.run(init_logging)
 
     nchan = args.nchan
@@ -89,10 +72,9 @@ if __name__ == '__main__':
     def load_ms(c):
         v1 = create_blockvisibility_from_ms(input_vis[0], start_chan=c, end_chan=c)[0]
         v2 = create_blockvisibility_from_ms(input_vis[1], start_chan=c, end_chan=c)[0]
-        vf = concatenate_visibility(v1, v2)
+        vf = concatenate_visibility([v1, v2])
         vf.configuration.diameter[...] = 35.0
         vf = blockvisibility_where(vf, vf.uvdist_lambda < uvmax)
-        print(vf)
         return vf
 
 
@@ -108,14 +90,15 @@ if __name__ == '__main__':
     model_list = rsexecute.persist(model_list)
 
     # Construct the graphs to make the dirty image and psf, and persist these to the cluster
-    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context="ng")
-    psf_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context="ng", dopsf=True)
+    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, normalize=False,
+                                                context="2d")
+    psf_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, normalize=False,
+                                                context="2d", dopsf=True)
 
 
     # Construct the graphs to do the clean and restoration, and gather the channel images
     # into one image. Persist the graph on the cluster
     def deconvolve(d, p, m):
-
         c, resid = deconvolve_cube(d[0], p[0], m, threshold=0.01, fracthresh=0.01,
                                    window_shape='quarter', niter=100, gain=0.1,
                                    algorithm='hogbom-complex')
@@ -127,7 +110,6 @@ if __name__ == '__main__':
                                                    model_list[c])
                      for c in range(nchan)]
     restored_cube = rsexecute.execute(image_gather_channels, nout=1)(restored_list)
-
     # Up to this point all we have is a graph. Now we compute it and get the
     # final restored cleaned cube. During the compute, Dask shows diagnostic pages
     # at http://127.0.0.1:8787

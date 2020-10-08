@@ -37,8 +37,23 @@ def blockvisibility_iselect(bvis, selection):
     newbvis.data = bvis.data.isel(selection)
     return newbvis
 
+def blockvisibility_fillna(bvis):
+    """ Fill Nan's
+    
+    Using xarray.where introduces Nan's into a dataset. Weflag these points
+    by setting the flags point appropriately and also zero the other
+    data variables.
+    :param bvis:
+    :return:
+    """
+    bvis.data.flags.fillna(1.0)
+    for value in ["uvw", "uvw_lambda", "uvdist_lambda", "time", "integration_time", "channel_bandwidth"]:
+        bvis.data[value].fillna(0)
+    from datetime import datetime
+    bvis.datetime.fillna(datetime(1970, 1, 1))
+    return bvis
 
-def blockvisibility_where(bvis, condition, make_copy=True, **kwargs):
+def blockvisibility_where(bvis, condition, make_copy=True, flagnans=True, **kwargs):
     """ Select where a condition holds of BlockVisibility using xarray syntax
 
     :param bvis:
@@ -49,9 +64,13 @@ def blockvisibility_where(bvis, condition, make_copy=True, **kwargs):
     if make_copy:
         newbvis = copy.copy(bvis)
         newbvis.data = bvis.data.where(condition, **kwargs)
+        if flagnans:
+            newbvis = blockvisibility_fillna(newbvis)
         return newbvis
     else:
         bvis.data = bvis.data.where(condition, **kwargs)
+        if flagnans:
+            bvis = blockvisibility_fillna(bvis)
         return bvis
 
 

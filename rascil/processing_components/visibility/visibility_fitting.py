@@ -35,7 +35,7 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         m = params[2]
         u = vis.u_lambda.values[..., numpy.newaxis]
         v = vis.v_lambda.values[..., numpy.newaxis]
-        vobs = vis.vis.values
+        vobs = vis.flagged_vis.values
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
         J = numpy.sum(vis.flagged_weight.values * (vres * numpy.conjugate(vres)).real)
@@ -48,7 +48,7 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         m = params[2]
         u = vis.u_lambda.values[..., numpy.newaxis]
         v = vis.v_lambda.values[..., numpy.newaxis]
-        vobs = vis.vis.values
+        vobs = vis.flagged_vis.values
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
         Vrp = vres * numpy.conjugate(p) * vis.flagged_weight.values
@@ -67,7 +67,7 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         v = vis.v_lambda.values[..., numpy.newaxis]
         wt = vis.flagged_weight.values
         
-        vobs = vis.vis.values
+        vobs = vis.flagged_vis.values
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
         Vrp = vres * numpy.conjugate(p)

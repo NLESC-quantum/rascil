@@ -308,6 +308,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
     psf_list_trimmed = rsexecute.execute(remove_sumwt, nout=nchan)(psf_list)
     
     def extract_psf(psf, facets):
+        assert not numpy.isnan(numpy.sum(psf.data.values)), "NaNs present in PSF"
         cx = psf.shape[3] // 2
         cy = psf.shape[2] // 2
         wx = psf.shape[3] // facets

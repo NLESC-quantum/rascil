@@ -254,7 +254,7 @@ def plot_pa(bvis_list, plot_file=None, **kwargs):
     plt.show(block=False)
 
 
-def plot_gaintable(gt_list, title='', value='amp', plot_file='gaintable.png', **kwargs):
+def plot_gaintable(gt_list, title='', value='amp', plot_file=None, **kwargs):
     """ Standard plot of gain table
     
     :param gt_list:

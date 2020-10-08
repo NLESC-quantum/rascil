@@ -485,6 +485,7 @@ class Image:
         :return: XImage
         """
         
+        assert not numpy.isnan(numpy.sum(data)), "NaNs present in image data"
         nx, ny = data.shape[-2], data.shape[-1]
         cellsize = numpy.abs(wcs.wcs.cdelt[1])
         cx = phasecentre.ra.to("deg").value
@@ -492,34 +493,32 @@ class Image:
         
         assert cellsize > 0.0, "Cellsize must be positive"
         
-        dims = ["frequency", "polarisation", "m", "l"]
+        dims = ["frequency", "polarisation", "l", "m"]
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
-            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny),
-            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx)
+            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx),
+            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny)
         }
-        
-        assert coords["l"][0] != coords["l"][-1]
-        assert coords["m"][0] != coords["m"][-1]
         
         self.wcs = wcs
         self.polarisation_frame = polarisation_frame
         
         nchan = len(frequency)
         npol = polarisation_frame.npol
-        if dtype is None:
-            dtype = "float"
         
-        if data is None:
-            data = numpy.zeros([nchan, npol, ny, nx], dtype=dtype)
-        else:
-            if data.shape == (ny, nx):
-                data = data.reshape([1, 1, ny, nx])
-            assert data.shape[1] == npol, \
-                "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
+        assert data.shape[0] == nchan, \
+            "Number of frequency channels {} and data shape {} are incompatible"\
+                .format(len(frequency),data.shape)
+        assert data.shape[1] == npol, \
+            "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
                                                                                   data.shape)
-        
+        assert coords["l"][0] != coords["l"][-1]
+        assert coords["m"][0] != coords["m"][-1]
+
+        assert len(coords["m"]) == ny
+        assert len(coords["l"]) == nx
+
         self.data = xarray.DataArray(data, dims=dims, coords=coords)
     
     def check(self):
@@ -1051,7 +1050,7 @@ class BlockVisibility:
         else:
             uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
             
-        dims = ["row", "baseline", "channel", "polarisation", "uvw_index"]
+        dims = ["row", "baseline", "frequency", "polarisation", "uvw_index"]
 
         coords = {
             "time": time,
@@ -1062,23 +1061,25 @@ class BlockVisibility:
         }
         
         datavars = dict()
-        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
+        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"], attrs={"units":"s"})
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
-                                                dims=["time"])
-        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"])
+                                                dims=["time"], attrs={"units":"s"})
+        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"],
+                                           attrs={"units":"Jy"})
         datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
                                                       dims=["time", "baseline", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
         
-        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"])
-        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "uvw_index"])
+        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"], attrs={"units":"m"})
+
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "uvw_index"],
+                                                  attrs={"units":"lambda"})
         datavars["uvdist_lambda"] = xarray.DataArray(numpy.hypot(uvw_lambda[...,0], uvw_lambda[...,1]),
-                                                   dims=["time", "baseline", "frequency"])
+                                                   dims=["time", "baseline", "frequency"], attrs={"units":"lambda"})
 
-        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
+        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"], attrs={"units":"Hz"})
         
-
         self.data = xarray.Dataset(datavars, coords=coords)
 
 

@@ -460,7 +460,7 @@ def subtract_list_serial_workflow(vis_list, model_vislist):
     
     def subtract_vis(vis, model_vis):
         if vis is not None and model_vis is not None:
-            assert vis.vis.shape == model_vis.vis.shape
+            assert vis.flagged_vis.shape == model_vis.flagged_vis.shape
             subvis = copy_visibility(vis)
             subvis.data['vis'][...] -= model_vis.data['vis'][...]
             return subvis

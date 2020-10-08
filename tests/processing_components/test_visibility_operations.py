@@ -51,6 +51,7 @@ class TestVisibilityOperations(unittest.TestCase):
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame("linear"))
+        print(self.vis)
         assert self.vis.vis.shape[0] == len(self.vis.time)
     
 

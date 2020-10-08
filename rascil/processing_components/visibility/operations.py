@@ -16,6 +16,7 @@ __all__ = ['sort_visibility',
            'convert_blockvisibility_to_stokesI']
 
 import copy
+import collections
 import logging
 from typing import List
 
@@ -50,9 +51,8 @@ def concatenate_visibility(vis_list, dim='time'):
     :param vis_list: List of vis
     :return: Concatendated visibility
     """
-    if isinstance(vis_list, BlockVisibility):
-        return vis_list
-    
+    assert isinstance(vis_list, collections.abc.Iterable), "vis_list must be iterable"
+
     assert len(vis_list) > 0
     
     newvis = copy.deepcopy(vis_list[0])
@@ -169,10 +169,10 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
     """
     assert isinstance(vis, BlockVisibility), vis
     
-    x = numpy.zeros_like(vis.vis.values)
-    xwt = numpy.abs(modelvis.vis.values) ** 2 * vis.flagged_weight.values
+    x = numpy.zeros_like(vis.flagged_vis.values)
+    xwt = numpy.abs(modelvis.flagged_vis.values) ** 2 * vis.flagged_weight.values
     mask = xwt > 0.0
-    x[mask] = vis.vis.values[mask] / modelvis.vis.values[mask]
+    x[mask] = vis.flagged_vis.values[mask] / modelvis.flagged_vis.values[mask]
     
     pointsource_vis = BlockVisibility(flags=vis.flags.values,
                                       baselines=vis.baselines,
@@ -327,7 +327,7 @@ def convert_blockvisibility_to_stokesI(vis):
     polarisation_frame = PolarisationFrame('stokesI')
     poldef = vis.polarisation_frame
     if poldef == PolarisationFrame('linear'):
-        vis_data = convert_linear_to_stokesI(vis.vis.values)
+        vis_data = convert_linear_to_stokesI(vis.flagged_vis.values)
         vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
             ..., numpy.newaxis]
         vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 3])[
@@ -336,7 +336,7 @@ def convert_blockvisibility_to_stokesI(vis):
                               vis.flagged_imaging_weight.values[..., 3])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('linearnp'):
-        vis_data = convert_linear_to_stokesI(vis.vis.values)
+        vis_data = convert_linear_to_stokesI(vis.flagged_vis.values)
         vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 1])[
             ..., numpy.newaxis]
         vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 1])[
@@ -345,7 +345,7 @@ def convert_blockvisibility_to_stokesI(vis):
                               vis.flagged_imaging_weight.values[..., 1])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('circular'):
-        vis_data = convert_circular_to_stokesI(vis.vis.values)
+        vis_data = convert_circular_to_stokesI(vis.flagged_vis.values)
         vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
             ..., numpy.newaxis]
         vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 3])[
@@ -354,7 +354,7 @@ def convert_blockvisibility_to_stokesI(vis):
                               vis.flagged_imaging_weight.values[..., 3])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('circularnp'):
-        vis_data = convert_circular_to_stokesI(vis.vis.values)
+        vis_data = convert_circular_to_stokesI(vis.flagged_vis.values)
         vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 1])[
             ..., numpy.newaxis]
         vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 1])[

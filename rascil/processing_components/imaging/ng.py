@@ -61,6 +61,7 @@ try:
         
         uvw = newbvis.uvw.values
         uvw=uvw.reshape([nrows * nbaselines, 3])
+        uvw = numpy.nan_to_num(uvw)
         vist = numpy.zeros([vnpol, vnchan, nbaselines * nrows], dtype='complex')
         
         # Get the image properties
@@ -156,12 +157,13 @@ try:
         # if dopsf:
         #     sbvis = fill_vis_for_psf(sbvis)
 
-        ms = sbvis.vis.values
+        ms = sbvis.flagged_vis.values
         ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
         ms = convert_pol_frame(ms, bvis.polarisation_frame, im.polarisation_frame, polaxis=2)
 
         uvw = sbvis.uvw.values
         uvw = uvw.reshape([nrows * nbaselines, 3])
+        uvw = numpy.nan_to_num(uvw)
         
         wgt = sbvis.flagged_imaging_weight.values
         wgt=wgt.reshape([nrows * nbaselines, vnchan, vnpol])

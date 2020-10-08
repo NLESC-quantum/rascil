@@ -158,8 +158,6 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     subim_wcs = im.wcs.deepcopy()
     subim_wcs.wcs.crpix[0] = onx // 2 + 1.0
     subim_wcs.wcs.crpix[1] = ony // 2 + 1.0
-    paddedim = create_image_from_array(numpy.zeros([nchan, npol, qny, qnx]), wcs=subim_wcs,
-                                    polarisation_frame=im.polarisation_frame)
     
     if use_aaf:
         this_pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6,

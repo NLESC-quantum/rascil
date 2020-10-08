@@ -174,6 +174,8 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         assert nchan > 2 * (nmoment - 1), "Require nchan %d > 2 * (nmoment %d - 1)" % (nchan, 2 * (nmoment - 1))
         dirty_taylor = calculate_image_frequency_moments(dirty, nmoment=nmoment)
         if nmoment > 1:
+            log.debug(psf)
+            log.debug(nmoment)
             psf_taylor = calculate_image_frequency_moments(psf, nmoment=2 * nmoment)
         else:
             psf_taylor = calculate_image_frequency_moments(psf, nmoment=1)

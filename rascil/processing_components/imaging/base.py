@@ -126,6 +126,8 @@ def predict_2d(vis: BlockVisibility, model: Image, gcfcf=None, **kwargs) -> Bloc
     if model is None:
         return vis
 
+    assert not numpy.isnan(numpy.sum(model.data.values)), "NaNs present in input model"
+
     assert isinstance(vis, BlockVisibility), vis
 
     _, _, ny, nx = model.data.shape
@@ -191,6 +193,8 @@ def invert_2d(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: b
         result = normalize_sumwt(result, sumwt)
 
     result = convert_polimage_to_stokes(result, **kwargs)
+
+    assert not numpy.isnan(numpy.sum(result.data.values)), "NaNs present in output image"
 
     return result, sumwt
 
@@ -304,7 +308,7 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
 
     inchan = get_parameter(kwargs, "nchan", vnchan)
     reffrequency = frequency[0] * units.Hz
-    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", vis.channel_bandwidth.values[0]) * units.Hz
+    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", vis.channel_bandwidth.values.flat[0]) * units.Hz
 
 
     if (inchan == vnchan) and vnchan > 1:
@@ -322,7 +326,6 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
                   "and bandwidth %s"
                   % (imagecentre, reffrequency, channel_bandwidth))
     elif (inchan == 1) and (vnchan == 1):
-        print(channel_bandwidth.shape)
         assert numpy.abs(channel_bandwidth) > 0.0, "Channel width must be non-zero for mfs mode"
         log.debug("create_image_from_visibility: Defining single channel Image at %s, starting frequency %s, "
                   "and bandwidth %s"

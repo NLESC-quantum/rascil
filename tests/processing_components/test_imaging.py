@@ -239,6 +239,7 @@ class TestImaging2D(unittest.TestCase):
                                                   polarisation_frame=self.vis_pol)
         self._predict_base(fluxthreshold=35.0, name='predict_awterm_spec', gcfcf=gcfcf)
     
+    @unittest.skip("Takes too long to run regularly")
     def test_predict_awterm_spec_IQUV(self):
         self.actualSetUp(zerow=False, freqwin=5, image_pol=PolarisationFrame("stokesIQUV"))
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)

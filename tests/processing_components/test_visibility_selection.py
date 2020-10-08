@@ -41,7 +41,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       phasecentre=self.phasecentre, weight=1.0)
         times = numpy.array([result[0] for result in blockvisibility_groupby(bvis, "time")])
         assert times.all() == bvis.time.all()
-    
+
     def test_blockvisibility_groupby_bins_time(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
@@ -49,23 +49,26 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       phasecentre=self.phasecentre, weight=1.0)
         for result in blockvisibility_groupby_bins(bvis, "time", 3):
             print(result[0])
-    
+
     def test_blockvisibility_where(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        print(bvis.size(), blockvisibility_where(bvis, bvis.data["flags"] == 0).size())
-    
+        selected_vis = blockvisibility_where(bvis, bvis.data["flags"] == 0)
+        print(selected_vis)
+        print(bvis.size(), selected_vis.size())
+
     def test_blockvisibility_where_absu(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
+        print(bvis)
         selected_vis = blockvisibility_where(bvis, numpy.abs(bvis.u_lambda) < 30.0)
         print(selected_vis)
         print(bvis.size(), selected_vis.size())
-    
+
     def test_blockvisibility_select_time(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,

@@ -162,10 +162,21 @@ def image_gather_channels(image_list: List[Image], im: Image = None, subimages=0
     :param subimages: Number of image partitions on each axis (2)
     :return: list of subimages
     """
+    for im in image_list:
+        assert not numpy.isnan(numpy.sum(im.data.values)), "NaNs present in input images"
+
     image_data_list = [im.data for im in image_list]
+    for ar in image_data_list:
+        assert not numpy.isnan(numpy.sum(ar.values)), "NaNs present in input image data"
+        
     image_data_concat = xarray.concat(image_data_list, "frequency")
+    for chan in range(image_data_concat.data.shape[0]):
+        if numpy.isnan(numpy.sum(image_data_concat.values[chan])):
+            print("NaNs present in concatenated DataArray, channel {}".format(chan))
+
     if not isinstance(im, Image):
         im = copy.deepcopy(image_list[0])
-    im.data = image_data_concat
+    im.data = image_data_concat.fillna(0.0)
+    assert not numpy.isnan(numpy.sum(im.data.values)), "NaNs present in output image"
     return im
 

@@ -244,15 +244,16 @@ def qa_image(im: Image, context="") -> QA:
     :return: QA
     """
     assert isinstance(im, Image), im
+    im_data = im.data.values
     data = {'shape': str(im.data.shape),
-            'max': numpy.max(im.data),
-            'min': numpy.min(im.data),
-            'maxabs': numpy.max(numpy.abs(im.data)),
-            'rms': numpy.std(im.data),
-            'sum': numpy.sum(im.data),
-            'medianabs': numpy.median(numpy.abs(im.data)),
-            'medianabsdevmedian': numpy.median(numpy.abs(im.data - numpy.median(im.data))),
-            'median': numpy.median(im.data)}
+            'max': numpy.max(im_data),
+            'min': numpy.min(im_data),
+            'maxabs': numpy.max(numpy.abs(im_data)),
+            'rms': numpy.std(im_data),
+            'sum': numpy.sum(im_data),
+            'medianabs': numpy.median(numpy.abs(im_data)),
+            'medianabsdevmedian': numpy.median(numpy.abs(im_data - numpy.median(im_data))),
+            'median': numpy.median(im_data)}
     
     qa = QA(origin="qa_image", data=data, context=context)
     return qa
@@ -410,12 +411,16 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     log.debug("calculate_image_frequency_moments: Reference frequency = %.3f (MHz)" % (reference_frequency / 1e6))
     
     moment_data = numpy.zeros([nmoment, npol, ny, nx])
-    
+
+    assert not numpy.isnan(numpy.sum(im.data.values)), "NaNs present in image data"
+
     for moment in range(nmoment):
         for chan in range(nchan):
             weight = numpy.power((freq[chan] - reference_frequency) / reference_frequency, moment)
             moment_data[moment, ...] += im.data.values[chan, ...] * weight
     
+    assert not numpy.isnan(numpy.sum(moment_data)), "NaNs present in moment data"
+
     moment_wcs = copy.deepcopy(im.wcs)
     moment_wcs.wcs.ctype[3] = 'MOMENT'
     moment_wcs.wcs.crval[3] = 0.0
@@ -1006,18 +1011,18 @@ def create_w_term_like(im: Image, w, phasecentre=None, remove_shift=False, dopol
         fim_shape[1] = 1
     
     fim_array = numpy.zeros(fim_shape, dtype='complex')
-    fim = create_image_from_array(fim_array, wcs=im.wcs, polarisation_frame=im.polarisation_frame)
-    
-    cellsize = abs(fim.wcs.wcs.cdelt[0]) * numpy.pi / 180.0
+    cellsize = abs(im.wcs.wcs.cdelt[0]) * numpy.pi / 180.0
     nchan, npol, _, npixel = fim_shape
     if phasecentre is SkyCoord:
         wcentre = phasecentre.to_pixel(im.wcs, origin=0)
     else:
         wcentre = [im.wcs.wcs.crpix[0] - 1.0, im.wcs.wcs.crpix[1] - 1.0]
     
-    fim.data[:, :, ...].values = w_beam(npixel, npixel * cellsize, w=w, cx=wcentre[0], cy=wcentre[1],
-                                 remove_shift=remove_shift)
-    
+    fim_array[...]= w_beam(npixel, npixel * cellsize, w=w, cx=wcentre[0], cy=wcentre[1],
+                                 remove_shift=remove_shift)[numpy.newaxis, numpy.newaxis, ...]
+
+    fim = create_image_from_array(fim_array, wcs=im.wcs, polarisation_frame=im.polarisation_frame)
+
     fov = npixel * cellsize
     fresnel = numpy.abs(w) * (0.5 * fov) ** 2
     log.debug('create_w_term_image: For w = %.1f, field of view = %.6f, Fresnel number = %.2f' % (w, fov, fresnel))

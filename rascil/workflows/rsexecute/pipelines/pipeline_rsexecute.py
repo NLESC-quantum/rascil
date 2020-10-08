@@ -162,8 +162,7 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
     
     residual_imagelist = residual_list_rsexecute_workflow(vis_list, deconvolve_model_imagelist, context=context,
                                                           vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
-    restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist,
-                                                        **kwargs)
+    restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist)
     return (deconvolve_model_imagelist, residual_imagelist, restore_imagelist)
 
 

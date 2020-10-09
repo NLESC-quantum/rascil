@@ -50,23 +50,13 @@ class TestDPrepB(unittest.TestCase):
 
         """
         
-        parser = argparse.ArgumentParser(description='Benchmark pipelines in numpy and dask')
-        parser.add_argument('--npixel', type=int, default=256,
-                            help='Number of pixels per axis')
-        parser.add_argument('--context', dest='context', default='2d',
-                            help='Context: 2d|awprojection|ng')
-        parser.add_argument('--nchan', type=int, default=40,
-                            help='Number of channels to process')
         
-        args = parser.parse_args()
-        print(args)
-        
-        nchan = args.nchan
+        nchan = 40
         uvmax = 450.0
         cellsize = 0.00015
-        npixel = args.npixel
+        npixel = 256
         
-        context = args.context
+        context = '2d'
         
         input_vis = [rascil_data_path('vis/sim-1.ms'), rascil_data_path('vis/sim-2.ms')]
         

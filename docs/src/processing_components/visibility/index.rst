@@ -11,9 +11,6 @@ Visibility
 .. automodapi::    rascil.processing_components.visibility.base
    :no-inheritance-diagram:
 
-.. automodapi::    rascil.processing_components.visibility.coalesce
-   :no-inheritance-diagram:
-
 .. automodapi::    rascil.processing_components.visibility.gather_scatter
    :no-inheritance-diagram:
 

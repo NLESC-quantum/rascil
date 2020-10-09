@@ -92,7 +92,5 @@ Visibility
 * Append/sum/divide/QA: :py:func:`rascil.processing_components.visibility.operations.divide_visibility`
 * Remove continuum: :py:func:`rascil.processing_components.visibility.operations.remove_continuum_blockvisibility`
 * Integrate across channels: :py:func:`rascil.processing_components.visibility.operations.integrate_visibility_by_channel`
-* Coalesce (i.e. BDA) :py:func:`rascil.processing_components.visibility.coalesce.coalesce_visibility`
-* De-coalesce (i.e. BDA) :py:func:`rascil.processing_components.visibility.coalesce.decoalesce_visibility`
 
 

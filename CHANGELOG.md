@@ -1,5 +1,5 @@
 
-0.2.0b0
+0.2.0a0
 -------
 
 * This is a major upgrade breaking interfaces. We have switched to use xarray instead of numpy to hold class 
@@ -20,10 +20,6 @@
   awprojection.
 * Other workflows work as before.
 * The LOW test beam is now a uniformly weighted 38m diameter disk
-
-0.1.10b0
---------
-
 
 0.1.9
 -----

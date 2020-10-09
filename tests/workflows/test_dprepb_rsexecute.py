@@ -9,6 +9,8 @@ import unittest
 
 import numpy
 
+from distributed import Client
+
 # These are the RASCIL functions we need
 from rascil.data_models import rascil_data_path
 from rascil.data_models.polarisation import PolarisationFrame
@@ -18,7 +20,8 @@ from rascil.processing_components import create_blockvisibility_from_ms, \
 from rascil.processing_components.image.operations import export_image_to_fits, qa_image
 from rascil.processing_components.visibility import blockvisibility_where
 
-from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
+from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute, \
+    get_dask_client
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rsexecute_workflow
 
 log = logging.getLogger('rascil-logger')
@@ -29,8 +32,9 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 
 class TestDPrepB(unittest.TestCase):
     def setUp(self):
-        
-        rsexecute.set_client(use_dask=True)
+        client = get_dask_client()
+        print(client)
+        rsexecute.set_client(use_dask=True, client=client, verbose=True)
         
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -47,25 +51,15 @@ class TestDPrepB(unittest.TestCase):
         """
         
         parser = argparse.ArgumentParser(description='Benchmark pipelines in numpy and dask')
-        parser.add_argument('--use_dask', type=str, default='True', help='Use Dask?')
-        parser.add_argument('--nworkers', type=int, default=1, help='Number of workers')
-        parser.add_argument('--threads', type=int, default=1,
-                            help='Number of threads per worker')
-        parser.add_argument('--memory', dest='memory', default=8,
-                            help='Memory per worker (GB)')
         parser.add_argument('--npixel', type=int, default=256,
                             help='Number of pixels per axis')
         parser.add_argument('--context', dest='context', default='2d',
                             help='Context: 2d|awprojection|ng')
         parser.add_argument('--nchan', type=int, default=40,
                             help='Number of channels to process')
-        parser.add_argument('--scheduler', type=str, default=None, help='Dask scheduler')
         
         args = parser.parse_args()
         print(args)
-        
-        # Put the results in current directory
-        results_dir = rascil_data_path("test_results")
         
         nchan = args.nchan
         uvmax = 450.0

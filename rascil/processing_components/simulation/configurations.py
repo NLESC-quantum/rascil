@@ -21,7 +21,7 @@ from rascil.processing_components.util.installation_checks import check_data_dir
 
 import logging
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def find_vptype_from_name(names, match: Union[str, dict] = "unknown"):
     """Determine voltage pattern type from name using a dictionary

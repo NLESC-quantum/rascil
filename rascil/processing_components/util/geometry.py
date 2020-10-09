@@ -18,7 +18,7 @@ import numpy
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, Angle
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def angle_to_quanta(angle):

@@ -23,7 +23,7 @@ from rascil.processing_components.calibration.operations import create_gaintable
 from rascil.processing_components.visibility.operations import divide_visibility
 from rascil.processing_components.visibility.visibility_selection import blockvisibility_select
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=None, phase_only=True, niter=30,

@@ -16,7 +16,7 @@ from rascil.processing_components.image.gather_scatter import image_gather_facet
     image_scatter_channels
 from rascil.processing_components.simulation import create_test_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

@@ -10,7 +10,7 @@ import numpy
 
 from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

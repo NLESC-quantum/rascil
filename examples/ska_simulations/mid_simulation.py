@@ -128,7 +128,7 @@ def simulation(args):
                             level=logging.INFO)
     
     init_logging()
-    log = logging.getLogger("logger")
+    log = logging.getLogger('rascil-logger')
     
     log.info("Starting simulation of {}".format(args.mode))
     

@@ -27,7 +27,7 @@ from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles, \
     calculate_blockvisibility_azel, calculate_blockvisibility_parallactic_angles
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def find_times_above_elevation_limit(start_times, end_times, location, phasecentre, elevation_limit):

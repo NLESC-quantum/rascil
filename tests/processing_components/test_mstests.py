@@ -28,7 +28,7 @@ try:
 except:
     run_ms_tests = False
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

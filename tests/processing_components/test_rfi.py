@@ -14,7 +14,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation.rfi import create_propagators, calculate_rfi_at_station, \
     calculate_station_correlation_rfi, simulate_DTV, simulate_DTV_prop, create_propagators_prop
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

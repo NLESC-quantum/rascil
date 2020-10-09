@@ -11,7 +11,7 @@ __all__ = ['blockvisibility_select',
 import copy
 import logging
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def blockvisibility_select(bvis, selection):

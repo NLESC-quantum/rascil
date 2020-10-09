@@ -37,7 +37,7 @@ warnings.simplefilter('ignore', FITSFixedWarning)
 warnings.simplefilter('ignore', AstropyDeprecationWarning)
 
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 class Configuration:
@@ -215,7 +215,7 @@ class GainTable:
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims="time")
         self.data = xarray.Dataset(datavars, coords=coords)
-
+        self.receptor_frame = receptor_frame
         self.phasecentre = phasecentre
         self.configuration = configuration
     
@@ -1367,13 +1367,19 @@ class FlagTable:
         """ Return size in GB
         """
         return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
-    
+
     @property
     def time(self):
         """ Time
         """
         return self.data['time']
-    
+
+    @property
+    def baseline(self):
+        """ Baselines
+        """
+        return self.data['baseline']
+
     @property
     def datetime(self):
         """ DateTime

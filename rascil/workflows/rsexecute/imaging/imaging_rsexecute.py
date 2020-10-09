@@ -31,7 +31,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.shared.imaging import imaging_context, remove_sumwt, sum_predict_results, \
     threshold_list, sum_invert_results
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=None, **kwargs):
@@ -268,7 +268,8 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
             result, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
             if result.data.shape[0] == model.data.shape[0]:
-                result.data.values += model.data.values
+                print(result.data.shape, model.data.shape)
+                result.data.values = result.data.values + model.data.values
             return result
         else:
             return copy_image(model)

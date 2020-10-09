@@ -60,7 +60,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import \
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import \
     predict_skymodel_list_compsonly_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def simulate_list_rsexecute_workflow(config='LOWBD2',

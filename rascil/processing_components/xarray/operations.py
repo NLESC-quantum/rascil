@@ -16,7 +16,7 @@ from astropy.wcs import FITSFixedWarning
 from astropy.wcs import WCS
 
 warnings.simplefilter('ignore', FITSFixedWarning)
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def xarray_to_fits_header(xa: xarray.DataArray):

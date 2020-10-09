@@ -17,7 +17,7 @@ from astropy.wcs import WCS
 from rascil.data_models.memory_data_models import BlockVisibility,  FlagTable
 from rascil.processing_components.visibility import get_baseline
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):

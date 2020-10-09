@@ -9,7 +9,7 @@ import numpy
 from rascil.data_models.parameters import rascil_path, rascil_data_path
 from rascil.processing_components.xarray.operations import import_xarray_from_fits, export_xarray_to_fits
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

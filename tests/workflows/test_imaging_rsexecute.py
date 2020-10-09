@@ -28,7 +28,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import zero_list_rsexe
     restore_list_rsexecute_workflow
 from rascil.workflows.shared.imaging.imaging_shared import sum_invert_results
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

@@ -25,7 +25,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines import continuum_imaging_list_rsexecute_workflow
 from rascil.workflows.rsexecute.imaging import weight_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.DEBUG)
 

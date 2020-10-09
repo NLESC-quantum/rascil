@@ -24,7 +24,7 @@ from rascil.processing_components.griddata.operations import create_griddata_fro
 from rascil.processing_components.image.operations import image_is_canonical
 from rascil.processing_components.util.array_functions import tukey_filter
 
-log = logging.getLogger("logger")
+log = logging.getLogger('rascil-logger')
 
 
 def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.0, **kwargs):

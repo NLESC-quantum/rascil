@@ -26,7 +26,7 @@ from astropy.wcs import WCS
 from rascil.data_models.memory_data_models import ConvolutionFunction
 from rascil.data_models.memory_data_models import QA
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def convolutionfunction_select(cf, selection):

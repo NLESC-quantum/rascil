@@ -18,7 +18,7 @@ from astropy.time import Time
 
 from rascil.data_models.memory_data_models import GainTable, BlockVisibility, QA, assert_vis_gt_compatible
 from rascil.data_models.polarisation import ReceptorFrame
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs) -> BlockVisibility:

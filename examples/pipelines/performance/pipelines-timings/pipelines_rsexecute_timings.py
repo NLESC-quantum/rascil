@@ -136,7 +136,7 @@ def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_pe
                             level=logging.INFO)
     
     init_logging()
-    log = logging.getLogger("logger")
+    log = logging.getLogger('rascil-logger')
     
     # Initialise logging on the workers. This appears to only work using the process scheduler.
     rsexecute.run(init_logging)

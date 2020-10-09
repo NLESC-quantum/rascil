@@ -17,7 +17,7 @@ from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.image.operations import import_image_from_fits, reproject_image, scale_and_rotate_image
 from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, fft_image, pad_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def set_pb_header(pb, use_local=True):

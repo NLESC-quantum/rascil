@@ -20,7 +20,7 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymo
     invert_skymodel_list_rsexecute_workflow, residual_skymodel_list_rsexecute_workflow, \
     restore_skymodel_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, skymodel_list, vis_slices=1, facets=1,

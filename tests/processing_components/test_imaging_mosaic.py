@@ -28,7 +28,7 @@ mpl_logger.setLevel(logging.WARNING)
 
 results_dir = rascil_path("test_results")
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

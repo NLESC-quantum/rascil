@@ -16,7 +16,7 @@ import xarray
 
 from rascil.data_models.memory_data_models import Image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def image_select(im, selection):
     """ Select subset of image using xarray syntax

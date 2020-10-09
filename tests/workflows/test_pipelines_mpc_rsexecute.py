@@ -21,7 +21,7 @@ from rascil.workflows.serial import weight_list_serial_workflow
 from rascil.processing_components.xarray import import_xarray_from_fits, export_xarray_to_fits
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

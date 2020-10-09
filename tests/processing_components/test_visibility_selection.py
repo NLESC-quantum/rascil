@@ -14,7 +14,7 @@ from rascil.processing_components.visibility import blockvisibility_select, bloc
     blockvisibility_groupby_bins, blockvisibility_where
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

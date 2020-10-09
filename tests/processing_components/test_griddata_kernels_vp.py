@@ -17,7 +17,7 @@ from rascil.processing_components.griddata.kernels import create_vpterm_convolut
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.primary_beams import create_vp
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

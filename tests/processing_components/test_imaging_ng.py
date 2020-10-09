@@ -28,7 +28,7 @@ try:
 except ImportError:
     run_ng_tests = False
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

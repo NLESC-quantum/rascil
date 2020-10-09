@@ -15,7 +15,7 @@ from rascil.processing_components.imaging import normalize_sumwt
 from rascil.processing_components.imaging import predict_2d, invert_2d, predict_awprojection, invert_awprojection
 from rascil.processing_components.visibility import copy_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def imaging_contexts():

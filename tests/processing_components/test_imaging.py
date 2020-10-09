@@ -26,7 +26,7 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
 from rascil.processing_components.skycomponent.operations import find_skycomponents, find_nearest_skycomponent, \
     insert_skycomponent
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

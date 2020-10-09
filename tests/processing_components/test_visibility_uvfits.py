@@ -17,7 +17,7 @@ from rascil.processing_components.imaging.base import invert_2d, create_image_fr
 from rascil.processing_components.image.operations import export_image_to_fits
 
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

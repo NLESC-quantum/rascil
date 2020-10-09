@@ -18,7 +18,7 @@ import numpy
 
 from rascil.data_models.memory_data_models import BlockVisibility, FlagTable, QA
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def flagtable_summary(ft: FlagTable):

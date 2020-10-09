@@ -33,7 +33,7 @@ from rascil.processing_components.griddata.operations import copy_griddata
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.visibility.base import copy_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def convolution_mapping_blockvisibility(vis, griddata, chan, cf, channel_tolerance=1e-8):

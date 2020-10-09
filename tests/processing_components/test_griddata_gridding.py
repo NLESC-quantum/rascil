@@ -31,7 +31,7 @@ from rascil.processing_components.simulation import create_unittest_model, \
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
 from rascil.processing_components.visibility.operations import qa_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

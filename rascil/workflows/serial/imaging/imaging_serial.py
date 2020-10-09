@@ -30,7 +30,7 @@ from rascil.processing_components.imaging import normalize_sumwt
 from rascil.processing_components.imaging import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=1, facets=1,

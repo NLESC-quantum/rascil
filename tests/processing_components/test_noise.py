@@ -16,7 +16,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation.noise import addnoise_visibility
 from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility, copy_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

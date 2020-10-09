@@ -20,7 +20,7 @@ from rascil.processing_components.skycomponent.operations import insert_skycompo
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

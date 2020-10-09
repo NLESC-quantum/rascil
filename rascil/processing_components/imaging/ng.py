@@ -24,7 +24,7 @@ from rascil.processing_components.imaging.base import shift_vis_to_image, \
 from rascil.processing_components.visibility.base import copy_visibility
 
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 try:
     import nifty_gridder as ng

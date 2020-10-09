@@ -14,7 +14,7 @@ import numpy
 
 from rascil.data_models.memory_data_models import GainTable
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def gaintable_select(gt, selection):
     """ Select subset of gaintable using xarray syntax

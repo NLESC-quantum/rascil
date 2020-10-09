@@ -34,7 +34,7 @@ from rascil.processing_components.imaging.imaging_params import get_frequency_ma
 from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.visibility.base import calculate_blockvisibility_phasor
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]]) \

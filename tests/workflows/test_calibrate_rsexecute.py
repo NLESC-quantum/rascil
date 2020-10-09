@@ -21,7 +21,7 @@ from rascil.processing_components.visibility.base import copy_visibility
 from rascil.workflows.rsexecute.calibration.calibration_rsexecute import calibrate_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

@@ -21,7 +21,7 @@ from rascil.processing_components.visibility import blockvisibility_select
 from rascil.processing_components.calibration import pointingtable_select, gaintable_select
 from rascil.processing_components.util.geometry import calculate_azel
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scale=1.0, order=3,

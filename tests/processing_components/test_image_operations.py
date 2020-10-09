@@ -18,7 +18,7 @@ from rascil.processing_components.image.operations import export_image_to_fits, 
     convert_stokes_to_polimage, smooth_image, scale_and_rotate_image
 from rascil.processing_components.simulation import create_test_image, create_low_test_image_from_gleam
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

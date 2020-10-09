@@ -18,7 +18,7 @@ from rascil.processing_components.image.operations import create_image_from_arra
     fft_image, pad_image, create_w_term_like
 from rascil.processing_components.imaging.primary_beams import convert_azelvp_to_radec
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def create_box_convolutionfunction(im, oversampling=1, support=1, polarisation_frame=None):

@@ -16,7 +16,7 @@ from rascil.processing_components.simulation import create_low_test_image_from_g
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

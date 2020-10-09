@@ -29,7 +29,7 @@ from rascil.data_models.polarisation import convert_linear_to_stokes, \
     convert_circular_to_stokes, PolarisationFrame
 from rascil.processing_components.visibility import copy_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def sort_visibility(vis, order=None):

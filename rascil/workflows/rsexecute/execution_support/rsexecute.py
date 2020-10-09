@@ -14,7 +14,7 @@ from dask import delayed, optimize
 from dask.distributed import wait
 from distributed import Client, LocalCluster
 
-log = logging.getLogger("logger")
+log = logging.getLogger('rascil-logger')
 
 # Support daliuge's delayed function, make it fail if not available but used
 try:
@@ -26,7 +26,7 @@ except ImportError:
     def dlg_compute(*args, **kwargs):
         pass
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def get_dask_client(timeout=30, n_workers=None, threads_per_worker=1,

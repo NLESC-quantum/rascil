@@ -52,7 +52,7 @@ from rascil.processing_components.image import create_image_from_array, convert_
     convert_stokes_to_polimage
 from rascil.processing_components.visibility.base import copy_visibility, phaserotate_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def shift_vis_to_image(vis: BlockVisibility, im: Image, tangent: bool = True, inverse: bool = False) \

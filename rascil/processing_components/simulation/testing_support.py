@@ -70,7 +70,7 @@ from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.util.installation_checks import check_data_directory
 
 check_data_directory()
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, phasecentre=None,

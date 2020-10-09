@@ -26,7 +26,7 @@ from rascil.processing_components.visibility.visibility_geometry import calculat
 from rascil.processing_components.util.coordinate_support import xyz_to_uvw, skycoord_to_lmn
 
 import logging
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def find_pierce_points(station_locations, ha, dec, phasecentre, height):
     """Find the pierce points for a flat screen at specified height

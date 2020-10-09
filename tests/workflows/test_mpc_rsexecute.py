@@ -23,7 +23,7 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components import plot_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

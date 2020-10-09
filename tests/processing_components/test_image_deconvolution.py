@@ -22,7 +22,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.imaging.base import predict_2d, invert_2d, create_image_from_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

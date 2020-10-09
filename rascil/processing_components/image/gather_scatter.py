@@ -19,7 +19,7 @@ from rascil.processing_components.image.operations import create_image_from_arra
 from rascil.processing_components.image.iterators import image_raster_iter, image_channel_iter
 from rascil.processing_components.image.image_selection import image_groupby, image_groupby_bins
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def image_scatter_facets(im: Image, facets=1, overlap=0, taper=None) -> List[Image]:
@@ -169,14 +169,9 @@ def image_gather_channels(image_list: List[Image], im: Image = None, subimages=0
     for ar in image_data_list:
         assert not numpy.isnan(numpy.sum(ar.values)), "NaNs present in input image data"
         
-    image_data_concat = xarray.concat(image_data_list, "frequency")
-    for chan in range(image_data_concat.data.shape[0]):
-        if numpy.isnan(numpy.sum(image_data_concat.values[chan])):
-            print("NaNs present in concatenated DataArray, channel {}".format(chan))
-
     if not isinstance(im, Image):
         im = copy.deepcopy(image_list[0])
-    im.data = image_data_concat.fillna(0.0)
+    im.data = xarray.concat(image_data_list, "frequency")
     assert not numpy.isnan(numpy.sum(im.data.values)), "NaNs present in output image"
     return im
 

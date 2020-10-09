@@ -25,7 +25,7 @@ from rascil.data_models.memory_data_models import QA
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import create_image_from_array
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def griddata_select(gd, selection):

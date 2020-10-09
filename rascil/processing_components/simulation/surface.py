@@ -22,7 +22,7 @@ from rascil.processing_components.calibration import gaintable_select
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 from rascil.processing_components.util.geometry import calculate_azel
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=3,
                                             elevation_limit=15.0 * numpy.pi / 180.0, **kwargs):

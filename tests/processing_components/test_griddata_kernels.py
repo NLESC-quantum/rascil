@@ -21,7 +21,7 @@ from rascil.processing_components.griddata.convolution_functions import export_c
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.primary_beams import create_pb_generic
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

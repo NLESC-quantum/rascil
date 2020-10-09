@@ -15,7 +15,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rse
 from rascil.data_models.polarisation import PolarisationFrame
 
 import logging
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))

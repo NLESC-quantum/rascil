@@ -18,7 +18,7 @@ from rascil.data_models.polarisation import ReceptorFrame
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def pointingtable_summary(pt: PointingTable):
     """Return string summarizing the Gaintable

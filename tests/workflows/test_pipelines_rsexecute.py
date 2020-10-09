@@ -29,7 +29,7 @@ from rascil.workflows.rsexecute.pipelines.pipeline_rsexecute import ical_list_rs
 from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import ical_skymodel_list_rsexecute_workflow, \
     continuum_imaging_skymodel_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

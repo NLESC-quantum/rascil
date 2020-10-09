@@ -61,7 +61,7 @@ from rascil.processing_components.calibration.operations import apply_gaintable,
 from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.solvers import solve_gaintable
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def create_calibration_controls():
     """Create a dictionary containing default chanin calibration controls

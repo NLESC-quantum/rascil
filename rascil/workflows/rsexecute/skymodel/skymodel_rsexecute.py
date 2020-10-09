@@ -26,7 +26,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rse
 from rascil.workflows.serial.imaging.imaging_serial import invert_list_serial_workflow, predict_list_serial_workflow
 from rascil.workflows.shared.imaging import remove_sumwt
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis_slices=1, facets=1,

@@ -17,7 +17,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rse
     predict_list_rsexecute_workflow, subtract_list_rsexecute_workflow, \
     restore_list_rsexecute_workflow, deconvolve_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=1, facets=1,

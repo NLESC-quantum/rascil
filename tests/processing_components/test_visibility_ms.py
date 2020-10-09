@@ -12,7 +12,7 @@ from rascil.data_models import rascil_path, rascil_data_path, BlockVisibility
 from rascil.processing_components.visibility.base import create_blockvisibility_from_ms, create_blockvisibility_from_ms
 from rascil.processing_components.visibility.operations import integrate_visibility_by_channel
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))

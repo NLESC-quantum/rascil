@@ -12,7 +12,7 @@ from rascil.processing_components import create_blockvisibility_from_ms, \
     deconvolve_cube, restore_cube, create_image_from_visibility, invert_2d
 from rascil.workflows import invert_list_serial_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))

@@ -50,7 +50,7 @@ from rascil.processing_components.calibration import apply_jones
 from rascil.processing_components.fourier_transforms import w_beam, fft, ifft
 
 warnings.simplefilter('ignore', FITSFixedWarning)
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def image_select(im, selection):
     """ Select subset of Image using xarray syntax

@@ -22,7 +22,7 @@ from rascil.processing_components.skycomponent.operations import create_skycompo
     filter_skycomponents_by_flux
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

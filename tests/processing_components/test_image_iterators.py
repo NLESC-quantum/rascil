@@ -15,7 +15,7 @@ from rascil.processing_components.image.iterators import image_raster_iter, imag
 from rascil.processing_components.image.operations import create_empty_image_like, pad_image
 from rascil.processing_components.simulation import create_test_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

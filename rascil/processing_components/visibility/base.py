@@ -37,7 +37,7 @@ from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
     hadec_to_azel, xyz_at_latitude
 from rascil.processing_components.util.geometry import calculate_transit_time, utc_to_ms_epoch
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 # This convention agrees with that in the MS reader

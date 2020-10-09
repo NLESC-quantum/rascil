@@ -12,7 +12,7 @@ import logging
 
 from rascil.data_models.memory_data_models import PointingTable
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def pointingtable_select(pt, selection):

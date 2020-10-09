@@ -6,6 +6,7 @@ __all__ = ['image_select',
            'image_iselect',
            'image_groupby',
            'image_groupby_bins',
+           'image_concat',
            'image_where']
 
 import copy
@@ -15,10 +16,10 @@ import numpy
 import xarray
 
 from rascil.data_models.memory_data_models import Image
-
+from rascil.processing_components.image.operations import copy_image
 log = logging.getLogger('rascil-logger')
 
-def image_select(im, selection):
+def image_select(im, selection, **kwargs):
     """ Select subset of image using xarray syntax
 
     :param im:
@@ -26,11 +27,11 @@ def image_select(im, selection):
     :return:
     """
     newim = copy.copy(im)
-    newim.data = im.data.sel(selection)
+    newim.data = im.data.sel(selection, **kwargs)
     return newim
 
 
-def image_iselect(im, selection):
+def image_iselect(im, selection, **kwargs):
     """ Select subset of image using xarray syntax
 
     :param im:
@@ -38,7 +39,7 @@ def image_iselect(im, selection):
     :return:
     """
     newim = copy.copy(im)
-    newim.data = im.data.isel(selection)
+    newim.data = im.data.isel(selection, **kwargs)
     return newim
 
 
@@ -87,3 +88,24 @@ def image_groupby_bins(im, coordinate, bins, **kwargs):
         newim = copy.copy(im)
         newim.data = group[1]
         yield newim
+
+def image_concat(im_list, dim, **kwargs):
+    """ Concatenate a list of images
+
+    :param im_list:
+    :param dim:
+    :return"
+    """
+    for im in im_list:
+        assert not numpy.isnan(numpy.sum(im.data.values)), \
+            "NaNs present in input image {}".format(im)
+
+    newim = copy_image(im_list[0])
+    newim.data = xarray.concat([im.data for im in im_list], dim, **kwargs)
+
+    assert not numpy.isnan(numpy.sum(newim.data.values)), \
+        "NaNs present in output image {}".format(newim)
+
+    return newim
+
+

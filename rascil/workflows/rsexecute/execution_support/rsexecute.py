@@ -28,9 +28,8 @@ except ImportError:
 
 log = logging.getLogger('rascil-logger')
 
-
-def get_dask_client(timeout=30, n_workers=None, threads_per_worker=1,
-                    processes=True, create_cluster=True,
+def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
+                    processes=True, create_cluster=False,
                     memory_limit=None, local_dir='.', with_file=False,
                     scheduler_file='./scheduler.json',
                     dashboard_address=':8787'):
@@ -82,7 +81,7 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=1,
         c = Client(cluster)
     else:
         c = Client(threads_per_worker=threads_per_worker, processes=processes,
-                   memory_limit=memory_limit, local_dir=local_dir)
+                   memory_limit=memory_limit, local_directory=local_dir)
 
     addr = c.scheduler_info()['address']
     services = c.scheduler_info()['services']
@@ -93,34 +92,6 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=1,
         db_addr = 'http:%s:%s' % (addr.split(':')[1], services['dashboard'])
         print('Diagnostic pages available on port %s' % db_addr)
     return c
-
-
-def get_nodes():
-    """ Get the nodes being used
-
-    The environment variable RASCIL_HOSTFILE is interpreted as file containing the nodes
-
-    :return: List of strings
-    """
-    hostfile = os.getenv('RASCIL_HOSTFILE', None)
-    if hostfile is None:
-        print("No hostfile specified")
-        return None
-
-    import socket
-    with open(hostfile, 'r') as file:
-        nodes = [line.replace('\n', '') for line in file.readlines()]
-        print("Nodes being used are %s" % nodes)
-        nodes = [socket.gethostbyname(node) for node in nodes]
-        print("Nodes IPs are %s" % nodes)
-        return nodes
-
-
-def findNodes(c):
-    """ Find Nodes being used for this Client
-
-    """
-    return [c.scheduler_info()['workers'][name]['host'] for name in c.scheduler_info()['workers'].keys()]
 
 
 class _rsexecutebase():
@@ -230,11 +201,11 @@ class _rsexecutebase():
             self._client.profile()
             self._client.get_task_stream()
             self.start_time = time.time()
-
         elif use_dlg:
             self._set_state(False, True, client, verbose, optim)
         else:
             self._set_state(False, False, None, verbose, optim)
+            
         if self._verbose:
             print('rsexecute.set_client: defined Dask Client')
 

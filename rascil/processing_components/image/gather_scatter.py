@@ -17,7 +17,8 @@ from rascil.data_models.memory_data_models import Image
 from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, \
     image_is_canonical
 from rascil.processing_components.image.iterators import image_raster_iter, image_channel_iter
-from rascil.processing_components.image.image_selection import image_groupby, image_groupby_bins
+from rascil.processing_components.image.image_selection import image_groupby, image_groupby_bins, \
+    image_concat
 
 log = logging.getLogger('rascil-logger')
 
@@ -162,16 +163,6 @@ def image_gather_channels(image_list: List[Image], im: Image = None, subimages=0
     :param subimages: Number of image partitions on each axis (2)
     :return: list of subimages
     """
-    for im in image_list:
-        assert not numpy.isnan(numpy.sum(im.data.values)), "NaNs present in input images"
-
-    image_data_list = [im.data for im in image_list]
-    for ar in image_data_list:
-        assert not numpy.isnan(numpy.sum(ar.values)), "NaNs present in input image data"
-        
-    if not isinstance(im, Image):
-        im = copy.deepcopy(image_list[0])
-    im.data = xarray.concat(image_data_list, "frequency")
-    assert not numpy.isnan(numpy.sum(im.data.values)), "NaNs present in output image"
+    im = image_concat(image_list, "frequency")
     return im
 

@@ -268,7 +268,6 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
             result, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
             if result.data.shape[0] == model.data.shape[0]:
-                print(result.data.shape, model.data.shape)
                 result.data.values = result.data.values + model.data.values
             return result
         else:

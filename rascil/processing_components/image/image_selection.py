@@ -92,9 +92,9 @@ def image_groupby_bins(im, coordinate, bins, **kwargs):
 def image_concat(im_list, dim, **kwargs):
     """ Concatenate a list of images
 
-    :param im_list:
-    :param dim:
-    :return"
+    :param im_list: List of images
+    :param dim: Dimension to concatenate along e.g. "frequency"
+    :return: Image
     """
     for im in im_list:
         assert not numpy.isnan(numpy.sum(im.data.values)), \

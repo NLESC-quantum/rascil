@@ -36,8 +36,7 @@ Visibility weighting and tapering
 Visibility predict and invert
 -----------------------------
 
-* Predict BlockVisibility for Skycomponent :py:func:`rascil.processing_components.imaging.base
-.predict_skycomponent_visibility`
+* Predict BlockVisibility for Skycomponent :py:func:`rascil.processing_components.imaging.base.predict_skycomponent_visibility`
 * Predict by de-gridding visibilities :py:func:`rascil.processing_components.imaging.base.predict_2d`
 * Invert by gridding visibilities :py:func:`rascil.processing_components.imaging.base.invert_2d`
 * Predict by de-gridding visibilities with Nifty Gridder :py:func:`rascil.processing_components.imaging.ng.predict_ng`

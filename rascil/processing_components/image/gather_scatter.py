@@ -5,20 +5,17 @@ Functions that perform gather/scatter operations on Images.
 
 __all__ = ['image_gather_channels', 'image_scatter_channels', 'image_gather_facets', 'image_scatter_facets']
 
+import copy
 import logging
 from typing import List
-import copy
 
-import numpy
 import xarray
 
 from rascil.data_models.memory_data_models import Image
-
-from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, \
-    image_is_canonical
-from rascil.processing_components.image.iterators import image_raster_iter, image_channel_iter
-from rascil.processing_components.image.image_selection import image_groupby, image_groupby_bins, \
+from rascil.processing_components.image.image_selection import image_groupby_bins, \
     image_concat
+from rascil.processing_components.image.iterators import image_raster_iter
+from rascil.processing_components.image.operations import create_empty_image_like
 
 log = logging.getLogger('rascil-logger')
 
@@ -78,7 +75,7 @@ def image_gather_facets(image_list: List[Image], im: Image, facets=1, overlap=0,
             for sum_flat_facet in image_raster_iter(sum_flats, facets=facets, overlap=overlap, taper=taper):
                 sum_flat_facet.data.values[...] += flats[i].data.values[...]
                 i += 1
-    
+            
             return sum_flats
         else:
             i = 0
@@ -88,10 +85,10 @@ def image_gather_facets(image_list: List[Image], im: Image, facets=1, overlap=0,
                 out_facet.data.values[...] += flats[i].data.values * image_list[i].data.values[...]
                 sum_flat_facet.data.values[...] += flats[i].data.values[...]
                 i += 1
-    
+            
             out.data.values[sum_flats.data.values > 0.0] /= sum_flats.data.values[sum_flats.data.values > 0.0]
             out.data.values[sum_flats.data.values <= 0.0] = 0.0
-        
+            
             return out
     else:
         flat = create_empty_image_like(im)
@@ -102,7 +99,7 @@ def image_gather_facets(image_list: List[Image], im: Image, facets=1, overlap=0,
         else:
             for i, facet in enumerate(image_raster_iter(out, facets=facets, overlap=overlap, taper=taper)):
                 facet.data[...].values += image_list[i].data[...].values
-        
+            
             return out
 
 
@@ -165,4 +162,3 @@ def image_gather_channels(image_list: List[Image], im: Image = None, subimages=0
     """
     im = image_concat(image_list, "frequency")
     return im
-

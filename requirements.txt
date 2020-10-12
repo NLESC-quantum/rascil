@@ -158,7 +158,6 @@ urllib3==1.25.10
 wcwidth 
 webencodings==0.5.1
 widgetsnbextension 
-wtowers==0.12
-xarray 
+xarray
 zict==2.0.0
 zipp==3.1.0

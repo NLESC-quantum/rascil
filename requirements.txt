@@ -80,8 +80,7 @@ nbformat
 nest-asyncio 
 netCDF4 
 networkx 
-nifty-gridder 
-notebook 
+notebook
 numba 
 numpy==1.19.2
 olefile==0.46

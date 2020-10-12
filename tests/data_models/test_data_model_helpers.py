@@ -84,10 +84,7 @@ class TestDataModelHelpers(unittest.TestCase):
         export_gaintable_to_hdf5(gt, '%s/test_data_model_helpers_gaintable.hdf' % self.dir)
         newgt = import_gaintable_from_hdf5('%s/test_data_model_helpers_gaintable.hdf' % self.dir)
     
-        for key in gt.data.dtype.fields:
-            assert numpy.max(numpy.abs(newgt.data[key] - gt.data[key])) < 1e-15
-    
-        assert gt.data.shape == newgt.data.shape
+        assert gt.data.gain.shape == newgt.data.gain.shape
         assert numpy.max(numpy.abs(gt.gain - newgt.gain)) < 1e-15
 
     def test_readwritepointingtable(self):
@@ -101,10 +98,7 @@ class TestDataModelHelpers(unittest.TestCase):
         export_pointingtable_to_hdf5(gt, '%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
         newgt = import_pointingtable_from_hdf5('%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
     
-        for key in gt.data.dtype.fields:
-            assert numpy.max(numpy.abs(newgt.data[key] - gt.data[key])) < 1e-15
-    
-        assert gt.data.shape == newgt.data.shape
+        assert gt.data.pointing.shape == newgt.data.pointing.shape
         assert numpy.max(numpy.abs(gt.pointing - newgt.pointing)) < 1e-15
 
     def test_readwriteimage(self):

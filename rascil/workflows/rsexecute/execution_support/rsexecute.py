@@ -11,8 +11,7 @@ import time
 from tabulate import tabulate
 
 from dask import delayed, optimize
-from dask.distributed import wait
-from distributed import Client, LocalCluster
+from dask.distributed import wait, Client, LocalCluster
 
 log = logging.getLogger('rascil-logger')
 
@@ -60,6 +59,7 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
         c = Client(scheduler_file=scheduler_file, timeout=timeout)
 
     elif create_cluster:
+        print("Creating Dask Localcluster")
         if n_workers is not None:
             if memory_limit is not None:
                 cluster = LocalCluster(n_workers=n_workers, threads_per_worker=threads_per_worker, processes=processes,
@@ -80,6 +80,7 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
         print("Creating LocalCluster and Dask Client")
         c = Client(cluster)
     else:
+        print("Creating Dask.distributed Client")
         c = Client(threads_per_worker=threads_per_worker, processes=processes,
                    memory_limit=memory_limit, local_directory=local_dir)
 

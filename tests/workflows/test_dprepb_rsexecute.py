@@ -35,13 +35,14 @@ class TestDPrepB(unittest.TestCase):
         client = get_dask_client()
         print(client)
         rsexecute.set_client(use_dask=True, client=client, verbose=True)
-        
+
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         
         self.persist = os.getenv("RASCIL_PERSIST", False)
     
     def tearDown(self):
+        print(rsexecute.client.scheduler)
         rsexecute.close()
     
     def test_pipeline(self):
@@ -115,8 +116,6 @@ class TestDPrepB(unittest.TestCase):
                              '%s/test_dprepb_rsexecute_%s_clean_restored_cube.fits'
                              % (self.dir, context))
         
-        rsexecute.close()
-
         qa = qa_image(restored_cube, context='CLEAN restored cube')
         print(qa)
 

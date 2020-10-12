@@ -1,5 +1,5 @@
-graphviz==0.14.2
-Sphinx==3.2.1
-sphinx-rtd-theme==0.5.0
-sphinx-automodapi==0.13
-sphinx-argparse==0.2.5
+graphviz
+sphinx
+sphinx_rtd_theme
+sphinx_automodapi
+sphinx-argparse

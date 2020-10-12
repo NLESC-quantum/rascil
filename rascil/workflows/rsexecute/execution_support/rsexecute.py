@@ -59,7 +59,7 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
         c = Client(scheduler_file=scheduler_file, timeout=timeout)
 
     elif create_cluster:
-        print("Creating Dask Localcluster")
+        print("Creating Dask Localcluster - xarray feaures may not work correctly")
         if n_workers is not None:
             if memory_limit is not None:
                 cluster = LocalCluster(n_workers=n_workers, threads_per_worker=threads_per_worker, processes=processes,
@@ -196,7 +196,7 @@ class _rsexecutebase():
             self.client.close()
 
         if use_dask:
-            client = client or Client(**kwargs)
+            client = client or get_dask_client(**kwargs)
             assert isinstance(client, Client)
             self._set_state(True, False, client, verbose, optim)
             self._client.profile()
@@ -208,7 +208,7 @@ class _rsexecutebase():
             self._set_state(False, False, None, verbose, optim)
             
         if self._verbose:
-            print('rsexecute.set_client: defined Dask Client')
+            print('rsexecute.set_client: defined Dask distributed client')
 
     def compute(self, value, sync=False):
         """Get the actual value

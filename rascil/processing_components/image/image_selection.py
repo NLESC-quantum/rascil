@@ -101,7 +101,7 @@ def image_concat(im_list, dim, **kwargs):
             "NaNs present in input image {}".format(im)
 
     newim = copy_image(im_list[0])
-    newim.data = xarray.concat([im.data for im in im_list], dim, **kwargs)
+    newim.data = xarray.concat([im.data for im in im_list], dim=dim, **kwargs)
 
     assert not numpy.isnan(numpy.sum(newim.data.values)), \
         "NaNs present in output image {}".format(newim)

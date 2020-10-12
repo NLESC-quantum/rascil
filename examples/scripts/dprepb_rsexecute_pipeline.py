@@ -19,12 +19,12 @@ from rascil.processing_components import create_blockvisibility_from_ms, \
 from rascil.processing_components.visibility import blockvisibility_where
 
 from rascil.workflows import invert_list_rsexecute_workflow
-from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
+from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute, get_dask_client
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Benchmark pipelines in numpy and dask')
-    parser.add_argument('--use_dask', type=str, default='True', help='Use Dask?')
+    parser.add_argument('--use_dask', type=str, default='False', help='Use Dask?')
     parser.add_argument('--npixel', type=int, default=256,
                         help='Number of pixels per axis')
     parser.add_argument('--context', dest='context', default='ng',
@@ -50,7 +50,12 @@ if __name__ == '__main__':
     log = logging.getLogger()
     logging.info("Starting Imaging pipeline")
 
-    rsexecute.set_client(use_dask=args.use_dask)
+    if args.use_dask:
+        rsexecute.set_client(use_dask=True, verbose=True)
+        print(rsexecute.client)
+    else:
+        rsexecute.set_client(use_dask=False)
+
     rsexecute.run(init_logging)
 
     nchan = args.nchan

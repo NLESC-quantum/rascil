@@ -32,9 +32,8 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 
 class TestDPrepB(unittest.TestCase):
     def setUp(self):
-        client = get_dask_client()
-        print(client)
-        rsexecute.set_client(use_dask=True, client=client, verbose=True)
+        rsexecute.set_client(use_dask=True, verbose=True)
+        print(rsexecute.client)
 
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')

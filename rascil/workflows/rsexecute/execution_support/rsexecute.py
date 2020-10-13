@@ -192,6 +192,9 @@ class _rsexecutebase():
         :param optim: Use dask.optimize via rsexecute.optimize function.
         :return:
         """
+        # We need this so that xarray knows which scheduler to use
+        config.set(scheduler='distributed')
+
         if bool(use_dask) and bool(use_dlg):
             raise ValueError('use_dask and use_dlg cannot be specified together')
 
@@ -212,9 +215,6 @@ class _rsexecutebase():
         else:
             self._set_state(False, False, None, verbose, optim)
 
-        # We need this so that xarray knows which scheduler to use
-        config.set(scheduler='distributed')
-
         if self._verbose:
             print('rsexecute.set_client: defined Dask distributed client')
 
@@ -234,6 +234,9 @@ class _rsexecutebase():
             if self.client is None:
                 return value.compute()
             else:
+                import dask
+                scheduler = dask.config.get("scheduler")
+                assert scheduler == "distributed", scheduler
                 future = self.client.compute(value, sync=sync)
                 wait(future)
                 if self._verbose:

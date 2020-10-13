@@ -25,15 +25,13 @@ import logging
 
 log = logging.getLogger("rascil-logger")
 logging.info("Starting imaging-pipeline")
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 class TestImagingPipeline(unittest.TestCase):
     def setUp(self):
 
-        client = get_dask_client()
-        print(client)
-        rsexecute.set_client(use_dask=True, client=client, verbose=True)
+        rsexecute.set_client(use_dask=True, verbose=True)
 
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -43,7 +41,6 @@ class TestImagingPipeline(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
     
-    @unittest.skip("Not yet working with xarray")
     def test_pipeline(self):
         nfreqwin = 7
         ntimes = 5
@@ -128,9 +125,7 @@ class TestImagingPipeline(unittest.TestCase):
                                                       deconvolve_facets=4,
                                                       deconvolve_overlap=32,
                                                       deconvolve_taper='tukey',
-                                                      psf_support=64,
-                                                      restore_facets=4,
-                                                      psfwidth=3.0)
+                                                      psf_support=64)
         
         log.info('About to run continuum imaging')
         

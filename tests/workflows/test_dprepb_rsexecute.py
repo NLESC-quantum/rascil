@@ -35,6 +35,7 @@ class TestDPrepB(unittest.TestCase):
         
         rsexecute.set_client(use_dask=True, verbose=True)
         print(rsexecute.client)
+        print(rsexecute.client.scheduler)
 
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -43,6 +44,7 @@ class TestDPrepB(unittest.TestCase):
     
     def tearDown(self):
         if rsexecute.client is not None:
+            print(rsexecute.client)
             print(rsexecute.client.scheduler)
         rsexecute.close()
     

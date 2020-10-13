@@ -345,7 +345,7 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
                 log.debug('restore_cube: error in fitting to psf, using 1 pixel stddev')
                 size = 1.0
             else:
-                size = max(fit.x_stddev, fit.y_stddev)
+                size = max(fit.x_stddev, fit.y_stddev).value
                 log.debug('restore_cube: psfwidth = %s' % (size))
         except minpack.error as err:
             log.debug('restore_cube: minpack error, using 1 pixel stddev')

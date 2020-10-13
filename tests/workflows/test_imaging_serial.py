@@ -458,6 +458,7 @@ class TestImaging(unittest.TestCase):
         assert numpy.abs(qa.data['min']) < 1e-7, str(qa)
     
     @unittest.skipUnless(run_serial_tests, "don't run serial tests")
+    @unittest.skip("Needs overlap to work - temporarily disabled")
     def test_restored_list_facet(self):
         self.actualSetUp(zerow=True)
         

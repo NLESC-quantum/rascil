@@ -154,8 +154,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
                                                       deconvolve_facets=4,
                                                       deconvolve_overlap=32,
                                                       deconvolve_taper='tukey',
-                                                      psf_support=64,
-                                                      restore_facets=4, psfwidth=1.0)
+                                                      psf_support=64)
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = 0
         if self.persist:

@@ -10,7 +10,9 @@ import time
 
 from tabulate import tabulate
 
-from dask import delayed, optimize
+from dask import delayed, optimize, config
+
+
 from dask.distributed import wait, Client, LocalCluster
 
 log = logging.getLogger('rascil-logger')
@@ -83,6 +85,9 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
         print("Creating Dask.distributed Client")
         c = Client(threads_per_worker=threads_per_worker, processes=processes,
                    memory_limit=memory_limit, local_directory=local_dir)
+
+    # We need this so that xarray knows which scheduler to use
+    config.set(scheduler='distributed')
 
     addr = c.scheduler_info()['address']
     services = c.scheduler_info()['services']
@@ -206,7 +211,10 @@ class _rsexecutebase():
             self._set_state(False, True, client, verbose, optim)
         else:
             self._set_state(False, False, None, verbose, optim)
-            
+
+        # We need this so that xarray knows which scheduler to use
+        config.set(scheduler='distributed')
+
         if self._verbose:
             print('rsexecute.set_client: defined Dask distributed client')
 
@@ -290,9 +298,12 @@ class _rsexecutebase():
         :return:
         """
         if self.using_dask:
-            return self.client.run(func, *args, **kwargs)
+            if self.client is not None:
+                return self.client.run(func, *args, **kwargs)
+            else:
+                return func(*args, **kwargs)
         else:
-            return func
+            return func(*args, **kwargs)
 
     def optimize(self, *args, **kwargs):
         """ Run Dask optimisation of graphs

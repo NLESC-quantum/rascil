@@ -32,6 +32,7 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 
 class TestDPrepB(unittest.TestCase):
     def setUp(self):
+        
         rsexecute.set_client(use_dask=True, verbose=True)
         print(rsexecute.client)
 
@@ -41,7 +42,8 @@ class TestDPrepB(unittest.TestCase):
         self.persist = os.getenv("RASCIL_PERSIST", False)
     
     def tearDown(self):
-        print(rsexecute.client.scheduler)
+        if rsexecute.client is not None:
+            print(rsexecute.client.scheduler)
         rsexecute.close()
     
     def test_pipeline(self):

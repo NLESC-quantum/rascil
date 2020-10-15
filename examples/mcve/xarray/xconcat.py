@@ -17,24 +17,27 @@ if __name__ == '__main__':
     import dask
     dask.config.set(scheduler="distributed")
 
-    xar = xarray.DataArray(numpy.ones([16, 128, 128]), dims=["z", "y", "x"])
+    original_xar = xarray.DataArray(numpy.ones([16, 1024, 1024]), dims=["z", "y", "x"]).chunk((4, 512, 512))
+    print(original_xar)
+    print(original_xar.data)
 
-    def make_break_fix(x, i):
-        lxar = [ar[1] for ar in x.groupby("z")]
-        rec_x = xarray.concat(lxar, "z")
-        assert rec_x.equals(x), i
-        return rec_x
+    def scatter_z(x):
+        for ar in x.groupby("z"):
+            print(ar[0])
+            yield ar[1]
+            
+    def gather_z(lx):
+        return xarray.concat(lx, "z")
     
-    graph = make_break_fix(xar, 0)
-    graph = graph.chunk(chunks={"x": 64, "y":64})
-    for iteration in range(16384):
-        graph = make_break_fix(graph, iteration)
+    def check(xar, rec_x):
+        return rec_x.equals(xar)
+        
+    future_xar = client.persist(original_xar)
+    list_x = delayed(scatter_z)(future_xar)
+    rec_x = delayed(gather_z)(list_x)
     
-    exit(0)
-
-    graph = delayed(make_break_fix(xar, 0))
-    for iteration in range(16384):
-        graph = delayed(make_break_fix, nout=1)(graph, iteration)
-    new_xar = client.compute(graph, sync=True)
-    
+    one_pass_graph = delayed(check)(future_xar, rec_x)
+    one_pass_graph.visualize()
+    one_pass_result = client.compute(one_pass_graph, sync=True)
+    assert one_pass_result
     exit()

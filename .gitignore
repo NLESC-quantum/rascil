@@ -88,3 +88,5 @@ test_results_master/
 *.html
 
 tests/workflows/gaintable.png
+
+examples/mcve/xarray/mydask.png

@@ -108,7 +108,7 @@ try:
                 # {'center': [arrayX, arrayY, arrayZ], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
 
 
-        def add_data_set(self, obstime, inttime, baselines, visibilities, pol='XX', source=None, phasecentre=None,
+        def add_data_set(self, obstime, inttime, baselines, visibilities, flags, pol='XX', source=None, phasecentre=None,
                          uvw=None):
             """
             Create a UVData object to store a collection of visibilities.
@@ -120,7 +120,7 @@ try:
                 numericPol = pol
 
             self.data.append(
-                MS_UVData(obstime, inttime, baselines, visibilities, pol=numericPol, source=source,
+                MS_UVData(obstime, inttime, baselines, visibilities, flags,  pol=numericPol, source=source,
                           phasecentre=phasecentre,uvw=uvw))
 
         def write(self):
@@ -851,12 +851,16 @@ try:
                     ## Zero out the visibility data
                     try:
                         matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
+                        flag_matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
                         matrix *= 0.0
+                        flag_matrix *= False
                     except (NameError, RuntimeError):
                         matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.complex64)
+                        flag_matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.bool)
 
                 # Save the visibility data in the right order
                 matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.visibilities[order, :]
+                flag_matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.flags[order, :]==1
 
                 # Deal with saving the data once all of the polarizations have been added to 'matrix'
                 if dataSet.pol == self.stokes[-1]:
@@ -864,6 +868,7 @@ try:
                     tb.addrows(nBand * nBL)
 
                     matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
+                    flag_matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
 
                     for j in range(nBand):
                         fg = numpy.zeros((nBL, self.nStokes, self.nchan), dtype=numpy.bool)
@@ -872,7 +877,8 @@ try:
                         sg = numpy.ones((nBL, self.nStokes)) * 9999
 
                         tb.putcol('UVW', uvwList, i, nBL)
-                        tb.putcol('FLAG', fg.transpose(0, 2, 1), i, nBL)
+                        # tb.putcol('FLAG', fg.transpose(0, 2, 1), i, nBL)
+                        tb.putcol('FLAG', flag_matrix[..., j, :].transpose(0, 2, 1), i, nBL)
                         tb.putcol('FLAG_CATEGORY', fc.transpose(0, 3, 2, 1), i, nBL)
                         tb.putcol('WEIGHT', wg, i, nBL)
                         tb.putcol('SIGMA', sg, i, nBL)

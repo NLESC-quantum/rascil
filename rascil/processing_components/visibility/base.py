@@ -586,11 +586,11 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
             for ipol, pol in enumerate(polarization):
                 if int_time[ntime] is not None:
                     tbl.add_data_set(time, int_time[ntime], bl_list,
-                                     ms_vis[ntime, ..., ipol], ms_flags[ntime, ..., ipol], pol=pol,
+                                     ms_vis[ntime, ..., ipol], flags=ms_flags[ntime, ..., ipol], pol=pol,
                                      source=source_name,
                                      phasecentre=vis.phasecentre, uvw=ms_uvw[ntime, :, :])
                 else:
-                    tbl.add_data_set(time, 0, bl_list, ms_vis[ntime, ..., ipol], ms_flags[ntime, ..., ipol],pol=pol,
+                    tbl.add_data_set(time, 0, bl_list, ms_vis[ntime, ..., ipol], flags=ms_flags[ntime, ..., ipol],pol=pol,
                                      source=source_name, phasecentre=vis.phasecentre,
                                      uvw=ms_uvw[ntime, :, :])
     tbl.write()

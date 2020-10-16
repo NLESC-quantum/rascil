@@ -476,7 +476,7 @@ class Image:
     """
     
     def __init__(self, phasecentre, frequency, polarisation_frame=None,
-                 data=None, wcs=None):
+                 data=None, wcs=None, chunksize=None):
         """ Create an XImage
 
         :param frequency:
@@ -523,7 +523,12 @@ class Image:
         assert len(coords["m"]) == ny
         assert len(coords["l"]) == nx
 
-        self.data = xarray.DataArray(data, dims=dims, coords=coords)
+        #chunksize = (1, 1, 128, 128)
+        if chunksize is not None:
+            self.data = xarray.DataArray(data, dims=dims, coords=coords).chunk(chunksize)
+            print(self.data)
+        else:
+            self.data = xarray.DataArray(data, dims=dims, coords=coords)
     
     def check(self):
         """ Check that the internals are ok

@@ -439,7 +439,7 @@ def create_low_test_image_from_gleam(npixel=512, polarisation_frame=Polarisation
     model = insert_skycomponent(model, sc, insert_method=insert_method)
     if applybeam:
         beam = create_pb(model, telescope='LOW', use_local=False)
-        model.data[...] *= beam.data[...]
+        model.data.values[...] *= beam.data.values[...]
 
     return model
 
@@ -645,10 +645,10 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
     data = numpy.zeros(fshape)
     log.info("replicate_image: replicating shape %s to %s" % (im.data.shape, data.shape))
     if len(im.data.shape) == 2:
-        data[...] = im.data[numpy.newaxis, numpy.newaxis, ...]
+        data[...] = im.data.values[numpy.newaxis, numpy.newaxis, ...]
     else:
         for pol in range(npol):
-            data[:, pol] = im.data[:, 0]
+            data[:, pol] = im.data.values[:, 0]
         
     return Image(data=data, phasecentre=phasecentre, polarisation_frame=polarisation_frame, wcs=newwcs,
                  frequency=frequency)

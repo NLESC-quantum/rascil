@@ -69,7 +69,7 @@ class TestPrimaryBeams(unittest.TestCase):
             # row = (noll-1)//7
             # col = (noll-1) - 7 * row
             # ax = axs[row, col]
-            # ax.imshow(vp.data[0,0], vmax=0.1, vmin=-0.01)
+            # ax.imshow(vp.data.values[0,0], vmax=0.1, vmin=-0.01)
             # #ax.set_title('Noll %d' % noll)
             # ax.axis('off')
 

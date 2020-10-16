@@ -198,7 +198,7 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             foot = numpy.zeros(shape, dtype='float')
             for chan in range(nchan):
                 for pol in range(npol):
-                    rep[chan, pol], foot[chan, pol] = reproject_interp((im.data[chan, pol].values, im.wcs.sub(2)),
+                    rep[chan, pol], foot[chan, pol] = reproject_interp((im.data.values[chan, pol].values, im.wcs.sub(2)),
                                                                        newwcs.sub(2), shape[2:], order='bicubic')
         
         if numpy.sum(foot.data) < 1e-12:
@@ -286,7 +286,7 @@ def show_image(im: Image, fig=None, title: str = '', pol=0, chan=0, cm='Greys', 
     ax = fig.add_subplot(1, 1, 1, projection=im.wcs.sub([1, 2]))
     
     if len(im.data.shape) == 4:
-        data_array = numpy.real(im.data[chan, pol, :, :])
+        data_array = numpy.real(im.data.values[chan, pol, :, :])
     else:
         data_array = numpy.real(im.data)
     
@@ -323,9 +323,9 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, titl
     import matplotlib.pyplot as plt
     
     if vmax is None:
-        vmax = numpy.max(im.data[0, 0, ...])
+        vmax = numpy.max(im.data.values[0, 0, ...])
     if vmin is None:
-        vmin = numpy.min(im.data[0, 0, ...])
+        vmin = numpy.min(im.data.values[0, 0, ...])
     
     if not fig:
         fig = plt.figure()
@@ -338,11 +338,11 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, titl
         plt.subplot(111, projection=newim.wcs.sub([1, 2]))
         centre = numpy.round(skycoord_to_pixel(sc.direction, newim.wcs, 1, 'wcs')).astype('int')
         newim.data = \
-            newim.data[:, :, (centre[1] - npixels // 2):(centre[1] + npixels // 2),
+            newim.data.values[:, :, (centre[1] - npixels // 2):(centre[1] + npixels // 2),
             (centre[0] - npixels // 2):(centre[0] + npixels // 2)]
         newim.wcs.wcs.crpix[0] -= centre[0] - npixels // 2
         newim.wcs.wcs.crpix[1] -= centre[1] - npixels // 2
-        plt.imshow(newim.data[0, 0, ...], origin='lower', cmap='Greys', vmax=vmax, vmin=vmin)
+        plt.imshow(newim.data.values[0, 0, ...], origin='lower', cmap='Greys', vmax=vmax, vmin=vmin)
         x, y = skycoord_to_pixel(sc.direction, newim.wcs, 0, 'wcs')
         plt.plot(x, y, marker='+', color='red')
         plt.title('Name = %s, flux = %s' % (sc.name, sc.flux))
@@ -476,7 +476,7 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
     
     newim = copy_image(im)
     
-    newim.data[...] = 0.0
+    newim.data.values[...] = 0.0
     
     for moment in range(nmoment):
         for chan in range(nchan):
@@ -516,9 +516,9 @@ def remove_continuum_image(im: Image, degree=1, mask=None):
     for pol in range(npol):
         for y in range(ny):
             for x in range(nx):
-                fit = numpy.polyfit(frequency, im.data[:, pol, y, x], w=wt, deg=degree)
+                fit = numpy.polyfit(frequency, im.data.values[:, pol, y, x], w=wt, deg=degree)
                 prediction = numpy.polyval(fit, frequency)
-                im.data[:, pol, y, x] -= prediction
+                im.data.values[:, pol, y, x] -= prediction
     return im
 
 
@@ -631,19 +631,19 @@ def create_window(template, window_type, **kwargs):
     if window_type == 'quarter':
         qx = template.shape[3] // 4
         qy = template.shape[2] // 4
-        window.data[..., (qy + 1):3 * qy, (qx + 1):3 * qx] = 1.0
+        window.data.values[..., (qy + 1):3 * qy, (qx + 1):3 * qx] = 1.0
         log.info('create_mask: Cleaning inner quarter of each sky plane')
     elif window_type == 'no_edge':
         edge = get_parameter(kwargs, 'window_edge', 16)
         nx = template.shape[3]
         ny = template.shape[2]
-        window.data[..., (edge + 1):(ny - edge), (edge + 1):(nx - edge)] = 1.0
+        window.data.values[..., (edge + 1):(ny - edge), (edge + 1):(nx - edge)] = 1.0
         log.info('create_mask: Window omits %d-pixel edge of each sky plane' % (edge))
     elif window_type == 'threshold':
         window_threshold = get_parameter(kwargs, 'window_threshold', None)
         if window_threshold is None:
             window_threshold = 10.0 * numpy.std(template.data)
-        window.data[template.data >= window_threshold] = 1.0
+        window.data.values[template.data >= window_threshold] = 1.0
         log.info('create_mask: Window omits all points below %g' % (window_threshold))
     elif window_type is None:
         log.info("create_mask: Mask covers entire image")
@@ -709,7 +709,8 @@ def create_image(npixel=512, cellsize=0.000015, polarisation_frame=PolarisationF
     return create_image_from_array(numpy.zeros(shape, dtype=dtype), w, polarisation_frame=polarisation_frame)
 
 
-def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: PolarisationFrame) -> Image:
+def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: PolarisationFrame,
+                            chunksize=None) -> Image:
     """ Create an image from an array and optional wcs
 
     The output image preserves a reference to the input array.
@@ -717,6 +718,7 @@ def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: Pol
     :param data: Numpy.array
     :param wcs: World coordinate system
     :param polarisation_frame: Polarisation Frame
+    :param chunksize: Size of xarray chunking
     :return: Image
 
     See also
@@ -742,7 +744,7 @@ def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: Pol
         phasecentre = SkyCoord("0.0d", "0.0d")
 
     return Image(phasecentre, frequency=frequency, polarisation_frame=polarisation_frame,
-                  data=data, wcs=wcs)
+                  data=data, wcs=wcs, chunksize=chunksize)
 
 def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
     """Convert wcs to polarisation_frame
@@ -822,7 +824,7 @@ def create_empty_image_like(im: Image) -> Image:
     """
     
     empty = copy_image(im)
-    empty.data[...] = 0.0
+    empty.data.values[...] = 0.0
     return empty
 
 
@@ -987,7 +989,7 @@ def pad_image(im: Image, shape):
         yend = ystart + im.shape[2]
         xstart = shape[3] // 2 - im.shape[3] // 2
         xend = xstart + im.shape[3]
-        newdata[..., ystart:yend, xstart:xend] = im.data[...]
+        newdata[..., ystart:yend, xstart:xend] = im.data.values[...]
         return create_image_from_array(newdata, newwcs, polarisation_frame=im.polarisation_frame)
 
 
@@ -1063,18 +1065,18 @@ def scale_and_rotate_image(im, angle=0.0, scale=None, order=5):
     for chan in range(nchan):
         for pol in range(npol):
             if im.data.dtype == "complex":
-                newim.data[chan, pol] = affine_transform(im.data[chan, pol].real,
+                newim.data.values[chan, pol] = affine_transform(im.data.values[chan, pol].real,
                                                          inv_transform,
                                                          offset=offset,
                                                          order=order,
                                                          output_shape=(ny, nx)) + \
-                                        1.0j * affine_transform(im.data[chan, pol].imag,
+                                        1.0j * affine_transform(im.data.values[chan, pol].imag,
                                                                 inv_transform,
                                                                 offset=offset,
                                                                 order=order,
                                                                 output_shape=(ny, nx))
             elif im.data.dtype == "float":
-                newim.data[chan, pol] = affine_transform(im.data[chan, pol].real,
+                newim.data.values[chan, pol] = affine_transform(im.data.values[chan, pol].real,
                                                          inv_transform,
                                                          offset=offset,
                                                          order=order,
@@ -1140,13 +1142,13 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
         log.debug('apply_voltage_pattern_to_image: Scalar voltage pattern')
         if inverse:
             for chan in range(nchan):
-                pb = (vp.data[chan, 0, ...] * numpy.conjugate(vp.data[chan, 0, ...])).real
-                newim.data[chan, 0, ...] *= pb
+                pb = (vp.data.values[chan, 0, ...] * numpy.conjugate(vp.data.values[chan, 0, ...])).real
+                newim.data.values[chan, 0, ...] *= pb
         else:
             for chan in range(nchan):
-                pb = (vp.data[chan, 0, ...] * numpy.conjugate(vp.data[chan, 0, ...])).real
+                pb = (vp.data.values[chan, 0, ...] * numpy.conjugate(vp.data.values[chan, 0, ...])).real
                 mask = pb > 0.0
-                newim.data[chan, 0, ...][mask] /= pb[mask]
+                newim.data.values[chan, 0, ...][mask] /= pb[mask]
     else:
         log.debug('apply_voltage_pattern_to_image: Full Jones voltage pattern')
         polim = convert_stokes_to_polimage(im, vp.polarisation_frame)

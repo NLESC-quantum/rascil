@@ -375,4 +375,6 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
                                                                  normalize_kernel=False, allow_huge=True)
     if residual is not None:
         restored.data.values += residual.data.values
+        
+    log.info('Restore done!')
     return restored

@@ -13,7 +13,7 @@ import logging
 
 import numpy
 
-from rascil.data_models.memory_data_models import Image, BlockVisibility
+from rascil.data_models.memory_data_models import Image
 from rascil.data_models.parameters import get_parameter
 from rascil.processing_components.griddata import create_griddata_from_image
 from rascil.processing_components.griddata import create_pswf_convolutionfunction
@@ -70,8 +70,10 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=No
     
     if gcfcf is None:
         assert len(model_imagelist) > 0
+        
         def make_gcfcf(m, v):
             return create_pswf_convolutionfunction(m, polarisation_frame=v.polarisation_frame)
+        
         gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(model_imagelist)]
     
     # Loop over all windows
@@ -84,7 +86,7 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=No
         predict_results = [rsexecute.execute(predict, pure=True, nout=1)
                            (vis, model_imagelist[ivis], gcfcf=gcfcf[0], **kwargs)
                            for ivis, vis in enumerate(vis_list)]
-
+    
     return rsexecute.optimize(predict_results)
 
 
@@ -124,8 +126,10 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
     # If we are doing facets, we need to create the gcf for each image
     if gcfcf is None:
         assert len(template_model_imagelist) > 0
+        
         def make_gcfcf(m, v):
             return create_pswf_convolutionfunction(m, polarisation_frame=v.polarisation_frame)
+        
         gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(template_model_imagelist)]
     
     # Loop over all vis_lists independently
@@ -139,8 +143,7 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
         invert_results = [rsexecute.execute(invert, nout=2)(vis, template_model_imagelist[ivis], dopsf=dopsf,
                                                             normalise=normalize, gcfcf=gcfcf[0], **kwargs)
                           for ivis, vis in enumerate(vis_list)]
-
-
+    
     return rsexecute.optimize(invert_results)
 
 
@@ -170,54 +173,25 @@ def restore_list_rsexecute_workflow(model_imagelist, psf_imagelist, residual_ima
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
     :param kwargs: Parameters for functions in components
-    :param restore_facets: Number of facets used per axis (used to distribute)
-    :param restore_overlap: Overlap in pixels (0 is best)
-    :param restore_taper: Type of taper between facets
     :return: list of restored images (or graph)
     """
     assert len(model_imagelist) == len(psf_imagelist)
     if residual_imagelist is not None:
         assert len(model_imagelist) == len(residual_imagelist)
     
-    if restore_facets % 2 == 0 or restore_facets == 1:
-        actual_number_facets = restore_facets
-    else:
-        actual_number_facets = max(1, (restore_facets - 1))
-    
     psf_list = rsexecute.execute(remove_sumwt, nout=len(psf_imagelist))(psf_imagelist)
-    
-    # Scatter each list element into a list. We will then run restore_cube on each
-    facet_model_list = [rsexecute.execute(image_scatter_facets, nout=actual_number_facets * actual_number_facets)
-                        (model, facets=restore_facets, overlap=restore_overlap, taper=restore_taper)
-                        for model in model_imagelist]
-    facet_psf_list = [rsexecute.execute(image_scatter_facets, nout=actual_number_facets * actual_number_facets)
-                      (psf, facets=restore_facets, overlap=restore_overlap, taper=restore_taper)
-                      for psf in psf_list]
     
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(residual_imagelist)
-        facet_residual_list = [
-            rsexecute.execute(image_scatter_facets, nout=actual_number_facets * actual_number_facets)
-            (residual, facets=restore_facets, overlap=restore_overlap, taper=restore_taper)
-            for residual in residual_list]
-        facet_restored_list = [[rsexecute.execute(restore_cube, nout=actual_number_facets * actual_number_facets)
-                                (model=facet_model_list[i][im], psf=facet_psf_list[i][im],
-                                 residual=facet_residual_list[i][im],
-                                 **kwargs)
-                                for im, _ in enumerate(facet_model_list[i])] for i, _ in enumerate(model_imagelist)]
+        restored_list = [rsexecute.execute(restore_cube, nout=1)(model_imagelist[i], psf=psf_list[i],
+                                                                 residual=residual_list[i], **kwargs)
+                         for i, _ in enumerate(model_imagelist)]
     else:
-        facet_restored_list = [[rsexecute.execute(restore_cube, nout=actual_number_facets * actual_number_facets)
-                                (model=facet_model_list[i][im], psf=facet_psf_list[i][im],
-                                 **kwargs)
-                                for im, _ in enumerate(facet_model_list[i])] for i, _ in enumerate(model_imagelist)]
+        restored_list = [rsexecute.execute(restore_cube, nout=1)(model_imagelist[i], psf=psf_list[i],
+                                                                 residual=None, **kwargs)
+                         for i, _ in enumerate(model_imagelist)]
     
-    # Now we run restore_cube on each and gather the results across all facets
-    restored_imagelist = [rsexecute.execute(image_gather_facets)
-                          (facet_restored_list[i], model_imagelist[i], facets=restore_facets,
-                           overlap=restore_overlap, taper=restore_taper)
-                          for i, _ in enumerate(model_imagelist)]
-    
-    return rsexecute.optimize(restored_imagelist)
+    return rsexecute.optimize(restored_list)
 
 
 def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, prefix='', mask=None, **kwargs):
@@ -251,6 +225,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
     nmoment = get_parameter(kwargs, "nmoment", 1)
     
     def deconvolve(dirty, psf, model, facet, gthreshold, msk=None):
+        log.info("deconvolve_list_rsexecute_workflow: Starting clean")
         if prefix == '':
             lprefix = "subimage %d" % facet
         else:

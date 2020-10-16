@@ -120,7 +120,7 @@ class TestImage(unittest.TestCase):
 
         newvp_data = vp.data.copy()
         for ip, p in enumerate(permute):
-            newvp_data[:,p,...] = vp.data[:,ip,...]
+            newvp_data[:,p,...] = vp.data.values[:,ip,...]
         vp.data = newvp_data
 
         assert vp.polarisation_frame == PolarisationFrame("linear")
@@ -165,7 +165,7 @@ class TestImage(unittest.TestCase):
         im.data = im.data.real
         for x in [256, 768]:
             for y in [256, 768]:
-                self.assertAlmostEqual(im.data[0, 0, y, x], -0.46042631800538464, 7)
+                self.assertAlmostEqual(im.data.values[0, 0, y, x], -0.46042631800538464, 7)
         if self.persist: export_image_to_fits(im, '%s/test_wterm.fits' % self.dir)
         assert im.data.shape == (5, 4, 1024, 1024), im.data.shape
         self.assertAlmostEqual(numpy.max(im.data.real), 1.0, 7)
@@ -217,7 +217,7 @@ class TestImage(unittest.TestCase):
     def test_apply_voltage_pattern(self):
     
         vp = create_vp(telescope='MID_FEKO_B2')
-        vp.data = vp.data[:,:,256:768,256:768]
+        vp.data = vp.data.values[:,:,256:768,256:768]
         # vp = scale_and_rotate_image(vp, 30.0 * numpy.pi / 180.0, [1.0, 2.0])
         cellsize = vp.wcs.wcs.cdelt[1] * numpy.pi / 180.0
         m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9])

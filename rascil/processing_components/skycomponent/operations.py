@@ -299,7 +299,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         xs = numpy.sum(aflux * xs) / flux_sum
         ys = numpy.sum(aflux * ys) / flux_sum
 
-        point_flux = im.data[:, :, numpy.round(ys.value).astype('int'), numpy.round(xs.value).astype('int')]
+        point_flux = im.data.values[:, :, numpy.round(ys.value).astype('int'), numpy.round(xs.value).astype('int')]
 
         # Add component
         comps.append(Skycomponent(
@@ -445,7 +445,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
                 # Now we want to left and right multiply by the Jones matrices
-                # comp_flux = vp.data[:, :, y, x] * comp_flux_cstokes * numpy.vp.data[:, :, y, x]
+                # comp_flux = vp.data.values[:, :, y, x] * comp_flux_cstokes * numpy.vp.data.values[:, :, y, x]
                 for chan in range(nchan):
                     ej = vp.data.values[chan, :, y, x].reshape([2, 2])
                     cfs = comp_flux_cstokes[chan].reshape([2,2])
@@ -556,7 +556,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
             insert_method = 'Nearest'
             y, x = numpy.round(pixloc[1]).astype('int'), numpy.round(pixloc[0]).astype('int')
             if 0 <= x < nx and 0 <= y < ny:
-                im.data[:, :, y, x] += flux[...]
+                im.data.values[:, :, y, x] += flux[...]
 
     return im
 

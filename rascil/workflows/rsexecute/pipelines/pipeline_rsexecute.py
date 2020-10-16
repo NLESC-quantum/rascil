@@ -62,7 +62,7 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
         
         def zero_model_image(im):
             log.info("ical_list_rsexecute_workflow: setting initial model to zero after initial selfcal")
-            im.data[...] = 0.0
+            im.data.values[...] = 0.0
             return im
         
         model_imagelist = [rsexecute.execute(zero_model_image, nout=1)(model) for model in model_imagelist]
@@ -154,7 +154,7 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
                                                                             deconvolve_model_imagelist,
                                                                             prefix=prefix,
                                                                             **kwargs)
-    
+
     residual_imagelist = residual_list_rsexecute_workflow(vis_list, deconvolve_model_imagelist, context=context,
                                                           vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
     restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist)

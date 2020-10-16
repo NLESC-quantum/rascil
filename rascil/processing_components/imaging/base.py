@@ -105,9 +105,9 @@ def normalize_sumwt(im: Image, sumwt) -> Image:
     for chan in range(nchan):
         for pol in range(npol):
             if sumwt[chan, pol] > 0.0:
-                im.data[chan, pol, :, :] = im.data[chan, pol, :, :] / sumwt[chan, pol]
+                im.data.values[chan, pol, :, :] = im.data.values[chan, pol, :, :] / sumwt[chan, pol]
             else:
-                im.data[chan, pol, :, :] = 0.0
+                im.data.values[chan, pol, :, :] = 0.0
     return im
 
 
@@ -373,7 +373,10 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
     w.wcs.radesys = get_parameter(kwargs, 'frame', 'ICRS')
     w.wcs.equinox = get_parameter(kwargs, 'equinox', 2000.0)
 
-    return create_image_from_array(numpy.zeros(shape), wcs=w, polarisation_frame=pol_frame)
+    chunksize = get_parameter(kwargs, "chunksize", None)
+    im = create_image_from_array(numpy.zeros(shape), wcs=w, polarisation_frame=pol_frame, chunksize=chunksize)
+    return im
+
 
 
 def advise_wide_field(vis: BlockVisibility, delA=0.02,

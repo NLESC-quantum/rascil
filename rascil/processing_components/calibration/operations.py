@@ -284,7 +284,7 @@ def copy_gaintable(gt: GainTable, zero=False):
     newgt = copy.copy(gt)
     newgt.data = copy.deepcopy(gt.data)
     if zero:
-        newgt.data['gt'][...] = 0.0
+        newgt.data['gt'].values[...] = 0.0
     return newgt
 
 

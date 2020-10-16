@@ -87,7 +87,8 @@ class TestDPrepB(unittest.TestCase):
                       (v, npixel=npixel, cellsize=cellsize,
                        polarisation_frame=PolarisationFrame("stokesIQUV"),
                        nchan=1) for v in vis_list]
-        model_list = rsexecute.persist(model_list)
+        model_list = rsexecute.compute(model_list, sync=True)
+        model_list = rsexecute.scatter(model_list)
         
         # Construct the graphs to make the dirty image and psf, and persist these to the cluster
         dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, normalize=False,

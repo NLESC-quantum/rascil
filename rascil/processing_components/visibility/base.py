@@ -94,7 +94,7 @@ def copy_visibility(vis: BlockVisibility, zero=False) -> BlockVisibility:
     
     newvis = copy.deepcopy(vis)
     if zero:
-        newvis.data['vis'][...] = 0.0
+        newvis.data['vis'].values[...] = 0.0
     return newvis
 
 

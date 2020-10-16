@@ -192,9 +192,9 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
         assert vp.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.wcs.wcs.ctype[1]
         
         nchan, npol, ny, nx = vp.data.shape
-        real_splines.append(RectBivariateSpline(range(ny), range(nx), vp.data[0, 0, ...].real, kx=order,
+        real_splines.append(RectBivariateSpline(range(ny), range(nx), vp.data.values[0, 0, ...].real, kx=order,
                                                 ky=order))
-        imag_splines.append(RectBivariateSpline(range(ny), range(nx), vp.data[0, 0, ...].imag, kx=order,
+        imag_splines.append(RectBivariateSpline(range(ny), range(nx), vp.data.values[0, 0, ...].imag, kx=order,
                                                 ky=order))
     
     latitude = vis.configuration.location.lat.rad

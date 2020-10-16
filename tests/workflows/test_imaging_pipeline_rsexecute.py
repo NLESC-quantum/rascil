@@ -42,11 +42,14 @@ class TestImagingPipeline(unittest.TestCase):
         rsexecute.close()
     
     def test_pipeline(self):
-        nfreqwin = 7
+        nfreqwin = 5
         ntimes = 5
         rmax = 300.0
         frequency = numpy.linspace(1e8, 1.2e8, nfreqwin)
-        channel_bandwidth = numpy.array(nfreqwin * [frequency[1] - frequency[0]])
+        if nfreqwin > 1:
+            channel_bandwidth = numpy.array(nfreqwin * [frequency[1] - frequency[0]])
+        else:
+            channel_bandwidth = numpy.array([2e7])
         times = numpy.linspace(-numpy.pi / 3.0, numpy.pi / 3.0, ntimes)
         phasecentre = SkyCoord(ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
         
@@ -69,7 +72,7 @@ class TestImagingPipeline(unittest.TestCase):
         npixel = advice_high['npixels2']
         cellsize = min(advice_low['cellsize'], advice_high['cellsize'])
         
-        gleam_model = [rsexecute.execute(create_low_test_image_from_gleam)
+        gleam_model = [rsexecute.execute(create_low_test_image_from_gleam, nout=1)
                        (npixel=npixel,
                         frequency=[frequency[f]],
                         channel_bandwidth=[channel_bandwidth[f]],
@@ -88,30 +91,31 @@ class TestImagingPipeline(unittest.TestCase):
                                                             context='2d')
         predicted_vislist = rsexecute.persist(predicted_vislist)
         
-        model_list = [rsexecute.execute(create_image_from_visibility)(bvis_list[f],
+        model_list = [rsexecute.execute(create_image_from_visibility, nout=1)(bvis_list[f],
                                                                       npixel=npixel,
                                                                       frequency=[frequency[f]],
                                                                       channel_bandwidth=[channel_bandwidth[f]],
                                                                       cellsize=cellsize,
                                                                       phasecentre=phasecentre,
-                                                                      polarisation_frame=PolarisationFrame("stokesI"))
+                                                                      polarisation_frame=PolarisationFrame("stokesI"),
+                                                                      chunksize=None)
                       for f, freq in enumerate(frequency)]
-        
+        # Works ok if the model_list is precalculated
+        model_list = rsexecute.compute(model_list, sync=True)
+
         dirty_list = invert_list_rsexecute_workflow(predicted_vislist, model_list, context='2d')
         psf_list = invert_list_rsexecute_workflow(predicted_vislist, model_list, context='2d', dopsf=True)
         
-        log.info('About to run invert to get dirty image')
         dirty_list = rsexecute.compute(dirty_list, sync=True)
         dirty = dirty_list[0][0]
         show_image(dirty, cm='Greys')
         plt.show()
         
-        log.info('About to run invert to get PSF')
         psf_list = rsexecute.compute(psf_list, sync=True)
         psf = psf_list[0][0]
         show_image(psf, cm='Greys')
         plt.show()
-        
+
         continuum_imaging_list = \
             continuum_imaging_list_rsexecute_workflow(predicted_vislist,
                                                       model_imagelist=model_list,
@@ -126,9 +130,7 @@ class TestImagingPipeline(unittest.TestCase):
                                                       deconvolve_overlap=32,
                                                       deconvolve_taper='tukey',
                                                       psf_support=64)
-        
-        log.info('About to run continuum imaging')
-        
+                
         centre = nfreqwin // 2
         continuum_imaging_list = rsexecute.compute(continuum_imaging_list, sync=True)
         deconvolved = continuum_imaging_list[0][centre]

@@ -85,7 +85,7 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
         
         def zero_model_image(im):
             log.info("ical_list_rsexecute_workflow: setting initial model to zero after initial selfcal")
-            im.data[...] = 0.0
+            im.data.values[...] = 0.0
             return im
         
         # Erase data in the input model_imagelist

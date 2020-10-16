@@ -182,7 +182,7 @@ try:
         fuvw[:, 2] *= -1.0
         
         nchan, npol, ny, nx = im.shape
-        im.data[...] = 0.0
+        im.data.values[...] = 0.0
         sumwt = numpy.zeros([nchan, npol])
         
         # There's a latent problem here with the weights.

@@ -87,7 +87,7 @@ if __name__ == '__main__':
         row = (trial - 1) // 4
         col = (trial - 1) - 4 * row
         ax = axs[row, col]
-        ax.imshow(vp.data[0, 0], vmax=0.01, vmin=-0.001)
+        ax.imshow(vp.data.values[0, 0], vmax=0.01, vmin=-0.001)
         # ax.set_title('Noll %d' % noll)
         ax.axis('off')
 

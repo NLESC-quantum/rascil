@@ -86,9 +86,6 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
         c = Client(threads_per_worker=threads_per_worker, processes=processes,
                    memory_limit=memory_limit, local_directory=local_dir)
 
-    # We need this so that xarray knows which scheduler to use
-    config.set(scheduler='distributed')
-
     addr = c.scheduler_info()['address']
     services = c.scheduler_info()['services']
     if 'bokeh' in services.keys():
@@ -193,7 +190,8 @@ class _rsexecutebase():
         :return:
         """
         # We need this so that xarray knows which scheduler to use
-        config.set(scheduler='distributed')
+        if use_dask:
+            config.set(scheduler='distributed')
 
         if bool(use_dask) and bool(use_dlg):
             raise ValueError('use_dask and use_dlg cannot be specified together')
@@ -236,7 +234,7 @@ class _rsexecutebase():
             else:
                 import dask
                 scheduler = dask.config.get("scheduler")
-                assert scheduler == "distributed", scheduler
+                assert scheduler == "distributed" or scheduler == "dask.distributed", scheduler
                 future = self.client.compute(value, sync=sync)
                 wait(future)
                 if self._verbose:

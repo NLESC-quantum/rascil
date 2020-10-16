@@ -411,7 +411,7 @@ def normalise_vp(vp):
     """
     g = numpy.zeros([4])
     g[0] = numpy.max(numpy.abs(vp.data.values[:, 0, ...]))
-    g[3] = numpy.max(numpy.abs(vp.data[:, 3, ...]))
+    g[3] = numpy.max(numpy.abs(vp.data.values[:, 3, ...]))
     g[1] = g[2] = numpy.sqrt(g[0] * g[3])
     for chan in range(4):
         if g[chan] > 0.0:

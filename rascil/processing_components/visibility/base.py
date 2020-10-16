@@ -564,12 +564,13 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         ntimes = len(vis.data['time'])
         
         ms_vis = numpy.zeros([ntimes, nbaseline, nchan, npol]).astype('complex')
+        ms_flags = numpy.zeros([ntimes, nbaseline, nchan, npol]).astype('bool')
         ms_uvw = numpy.zeros([ntimes, nbaseline, 3])
         time = vis.data['time']
         int_time = vis.data['integration_time']
         bv_vis = vis.data['vis']
         bv_uvw = vis.data['uvw']
-        
+        bv_flags = vis.data['flags']
         for row, _ in enumerate(time):
             # MS has shape [row, npol, nchan]
             # BV has shape [ntimes, nants, nants, nchan, npol]
@@ -577,6 +578,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
             for i in range(0, n_ant - 1):
                 for j in range(i + 1, n_ant):
                     ms_vis[row, bl, ...] = bv_vis[row, j, i, ...]
+                    ms_flags[row, bl, ...] = bv_flags[row, j, i, ...]
                     ms_uvw[row, bl, :] = bv_uvw[row, j, i, :]
                     bl += 1
         
@@ -584,11 +586,11 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
             for ipol, pol in enumerate(polarization):
                 if int_time[ntime] is not None:
                     tbl.add_data_set(time, int_time[ntime], bl_list,
-                                     ms_vis[ntime, ..., ipol], pol=pol,
+                                     ms_vis[ntime, ..., ipol], flags=ms_flags[ntime, ..., ipol], pol=pol,
                                      source=source_name,
                                      phasecentre=vis.phasecentre, uvw=ms_uvw[ntime, :, :])
                 else:
-                    tbl.add_data_set(time, 0, bl_list, ms_vis[ntime, ..., ipol], pol=pol,
+                    tbl.add_data_set(time, 0, bl_list, ms_vis[ntime, ..., ipol], flags=ms_flags[ntime, ..., ipol],pol=pol,
                                      source=source_name, phasecentre=vis.phasecentre,
                                      uvw=ms_uvw[ntime, :, :])
     tbl.write()

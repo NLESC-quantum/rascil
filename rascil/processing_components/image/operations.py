@@ -188,9 +188,9 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             foot = numpy.zeros(shape, dtype='float')
             for chan in range(nchan):
                 for pol in range(npol):
-                    rep_real[chan, pol], foot[chan, pol] = reproject_interp((im.data.real[chan, pol].values, im.wcs.sub(2)),
+                    rep_real[chan, pol], foot[chan, pol] = reproject_interp((im.data.real.values[chan, pol], im.wcs.sub(2)),
                                                                             newwcs.sub(2), shape[2:], order='bicubic')
-                    rep_imag[chan, pol], foot[chan, pol] = reproject_interp((im.data.imag[chan, pol].values, im.wcs.sub(2)),
+                    rep_imag[chan, pol], foot[chan, pol] = reproject_interp((im.data.imag.values[chan, pol], im.wcs.sub(2)),
                                                                             newwcs.sub(2), shape[2:], order='bicubic')
             rep = rep_real + 1j * rep_imag
         else:
@@ -198,7 +198,7 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             foot = numpy.zeros(shape, dtype='float')
             for chan in range(nchan):
                 for pol in range(npol):
-                    rep[chan, pol], foot[chan, pol] = reproject_interp((im.data.values[chan, pol].values, im.wcs.sub(2)),
+                    rep[chan, pol], foot[chan, pol] = reproject_interp((im.data.values[chan, pol], im.wcs.sub(2)),
                                                                        newwcs.sub(2), shape[2:], order='bicubic')
         
         if numpy.sum(foot.data) < 1e-12:

@@ -12,18 +12,17 @@ import xarray
 
 if __name__ == '__main__':
 
-    client = Client(n_workers=4, threads_per_worker=4)
-    print(client)
-    import dask
-    dask.config.set(scheduler="distributed")
+    # client = Client(n_workers=4, threads_per_worker=4)
+    # print(client)
+    # import dask
+    # dask.config.set(scheduler="distributed")
 
-    original_xar = xarray.DataArray(numpy.ones([16, 1024, 1024]), dims=["z", "y", "x"]).chunk((4, 512, 512))
+    original_xar = xarray.DataArray(numpy.ones([16, 1024, 1024]), dims=["z", "y", "x"]).chunk((1, 256, 256))
     print(original_xar)
     print(original_xar.data)
 
     def scatter_z(x):
         for ar in x.groupby("z"):
-            print(ar[0])
             yield ar[1]
             
     def gather_z(lx):
@@ -32,12 +31,11 @@ if __name__ == '__main__':
     def check(xar, rec_x):
         return rec_x.equals(xar)
         
-    future_xar = client.persist(original_xar)
+    future_xar = original_xar.persist()
     list_x = delayed(scatter_z)(future_xar)
     rec_x = delayed(gather_z)(list_x)
     
     one_pass_graph = delayed(check)(future_xar, rec_x)
-    one_pass_graph.visualize()
-    one_pass_result = client.compute(one_pass_graph, sync=True)
+    one_pass_result = one_pass_graph.compute()
     assert one_pass_result
     exit()

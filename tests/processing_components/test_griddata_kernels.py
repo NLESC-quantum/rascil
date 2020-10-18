@@ -113,6 +113,7 @@ class TestGridDataKernels(unittest.TestCase):
         assert numpy.abs(u_peak) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
 
+    #@unittest.skip("Too large for CI/CD")
     def test_fill_awterm_to_convolutionfunction(self):
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
         pb = make_pb(self.image)

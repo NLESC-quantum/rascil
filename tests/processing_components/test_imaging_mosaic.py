@@ -62,7 +62,7 @@ class TestImaging2D(unittest.TestCase):
         for vt in vis_list:
             vt = weight_visibility(vt, model)
             dirty, sumwt = invert_awprojection(vt, model, gcfcf=gcfcf)
-            mosaic.data += dirty.data
+            mosaic.data.values += dirty.data.values
         
         show_image(mosaic, cm='Greys', title='Linear mosaic')
         plt.show()

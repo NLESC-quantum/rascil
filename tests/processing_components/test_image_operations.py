@@ -217,15 +217,14 @@ class TestImage(unittest.TestCase):
     def test_apply_voltage_pattern(self):
     
         vp = create_vp(telescope='MID_FEKO_B2')
-        vp.data = vp.data.values[:,:,256:768,256:768]
         # vp = scale_and_rotate_image(vp, 30.0 * numpy.pi / 180.0, [1.0, 2.0])
         cellsize = vp.wcs.wcs.cdelt[1] * numpy.pi / 180.0
         m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9])
-        padded = pad_image(m31image, [1, 1, 512, 512])
-        padded.data = numpy.repeat(padded.data, repeats=4, axis=1)
-        padded = create_image_from_array(padded.data, polarisation_frame=PolarisationFrame("stokesIQUV"),
+        padded = pad_image(m31image, [1, 1, 1024, 1024])
+        padded_data = numpy.repeat(padded.data.values, repeats=4, axis=1)
+        padded = create_image_from_array(padded_data, polarisation_frame=PolarisationFrame("stokesIQUV"),
                                          wcs=padded.wcs)
-        padded.data[:, 1:, ...] = 0.0
+        padded.data.values[:, 1:, ...] = 0.0
         applied = apply_voltage_pattern_to_image(padded, vp)
         unapplied = apply_voltage_pattern_to_image(applied, vp, inverse=True, min_det=1e-12)
         if self.persist:

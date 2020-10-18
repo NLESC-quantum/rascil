@@ -264,6 +264,7 @@ class TestImaging2D(unittest.TestCase):
                                                   polarisation_frame=self.vis_pol)
         self._invert_base(name='invert_awterm_spec', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
     
+    @unittest.skip("Too large for CI/CD")
     def test_invert_awterm_spec_IQUV(self):
         self.actualSetUp(zerow=False, freqwin=5, image_pol=PolarisationFrame("stokesIQUV"))
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)

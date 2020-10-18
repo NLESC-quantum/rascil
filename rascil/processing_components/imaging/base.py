@@ -301,7 +301,7 @@ def create_image_from_visibility(vis: Union[BlockVisibility, Visibility], **kwar
     npixel = get_parameter(kwargs, "npixel", 512)
     uvmax = numpy.max((numpy.abs(vis.data['uvw'][..., 0:1])))
     if isinstance(vis, BlockVisibility):
-        uvmax *= numpy.max(frequency) / constants.c.to('m s^-1').value
+        uvmax *= numpy.max(frequency) / constants.c.value
     log.debug("create_image_from_visibility: uvmax = %f wavelengths" % uvmax)
     criticalcellsize = 1.0 / (uvmax * 2.0)
     log.debug("create_image_from_visibility: Critical cellsize = %f radians, %f degrees" % (

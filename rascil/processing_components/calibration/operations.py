@@ -55,8 +55,9 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     # row_numbers = numpy.array(list(range(len(vis.time))), dtype='int')
     row_numbers = numpy.arange(len(vis.time))
     done = numpy.zeros(len(row_numbers), dtype='int')
+
     for row in range(gt.ntimes):
-        vis_rows = numpy.abs(vis.time - gt.time[row]) < gt.interval[row] / 2.0
+        vis_rows = numpy.abs(vis.time - gt.time[row]) <= gt.interval[row] / 2.0
         vis_rows = row_numbers[vis_rows]
         if len(vis_rows) > 0:
             
@@ -189,7 +190,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             vis.data['vis'][vis_rows] = applied
             for r in vis_rows:
                 done[r] = 1
-    
+
     assert done.all() == 1, "Some rows were not calibrated"
     
     return vis

@@ -65,7 +65,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gtsol)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
 
     def test_solve_gaintable_stokesI_phaseonly(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0])
@@ -78,7 +78,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gtsol)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
 
     def test_solve_gaintable_stokesI_repeat(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0])
@@ -94,7 +94,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gtsol)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
 
     def test_solve_gaintable_stokesI_repeat_apply(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0])
@@ -107,8 +107,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
         self.vis = apply_gaintable(self.vis, gtsol)
-        gtsol = solve_gaintable(self.vis, original, phase_only=True, niter=1)
-        self.vis = apply_gaintable(self.vis, gtsol)
+        gtsol = solve_gaintable(self.vis, original, phase_only=True, niter=200)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
         assert numpy.max(numpy.abs(gtsol.gain - 1.0)) < 1e-8
@@ -126,7 +125,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gtsol)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
 
     def test_solve_gaintable_stokesI_timeslice(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0], ntimes=10)
@@ -139,7 +138,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gtsol)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
 
     def test_solve_gaintable_stokesI_normalise(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0])
@@ -153,7 +152,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gtsol)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
     
     def test_solve_gaintable_stokesI_bandpass(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0], vnchan=128)
@@ -165,7 +164,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         gtsol = solve_gaintable(self.vis, original, phase_only=False, niter=200, damping=0.5)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
 
     def test_solve_gaintable_stokesI_pointsource(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0])
@@ -178,7 +177,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         gtsol = solve_gaintable(point_vis, phase_only=False, niter=200)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
 
 
     def core_solve(self, spf, dpf, phase_error=0.1, amplitude_error=0.0, leakage=0.01,
@@ -198,8 +197,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         vis = apply_gaintable(vis, gtsol, inverse=True)
         residual = numpy.max(gtsol.residual)
         assert residual < residual_tol, "%s %s Max residual = %s" % (spf, dpf, residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1
-
+        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
     def test_solve_gaintable_stokesIQUV_phase_only_linear(self):
         self.core_solve('stokesIQUV', 'linear', phase_error=0.1, phase_only=True,
                         leakage=0.0, f=[100.0, 50.0, 0.0, 0.0])

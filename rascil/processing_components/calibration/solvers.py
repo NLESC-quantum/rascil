@@ -63,7 +63,7 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
         pointvis = vis
     
     for row in range(gt.ntimes):
-        vis_rows = numpy.abs(vis.time - gt.time[row]) < gt.interval[row] / 2.0
+        vis_rows = numpy.abs(vis.time - gt.time[row]) <= gt.interval[row] / 2.0
         if numpy.sum(vis_rows) > 0:
             x = numpy.sum((pointvis.vis[vis_rows] * pointvis.weight[vis_rows]) * (1 - pointvis.flags[vis_rows]), axis=0)
             xwt = numpy.sum(pointvis.weight[vis_rows] * (1 - pointvis.flags[vis_rows]), axis=0)
@@ -94,7 +94,7 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
                                                               tol=tol)
                     else:
                         gt.data['gain'][row, ...], gt.data['weight'][row, ...], gt.data['residual'][row, ...] = \
-                            solve_antenna_gains_itsubs_vector(gt.data['gain'][row, ...], gt.data['weight'][row, ...],
+                            solve_antenna_gains_itsubs_nocrossdata(gt.data['gain'][row, ...], gt.data['weight'][row, ...],
                                                               x, xwt, phase_only=phase_only, niter=niter,
                                                               tol=tol)
                 
@@ -367,16 +367,25 @@ def solve_antenna_gains_itsubs_nocrossdata(gain, gwt, x, xwt, niter=30, tol=1e-8
     
     # This implementation is sub-optimal. TODO: Reimplement IQ, IV calibration
     nants, _, nchan, npol = x.shape
-    assert npol == 2
-    newshape = (nants, nants, nchan, 4)
-    x_fill = numpy.zeros(newshape, dtype='complex')
-    x_fill[..., 0] = x[..., 0]
-    x_fill[..., 3] = x[..., 1]
-    xwt_fill = numpy.zeros(newshape, dtype='float')
-    xwt_fill[..., 0] = xwt[..., 0]
-    xwt_fill[..., 3] = xwt[..., 1]
+    if npol == 2:
+        newshape = (nants, nants, nchan, 4)
+        x_fill = numpy.zeros(newshape, dtype='complex')
+        x_fill[..., 0] = x[..., 0]
+        x_fill[..., 3] = x[..., 1]
+        xwt_fill = numpy.zeros(newshape, dtype='float')
+        xwt_fill[..., 0] = xwt[..., 0]
+        xwt_fill[..., 3] = xwt[..., 1]
+    else:
+        newshape = (nants, nants, nchan, 4)
+        x_fill = numpy.zeros(newshape, dtype='complex')
+        x_fill[..., 0] = x[..., 0]
+        x_fill[..., 3] = x[..., 3]
+        xwt_fill = numpy.zeros(newshape, dtype='float')
+        xwt_fill[..., 0] = xwt[..., 0]
+        xwt_fill[..., 3] = xwt[..., 3]
+
     
-    return solve_antenna_gains_itsubs_vector(gain, gwt, x_fill, xwt_fill, niter=niter, tol=tol, phase_only=phase_only,
+    return solve_antenna_gains_itsubs_matrix(gain, gwt, x_fill, xwt_fill, niter=niter, tol=tol, phase_only=phase_only,
                                              refant=refant)
 
 
@@ -478,7 +487,8 @@ def solve_antenna_gains_itsubs_matrix(gain, gwt, x, xwt, niter=30, tol=1e-8, pha
         gainLast = gain
         gain, gwt = gain_substitution_matrix(gain, x, xwt)
         if phase_only:
-            gain = gain / numpy.abs(gain)
+            mask = numpy.abs(gain) > 0.0
+            gain[mask] = gain[mask] / numpy.abs(gain[mask])
         change = numpy.max(numpy.abs(gain - gainLast))
         gain = 0.5 * (gain + gainLast)
         if change < tol:

@@ -138,24 +138,21 @@ class TestImaging(unittest.TestCase):
         
         self.components = self.components_list[centre]
         
+        
         if makegcfcf:
             self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
                                                             oversampling=4,
                                                             support=100,
-                                                            use_aaf=True)]
+                                                            use_aaf=True,
+                                                            polarisation_frame=self.vis_pol)]
             
             self.gcfcf_clipped = [(self.gcfcf[0][0], apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
                                                                                             fractional_level=1e-3))]
             
-            self.gcfcf_joint = [create_awterm_convolutionfunction(self.model, nw=21, wstep=8.0,
-                                                                  oversampling=4,
-                                                                  support=64,
-                                                                  use_aaf=True)]
         
         else:
             self.gcfcf = None
             self.gcfcf_clipped = None
-            self.gcfcf_joint = None
     
     def _checkcomponents(self, dirty, fluxthreshold=0.6, positionthreshold=1.0):
         comps = find_skycomponents(dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5)

@@ -202,11 +202,6 @@ class TestGridDataGridding(unittest.TestCase):
         gcf, cf = create_awterm_convolutionfunction(self.model, nw=100, wstep=8.0, oversampling=4, support=32,
                                                     use_aaf=True, polarisation_frame=self.vis_pol)
         
-        # cf_image = convert_convolutionfunction_to_image(cf)
-        # cf_image.data = numpy.real(cf_image.data)
-        # if self.persist:
-        #     export_image_to_fits(cf_image, "%s/test_gridding_wterm_cf.fits" % self.dir)
-        
         griddata = create_griddata_from_image(self.model, nw=1, polarisation_frame=self.vis_pol)
         griddata, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=griddata, cf=cf)
         cim = fft_griddata_to_image(griddata, gcf)
@@ -214,7 +209,7 @@ class TestGridDataGridding(unittest.TestCase):
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, '%s/test_gridding_dirty_wterm.fits' % self.dir)
-        self.check_peaks(im, 97.1333825)
+        self.check_peaks(im, 97.13206509100314)
     
     def test_griddata_invert_wterm_noover(self):
         self.actualSetUp(zerow=False)

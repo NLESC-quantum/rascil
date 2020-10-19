@@ -22,7 +22,7 @@ log = logging.getLogger('rascil-logger')
 log.setLevel(logging.WARNING)
 
 
-class TestGridDataKernels(unittest.TestCase):
+class TestVPGridDataKernels(unittest.TestCase):
 
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
@@ -42,15 +42,11 @@ class TestGridDataKernels(unittest.TestCase):
         gcf, cf = create_vpterm_convolutionfunction(self.image, make_vp=make_vp, oversampling=16,
                                                     support=32, use_aaf=True,
                                   polarisation_frame=PolarisationFrame("linear"))
-        # cf_image = convert_convolutionfunction_to_image(cf)
-        # cf_image.data = numpy.real(cf_image.data)
-        # if self.persist:
-        #     export_image_to_fits(cf_image, "%s/test_convolutionfunction_aterm_vp_cf.fits" % self.dir)
 
         # Tests for the VP convolution function are different because it does not peak
         # at the centre of the uv plane
         peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf.data)), cf.shape)
-        assert numpy.abs(cf.data[peak_location] - (0.005286010417866583+0.000490194742591494j)) < 1e-7, cf.data[
+        assert numpy.abs(cf.data[peak_location] - (0.005285675638650622+0.000494340010248879j)) < 1e-7, cf.data[
             peak_location]
         assert peak_location == (0, 3, 0, 11, 8, 11, 16), peak_location
         u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)

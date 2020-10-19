@@ -147,38 +147,43 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     assert isinstance(oversampling, int)
     assert oversampling > 0
     
-    # nx = max(maxsupport, 2 * oversampling * support)
-    # ny = max(maxsupport, 2 * oversampling * support)
-    #
+    nx = max(maxsupport, 2 * oversampling * support)
+    ny = max(maxsupport, 2 * oversampling * support)
+    
+    qnx = nx // oversampling
+    qny = ny // oversampling
     
     cf.data.values[...] = 0.0
     
-    qnx = onx * oversampling
-    qny = ony * oversampling
+    ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
+    
     subim_wcs = im.wcs.deepcopy()
-    subim_wcs.wcs.crpix[0] = onx // 2 + 1.0
-    subim_wcs.wcs.crpix[1] = ony // 2 + 1.0
+    subim_wcs.wcs.cdelt[0] = -ccell / d2r
+    subim_wcs.wcs.cdelt[1] = +ccell / d2r
+    subim_wcs.wcs.crpix[0] = qnx // 2 + 1.0
+    subim_wcs.wcs.crpix[1] = qny // 2 + 1.0
+    subim = create_image_from_array(numpy.zeros([nchan, npol, qny, qnx]), subim_wcs, polarisation_frame=polarisation_frame)
     
     if use_aaf:
-        this_pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6,
+        this_pswf_gcf, _ = create_pswf_convolutionfunction(subim, oversampling=1, support=6,
                                                            polarisation_frame=polarisation_frame)
         norm = 1.0 / this_pswf_gcf.data
     else:
         norm = 1.0
     
     if make_pb is not None:
-        pb = make_pb(im)
+        pb = make_pb(subim)
         
         if pa is not None:
-            rpb = convert_azelvp_to_radec(pb, im, pa)
+            rpb = convert_azelvp_to_radec(pb, subim, pa)
         else:
-            rpb = convert_azelvp_to_radec(pb, im, 0.0)
+            rpb = convert_azelvp_to_radec(pb, subim, 0.0)
         
         norm *= rpb.data
     
     # We might need to work with a larger image
-    padded_shape = [nchan, npol, qny, qnx]
-    thisplane = copy_image(im)
+    padded_shape = [nchan, npol, ny, nx]
+    thisplane = copy_image(subim)
     thisplane.data.values = numpy.zeros(thisplane.shape, dtype='complex')
     for z, w in enumerate(w_list):
         thisplane.data.values[...] = 0.0 + 0.0j
@@ -187,34 +192,30 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
         paddedplane = pad_image(thisplane, padded_shape)
         grid = fft_image(paddedplane)
 
-        ycen, xcen = qny // 2, qnx // 2
+        ycen, xcen = ny // 2, nx // 2
         for y in range(oversampling):
             ybeg = y + ycen + (support * oversampling) // 2 - oversampling // 2
             yend = y + ycen - (support * oversampling) // 2 - oversampling // 2
             assert ybeg >= 0, "Convolutionfunction does not fit into image"
-            assert yend < qny, "Convolutionfunction does not fit into image"
-            # vv = range(ybeg, yend, -oversampling)
+            assert yend < ny, "Convolutionfunction does not fit into image"
             for x in range(oversampling):
                 xbeg = x + xcen + (support * oversampling) // 2 - oversampling // 2
                 xend = x + xcen - (support * oversampling) // 2 - oversampling // 2
                 assert xbeg >= 0, "Convolutionfunction does not fit into image"
-                assert xend < qnx, "Convolutionfunction does not fit into image"
-
-                # uu = range(xbeg, xend, -oversampling)
+                assert xend < nx, "Convolutionfunction does not fit into image"
                 cf.data.values[..., z, y, x, :, :] = grid.data.values[...,
                                               ybeg:yend:-oversampling,
                                               xbeg:xend:-oversampling]
-                # for chan in range(nchan):
-                #     for pol in range(npol):
-                #         cf.data[chan, pol, z, y, x, :, :] = paddedplane.data[chan, pol, :, :][vv, :][:, uu]
     
     cf.check()
+    
+    for ipol in range(1, npol):
+        cf.data.values[:, ipol,...] = cf.data.values[:, 0,...]
     
     if normalise:
         norm = numpy.zeros([nchan, npol, oversampling, oversampling])
         for y in range(oversampling):
             for x in range(oversampling):
-                # uu = range(xbeg, xend, -oversampling)
                 norm[..., y, x] = numpy.sum(numpy.real(cf.data.values[:, :, 0, y, x, :, :]), axis=(-2, -1))
         for z, _ in enumerate(w_list):
             for y in range(oversampling):
@@ -244,9 +245,9 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     :param oversampling: Oversampling of the convolution function in uv space
     :return: griddata correction Image, griddata kernel as GridData
     """
-    # if oversampling % 2 == 0:
-    #     log.info("Setting oversampling to next greatest odd number {}".format(oversampling))
-    #     oversampling += 1
+    if oversampling % 2 == 0:
+        log.info("Setting oversampling to next greatest odd number {}".format(oversampling))
+        oversampling += 1
     
     d2r = numpy.pi / 180.0
     
@@ -321,6 +322,6 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
                                                       polarisation_frame=polarisation_frame)
     else:
         pswf_gcf = create_empty_image_like(im)
-        pswf_gcf.data[...] = 1.0
+        pswf_gcf.data.values[...] = 1.0
     
     return pswf_gcf, cf

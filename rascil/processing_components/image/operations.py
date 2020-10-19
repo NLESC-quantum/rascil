@@ -34,6 +34,7 @@ import logging
 import warnings
 
 import numpy
+import xarray
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
@@ -824,6 +825,8 @@ def create_empty_image_like(im: Image) -> Image:
     """
     
     empty = copy_image(im)
+    assert isinstance(im, Image)
+    assert isinstance(im.data, xarray.DataArray)
     empty.data.values[...] = 0.0
     return empty
 

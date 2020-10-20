@@ -301,7 +301,7 @@ def create_image_from_visibility(vis: Union[BlockVisibility, Visibility], **kwar
     npixel = get_parameter(kwargs, "npixel", 512)
     uvmax = numpy.max((numpy.abs(vis.data['uvw'][..., 0:1])))
     if isinstance(vis, BlockVisibility):
-        uvmax *= numpy.max(frequency) / constants.c.to('m s^-1').value
+        uvmax *= numpy.max(frequency) / constants.c.value
     log.debug("create_image_from_visibility: uvmax = %f wavelengths" % uvmax)
     criticalcellsize = 1.0 / (uvmax * 2.0)
     log.debug("create_image_from_visibility: Critical cellsize = %f radians, %f degrees" % (
@@ -361,11 +361,11 @@ def advise_wide_field(vis: Union[BlockVisibility, Visibility], delA=0.02,
 
     isblock = isinstance(vis, BlockVisibility)
 
-    max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis.frequency)
+    max_wavelength = constants.c.value / numpy.min(vis.frequency)
     if verbose:
         log.info("advise_wide_field: (max_wavelength) Maximum wavelength %.3f (meters)" % (max_wavelength))
 
-    min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis.frequency)
+    min_wavelength = constants.c.value / numpy.max(vis.frequency)
     if verbose:
         log.info("advise_wide_field: (min_wavelength) Minimum wavelength %.3f (meters)" % (min_wavelength))
 

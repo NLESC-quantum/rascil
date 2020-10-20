@@ -190,7 +190,8 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             for r in vis_rows:
                 done[r] = 1
     
-    assert done.all() == 1, "Some rows were not calibrated"
+    if done.all() == 1:
+        log.warning("apply_gaintable: solutions not available for some times")
     
     return vis
 
@@ -417,7 +418,7 @@ def gaintable_plot(gt: GainTable, cc="T", title='', ants=None, channels=None, la
             ax[1].plot(time_axis[amp[:, 0] > min_amp],
                        amp[amp[:, 0] > min_amp], '.',
                        label=labels[ant])
-        ax[1].set_ylabel('Amplitude (Jy)')
+        ax[1].set_ylabel('Amplitude')
         ax[1].set_title("{title} Amplitude {cc}".format(title=title, cc=cc))
         
         for ant in ants:

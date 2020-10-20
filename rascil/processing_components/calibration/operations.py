@@ -324,20 +324,34 @@ def qa_gaintable(gt: GainTable, context=None) -> QA:
     :param gt:
     :return: QA
     """
-    agt = numpy.abs(gt.gain[gt.weight > 0.0])
-    pgt = numpy.angle(gt.gain[gt.weight > 0.0])
-    rgt = gt.residual[numpy.sum(gt.weight, axis=1) > 0.0]
-    data = {'shape': gt.gain.shape,
-            'maxabs-amp': numpy.max(agt),
-            'minabs-amp': numpy.min(agt),
-            'rms-amp': numpy.std(agt),
-            'medianabs-amp': numpy.median(agt),
-            'maxabs-phase': numpy.max(pgt),
-            'minabs-phase': numpy.min(pgt),
-            'rms-phase': numpy.std(pgt),
-            'medianabs-phase': numpy.median(pgt),
-            'residual': numpy.max(rgt)
-            }
+    if numpy.sum([gt.weight > 0.0]) > 0.0:
+        agt = numpy.abs(gt.gain[gt.weight > 0.0])
+        pgt = numpy.angle(gt.gain[gt.weight > 0.0])
+        rgt = gt.residual[numpy.sum(gt.weight, axis=1) > 0.0]
+        data = {'shape': gt.gain.shape,
+                'maxabs-amp': numpy.max(agt),
+                'minabs-amp': numpy.min(agt),
+                'rms-amp': numpy.std(agt),
+                'medianabs-amp': numpy.median(agt),
+                'maxabs-phase': numpy.max(pgt),
+                'minabs-phase': numpy.min(pgt),
+                'rms-phase': numpy.std(pgt),
+                'medianabs-phase': numpy.median(pgt),
+                'residual': numpy.max(rgt)
+                }
+    else:
+       data = {'shape': gt.gain.shape,
+                'maxabs-amp': None,
+                'minabs-amp': None,
+                'rms-amp': None,
+                'medianabs-amp': None,
+                'maxabs-phase': None,
+                'minabs-phase': None,
+                'rms-phase': None,
+                'medianabs-phase': None,
+                'residual': None
+                }
+
     return QA(origin='qa_gaintable', data=data, context=context)
 
 

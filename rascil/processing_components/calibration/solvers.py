@@ -116,7 +116,7 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
                     else:
                         gt.data['gain'].values[row, ...], gt.data['weight'].values[row, ...], \
                         gt.data['residual'].values[row, ...] = \
-                            solve_antenna_gains_itsubs_vector(gt.data['gain'].values[row, ...],
+                            solve_antenna_gains_itsubs_nocrossdata(gt.data['gain'].values[row, ...],
                                                               gt.data['weight'].values[row, ...],
                                                               x, xwt, phase_only=phase_only, niter=niter,
                                                               tol=tol)

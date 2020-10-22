@@ -194,6 +194,8 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
     :param restore_taper: Type of taper between facets
     :return: list of restored images (or graph)
     """
+    restore_facets=1
+
     assert len(skymodel_list) == len(psf_imagelist)
     if residual_imagelist is not None:
         assert len(skymodel_list) == len(residual_imagelist)

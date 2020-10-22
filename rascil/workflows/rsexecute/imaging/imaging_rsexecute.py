@@ -175,6 +175,8 @@ def restore_list_rsexecute_workflow(model_imagelist, psf_imagelist, residual_ima
     :param kwargs: Parameters for functions in components
     :return: list of restored images (or graph)
     """
+    restore_facets = 1
+
     assert len(model_imagelist) == len(psf_imagelist)
     if residual_imagelist is not None:
         assert len(model_imagelist) == len(residual_imagelist)

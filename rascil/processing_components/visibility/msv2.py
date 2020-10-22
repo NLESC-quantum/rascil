@@ -21,6 +21,7 @@ try:
     from casacore.tables import table, tableutil
     from casacore.measures import measures
 
+
     class WriteMs(BaseData):
         """
         Class for storing visibility data and writing the data, along with array
@@ -29,7 +30,8 @@ try:
 
         _STOKES_CODES = STOKES_CODES
 
-        def __init__(self, filename, ref_time=0.0, source_name = None, frame ='ITRF', verbose=False, memmap=None, if_delete=False):
+        def __init__(self, filename, ref_time=0.0, source_name=None, frame='ITRF', verbose=False, memmap=None,
+                     if_delete=False):
             """
             Initialize a new Measurement set object using a filename and a reference time
             given in seconds since the UNIX 1970 ephem, a python datetime object, or a
@@ -95,7 +97,7 @@ try:
                 topo2eci = get_eci_transform(latitude)
                 for i in range(len(stands)):
                     eci = numpy.dot(topo2eci, xyz[i, :])
-                    ants.append(self._Antenna(stands[i], eci[0]+arrayX, eci[1]+arrayY, eci[2]+arrayZ, bits=bits))
+                    ants.append(self._Antenna(stands[i], eci[0] + arrayX, eci[1] + arrayY, eci[2] + arrayZ, bits=bits))
                     mapper.append(stands[i])
             else:
                 for i, ant_name in enumerate(stands):
@@ -104,11 +106,11 @@ try:
 
             self.nant = len(ants)
             self.array.append(
-                {'center': [0.,0.,0.], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
-                # {'center': [arrayX, arrayY, arrayZ], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
+                {'center': [0., 0., 0.], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
+            # {'center': [arrayX, arrayY, arrayZ], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
 
-
-        def add_data_set(self, obstime, inttime, baselines, visibilities, pol='XX', source=None, phasecentre=None,
+        def add_data_set(self, obstime, inttime, baselines, visibilities, flags=None, pol='XX', source=None,
+                         phasecentre=None,
                          uvw=None):
             """
             Create a UVData object to store a collection of visibilities.
@@ -119,9 +121,11 @@ try:
             else:
                 numericPol = pol
 
+            if flags is None:
+                flags = numpy.zeros_like(visibilities, dtype='bool')
             self.data.append(
-                MS_UVData(obstime, inttime, baselines, visibilities, pol=numericPol, source=source,
-                          phasecentre=phasecentre,uvw=uvw))
+                MS_UVData(obstime, inttime, baselines, visibilities, flags, pol=numericPol, source=source,
+                          phasecentre=phasecentre, uvw=uvw))
 
         def write(self):
             """
@@ -428,7 +432,8 @@ try:
                             # currSourceName = dataSet.source.name
 
                             ### Zenith pointings
-                            sidereal = Time(dataSet.obstime/86400.0, format='mjd', scale='utc', location=self.site_config.location)
+                            sidereal = Time(dataSet.obstime / 86400.0, format='mjd', scale='utc',
+                                            location=self.site_config.location)
                             sidereal_time = sidereal.sidereal_time('apparent').value
                             ra = sidereal_time * 15
                             dec = latitude
@@ -634,7 +639,7 @@ try:
             tb = table("%s/SPECTRAL_WINDOW" % self.basename, desc, nrow=nBand, ack=False)
 
             for i, freq in enumerate(self.freq):
-                tb.putcell('MEAS_FREQ_REF', i, 5)  #https://github.com/ska-sa/pyxis/issues/27
+                tb.putcell('MEAS_FREQ_REF', i, 5)  # https://github.com/ska-sa/pyxis/issues/27
                 tb.putcell('CHAN_FREQ', i, self.refVal + freq.bandFreq + numpy.arange(self.nchan) * self.channelWidth)
                 tb.putcell('REF_FREQUENCY', i, self.refVal)
                 tb.putcell('CHAN_WIDTH', i, [freq.chWidth for j in range(self.nchan)])
@@ -667,7 +672,7 @@ try:
                 altitude = self.site_config.location.height.to('meter').value
 
             mapper = self.array[0]['mapper']
-            
+
             ncorr = self.nStokes
             nchan = self.nchan
 
@@ -756,7 +761,6 @@ try:
                                              datamanagergroup="Data",
                                              comment='The data column')
 
-
             desc = tableutil.maketabdesc([col1, col2, col3, col4, col5, col6, col7, col8, col9,
                                           col10, col11, col12, col13, col14, col15, col16,
                                           col17, col18, col19, col20, col21, col22])
@@ -782,7 +786,8 @@ try:
 
                     if dataSet.source is None:
                         ### Zenith pointings
-                        sidereal = Time(dataSet.obstime/86400.0, format='mjd', scale='utc', location=self.site_config.location)
+                        sidereal = Time(dataSet.obstime / 86400.0, format='mjd', scale='utc',
+                                        location=self.site_config.location)
                         sidereal_time = sidereal.sidereal_time('apparent').value
                         # equ = astro.equ_posn(obs.sidereal_time() * 180 / numpy.pi, obs.lat * 180 / numpy.pi)
                         from astropy.coordinates import Angle
@@ -841,7 +846,7 @@ try:
                     ### Add in the new date/time and integration time
                     # timeList = [utc - astro.MJD_OFFSET for bl in dataSet.baselines]
                     inttimeList = [dataSet.inttime for bl in dataSet.baselines]
-                    #timeList = [(utc0/86400.0 - 2400000.5) * 86400 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+                    # timeList = [(utc0/86400.0 - 2400000.5) * 86400 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
                     # timeList = [utc + dataSet.inttime / 2.0 for bl in dataSet.baselines]
                     timeList = [dataSet.obstime + dataSet.inttime / 2.0 for bl in dataSet.baselines]
 
@@ -851,12 +856,16 @@ try:
                     ## Zero out the visibility data
                     try:
                         matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
+                        flag_matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
                         matrix *= 0.0
+                        flag_matrix *= False
                     except (NameError, RuntimeError):
                         matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.complex64)
+                        flag_matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.bool)
 
                 # Save the visibility data in the right order
                 matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.visibilities[order, :]
+                flag_matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.flags[order, :] == 1
 
                 # Deal with saving the data once all of the polarizations have been added to 'matrix'
                 if dataSet.pol == self.stokes[-1]:
@@ -864,6 +873,7 @@ try:
                     tb.addrows(nBand * nBL)
 
                     matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
+                    flag_matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
 
                     for j in range(nBand):
                         fg = numpy.zeros((nBL, self.nStokes, self.nchan), dtype=numpy.bool)
@@ -872,7 +882,8 @@ try:
                         sg = numpy.ones((nBL, self.nStokes)) * 9999
 
                         tb.putcol('UVW', uvwList, i, nBL)
-                        tb.putcol('FLAG', fg.transpose(0, 2, 1), i, nBL)
+                        # tb.putcol('FLAG', fg.transpose(0, 2, 1), i, nBL)
+                        tb.putcol('FLAG', flag_matrix[..., j, :].transpose(0, 2, 1), i, nBL)
                         tb.putcol('FLAG_CATEGORY', fc.transpose(0, 3, 2, 1), i, nBL)
                         tb.putcol('WEIGHT', wg, i, nBL)
                         tb.putcol('SIGMA', sg, i, nBL)
@@ -1077,7 +1088,7 @@ try:
 
         _STOKES_CODES = STOKES_CODES
 
-        def __init__(self, filename, ref_time=0.0, source_name = None, frame='IRTF', verbose=False, if_delete=False):
+        def __init__(self, filename, ref_time=0.0, source_name=None, frame='IRTF', verbose=False, if_delete=False):
             """
             Initialize a new MeasurementSets object using a filename and a reference time
             given in seconds since the UNIX 1970 ephem, a python datetime object, or a

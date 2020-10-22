@@ -143,7 +143,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                       nmajor=5, gain=0.7,
                                                       deconvolve_facets=4, deconvolve_overlap=32,
                                                       deconvolve_taper='tukey', psf_support=64,
-                                                      restore_facets=4, psfwidth=1.0)
+                                                      restore_facets=1)
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
         if self.persist:
@@ -171,7 +171,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                       nmajor=5, gain=0.7,
                                                       deconvolve_facets=4, deconvolve_overlap=32,
                                                       deconvolve_taper='tukey', psf_support=64,
-                                                      restore_facets=4, psfwidth=1.0)
+                                                      restore_facets=1)
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
         if self.persist:
@@ -205,7 +205,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                          nmajor=5, gain=0.7,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
-                                         restore_facets=4, psfwidth=1.0,
+                                         restore_facets=1,
                                          calibration_context='T', controls=controls, do_selfcal=True,
                                          global_solution=False)
         clean, residual, restored, gt_list = rsexecute.compute(ical_list, sync=True)
@@ -241,7 +241,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                          nmajor=5, gain=0.7,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
-                                         restore_facets=4, psfwidth=1.0,
+                                         restore_facets=1,
                                          calibration_context='T', controls=controls, do_selfcal=True,
                                          global_solution=False)
         clean, residual, restored, gt_list = rsexecute.compute(ical_list, sync=True)
@@ -278,7 +278,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                          nmajor=5, gain=0.7,
                                          deconvolve_facets=4, deconvolve_overlap=32,
                                          deconvolve_taper='tukey', psf_support=64,
-                                         restore_facets=4, psfwidth=1.0,
+                                         restore_facets=1,
                                          calibration_context='T', controls=controls, do_selfcal=True,
                                          global_solution=True)
         clean, residual, restored, gt_list = rsexecute.compute(ical_list, sync=True)
@@ -321,7 +321,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                   nmajor=5, gain=0.7,
                                                   deconvolve_facets=4, deconvolve_overlap=32,
                                                   deconvolve_taper='tukey', psf_support=64,
-                                                  restore_facets=4, psfwidth=1.0,
+                                                  restore_facets=1,
                                                   calibration_context='T', controls=controls, do_selfcal=True,
                                                   global_solution=False)
         clean, residual, restored, skymodel_list, gt_list = rsexecute.compute(ical_list, sync=True)
@@ -366,7 +366,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                   nmajor=5, gain=0.7,
                                                   deconvolve_facets=4, deconvolve_overlap=32,
                                                   deconvolve_taper='tukey', psf_support=64,
-                                                  restore_facets=4, psfwidth=1.0,
+                                                  restore_facets=1,
                                                   calibration_context='T', controls=controls, do_selfcal=True,
                                                   global_solution=False)
         clean, residual, restored, sky_model_list, gt_list = rsexecute.compute(ical_list, sync=True)
@@ -418,7 +418,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                   nmajor=5, gain=0.7,
                                                   deconvolve_facets=4, deconvolve_overlap=32,
                                                   deconvolve_taper='tukey', psf_support=64,
-                                                  restore_facets=4, psfwidth=1.0,
+                                                  restore_facets=1,
                                                   calibration_context='T', controls=controls, do_selfcal=True,
                                                   global_solution=False)
         clean, residual, restored, skymodel_list, gt_list = rsexecute.compute(ical_list, sync=True)
@@ -460,7 +460,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                nmajor=5, gain=0.7,
                                                                deconvolve_facets=4, deconvolve_overlap=32,
                                                                deconvolve_taper='tukey', psf_support=64,
-                                                               restore_facets=4, psfwidth=1.0)
+                                                               restore_facets=1)
         clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
         if self.persist:
@@ -502,7 +502,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                nmajor=5, gain=0.7,
                                                                deconvolve_facets=4, deconvolve_overlap=32,
                                                                deconvolve_taper='tukey', psf_support=64,
-                                                               restore_facets=4, psfwidth=1.0)
+                                                               restore_facets=1)
         clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
         if self.persist:
@@ -538,7 +538,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                nmajor=5, gain=0.7,
                                                                deconvolve_facets=4, deconvolve_overlap=32,
                                                                deconvolve_taper='tukey', psf_support=64,
-                                                               restore_facets=4, psfwidth=1.0)
+                                                               restore_facets=1)
         clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
         if self.persist:

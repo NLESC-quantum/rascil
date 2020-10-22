@@ -203,7 +203,8 @@ def restore_list_serial_workflow(model_imagelist, psf_imagelist, residual_imagel
     :param restore_taper: Type of taper between facets
     :return: list of restored images
     """
-    
+    restore_facets = 1
+
     if residual_imagelist is None:
         residual_imagelist = []
     

@@ -239,12 +239,13 @@ try:
         UV visibility data set for a given observation time.
         """
 
-        def __init__(self, obstime, inttime, baselines, visibilities, weights=None, pol=STOKES_CODES['XX'], source=None,
+        def __init__(self, obstime, inttime, baselines, visibilities, flags, weights=None, pol=STOKES_CODES['XX'], source=None,
                      phasecentre=None, uvw=None):
             self.obstime = obstime
             self.inttime = inttime
             self.baselines = baselines
             self.visibilities = visibilities
+            self.flags = flags
             self.weights = weights
             self.pol = pol
             self.source = source
@@ -500,7 +501,7 @@ try:
 
             raise NotImplementedError
 
-        def add_data_set(self, obstime, inttime, baselines, visibilities, weights=None, pol='XX', source=None):
+        def add_data_set(self, obstime, inttime, baselines, visibilities, flags, weights=None, pol='XX', source=None):
             """
             Create a UVData object to store a collection of visibilities.
 
@@ -512,7 +513,7 @@ try:
                 numericPol = pol
 
             self.data.append(
-                MS_UVData(obstime, inttime, baselines, visibilities, weights=weights, pol=numericPol, source=source))
+                MS_UVData(obstime, inttime, baselines, visibilities, flags,  weights=weights, pol=numericPol, source=source))
 
         def write(self):
             """

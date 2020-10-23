@@ -53,12 +53,12 @@ spectral_mode           Visibility processing mode          'mfs' or 'channel'
 
 """
 
-__all__ = ['rascil_path', 'rascil_data_path', 'get_parameter']
+__all__ = ["rascil_path", "rascil_data_path", "get_parameter"]
 
 import logging
 import os
 
-log = logging.getLogger('logger')
+log = logging.getLogger("logger")
 
 
 def rascil_path(path):
@@ -71,8 +71,10 @@ def rascil_path(path):
     :param path:
     :return: absolute path
     """
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)) + "/../../")
-    rascilhome = os.getenv('RASCIL', project_root)
+    project_root = os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)) + "/../../"
+    )
+    rascilhome = os.getenv("RASCIL", project_root)
     return os.path.join(rascilhome, path)
 
 
@@ -89,9 +91,9 @@ def rascil_data_path(path, check=True):
     :param path:
     :return: absolute path
     """
-    rascil_data_home = os.getenv('RASCIL_DATA', None)
+    rascil_data_home = os.getenv("RASCIL_DATA", None)
     if rascil_data_home is None:
-        dp = rascil_path('data/')
+        dp = rascil_path("data/")
     else:
         dp = rascil_data_home
     if check:
@@ -102,7 +104,7 @@ def rascil_data_path(path, check=True):
 
 
 def get_parameter(kwargs, key, default=None):
-    """ Get a specified named value for this (calling) function
+    """Get a specified named value for this (calling) function
 
     The parameter is searched for in kwargs
 

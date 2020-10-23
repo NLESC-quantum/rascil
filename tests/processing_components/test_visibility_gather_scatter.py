@@ -10,46 +10,69 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.gather_scatter import visibility_gather_time, visibility_gather_w, \
-    visibility_scatter_time, visibility_scatter_w, visibility_scatter_channel, \
-    visibility_gather_channel
-from rascil.processing_components.visibility.iterators import vis_wslices, vis_timeslices
-from rascil.processing_components.visibility.base import create_visibility, create_blockvisibility
+from rascil.processing_components.visibility.gather_scatter import (
+    visibility_gather_time,
+    visibility_gather_w,
+    visibility_scatter_time,
+    visibility_scatter_w,
+    visibility_scatter_channel,
+    visibility_gather_channel,
+)
+from rascil.processing_components.visibility.iterators import (
+    vis_wslices,
+    vis_timeslices,
+)
+from rascil.processing_components.visibility.base import (
+    create_visibility,
+    create_blockvisibility,
+)
 
 import logging
 
-log = logging.getLogger('logger')
+log = logging.getLogger("logger")
 
 log.setLevel(logging.WARNING)
 
+
 class TestVisibilityGatherScatter(unittest.TestCase):
-    
     def setUp(self):
-    
-        self.lowcore = create_named_configuration('LOWBD2-CORE')
-    
+
+        self.lowcore = create_named_configuration("LOWBD2-CORE")
+
         self.times = numpy.linspace(-300.0, 300.0, 11) * numpy.pi / 43200.0
-    
+
         self.frequency = numpy.linspace(1e8, 1.5e9, 7)
-        
-        self.channel_bandwidth = numpy.array(7 * [self.frequency[1] - self.frequency[0]])
-        
-        self.phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
+
+        self.channel_bandwidth = numpy.array(
+            7 * [self.frequency[1] - self.frequency[0]]
+        )
+
+        self.phasecentre = SkyCoord(
+            ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
+        )
 
     def actualSetUp(self, times=None):
         if times is not None:
             self.times = times
-            
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
-                                     channel_bandwidth=self.channel_bandwidth,
-                                     phasecentre=self.phasecentre,
-                                     weight=1.0)
-        self.vis.data['vis'][:, 0] = self.vis.time
-        self.blockvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                               channel_bandwidth=self.channel_bandwidth,
-                                               phasecentre=self.phasecentre,
-                                               weight=1.0)
-        self.blockvis.data['vis'][...] = 1.0
+
+        self.vis = create_visibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+        )
+        self.vis.data["vis"][:, 0] = self.vis.time
+        self.blockvis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+        )
+        self.blockvis.data["vis"][...] = 1.0
 
     def test_vis_scatter_gather_wstack(self):
         self.actualSetUp()
@@ -61,7 +84,7 @@ class TestVisibilityGatherScatter(unittest.TestCase):
 
     def test_vis_scatter_gather_timeslice(self):
         self.actualSetUp()
-        vis_slices = vis_timeslices(self.vis, 'auto')
+        vis_slices = vis_timeslices(self.vis, "auto")
         vis_list = visibility_scatter_time(self.vis, vis_slices)
         newvis = visibility_gather_time(vis_list, self.vis, vis_slices)
         assert self.vis.nvis == newvis.nvis
@@ -91,5 +114,5 @@ class TestVisibilityGatherScatter(unittest.TestCase):
         assert numpy.max(numpy.abs(newvis.vis)) > 0.0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

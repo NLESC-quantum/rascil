@@ -24,12 +24,17 @@ Ignoring changes in the normalisation term, we have:
 
 """
 
-__all__ = ['fit_uvwplane', 'fit_uvwplane_only', 'predict_timeslice_single', 'invert_timeslice_single']
+__all__ = [
+    "fit_uvwplane",
+    "fit_uvwplane_only",
+    "predict_timeslice_single",
+    "invert_timeslice_single",
+]
 
 import logging
 from rascil.processing_components.image.operations import image_is_canonical
 
-log = logging.getLogger('logger')
+log = logging.getLogger("logger")
 
 """
 The w-term can be viewed as a time-variable distortion. Approximating the array as instantaneously
@@ -66,12 +71,12 @@ from rascil.processing_components.imaging.base import predict_2d, invert_2d
 
 
 def fit_uvwplane_only(vis: Union[Visibility, BlockVisibility]) -> (float, float):
-    """ Fit the best fitting plane p u + q v = w
+    """Fit the best fitting plane p u + q v = w
 
     :param vis: visibility to be fitted
     :return: direction cosines defining plane
     """
-    
+
     su2 = numpy.sum(vis.u * vis.u)
     sv2 = numpy.sum(vis.v * vis.v)
     suv = numpy.sum(vis.u * vis.v)
@@ -83,8 +88,10 @@ def fit_uvwplane_only(vis: Union[Visibility, BlockVisibility]) -> (float, float)
     return p, q
 
 
-def fit_uvwplane(vis: Union[Visibility, BlockVisibility], remove=False) -> (Image, float, float):
-    """ Fit and optionally remove the best fitting plane p u + q v = w
+def fit_uvwplane(
+    vis: Union[Visibility, BlockVisibility], remove=False
+) -> (Image, float, float):
+    """Fit and optionally remove the best fitting plane p u + q v = w
 
     :param vis: visibility to be fitted
     :param remove: Remove the fitted w permanently from vis?
@@ -93,20 +100,27 @@ def fit_uvwplane(vis: Union[Visibility, BlockVisibility], remove=False) -> (Imag
     nvis = len(vis.data)
     before = numpy.max(numpy.abs(vis.w))
     p, q = fit_uvwplane_only(vis)
-    residual = vis.data['uvw'][..., 2] - (p * vis.u + q * vis.v)
+    residual = vis.data["uvw"][..., 2] - (p * vis.u + q * vis.v)
     after = numpy.max(numpy.abs(residual))
     if numpy.abs(p) > 1e-7 or numpy.abs(q) > 1e-7:
-        log.debug('fit_uvwplane: Fit to %d rows reduces max abs w from %.1f to %.1f m'
-                % (nvis, before, after))
+        log.debug(
+            "fit_uvwplane: Fit to %d rows reduces max abs w from %.1f to %.1f m"
+            % (nvis, before, after)
+        )
     if remove:
-        vis.data['uvw'][..., 2] -= p * vis.u + q * vis.v
+        vis.data["uvw"][..., 2] -= p * vis.u + q * vis.v
     return vis, p, q
 
 
-def predict_timeslice_single(vis: Union[Visibility, BlockVisibility], model: Image,
-                             predict=predict_2d, remove=True, gcfcf=None, **kwargs) \
-        -> Union[Visibility, BlockVisibility]:
-    """ Predict using a single time slices.
+def predict_timeslice_single(
+    vis: Union[Visibility, BlockVisibility],
+    model: Image,
+    predict=predict_2d,
+    remove=True,
+    gcfcf=None,
+    **kwargs
+) -> Union[Visibility, BlockVisibility]:
+    """Predict using a single time slices.
 
     This fits a single plane and corrects the image geometry.
 
@@ -142,13 +156,13 @@ def predict_timeslice_single(vis: Union[Visibility, BlockVisibility], model: Ima
     assert image_is_canonical(model)
 
     assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
-    
-    vis.data['vis'][...] = 0.0
-    
+
+    vis.data["vis"][...] = 0.0
+
     # Fit and remove best fitting plane for this slice
     uvw = vis.uvw
     avis, p, q = fit_uvwplane(vis, remove=remove)
-    
+
     # We want to describe work image as distorted. We describe the distortion by putting
     # the olbiquity parameters in the wcs. The input model should be described as having
     # zero olbiquity parameters.
@@ -160,20 +174,27 @@ def predict_timeslice_single(vis: Union[Visibility, BlockVisibility], model: Ima
         workimage, footprintimage = reproject_image(model, newwcs, shape=model.shape)
         workimage.data[footprintimage.data <= 0.0] = 0.0
         workimage.wcs.wcs.set_pv([(0, 1, -p), (0, 2, -q)])
-    
+
         # Now we can do the predict
         vis = predict(avis, workimage, gcfcf=gcfcf, **kwargs)
     else:
         vis = predict(avis, model, gcfcf=gcfcf, **kwargs)
-    
+
     if remove:
-        avis.data['uvw'][...] = uvw
+        avis.data["uvw"][...] = uvw
 
     return vis
 
 
-def invert_timeslice_single(vis: Union[Visibility, BlockVisibility], im: Image, dopsf, normalize=True, remove=True,
-                            gcfcf=None, **kwargs) -> (Image, numpy.ndarray):
+def invert_timeslice_single(
+    vis: Union[Visibility, BlockVisibility],
+    im: Image,
+    dopsf,
+    normalize=True,
+    remove=True,
+    gcfcf=None,
+    **kwargs
+) -> (Image, numpy.ndarray):
     """Process single time slice
 
     Extracted for re-use in parallel version
@@ -209,28 +230,30 @@ def invert_timeslice_single(vis: Union[Visibility, BlockVisibility], im: Image, 
     """
     assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
     assert image_is_canonical(im)
-    
+
     uvw = vis.uvw
     vis, p, q = fit_uvwplane(vis, remove=remove)
-    
-    workimage, sumwt = invert_2d(vis, im, dopsf, normalize=normalize, gcfcf=gcfcf, **kwargs)
+
+    workimage, sumwt = invert_2d(
+        vis, im, dopsf, normalize=normalize, gcfcf=gcfcf, **kwargs
+    )
     # Work image is distorted. We describe the distortion by putting the olbiquity parameters in
     # the wcs. The output image should be described as having zero olbiquity parameters.
-    
+
     if numpy.abs(p) > 1e-7 or numpy.abs(q) > 1e-7:
         # Note that this has to be zero relative in first element, one relative in second!!!!
         workimage.wcs.wcs.set_pv([(0, 1, -p), (0, 2, -q)])
-    
+
         finalimage, footprint = reproject_image(workimage, im.wcs, im.shape)
         finalimage.data[footprint.data <= 0.0] = 0.0
         finalimage.wcs.wcs.set_pv([(0, 1, 0.0), (0, 2, 0.0)])
 
         if remove:
-            vis.data['uvw'][...] = uvw
+            vis.data["uvw"][...] = uvw
 
         return finalimage, sumwt
     else:
         if remove:
-            vis.data['uvw'][...] = uvw
-    
+            vis.data["uvw"][...] = uvw
+
         return workimage, sumwt

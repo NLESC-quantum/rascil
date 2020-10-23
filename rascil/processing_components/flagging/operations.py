@@ -7,7 +7,7 @@ order in the WCS is reversed so the grid_WCS describes UU, VV, WW, STOKES, FREQ 
 
 """
 
-__all__ = ['flagging_blockvisibility', 'flagging_blockvisibility_with_bl']
+__all__ = ["flagging_blockvisibility", "flagging_blockvisibility_with_bl"]
 
 import logging
 
@@ -19,7 +19,7 @@ from rascil.data_models.memory_data_models import QA
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import create_image_from_array
 
-log = logging.getLogger('logger')
+log = logging.getLogger("logger")
 
 
 def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):
@@ -36,24 +36,24 @@ def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):
     assert isinstance(antenna, list)
     if len(channel) == 0 and len(polarization) == 0:
         for ant in antenna:
-            bvis.data['flags'][:, ant, ...] = 1
-            bvis.data['flags'][:, :, ant, ...] = 1
+            bvis.data["flags"][:, ant, ...] = 1
+            bvis.data["flags"][:, :, ant, ...] = 1
     elif len(channel) == 0:
         for ant in antenna:
             for pol in polarization:
-                bvis.data['flags'][:, ant, :, :, pol] = 1
-                bvis.data['flags'][:, :, ant, :, pol] = 1
+                bvis.data["flags"][:, ant, :, :, pol] = 1
+                bvis.data["flags"][:, :, ant, :, pol] = 1
     elif len(polarization) == 0:
         for ant in antenna:
             for ch in channel:
-                bvis.data['flags'][:, ant, :, ch, :] = 1
-                bvis.data['flags'][:, :, ant, ch, :] = 1
+                bvis.data["flags"][:, ant, :, ch, :] = 1
+                bvis.data["flags"][:, :, ant, ch, :] = 1
     else:
         for ant in antenna:
             for ch in channel:
                 for pol in polarization:
-                    bvis.data['flags'][:, ant, :, ch, pol] = 1
-                    bvis.data['flags'][:, :, ant, ch, pol] = 1
+                    bvis.data["flags"][:, ant, :, ch, pol] = 1
+                    bvis.data["flags"][:, :, ant, ch, pol] = 1
 
     return bvis
 
@@ -70,5 +70,5 @@ def flagging_blockvisibility_with_bl(bvis, baseline=[]):
     assert isinstance(baseline, list)
     if len(baseline) == 0:
         for ant1, ant2 in baseline:
-            bvis.data['flags'][:, ant1, ant2, :, :] = 1
+            bvis.data["flags"][:, ant1, ant2, :, :] = 1
     return bvis

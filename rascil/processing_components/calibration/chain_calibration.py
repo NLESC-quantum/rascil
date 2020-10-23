@@ -50,20 +50,31 @@ For example::
 
 """
 
-__all__ = ['calibrate_chain', 'solve_calibrate_chain', 'create_calibration_controls', 'apply_calibration_chain']
+__all__ = [
+    "calibrate_chain",
+    "solve_calibrate_chain",
+    "create_calibration_controls",
+    "apply_calibration_chain",
+]
 
 import logging
 
 import numpy
 
-from rascil.processing_components.visibility import convert_visibility_to_blockvisibility, \
-    convert_blockvisibility_to_visibility
-from rascil.processing_components.calibration.operations import apply_gaintable, \
-    create_gaintable_from_blockvisibility, qa_gaintable
+from rascil.processing_components.visibility import (
+    convert_visibility_to_blockvisibility,
+    convert_blockvisibility_to_visibility,
+)
+from rascil.processing_components.calibration.operations import (
+    apply_gaintable,
+    create_gaintable_from_blockvisibility,
+    qa_gaintable,
+)
 from rascil.data_models.memory_data_models import Visibility, BlockVisibility
 from rascil.processing_components.calibration.solvers import solve_gaintable
 
-log = logging.getLogger('logger')
+log = logging.getLogger("logger")
+
 
 def create_calibration_controls():
     """Create a dictionary containing default chanin calibration controls
@@ -89,16 +100,40 @@ def create_calibration_controls():
     #             'B': {'shape': 'vector', 'timeslice': 1e5, 'phase_only': False, 'first_selfcal': 0},
     #             'I': {'shape': 'vector', 'timeslice': 1.0, 'phase_only': True, 'first_selfcal': 0}}
 
-    controls = {'T': {'shape': 'scalar', 'timeslice': 'auto', 'phase_only': True, 'first_selfcal': 0},
-                'G': {'shape': 'vector', 'timeslice': 60.0, 'phase_only': False, 'first_selfcal': 0},
-                'B': {'shape': 'vector', 'timeslice': 1e5, 'phase_only': False, 'first_selfcal': 0}}
+    controls = {
+        "T": {
+            "shape": "scalar",
+            "timeslice": "auto",
+            "phase_only": True,
+            "first_selfcal": 0,
+        },
+        "G": {
+            "shape": "vector",
+            "timeslice": 60.0,
+            "phase_only": False,
+            "first_selfcal": 0,
+        },
+        "B": {
+            "shape": "vector",
+            "timeslice": 1e5,
+            "phase_only": False,
+            "first_selfcal": 0,
+        },
+    }
 
     return controls
 
 
-def apply_calibration_chain(vis, gaintables, calibration_context='T', controls=None, iteration=0, tol=1e-6,
-                            **kwargs):
-    """ Calibrate using algorithm specified by calibration_context and the calibration controls
+def apply_calibration_chain(
+    vis,
+    gaintables,
+    calibration_context="T",
+    controls=None,
+    iteration=0,
+    tol=1e-6,
+    **kwargs
+):
+    """Calibrate using algorithm specified by calibration_context and the calibration controls
 
     The context string can denote a sequence of calibrations e.g. TGB with different timescales.
 
@@ -117,7 +152,7 @@ def apply_calibration_chain(vis, gaintables, calibration_context='T', controls=N
     # Check to see if changes are required
     changes = False
     for c in calibration_context:
-        if (iteration >= controls[c]['first_selfcal']) and (c in gaintables.keys()):
+        if (iteration >= controls[c]["first_selfcal"]) and (c in gaintables.keys()):
             changes = True
 
     if changes:
@@ -125,17 +160,27 @@ def apply_calibration_chain(vis, gaintables, calibration_context='T', controls=N
         assert isinstance(vis, BlockVisibility), vis
 
         for c in calibration_context:
-            if iteration >= controls[c]['first_selfcal']:
-                avis = apply_gaintable(vis, gaintables[c], timeslice=controls[c]['timeslice'])
+            if iteration >= controls[c]["first_selfcal"]:
+                avis = apply_gaintable(
+                    vis, gaintables[c], timeslice=controls[c]["timeslice"]
+                )
 
         return avis
     else:
         return vis
 
 
-def calibrate_chain(vis, model_vis, gaintables=None, calibration_context='T', controls=None,
-                    iteration=0, tol=1e-8, **kwargs):
-    """ Calibrate using algorithm specified by calibration_context
+def calibrate_chain(
+    vis,
+    model_vis,
+    gaintables=None,
+    calibration_context="T",
+    controls=None,
+    iteration=0,
+    tol=1e-8,
+    **kwargs
+):
+    """Calibrate using algorithm specified by calibration_context
 
     The context string can denote a sequence of calibrations e.g. TGB with different timescales.
 
@@ -153,7 +198,7 @@ def calibrate_chain(vis, model_vis, gaintables=None, calibration_context='T', co
     # Check to see if changes are required
     changes = False
     for c in calibration_context:
-        if iteration >= controls[c]['first_selfcal']:
+        if iteration >= controls[c]["first_selfcal"]:
             changes = True
 
     if changes:
@@ -165,35 +210,60 @@ def calibrate_chain(vis, model_vis, gaintables=None, calibration_context='T', co
 
         if gaintables is None:
             gaintables = dict()
-            
+
         for c in calibration_context:
-            if iteration >= controls[c]['first_selfcal']:
+            if iteration >= controls[c]["first_selfcal"]:
                 if c not in gaintables.keys():
                     log.info("Creating new {} gaintable".format(c))
-                    gaintables[c] = \
-                        create_gaintable_from_blockvisibility(avis,
-                                                              timeslice=controls[c]['timeslice'])
-                gaintables[c] = solve_gaintable(avis, amvis,
-                                                gt=gaintables[c],
-                                                timeslice=controls[c]['timeslice'],
-                                                phase_only=controls[c]['phase_only'],
-                                                crosspol=controls[c]['shape'] == 'matrix',
-                                                tol=tol)
-                log.debug('calibrate_chain: Jones matrix %s, iteration %d' % (c, iteration))
-                log.debug(qa_gaintable(gaintables[c],
-                                       context='Jones matrix %s, iteration %d' % (c, iteration)))
-                avis = apply_gaintable(avis, gaintables[c], inverse=True, timeslice=controls[c]['timeslice'])
+                    gaintables[c] = create_gaintable_from_blockvisibility(
+                        avis, timeslice=controls[c]["timeslice"]
+                    )
+                gaintables[c] = solve_gaintable(
+                    avis,
+                    amvis,
+                    gt=gaintables[c],
+                    timeslice=controls[c]["timeslice"],
+                    phase_only=controls[c]["phase_only"],
+                    crosspol=controls[c]["shape"] == "matrix",
+                    tol=tol,
+                )
+                log.debug(
+                    "calibrate_chain: Jones matrix %s, iteration %d" % (c, iteration)
+                )
+                log.debug(
+                    qa_gaintable(
+                        gaintables[c],
+                        context="Jones matrix %s, iteration %d" % (c, iteration),
+                    )
+                )
+                avis = apply_gaintable(
+                    avis,
+                    gaintables[c],
+                    inverse=True,
+                    timeslice=controls[c]["timeslice"],
+                )
             else:
-                log.debug('calibrate_chain: Jones matrix %s not solved, iteration %d' % (c, iteration))
+                log.debug(
+                    "calibrate_chain: Jones matrix %s not solved, iteration %d"
+                    % (c, iteration)
+                )
 
         return avis, gaintables
     else:
         return vis, gaintables
 
 
-def solve_calibrate_chain(vis, model_vis, gaintables=None, calibration_context='T',
-                          controls=None, iteration=0, tol=1e-6, **kwargs):
-    """ Calibrate using algorithm specified by calibration_context
+def solve_calibrate_chain(
+    vis,
+    model_vis,
+    gaintables=None,
+    calibration_context="T",
+    controls=None,
+    iteration=0,
+    tol=1e-6,
+    **kwargs
+):
+    """Calibrate using algorithm specified by calibration_context
 
     The context string can denote a sequence of calibrations e.g. TGB with different timescales.
 
@@ -214,31 +284,51 @@ def solve_calibrate_chain(vis, model_vis, gaintables=None, calibration_context='
 
     assert isinstance(avis, BlockVisibility), avis
 
-    assert amvis.__repr__() != avis.__repr__(), "Vis and model vis are the same object: convert problem"
+    assert (
+        amvis.__repr__() != avis.__repr__()
+    ), "Vis and model vis are the same object: convert problem"
 
     # Always return a gain table, even if null
-    
+
     if gaintables is None:
         gaintables = dict()
-        
+
     for c in calibration_context:
         if c not in gaintables.keys():
-            gaintables[c] = \
-                create_gaintable_from_blockvisibility(avis,
-                                                      timeslice=controls[c]['timeslice'])
-        if iteration >= controls[c]['first_selfcal']:
-            if numpy.max(numpy.abs(vis.flagged_weight)) > 0.0 and (amvis is None or numpy.max(numpy.abs(amvis.vis)) > 0.0):
-                gaintables[c] = solve_gaintable(avis, amvis,
-                                                gt=gaintables[c],
-                                                timeslice=controls[c]['timeslice'],
-                                                phase_only=controls[c]['phase_only'],
-                                                crosspol=controls[c]['shape'] == 'matrix',
-                                                tol=tol)
-                log.debug('calibrate_chain: Jones matrix %s, iteration %d' % (c, iteration))
-                log.debug(qa_gaintable(gaintables[c], context='Jones matrix %s, iteration %d' % (c, iteration)))
+            gaintables[c] = create_gaintable_from_blockvisibility(
+                avis, timeslice=controls[c]["timeslice"]
+            )
+        if iteration >= controls[c]["first_selfcal"]:
+            if numpy.max(numpy.abs(vis.flagged_weight)) > 0.0 and (
+                amvis is None or numpy.max(numpy.abs(amvis.vis)) > 0.0
+            ):
+                gaintables[c] = solve_gaintable(
+                    avis,
+                    amvis,
+                    gt=gaintables[c],
+                    timeslice=controls[c]["timeslice"],
+                    phase_only=controls[c]["phase_only"],
+                    crosspol=controls[c]["shape"] == "matrix",
+                    tol=tol,
+                )
+                log.debug(
+                    "calibrate_chain: Jones matrix %s, iteration %d" % (c, iteration)
+                )
+                log.debug(
+                    qa_gaintable(
+                        gaintables[c],
+                        context="Jones matrix %s, iteration %d" % (c, iteration),
+                    )
+                )
             else:
-                log.debug('calibrate_chain: Jones matrix %s not solved, iteration %d' % (c, iteration))
+                log.debug(
+                    "calibrate_chain: Jones matrix %s not solved, iteration %d"
+                    % (c, iteration)
+                )
         else:
-            log.debug('calibrate_chain: Jones matrix %s not solved, iteration %d' % (c, iteration))
+            log.debug(
+                "calibrate_chain: Jones matrix %s not solved, iteration %d"
+                % (c, iteration)
+            )
 
     return gaintables

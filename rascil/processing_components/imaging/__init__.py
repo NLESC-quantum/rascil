@@ -34,4 +34,3 @@ from .timeslice_single import *
 from .weighting import *
 from .wstack_single import *
 from .dft import *
-

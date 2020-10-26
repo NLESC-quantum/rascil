@@ -24,7 +24,7 @@ import logging
 
 import numpy
 
-log = logging.getLogger('logger')
+log = logging.getLogger("logger")
 
 
 class ReceptorFrame:
@@ -32,116 +32,114 @@ class ReceptorFrame:
 
     circular, linear, and stokesI. The latter is non-physical but useful for some types of testing.
     """
-    
+
     rec_frames = {
-        'circular': {'R': 0, 'L': 1},
-        'circularnp': {'R': 0, 'L': 1},
-        'linear': {'X': 0, 'Y': 1},
-        'linearnp': {'X': 0, 'Y': 1},
-        'stokesI': {'I': 0}
+        "circular": {"R": 0, "L": 1},
+        "circularnp": {"R": 0, "L": 1},
+        "linear": {"X": 0, "Y": 1},
+        "linearnp": {"X": 0, "Y": 1},
+        "stokesI": {"I": 0},
     }
-    
+
     def __init__(self, name):
-        """ create ReceptorFrame
+        """create ReceptorFrame
 
         :param name:
         """
-        
+
         if name in self.rec_frames.keys():
             self.type = name
             self.translations = self.rec_frames[name]
         else:
             raise ValueError("Unknown receptor frame %s" % str(name))
-    
+
     @property
     def nrec(self):
-        """ Number of receptors (should be 2)
-        """
+        """Number of receptors (should be 2)"""
         return len(list(self.translations.keys()))
-    
+
     def valid(self, name):
         return name in self.rec_frames.keys()
-    
+
     @property
     def names(self):
-        """ Names
-        
+        """Names
+
         :return:
         """
         return list(self.translations.keys())
-    
+
     def __eq__(self, a):
         return self.type == a.type
 
 
 class PolarisationFrame:
-    """ Define polarisation frames post correlation
+    """Define polarisation frames post correlation
 
     stokesI, stokesIQUV, linear, circular
 
     """
+
     fits_codes = {
-        'circular': [-1, -2, -3, -4], # RR, LL, RL, LR
-        'circularnp': [-1, -2], # RR, LL,
-        'linear': [-5, -6, -7, -8], # XX, YY, XY, YX
-        'linearnp': [-5, -6], # XX, YY
-        'stokesIQUV': [1, 2, 3, 4], # I, Q, U, V
-        'stokesIV': [1, 4], # IV
-        'stokesIQ': [1, 2], # IQ
-        'stokesI': [1] # I
+        "circular": [-1, -2, -3, -4],  # RR, LL, RL, LR
+        "circularnp": [-1, -2],  # RR, LL,
+        "linear": [-5, -6, -7, -8],  # XX, YY, XY, YX
+        "linearnp": [-5, -6],  # XX, YY
+        "stokesIQUV": [1, 2, 3, 4],  # I, Q, U, V
+        "stokesIV": [1, 4],  # IV
+        "stokesIQ": [1, 2],  # IQ
+        "stokesI": [1],  # I
     }
     polarisation_frames = {
-        'circular': {'RR': 0, 'RL': 1, 'LR': 2, 'LL': 3},
-        'circularnp': {'RR': 0, 'LL': 1},
-        'linear': {'XX': 0, 'XY': 1, 'YX': 2, 'YY': 3},
-        'linearnp': {'XX': 0, 'YY': 1},
-        'stokesIQUV': {'I': 0, 'Q': 1, 'U': 2, 'V': 3},
-        'stokesIV': {'I': 0, 'V': 1},
-        'stokesIQ': {'I': 0, 'Q': 1},
-        'stokesI': {'I': 0}
+        "circular": {"RR": 0, "RL": 1, "LR": 2, "LL": 3},
+        "circularnp": {"RR": 0, "LL": 1},
+        "linear": {"XX": 0, "XY": 1, "YX": 2, "YY": 3},
+        "linearnp": {"XX": 0, "YY": 1},
+        "stokesIQUV": {"I": 0, "Q": 1, "U": 2, "V": 3},
+        "stokesIV": {"I": 0, "V": 1},
+        "stokesIQ": {"I": 0, "Q": 1},
+        "stokesI": {"I": 0},
     }
     fits_to_rascil = {
-        'circular': [0, 3, 1, 2],  # RR, LL, RL, LR
-        'circularnp': [0, 1],  # RR, LL,
-        'linear': [0, 3, 1, 2],  # XX, YY, XY, YX
-        'linearnp': [0, 1],  # XX, YY
-        'stokesIQUV': [0, 1, 2, 3],  # I, Q, U, V
-        'stokesIV': [0, 1],  # IV
-        'stokesIQ': [0, 1],  # IQ
-        'stokesI': [0]  # I
-    
+        "circular": [0, 3, 1, 2],  # RR, LL, RL, LR
+        "circularnp": [0, 1],  # RR, LL,
+        "linear": [0, 3, 1, 2],  # XX, YY, XY, YX
+        "linearnp": [0, 1],  # XX, YY
+        "stokesIQUV": [0, 1, 2, 3],  # I, Q, U, V
+        "stokesIV": [0, 1],  # IV
+        "stokesIQ": [0, 1],  # IQ
+        "stokesI": [0],  # I
     }
-    
+
     def __init__(self, name):
-        """ create PolarisationFrame
+        """create PolarisationFrame
 
         :param name:
         """
-        
+
         if name in self.polarisation_frames.keys():
             self.type = name
             self.translations = self.polarisation_frames[name]
         else:
             raise ValueError("Unknown polarisation frame %s" % str(name))
-    
+
     def __eq__(self, a):
         if a is None:
             return False
         return self.type == a.type
-    
+
     def __str__(self):
         """Default printer for Polarisation"""
         return self.type
-    
+
     @property
     def npol(self):
-        """ Number of correlated polarisations
-        """
+        """Number of correlated polarisations"""
         return len(list(self.translations.keys()))
-    
+
     @property
     def names(self):
-        """ Names
+        """Names
 
         :return:
         """
@@ -164,13 +162,15 @@ def polmatrixmultiply(cm, vec, polaxis=0):
         return numpy.dot(cm, vec)
     elif vec.shape[polaxis] == 2:
         assert cm.shape == (2, 2)
-    
+
     elif vec.shape[polaxis] == 4:
         assert cm.shape == (4, 4)
-    
+
     else:
-        raise ValueError("Unknown polarisation conversion {} {}".format(str(cm), str(vec)))
-    
+        raise ValueError(
+            "Unknown polarisation conversion {} {}".format(str(cm), str(vec))
+        )
+
     # This tensor swaps the first two axes so we need to tranpose back
     # e.g. if polaxis=2 1000, 3, 4 becomes 4, 1000, 3
     if polaxis == -1:
@@ -183,17 +183,27 @@ def polmatrixmultiply(cm, vec, polaxis=0):
     elif polaxis == 2:
         permut[0], permut[1], permut[2] = permut[1], permut[2], permut[0]
     elif polaxis == 3:
-        permut[0], permut[1], permut[2], permut[3] = permut[1], permut[2], permut[3], permut[0]
+        permut[0], permut[1], permut[2], permut[3] = (
+            permut[1],
+            permut[2],
+            permut[3],
+            permut[0],
+        )
     elif polaxis == 4:
-        permut[0], permut[1], permut[2], permut[3], permut[4] = permut[1], permut[2], permut[3], permut[4], \
-                                                                permut[0]
+        permut[0], permut[1], permut[2], permut[3], permut[4] = (
+            permut[1],
+            permut[2],
+            permut[3],
+            permut[4],
+            permut[0],
+        )
     transposed = numpy.transpose(result, axes=permut)
     assert transposed.shape == vec.shape
     return transposed
 
 
 def convert_stokes_to_linear(stokes, polaxis=1):
-    """ Convert Stokes IQUV to Linear (complex image)
+    """Convert Stokes IQUV to Linear (complex image)
 
     :param stokes: [...,4] Stokes vector in I,Q,U,V (can be complex)
     :param polaxis: Axis of stokes with polarisation (default 1)
@@ -202,20 +212,18 @@ def convert_stokes_to_linear(stokes, polaxis=1):
     Equation 4.58 TMS
     """
     if stokes.shape[polaxis] == 2:
-        conversion_matrix = numpy.array([[1, 1],
-                                         [1, -1]])
-    
+        conversion_matrix = numpy.array([[1, 1], [1, -1]])
+
     else:
-        conversion_matrix = numpy.array([[1, 1, 0, 0],
-                                         [0, 0, 1, 1j],
-                                         [0, 0, 1, -1j],
-                                         [1, -1, 0, 0]])
-    
+        conversion_matrix = numpy.array(
+            [[1, 1, 0, 0], [0, 0, 1, 1j], [0, 0, 1, -1j], [1, -1, 0, 0]]
+        )
+
     return polmatrixmultiply(conversion_matrix, stokes, polaxis)
 
 
 def convert_linear_to_stokes(linear, polaxis=1):
-    """ Convert Linear to Stokes IQUV (complex image)
+    """Convert Linear to Stokes IQUV (complex image)
 
     :param linear: [...,4] linear vector in XX, XY, YX, YY sequence
     :param polaxis: Axis of linear with polarisation (default 1)
@@ -223,21 +231,26 @@ def convert_linear_to_stokes(linear, polaxis=1):
 
     Equation 4.58 TMS, inverted with numpy.linalg.inv
     """
-    
+
     if linear.shape[polaxis] == 2:
-        conversion_matrix = numpy.array([[0.5 + 0.j, 0.5 + 0.j],
-                                         [0.5 + 0.j, -0.5 - 0.j]])
+        conversion_matrix = numpy.array(
+            [[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, -0.5 - 0.0j]]
+        )
     else:
-        conversion_matrix = numpy.array([[0.5 + 0.j, 0.0 + 0.j, 0.0 + 0.j, 0.5 + 0.j],
-                                         [0.5 + 0.j, 0.0 + 0.j, 0.0 + 0.j, -0.5 - 0.j],
-                                         [0.0 + 0.j, 0.5 + 0.j, 0.5 + 0.j, 0.0 + 0.j],
-                                         [0.0 + 0.j, 0.0 - 0.5j, 0.0 + 0.5j, 0.0 + 0.j]])
-    
+        conversion_matrix = numpy.array(
+            [
+                [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j],
+                [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -0.5 - 0.0j],
+                [0.0 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 - 0.5j, 0.0 + 0.5j, 0.0 + 0.0j],
+            ]
+        )
+
     return polmatrixmultiply(conversion_matrix, linear, polaxis)
 
 
 def convert_linear_to_stokesI(linear):
-    """ Convert Linear to Stokes I
+    """Convert Linear to Stokes I
 
     :param linear: [...,4] linear vector in XX, XY, YX, YY sequence
     :return: Complex I
@@ -251,7 +264,7 @@ def convert_linear_to_stokesI(linear):
 
 
 def convert_stokes_to_circular(stokes, polaxis=1):
-    """ Convert Stokes IQUV to Circular (complex image)
+    """Convert Stokes IQUV to Circular (complex image)
 
     :param stokes: [...,4] Stokes vector in I,Q,U,V (can be complex)
     :param polaxis: Axis of stokes with polarisation (default 1)
@@ -260,19 +273,17 @@ def convert_stokes_to_circular(stokes, polaxis=1):
     Equation 4.59 TMS
     """
     if stokes.shape[polaxis] == 2:
-        conversion_matrix = numpy.array([[1, 1],
-                                         [1, -1]])
+        conversion_matrix = numpy.array([[1, 1], [1, -1]])
 
     else:
-        conversion_matrix = numpy.array([[1, 0, 0, 1],
-                                         [0, -1j, 1, 0],
-                                         [0, -1j, -1, 0],
-                                         [1, 0, 0, -1]])
+        conversion_matrix = numpy.array(
+            [[1, 0, 0, 1], [0, -1j, 1, 0], [0, -1j, -1, 0], [1, 0, 0, -1]]
+        )
     return polmatrixmultiply(conversion_matrix, stokes, polaxis)
 
 
 def convert_circular_to_stokes(circular, polaxis=1):
-    """ Convert Circular to Stokes IQUV (complex image)
+    """Convert Circular to Stokes IQUV (complex image)
 
     :param circular: [...,4] linear vector in RR, RL, LR, LL sequence
     :param polaxis: Axis of circular with polarisation (default 1)
@@ -280,35 +291,42 @@ def convert_circular_to_stokes(circular, polaxis=1):
 
     Equation 4.58 TMS, inverted with numpy.linalg.inv
     """
-    
+
     if circular.shape[polaxis] == 2:
-        conversion_matrix = numpy.array([[0.5 + 0.j, 0.5 + 0.j],
-                                         [0.5 + 0.j, -0.5 - 0.j]])
+        conversion_matrix = numpy.array(
+            [[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, -0.5 - 0.0j]]
+        )
     else:
-        conversion_matrix = numpy.array([[0.5 + 0.j, 0.0 + 0.j, 0.0 + 0.j, 0.5 + 0.j],
-                                         [0.0 + 0.j, -0.0 + 0.5j, -0.0 + 0.5j, 0.0 + 0.j],
-                                         [0.0 + 0.j, 0.5 + 0.j, -0.5 - 0.j, 0.0 + 0.j],
-                                         [0.5 + 0.j, 0.0 + 0.j, 0.0 + 0.j, -0.5 - 0.j]])
-    
+        conversion_matrix = numpy.array(
+            [
+                [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j],
+                [0.0 + 0.0j, -0.0 + 0.5j, -0.0 + 0.5j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.5 + 0.0j, -0.5 - 0.0j, 0.0 + 0.0j],
+                [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, -0.5 - 0.0j],
+            ]
+        )
+
     return polmatrixmultiply(conversion_matrix, circular, polaxis)
 
 
 def convert_circular_to_stokesI(circular):
-    """ Convert Circular to Stokes I
+    """Convert Circular to Stokes I
 
     :param circular: [...,4] linear vector in RR, RL, LR, LL sequence
     :return: Complex I
 
     Equation 4.58 TMS, inverted with numpy.linalg.inv
     """
-    
+
     if circular.shape[-1] == 2:
         return 0.5 * (circular[..., 0] + circular[..., 1])[..., numpy.newaxis]
     else:
         return 0.5 * (circular[..., 0] + circular[..., 3])[..., numpy.newaxis]
 
 
-def convert_pol_frame(polvec, ipf: PolarisationFrame, opf: PolarisationFrame, polaxis=1):
+def convert_pol_frame(
+    polvec, ipf: PolarisationFrame, opf: PolarisationFrame, polaxis=1
+):
     if ipf == opf:
         return polvec
 
@@ -353,12 +371,12 @@ def convert_pol_frame(polvec, ipf: PolarisationFrame, opf: PolarisationFrame, po
     if ipf == PolarisationFrame("stokesI"):
         if opf == PolarisationFrame("stokesI"):
             return polvec
-    
+
     raise ValueError("Unknown polarisation conversion: {} to {}".format(ipf, opf))
 
 
 def correlate_polarisation(rec_frame: ReceptorFrame):
-    """ Gives the polarisation frame corresponding to a receptor frame
+    """Gives the polarisation frame corresponding to a receptor frame
 
     :param rec_frame: Receptor frame
     :return: PolarisationFrame
@@ -371,19 +389,19 @@ def correlate_polarisation(rec_frame: ReceptorFrame):
         correlation = PolarisationFrame("stokesI")
     else:
         raise ValueError("Unknown receptor frame %s for correlation" % rec_frame)
-    
+
     return correlation
 
 
-def congruent_polarisation(rec_frame: ReceptorFrame, polarisation_frame: PolarisationFrame):
-    """Are these receptor and polarisation frames congruent?
-
-    """
+def congruent_polarisation(
+    rec_frame: ReceptorFrame, polarisation_frame: PolarisationFrame
+):
+    """Are these receptor and polarisation frames congruent?"""
     if rec_frame.type == "linear":
         return polarisation_frame.type in ["linear", "linearnp"]
     elif rec_frame.type == "circular":
         return polarisation_frame.type in ["circular", "circularnp"]
     elif rec_frame.type == "stokesI":
         return polarisation_frame.type == "stokesI"
-    
+
     return False

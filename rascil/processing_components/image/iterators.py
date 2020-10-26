@@ -2,7 +2,7 @@
 Functions that define and manipulate images. Images are just data and a World Coordinate System.
 """
 
-__all__ = ['image_channel_iter', 'image_null_iter', 'image_raster_iter']
+__all__ = ["image_channel_iter", "image_null_iter", "image_raster_iter"]
 
 import logging
 import collections.abc
@@ -11,11 +11,14 @@ import numpy
 
 from rascil.data_models.memory_data_models import Image
 
-from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, \
-    image_is_canonical
+from rascil.processing_components.image.operations import (
+    create_image_from_array,
+    create_empty_image_like,
+    image_is_canonical,
+)
 from rascil.processing_components.util.array_functions import tukey_filter
 
-log = logging.getLogger('logger')
+log = logging.getLogger("logger")
 
 
 def image_null_iter(im: Image, facets=1, overlap=0) -> collections.abc.Iterable:
@@ -31,7 +34,9 @@ def image_null_iter(im: Image, facets=1, overlap=0) -> collections.abc.Iterable:
     yield im
 
 
-def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=False) -> collections.abc.Iterable:
+def image_raster_iter(
+    im: Image, facets=1, overlap=0, taper="flat", make_flat=False
+) -> collections.abc.Iterable:
     """Create an image_raster_iter generator, returning images, optionally with overlaps
 
     The WCS is adjusted appropriately for each raster element. Hence this is a coordinate-aware
@@ -44,11 +49,11 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
 
         for r in image_raster_iter(im, facets=2):
             r.data[...] = numpy.sqrt(r.data[...])
-            
+
     If the overlap is greater than zero, we choose to keep all images the same size so the
     other ring of facets are ignored. So if facets=4 and overlap > 0 then the iterator returns
     (facets-2)**2 = 4 images.
-    
+
     A taper is applied in the overlap regions. None implies a constant value, linear is a ramp, and
     quadratic is parabolic at the ends.
 
@@ -69,21 +74,21 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
     nchan, npol, ny, nx = im.shape
     assert facets <= ny, "Cannot have more raster elements than pixels"
     assert facets <= nx, "Cannot have more raster elements than pixels"
-    
-    assert facets >=1, "Facets cannot be zero or less"
+
+    assert facets >= 1, "Facets cannot be zero or less"
     assert overlap >= 0, "Overlap must be zero or greater"
-    
+
     if facets == 1:
         yield im
     else:
-        
+
         assert overlap < (nx // facets), "Overlap in facets is too large"
         assert overlap < (ny // facets), "Overlap in facets is too large"
 
         # Step between facets
         sx = nx // facets + overlap
         sy = ny // facets + overlap
-    
+
         # Size of facet
         dx = sx + overlap
         dy = sy + overlap
@@ -99,24 +104,24 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
         def taper_linear():
             t = numpy.ones(dx)
             ramp = numpy.arange(0, overlap).astype(float) / float(overlap)
-            
+
             t[:overlap] = ramp
-            t[(dx - overlap):dx] = 1.0 - ramp
+            t[(dx - overlap) : dx] = 1.0 - ramp
             result = numpy.outer(t, t)
-            
+
             return result
 
         def taper_quadratic():
             t = numpy.ones(dx)
             ramp = numpy.arange(0, overlap).astype(float) / float(overlap)
-            
+
             quadratic_ramp = numpy.ones(overlap)
-            quadratic_ramp[0:overlap // 2] = 2.0 * ramp[0:overlap // 2] ** 2
-            quadratic_ramp[overlap // 2:] = 1 - 2.0 * ramp[overlap // 2:0:-1] ** 2
-            
+            quadratic_ramp[0 : overlap // 2] = 2.0 * ramp[0 : overlap // 2] ** 2
+            quadratic_ramp[overlap // 2 :] = 1 - 2.0 * ramp[overlap // 2 : 0 : -1] ** 2
+
             t[:overlap] = quadratic_ramp
-            t[(dx - overlap):dx] = 1.0 - quadratic_ramp
-            
+            t[(dx - overlap) : dx] = 1.0 - quadratic_ramp
+
             result = numpy.outer(t, t)
             return result
 
@@ -125,10 +130,10 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
             xs = numpy.arange(dx) / float(dx)
             r = 2 * overlap / dx
             t = [tukey_filter(x, r) for x in xs]
-    
+
             result = numpy.outer(t, t)
             return result
-        
+
         def taper_flat():
             return numpy.ones([dx, dx])
 
@@ -143,14 +148,16 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
                     wcs.wcs.crpix[0] -= x
                     wcs.wcs.crpix[1] -= y
                     # yield image from slice (reference!)
-                    subim = create_image_from_array(im.data[..., y:y + dy, x:x + dx], wcs, im.polarisation_frame)
+                    subim = create_image_from_array(
+                        im.data[..., y : y + dy, x : x + dx], wcs, im.polarisation_frame
+                    )
                     if overlap > 0 and make_flat:
                         flat = create_empty_image_like(subim)
-                        if taper == 'linear':
+                        if taper == "linear":
                             flat.data[..., :, :] = taper_linear()
-                        elif taper == 'quadratic':
+                        elif taper == "quadratic":
                             flat.data[..., :, :] = taper_quadratic()
-                        elif taper == 'tukey':
+                        elif taper == "tukey":
                             flat.data[..., :, :] = taper_tukey()
                         else:
                             flat.data[..., :, :] = taper_flat()
@@ -185,21 +192,25 @@ def image_channel_iter(im: Image, subimages=1) -> collections.abc.Iterable:
     assert image_is_canonical(im)
 
     nchan, npol, ny, nx = im.shape
-    
+
     assert subimages <= nchan, "More subimages %d than channels %d" % (subimages, nchan)
     step = nchan // subimages
-    channels = numpy.array(range(0, nchan, step), dtype='int')
-    assert len(channels) == subimages, "subimages %d does not match length of channels %d" % (subimages, len(channels))
-    
+    channels = numpy.array(range(0, nchan, step), dtype="int")
+    assert (
+        len(channels) == subimages
+    ), "subimages %d does not match length of channels %d" % (subimages, len(channels))
+
     for i, channel in enumerate(channels):
         if i + 1 < len(channels):
             channel_max = channels[i + 1]
         else:
             channel_max = nchan
-        
+
         # Adjust WCS
         wcs = im.wcs.deepcopy()
         wcs.wcs.crpix[3] -= channel
-        
+
         # Yield image from slice (reference!)
-        yield create_image_from_array(im.data[channel:channel_max, ...], wcs, im.polarisation_frame)
+        yield create_image_from_array(
+            im.data[channel:channel_max, ...], wcs, im.polarisation_frame
+        )

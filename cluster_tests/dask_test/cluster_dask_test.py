@@ -5,22 +5,22 @@ import os
 
 from dask.distributed import Client
 
-if __name__ == '__main__':
-    
+if __name__ == "__main__":
+
     snooze = 1.0
 
     def inc(x):
         time.sleep(snooze * random.random())
         return x + 1
-    
+
     def dec(x):
         time.sleep(snooze * random.random())
         return x - 1
-    
+
     def add(x, y):
         time.sleep(snooze * random.random())
         return x + y
-    
+
     print("Starting cluster_dask_test")
     # We pass in the scheduler from the invoking script
     if len(sys.argv) > 1:
@@ -30,6 +30,7 @@ if __name__ == '__main__':
         client = Client()
 
     import dask
+
     inc = dask.delayed(inc)
     dec = dask.delayed(dec)
     add = dask.delayed(add)
@@ -53,10 +54,7 @@ if __name__ == '__main__':
     result = dask.compute(L, sync=True)
     assert result[0][0] == 65536
     print("Successfully finished cluster_dask_test")
-    
+
     client.close()
-    
+
     exit(0)
-
-
-    

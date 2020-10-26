@@ -51,8 +51,8 @@ all: test lint docs
 
 lint:
 # outputs linting.xml
-	pylint --exit-zero --extension-pkg-whitelist=numpy --ignored-classes=astropy.units,astropy.constants,HDUList --output-format=pylint2junit.JunitReporter rascil > linting.xml
-	pylint --exit-zero --extension-pkg-whitelist=numpy --ignored-classes=astropy.units,astropy.constants,HDUList --output-format=parseable rascil
+	pylint --exit-zero --output-format=pylint2junit.JunitReporter rascil > linting.xml
+	pylint --exit-zero --output-format=parseable rascil
 
 docs:  ## build docs
 # Outputs docs/build/html

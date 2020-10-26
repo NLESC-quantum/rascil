@@ -48,6 +48,7 @@ class TestGainTableIterators(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         self.gaintable = create_gaintable_from_blockvisibility(self.vis)
 

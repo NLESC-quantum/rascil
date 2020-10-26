@@ -57,6 +57,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
             self.frequency,
             self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
             zerow=True,
         )

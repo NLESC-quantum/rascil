@@ -61,6 +61,7 @@ class TestVisibilityGatherScatter(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         self.vis.data["vis"][:, 0] = self.vis.time
         self.blockvis = create_blockvisibility(
@@ -69,6 +70,7 @@ class TestVisibilityGatherScatter(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         self.blockvis.data["vis"][...] = 1.0
 

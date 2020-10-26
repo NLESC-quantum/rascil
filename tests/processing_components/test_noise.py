@@ -52,6 +52,7 @@ class TestNoise(unittest.TestCase):
             self.times,
             self.frequency,
             phasecentre=self.phasecentre,
+            weight=1.0,
             integration_time=300.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
             channel_bandwidth=self.channel_bandwidth,
@@ -67,6 +68,7 @@ class TestNoise(unittest.TestCase):
             self.times,
             self.frequency,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
             channel_bandwidth=self.channel_bandwidth,
         )

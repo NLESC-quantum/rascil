@@ -48,6 +48,7 @@ if __name__ == "__main__":
         frequency,
         channel_bandwidth=channel_bandwidth,
         phasecentre=phasecentre,
+        weight=1.0,
         polarisation_frame=PolarisationFrame("stokesI"),
     )
 

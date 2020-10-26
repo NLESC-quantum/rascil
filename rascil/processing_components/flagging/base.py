@@ -33,7 +33,6 @@ def copy_flagtable(ft: FlagTable, zero=False) -> FlagTable:
     """Copy a flagtable
 
     Performs a deepcopy of the data array
-    :param zero:
     :param ft: FlagTable
     :returns: FlagTable
 
@@ -47,10 +46,11 @@ def copy_flagtable(ft: FlagTable, zero=False) -> FlagTable:
     return newft
 
 
-def create_flagtable_from_blockvisibility(bvis: BlockVisibility) -> FlagTable:
+def create_flagtable_from_blockvisibility(bvis: BlockVisibility, **kwargs) -> FlagTable:
     """Create FlagTable matching BlockVisibility
 
     :param bvis:
+    :param kwargs:
     :return:
     """
     return FlagTable(

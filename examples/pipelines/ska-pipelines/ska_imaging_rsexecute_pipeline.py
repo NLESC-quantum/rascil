@@ -35,6 +35,7 @@ def init_logging():
 
 
 if __name__ == "__main__":
+
     log = logging.getLogger()
     logging.info("Starting Imaging pipeline")
 

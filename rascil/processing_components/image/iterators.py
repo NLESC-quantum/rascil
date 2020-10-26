@@ -21,12 +21,14 @@ from rascil.processing_components.util.array_functions import tukey_filter
 log = logging.getLogger("logger")
 
 
-def image_null_iter(im: Image) -> collections.abc.Iterable:
+def image_null_iter(im: Image, facets=1, overlap=0) -> collections.abc.Iterable:
     """One time iterator
 
     This is useful to simplify control structures.
 
     :param im:
+    :param facets: Number of image partitions on each axis (2)
+    :param overlap: overlap in pixels
     :return:
     """
     yield im
@@ -89,6 +91,7 @@ def image_raster_iter(
 
         # Size of facet
         dx = sx + overlap
+        dy = sy + overlap
 
         # Step between facets
         sx = nx // facets + overlap

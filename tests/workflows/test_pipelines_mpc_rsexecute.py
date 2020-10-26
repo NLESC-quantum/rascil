@@ -121,6 +121,7 @@ class TestPipelineMPC(unittest.TestCase):
             times,
             frequency=frequency,
             channel_bandwidth=channel_bandwidth,
+            weight=1.0,
             phasecentre=phasecentre,
             polarisation_frame=PolarisationFrame("stokesI"),
             zerow=True,
@@ -208,7 +209,7 @@ class TestPipelineMPC(unittest.TestCase):
         ngroup = 8
         future_vis = rsexecute.scatter(self.all_skymodel_noniso_vis)
         chunks = [
-            gleam_skymodel_noniso[i: i + ngroup]
+            gleam_skymodel_noniso[i : i + ngroup]
             for i in range(0, len(gleam_skymodel_noniso), ngroup)
         ]
         for chunk in chunks:

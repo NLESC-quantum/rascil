@@ -421,7 +421,7 @@ class TestGridDataGridding(unittest.TestCase):
         gd_list = [
             grid_visibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)
         ]
-        gd, sumwt = griddata_merge_weights(gd_list)
+        gd, sumwt = griddata_merge_weights(gd_list, algorithm="uniform")
         self.vis = griddata_visibility_reweight(self.vis, gd, cf)
         gd, sumwt = grid_visibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf)
@@ -440,7 +440,7 @@ class TestGridDataGridding(unittest.TestCase):
         gd_list = [
             grid_visibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)
         ]
-        gd, sumwt = griddata_merge_weights(gd_list)
+        gd, sumwt = griddata_merge_weights(gd_list, algorithm="uniform")
         self.vis = griddata_visibility_reweight(self.vis, gd, cf)
         gd, sumwt = grid_visibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf)
@@ -462,7 +462,7 @@ class TestGridDataGridding(unittest.TestCase):
             grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)
         ]
         assert numpy.max(numpy.abs(gd_list[0][0].data)) > 10.0
-        gd, sumwt = griddata_merge_weights(gd_list)
+        gd, sumwt = griddata_merge_weights(gd_list, algorithm="uniform")
         self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf)
@@ -482,7 +482,7 @@ class TestGridDataGridding(unittest.TestCase):
             grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)
         ]
         assert numpy.max(numpy.abs(gd_list[0][0].data)) > 10.0
-        gd, sumwt = griddata_merge_weights(gd_list)
+        gd, sumwt = griddata_merge_weights(gd_list, algorithm="uniform")
         self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf)
@@ -504,7 +504,7 @@ class TestGridDataGridding(unittest.TestCase):
             grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)
         ]
         assert numpy.max(numpy.abs(gd_list[0][0].data)) > 10.0
-        gd, sumwt = griddata_merge_weights(gd_list)
+        gd, sumwt = griddata_merge_weights(gd_list, algorithm="uniform")
         self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf)

@@ -94,6 +94,7 @@ class TestWeighting(unittest.TestCase):
                 self.frequency,
                 channel_bandwidth=self.channel_bandwidth,
                 phasecentre=self.phasecentre,
+                weight=1.0,
                 polarisation_frame=self.vis_pol,
             )
         else:
@@ -103,6 +104,7 @@ class TestWeighting(unittest.TestCase):
                 self.frequency,
                 channel_bandwidth=self.channel_bandwidth,
                 phasecentre=self.phasecentre,
+                weight=1.0,
                 polarisation_frame=self.vis_pol,
             )
 
@@ -123,7 +125,7 @@ class TestWeighting(unittest.TestCase):
             self.actualSetUp(block=block)
             size_required = 0.010
             self.componentvis = weight_visibility(
-                self.componentvis, self.model
+                self.componentvis, self.model, algoritm="uniform"
             )
             self.componentvis = taper_visibility_gaussian(
                 self.componentvis, beam=size_required
@@ -163,7 +165,7 @@ class TestWeighting(unittest.TestCase):
         for block in [True, False]:
             self.actualSetUp(block=block)
             self.componentvis = weight_visibility(
-                self.componentvis, self.model
+                self.componentvis, self.model, algoritm="uniform"
             )
             self.componentvis = taper_visibility_tukey(self.componentvis, tukey=1.0)
             psf, sumwt = invert_2d(self.componentvis, self.model, dopsf=True)

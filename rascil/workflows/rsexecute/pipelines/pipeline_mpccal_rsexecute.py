@@ -87,7 +87,7 @@ def mpccal_skymodel_list_rsexecute_workflow(
             for i in range(len(dirty_all_cal))
         ]
 
-        def make_residual(dcal, tl):
+        def make_residual(dcal, tl, it):
             res = create_empty_image_like(dcal[0][0])
             for i, d in enumerate(dcal):
                 assert (

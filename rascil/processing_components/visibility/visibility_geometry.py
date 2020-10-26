@@ -66,8 +66,10 @@ def calculate_blockvisibility_parallactic_angles(bvis):
 def calculate_blockvisibility_transit_time(bvis, fraction_day=1e-10):
     """Find the UTC time of the nearest transit
 
-    :param bvis:
     :param fraction_day:
+    :param utc_time:
+    :param location:
+    :param direction: Direction of source
     :return:
     """
     location, utc_time, direction = get_direction_time_location(bvis)
@@ -79,7 +81,9 @@ def calculate_blockvisibility_transit_time(bvis, fraction_day=1e-10):
 def calculate_blockvisibility_azel(bvis):
     """Return az el for a location, utc_time, and direction
 
-    :param bvis:
+    :param utc_time:
+    :param location:
+    :param direction: Direction of source
     :return:
     """
     location, utc_time, direction = get_direction_time_location(bvis)

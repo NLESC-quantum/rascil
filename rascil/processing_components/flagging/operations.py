@@ -61,8 +61,8 @@ def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):
 def flagging_blockvisibility_with_bl(bvis, baseline=[]):
     """Flagging BlockVisibility with Baseline (nant, nant, channel, pol)
 
-    :param baseline:
     :param bvis: BlockVisibility
+    :param polarization:
     :return: BlockVisibility
     """
 

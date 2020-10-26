@@ -65,6 +65,7 @@ class TestSkycomponentInsert(unittest.TestCase):
             self.image_frequency,
             channel_bandwidth=self.image_channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=self.vis_pol,
             zerow=True,
         )

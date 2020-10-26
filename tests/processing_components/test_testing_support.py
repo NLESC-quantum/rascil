@@ -74,6 +74,7 @@ class TestTesting_Support(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
 
@@ -384,6 +385,7 @@ class TestTesting_Support(unittest.TestCase):
             self.times,
             self.frequency,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
             channel_bandwidth=self.channel_bandwidth,
         )

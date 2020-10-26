@@ -35,15 +35,17 @@ def pointingtable_summary(pt: PointingTable):
 def create_pointingtable_from_blockvisibility(
     vis: BlockVisibility,
     pointing_frame="azel",
-    timeslice=None
+    timeslice=None,
+    frequencyslice: float = None,
+    **kwargs
 ) -> PointingTable:
     """Create pointing table from visibility.
 
     This makes an empty pointing table consistent with the BlockVisibility.
 
-    :param pointing_frame:
     :param vis: BlockVisibilty
     :param timeslice: Time interval between solutions (s)
+    :param frequency_width: Frequency solution width (Hz)
     :return: PointingTable
 
     """
@@ -170,7 +172,6 @@ def create_pointingtable_from_rows(
 def qa_pointingtable(pt: PointingTable, context=None) -> QA:
     """Assess the quality of a pointingtable
 
-    :param context:
     :param pt:
     :return: AQ
     """

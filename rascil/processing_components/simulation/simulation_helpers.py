@@ -86,16 +86,14 @@ def plot_visibility(
     y="amp",
     x="uvdist",
     plot_file=None,
-    plot_zero=False
+    plot_zero=False,
+    *kwargs
 ):
     """Standard plot of visibility
 
-    :param title:
-    :param y:
-    :param x:
-    :param plot_zero:
     :param vis_list:
     :param plot_file:
+    :param kwargs:
     :return:
     """
     plt.clf()
@@ -126,15 +124,13 @@ def plot_visibility(
 
 
 def plot_visibility_pol(
-    vis_list, title="Visibility_pol", y="amp", x="uvdist", plot_file=None
+    vis_list, title="Visibility_pol", y="amp", x="uvdist", plot_file=None, **kwargs
 ):
     """Standard plot of visibility
 
-    :param title:
-    :param y:
-    :param x:
     :param vis_list:
     :param plot_file:
+    :param kwargs:
     :return:
     """
     plt.clf()
@@ -172,12 +168,12 @@ def plot_visibility_pol(
     plt.show(block=False)
 
 
-def plot_uvcoverage(vis_list, plot_file=None, title="UV coverage"):
+def plot_uvcoverage(vis_list, ax=None, plot_file=None, title="UV coverage", **kwargs):
     """Standard plot of uv coverage
 
-    :param title:
     :param vis_list:
     :param plot_file:
+    :param kwargs:
     :return:
     """
 
@@ -204,12 +200,12 @@ def plot_uvcoverage(vis_list, plot_file=None, title="UV coverage"):
     plt.show(block=False)
 
 
-def plot_uwcoverage(vis_list, plot_file=None, title="UW coverage"):
+def plot_uwcoverage(vis_list, ax=None, plot_file=None, title="UW coverage", **kwargs):
     """Standard plot of uw coverage
 
-    :param title:
     :param vis_list:
     :param plot_file:
+    :param kwargs:
     :return:
     """
 
@@ -235,12 +231,12 @@ def plot_uwcoverage(vis_list, plot_file=None, title="UW coverage"):
     plt.show(block=False)
 
 
-def plot_vwcoverage(vis_list, plot_file=None, title="VW coverage"):
+def plot_vwcoverage(vis_list, ax=None, plot_file=None, title="VW coverage", **kwargs):
     """Standard plot of vw coverage
 
-    :param title:
     :param vis_list:
     :param plot_file:
+    :param kwargs:
     :return:
     """
 
@@ -266,11 +262,12 @@ def plot_vwcoverage(vis_list, plot_file=None, title="VW coverage"):
     plt.show(block=False)
 
 
-def plot_azel(bvis_list, plot_file=None):
+def plot_azel(bvis_list, plot_file=None, **kwargs):
     """Standard plot of az el coverage
 
     :param bvis_list:
     :param plot_file:
+    :param kwargs:
     :return:
     """
     plt.clf()
@@ -294,11 +291,12 @@ def plot_azel(bvis_list, plot_file=None):
     plt.show(block=False)
 
 
-def plot_pa(bvis_list, plot_file=None):
+def plot_pa(bvis_list, plot_file=None, **kwargs):
     """Standard plot of parallactic angle coverage
 
     :param bvis_list:
     :param plot_file:
+    :param kwargs:
     :return:
     """
     plt.clf()
@@ -319,13 +317,13 @@ def plot_pa(bvis_list, plot_file=None):
     plt.show(block=False)
 
 
-def plot_gaintable(gt_list, title="", value="amp", plot_file="gaintable.png"):
+def plot_gaintable(gt_list, title="", value="amp", plot_file="gaintable.png", **kwargs):
     """Standard plot of gain table
 
-    :param value:
     :param gt_list:
     :param title:
     :param plot_file:
+    :param kwargs:
     :return:
     """
     plt.clf()
@@ -379,12 +377,13 @@ def plot_gaintable(gt_list, title="", value="amp", plot_file="gaintable.png"):
     plt.show(block=False)
 
 
-def plot_pointingtable(pt_list, plot_file, title):
+def plot_pointingtable(pt_list, plot_file, title, **kwargs):
     """Standard plot of pointing table
 
     :param pt_list:
     :param plot_file:
     :param title:
+    :param kwargs:
     :return:
     """
     plt.clf()
@@ -409,11 +408,12 @@ def plot_pointingtable(pt_list, plot_file, title):
     plt.show(block=False)
 
 
-def find_pb_width_null(pbtype, frequency):
+def find_pb_width_null(pbtype, frequency, **kwargs):
     """Rough estimates of HWHM and null locations
 
     :param pbtype:
     :param frequency:
+    :param kwargs:
     :return:
     """
     if pbtype == "MID":
@@ -568,6 +568,7 @@ def create_simulation_components(
         )
 
         offset = [null_az_deg * offset_dir[0], null_el_deg * offset_dir[1]]
+        HWHM = HWHM_deg * numpy.pi / 180.0
 
         log.info(
             "create_simulation_components: Offset from pointing centre = %.3f, %.3f deg"
@@ -602,6 +603,7 @@ def create_simulation_components(
             ]
 
     else:
+        offset = [0.0, 0.0]
         # Make a skymodel from S3
         max_flux = 0.0
         total_flux = 0.0
@@ -698,9 +700,11 @@ def create_mid_simulation_components(
 ):
     """Construct components for simulation
 
-    :param pb_type:
+    :param context: singlesource or null or s3sky
     :param phasecentre: Centre of components
     :param frequency: Frequency
+    :param pbtype: Type of primary beam
+    :param offset_dir: Offset in ra, dec degrees
     :param flux_limit: Lower limit flux
     :param pbradius: Radius of components in radians
     :param pb_npixel: Number of pixels in the primary beam model
@@ -714,6 +718,7 @@ def create_mid_simulation_components(
     """
 
     # Make a skymodel from S3
+    max_flux = 0.0
     total_flux = 0.0
     log.info("create_simulation_components: Constructing s3sky components")
     from rascil.processing_components.simulation import (

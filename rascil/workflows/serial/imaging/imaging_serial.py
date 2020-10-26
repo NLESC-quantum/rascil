@@ -72,12 +72,12 @@ def predict_list_serial_workflow(
     The visibility and image are scattered, the visibility is predicted on each part, and then the
     parts are assembled.
 
-    :param gcfcf:
     :param vis_list: list of vis
     :param model_imagelist: Model used to determine image parameters
     :param vis_slices: Number of vis slices (w stack or timeslice)
     :param facets: Number of facets (per axis)
     :param context: Type of processing e.g. 2d, wstack, timeslice or facets
+    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: List of vis_lists
     """
@@ -94,9 +94,9 @@ def predict_list_serial_workflow(
     predict = c["predict"]
 
     if facets % 2 == 0 or facets == 1:
-        pass
+        actual_number_facets = facets
     else:
-        pass
+        actual_number_facets = facets - 1
 
     def predict_ignore_none(vis, model, g):
         if vis is not None:
@@ -169,7 +169,6 @@ def invert_list_serial_workflow(
 ):
     """Sum results from invert, iterating over the scattered image and vis_list
 
-    :param gcfcf:
     :param vis_list: list of vis
     :param template_model_imagelist: list of template models
     :param dopsf: Make the PSF instead of the dirty image
@@ -177,6 +176,7 @@ def invert_list_serial_workflow(
     :param normalize: Normalize by sumwt
     :param vis_slices: Number of slices
     :param context: Imaging context
+    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: List of (image, sumwt) tuples, one per vis in vis_list
 
@@ -200,9 +200,9 @@ def invert_list_serial_workflow(
     invert = c["invert"]
 
     if facets % 2 == 0 or facets == 1:
-        pass
+        actual_number_facets = facets
     else:
-        pass
+        actual_number_facets = max(1, (facets - 1))
 
     def gather_image_iteration_results(results, template_model):
         result = create_empty_image_like(template_model)
@@ -298,10 +298,10 @@ def residual_list_serial_workflow(
 ):
     """Create a graph to calculate residual image
 
-    :param gcfcf:
     :param vis: List of vis
     :param model_imagelist: Model used to determine image parameters
     :param context: Imaging context e.g. '2d', 'wstack'
+    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: list of (image, sumwt) tuples
     """
@@ -326,7 +326,10 @@ def restore_list_serial_workflow(
     model_imagelist,
     psf_imagelist,
     residual_imagelist=None,
-        **kwargs
+    restore_facets=1,
+    restore_overlap=0,
+    restore_taper="tukey",
+    **kwargs
 ):
     """Create a graph to calculate the restored image
 
@@ -334,8 +337,12 @@ def restore_list_serial_workflow(
     :param psf_imagelist: PSF list
     :param residual_imagelist: Residual list
     :param kwargs: Parameters for functions in components
+    :param restore_facets: Number of facets used per axis (used to distribute)
+    :param restore_overlap: Overlap in pixels (0 is best)
+    :param restore_taper: Type of taper between facets
     :return: list of restored images
     """
+    restore_facets = 1
 
     if residual_imagelist is None:
         residual_imagelist = []
@@ -535,16 +542,17 @@ def deconvolve_channel_list_serial_workflow(
 
 
 def weight_list_serial_workflow(
-    vis_list, model_imagelist, gcfcf=None
+    vis_list, model_imagelist, gcfcf=None, weighting="uniform", **kwargs
 ):
     """Weight the visibility data
 
     This is done collectively so the weights are summed over all vis_lists and then
     corrected
 
-    :param gcfcf:
     :param vis_list:
     :param model_imagelist: Model required to determine weighting parameters
+    :param weighting: Type of weighting
+    :param kwargs: Parameters for functions in graphs
     :return: List of vis_graphs
     """
     centre = len(model_imagelist) // 2

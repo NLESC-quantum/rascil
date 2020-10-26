@@ -13,6 +13,7 @@ __all__ = ["check_data_directory"]
 
 def check_data_directory(verbose=False, fatal=True):
     """Check the RASCIL data directory to see if it has been installed correctly"""
+    dp = rascil_data_path("")
 
     try:
 

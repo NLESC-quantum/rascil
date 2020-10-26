@@ -96,6 +96,7 @@ class export_ms_RASCIL_test(unittest.TestCase):
             times,
             frequency,
             phasecentre=phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
             channel_bandwidth=channelbandwidth,
         )

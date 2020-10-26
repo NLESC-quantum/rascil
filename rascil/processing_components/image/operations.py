@@ -116,7 +116,6 @@ def export_image_to_fits(im: Image, fitsfile: str = "imaging.fits"):
 def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
     """Read an Image from fits
 
-    :param fixpol:
     :param fitsfile: FITS file in storage
     :return: Image
 
@@ -263,7 +262,6 @@ def qa_image(im, context="") -> QA:
 
     QA is a standard set of statistics of an image; max, min, maxabs, rms, sum, medianabs, medianabsdevmedian, median
 
-    :param context:
     :param im:
     :return: QA
     """
@@ -286,7 +284,8 @@ def qa_image(im, context="") -> QA:
 
 def show_image(
     im: Image,
-        title: str = "",
+    fig=None,
+    title: str = "",
     pol=0,
     chan=0,
     cm="Greys",
@@ -297,8 +296,8 @@ def show_image(
 ):
     """Show an Image with coordinates using matplotlib, optionally with components
 
-    :param cm:
     :param im: Image
+    :param fig: Matplotlib figure
     :param title: String for title of plot
     :param pol: Polarisation to show (index)
     :param chan: Channel to show (index)
@@ -341,11 +340,9 @@ def show_image(
     return fig
 
 
-def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None):
+def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, title=""):
     """Show components against an image
 
-    :param vmax:
-    :param vmin:
     :param im:
     :param comps:
     :param npixels:
@@ -360,7 +357,7 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None):
         vmin = numpy.min(im.data[0, 0, ...])
 
     if not fig:
-        pass
+        fig = plt.figure()
     plt.clf()
 
     assert image_is_canonical(im)
@@ -525,7 +522,7 @@ def calculate_image_from_frequency_moments(
         reference_frequency = numpy.average(freq)
     log.debug(
         "calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)"
-        % reference_frequency
+        % (reference_frequency)
     )
 
     newim = copy_image(im)
@@ -615,10 +612,10 @@ def convert_stokes_to_polimage(im: Image, polarisation_frame: PolarisationFrame)
             im.data.astype("complex"), im.wcs, PolarisationFrame("stokesI")
         )
     else:
-        raise ValueError("Cannot convert stokes to %s" % polarisation_frame.type)
+        raise ValueError("Cannot convert stokes to %s" % (polarisation_frame.type))
 
 
-def convert_polimage_to_stokes(im: Image, complex_image=False):
+def convert_polimage_to_stokes(im: Image, complex_image=False, **kwargs):
     """Convert a polarisation image to stokes IQUV (complex)
 
     For example:
@@ -668,7 +665,7 @@ def convert_polimage_to_stokes(im: Image, complex_image=False):
             to_required(im.data), im.wcs, PolarisationFrame("stokesI")
         )
     else:
-        raise ValueError("Cannot convert %s to stokes" % im.polarisation_frame.type)
+        raise ValueError("Cannot convert %s to stokes" % (im.polarisation_frame.type))
 
 
 def create_window(template, window_type, **kwargs):
@@ -706,13 +703,13 @@ def create_window(template, window_type, **kwargs):
         nx = template.shape[3]
         ny = template.shape[2]
         window.data[..., (edge + 1) : (ny - edge), (edge + 1) : (nx - edge)] = 1.0
-        log.info("create_mask: Window omits %d-pixel edge of each sky plane" % edge)
+        log.info("create_mask: Window omits %d-pixel edge of each sky plane" % (edge))
     elif window_type == "threshold":
         window_threshold = get_parameter(kwargs, "window_threshold", None)
         if window_threshold is None:
             window_threshold = 10.0 * numpy.std(template.data)
         window.data[template.data >= window_threshold] = 1.0
-        log.info("create_mask: Window omits all points below %g" % window_threshold)
+        log.info("create_mask: Window omits all points below %g" % (window_threshold))
     elif window_type is None:
         log.info("create_mask: Mask covers entire image")
     else:
@@ -1266,7 +1263,7 @@ def rotate_image(im, angle=0.0, order=5):
 
 
 def apply_voltage_pattern_to_image(
-    im: Image, vp: Image, inverse=False, min_det=1e-1
+    im: Image, vp: Image, inverse=False, min_det=1e-1, **kwargs
 ) -> Image:
     """Apply a voltage pattern to an image
 

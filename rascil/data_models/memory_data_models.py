@@ -690,6 +690,9 @@ class ConvolutionFunction:
 
     @property
     def nwidth(self):
+        def nwidth(self):
+            """Number of pixels width i.e. x"""
+
         return self.data.shape[3]
 
     @property

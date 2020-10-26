@@ -87,6 +87,7 @@ class TestDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
+            weight=1.0,
         )
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
         export_visibility_to_hdf5(
@@ -143,6 +144,7 @@ class TestDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
+            weight=1.0,
         )
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
         export_blockvisibility_to_hdf5(
@@ -193,6 +195,7 @@ class TestDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
+            weight=1.0,
         )
         gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
         gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
@@ -217,6 +220,7 @@ class TestDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
+            weight=1.0,
         )
         gt = create_pointingtable_from_blockvisibility(self.vis, timeslice="auto")
         gt = simulate_pointingtable(gt, pointing_error=0.001)
@@ -262,6 +266,7 @@ class TestDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
+            weight=1.0,
         )
         im = create_test_image()
         gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")

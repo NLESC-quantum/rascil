@@ -54,6 +54,7 @@ class TestPointing(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
         self.vis.data["vis"] *= 0.0
@@ -119,6 +120,7 @@ class TestPointing(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("linear"),
         )
         self.sidelobe = SkyCoord(

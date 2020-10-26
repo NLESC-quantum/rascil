@@ -36,7 +36,6 @@ def calibrate_list_rsexecute_workflow(
     self-calibrated. The resulting gaintable is then effectively scattered out for application to each visibility
     set. If global solution is false then the solutions are performed locally.
 
-    :param gt_list:
     :param vis_list: list of visibilities (or graph)
     :param model_vislist: list of model visibilities (or graph)
     :param calibration_context: String giving terms to be calibrated e.g. 'TGB'
@@ -47,13 +46,13 @@ def calibrate_list_rsexecute_workflow(
 
     def solve(vis, modelvis=None, gt=None):
         return solve_calibrate_chain(
-            vis, modelvis, gt, calibration_context=calibration_context
+            vis, modelvis, gt, calibration_context=calibration_context, **kwargs
         )
 
     def apply(vis, gt):
         assert gt is not None
         return apply_calibration_chain(
-            vis, gt, calibration_context=calibration_context
+            vis, gt, calibration_context=calibration_context, **kwargs
         )
 
     if global_solution and (len(vis_list) > 1):

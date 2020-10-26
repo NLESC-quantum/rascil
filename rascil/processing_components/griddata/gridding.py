@@ -43,7 +43,6 @@ log = logging.getLogger('logger')
 def convolution_mapping_visibility(vis, griddata, frequency, cf, channel_tolerance=1e-8):
     """Find the mappings between visibility, griddata, and convolution function
 
-    :param frequency:
     :param vis:
     :param griddata:
     :param cf:
@@ -84,13 +83,14 @@ def convolution_mapping_visibility(vis, griddata, frequency, cf, channel_toleran
     return pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction, pfreq_grid
 
 
-def convolution_mapping_blockvisibility(vis, griddata, frequency, cf):
+def convolution_mapping_blockvisibility(vis, griddata, frequency, cf,
+                                        channel_tolerance=1e-8):
     """Find the mappings between visibility, griddata, and convolution function
 
-    :param frequency:
     :param vis:
     :param griddata:
     :param cf:
+    :param channel_tolerance:
     :return:
     """
 
@@ -111,11 +111,9 @@ def convolution_mapping_blockvisibility(vis, griddata, frequency, cf):
 def spatial_mapping(cf, griddata, u, v, w):
     """ Map u,v,w per row into coordinates in the grid
     
-    :param u:
-    :param v:
-    :param w:
     :param cf:
     :param griddata:
+    :param vis:
     :return:
     """
 
@@ -304,16 +302,16 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
     return griddata, sumwt
 
 
-def grid_average_weight():
+def grid_average_weight(vis):
     """
     
+    :param vis:
     :return:
     """
     
 def grid_visibility_weight_to_griddata(vis, griddata: GridData, cf):
     """Grid Visibility weight onto a GridData
 
-    :param cf:
     :param vis: Visibility to be gridded
     :param griddata: GridData
     :return: GridData
@@ -339,10 +337,12 @@ def grid_visibility_weight_to_griddata(vis, griddata: GridData, cf):
     return griddata, sumwt
 
 
-def griddata_merge_weights(gd_list):
+def griddata_merge_weights(gd_list, algorithm='uniform'):
     """ Merge weights into one grid
     
     :param gd_list:
+    :param gd:
+    :param algorithm:
     :return:
     """
     centre = len(gd_list) // 2
@@ -361,13 +361,12 @@ def griddata_merge_weights(gd_list):
 
     gd.grid_wcs.wcs.cdelt[4] = bandwidth
     gd.grid_wcs.wcs.crval[4] = frequency / len(gd_list)
-    return gd, sumwt
+    return (gd, sumwt)
 
 
 def griddata_visibility_reweight(vis, griddata, cf, weighting="uniform", robustness=0.0):
     """Reweight visibility weight using the weights in griddata
 
-    :param robustness:
     :param weighting:
     :param vis: Visibility to be reweighted
     :param griddata: GridData holding gridded weights
@@ -427,7 +426,6 @@ def griddata_visibility_reweight(vis, griddata, cf, weighting="uniform", robustn
 def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", robustness=0.0):
     """Reweight blockvisibility weight using the weights in griddata
 
-    :param robustness:
     :param weighting:
     :param vis: Visibility to be reweighted
     :param griddata: GridData holding gridded weights
@@ -483,12 +481,13 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
     return vis
 
 
-def degrid_blockvisibility_from_griddata(vis, griddata, cf):
+def degrid_blockvisibility_from_griddata(vis, griddata, cf, **kwargs):
     """Degrid blockVisibility from a GridData
 
     :param vis: Visibility to be degridded
     :param griddata: GridData containing image
     :param cf: Convolution function (as GridData)
+    :param kwargs:
     :return: Visibility
     """
     assert vis.polarisation_frame == griddata.polarisation_frame
@@ -546,12 +545,13 @@ def degrid_blockvisibility_from_griddata(vis, griddata, cf):
     return newvis
 
 
-def degrid_visibility_from_griddata(vis, griddata, cf):
+def degrid_visibility_from_griddata(vis, griddata, cf, **kwargs):
     """Degrid Visibility from a GridData
 
     :param vis: Visibility to be degridded
     :param griddata: GridData containing image
     :param cf: Convolution function (as GridData)
+    :param kwargs:
     :return: Visibility
     """
     assert vis.polarisation_frame == griddata.polarisation_frame
@@ -609,7 +609,6 @@ def fft_griddata_to_image(griddata, gcf=None):
 def fft_image_to_griddata(im, griddata, gcf=None):
     """Fill griddata with transform of im
 
-    :param im:
     :param griddata:
     :param gcf: Grid correction image
     :return:

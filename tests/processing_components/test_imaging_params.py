@@ -43,6 +43,7 @@ class TestImagingParams(unittest.TestCase):
             times=self.times,
             frequency=self.frequency,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
             channel_bandwidth=self.channel_bandwidth,
         )

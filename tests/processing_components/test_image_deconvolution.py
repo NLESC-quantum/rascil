@@ -55,6 +55,7 @@ class TestImageDeconvolution(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
             zerow=True,
         )
@@ -77,8 +78,8 @@ class TestImageDeconvolution(unittest.TestCase):
 
     def overlaptest(self, a1, a2, s1, s2):
         #
-        a1[s1[0]: s1[1], s1[2]: s1[3]] = 1
-        a2[s2[0]: s2[1], s2[2]: s2[3]] = 1
+        a1[s1[0] : s1[1], s1[2] : s1[3]] = 1
+        a2[s2[0] : s2[1], s2[2] : s2[3]] = 1
         return numpy.sum(a1) == numpy.sum(a2)
 
     def test_overlap(self):

@@ -9,7 +9,6 @@ import numpy
 from dask import delayed
 from distributed import Client
 
-
 # Make some randomly located points on 2D plane
 def init_sparse(n, margin=0.1):
     numpy.random.seed(8753193)
@@ -59,7 +58,7 @@ if __name__ == "__main__":
         delayed(grid_and_invert_data)(s, shape) for s in sparse_graph_list
     ]
     sum_psf_graph_rank1 = [
-        delayed(numpy.sum)(psf_graph_list[i: i + nreduce])
+        delayed(numpy.sum)(psf_graph_list[i : i + nreduce])
         for i in range(0, nchunks, nreduce)
     ]
     sum_psf_graph = delayed(numpy.sum)(sum_psf_graph_rank1)

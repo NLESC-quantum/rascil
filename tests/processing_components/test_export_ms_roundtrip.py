@@ -37,6 +37,7 @@ from rascil.processing_components import (
     create_blockvisibility_from_ms,
 )
 
+
 try:
     import casacore
     from casacore.tables import table  # pylint: disable=import-error
@@ -84,6 +85,7 @@ class measurementset_tests(unittest.TestCase):
             times,
             frequency,
             channel_bandwidth=channel_bandwidth,
+            weight=1.0,
             phasecentre=phasecentre,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
@@ -132,5 +134,5 @@ class measurementset_tests(unittest.TestCase):
         # print("Maximum fractional difference in dirty image before, after writing to MS = {}".format(error))
 
         assert (
-                error < 1e08
+            error < 1e08
         ), "Maximum fractional difference in dirty image before,after writing to MS execeeds tolerance"

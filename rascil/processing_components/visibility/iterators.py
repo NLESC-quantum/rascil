@@ -29,11 +29,12 @@ log = logging.getLogger("logger")
 
 
 def vis_null_iter(
-    vis: Union[Visibility, BlockVisibility]
+    vis: Union[Visibility, BlockVisibility], vis_slices=1
 ) -> numpy.ndarray:
     """Null iterator returning true for all rows
 
     :param vis:
+    :param vis_slices:
     :return:
     """
     assert vis is not None

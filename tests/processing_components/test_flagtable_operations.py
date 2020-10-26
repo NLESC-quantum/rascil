@@ -55,6 +55,7 @@ class TestFlagTableOperations(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=self.polarisation_frame,
+            weight=1.0,
         )
         ft = create_flagtable_from_blockvisibility(bvis)
         print(ft)
@@ -68,6 +69,7 @@ class TestFlagTableOperations(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             polarisation_frame=self.polarisation_frame,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         ft = create_flagtable_from_blockvisibility(bvis)
         rows = ft.time > 150.0

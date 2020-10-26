@@ -41,7 +41,6 @@ def ical_list_rsexecute_workflow(
 ):
     """Create graph for ICAL pipeline
 
-    :param gcfcf:
     :param vis_list: List of vis (or graph)
     :param model_imagelist:  list of models (or graph)
     :param context: imaging context e.g. '2d'
@@ -207,7 +206,7 @@ def ical_list_rsexecute_workflow(
     restore_imagelist = restore_list_rsexecute_workflow(
         deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
     )
-    return deconvolve_model_imagelist, residual_imagelist, restore_imagelist, gt_list
+    return (deconvolve_model_imagelist, residual_imagelist, restore_imagelist, gt_list)
 
 
 def continuum_imaging_list_rsexecute_workflow(
@@ -217,9 +216,6 @@ def continuum_imaging_list_rsexecute_workflow(
 
     Same as ICAL but with no selfcal.
 
-    :param gcfcf:
-    :param vis_slices:
-    :param facets:
     :param vis_list: List of vis (or graph)
     :param model_imagelist: List of models (or graph)
     :param context: Imaging context
@@ -290,7 +286,7 @@ def continuum_imaging_list_rsexecute_workflow(
     restore_imagelist = restore_list_rsexecute_workflow(
         deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
     )
-    return deconvolve_model_imagelist, residual_imagelist, restore_imagelist
+    return (deconvolve_model_imagelist, residual_imagelist, restore_imagelist)
 
 
 def spectral_line_imaging_list_rsexecute_workflow(
@@ -307,7 +303,6 @@ def spectral_line_imaging_list_rsexecute_workflow(
 
     Uses the continuum imaging rsexecute pipeline after subtraction of a continuum model
 
-    :param gcfcf:
     :param vis_list: List of vis (or graph)
     :param model_imagelist: List of Spectral line model (or graph)
     :param continuum_model_imagelist: Continuum model list (or graph)

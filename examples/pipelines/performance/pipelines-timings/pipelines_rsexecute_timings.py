@@ -372,7 +372,7 @@ def trial_case(
     # Corrupt the visibility for the GLEAM model
     lprint("****** Visibility corruption ******")
     corrupted_bvis_list = corrupt_list_rsexecute_workflow(
-        predicted_bvis_list, phase_error=1.0
+        predicted_bvis_list, phase_error=1.0, seed=seed
     )
     lprint("****** Weighting and tapering ******")
     corrupted_bvis_list = weight_list_rsexecute_workflow(

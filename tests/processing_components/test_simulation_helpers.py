@@ -43,6 +43,7 @@ class TestSimulationHelpers(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             elevation_limit=0.0,
         )
         plt.clf()
@@ -56,6 +57,7 @@ class TestSimulationHelpers(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         plt.clf()
         plot_uvcoverage([self.vis])
@@ -71,6 +73,7 @@ class TestSimulationHelpers(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         plt.clf()
         plot_uvcoverage([self.vis])

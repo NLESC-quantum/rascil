@@ -63,6 +63,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         assert self.vis.nvis == len(self.vis.time)
 
@@ -73,6 +74,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         assert self.vis.nvis == len(self.vis.time)
         assert self.vis.nvis == len(self.vis.frequency)
@@ -84,6 +86,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("linear"),
         )
         assert self.vis.nvis == len(self.vis.time)
@@ -96,6 +99,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         rows = self.vis.time > 150.0
         for makecopy in [True, False]:
@@ -110,6 +114,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.times,
             self.frequency,
             phasecentre=self.phasecentre,
+            weight=1.0,
             channel_bandwidth=self.channel_bandwidth,
         )
         assert self.vis.nvis == len(self.vis.time)
@@ -120,6 +125,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.times,
             self.frequency,
             phasecentre=self.phasecentre,
+            weight=1.0,
             channel_bandwidth=self.channel_bandwidth,
         )
         vis = convert_blockvisibility_to_visibility(self.vis)
@@ -134,6 +140,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.times,
             self.frequency,
             phasecentre=self.phasecentre,
+            weight=1.0,
             channel_bandwidth=self.channel_bandwidth,
         )
         rows = self.vis.time > 150.0
@@ -150,6 +157,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         othertimes = (numpy.pi / 43200.0) * numpy.arange(300.0, 600.0, 30.0)
         self.othervis = create_visibility(
@@ -158,6 +166,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
         )
         self.vis = append_visibility(self.vis, self.othervis)
         assert self.vis.nvis == len(self.vis.time)
@@ -170,6 +179,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
         self.vis.data["vis"][..., :] = [2.0 + 0.0j]
@@ -179,6 +189,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
         self.othervis.data["vis"][..., :] = [1.0 + 0.0j]
@@ -195,6 +206,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("linear"),
         )
         self.vis.data["vis"][..., :] = [2.0 + 0.0j, 0.0j, 0.0j, 2.0 + 0.0j]
@@ -204,6 +216,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("linear"),
         )
         self.othervis.data["vis"][..., :] = [1.0 + 0.0j, 0.0j, 0.0j, 1.0 + 0.0j]
@@ -220,6 +233,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("linear"),
         )
         self.vis.data["vis"][..., :] = [2.0 + 0.0j, 2.0 + 0.0j, 2.0 + 0.0j, 2.0 + 0.0j]
@@ -229,6 +243,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("linear"),
         )
         self.othervis.data["vis"][..., :] = [
@@ -250,6 +265,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         vis = copy_visibility(self.vis)
@@ -265,6 +281,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -295,6 +312,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -306,6 +324,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.compabsdirection,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         vismodel2 = dft_skycomponent_visibility(vispred, self.comp)
@@ -324,6 +343,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -335,6 +355,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.compabsdirection,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         vismodel2 = dft_skycomponent_visibility(vispred, self.comp)
@@ -353,6 +374,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -378,6 +400,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -403,6 +426,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         vis1.data["vis"][...] = 1.0
@@ -412,6 +436,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         vis2.data["vis"][...] = 1.0
@@ -426,6 +451,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -445,6 +471,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
             elevation_limit=numpy.pi * 15.0 / 180.0,
         )
@@ -455,6 +482,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
             elevation_limit=None,
         )
@@ -471,6 +499,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
             elevation_limit=numpy.pi * 15.0 / 180.0,
         )
@@ -481,6 +510,7 @@ class TestVisibilityOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
+            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
             elevation_limit=None,
         )

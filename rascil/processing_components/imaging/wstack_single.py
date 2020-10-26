@@ -36,7 +36,7 @@ from rascil.processing_components.imaging import normalize_sumwt, fill_vis_for_p
 log = logging.getLogger("logger")
 
 
-def predict_wstack_single(vis, model, remove=True, gcfcf=None) -> Visibility:
+def predict_wstack_single(vis, model, remove=True, gcfcf=None, **kwargs) -> Visibility:
     """Predict using a single w slices.
 
     This processes a single w plane, rotating out the w beam for the average w
@@ -50,8 +50,6 @@ def predict_wstack_single(vis, model, remove=True, gcfcf=None) -> Visibility:
 
     If images constructed from slices in w are added after applying a w-dependent image plane correction, the w term will be corrected.
 
-    :param remove:
-    :param gcfcf:
     :param vis: Visibility to be predicted
     :param model: model image
     :return: resulting visibility (in place works)
@@ -70,6 +68,7 @@ def predict_wstack_single(vis, model, remove=True, gcfcf=None) -> Visibility:
     w_average = numpy.average(vis.w)
     if remove:
         vis.data["uvw"][..., 2] -= w_average
+    tempvis = copy_visibility(vis)
 
     # Calculate w beam and apply to the model. The imaginary part is not needed
     workimage = convert_stokes_to_polimage(model, vis.polarisation_frame)
@@ -89,7 +88,7 @@ def predict_wstack_single(vis, model, remove=True, gcfcf=None) -> Visibility:
 
 
 def invert_wstack_single(
-    vis: Visibility, im: Image, dopsf, remove=True, gcfcf=None, **kwargs
+    vis: Visibility, im: Image, dopsf, normalize=True, remove=True, gcfcf=None, **kwargs
 ) -> (Image, numpy.ndarray):
     """Process single w slice
 
@@ -102,11 +101,10 @@ def invert_wstack_single(
 
     If images constructed from slices in w are added after applying a w-dependent image plane correction, the w term will be corrected.
 
-    :param remove:
-    :param gcfcf:
     :param vis: Visibility to be inverted
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
+    :param normalize: Normalize by the sum of weights (True)
     :returns: image, sum of weights
     """
     assert image_is_canonical(im)

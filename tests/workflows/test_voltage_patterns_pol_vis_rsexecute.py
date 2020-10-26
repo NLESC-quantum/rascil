@@ -192,6 +192,8 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
                     original_components,
                     gt_list=gt_list,
                     context=imaging_context,
+                    vis_slices=vis_slices,
+                    do_wstacking=False,
                 )
                 bvis_plot_list = rsexecute.persist(bvis_plot_list)
 

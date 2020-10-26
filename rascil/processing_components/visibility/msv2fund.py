@@ -98,7 +98,7 @@ try:
             )
 
         def __reduce__(self):
-            return Stand, (self.id, self.x, self.y, self.z)
+            return (Stand, (self.id, self.x, self.y, self.z))
 
         def __getitem__(self, key):
             if key == 0:

@@ -66,7 +66,7 @@ def coordinates2Offset(npixel: int, cx: int, cy: int, quadrant=False):
         mg = numpy.mgrid[0:npixel, 0:npixel]
     else:
         # If npixel is even, we should create a grid with npixel//2+1
-        mg = numpy.mgrid[0 : npixel // 2 + 1, 0 : npixel // 2 + 1]
+        mg = numpy.mgrid[0: npixel // 2 + 1, 0: npixel // 2 + 1]
     return (mg[0] - cy) / npixel, (mg[1] - cx) / npixel
 
 
@@ -93,35 +93,35 @@ def grdsf(nu):
             [1.0000000e0, 9.599102e-1, 2.918724e-1],
         ]
     )
-
+    
     _, np = p.shape
     _, nq = q.shape
-
+    
     nu = numpy.abs(nu)
-
+    
     nuend = numpy.zeros_like(nu)
     part = numpy.zeros(len(nu), dtype="int")
     part[(nu >= 0.0) & (nu < 0.75)] = 0
     part[(nu >= 0.75) & (nu <= 1.0)] = 1
     nuend[(nu >= 0.0) & (nu < 0.75)] = 0.75
     nuend[(nu >= 0.75) & (nu <= 1.0)] = 1.0
-
+    
     delnusq = nu ** 2 - nuend ** 2
-
+    
     top = p[part, 0]
     for k in range(1, np):
         top += p[part, k] * numpy.power(delnusq, k)
-
+    
     bot = q[part, 0]
     for k in range(1, nq):
         bot += q[part, k] * numpy.power(delnusq, k)
-
+    
     grdsf = numpy.zeros_like(nu)
     ok = bot > 0.0
     grdsf[ok] = top[ok] / bot[ok]
     ok = numpy.abs(nu > 1.0)
     grdsf[ok] = 0.0
-
+    
     # Return the griddata function and the grid correction function
     return grdsf, (1 - nu ** 2) * grdsf
 
@@ -141,7 +141,7 @@ def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
         cx = npixel // 2
     if cy is None:
         cy = npixel // 2
-
+    
     # Original codes
     # ly, mx = coordinates2Offset(npixel, cx, cy)
     # r2 = field_of_view**2*(ly ** 2 + mx ** 2)
@@ -152,7 +152,7 @@ def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
     # cp[r2 == 0] = 1.0 + 0j
     # if remove_shift:
     #     cp /= cp[npixel // 2, npixel // 2]
-
+    
     # numpy.putmask
     # ly, mx = coordinates2Offset(npixel, cx, cy)
     # r2 = field_of_view**2*(ly ** 2 + mx ** 2)
@@ -164,7 +164,7 @@ def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
     # numpy.putmask(cp, r2 == 0, 1.0 + 0j)
     # if remove_shift:
     #     cp /= cp[npixel // 2, npixel // 2]
-
+    
     # numpy.putmask - 2
     # ly, mx = coordinates2Offset(npixel, cx, cy)
     # r2 = field_of_view ** 2 * (ly ** 2 + mx ** 2)
@@ -176,24 +176,23 @@ def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
     # numpy.putmask(cp, r2 == 0, 1.0 + 0j)
     # if remove_shift:
     #     cp /= cp[npixel // 2, npixel // 2]
-
+    
     # SubArray Copy Symmetrically
     ly, mx = coordinates2Offset(npixel, cx, cy, quadrant=True)
     r2 = field_of_view ** 2 * (ly ** 2 + mx ** 2)
     ph = -2 * numpy.pi * w * (1 - numpy.sqrt(1.0 - r2))
     numpy.putmask(ph, r2 >= 1.0, 0)
-    cp = numpy.zeros_like(r2, dtype="complex")
     cp = numpy.exp(1j * ph)
     numpy.putmask(cp, r2 >= 1.0, 0 + 0j)
     numpy.putmask(cp, r2 == 0, 1.0 + 0j)
     # Correct for linear phase shift in faceting
     if remove_shift:
         cp /= cp[-1, -1]
-
+    
     cp = numpy.pad(
         cp, ((0, int(cx) + npixel % 2 - 1), (0, int(cy) + npixel % 2 - 1)), "reflect"
     )
-
+    
     # assert((cp==cp1).all())
-
+    
     return cp

@@ -76,7 +76,6 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
-            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -88,7 +87,6 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.compabsdirection,
-            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
         vismodel2 = dft_skycomponent_visibility(vispred, self.comp)
@@ -107,7 +105,6 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
-            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -119,7 +116,6 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.compabsdirection,
-            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         vismodel2 = dft_skycomponent_visibility(vispred, self.comp)
@@ -139,7 +135,6 @@ class TestVisibilityDFTOperations(unittest.TestCase):
                 self.frequency,
                 channel_bandwidth=self.channel_bandwidth,
                 phasecentre=self.phasecentre,
-                weight=1.0,
                 polarisation_frame=PolarisationFrame("stokesIQUV"),
             )
             self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
@@ -154,7 +149,6 @@ class TestVisibilityDFTOperations(unittest.TestCase):
                 self.frequency,
                 channel_bandwidth=self.channel_bandwidth,
                 phasecentre=self.phasecentre,
-                weight=1.0,
                 polarisation_frame=PolarisationFrame("stokesIQUV"),
             )
             self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)

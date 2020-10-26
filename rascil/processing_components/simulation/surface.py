@@ -52,7 +52,7 @@ def simulate_gaintable_from_voltage_pattern(
     """
 
     nant = vis.vis.shape[1]
-    gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
+    gaintables = [create_gaintable_from_blockvisibility(vis) for _ in sc]
 
     nrec = gaintables[0].nrec
     gnchan = gaintables[0].nchan
@@ -217,11 +217,11 @@ def simulate_gaintable_from_voltage_pattern(
     if number_bad > 0:
         log.warning(
             "simulate_gaintable_from_voltage_pattern: %d points are inside the voltage pattern image"
-            % (number_good)
+            % number_good
         )
         log.warning(
             "simulate_gaintable_from_voltage_pattern: %d points are outside the voltage pattern image"
-            % (number_bad)
+            % number_bad
         )
 
     return gaintables
@@ -239,9 +239,11 @@ def simulate_gaintable_from_zernikes(
 ):
     """Create gaintables for a set of zernikes
 
+    :param vp_list:
+    :param vis_slices:
+    :param elevation_limit:
     :param vis:
     :param sc: Sky components for which pierce points are needed
-    :param vp: List of Voltage patterns in AZELGEO frame
     :param vp_coeffs: Fractional contribution [nants, nvp]
     :param order: order of spline (default is 3)
     :return:
@@ -249,7 +251,7 @@ def simulate_gaintable_from_zernikes(
 
     ntimes, nant = vis.vis.shape[0:2]
     vp_coeffs = numpy.array(vp_coeffs)
-    gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
+    gaintables = [create_gaintable_from_blockvisibility(vis) for _ in sc]
 
     assert isinstance(vis, BlockVisibility)
     assert vis.configuration.mount[0] == "azel", (
@@ -282,7 +284,6 @@ def simulate_gaintable_from_zernikes(
     latitude = vis.configuration.location.lat.rad
 
     r2d = 180.0 / numpy.pi
-    s2r = numpy.pi / 43200.0
     # For each hourangle, we need to calculate the location of a component
     # in AZELGEO. With that we can then look up the relevant gain from the
     # voltage pattern
@@ -355,11 +356,11 @@ def simulate_gaintable_from_zernikes(
     if number_bad > 0:
         log.warning(
             "simulate_gaintable_from_zernikes: %d points are inside the voltage pattern image"
-            % (number_good)
+            % number_good
         )
         log.warning(
             "simulate_gaintable_from_zernikes: %d points are outside the voltage pattern image"
-            % (number_bad)
+            % number_bad
         )
 
     return gaintables

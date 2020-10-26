@@ -78,7 +78,6 @@ class TestCalibrationPlot(unittest.TestCase):
             self.frequency,
             phasecentre=self.phasecentre,
             channel_bandwidth=self.channel_bandwidth,
-            weight=1.0,
             polarisation_frame=PolarisationFrame(data_pol_frame),
         )
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)

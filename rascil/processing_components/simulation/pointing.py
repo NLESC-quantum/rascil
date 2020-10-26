@@ -36,26 +36,25 @@ def simulate_gaintable_from_pointingtable(
     pt,
     vp,
     vis_slices=None,
-    scale=1.0,
-    order=3,
+        order=3,
     elevation_limit=15.0 * numpy.pi / 180.0,
     **kwargs
 ):
     """Create gaintables from a pointing table
 
+    :param vis_slices:
+    :param elevation_limit:
     :param vis:
     :param sc: Sky components for which pierce points are needed
     :param pt: Pointing table
     :param vp: Voltage pattern in AZELGEO frame
-    :param scale: Multiply the screen by this factor
     :param order: order of spline (default is 3)
     :return:
     """
 
     nant = vis.vis.shape[1]
-    gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
+    gaintables = [create_gaintable_from_blockvisibility(vis) for _ in sc]
 
-    nrec = gaintables[0].nrec
     gnchan = gaintables[0].nchan
     frequency = gaintables[0].frequency
 
@@ -96,7 +95,6 @@ def simulate_gaintable_from_pointingtable(
     number_good = 0
 
     r2d = 180.0 / numpy.pi
-    s2r = numpy.pi / 43200.0
     # For each hourangle, we need to calculate the location of a component
     # in AZELGEO. With that we can then look up the relevant gain from the
     # voltage pattern
@@ -198,11 +196,11 @@ def simulate_gaintable_from_pointingtable(
     if number_bad > 0:
         log.warning(
             "simulate_gaintable_from_pointingtable: %d points are inside the voltage pattern image"
-            % (number_good)
+            % number_good
         )
         log.warning(
             "simulate_gaintable_from_pointingtable: %d points are outside the voltage pattern image"
-            % (number_bad)
+            % number_bad
         )
 
     return gaintables
@@ -213,16 +211,15 @@ def simulate_pointingtable(
     pointing_error,
     static_pointing_error=None,
     global_pointing_error=None,
-    seed=None,
-    **kwargs
+    seed=None
 ) -> PointingTable:
     """Simulate a gain table
 
+    :param seed:
     :type pt: PointingTable
     :param pointing_error: std of normal distribution (radians)
     :param static_pointing_error: std of normal distribution (radians)
     :param global_pointing_error: 2-vector of global pointing error (rad)
-    :param kwargs:
     :return: PointingTable
 
     """
@@ -295,6 +292,7 @@ def simulate_pointingtable_from_timeseries(
 ):
     """Create a pointing table with time series created from PSD.
 
+    :param seed:
     :param pt: Pointing table to be filled
     :param type: Type of pointing: 'tracking' or 'wind'
     :param time_series_type: Type of wind condition precision|standard|degraded
@@ -464,7 +462,6 @@ def simulate_pointingtable_from_timeseries(
             mirror_regular_freq = -regular_freq
             # join
             z_axis_values = numpy.append(z_axis_values, mirror_z_axis_values[::-1])
-            regular_freq = numpy.append(regular_freq, mirror_regular_freq[::-1])
 
             # add a 0 Fourier term
             zav = z_axis_values
@@ -475,7 +472,6 @@ def simulate_pointingtable_from_timeseries(
             ts = numpy.fft.ifft(z_axis_values)
 
             # set up and check scalings
-            Dt = pt.interval[0]
             ts = numpy.real(ts)
             ts *= m0  # the result is scaled by number of points in the signal, so multiply - real part - by this
 

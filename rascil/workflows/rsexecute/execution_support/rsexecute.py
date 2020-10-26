@@ -22,10 +22,10 @@ try:
     from dlg.dask_emulation import compute as dlg_compute
 except ImportError:
 
-    def dlg_delayed(*args, **kwargs):
+    def dlg_delayed():
         raise Exception("daliuge is not available")
 
-    def dlg_compute(*args, **kwargs):
+    def dlg_compute():
         pass
 
 
@@ -52,6 +52,8 @@ def get_dask_client(
     The environment variable RASCIL_DASK_SCHEDULER is interpreted as pointing to the Dask distributed scheduler.
     and a client using that scheduler is returned. Otherwise a client for a LocalCluster is created.
 
+    :param local_dir:
+    :param with_file:
     :param timeout: Time out for creation (30s)
     :param n_workers: Number of workers (cores available)
     :param threads_per_worker: 1
@@ -214,6 +216,7 @@ class _rsexecutebase:
 
         Passes through if dask is not being used
 
+        :param func:
         :param args:
         :param kwargs:
         :return: delayed func or func
@@ -221,7 +224,7 @@ class _rsexecutebase:
         if self._using_dask:
             return delayed(func, *args, **kwargs)
         elif self._using_dlg:
-            return dlg_delayed(func, *args, **kwargs)
+            return dlg_delayed()
         else:
             return func
 
@@ -311,7 +314,7 @@ class _rsexecutebase:
                 return future
         elif self._using_dlg:
             kwargs = {"client": self._client} if self._client else {}
-            return dlg_compute(value, **kwargs)
+            return dlg_compute()
         else:
             return value
 

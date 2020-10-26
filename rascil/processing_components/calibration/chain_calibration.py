@@ -129,20 +129,17 @@ def apply_calibration_chain(
     gaintables,
     calibration_context="T",
     controls=None,
-    iteration=0,
-    tol=1e-6,
-    **kwargs
+    iteration=0
 ):
     """Calibrate using algorithm specified by calibration_context and the calibration controls
 
     The context string can denote a sequence of calibrations e.g. TGB with different timescales.
 
+    :param gaintables:
+    :param controls:
     :param vis:
-    :param model_vis:
     :param calibration_context: calibration contexts in order of correction e.g. 'TGB'
-    :param control: controls dictionary, modified as necessary
     :param iteration: Iteration number to be compared to the 'first_selfcal' field.
-    :param kwargs:
     :return: Calibrated data_models, dict(gaintables)
     """
 
@@ -162,7 +159,7 @@ def apply_calibration_chain(
         for c in calibration_context:
             if iteration >= controls[c]["first_selfcal"]:
                 avis = apply_gaintable(
-                    vis, gaintables[c], timeslice=controls[c]["timeslice"]
+                    vis, gaintables[c]
                 )
 
         return avis
@@ -177,19 +174,19 @@ def calibrate_chain(
     calibration_context="T",
     controls=None,
     iteration=0,
-    tol=1e-8,
-    **kwargs
+    tol=1e-8
 ):
     """Calibrate using algorithm specified by calibration_context
 
     The context string can denote a sequence of calibrations e.g. TGB with different timescales.
 
+    :param gaintables:
+    :param tol:
     :param vis:
     :param model_vis:
     :param calibration_context: calibration contexts in order of correction e.g. 'TGB'
     :param controls: controls dictionary, modified as necessary
     :param iteration: Iteration number to be compared to the 'first_selfcal' field.
-    :param kwargs:
     :return: Calibrated data_models, dict(gaintables)
     """
     if controls is None:
@@ -240,7 +237,6 @@ def calibrate_chain(
                     avis,
                     gaintables[c],
                     inverse=True,
-                    timeslice=controls[c]["timeslice"],
                 )
             else:
                 log.debug(
@@ -260,19 +256,19 @@ def solve_calibrate_chain(
     calibration_context="T",
     controls=None,
     iteration=0,
-    tol=1e-6,
-    **kwargs
+    tol=1e-6
 ):
     """Calibrate using algorithm specified by calibration_context
 
     The context string can denote a sequence of calibrations e.g. TGB with different timescales.
 
+    :param gaintables:
+    :param tol:
     :param vis:
     :param model_vis:
     :param calibration_context: calibration contexts in order of correction e.g. 'TGB'
     :param controls: controls dictionary, modified as necessary
     :param iteration: Iteration number to be compared to the 'first_selfcal' field.
-    :param kwargs:
     :return: Calibrated data_models, dict(gaintables)
     """
     if controls is None:

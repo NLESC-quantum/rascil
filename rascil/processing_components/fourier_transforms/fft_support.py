@@ -8,14 +8,14 @@ import numpy
 
 try:
     import pyfftw
-
+    
     # import multiprocessing
     nthread = 4  # multiprocessing.cpu_count()
     # Enable the PyFFTW cache
     if not pyfftw.interfaces.cache.is_enabled():
         pyfftw.interfaces.cache.enable()
         pyfftw.interfaces.cache.set_keepalive_time(60)
-
+    
     pyfftw_exists = True
 except ImportError:
     pyfftw = None
@@ -32,7 +32,7 @@ def fft(a):
     :param a: image in `lm` coordinate space
     :return: `uv` grid
     """
-
+    
     if not pyfftw_exists:
         if len(a.shape) == 4:
             return numpy.fft.fftshift(
@@ -46,15 +46,7 @@ def fft(a):
             return numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.ifftshift(a)))
     else:
         if len(a.shape) == 4:
-            b = pyfftw.interfaces.numpy_fft.fftshift(
-                pyfftw.interfaces.numpy_fft.fft2(
-                    pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[2, 3]),
-                    auto_align_input=False,
-                    planner_effort="FFTW_MEASURE",
-                    threads=nthread,
-                ),
-                axes=[2, 3],
-            )
+            pass
         if len(a.shape) == 5:
             b = pyfftw.interfaces.numpy_fft.fftshift(
                 pyfftw.interfaces.numpy_fft.fft2(
@@ -181,9 +173,9 @@ def extract_mid(a, npixel):
     cy = ny // 2
     s = npixel // 2
     if npixel % 2 != 0:
-        return a[..., cx - s : cx + s + 1, cy - s : cy + s + 1]
+        return a[..., cx - s: cx + s + 1, cy - s: cy + s + 1]
     else:
-        return a[..., cx - s : cx + s, cy - s : cy + s]
+        return a[..., cx - s: cx + s, cy - s: cy + s]
 
 
 def extract_oversampled(a, xf, yf, kernel_oversampling, kernelwidth):
@@ -204,7 +196,7 @@ def extract_oversampled(a, xf, yf, kernel_oversampling, kernelwidth):
     :param kernel_oversampling: oversampling factor
     :param kernelwidth: size of section
     """
-
+    
     assert 0 <= xf < kernel_oversampling
     assert 0 <= yf < kernel_oversampling
     # Determine start offset.
@@ -214,8 +206,8 @@ def extract_oversampled(a, xf, yf, kernel_oversampling, kernelwidth):
     assert mx >= 0 and my >= 0, "mx %d and my %d" % (mx, my)
     # Extract every kernel_oversampling-th pixel
     mid = a[
-        my : my + kernel_oversampling * kernelwidth : kernel_oversampling,
-        mx : mx + kernel_oversampling * kernelwidth : kernel_oversampling,
-    ]
+          my: my + kernel_oversampling * kernelwidth: kernel_oversampling,
+          mx: mx + kernel_oversampling * kernelwidth: kernel_oversampling,
+          ]
     # normalise
     return kernel_oversampling * kernel_oversampling * mid

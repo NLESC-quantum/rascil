@@ -74,12 +74,12 @@ def predict_list_rsexecute_workflow(
     Note that this call can be converted to a set of rsexecute calls to the serial
     version, using argument use_serial_predict=True
 
+    :param gcfcf:
     :param vis_list: list of vis (or graph)
     :param model_imagelist: list of models (or graph)
     :param vis_slices: Number of vis slices (w stack or timeslice)
     :param facets: Number of facets (per axis)
     :param context: Type of processing e.g. 2d, wstack, timeslice or facets
-    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: List of vis_lists
 
@@ -237,7 +237,6 @@ def invert_list_rsexecute_workflow(
     :param normalize: Normalize by sumwt
     :param vis_slices: Number of slices
     :param context: Imaging context
-    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: List of (image, sumwt) tuples, one per vis in vis_list
 
@@ -402,10 +401,10 @@ def residual_list_rsexecute_workflow(
 ):
     """Create a graph to calculate residual image
 
+    :param gcfcf:
     :param vis: List of vis (or graph)
     :param model_imagelist: Model used to determine image parameters
     :param context: Imaging context e.g. '2d', 'wstack'
-    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: list of (image, sumwt) tuples or graph
     """
@@ -430,8 +429,7 @@ def restore_list_rsexecute_workflow(
     model_imagelist,
     psf_imagelist,
     residual_imagelist=None,
-    restore_facets=1,
-    restore_overlap=0,
+        restore_overlap=0,
     restore_taper="tukey",
     **kwargs
 ):
@@ -441,7 +439,6 @@ def restore_list_rsexecute_workflow(
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
     :param kwargs: Parameters for functions in components
-    :param restore_facets: Number of facets used per axis (used to distribute)
     :param restore_overlap: Overlap in pixels (0 is best)
     :param restore_taper: Type of taper between facets
     :return: list of restored images (or graph)
@@ -783,17 +780,18 @@ def deconvolve_list_channel_rsexecute_workflow(
 
 
 def weight_list_rsexecute_workflow(
-    vis_list, model_imagelist, gcfcf=None, weighting="uniform", robustness=0.0, **kwargs
+    vis_list, model_imagelist, gcfcf=None, weighting="uniform", robustness=0.0
 ):
     """Weight the visibility data
 
     This is done collectively so the weights are summed over all vis_lists and then
     corrected
 
+    :param gcfcf:
+    :param robustness:
     :param vis_list:
     :param model_imagelist: Model required to determine weighting parameters
     :param weighting: Type of weighting
-    :param kwargs: Parameters for functions in graphs
     :return: List of vis_graphs
 
     For example::

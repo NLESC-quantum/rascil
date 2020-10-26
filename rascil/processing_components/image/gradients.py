@@ -29,12 +29,12 @@ def image_gradients(im: Image):
     :return: Gradient images
     """
     assert isinstance(im, Image)
-
+    
     nchan, npol, ny, nx = im.shape
-
+    
     gradientx = create_empty_image_like(im)
-    gradientx.data[..., :, 1:nx] = im.data[..., :, 1:nx] - im.data[..., :, 0 : (nx - 1)]
+    gradientx.data[..., :, 1:nx] = im.data[..., :, 1:nx] - im.data[..., :, 0: (nx - 1)]
     gradienty = create_empty_image_like(im)
-    gradienty.data[..., 1:ny, :] = im.data[..., 1:ny, :] - im.data[..., 0 : (ny - 1), :]
-
+    gradienty.data[..., 1:ny, :] = im.data[..., 1:ny, :] - im.data[..., 0: (ny - 1), :]
+    
     return gradientx, gradienty

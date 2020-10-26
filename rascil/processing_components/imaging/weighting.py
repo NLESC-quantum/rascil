@@ -34,18 +34,18 @@ log = logging.getLogger("logger")
 
 
 def weight_visibility(
-    vis, model, gcfcf=None, weighting="uniform", robustness=0.0, **kwargs
+    vis, model, gcfcf=None, weighting="uniform", robustness=0.0
 ):
     """Weight the visibility data
 
     This is done collectively so the weights are summed over all vis_lists and then
     corrected
 
-    :param vis_list:
-    :param model_imagelist: Model required to determine weighting parameters
+    :param vis:
+    :param model:
+    :param gcfcf:
     :param weighting: Type of weighting (uniform or robust or natural)
     :param robustness: Robustness parameter
-    :param kwargs: Parameters for functions in graphs
     :return: Reweighted vis
     """
 
@@ -80,14 +80,16 @@ def weight_blockvisibility(
     This is done collectively so the weights are summed over all vis_lists and then
     corrected
 
-    :param vis_list:
-    :param model_imagelist: Model required to determine weighting parameters
+    :param vis:
+    :param model:
+    :param gcfcf:
+    :param robustness:
     :param weighting: Type of weighting
     :param kwargs: Parameters for functions in graphs
     :return: List of vis_graphs
     """
     log.info("weight_blockvisibility: is deprecated, use weight_visibility")
-    return weight_visibility(vis, model, gcfcf, weighting, robustness, **kwargs)
+    return weight_visibility(vis, model, gcfcf, weighting, robustness)
 
 
 def taper_visibility_gaussian(vis, beam=None):
@@ -141,6 +143,7 @@ def taper_visibility_tukey(vis, tukey=0.1):
     These are cumulative. If You can reset the imaging_weights
     using :py:mod:`processing_components.imaging.weighting.weight_visibility`
 
+    :param tukey:
     :param vis: Visibility with imaging_weight's to be tapered
     :return: visibility with imaging_weight column modified
     """

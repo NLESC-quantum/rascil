@@ -56,7 +56,6 @@ class TestFlaggingOperations(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=self.polarisation_frame,
-            weight=1.0,
         )
         bvis = flagging_blockvisibility(bvis, antenna=[1])
         assert bvis.data["flags"][0, 1, 2, 0, 0] == 1
@@ -71,7 +70,6 @@ class TestFlaggingOperations(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=self.polarisation_frame,
-            weight=1.0,
         )
         bvis = flagging_blockvisibility(
             bvis, antenna=[1, 3], channel=[0, 1], polarization=[0]

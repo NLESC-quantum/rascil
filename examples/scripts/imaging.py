@@ -46,7 +46,6 @@ vt = create_visibility(
     times,
     frequency,
     channel_bandwidth=channel_bandwidth,
-    weight=1.0,
     phasecentre=phasecentre,
     polarisation_frame=PolarisationFrame("stokesI"),
 )

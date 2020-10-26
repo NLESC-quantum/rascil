@@ -43,6 +43,7 @@ def set_pb_header(pb, use_local=True):
 
     There is no convention on how to represent primary beams. We use axes 'AZELGEO long' and 'AZELGEO lati'
 
+    :param use_local:
     :param pb:
     :return:
     """
@@ -62,6 +63,12 @@ def gauss(x0, y0, amp, sigma, rho, diff, a):
     """
     2D gaussian
 
+    :param x0:
+    :param y0:
+    :param amp:
+    :param sigma:
+    :param rho:
+    :param diff:
     :param a: Grid of aperture plane coordinates
     """
     dx = a[..., 0] - x0
@@ -104,6 +111,10 @@ def create_vp(
 ):
     """Create an image containing the dish voltage pattern for a number of cases
 
+    :param pointingcentre:
+    :param padding:
+    :param use_local:
+    :param fixpol:
     :param model: Template image (Can be None for some cases)
     :param telescope:
     :return: Primary beam image
@@ -237,6 +248,8 @@ def create_vp(
 def create_pb(model, telescope="MID", pointingcentre=None, use_local=True):
     """Create an image containing the primary beam for a number of cases
 
+    :param pointingcentre:
+    :param use_local:
     :param model: Template image
     :param telescope: 'VLA' or 'ASKAP'
     :return: Primary beam image
@@ -256,6 +269,7 @@ def mosaic_pb(model, telescope, pointingcentres, use_local=True):
 
     Note that the addition is root sum of squares
 
+    :param use_local:
     :param model:  Template image
     :param telescope:
     :param pointingcentres: list of pointing centres
@@ -279,6 +293,8 @@ def create_pb_generic(
 
     Feeed legs are ignored
 
+    :param pointingcentre:
+    :param use_local:
     :param model:
     :param diameter: Diameter of dish (m)
     :param blockage: Diameter of blockage
@@ -299,6 +315,8 @@ def create_vp_generic(
 
     Feeed legs are ignored
 
+    :param pointingcentre:
+    :param use_local:
     :param model:
     :param diameter: Diameter of dish (m)
     :param blockage: Diameter of blockage
@@ -486,6 +504,7 @@ def create_low_test_beam(model: Image, use_local=True) -> Image:
 
     This is not fit for anything except the most basic testing. It does not include any form of elevation/pa dependence.
 
+    :param use_local:
     :param model: Template image
     :return: Image
     """
@@ -542,6 +561,7 @@ def create_low_test_vp(model: Image, use_local=True) -> Image:
 
     This is not fit for anything except the most basic testing. It does not include any form of elevation/pa dependence.
 
+    :param use_local:
     :param model: Template image
     :return: Image
     """
@@ -609,7 +629,7 @@ def create_low_test_vp(model: Image, use_local=True) -> Image:
 def convert_azelvp_to_radec(vp, im, pa):
     """Convert AZELGEO image to image coords at specific parallactic angle
 
-    :param pb: Primary beam or voltagee pattern
+    :param vp:
     :param im: Template image
     :param pa: Parallactic angle (radians)
     :return:

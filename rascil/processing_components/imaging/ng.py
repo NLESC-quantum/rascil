@@ -139,9 +139,9 @@ try:
 
         In the imaging and pipeline workflows, this may be invoked using context='ng'.
 
+        :param model:
         :param dopsf: Make the PSF instead of the dirty image
         :param bvis: BlockVisibility to be inverted
-        :param im: image template (not changed)
         :param normalize: Normalize by the sum of weights (True)
         :return: (resulting image, sum of the weights for each frequency and polarization)
 
@@ -310,7 +310,7 @@ except ImportError:
 
     warnings.warn("Cannot import nifty_gridder, ng disabled", ImportWarning)
 
-    def predict_ng(bvis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
+    def predict_ng(bvis: BlockVisibility) -> BlockVisibility:
         """Predict using convolutional degridding.
 
         Nifty-gridder version. https://gitlab.mpcdf.mpg.de/ift/nifty_gridder
@@ -318,7 +318,6 @@ except ImportError:
         In the imaging and pipeline workflows, this may be invoked using context='ng'.
 
         :param bvis: BlockVisibility to be predicted
-        :param model: model image
         :return: resulting BlockVisibility (in place works)
         """
 
@@ -326,11 +325,7 @@ except ImportError:
         return bvis
 
     def invert_ng(
-        bvis: BlockVisibility,
-        model: Image,
-        dopsf: bool = False,
-        normalize: bool = True,
-        **kwargs
+            model: Image
     ) -> (Image, numpy.ndarray):
         """Invert using nifty-gridder module
 
@@ -342,9 +337,7 @@ except ImportError:
 
         In the imaging and pipeline workflows, this may be invoked using context='ng'.
 
-        :param bvis: BlockVisibility to be inverted
-        :param im: image template (not changed)
-        :param normalize: Normalize by the sum of weights (True)
+        :param model:
         :return: (resulting image, sum of the weights for each frequency and polarization)
 
         """

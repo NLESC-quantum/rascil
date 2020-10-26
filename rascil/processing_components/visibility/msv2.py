@@ -40,8 +40,7 @@ try:
             source_name=None,
             frame="ITRF",
             verbose=False,
-            memmap=None,
-            if_delete=False,
+                if_delete=False,
         ):
             """
             Initialize a new Measurement set object using a filename and a reference time
@@ -52,7 +51,6 @@ try:
             :param ref_time: Observational date & time
             :param frame: Antenna's frame (ITRF or WGS84)
             :param verbose: verbose
-            :param memmap: Preserved
             :param if_delete: delete original filename
 
             """
@@ -109,7 +107,7 @@ try:
             # No use if don't need to consider antenna name
             mapper = []
             ants = []
-            if (self.frame).upper() == "WGS84":
+            if self.frame.upper() == "WGS84":
                 topo2eci = get_eci_transform(latitude)
                 for i in range(len(stands)):
                     eci = numpy.dot(topo2eci, xyz[i, :])
@@ -664,9 +662,7 @@ try:
 
             # Source
             if self.site_config.location is not None:
-                longitude = self.site_config.location.geodetic[0].to("rad").value
                 latitude = self.site_config.location.geodetic[1].to("rad").value
-                altitude = self.site_config.location.height.to("meter").value
 
             nameList = []
             posList = []
@@ -674,7 +670,6 @@ try:
             for dataSet in self.data:
                 if dataSet.pol == self.stokes[0]:
                     utc0 = Time(dataSet.obstime, format="mjd", scale="utc")
-                    utc = utc0.jd
 
                     currSourceName = dataSet.source
 
@@ -1109,9 +1104,9 @@ try:
                     + numpy.arange(self.nchan) * self.channelWidth,
                 )
                 tb.putcell("REF_FREQUENCY", i, self.refVal)
-                tb.putcell("CHAN_WIDTH", i, [freq.chWidth for j in range(self.nchan)])
-                tb.putcell("EFFECTIVE_BW", i, [freq.chWidth for j in range(self.nchan)])
-                tb.putcell("RESOLUTION", i, [freq.chWidth for j in range(self.nchan)])
+                tb.putcell("CHAN_WIDTH", i, [freq.chWidth for _ in range(self.nchan)])
+                tb.putcell("EFFECTIVE_BW", i, [freq.chWidth for _ in range(self.nchan)])
+                tb.putcell("RESOLUTION", i, [freq.chWidth for _ in range(self.nchan)])
                 tb.putcell("FLAG_ROW", i, False)
                 tb.putcell("FREQ_GROUP", i, i + 1)
                 tb.putcell("FREQ_GROUP_NAME", i, "group%i" % (i + 1))
@@ -1134,9 +1129,7 @@ try:
             nBand = len(self.freq)
 
             if self.site_config.location is not None:
-                longitude = self.site_config.location.geodetic[0].to("deg").value
                 latitude = self.site_config.location.geodetic[1].to("deg").value
-                altitude = self.site_config.location.height.to("meter").value
 
             mapper = self.array[0]["mapper"]
 
@@ -1372,7 +1365,6 @@ try:
                     from astropy.time import Time
 
                     utc = Time(dataSet.obstime, format="mjd", scale="utc")
-                    utc0 = utc.mjd
 
                     if dataSet.source is None:
                         ### Zenith pointings
@@ -1397,8 +1389,6 @@ try:
                         )
                     else:
                         ### Real-live sources (ephem.Body instances)
-                        ra = dataSet.phasecentre.ra.value
-                        dec = dataSet.phasecentre.dec.value
                         name = dataSet.source
 
                     ## Update the source ID
@@ -1445,16 +1435,16 @@ try:
 
                     ### Add in the new date/time and integration time
                     # timeList = [utc - astro.MJD_OFFSET for bl in dataSet.baselines]
-                    inttimeList = [dataSet.inttime for bl in dataSet.baselines]
+                    inttimeList = [dataSet.inttime for _ in dataSet.baselines]
                     # timeList = [(utc0/86400.0 - 2400000.5) * 86400 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
                     # timeList = [utc + dataSet.inttime / 2.0 for bl in dataSet.baselines]
                     timeList = [
                         dataSet.obstime + dataSet.inttime / 2.0
-                        for bl in dataSet.baselines
+                        for _ in dataSet.baselines
                     ]
 
                     ### Add in the new new source ID and name
-                    sourceList = [sourceID for bl in dataSet.baselines]
+                    sourceList = [sourceID for _ in dataSet.baselines]
 
                     ## Zero out the visibility data
                     try:
@@ -1493,9 +1483,6 @@ try:
                     flag_matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
 
                     for j in range(nBand):
-                        fg = numpy.zeros(
-                            (nBL, self.nStokes, self.nchan), dtype=numpy.bool
-                        )
                         fc = numpy.zeros(
                             (nBL, self.nStokes, self.nchan, 1), dtype=numpy.bool
                         )

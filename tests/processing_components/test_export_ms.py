@@ -273,19 +273,19 @@ class measurementset_tests(unittest.TestCase):
         # Make sure everyone is there
         self.assertTrue(os.path.exists(testFile))
         for tbl in (
-            "ANTENNA",
-            "DATA_DESCRIPTION",
-            "FEED",
-            "FIELD",
-            "FLAG_CMD",
-            "HISTORY",
-            "OBSERVATION",
-            "POINTING",
-            "POLARIZATION",
-            "PROCESSOR",
-            "SOURCE",
-            "SPECTRAL_WINDOW",
-            "STATE",
+                "ANTENNA",
+                "DATA_DESCRIPTION",
+                "FEED",
+                "FIELD",
+                "FLAG_CMD",
+                "HISTORY",
+                "OBSERVATION",
+                "POINTING",
+                "POLARIZATION",
+                "PROCESSOR",
+                "SOURCE",
+                "SPECTRAL_WINDOW",
+                "STATE",
         ):
             self.assertTrue(os.path.exists(os.path.join(testFile, tbl)))
 
@@ -311,19 +311,19 @@ class measurementset_tests(unittest.TestCase):
         # Make sure everyone is there
         self.assertTrue(os.path.exists(testFile))
         for tbl in (
-            "ANTENNA",
-            "DATA_DESCRIPTION",
-            "FEED",
-            "FIELD",
-            "FLAG_CMD",
-            "HISTORY",
-            "OBSERVATION",
-            "POINTING",
-            "POLARIZATION",
-            "PROCESSOR",
-            "SOURCE",
-            "SPECTRAL_WINDOW",
-            "STATE",
+                "ANTENNA",
+                "DATA_DESCRIPTION",
+                "FEED",
+                "FIELD",
+                "FLAG_CMD",
+                "HISTORY",
+                "OBSERVATION",
+                "POINTING",
+                "POLARIZATION",
+                "PROCESSOR",
+                "SOURCE",
+                "SPECTRAL_WINDOW",
+                "STATE",
         ):
             self.assertTrue(os.path.exists(os.path.join(testFile, tbl)))
 

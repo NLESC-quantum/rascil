@@ -91,9 +91,11 @@ if __name__ == "__main__":
         for f, freq in enumerate(frequency)
     ]
 
+
     def print_max(v):
         print(numpy.max(numpy.abs(v.vis)))
         return v
+
 
     imaging_context = "ng"
     vis_slices = 1
@@ -106,7 +108,7 @@ if __name__ == "__main__":
         verbosity=2,
     )
     corrupted_vislist = corrupt_list_rsexecute_workflow(
-        predicted_vislist, phase_error=1.0, seed=180555
+        predicted_vislist, phase_error=1.0
     )
     corrupted_vislist = [rsexecute.execute(print_max)(v) for v in corrupted_vislist]
     export_list = [

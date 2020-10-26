@@ -119,6 +119,7 @@ def create_configuration_from_SKAfile(
 ) -> Configuration:
     """Define configuration from a SKA format file
 
+    :param vp_type:
     :param antfile: Antenna file name
     :param location: Earthlocation of array
     :param mount: mount type: 'azel', 'xy', 'equatorial'
@@ -172,6 +173,8 @@ def create_configuration_from_MIDfile(
 ) -> Configuration:
     """Define configuration from a SKA MID format file
 
+    :param location:
+    :param vp_type:
     :param antfile: Antenna file name
     :param mount: mount type: 'azel', 'xy'
     :param rmax: Maximum distance from array centre (m)
@@ -291,7 +294,6 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
         VLAA_north
 
     :param name: name of Configuration MID, LOW, LOFAR, VLAA, ASKAP
-    :param rmax: Maximum distance of station from the average (m)
     :return:
 
     For LOWBD2, setting rmax gives the following number of stations

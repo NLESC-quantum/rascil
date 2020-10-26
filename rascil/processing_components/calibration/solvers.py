@@ -46,6 +46,7 @@ def solve_gaintable(
 
     If modelvis is None, a point source model is assumed.
 
+    :param normalise_gains:
     :param vis: BlockVisibility containing the observed data_models
     :param modelvis: BlockVisibility containing the visibility predicted by a model
     :param gt: Existing gaintable
@@ -68,7 +69,7 @@ def solve_gaintable(
 
     if gt is None:
         log.debug("solve_gaintable: creating new gaintable")
-        gt = create_gaintable_from_blockvisibility(vis, **kwargs)
+        gt = create_gaintable_from_blockvisibility(vis)
     else:
         log.debug("solve_gaintable: starting from existing gaintable")
 
@@ -200,6 +201,7 @@ def solve_antenna_gains_itsubs_scalar(
     D'Addario c 1980'ish (see ThompsonDaddario1982 Appendix 1). Used
     in the original VLA Dec-10 Antsol.
 
+    :param damping:
     :param gain: gains
     :param gwt: gain weight
     :param x: Equivalent point source visibility[nants, nants, ...]
@@ -348,12 +350,11 @@ def solve_antenna_gains_itsubs_nocrossdata(
         niter=niter,
         tol=tol,
         phase_only=phase_only,
-        refant=refant,
     )  # for ant1 in range(nants):
 
 
 def solve_antenna_gains_itsubs_matrix(
-    gain, gwt, x, xwt, niter=30, tol=1e-8, phase_only=True, refant=0
+    gain, gwt, x, xwt, niter=30, tol=1e-8, phase_only=True
 ):
     """Solve for the antenna gains using full matrix expressions
 
@@ -372,7 +373,6 @@ def solve_antenna_gains_itsubs_matrix(
     :param niter: Number of iterations
     :param tol: tolerance on solution change
     :param phase_only: Do solution for only the phase? (default True)
-    :param refant: Reference antenna for phase (default=0.0)
     :return: gain [nants, ...], weight [nants, ...]
     """
 
@@ -418,9 +418,7 @@ def solve_antenna_gains_itsubs_matrix(
 def gain_substitution_matrix(gain, x, xwt):
     nants, nchan, nrec, _ = gain.shape
     # newgain = numpy.ones_like(gain, dtype='complex128')
-    newgain1 = numpy.ones_like(gain, dtype="complex128")
     # gwt = numpy.zeros_like(gain, dtype='double')
-    gwt1 = numpy.zeros_like(gain, dtype="double")
 
     # We are going to work with Jones 2x2 matrix formalism so everything has to be
     # converted to that format
@@ -523,9 +521,6 @@ def solution_residual_matrix(gain, x, xwt):
 
     # residual = numpy.zeros([nchan, nrec, nrec])
     # sumwt = numpy.zeros([nchan, nrec, nrec])
-
-    n_residual = numpy.zeros([nchan, nrec, nrec])
-    n_sumwt = numpy.zeros([nchan, nrec, nrec])
 
     n_gain = numpy.einsum("i...,j...->ij...", numpy.conjugate(gain), gain)
     n_error = numpy.conjugate(x - n_gain)

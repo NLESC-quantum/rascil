@@ -54,7 +54,6 @@ from rascil.processing_components.griddata.kernels import (
     create_awterm_convolutionfunction,
 )
 
-
 # In[3]:
 
 
@@ -128,12 +127,10 @@ if persist:
 if persist:
     export_image_to_fits(cmodel, "%s/test_imaging_2d_cmodel.fits" % rdir)
 
-
 # In[4]:
 
 
 print(qa_image(model))
-
 
 # In[5]:
 
@@ -141,7 +138,6 @@ print(qa_image(model))
 plt.rcParams["figure.figsize"] = 10, 10
 show_image(cmodel)
 plt.savefig("cmodel.png")
-
 
 # In[6]:
 
@@ -158,11 +154,10 @@ if nw % 2 == 0:
     nw = nw + 1
 print(w_min, w_max, w_range, wstep, nw)
 
-
 # In[7]:
 
 
-#%timeit dirty_ng,_ = invert_ng(blockvis, model, normalize=True)
+# %timeit dirty_ng,_ = invert_ng(blockvis, model, normalize=True)
 
 
 # In[10]:
@@ -209,7 +204,6 @@ start = time.time()
 dirty_2d, _ = invert_2d(blockvis, model, dopsf=False, normalize=True)
 elapsed = time.time() - start
 print("Elapsed time = ", elapsed, "sec")
-
 
 plt.rcParams["figure.figsize"] = 10, 10
 show_image(dirty_2d, chan=1)

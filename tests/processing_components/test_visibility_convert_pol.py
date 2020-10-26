@@ -56,7 +56,6 @@ class TestVisibilityConvertPol(unittest.TestCase):
                 self.frequency,
                 channel_bandwidth=self.channel_bandwidth,
                 phasecentre=self.phasecentre,
-                weight=1.0,
                 polarisation_frame=PolarisationFrame(pol),
             )
             visi = convert_visibility_to_stokesI(vis)
@@ -71,7 +70,6 @@ class TestVisibilityConvertPol(unittest.TestCase):
                 self.frequency,
                 channel_bandwidth=self.channel_bandwidth,
                 phasecentre=self.phasecentre,
-                weight=1.0,
                 polarisation_frame=PolarisationFrame(pol),
             )
             visi = convert_visibility_to_stokes(vis)
@@ -86,7 +84,6 @@ class TestVisibilityConvertPol(unittest.TestCase):
                 self.frequency,
                 channel_bandwidth=self.channel_bandwidth,
                 phasecentre=self.phasecentre,
-                weight=1.0,
                 polarisation_frame=PolarisationFrame(pol),
             )
             visi = convert_blockvisibility_to_stokesI(vis)
@@ -101,7 +98,6 @@ class TestVisibilityConvertPol(unittest.TestCase):
                 self.frequency,
                 channel_bandwidth=self.channel_bandwidth,
                 phasecentre=self.phasecentre,
-                weight=1.0,
                 polarisation_frame=PolarisationFrame(pol),
             )
             visi = convert_blockvisibility_to_stokes(vis)

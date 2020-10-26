@@ -76,7 +76,7 @@ def fit_uvwplane_only(vis: Union[Visibility, BlockVisibility]) -> (float, float)
     :param vis: visibility to be fitted
     :return: direction cosines defining plane
     """
-
+    
     su2 = numpy.sum(vis.u * vis.u)
     sv2 = numpy.sum(vis.v * vis.v)
     suv = numpy.sum(vis.u * vis.v)
@@ -89,7 +89,7 @@ def fit_uvwplane_only(vis: Union[Visibility, BlockVisibility]) -> (float, float)
 
 
 def fit_uvwplane(
-    vis: Union[Visibility, BlockVisibility], remove=False
+        vis: Union[Visibility, BlockVisibility], remove=False
 ) -> (Image, float, float):
     """Fit and optionally remove the best fitting plane p u + q v = w
 
@@ -113,12 +113,12 @@ def fit_uvwplane(
 
 
 def predict_timeslice_single(
-    vis: Union[Visibility, BlockVisibility],
-    model: Image,
-    predict=predict_2d,
-    remove=True,
-    gcfcf=None,
-    **kwargs
+        vis: Union[Visibility, BlockVisibility],
+        model: Image,
+        predict=predict_2d,
+        remove=True,
+        gcfcf=None,
+        **kwargs
 ) -> Union[Visibility, BlockVisibility]:
     """Predict using a single time slices.
 
@@ -154,46 +154,46 @@ def predict_timeslice_single(
     :return: resulting visibility (in place works)
     """
     assert image_is_canonical(model)
-
+    
     assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
-
+    
     vis.data["vis"][...] = 0.0
-
+    
     # Fit and remove best fitting plane for this slice
     uvw = vis.uvw
     avis, p, q = fit_uvwplane(vis, remove=remove)
-
+    
     # We want to describe work image as distorted. We describe the distortion by putting
     # the olbiquity parameters in the wcs. The input model should be described as having
     # zero olbiquity parameters.
     # Note that this has to be zero relative in first element, one relative in second!!!
     if numpy.abs(p) > 1e-7 or numpy.abs(q) > 1e-7:
-
+        
         newwcs = model.wcs.deepcopy()
         newwcs.wcs.set_pv([(0, 1, -p), (0, 2, -q)])
         workimage, footprintimage = reproject_image(model, newwcs, shape=model.shape)
         workimage.data[footprintimage.data <= 0.0] = 0.0
         workimage.wcs.wcs.set_pv([(0, 1, -p), (0, 2, -q)])
-
+        
         # Now we can do the predict
         vis = predict(avis, workimage, gcfcf=gcfcf, **kwargs)
     else:
         vis = predict(avis, model, gcfcf=gcfcf, **kwargs)
-
+    
     if remove:
         avis.data["uvw"][...] = uvw
-
+    
     return vis
 
 
 def invert_timeslice_single(
-    vis: Union[Visibility, BlockVisibility],
-    im: Image,
-    dopsf,
-    normalize=True,
-    remove=True,
-    gcfcf=None,
-    **kwargs
+        vis: Union[Visibility, BlockVisibility],
+        im: Image,
+        dopsf,
+        normalize=True,
+        remove=True,
+        gcfcf=None,
+        **kwargs
 ) -> (Image, numpy.ndarray):
     """Process single time slice
 
@@ -221,6 +221,7 @@ def invert_timeslice_single(
 
         V(u,v,w) =\\int \\frac{ I(l',m')} { \\sqrt{1-l'^2-m'^2}} e^{-2 \\pi j (ul'+um')} dl' dm'
 
+    :param remove:
     :param vis: Visibility to be inverted
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
@@ -230,30 +231,30 @@ def invert_timeslice_single(
     """
     assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
     assert image_is_canonical(im)
-
+    
     uvw = vis.uvw
     vis, p, q = fit_uvwplane(vis, remove=remove)
-
+    
     workimage, sumwt = invert_2d(
         vis, im, dopsf, normalize=normalize, gcfcf=gcfcf, **kwargs
     )
     # Work image is distorted. We describe the distortion by putting the olbiquity parameters in
     # the wcs. The output image should be described as having zero olbiquity parameters.
-
+    
     if numpy.abs(p) > 1e-7 or numpy.abs(q) > 1e-7:
         # Note that this has to be zero relative in first element, one relative in second!!!!
         workimage.wcs.wcs.set_pv([(0, 1, -p), (0, 2, -q)])
-
+        
         finalimage, footprint = reproject_image(workimage, im.wcs, im.shape)
         finalimage.data[footprint.data <= 0.0] = 0.0
         finalimage.wcs.wcs.set_pv([(0, 1, 0.0), (0, 2, 0.0)])
-
+        
         if remove:
             vis.data["uvw"][...] = uvw
-
+        
         return finalimage, sumwt
     else:
         if remove:
             vis.data["uvw"][...] = uvw
-
+        
         return workimage, sumwt

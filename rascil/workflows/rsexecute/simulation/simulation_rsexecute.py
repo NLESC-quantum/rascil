@@ -97,18 +97,18 @@ log = logging.getLogger("logger")
 
 
 def simulate_list_rsexecute_workflow(
-    config="LOWBD2",
-    phasecentre=SkyCoord(
-        ra=+15.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
-    ),
-    frequency=None,
-    channel_bandwidth=None,
-    times=None,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    order="frequency",
-    format="blockvis",
-    rmax=1000.0,
-    zerow=False,
+        config="LOWBD2",
+        phasecentre=SkyCoord(
+            ra=+15.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
+        ),
+        frequency=None,
+        channel_bandwidth=None,
+        times=None,
+        polarisation_frame=PolarisationFrame("stokesI"),
+        order="frequency",
+        format="blockvis",
+        rmax=1000.0,
+        zerow=False,
 ):
     """A component to simulate an observation
 
@@ -121,6 +121,8 @@ def simulate_list_rsexecute_workflow(
 
     The output format can be either 'blockvis' (for calibration) or 'vis' (for imaging)
 
+    :param rmax:
+    :param zerow:
     :param config: Name of configuration: def LOWBDS-CORE
     :param phasecentre: Phase centre def: SkyCoord(ra=+15.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
     :param frequency: def [1e8]
@@ -228,7 +230,7 @@ def simulate_list_rsexecute_workflow(
     return vis_list
 
 
-def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, seed=None, **kwargs):
+def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, **kwargs):
     """Create a graph to apply gain errors to a vis_list
 
     :param vis_list: List of vis (or graph)
@@ -239,8 +241,8 @@ def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, seed=None, **kwargs)
 
     def corrupt_vis(bvis, gt, **kwargs):
         if gt is None:
-            gt = create_gaintable_from_blockvisibility(bvis, **kwargs)
-            gt = simulate_gaintable(gt, **kwargs)
+            gt = create_gaintable_from_blockvisibility(bvis)
+            gt = simulate_gaintable(gt)
             bvis = apply_gaintable(bvis, gt)
             return bvis
 
@@ -259,7 +261,7 @@ def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, seed=None, **kwargs)
 
 
 def calculate_residual_from_gaintables_rsexecute_workflow(
-    bvis_list, components, model_list, no_error_gtl, error_gtl, **kwargs
+        bvis_list, components, model_list, no_error_gtl, error_gtl
 ):
     """Calculate residual between two gaintables
 
@@ -268,7 +270,6 @@ def calculate_residual_from_gaintables_rsexecute_workflow(
     :param model_list:
     :param no_error_gtl:
     :param error_gtl:
-    :param kwargs:
     :return:
     """
     error_dirty_list = calculate_residual_dft_rsexecute_workflow(
@@ -291,23 +292,22 @@ def calculate_residual_from_gaintables_rsexecute_workflow(
 
 
 def predict_fft_components_rsexecute_workflow(
-    sub_bvis_list,
-    sub_components,
-    sub_model_list,
-    vp_list,
-    context="2d",
-    insert_method="Lanczos",
-    **kwargs
+        sub_bvis_list,
+        sub_components,
+        sub_model_list,
+        vp_list,
+        context="2d",
+        insert_method="Lanczos",
+        **kwargs
 ):
     """Calculate residual image corresponding to a set of voltage patternss
 
-    :param sum_vis:
+    :param insert_method:
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
     :param sub_model_list: List of models (or graph)
     :param vp_list: List of gaintables for no error (or graph)
     :param context: Imaging context e.g. '2d' or 'ng'
-    :param residual: Calculate residual visibility (True)
     :return:
     """
     fft_model_list = [
@@ -334,7 +334,7 @@ def predict_fft_components_rsexecute_workflow(
 
 
 def predict_fft_image_rsexecute_workflow(
-    sub_bvis_list, sub_model_list, vp_list, context="2d", **kwargs
+        sub_bvis_list, sub_model_list, vp_list, context="2d", **kwargs
 ):
     """Calculate residual image corresponding to a set of voltage patternss
 
@@ -359,20 +359,18 @@ def predict_fft_image_rsexecute_workflow(
 
 
 def calculate_residual_fft_rsexecute_workflow(
-    sub_bvis_list, sub_components, sub_model_list, vp_list, context="2d", **kwargs
+        sub_bvis_list, sub_components, sub_model_list, vp_list, context="2d", **kwargs
 ):
     """Calculate residual image corresponding to a set of gaintables
 
     The visibility difference for a set of components for error and no error gaintables
     are calculated and the residual images constructed
 
-    :param sum_vis:
+    :param vp_list:
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
     :param sub_model_list: List of models (or graph)
-    :param no_error_gt_list: List of gaintables for no error (or graph)
     :param context: Imaging context e.g. '2d' or 'ng'
-    :param residual: Calculate residual visibility (True)
     :return:
     """
     fft_bvis_list = predict_fft_components_rsexecute_workflow(
@@ -391,20 +389,17 @@ def calculate_residual_fft_rsexecute_workflow(
 
 
 def predict_dft_rsexecute_workflow(
-    sub_bvis_list, sub_components, gt_list, context="2d", **kwargs
+        sub_bvis_list, sub_components, gt_list, context="2d"
 ):
     """Calculate residual image corresponding to a set of gaintables
 
     The visibility difference for a set of components for error and no error gaintables
     are calculated and the residual images constructed
 
-    :param sum_vis:
+    :param gt_list:
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
-    :param sub_model_list: List of models (or graph)
-    :param no_error_gt_list: List of gaintables for no error (or graph)
     :param context: Imaging context e.g. '2d' or 'ng'
-    :param residual: Calculate residual visibility (True)
     :return:
     """
     dft_sm_list = [
@@ -425,7 +420,7 @@ def predict_dft_rsexecute_workflow(
     ]
     dft_bvis_list = [
         predict_skymodel_list_compsonly_rsexecute_workflow(
-            dft_bvis_list[ibv], dft_sm_list[ibv], context=context, docal=True
+            dft_bvis_list[ibv], dft_sm_list[ibv], docal=True
         )
         for ibv, bvis in enumerate(dft_bvis_list)
     ]
@@ -441,20 +436,18 @@ def predict_dft_rsexecute_workflow(
 
 
 def calculate_residual_dft_rsexecute_workflow(
-    sub_bvis_list, sub_components, sub_model_list, gt_list, context="2d", **kwargs
+        sub_bvis_list, sub_components, sub_model_list, gt_list, context="2d", **kwargs
 ):
     """Calculate residual image corresponding to a set of gaintables
 
     The visibility difference for a set of components for error and no error gaintables
     are calculated and the residual images constructed
 
-    :param sum_vis:
+    :param gt_list:
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
     :param sub_model_list: List of models (or graph)
-    :param no_error_gt_list: List of gaintables for no error (or graph)
     :param context: Imaging context e.g. '2d' or 'ng'
-    :param residual: Calculate residual visibility (True)
     :return:
     """
 
@@ -469,15 +462,15 @@ def calculate_residual_dft_rsexecute_workflow(
 
 
 def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(
-    sub_bvis_list,
-    sub_components,
-    sub_model_list,
-    no_error_gt_list,
-    error_gt_list,
-    context="2d",
-    residual=True,
-    selfcal=True,
-    **kwargs
+        sub_bvis_list,
+        sub_components,
+        sub_model_list,
+        no_error_gt_list,
+        error_gt_list,
+        context="2d",
+        residual=True,
+        selfcal=True,
+        **kwargs
 ):
     """Calculate residual image corresponding to a set of gaintables, after selfcal
 
@@ -524,9 +517,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(
         predict_skymodel_list_compsonly_rsexecute_workflow(
             no_error_bvis_list[ibv],
             no_error_sm_list[ibv],
-            context=context,
-            docal=True,
-            **kwargs
+            docal=True
         )
         for ibv, bvis in enumerate(no_error_bvis_list)
     ]
@@ -539,9 +530,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(
         predict_skymodel_list_compsonly_rsexecute_workflow(
             error_bvis_list[ibv],
             error_sm_list[ibv],
-            context=context,
-            docal=True,
-            **kwargs
+            docal=True
         )
         for ibv, bvis in enumerate(error_bvis_list)
     ]
@@ -595,19 +584,20 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(
 
 
 def create_atmospheric_errors_gaintable_rsexecute_workflow(
-    sub_bvis_list,
-    sub_components,
-    r0=5e3,
-    screen=None,
-    height=3e5,
-    type_atmosphere="iono",
-    show=False,
-    basename="",
-    reference_component=None,
-    **kwargs
+        sub_bvis_list,
+        sub_components,
+        r0=5e3,
+        screen=None,
+        height=3e5,
+        type_atmosphere="iono",
+        show=False,
+        basename="",
+        reference_component=None,
+        **kwargs
 ):
     """Create gaintable for atmospheric errors
 
+    :param reference_component:
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
     :param r0: r0 in m
@@ -638,7 +628,7 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(
     no_error_gt_list = [
         [
             rsexecute.execute(create_gaintable_from_blockvisibility)(bvis, **kwargs)
-            for cmp in sub_components
+            for _ in sub_components
         ]
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
@@ -658,18 +648,18 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(
 
 
 def create_pointing_errors_gaintable_rsexecute_workflow(
-    sub_bvis_list,
-    sub_components,
-    sub_vp_list,
-    pointing_error=0.0,
-    static_pointing_error=None,
-    global_pointing_error=None,
-    time_series="",
-    time_series_type="",
-    seed=None,
-    pointing_directory=None,
-    show=False,
-    basename="",
+        sub_bvis_list,
+        sub_components,
+        sub_vp_list,
+        pointing_error=0.0,
+        static_pointing_error=None,
+        global_pointing_error=None,
+        time_series="",
+        time_series_type="",
+        seed=None,
+        pointing_directory=None,
+        show=False,
+        basename="",
 ):
     """Create gaintable for pointing errors
 
@@ -727,18 +717,18 @@ def create_pointing_errors_gaintable_rsexecute_workflow(
     if show:
         tmp_error_pt_list = rsexecute.compute(error_pt_list, sync=True)
         if time_series != "":
-            plot_file = "pointing_error_%s.png" % (time_series_type)
+            plot_file = "pointing_error_%s.png" % time_series_type
         else:
             r2s = 180 * 3600.0 / numpy.pi
             plot_file = (
-                "pointing_error_dynamic_%.2f_static_(%.2f,%.2f)_global_(%.2f,%.2f).png"
-                % (
-                    r2s * pointing_error,
-                    r2s * static_pointing_error[0],
-                    r2s * static_pointing_error[1],
-                    r2s * global_pointing_error[0],
-                    r2s * global_pointing_error[1],
-                )
+                    "pointing_error_dynamic_%.2f_static_(%.2f,%.2f)_global_(%.2f,%.2f).png"
+                    % (
+                        r2s * pointing_error,
+                        r2s * static_pointing_error[0],
+                        r2s * static_pointing_error[1],
+                        r2s * global_pointing_error[0],
+                        r2s * global_pointing_error[1],
+                    )
             )
 
         plot_pointingtable(tmp_error_pt_list, plot_file=plot_file, title=basename)
@@ -764,14 +754,14 @@ def create_pointing_errors_gaintable_rsexecute_workflow(
         else:
             r2s = 180 * 3600.0 / numpy.pi
             plot_file = (
-                "gaintable_dynamic_%.2f_static_(%.2f,%.2f)_global_(%.2f,%.2f).png"
-                % (
-                    r2s * pointing_error,
-                    r2s * static_pointing_error[0],
-                    r2s * static_pointing_error[1],
-                    r2s * global_pointing_error[0],
-                    r2s * global_pointing_error[1],
-                )
+                    "gaintable_dynamic_%.2f_static_(%.2f,%.2f)_global_(%.2f,%.2f).png"
+                    % (
+                        r2s * pointing_error,
+                        r2s * static_pointing_error[0],
+                        r2s * static_pointing_error[1],
+                        r2s * global_pointing_error[0],
+                        r2s * global_pointing_error[1],
+                    )
             )
 
         plot_gaintable(
@@ -784,13 +774,13 @@ def create_pointing_errors_gaintable_rsexecute_workflow(
 
 
 def create_surface_errors_gaintable_rsexecute_workflow(
-    band,
-    sub_bvis_list,
-    sub_components,
-    vp_directory,
-    elevation_sampling=5.0,
-    show=False,
-    basename="",
+        band,
+        sub_bvis_list,
+        sub_components,
+        vp_directory,
+        elevation_sampling=5.0,
+        show=False,
+        basename="",
 ):
     """Create gaintable for surface errors
     :param band: B1, B2 or Ku
@@ -806,8 +796,8 @@ def create_surface_errors_gaintable_rsexecute_workflow(
     def get_band_vp(band, el):
         if band == "B1":
             dir = (
-                vp_directory
-                + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB1/interpolated_elevation/"
+                    vp_directory
+                    + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB1/interpolated_elevation/"
             )
             vpa = import_image_from_fits(
                 "%s/B1_%d_0565_real_interpolated.fits" % (dir, int(el)), fixpol=True
@@ -821,8 +811,8 @@ def create_surface_errors_gaintable_rsexecute_workflow(
             )
         elif band == "B2":
             dir = (
-                vp_directory
-                + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB2/interpolated_elevation/"
+                    vp_directory
+                    + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB2/interpolated_elevation/"
             )
             vpa = import_image_from_fits(
                 "%s/B2_%d_1360_real_interpolated.fits" % (dir, int(el)), fixpol=True
@@ -836,8 +826,8 @@ def create_surface_errors_gaintable_rsexecute_workflow(
             )
         elif band == "Ku":
             dir = (
-                vp_directory
-                + "/SKADCBeamPatterns/2019_08_06_SKA_Ku/interpolated_elevation/"
+                    vp_directory
+                    + "/SKADCBeamPatterns/2019_08_06_SKA_Ku/interpolated_elevation/"
             )
             vpa = import_image_from_fits(
                 "%s/Ku_%d_11700_real_interpolated.fits" % (dir, int(el)), fixpol=True
@@ -885,7 +875,7 @@ def create_surface_errors_gaintable_rsexecute_workflow(
         for bvis in sub_bvis_list
     ]
 
-    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(band) for bv in sub_bvis_list]
+    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(band) for _ in sub_bvis_list]
     vp_actual_list = [rsexecute.execute(find_vp)(band, bv) for bv in sub_bvis_list]
 
     # Create the gain tables, one per Visibility and per component
@@ -913,12 +903,13 @@ def create_surface_errors_gaintable_rsexecute_workflow(
 
 
 def create_polarisation_gaintable_rsexecute_workflow(
-    band, sub_bvis_list, sub_components, get_vp, show=True, basename="", normalise=True
+        band, sub_bvis_list, sub_components, get_vp, show=True, basename="", normalise=True
 ):
     """Create gaintable for polarisation effects
 
     Compare with nominal and actual voltage patterns
 
+    :param get_vp:
     :param band: B1, B2 or Ku
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
@@ -987,18 +978,20 @@ def create_polarisation_gaintable_rsexecute_workflow(
 
 
 def create_heterogeneous_gaintable_rsexecute_workflow(
-    band,
-    sub_bvis_list,
-    sub_components,
-    get_vp,
-    default_vp="MID",
-    show=True,
-    basename="",
+        band,
+        sub_bvis_list,
+        sub_components,
+        get_vp,
+        default_vp="MID",
+        show=True,
+        basename="",
 ):
     """Create gaintable for polarisation effects
 
     Compare with nominal and actual voltage patterns
 
+    :param get_vp:
+    :param default_vp:
     :param band: B1, B2 or Ku
     :param sub_bvis_list: List of vis (or graph)
     :param sub_components: List of components (or graph)
@@ -1058,18 +1051,19 @@ def create_heterogeneous_gaintable_rsexecute_workflow(
 
 
 def create_standard_mid_simulation_rsexecute_workflow(
-    band,
-    rmax,
-    phasecentre,
-    time_range,
-    time_chunk,
-    integration_time,
-    polarisation_frame=None,
-    zerow=False,
-    configuration="MID",
+        band,
+        rmax,
+        phasecentre,
+        time_range,
+        time_chunk,
+        integration_time,
+        polarisation_frame=None,
+        zerow=False,
+        configuration="MID",
 ):
     """Create the standard MID simulation
 
+    :param configuration:
     :param band: B1, B2, or Ku
     :param rmax: Maximum distance from array centre
     :param phasecentre: Phase centre (SkyCoord)
@@ -1139,18 +1133,16 @@ def create_standard_mid_simulation_rsexecute_workflow(
 
 
 def create_standard_low_simulation_rsexecute_workflow(
-    band,
-    rmax,
-    phasecentre,
-    time_range,
-    time_chunk,
-    integration_time,
-    polarisation_frame=None,
-    zerow=False,
+        rmax,
+        phasecentre,
+        time_range,
+        time_chunk,
+        integration_time,
+        polarisation_frame=None,
+        zerow=False,
 ):
     """Create the standard LOW simulation
 
-    :param band: B
     :param rmax: Maximum distance from array centre
     :param phasecentre: Phase centre (SkyCoord)
     :param time_range: Hour angle (in hours)

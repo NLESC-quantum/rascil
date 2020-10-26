@@ -74,12 +74,12 @@ class TestMIDSimulations(unittest.TestCase):
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def simulation(
-        self,
-        args,
-        mode="wind_pointing",
-        band="B2",
-        image_polarisation_frame=PolarisationFrame("stokesI"),
-        vis_polarisation_frame=PolarisationFrame("stokesI"),
+            self,
+            args,
+            mode="wind_pointing",
+            band="B2",
+            image_polarisation_frame=PolarisationFrame("stokesI"),
+            vis_polarisation_frame=PolarisationFrame("stokesI"),
     ):
 
         context = args.context
@@ -495,7 +495,7 @@ class TestMIDSimulations(unittest.TestCase):
             type=str,
             default="wind",
             help="Mode of simulation: wind_pointing|random_pointing|polarisation|ionosphere|"
-            "troposphere|heterogeneous",
+                 "troposphere|heterogeneous",
         )
         parser.add_argument(
             "--duration",

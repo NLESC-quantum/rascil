@@ -73,14 +73,14 @@ class TestImaging(unittest.TestCase):
         pass
 
     def actualSetUp(
-        self,
-        add_errors=False,
-        freqwin=3,
-        block=True,
-        dospectral=True,
-        dopol=False,
-        zerow=False,
-        makegcfcf=False,
+            self,
+            add_errors=False,
+            freqwin=3,
+            block=True,
+            dospectral=True,
+            dopol=False,
+            zerow=False,
+            makegcfcf=False,
     ):
 
         self.npixel = 256
@@ -241,18 +241,18 @@ class TestImaging(unittest.TestCase):
                 comp.direction, self.components
             )
             assert separation / cellsize < positionthreshold, (
-                "Component differs in position %.3f pixels" % separation / cellsize
+                    "Component differs in position %.3f pixels" % separation / cellsize
             )
 
     def _predict_base(
-        self,
-        context="2d",
-        extra="",
-        fluxthreshold=1.0,
-        facets=1,
-        vis_slices=1,
-        gcfcf=None,
-        **kwargs
+            self,
+            context="2d",
+            extra="",
+            fluxthreshold=1.0,
+            facets=1,
+            vis_slices=1,
+            gcfcf=None,
+            **kwargs
     ):
 
         centre = self.freqwin // 2
@@ -294,17 +294,17 @@ class TestImaging(unittest.TestCase):
         )
 
     def _invert_base(
-        self,
-        context,
-        extra="",
-        fluxthreshold=1.0,
-        positionthreshold=1.0,
-        check_components=True,
-        facets=1,
-        vis_slices=1,
-        gcfcf=None,
-        dopsf=False,
-        **kwargs
+            self,
+            context,
+            extra="",
+            fluxthreshold=1.0,
+            positionthreshold=1.0,
+            check_components=True,
+            facets=1,
+            vis_slices=1,
+            gcfcf=None,
+            dopsf=False,
+            **kwargs
     ):
 
         centre = self.freqwin // 2
@@ -479,7 +479,7 @@ class TestImaging(unittest.TestCase):
     def test_invert_2d_uniform(self):
         self.actualSetUp(zerow=True, makegcfcf=True)
         self.bvis_list = weight_list_serial_workflow(
-            self.bvis_list, self.model_list, gcfcf=self.gcfcf, weighting="uniform"
+            self.bvis_list, self.model_list, gcfcf=self.gcfcf
         )
         self._invert_base(
             context="2d",
@@ -492,7 +492,7 @@ class TestImaging(unittest.TestCase):
     def test_invert_2d_uniform_block(self):
         self.actualSetUp(zerow=True, makegcfcf=True, block=True)
         self.bvis_list = weight_list_serial_workflow(
-            self.bvis_list, self.model_list, gcfcf=self.gcfcf, weighting="uniform"
+            self.bvis_list, self.model_list, gcfcf=self.gcfcf
         )
         assert isinstance(self.bvis_list[0], BlockVisibility)
 
@@ -733,7 +733,6 @@ class TestImaging(unittest.TestCase):
             self.model_list,
             psf_image_list,
             residual_image_list,
-            restore_facets=4,
             psfwidth=1.0,
         )
 
@@ -741,7 +740,6 @@ class TestImaging(unittest.TestCase):
             self.model_list,
             psf_image_list,
             residual_image_list,
-            restore_facets=1,
             psfwidth=1.0,
         )
 

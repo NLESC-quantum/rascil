@@ -34,7 +34,6 @@ class TestGeometry(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
-            weight=1.0,
         )
 
     def test_azel(self):

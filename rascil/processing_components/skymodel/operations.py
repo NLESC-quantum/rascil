@@ -212,6 +212,7 @@ def calculate_skymodel_equivalent_image(sm):
 def update_skymodel_from_image(sm, im, damping=0.5):
     """Update a skymodel for an image, applying damping factor
 
+    :param damping:
     :param sm: List of skymodels
     :param im: Image
     :return: List of SkyModels
@@ -228,6 +229,7 @@ def update_skymodel_from_image(sm, im, damping=0.5):
 def update_skymodel_from_gaintables(sm, gt_list, calibration_context="T", damping=0.5):
     """Update a skymodel from a list of gaintables
 
+    :param damping:
     :param sm: List of skymodels
     :param gt_list: List of gain tables
     :param calibration_context: Type of gaintable e.g. 'T', 'G'
@@ -237,7 +239,6 @@ def update_skymodel_from_gaintables(sm, gt_list, calibration_context="T", dampin
 
     for i, th in enumerate(sm):
         assert isinstance(th.gaintable, GainTable), th.gaintable
-        delta = numpy.exp(damping * 1j * gt_list[i][calibration_context].gain)
         th.gaintable.data["gain"] *= numpy.exp(
             damping * 1j * numpy.angle(gt_list[i][calibration_context].gain)
         )
@@ -245,7 +246,7 @@ def update_skymodel_from_gaintables(sm, gt_list, calibration_context="T", dampin
     return sm
 
 
-def expand_skymodel_by_skycomponents(sm, **kwargs):
+def expand_skymodel_by_skycomponents(sm):
     """Expand a sky model so that all components and the image are in separate skymodels
 
     The mask and gaintable are taken to apply for all new skymodels.
@@ -276,10 +277,11 @@ def expand_skymodel_by_skycomponents(sm, **kwargs):
     return result
 
 
-def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwargs):
+def create_skymodel_from_skycomponents_gaintables(components, gaintables):
     """Create a list of sky model from lists of components and gaintables
 
-    :param sm: SkyModel
+    :param components:
+    :param gaintables:
     :return: List of SkyModels
     """
     assert len(components) == len(gaintables)

@@ -742,7 +742,6 @@ class TestImaging(unittest.TestCase):
             self.model_list,
             psf_image_list,
             residual_image_list,
-            restore_facets=4,
             psfwidth=3,
         )
         restored_4facets_image_list = rsexecute.compute(
@@ -753,7 +752,6 @@ class TestImaging(unittest.TestCase):
             self.model_list,
             psf_image_list,
             residual_image_list,
-            restore_facets=1,
             psfwidth=3,
         )
         restored_1facets_image_list = rsexecute.compute(

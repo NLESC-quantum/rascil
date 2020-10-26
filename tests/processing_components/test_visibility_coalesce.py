@@ -49,7 +49,6 @@ class TestCoalesce(unittest.TestCase):
             self.times,
             self.frequency,
             phasecentre=self.phasecentre,
-            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
             channel_bandwidth=self.channel_bandwidth,
             meta={"RASCIL": 0.1},
@@ -128,7 +127,6 @@ class TestCoalesce(unittest.TestCase):
             self.times,
             self.frequency,
             phasecentre=self.phasecentre,
-            weight=1.0,
             polarisation_frame=PolarisationFrame("stokesI"),
             channel_bandwidth=self.channel_bandwidth,
         )

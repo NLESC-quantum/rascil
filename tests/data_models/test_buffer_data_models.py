@@ -81,7 +81,6 @@ class TestBufferDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
-            weight=1.0,
             meta={"RASCIL": 0.0},
         )
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
@@ -139,7 +138,6 @@ class TestBufferDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
-            weight=1.0,
         )
         gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
         gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
@@ -168,9 +166,8 @@ class TestBufferDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
-            weight=1.0,
         )
-        ft = create_flagtable_from_blockvisibility(self.vis, timeslice="auto")
+        ft = create_flagtable_from_blockvisibility(self.vis)
 
         config = {
             "buffer": {"directory": self.dir},
@@ -196,7 +193,6 @@ class TestBufferDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
-            weight=1.0,
         )
         pt = create_pointingtable_from_blockvisibility(self.vis, timeslice="auto")
         pt = simulate_pointingtable(pt, pointing_error=0.1)
@@ -225,7 +221,6 @@ class TestBufferDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
-            weight=1.0,
         )
         gt = create_gaintable_from_blockvisibility(vis, timeslice="auto")
         gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
@@ -255,7 +250,6 @@ class TestBufferDataModelHelpers(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("linear"),
-            weight=1.0,
         )
         gt = create_gaintable_from_blockvisibility(vis, timeslice="auto")
         gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)

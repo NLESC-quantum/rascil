@@ -184,6 +184,7 @@ def convert_griddata_to_image(gd):
 def qa_griddata(gd, context="") -> QA:
     """Assess the quality of a griddata
 
+    :param context:
     :param gd:
     :return: QA
     """

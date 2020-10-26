@@ -98,12 +98,12 @@ log = logging.getLogger("logger")
 
 
 def create_test_image(
-    canonical=True,
-    cellsize=None,
-    frequency=None,
-    channel_bandwidth=None,
-    phasecentre=None,
-    polarisation_frame=PolarisationFrame("stokesI"),
+        canonical=True,
+        cellsize=None,
+        frequency=None,
+        channel_bandwidth=None,
+        phasecentre=None,
+        polarisation_frame=PolarisationFrame("stokesI"),
 ) -> Image:
     """Create a useful test image
 
@@ -119,19 +119,19 @@ def create_test_image(
     :return: Image
     """
     check_data_directory()
-
+    
     if frequency is None:
         frequency = [1e8]
     im = import_image_from_fits(rascil_data_path("models/M31.MOD"))
     if canonical:
-
+        
         if polarisation_frame is None:
             im.polarisation_frame = PolarisationFrame("stokesI")
         elif isinstance(polarisation_frame, PolarisationFrame):
             im.polarisation_frame = polarisation_frame
         else:
             raise ValueError("polarisation_frame is not valid")
-
+        
         im = replicate_image(
             im, frequency=frequency, polarisation_frame=im.polarisation_frame
         )
@@ -149,26 +149,26 @@ def create_test_image(
                 im.wcs.wcs.cdelt[3] = 0.001 * frequency[0]
         im.wcs.wcs.radesys = "ICRS"
         im.wcs.wcs.equinox = 2000.00
-
+    
     if phasecentre is not None:
         im.wcs.wcs.crval[0] = phasecentre.ra.deg
         im.wcs.wcs.crval[1] = phasecentre.dec.deg
         # WCS is 1 relative
         im.wcs.wcs.crpix[0] = im.data.shape[3] // 2 + 1
         im.wcs.wcs.crpix[1] = im.data.shape[2] // 2 + 1
-
+    
     return im
 
 
 def create_test_image_from_s3(
-    npixel=16384,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    cellsize=0.000015,
-    frequency=numpy.array([1e8]),
-    channel_bandwidth=numpy.array([1e6]),
-    phasecentre=None,
-    fov=20,
-    flux_limit=1e-3,
+        npixel=16384,
+        polarisation_frame=PolarisationFrame("stokesI"),
+        cellsize=0.000015,
+        frequency=numpy.array([1e8]),
+        channel_bandwidth=numpy.array([1e6]),
+        phasecentre=None,
+        fov=20,
+        flux_limit=1e-3,
 ) -> Image:
     """Create MID test image from S3
 
@@ -207,23 +207,23 @@ def create_test_image_from_s3(
     :return: Image
     """
     check_data_directory()
-
+    
     ras = []
     decs = []
     fluxes = []
-
+    
     if phasecentre is None:
         phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
         )
-
+    
     if polarisation_frame is None:
         polarisation_frame = PolarisationFrame("stokesI")
-
+    
     npol = polarisation_frame.npol
-
+    
     nchan = len(frequency)
-
+    
     shape = [nchan, npol, npixel, npixel]
     w = WCS(naxis=4)
     # The negation in the longitude is needed by definition of RA, DEC
@@ -237,14 +237,14 @@ def create_test_image_from_s3(
     w.wcs.ctype = ["RA---SIN", "DEC--SIN", "STOKES", "FREQ"]
     w.wcs.crval = [phasecentre.ra.deg, phasecentre.dec.deg, 1.0, frequency[0]]
     w.naxis = 4
-
+    
     w.wcs.radesys = "ICRS"
     w.wcs.equinox = 2000.0
-
+    
     model = create_image_from_array(
         numpy.zeros(shape), w, polarisation_frame=polarisation_frame
     )
-
+    
     if numpy.max(frequency) > 6.1e8:
         if fov > 10:
             fovstr = "18"
@@ -261,9 +261,9 @@ def create_test_image_from_s3(
         assert fov in [10, 20, 40], "Field of view invalid: use one of %s" % (
             [10, 20, 40]
         )
-        csvfilename = rascil_data_path("models/S3_151MHz_%ddeg.csv" % (fov))
+        csvfilename = rascil_data_path("models/S3_151MHz_%ddeg.csv" % fov)
         log.info("create_test_image_from_s3: Reading S3 sources from %s " % csvfilename)
-
+    
     with open(csvfilename) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=",")
         r = 0
@@ -291,13 +291,13 @@ def create_test_image_from_s3(
                     decs.append(dec)
                     fluxes.append(flux)
             r += 1
-
+    
     csvfile.close()
-
+    
     assert len(fluxes) > 0, "No sources found above flux limit %s" % flux_limit
-
+    
     log.info("create_test_image_from_s3: %d sources read" % (len(fluxes)))
-
+    
     p = w.sub(2).wcs_world2pix(numpy.array(ras), numpy.array(decs), 1)
     fluxes = numpy.array(fluxes)
     total_flux = numpy.sum(fluxes)
@@ -308,9 +308,9 @@ def create_test_image_from_s3(
     ps = ip[:, ok]
     fluxes = fluxes[ok]
     actual_flux = numpy.sum(fluxes)
-
+    
     log.info("create_test_image_from_s3: %d sources inside the image" % (ps.shape[1]))
-
+    
     log.info(
         "create_test_image_from_s3: average channel flux in S3 model = %.3f, actual average channel flux in "
         "image = %.3f" % (total_flux / float(nchan), actual_flux / float(nchan))
@@ -318,18 +318,17 @@ def create_test_image_from_s3(
     for chan in range(nchan):
         for iflux, flux in enumerate(fluxes):
             model.data[chan, 0, ps[1, iflux], ps[0, iflux]] = flux[chan]
-
+    
     return model
 
 
 def create_test_skycomponents_from_s3(
-    polarisation_frame=PolarisationFrame("stokesI"),
-    frequency=numpy.array([1e8]),
-    channel_bandwidth=numpy.array([1e6]),
-    phasecentre=None,
-    fov=20,
-    flux_limit=1e-3,
-    radius=None,
+        polarisation_frame=PolarisationFrame("stokesI"),
+        frequency=numpy.array([1e8]),
+        phasecentre=None,
+        fov=20,
+        flux_limit=1e-3,
+        radius=None,
 ):
     """Create test image from S3
 
@@ -357,29 +356,29 @@ def create_test_skycomponents_from_s3(
 
     If polarisation_frame is not stokesI then the image will a polarised axis but the values will be zero.
 
+    :param radius:
     :param polarisation_frame: Polarisation frame (default PolarisationFrame("stokesI"))
     :param frequency:
-    :param channel_bandwidth: Channel width (Hz)
     :param phasecentre: phasecentre (SkyCoord)
     :param fov: fov 10 | 20 | 40
     :param flux_limit: Minimum flux (Jy)
     :return: Image
     """
     check_data_directory()
-
+    
     ras = []
     decs = []
     fluxes = []
     names = []
-
+    
     if phasecentre is None:
         phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
         )
-
+    
     if polarisation_frame is None:
         polarisation_frame = PolarisationFrame("stokesI")
-
+    
     if numpy.max(frequency) > 6.1e8:
         if fov > 10:
             fovstr = "18"
@@ -399,14 +398,14 @@ def create_test_skycomponents_from_s3(
         assert fov in [10, 20, 40], "Field of view invalid: use one of %s" % (
             [10, 20, 40]
         )
-        csvfilename = rascil_data_path("models/S3_151MHz_%ddeg.csv" % (fov))
+        csvfilename = rascil_data_path("models/S3_151MHz_%ddeg.csv" % fov)
         log.info(
             "create_test_skycomponents_from_s3: Reading S3-SEX sources from %s "
             % csvfilename
         )
-
+    
     skycomps = list()
-
+    
     with open(csvfilename) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=",")
         r = 0
@@ -453,17 +452,17 @@ def create_test_skycomponents_from_s3(
                         fluxes.append([[f] for f in flux])
                     names.append("S3_%s" % row[0])
             r += 1
-
+    
     csvfile.close()
-
+    
     assert len(fluxes) > 0, "No sources found above flux limit %s" % flux_limit
-
+    
     directions = SkyCoord(ra=ras * u.deg, dec=decs * u.deg)
     if phasecentre is not None:
         separations = directions.separation(phasecentre).to("rad").value
     else:
         separations = numpy.zeros(len(names))
-
+    
     for isource, name in enumerate(names):
         direction = directions[isource]
         if separations[isource] < radius:
@@ -478,29 +477,29 @@ def create_test_skycomponents_from_s3(
                         polarisation_frame=polarisation_frame,
                     )
                 )
-
+    
     log.info(
         "create_test_skycomponents_from_s3: %d sources found above fluxlimit inside search radius"
         % len(skycomps)
     )
-
+    
     return skycomps
 
 
 def create_low_test_image_from_gleam(
-    npixel=512,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    cellsize=0.000015,
-    frequency=numpy.array([1e8]),
-    channel_bandwidth=numpy.array([1e6]),
-    phasecentre=None,
-    kind="cubic",
-    applybeam=False,
-    flux_limit=0.1,
-    flux_max=numpy.inf,
-    flux_min=-numpy.inf,
-    radius=None,
-    insert_method="Nearest",
+        npixel=512,
+        polarisation_frame=PolarisationFrame("stokesI"),
+        cellsize=0.000015,
+        frequency=numpy.array([1e8]),
+        channel_bandwidth=numpy.array([1e6]),
+        phasecentre=None,
+        kind="cubic",
+        applybeam=False,
+        flux_limit=0.1,
+        flux_max=numpy.inf,
+        flux_min=-numpy.inf,
+        radius=None,
+        insert_method="Nearest",
 ) -> Image:
     """Create LOW test image from the GLEAM survey
 
@@ -513,6 +512,12 @@ def create_low_test_image_from_gleam(
     GaLactic and Extragalactic All-sky Murchison Wide Field Array (GLEAM) survey. I: A low-frequency extragalactic
     catalogue. Hurley-Walker N., et al., Mon. Not. R. Astron. Soc., 464, 1146-1167 (2017), 2017MNRAS.464.1146H
 
+    :param applybeam:
+    :param flux_limit:
+    :param flux_max:
+    :param flux_min:
+    :param radius:
+    :param insert_method:
     :param npixel: Number of pixels
     :param polarisation_frame: Polarisation frame (default PolarisationFrame("stokesI"))
     :param cellsize: cellsize in radians
@@ -524,15 +529,15 @@ def create_low_test_image_from_gleam(
 
     """
     check_data_directory()
-
+    
     if phasecentre is None:
         phasecentre = SkyCoord(
             ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
         )
-
+    
     if radius is None:
         radius = npixel * cellsize / numpy.sqrt(2.0)
-
+    
     sc = create_low_test_skycomponents_from_gleam(
         flux_limit=flux_limit,
         polarisation_frame=polarisation_frame,
@@ -541,12 +546,12 @@ def create_low_test_image_from_gleam(
         kind=kind,
         radius=radius,
     )
-
+    
     sc = filter_skycomponents_by_flux(sc, flux_min=flux_min, flux_max=flux_max)
-
+    
     if polarisation_frame is None:
         polarisation_frame = PolarisationFrame("stokesI")
-
+    
     npol = polarisation_frame.npol
     nchan = len(frequency)
     shape = [nchan, npol, npixel, npixel]
@@ -564,33 +569,33 @@ def create_low_test_image_from_gleam(
     w.naxis = 4
     w.wcs.radesys = "ICRS"
     w.wcs.equinox = 2000.0
-
+    
     model = create_image_from_array(
         numpy.zeros(shape), w, polarisation_frame=polarisation_frame
     )
-
+    
     model = insert_skycomponent(model, sc, insert_method=insert_method)
     if applybeam:
         beam = create_pb(model, telescope="LOW", use_local=False)
         model.data[...] *= beam.data[...]
-
+    
     return model
 
 
 def create_low_test_skymodel_from_gleam(
-    npixel=512,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    cellsize=0.000015,
-    frequency=numpy.array([1e8]),
-    channel_bandwidth=numpy.array([1e6]),
-    phasecentre=None,
-    kind="cubic",
-    applybeam=True,
-    flux_limit=0.1,
-    flux_max=numpy.inf,
-    flux_threshold=1.0,
-    insert_method="Nearest",
-    telescope="LOW",
+        npixel=512,
+        polarisation_frame=PolarisationFrame("stokesI"),
+        cellsize=0.000015,
+        frequency=numpy.array([1e8]),
+        channel_bandwidth=numpy.array([1e6]),
+        phasecentre=None,
+        kind="cubic",
+        applybeam=True,
+        flux_limit=0.1,
+        flux_max=numpy.inf,
+        flux_threshold=1.0,
+        insert_method="Nearest",
+        telescope="LOW",
 ) -> SkyModel:
     """Create LOW test skymodel from the GLEAM survey
 
@@ -621,14 +626,14 @@ def create_low_test_skymodel_from_gleam(
 
     """
     check_data_directory()
-
+    
     if phasecentre is None:
         phasecentre = SkyCoord(
             ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
         )
-
+    
     radius = npixel * cellsize
-
+    
     sc = create_low_test_skycomponents_from_gleam(
         flux_limit=flux_limit,
         polarisation_frame=polarisation_frame,
@@ -637,11 +642,11 @@ def create_low_test_skymodel_from_gleam(
         kind=kind,
         radius=radius,
     )
-
+    
     sc = filter_skycomponents_by_flux(sc, flux_max=flux_max)
     if polarisation_frame is None:
         polarisation_frame = PolarisationFrame("stokesI")
-
+    
     npol = polarisation_frame.npol
     nchan = len(frequency)
     shape = [nchan, npol, npixel, npixel]
@@ -659,34 +664,34 @@ def create_low_test_skymodel_from_gleam(
     w.naxis = 4
     w.wcs.radesys = "ICRS"
     w.wcs.equinox = 2000.0
-
+    
     model = create_image_from_array(
         numpy.zeros(shape), w, polarisation_frame=polarisation_frame
     )
-
+    
     if applybeam:
         beam = create_pb(model, telescope=telescope, use_local=False)
         sc = apply_beam_to_skycomponent(sc, beam)
-
+    
     weaksc = filter_skycomponents_by_flux(sc, flux_max=flux_threshold)
     brightsc = filter_skycomponents_by_flux(sc, flux_min=flux_threshold)
     model = insert_skycomponent(model, weaksc, insert_method=insert_method)
-
+    
     log.info(
         "create_low_test_skymodel_from_gleam: %d bright sources above flux threshold %.3f, %d weak sources below "
         % (len(brightsc), flux_threshold, len(weaksc))
     )
-
+    
     return SkyModel(components=brightsc, image=model, mask=None, gaintable=None)
 
 
 def create_low_test_skycomponents_from_gleam(
-    flux_limit=0.1,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    frequency=numpy.array([1e8]),
-    kind="cubic",
-    phasecentre=None,
-    radius=1.0,
+        flux_limit=0.1,
+        polarisation_frame=PolarisationFrame("stokesI"),
+        frequency=numpy.array([1e8]),
+        kind="cubic",
+        phasecentre=None,
+        radius=1.0,
 ) -> List[Skycomponent]:
     """Create sky components from the GLEAM survey
 
@@ -709,40 +714,40 @@ def create_low_test_skycomponents_from_gleam(
     :return: List of Skycomponents
     """
     check_data_directory()
-
+    
     fitsfile = rascil_data_path("models/GLEAM_EGC.fits")
-
+    
     rad2deg = 180.0 / numpy.pi
     decmin = phasecentre.dec.to("deg").value - rad2deg * radius / 2.0
     decmax = phasecentre.dec.to("deg").value + rad2deg * radius / 2.0
-
+    
     hdulist = fits.open(fitsfile, lazy_load_hdus=False)
     recs = hdulist[1].data[0].array
-
+    
     fluxes = recs["peak_flux_wide"]
-
+    
     mask = fluxes > flux_limit
     filtered_recs = recs[mask]
-
+    
     decs = filtered_recs["DEJ2000"]
     mask = decs > decmin
     filtered_recs = filtered_recs[mask]
-
+    
     decs = filtered_recs["DEJ2000"]
     mask = decs < decmax
     filtered_recs = filtered_recs[mask]
-
+    
     ras = filtered_recs["RAJ2000"]
     decs = filtered_recs["DEJ2000"]
     names = filtered_recs["Name"]
-
+    
     if polarisation_frame is None:
         polarisation_frame = PolarisationFrame("stokesI")
-
+    
     npol = polarisation_frame.npol
-
+    
     nchan = len(frequency)
-
+    
     # For every source, we read all measured fluxes and interpolate to the
     # required frequencies
     gleam_freqs = numpy.array(
@@ -771,20 +776,20 @@ def create_low_test_skycomponents_from_gleam(
     )
     gleam_flux_freq = numpy.zeros([len(names), len(gleam_freqs)])
     for i, f in enumerate(gleam_freqs):
-        gleam_flux_freq[:, i] = filtered_recs["int_flux_%03d" % (f)][:]
-
+        gleam_flux_freq[:, i] = filtered_recs["int_flux_%03d" % f][:]
+    
     skycomps = []
-
+    
     directions = SkyCoord(ra=ras * u.deg, dec=decs * u.deg)
     if phasecentre is not None:
         separations = directions.separation(phasecentre).to("rad").value
     else:
         separations = numpy.zeros(len(names))
-
+    
     for isource, name in enumerate(names):
         direction = directions[isource]
         if separations[isource] < radius:
-
+            
             fint = interpolate.interp1d(
                 gleam_freqs * 1.0e6, gleam_flux_freq[isource, :], kind=kind
             )
@@ -801,21 +806,21 @@ def create_low_test_skycomponents_from_gleam(
                         polarisation_frame=polarisation_frame,
                     )
                 )
-
+    
     log.info(
         "create_low_test_skycomponents_from_gleam: %d sources above flux limit %.3f"
         % (len(skycomps), flux_limit)
     )
-
+    
     hdulist.close()
-
+    
     return skycomps
 
 
 def replicate_image(
-    im: Image,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    frequency=numpy.array([1e8]),
+        im: Image,
+        polarisation_frame=PolarisationFrame("stokesI"),
+        frequency=numpy.array([1e8]),
 ) -> Image:
     """Make a new canonical shape Image, extended along third and fourth axes by replication.
 
@@ -827,12 +832,12 @@ def replicate_image(
     :param polarisation_frame: Polarisation_frame
     :return: Image
     """
-
+    
     if len(im.data.shape) == 2:
         fim = Image()
-
+        
         newwcs = WCS(naxis=4)
-
+        
         newwcs.wcs.crpix = [
             im.wcs.wcs.crpix[0] + 1.0,
             im.wcs.wcs.crpix[1] + 1.0,
@@ -842,11 +847,11 @@ def replicate_image(
         newwcs.wcs.cdelt = [im.wcs.wcs.cdelt[0], im.wcs.wcs.cdelt[1], 1.0, 1.0]
         newwcs.wcs.crval = [im.wcs.wcs.crval[0], im.wcs.wcs.crval[1], 1.0, frequency[0]]
         newwcs.wcs.ctype = [im.wcs.wcs.ctype[0], im.wcs.wcs.ctype[1], "STOKES", "FREQ"]
-
+        
         nchan = len(frequency)
         npol = polarisation_frame.npol
         fim.polarisation_frame = polarisation_frame
-
+        
         fim.wcs = newwcs
         fshape = [nchan, npol, im.data.shape[1], im.data.shape[0]]
         fim.data = numpy.zeros(fshape)
@@ -862,22 +867,22 @@ def replicate_image(
 
 
 def create_blockvisibility_iterator(
-    config: Configuration,
-    times: numpy.array,
-    frequency: numpy.array,
-    channel_bandwidth,
-    phasecentre: SkyCoord,
-    weight: float = 1,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    integration_time=1.0,
-    number_integrations=1,
-    predict=predict_2d,
-    model=None,
-    components=None,
-    phase_error=0.0,
-    amplitude_error=0.0,
-    sleep=0.0,
-    **kwargs
+        config: Configuration,
+        times: numpy.array,
+        frequency: numpy.array,
+        channel_bandwidth,
+        phasecentre: SkyCoord,
+        weight: float = 1,
+        polarisation_frame=PolarisationFrame("stokesI"),
+        integration_time=1.0,
+        number_integrations=1,
+        predict=predict_2d,
+        model=None,
+        components=None,
+        phase_error=0.0,
+        amplitude_error=0.0,
+        sleep=0.0,
+        **kwargs
 ):
     """Create a sequence of Visibilities and optionally predicting and coalescing
 
@@ -893,45 +898,48 @@ def create_blockvisibility_iterator(
             fullvis = append_visibility(fullvis, vis)
 
 
+    :param channel_bandwidth:
+    :param polarisation_frame:
+    :param predict:
+    :param phase_error:
+    :param amplitude_error:
+    :param sleep:
     :param config: Configuration of antennas
     :param times: hour angles in radians
     :param frequency: frequencies (Hz] Shape [nchan]
     :param weight: weight of a single sample
     :param phasecentre: phasecentre of observation
-    :param npol: Number of polarizations
     :param integration_time: Integration time ('auto' or value in s)
     :param number_integrations: Number of integrations to be created at each time.
     :param model: Model image to be inserted
     :param components: Components to be inserted
-    :param sleep_time: Time to sleep between yields
     :return: Visibility
 
     """
     for time in times:
         actualtimes = (
-            time
-            + numpy.arange(0, number_integrations)
-            * integration_time
-            * numpy.pi
-            / 43200.0
+                time
+                + numpy.arange(0, number_integrations)
+                * integration_time
+                * numpy.pi
+                / 43200.0
         )
         bvis = create_blockvisibility(
             config,
             actualtimes,
             frequency=frequency,
             phasecentre=phasecentre,
-            weight=weight,
             polarisation_frame=polarisation_frame,
             integration_time=integration_time,
             channel_bandwidth=channel_bandwidth,
         )
-
+        
         if model is not None:
             bvis = predict(bvis, model, **kwargs)
-
+        
         if components is not None:
             bvis = dft_skycomponent_visibility(bvis, components)
-
+        
         # Add phase errors
         if phase_error > 0.0 or amplitude_error > 0.0:
             gt = create_gaintable_from_blockvisibility(bvis)
@@ -939,21 +947,20 @@ def create_blockvisibility_iterator(
                 gt=gt, phase_error=phase_error, amplitude_error=amplitude_error
             )
             bvis = apply_gaintable(bvis, gt)
-
+        
         import time
-
+        
         time.sleep(sleep)
-
+        
         yield bvis
 
 
 def simulate_gaintable(
-    gt: GainTable,
-    phase_error=0.1,
-    amplitude_error=0.0,
-    smooth_channels=1,
-    leakage=0.0,
-    **kwargs
+        gt: GainTable,
+        phase_error=0.1,
+        amplitude_error=0.0,
+        smooth_channels=1,
+        leakage=0.0
 ) -> GainTable:
     """Simulate a gain table
 
@@ -962,14 +969,13 @@ def simulate_gaintable(
     :param amplitude_error: std of log normal distribution
     :param leakage: std of cross hand leakage
     :param smooth_channels: Use bspline over smooth_channels
-    :param kwargs:
     :return: Gaintable
 
     """
-
+    
     def moving_average(a, n=3):
         return numpy.convolve(a, numpy.ones((n,)) / n, mode="valid")
-
+    
     log.debug(
         "simulate_gaintable: Simulating amplitude error = %.4f, phase error = %.4f"
         % (amplitude_error, phase_error)
@@ -987,7 +993,7 @@ def simulate_gaintable(
                 if smooth_channels > 1:
                     phase = moving_average(phase, smooth_channels)
                 phases[time, ant, ...] = phase[..., numpy.newaxis, numpy.newaxis]
-
+    
     if amplitude_error > 0.0:
         amps = numpy.ones(gt.data["gain"].shape, dtype="complex")
         for time in range(ntimes):
@@ -1001,7 +1007,7 @@ def simulate_gaintable(
                     amp = moving_average(amp, smooth_channels)
                     amp = amp / numpy.average(amp)
                 amps[time, ant, ...] = amp[..., numpy.newaxis, numpy.newaxis]
-
+    
     gt.data["gain"] = amps * numpy.exp(0 + 1j * phases)
     nrec = gt.data["gain"].shape[-1]
     if nrec > 1:
@@ -1017,19 +1023,19 @@ def simulate_gaintable(
         else:
             gt.data["gain"][..., 0, 1] = 0.0
             gt.data["gain"][..., 1, 0] = 0.0
-
+    
     return gt
 
 
 def ingest_unittest_visibility(
-    config,
-    frequency,
-    channel_bandwidth,
-    times,
-    vis_pol,
-    phasecentre,
-    block=False,
-    zerow=False,
+        config,
+        frequency,
+        channel_bandwidth,
+        times,
+        vis_pol,
+        phasecentre,
+        block=False,
+        zerow=False,
 ):
     if block:
         vt = create_blockvisibility(
@@ -1038,7 +1044,6 @@ def ingest_unittest_visibility(
             frequency,
             channel_bandwidth=channel_bandwidth,
             phasecentre=phasecentre,
-            weight=1.0,
             polarisation_frame=vis_pol,
             zerow=zerow,
         )
@@ -1049,7 +1054,6 @@ def ingest_unittest_visibility(
             frequency,
             channel_bandwidth=channel_bandwidth,
             phasecentre=phasecentre,
-            weight=1.0,
             polarisation_frame=vis_pol,
             zerow=zerow,
         )
@@ -1058,31 +1062,31 @@ def ingest_unittest_visibility(
 
 
 def create_unittest_components(
-    model,
-    flux,
-    applypb=False,
-    telescope="LOW",
-    npixel=None,
-    scale=1.0,
-    single=False,
-    symmetric=False,
-    angular_scale=1.0,
+        model,
+        flux,
+        applypb=False,
+        telescope="LOW",
+        npixel=None,
+        scale=1.0,
+        single=False,
+        symmetric=False,
+        angular_scale=1.0,
 ):
     # Fill the visibility with exactly computed point sources.
-
+    
     if npixel is None:
         _, _, _, npixel = model.data.shape
     spacing_pixels = int(scale * npixel) // 4
     log.info("Spacing in pixels = %s" % spacing_pixels)
-
+    
     if not symmetric:
         centers = [(0.2 * angular_scale, 1.1 * angular_scale)]
     else:
         centers = list()
-
+    
     if not single:
         centers.append([0.0, 0.0])
-
+        
         for x in numpy.linspace(-1.2 * angular_scale, 1.2 * angular_scale, 7):
             if abs(x) > 1e-15:
                 centers.append([x, x])
@@ -1102,7 +1106,7 @@ def create_unittest_components(
         )
         sc = pixel_to_skycoord(p[0], p[1], model.wcs, origin=1)
         log.info("Component at (%f, %f) [0-rel] %s" % (p[0], p[1], str(sc)))
-
+        
         # Channel images
         comp = create_skycomponent(
             direction=sc,
@@ -1111,11 +1115,11 @@ def create_unittest_components(
             polarisation_frame=model_pol,
         )
         components.append(comp)
-
+    
     if applypb:
         beam = create_pb(model, telescope=telescope, use_local=False)
         components = apply_beam_to_skycomponent(components, beam)
-
+    
     return components
 
 
@@ -1139,24 +1143,24 @@ def create_unittest_model(vis, model_pol, npixel=None, cellsize=None, nchan=1):
 
 
 def insert_unittest_errors(
-    vt, seed=180555, calibration_context="TG", amp_errors=None, phase_errors=None
+        vt, calibration_context="TG", amp_errors=None, phase_errors=None
 ):
     """Simulate gain errors and apply
 
+    :param calibration_context:
     :param vt:
-    :param seed: Random number seed, set to big integer repeat values from run to run
     :param phase_errors: e.g. {'T': 1.0, 'G': 0.1, 'B': 0.01}
     :param amp_errors: e.g. {'T': 0.0, 'G': 0.01, 'B': 0.01}
     :return:
     """
     controls = create_calibration_controls()
-
+    
     if amp_errors is None:
         amp_errors = {"T": 0.0, "G": 0.01, "B": 0.01}
-
+    
     if phase_errors is None:
         phase_errors = {"T": 1.0, "G": 0.1, "B": 0.01}
-
+    
     for c in calibration_context:
         gaintable = create_gaintable_from_blockvisibility(
             vt, timeslice=controls[c]["timeslice"]
@@ -1165,13 +1169,10 @@ def insert_unittest_errors(
             gaintable,
             phase_error=phase_errors[c],
             amplitude_error=amp_errors[c],
-            timeslice=controls[c]["timeslice"],
-            phase_only=controls[c]["phase_only"],
-            crosspol=controls[c]["shape"] == "matrix",
         )
-
+        
         vt = apply_gaintable(
-            vt, gaintable, inverse=True, timeslice=controls[c]["timeslice"]
+            vt, gaintable, inverse=True
         )
-
+    
     return vt

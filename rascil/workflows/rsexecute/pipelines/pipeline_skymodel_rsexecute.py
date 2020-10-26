@@ -47,6 +47,7 @@ def ical_skymodel_list_rsexecute_workflow(
 ):
     """Create graph for ICAL pipeline using SkyModel
 
+    :param gcfcf:
     :param vis_list: List of vis (or graph)
     :param model_imagelist:  list of models (or graph)
     :param skymodel_list: list of SkyModels
@@ -305,6 +306,9 @@ def continuum_imaging_skymodel_list_rsexecute_workflow(
 
     Same as ICAL but with no selfcal.
 
+    :param gcfcf:
+    :param vis_slices:
+    :param facets:
     :param vis_list: List of vis (or graph)
     :param model_imagelist: List of models (or graph)
     :param skymodel_list: list of SkyModels
@@ -353,6 +357,7 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(
 
     Uses the continuum imaging rsexecute pipeline after subtraction of a continuum model
 
+    :param gcfcf:
     :param vis_list: List of vis (or graph)
     :param model_imagelist: List of Spectral line model (or graph)
     :param continuum_model_imagelist: Continuum model list (or graph)

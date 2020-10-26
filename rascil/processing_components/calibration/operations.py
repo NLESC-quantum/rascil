@@ -38,7 +38,7 @@ log = logging.getLogger("logger")
 
 
 def apply_gaintable(
-    vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
+    vis: BlockVisibility, gt: GainTable, inverse=False
 ) -> BlockVisibility:
     """Apply a gain table to a block visibility
 
@@ -65,7 +65,6 @@ def apply_gaintable(
     else:
         log.debug("apply_gaintable: Apply gaintable")
 
-    is_scalar = gt.gain.shape[-2:] == (1, 1)
     if vis.npol == 1:
         log.debug("apply_gaintable: scalar gains")
 
@@ -277,7 +276,7 @@ def gaintable_summary(gt: GainTable):
 
 
 def create_gaintable_from_blockvisibility(
-    vis: BlockVisibility, timeslice=None, frequencyslice: float = None, **kwargs
+    vis: BlockVisibility, timeslice=None
 ) -> GainTable:
     """Create gain table from visibility.
 
@@ -285,7 +284,6 @@ def create_gaintable_from_blockvisibility(
 
     :param vis: BlockVisibilty
     :param timeslice: Time interval between solutions (s)
-    :param frequencyslice: Frequency solution width (Hz) (NYI)
     :return: GainTable
 
     """
@@ -301,8 +299,6 @@ def create_gaintable_from_blockvisibility(
             numpy.round((vis.time - vis.time[0]) / timeslice)
         )
         gain_interval = timeslice * numpy.ones_like(utimes)
-
-    ntimes = len(utimes)
 
     #    log.debug('create_gaintable_from_blockvisibility: times are %s' % str(utimes))
     #    log.debug('create_gaintable_from_blockvisibility: intervals are %s' % str(gain_interval))
@@ -406,6 +402,7 @@ def create_gaintable_from_rows(
 def qa_gaintable(gt: GainTable, context=None) -> QA:
     """Assess the quality of a gaintable
 
+    :param context:
     :param gt:
     :return: QA
     """
@@ -450,17 +447,18 @@ def gaintable_plot(
     channels=None,
     label_max=0,
     min_amp=1e-5,
-    cmap="rainbow",
-    **kwargs
+    cmap="rainbow"
 ):
     """Standard plot of gain table
 
+    :param title:
+    :param label_max:
+    :param min_amp:
+    :param cmap:
     :param gt: Gaintable
     :param cc: Type of gain table e.g. 'T', 'G, 'B'
-    :param value: 'amp' or 'phase' or 'residual'
     :param ants: Antennas to plot
     :param channels: Channels to plot
-    :param kwargs:
     :return:
     """
 
@@ -472,7 +470,7 @@ def gaintable_plot(
     if gt.configuration is not None:
         labels = [gt.configuration.names[ant] for ant in ants]
     else:
-        labels = ["" for ant in ants]
+        labels = ["" for _ in ants]
 
     # with time_support(format = 'iso', scale = 'utc'):
     # time_axis = Time(gt.time/86400.0, format='mjd', out_subfmt='str')

@@ -452,6 +452,7 @@ def apply_voltage_pattern_to_skycomponent(
     Requires a complex Image with the correct ordering of polarisation axes:
     e.g. RR, LL, RL, LR or XX, YY, XY, YX
 
+    :param inverse:
     :param vp: voltage pattern as complex image
     :param sc: SkyComponent or list of SkyComponents
     :return: List of skycomponents

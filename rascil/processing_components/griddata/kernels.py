@@ -36,13 +36,12 @@ from rascil.processing_components.imaging.primary_beams import convert_azelvp_to
 log = logging.getLogger("logger")
 
 
-def create_box_convolutionfunction(im, oversampling=1, support=1):
+def create_box_convolutionfunction(im):
     """Fill a box car function into a ConvolutionFunction
 
     Also returns the griddata correction function as an image
 
     :param im: Image template
-    :param oversampling: Oversampling of the convolution function in uv space
     :return: griddata correction Image, griddata kernel as ConvolutionFunction
     """
     assert isinstance(im, Image)
@@ -79,6 +78,7 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8):
 
     Also returns the griddata correction function as an image
 
+    :param support:
     :param im: Image template
     :param oversampling: Oversampling of the convolution function in uv space
     :return: griddata correction Image, griddata kernel as ConvolutionFunction
@@ -153,6 +153,11 @@ def create_awterm_convolutionfunction(
 ):
     """Fill AW projection kernel into a GridData.
 
+    :param support:
+    :param use_aaf:
+    :param maxsupport:
+    :param pa:
+    :param normalise:
     :param im: Image template
     :param make_pb: Function to make the primary beam model image (hint: use a partial)
     :param nw: Number of w planes
@@ -297,6 +302,11 @@ def create_vpterm_convolutionfunction(
     The makes the convolution function for gridding polarised data with a voltage
     pattern.
 
+    :param support:
+    :param use_aaf:
+    :param maxsupport:
+    :param pa:
+    :param normalise:
     :param im: Image template
     :param make_vp: Function to make the voltage pattern model image (hint: use a partial)
     :param oversampling: Oversampling of the convolution function in uv space

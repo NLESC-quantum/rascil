@@ -14,11 +14,10 @@ from rascil.data_models.parameters import get_parameter
 log = logging.getLogger("logger")
 
 
-def gaintable_null_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
+def gaintable_null_iter(gt: GainTable) -> numpy.ndarray:
     """One time iterator returning true for all rows
 
     :param gt:
-    :param kwargs:
     :return:
     """
     yield numpy.ones_like(gt.time, dtype=bool)
@@ -28,8 +27,6 @@ def gaintable_timeslice_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
     """GainTable iterator
 
     :param gt: GainTable
-    :param timeslice: 'auto' or time in seconds
-    :param gaintable_slices: Number of slices (second in precedence to timeslice)
     :return: Boolean array with selected rows=True
     """
     assert isinstance(gt, GainTable)

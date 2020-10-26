@@ -50,7 +50,6 @@ class TestVisibilityIterators(unittest.TestCase):
             self.frequency,
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
-            weight=1.0,
         )
         self.vis.data["vis"][:, 0] = self.vis.time
 

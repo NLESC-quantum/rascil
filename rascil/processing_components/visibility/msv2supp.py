@@ -54,7 +54,7 @@ def geo_to_ecef(lat, lon, elev):
     y = (N + elev) * numpy.cos(lat) * numpy.sin(lon)
     z = ((WGS84_b ** 2 / WGS84_a ** 2) * N + elev) * numpy.sin(lat)
 
-    return (x, y, z)
+    return x, y, z
 
 
 def get_eci_transform(lat):

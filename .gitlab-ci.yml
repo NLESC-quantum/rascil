@@ -130,28 +130,8 @@ pages:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-create ci metrics:
-  stage: .post
-  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-  when: always
-  before_script:
-    - mkdir -p build/reports
-    - mv coverage.xml ./build/reports/code-coverage.xml
-    - mv linting.xml ./build/reports/linting.xml
-    - mv unit-tests.xml ./build/reports/unit-tests.xml
-  script:
-    # Gitlab CI badges creation: START
-    # The following reads::
-    # build/reports/code-coverage.xml
-    # build/reports/unit-tests.xml
-    # build/reports/linting.xml
-    # And writes:
-    # build/reports/ci-metrics.json
-    - apt-get -y update
-    - apt-get install -y curl --no-install-recommends
-    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
-    # Gitlab CI badges creation: END
-  artifacts:
-    paths:
-      - ./build
-
+# Create Gitlab CI badges from CI metrics
+# https://developer.skatelescope.org/en/latest/tools/continuousintegration.html#automated-collection-of-ci-health-metrics-as-part-of-the-ci-pipeline
+include:
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/post_step.yml'

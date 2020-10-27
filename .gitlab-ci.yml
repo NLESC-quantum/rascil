@@ -12,6 +12,7 @@ stages:
   - test
   - build
   - publish
+  - prepost
 
 linting:
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
@@ -122,17 +123,26 @@ pages:
     - mv docs/build/html/* public
     - mv coverage public
     - mv rascil_data.tgz public
+    - ls -l public
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+prepare ci metrics:
+  stage: prepost
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  when: always
+  script:
     - mkdir -p build/reports
     - mv coverage.xml ./build/reports/code-coverage.xml
     - mv linting.xml ./build/reports/linting.xml
     - mv unit-tests.xml ./build/reports/unit-tests.xml
   artifacts:
     paths:
-      - public
-      - build
-    expire_in: 30 days
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+      - ./build
 
 # Create Gitlab CI badges from CI metrics
 # https://developer.skatelescope.org/en/latest/tools/continuousintegration.html#automated-collection-of-ci-health-metrics-as-part-of-the-ci-pipeline

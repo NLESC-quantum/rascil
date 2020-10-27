@@ -122,10 +122,14 @@ pages:
     - mv docs/build/html/* public
     - mv coverage public
     - mv rascil_data.tgz public
-    - ls -l public
+    - mkdir -p build/reports
+    - mv coverage.xml ./build/reports/code-coverage.xml
+    - mv linting.xml ./build/reports/linting.xml
+    - mv unit-tests.xml ./build/reports/unit-tests.xml
   artifacts:
     paths:
       - public
+      - build
     expire_in: 30 days
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'

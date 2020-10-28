@@ -11,14 +11,8 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 
 """
 
-__all__ = [
-    "griddata_sizeof",
-    "create_griddata_from_image",
-    "create_griddata_from_array",
-    "copy_griddata",
-    "convert_griddata_to_image",
-    "qa_griddata",
-]
+__all__ = ['griddata_sizeof', 'create_griddata_from_image', 'create_griddata_from_array', 'copy_griddata',
+           'convert_griddata_to_image', 'qa_griddata']
 
 import copy
 import logging
@@ -31,12 +25,12 @@ from rascil.data_models.memory_data_models import QA
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import create_image_from_array
 
-log = logging.getLogger("logger")
+log = logging.getLogger('logger')
 
 
 def copy_griddata(gd):
-    """Copy griddata
-
+    """ Copy griddata
+    
     :param gd:
     :return:
     """
@@ -53,30 +47,25 @@ def copy_griddata(gd):
     else:
         newgd.projection_wcs = copy.deepcopy(gd.projection_wcs)
     if griddata_sizeof(newgd) >= 1.0:
-        log.debug(
-            "copy_image: copied %s image of shape %s, size %.3f (GB)"
-            % (newgd.data.dtype, str(newgd.shape), griddata_sizeof(newgd))
-        )
+        log.debug("copy_image: copied %s image of shape %s, size %.3f (GB)" %
+                  (newgd.data.dtype, str(newgd.shape), griddata_sizeof(newgd)))
     assert type(newgd) == GridData
     return newgd
 
 
 def griddata_sizeof(gd: GridData):
-    """Return size in GB"""
+    """ Return size in GB
+    """
     return gd.size()
 
 
-def create_griddata_from_array(
-    data: numpy.array,
-    grid_wcs: WCS,
-    projection_wcs: WCS,
-    polarisation_frame: PolarisationFrame,
-) -> GridData:
-    """Create a griddata from an array and wcs's
-
+def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs: WCS,
+                               polarisation_frame: PolarisationFrame) -> GridData:
+    """ Create a griddata from an array and wcs's
+    
     The griddata has axes [chan, pol, z, y, x] where z, y, x are spatial axes in either sky or Fourier plane. The
     order in the WCS is reversed so the grid_WCS describes UU, VV, WW, STOKES, FREQ axes
-
+    
     Griddata holds the original sky plane projection in the projection_wcs.
 
     :param data: Numpy.array
@@ -84,7 +73,7 @@ def create_griddata_from_array(
     :param projection_wcs: Projection world coordinate system
     :param polarisation_frame: Polarisation Frame
     :return: GridData
-
+    
     """
     fgriddata = GridData()
     fgriddata.polarisation_frame = polarisation_frame
@@ -94,17 +83,15 @@ def create_griddata_from_array(
     fgriddata.projection_wcs = projection_wcs.deepcopy()
 
     if griddata_sizeof(fgriddata) >= 1.0:
-        log.debug(
-            "create_griddata_from_array: created %s image of shape %s, size %.3f (GB)"
-            % (fgriddata.data.dtype, str(fgriddata.shape), griddata_sizeof(fgriddata))
-        )
+        log.debug("create_griddata_from_array: created %s image of shape %s, size %.3f (GB)" %
+                  (fgriddata.data.dtype, str(fgriddata.shape), griddata_sizeof(fgriddata)))
 
     assert isinstance(fgriddata, GridData), "Type is %s" % type(fgriddata)
     return fgriddata
 
 
 def create_griddata_from_image(im, vis, nw=1, wstep=1e15):
-    """Create a GridData from an image
+    """ Create a GridData from an image
 
     :param vis:
     :param im: Image
@@ -113,8 +100,8 @@ def create_griddata_from_image(im, vis, nw=1, wstep=1e15):
     :return: GridData
     """
     assert len(im.shape) == 4
-    assert im.wcs.wcs.ctype[0] == "RA---SIN"
-    assert im.wcs.wcs.ctype[1] == "DEC--SIN"
+    assert im.wcs.wcs.ctype[0] == 'RA---SIN'
+    assert im.wcs.wcs.ctype[1] == 'DEC--SIN'
 
     d2r = numpy.pi / 180.0
     projection_wcs = copy.deepcopy(im.wcs)
@@ -141,9 +128,9 @@ def create_griddata_from_image(im, vis, nw=1, wstep=1e15):
     grid_wcs.wcs.crpix[3] = im.wcs.wcs.crpix[2]
     grid_wcs.wcs.crpix[4] = im.wcs.wcs.crpix[3]
 
-    grid_wcs.wcs.ctype[0] = "UU"
-    grid_wcs.wcs.ctype[1] = "VV"
-    grid_wcs.wcs.ctype[2] = "WW"
+    grid_wcs.wcs.ctype[0] = 'UU'
+    grid_wcs.wcs.ctype[1] = 'VV'
+    grid_wcs.wcs.ctype[2] = 'WW'
     grid_wcs.wcs.ctype[3] = im.wcs.wcs.ctype[2]
     grid_wcs.wcs.ctype[4] = im.wcs.wcs.ctype[3]
 
@@ -154,27 +141,21 @@ def create_griddata_from_image(im, vis, nw=1, wstep=1e15):
     grid_wcs.wcs.cdelt[4] = im.wcs.wcs.cdelt[3]
 
     nchan, npol, ny, nx = im.shape
-    grid_data = numpy.zeros([nchan, npol, nw, ny, nx], dtype="complex")
+    grid_data = numpy.zeros([nchan, npol, nw, ny, nx], dtype='complex')
 
     if vis is not None:
-        return create_griddata_from_array(
-            grid_data,
-            grid_wcs=grid_wcs,
-            projection_wcs=projection_wcs,
-            polarisation_frame=vis.polarisation_frame,
-        )
+        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs,
+                                          projection_wcs=projection_wcs,
+                                          polarisation_frame=vis.polarisation_frame)
     else:
-        return create_griddata_from_array(
-            grid_data,
-            grid_wcs=grid_wcs,
-            projection_wcs=projection_wcs,
-            polarisation_frame=im.polarisation_frame,
-        )
+        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs,
+                                          projection_wcs=projection_wcs,
+                                          polarisation_frame=im.polarisation_frame)
 
 
 def convert_griddata_to_image(gd):
-    """Convert griddata to an image
-
+    """ Convert griddata to an image
+    
     :param gd:
     :return:
     """
@@ -188,15 +169,13 @@ def qa_griddata(gd, context="") -> QA:
     :return: QA
     """
     assert isinstance(gd, GridData), gd
-    data = {
-        "shape": str(gd.data.shape),
-        "max": numpy.max(gd.data),
-        "min": numpy.min(gd.data),
-        "rms": numpy.std(gd.data),
-        "sum": numpy.sum(gd.data),
-        "medianabs": numpy.median(numpy.abs(gd.data)),
-        "median": numpy.median(gd.data),
-    }
+    data = {'shape': str(gd.data.shape),
+            'max': numpy.max(gd.data),
+            'min': numpy.min(gd.data),
+            'rms': numpy.std(gd.data),
+            'sum': numpy.sum(gd.data),
+            'medianabs': numpy.median(numpy.abs(gd.data)),
+            'median': numpy.median(gd.data)}
 
     qa = QA(origin="qa_image", data=data, context=context)
     return qa

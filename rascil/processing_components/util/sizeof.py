@@ -2,13 +2,12 @@
 
 """
 
-__all__ = ["get_size"]
+__all__ = ['get_size']
 
 from distributed.protocol import pickle
 
-
 def get_size(obj):
-    """Return size of object in bytes
+    """ Return size of object in bytes
 
     :param obj:
     :return:

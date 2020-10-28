@@ -3,102 +3,100 @@
 These do data conversion and persistence. Functions from processing_components are used.
 """
 
-__all__ = [
-    "convert_earthlocation_to_string",
-    "convert_earthlocation_from_string",
-    "convert_direction_to_string",
-    "convert_direction_from_string",
-    "convert_configuration_to_hdf",
-    "convert_configuration_from_hdf",
-    "convert_visibility_to_hdf",
-    "convert_hdf_to_visibility",
-    "convert_blockvisibility_to_hdf",
-    "convert_hdf_to_blockvisibility",
-    "convert_flagtable_to_hdf",
-    "convert_hdf_to_flagtable",
-    "export_visibility_to_hdf5",
-    "import_visibility_from_hdf5",
-    "export_blockvisibility_to_hdf5",
-    "import_blockvisibility_from_hdf5",
-    "convert_gaintable_to_hdf",
-    "convert_hdf_to_gaintable",
-    "export_gaintable_to_hdf5",
-    "import_gaintable_from_hdf5",
-    "convert_pointingtable_to_hdf",
-    "convert_hdf_to_pointingtable",
-    "export_pointingtable_to_hdf5",
-    "import_pointingtable_from_hdf5",
-    "convert_skycomponent_to_hdf",
-    "convert_hdf_to_skycomponent",
-    "export_skycomponent_to_hdf5",
-    "import_skycomponent_from_hdf5",
-    "convert_image_to_hdf",
-    "convert_hdf_to_image",
-    "export_image_to_hdf5",
-    "import_image_from_hdf5",
-    "export_skymodel_to_hdf5",
-    "convert_skymodel_to_hdf",
-    "import_skymodel_from_hdf5",
-    "convert_hdf_to_skymodel",
-    "convert_griddata_to_hdf",
-    "convert_hdf_to_griddata",
-    "export_griddata_to_hdf5",
-    "import_griddata_from_hdf5",
-    "convert_convolutionfunction_to_hdf",
-    "convert_hdf_to_convolutionfunction",
-    "export_convolutionfunction_to_hdf5",
-    "import_convolutionfunction_from_hdf5",
-    "memory_data_model_to_buffer",
-    "buffer_data_model_to_memory",
-    "convert_earthlocation_to_string",
-    "convert_earthlocation_from_string",
-    "convert_direction_to_string",
-    "convert_direction_from_string",
-    "convert_configuration_to_hdf",
-    "convert_configuration_from_hdf",
-    "convert_visibility_to_hdf",
-    "convert_hdf_to_visibility",
-    "convert_blockvisibility_to_hdf",
-    "convert_hdf_to_blockvisibility",
-    "convert_flagtable_to_hdf",
-    "convert_hdf_to_flagtable",
-    "export_visibility_to_hdf5",
-    "import_visibility_from_hdf5",
-    "export_blockvisibility_to_hdf5",
-    "import_blockvisibility_from_hdf5",
-    "export_flagtable_to_hdf5",
-    "import_flagtable_from_hdf5",
-    "convert_gaintable_to_hdf",
-    "convert_hdf_to_gaintable",
-    "export_gaintable_to_hdf5",
-    "import_gaintable_from_hdf5",
-    "convert_pointingtable_to_hdf",
-    "convert_hdf_to_pointingtable",
-    "export_pointingtable_to_hdf5",
-    "import_pointingtable_from_hdf5",
-    "convert_skycomponent_to_hdf",
-    "convert_hdf_to_skycomponent",
-    "export_skycomponent_to_hdf5",
-    "import_skycomponent_from_hdf5",
-    "convert_image_to_hdf",
-    "convert_hdf_to_image",
-    "export_image_to_hdf5",
-    "import_image_from_hdf5",
-    "export_skymodel_to_hdf5",
-    "convert_skymodel_to_hdf",
-    "import_skymodel_from_hdf5",
-    "convert_hdf_to_skymodel",
-    "convert_griddata_to_hdf",
-    "convert_hdf_to_griddata",
-    "export_griddata_to_hdf5",
-    "import_griddata_from_hdf5",
-    "convert_convolutionfunction_to_hdf",
-    "convert_hdf_to_convolutionfunction",
-    "export_convolutionfunction_to_hdf5",
-    "import_convolutionfunction_from_hdf5",
-    "memory_data_model_to_buffer",
-    "buffer_data_model_to_memory",
-]
+__all__ = ['convert_earthlocation_to_string',
+           'convert_earthlocation_from_string',
+           'convert_direction_to_string',
+           'convert_direction_from_string',
+           'convert_configuration_to_hdf',
+           'convert_configuration_from_hdf',
+           'convert_visibility_to_hdf',
+           'convert_hdf_to_visibility',
+           'convert_blockvisibility_to_hdf',
+           'convert_hdf_to_blockvisibility',
+           'convert_flagtable_to_hdf',
+           'convert_hdf_to_flagtable',
+           'export_visibility_to_hdf5',
+           'import_visibility_from_hdf5',
+           'export_blockvisibility_to_hdf5',
+           'import_blockvisibility_from_hdf5',
+           'convert_gaintable_to_hdf',
+           'convert_hdf_to_gaintable',
+           'export_gaintable_to_hdf5',
+           'import_gaintable_from_hdf5',
+           'convert_pointingtable_to_hdf',
+           'convert_hdf_to_pointingtable',
+           'export_pointingtable_to_hdf5',
+           'import_pointingtable_from_hdf5',
+           'convert_skycomponent_to_hdf',
+           'convert_hdf_to_skycomponent',
+           'export_skycomponent_to_hdf5',
+           'import_skycomponent_from_hdf5',
+           'convert_image_to_hdf',
+           'convert_hdf_to_image',
+           'export_image_to_hdf5',
+           'import_image_from_hdf5',
+           'export_skymodel_to_hdf5',
+           'convert_skymodel_to_hdf',
+           'import_skymodel_from_hdf5',
+           'convert_hdf_to_skymodel',
+           'convert_griddata_to_hdf',
+           'convert_hdf_to_griddata',
+           'export_griddata_to_hdf5',
+           'import_griddata_from_hdf5',
+           'convert_convolutionfunction_to_hdf',
+           'convert_hdf_to_convolutionfunction',
+           'export_convolutionfunction_to_hdf5',
+           'import_convolutionfunction_from_hdf5',
+           'memory_data_model_to_buffer',
+           'buffer_data_model_to_memory',
+           'convert_earthlocation_to_string',
+           'convert_earthlocation_from_string',
+           'convert_direction_to_string',
+           'convert_direction_from_string',
+           'convert_configuration_to_hdf',
+           'convert_configuration_from_hdf',
+           'convert_visibility_to_hdf',
+           'convert_hdf_to_visibility',
+           'convert_blockvisibility_to_hdf',
+           'convert_hdf_to_blockvisibility',
+           'convert_flagtable_to_hdf',
+           'convert_hdf_to_flagtable',
+           'export_visibility_to_hdf5',
+           'import_visibility_from_hdf5',
+           'export_blockvisibility_to_hdf5',
+           'import_blockvisibility_from_hdf5',
+           'export_flagtable_to_hdf5',
+           'import_flagtable_from_hdf5',
+           'convert_gaintable_to_hdf',
+           'convert_hdf_to_gaintable',
+           'export_gaintable_to_hdf5',
+           'import_gaintable_from_hdf5',
+           'convert_pointingtable_to_hdf',
+           'convert_hdf_to_pointingtable',
+           'export_pointingtable_to_hdf5',
+           'import_pointingtable_from_hdf5',
+           'convert_skycomponent_to_hdf',
+           'convert_hdf_to_skycomponent',
+           'export_skycomponent_to_hdf5',
+           'import_skycomponent_from_hdf5',
+           'convert_image_to_hdf',
+           'convert_hdf_to_image',
+           'export_image_to_hdf5',
+           'import_image_from_hdf5',
+           'export_skymodel_to_hdf5',
+           'convert_skymodel_to_hdf',
+           'import_skymodel_from_hdf5',
+           'convert_hdf_to_skymodel',
+           'convert_griddata_to_hdf',
+           'convert_hdf_to_griddata',
+           'export_griddata_to_hdf5',
+           'import_griddata_from_hdf5',
+           'convert_convolutionfunction_to_hdf',
+           'convert_hdf_to_convolutionfunction',
+           'export_convolutionfunction_to_hdf5',
+           'import_convolutionfunction_from_hdf5',
+           'memory_data_model_to_buffer',
+           'buffer_data_model_to_memory']
 
 import ast
 import collections
@@ -111,19 +109,8 @@ from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.units import Quantity
 from astropy.wcs import WCS
 
-from rascil.data_models.memory_data_models import (
-    Visibility,
-    BlockVisibility,
-    Configuration,
-    GainTable,
-    SkyModel,
-    Skycomponent,
-    Image,
-    GridData,
-    ConvolutionFunction,
-    PointingTable,
-    FlagTable,
-)
+from rascil.data_models.memory_data_models import Visibility, BlockVisibility, Configuration, \
+    GainTable, SkyModel, Skycomponent, Image, GridData, ConvolutionFunction, PointingTable, FlagTable
 from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 
 
@@ -143,7 +130,7 @@ def convert_earthlocation_from_string(s: str):
 
     :return:
     """
-    x, y, z = s.split(",")
+    x, y, z = s.split(',')
     el = EarthLocation(x=Quantity(x), y=Quantity(y), z=Quantity(z))
     return el
 
@@ -154,88 +141,74 @@ def convert_direction_to_string(d: SkyCoord):
     :param d: SkyCoord
     :return:
     """
-    return "%s, %s, %s" % (d.ra.deg, d.dec.deg, "icrs")
+    return "%s, %s, %s" % (d.ra.deg, d.dec.deg, 'icrs')
 
 
 def convert_direction_from_string(s: str):
     """Convert direction (SkyCoord) from string
-
+    
     :param s: String
 
     :return:
     """
-    ra, dec, frame = s.split(",")
-    d = SkyCoord(ra, dec, unit="deg", frame=frame.strip())
+    ra, dec, frame = s.split(',')
+    d = SkyCoord(ra, dec, unit='deg', frame=frame.strip())
     return d
 
 
 def convert_configuration_to_hdf(config: Configuration, f):
-    """Convert a Configuration to HDF
+    """ Convert a Configuration to HDF
 
     :param config:
     :param f:
     :return:
     """
-    cf = f.create_group("configuration")
-    cf.attrs["RASCIL_data_model"] = "Configuration"
-    cf.attrs["name"] = config.name
-    cf.attrs["location"] = convert_earthlocation_to_string(config.location)
-    cf.attrs["frame"] = config.frame
-    cf.attrs["receptor_frame"] = config.receptor_frame.type
+    cf = f.create_group('configuration')
+    cf.attrs['RASCIL_data_model'] = 'Configuration'
+    cf.attrs['name'] = config.name
+    cf.attrs['location'] = convert_earthlocation_to_string(config.location)
+    cf.attrs['frame'] = config.frame
+    cf.attrs['receptor_frame'] = config.receptor_frame.type
 
-    cf["configuration/xyz"] = config.xyz
-    cf["configuration/diameter"] = config.diameter
-    cf["configuration/names"] = [numpy.string_(name) for name in config.names]
-    cf["configuration/mount"] = [numpy.string_(mount) for mount in config.mount]
-    cf["configuration/offset"] = config.offset
-    cf["configuration/stations"] = [
-        numpy.string_(station) for station in config.stations
-    ]
-    cf["configuration/vp_type"] = [numpy.string_(vpt) for vpt in config.vp_type]
+    cf['configuration/xyz'] = config.xyz
+    cf['configuration/diameter'] = config.diameter
+    cf['configuration/names'] = [numpy.string_(name) for name in config.names]
+    cf['configuration/mount'] = [numpy.string_(mount) for mount in config.mount]
+    cf['configuration/offset'] = config.offset
+    cf['configuration/stations'] = [numpy.string_(station) for station in config.stations]
+    cf['configuration/vp_type'] = [numpy.string_(vpt) for vpt in config.vp_type]
     return f
 
 
 def convert_configuration_from_hdf(f):
-    """Extract configuration from HDF
+    """ Extract configuration from HDF
 
     :param f:
     :return: Configuration
     """
-    cf = f["configuration"]
+    cf = f['configuration']
 
-    assert cf.attrs["RASCIL_data_model"] == "Configuration", (
-        "%s is a Configuration" % cf.attrs["RASCIL_data_model"]
-    )
+    assert cf.attrs['RASCIL_data_model'] == "Configuration", "%s is a Configuration" % cf.attrs['RASCIL_data_model']
 
-    name = cf.attrs["name"]
-    location = convert_earthlocation_from_string(cf.attrs["location"])
-    receptor_frame = ReceptorFrame(cf.attrs["receptor_frame"])
-    frame = cf.attrs["frame"]
+    name = cf.attrs['name']
+    location = convert_earthlocation_from_string(cf.attrs['location'])
+    receptor_frame = ReceptorFrame(cf.attrs['receptor_frame'])
+    frame = cf.attrs['frame']
 
-    xyz = cf["configuration/xyz"]
-    diameter = cf["configuration/diameter"]
-    names = [str(n) for n in cf["configuration/names"]]
-    mount = [str(m) for m in cf["configuration/mount"]]
-    stations = [str(p) for p in cf["configuration/stations"]]
-    vp_type = [str(p) for p in cf["configuration/vp_type"]]
-    offset = cf["configuration/offset"]
-    return Configuration(
-        name=name,
-        location=location,
-        receptor_frame=receptor_frame,
-        xyz=xyz,
-        frame=frame,
-        diameter=diameter,
-        names=names,
-        mount=mount,
-        offset=offset,
-        stations=stations,
-        vp_type=vp_type,
-    )
+    xyz = cf['configuration/xyz']
+    diameter = cf['configuration/diameter']
+    names = [str(n) for n in cf['configuration/names']]
+    mount = [str(m) for m in cf['configuration/mount']]
+    stations = [str(p) for p in cf['configuration/stations']]
+    vp_type = [str(p) for p in cf['configuration/vp_type']]
+    offset = cf['configuration/offset']
+    return Configuration(name=name, location=location, receptor_frame=receptor_frame, xyz=xyz, frame=frame,
+                         diameter=diameter, names=names, mount=mount, offset=offset, stations=stations,
+                         vp_type=vp_type)
 
 
 def convert_visibility_to_hdf(vis, f):
-    """Convert visibility to HDF
+    """ Convert visibility to HDF
 
     :param vis: Visibility
     :param f: HDF root
@@ -243,46 +216,41 @@ def convert_visibility_to_hdf(vis, f):
     """
     assert isinstance(vis, Visibility)
 
-    f.attrs["RASCIL_data_model"] = "Visibility"
-    f.attrs["nvis"] = vis.nvis
-    f.attrs["npol"] = vis.npol
-    f.attrs["phasecentre_coords"] = vis.phasecentre.to_string()
-    f.attrs["phasecentre_frame"] = vis.phasecentre.frame.name
-    f.attrs["polarisation_frame"] = vis.polarisation_frame.type
-    f.attrs["source"] = vis.source
-    f.attrs["meta"] = str(vis.meta)
-    f["data"] = vis.data
+    f.attrs['RASCIL_data_model'] = 'Visibility'
+    f.attrs['nvis'] = vis.nvis
+    f.attrs['npol'] = vis.npol
+    f.attrs['phasecentre_coords'] = vis.phasecentre.to_string()
+    f.attrs['phasecentre_frame'] = vis.phasecentre.frame.name
+    f.attrs['polarisation_frame'] = vis.polarisation_frame.type
+    f.attrs['source'] = vis.source
+    f.attrs['meta'] = str(vis.meta)
+    f['data'] = vis.data
     f = convert_configuration_to_hdf(vis.configuration, f)
     return f
 
 
 def convert_hdf_to_visibility(f):
-    """Convert HDF root to visibility
+    """ Convert HDF root to visibility
 
     :param f:
     :return:
     """
-    assert f.attrs["RASCIL_data_model"] == "Visibility", "Not a Visibility"
-    s = f.attrs["phasecentre_coords"].split()
+    assert f.attrs['RASCIL_data_model'] == "Visibility", "Not a Visibility"
+    s = f.attrs['phasecentre_coords'].split()
     ss = [float(s[0]), float(s[1])] * u.deg
-    phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs["phasecentre_frame"])
-    polarisation_frame = PolarisationFrame(f.attrs["polarisation_frame"])
-    data = numpy.array(f["data"])
-    source = str(f.attrs["source"])
-    meta = ast.literal_eval(f.attrs["meta"])
-    vis = Visibility(
-        data=data,
-        polarisation_frame=polarisation_frame,
-        phasecentre=phasecentre,
-        source=source,
-        meta=meta,
-    )
+    phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['phasecentre_frame'])
+    polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
+    data = numpy.array(f['data'])
+    source = str(f.attrs['source'])
+    meta = ast.literal_eval(f.attrs['meta'])
+    vis = Visibility(data=data, polarisation_frame=polarisation_frame,
+                     phasecentre=phasecentre, source=source, meta=meta)
     vis.configuration = convert_configuration_from_hdf(f)
     return vis
 
 
 def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
-    """Convert blockvisibility to HDF
+    """ Convert blockvisibility to HDF
 
     :param vis:
     :param f: HDF root
@@ -290,52 +258,47 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     """
     assert isinstance(vis, BlockVisibility)
 
-    f.attrs["RASCIL_data_model"] = "BlockVisibility"
-    f.attrs["nvis"] = vis.nvis
-    f.attrs["npol"] = vis.npol
-    f.attrs["phasecentre_coords"] = vis.phasecentre.to_string()
-    f.attrs["phasecentre_frame"] = vis.phasecentre.frame.name
-    f.attrs["polarisation_frame"] = vis.polarisation_frame.type
-    f.attrs["frequency"] = vis.frequency
-    f.attrs["source"] = vis.source
-    f.attrs["meta"] = str(vis.meta)
-    f.attrs["channel_bandwidth"] = vis.channel_bandwidth
-    f["data"] = vis.data
+    f.attrs['RASCIL_data_model'] = 'BlockVisibility'
+    f.attrs['nvis'] = vis.nvis
+    f.attrs['npol'] = vis.npol
+    f.attrs['phasecentre_coords'] = vis.phasecentre.to_string()
+    f.attrs['phasecentre_frame'] = vis.phasecentre.frame.name
+    f.attrs['polarisation_frame'] = vis.polarisation_frame.type
+    f.attrs['frequency'] = vis.frequency
+    f.attrs['source'] = vis.source
+    f.attrs['meta'] = str(vis.meta)
+    f.attrs['channel_bandwidth'] = vis.channel_bandwidth
+    f['data'] = vis.data
     f = convert_configuration_to_hdf(vis.configuration, f)
     return f
 
 
 def convert_hdf_to_blockvisibility(f):
-    """Convert HDF root to blockvisibility
+    """ Convert HDF root to blockvisibility
 
     :param f:
     :return:
     """
-    assert f.attrs["RASCIL_data_model"] == "BlockVisibility", "Not a BlockVisibility"
-    s = f.attrs["phasecentre_coords"].split()
+    assert f.attrs['RASCIL_data_model'] == "BlockVisibility", "Not a BlockVisibility"
+    s = f.attrs['phasecentre_coords'].split()
     ss = [float(s[0]), float(s[1])] * u.deg
-    phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs["phasecentre_frame"])
-    polarisation_frame = PolarisationFrame(f.attrs["polarisation_frame"])
-    frequency = f.attrs["frequency"]
-    channel_bandwidth = f.attrs["channel_bandwidth"]
-    data = numpy.array(f["data"])
-    source = f.attrs["source"]
-    meta = ast.literal_eval(f.attrs["meta"])
-    vis = BlockVisibility(
-        data=data,
-        polarisation_frame=polarisation_frame,
-        phasecentre=phasecentre,
-        frequency=frequency,
-        channel_bandwidth=channel_bandwidth,
-        source=source,
-        meta=meta,
-    )
+    phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['phasecentre_frame'])
+    polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
+    frequency = f.attrs['frequency']
+    channel_bandwidth = f.attrs['channel_bandwidth']
+    data = numpy.array(f['data'])
+    source = f.attrs['source']
+    meta = ast.literal_eval(f.attrs['meta'])
+    vis = BlockVisibility(data=data, polarisation_frame=polarisation_frame,
+                          phasecentre=phasecentre, frequency=frequency,
+                          channel_bandwidth=channel_bandwidth, source=source,
+                          meta=meta)
     vis.configuration = convert_configuration_from_hdf(f)
     return vis
 
 
 def convert_flagtable_to_hdf(ft: FlagTable, f):
-    """Convert flagtable to HDF
+    """ Convert flagtable to HDF
 
     :param ft:
     :param f: HDF root
@@ -343,31 +306,31 @@ def convert_flagtable_to_hdf(ft: FlagTable, f):
     """
     assert isinstance(ft, FlagTable)
 
-    f.attrs["RASCIL_data_model"] = "FlagTable"
-    f.attrs["frequency"] = ft.frequency
-    f.attrs["channel_bandwidth"] = ft.channel_bandwidth
-    f["data"] = ft.data
+    f.attrs['RASCIL_data_model'] = 'FlagTable'
+    f.attrs['frequency'] = ft.frequency
+    f.attrs['channel_bandwidth'] = ft.channel_bandwidth
+    f['data'] = ft.data
     f = convert_configuration_to_hdf(ft.configuration, f)
     return f
 
 
 def convert_hdf_to_flagtable(f):
-    """Convert HDF root to flagtable
+    """ Convert HDF root to flagtable
 
     :param f:
     :return:
     """
-    assert f.attrs["RASCIL_data_model"] == "FlagTable", "Not a FlagTable"
-    frequency = f.attrs["frequency"]
-    channel_bandwidth = f.attrs["channel_bandwidth"]
-    data = numpy.array(f["data"])
+    assert f.attrs['RASCIL_data_model'] == "FlagTable", "Not a FlagTable"
+    frequency = f.attrs['frequency']
+    channel_bandwidth = f.attrs['channel_bandwidth']
+    data = numpy.array(f['data'])
     vis = FlagTable(data=data, frequency=frequency, channel_bandwidth=channel_bandwidth)
     vis.configuration = convert_configuration_from_hdf(f)
     return vis
 
 
 def export_visibility_to_hdf5(vis, filename):
-    """Export a Visibility to HDF5 format
+    """ Export a Visibility to HDF5 format
 
     :param vis:
     :param filename:
@@ -376,10 +339,10 @@ def export_visibility_to_hdf5(vis, filename):
 
     if not isinstance(vis, collections.abc.Iterable):
         vis = [vis]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(vis)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(vis)
         for i, v in enumerate(vis):
-            vf = f.create_group("Visibility%d" % i)
+            vf = f.create_group('Visibility%d' % i)
             convert_visibility_to_hdf(v, vf)
         f.flush()
 
@@ -391,11 +354,9 @@ def import_visibility_from_hdf5(filename):
     :return: If only one then a Visibility, otherwise a list of Visibilitys
     """
 
-    with h5py.File(filename, "r") as f:
-        nvislist = f.attrs["number_data_models"]
-        vislist = [
-            convert_hdf_to_visibility(f["Visibility%d" % i]) for i in range(nvislist)
-        ]
+    with h5py.File(filename, 'r') as f:
+        nvislist = f.attrs['number_data_models']
+        vislist = [convert_hdf_to_visibility(f['Visibility%d' % i]) for i in range(nvislist)]
         if nvislist == 1:
             return vislist[0]
         else:
@@ -403,7 +364,7 @@ def import_visibility_from_hdf5(filename):
 
 
 def export_blockvisibility_to_hdf5(vis, filename):
-    """Export a BlockVisibility to HDF5 format
+    """ Export a BlockVisibility to HDF5 format
 
     :param vis:
     :param filename:
@@ -412,11 +373,11 @@ def export_blockvisibility_to_hdf5(vis, filename):
 
     if not isinstance(vis, collections.abc.Iterable):
         vis = [vis]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(vis)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(vis)
         for i, v in enumerate(vis):
             assert isinstance(v, BlockVisibility)
-            vf = f.create_group("BlockVisibility%d" % i)
+            vf = f.create_group('BlockVisibility%d' % i)
             convert_blockvisibility_to_hdf(v, vf)
         f.flush()
 
@@ -428,12 +389,9 @@ def import_blockvisibility_from_hdf5(filename):
     :return: If only one then a BlockVisibility, otherwise a list of BlockVisibility's
     """
 
-    with h5py.File(filename, "r") as f:
-        nvislist = f.attrs["number_data_models"]
-        vislist = [
-            convert_hdf_to_blockvisibility(f["BlockVisibility%d" % i])
-            for i in range(nvislist)
-        ]
+    with h5py.File(filename, 'r') as f:
+        nvislist = f.attrs['number_data_models']
+        vislist = [convert_hdf_to_blockvisibility(f['BlockVisibility%d' % i]) for i in range(nvislist)]
         if nvislist == 1:
             return vislist[0]
         else:
@@ -441,7 +399,7 @@ def import_blockvisibility_from_hdf5(filename):
 
 
 def export_flagtable_to_hdf5(ft, filename):
-    """Export a FlagTable to HDF5 format
+    """ Export a FlagTable to HDF5 format
 
     :param ft:
     :param filename:
@@ -450,11 +408,11 @@ def export_flagtable_to_hdf5(ft, filename):
 
     if not isinstance(ft, collections.abc.Iterable):
         ft = [ft]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(ft)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(ft)
         for i, v in enumerate(ft):
             assert isinstance(v, FlagTable)
-            vf = f.create_group("FlagTable%d" % i)
+            vf = f.create_group('FlagTable%d' % i)
             convert_flagtable_to_hdf(v, vf)
         f.flush()
 
@@ -466,11 +424,9 @@ def import_flagtable_from_hdf5(filename):
     :return: If only one then a FlagTable, otherwise a list of FlagTable's
     """
 
-    with h5py.File(filename, "r") as f:
-        nftlist = f.attrs["number_data_models"]
-        ftlist = [
-            convert_hdf_to_flagtable(f["FlagTable%d" % i]) for i in range(nftlist)
-        ]
+    with h5py.File(filename, 'r') as f:
+        nftlist = f.attrs['number_data_models']
+        ftlist = [convert_hdf_to_flagtable(f['FlagTable%d' % i]) for i in range(nftlist)]
         if nftlist == 1:
             return ftlist[0]
         else:
@@ -478,7 +434,7 @@ def import_flagtable_from_hdf5(filename):
 
 
 def convert_gaintable_to_hdf(gt: GainTable, f):
-    """Convert GainTable to HDF
+    """ Convert GainTable to HDF
 
     :param gt:
     :param f: HDF root
@@ -486,39 +442,34 @@ def convert_gaintable_to_hdf(gt: GainTable, f):
     """
     assert isinstance(gt, GainTable)
 
-    f.attrs["RASCIL_data_model"] = "GainTable"
-    f.attrs["frequency"] = gt.frequency
-    f.attrs["receptor_frame"] = gt.receptor_frame.type
-    f.attrs["phasecentre_coords"] = gt.phasecentre.to_string()
-    f.attrs["phasecentre_frame"] = gt.phasecentre.frame.name
-    f["data"] = gt.data
+    f.attrs['RASCIL_data_model'] = 'GainTable'
+    f.attrs['frequency'] = gt.frequency
+    f.attrs['receptor_frame'] = gt.receptor_frame.type
+    f.attrs['phasecentre_coords'] = gt.phasecentre.to_string()
+    f.attrs['phasecentre_frame'] = gt.phasecentre.frame.name
+    f['data'] = gt.data
     return f
 
 
 def convert_hdf_to_gaintable(f):
-    """Convert HDF root to a GainTable
+    """ Convert HDF root to a GainTable
 
     :param f:
     :return:
     """
-    assert f.attrs["RASCIL_data_model"] == "GainTable", "Not a GainTable"
-    receptor_frame = ReceptorFrame(f.attrs["receptor_frame"])
-    frequency = numpy.array(f.attrs["frequency"])
-    data = numpy.array(f["data"])
-    s = f.attrs["phasecentre_coords"].split()
+    assert f.attrs['RASCIL_data_model'] == "GainTable", "Not a GainTable"
+    receptor_frame = ReceptorFrame(f.attrs['receptor_frame'])
+    frequency = numpy.array(f.attrs['frequency'])
+    data = numpy.array(f['data'])
+    s = f.attrs['phasecentre_coords'].split()
     ss = [float(s[0]), float(s[1])] * u.deg
-    phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs["phasecentre_frame"])
-    gt = GainTable(
-        data=data,
-        receptor_frame=receptor_frame,
-        frequency=frequency,
-        phasecentre=phasecentre,
-    )
+    phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['phasecentre_frame'])
+    gt = GainTable(data=data, receptor_frame=receptor_frame, frequency=frequency, phasecentre=phasecentre)
     return gt
 
 
 def export_gaintable_to_hdf5(gt: GainTable, filename):
-    """Export a GainTable to HDF5 format
+    """ Export a GainTable to HDF5 format
 
     :param gt:
     :param filename:
@@ -527,11 +478,11 @@ def export_gaintable_to_hdf5(gt: GainTable, filename):
 
     if not isinstance(gt, collections.abc.Iterable):
         gt = [gt]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(gt)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(gt)
         for i, g in enumerate(gt):
             assert isinstance(g, GainTable)
-            gf = f.create_group("GainTable%d" % i)
+            gf = f.create_group('GainTable%d' % i)
             convert_gaintable_to_hdf(g, gf)
         f.flush()
 
@@ -543,11 +494,9 @@ def import_gaintable_from_hdf5(filename):
     :return: single gaintable or list of gaintables
     """
 
-    with h5py.File(filename, "r") as f:
-        ngtlist = f.attrs["number_data_models"]
-        gtlist = [
-            convert_hdf_to_gaintable(f["GainTable%d" % i]) for i in range(ngtlist)
-        ]
+    with h5py.File(filename, 'r') as f:
+        ngtlist = f.attrs['number_data_models']
+        gtlist = [convert_hdf_to_gaintable(f['GainTable%d' % i]) for i in range(ngtlist)]
         if ngtlist == 1:
             return gtlist[0]
         else:
@@ -555,7 +504,7 @@ def import_gaintable_from_hdf5(filename):
 
 
 def convert_pointingtable_to_hdf(pt: PointingTable, f):
-    """Convert PointingTable to HDF
+    """ Convert PointingTable to HDF
 
     :param pt:
     :param f: HDF root
@@ -563,47 +512,39 @@ def convert_pointingtable_to_hdf(pt: PointingTable, f):
     """
     assert isinstance(pt, PointingTable)
 
-    f.attrs["RASCIL_data_model"] = "PointingTable"
-    f.attrs["frequency"] = pt.frequency
-    f.attrs["receptor_frame"] = pt.receptor_frame.type
-    f.attrs["pointingcentre_coords"] = pt.pointingcentre.to_string()
-    f.attrs["pointingcentre_frame"] = pt.pointingcentre.frame.name
-    f.attrs["pointing_frame"] = pt.pointing_frame
-    f["data"] = pt.data
+    f.attrs['RASCIL_data_model'] = 'PointingTable'
+    f.attrs['frequency'] = pt.frequency
+    f.attrs['receptor_frame'] = pt.receptor_frame.type
+    f.attrs['pointingcentre_coords'] = pt.pointingcentre.to_string()
+    f.attrs['pointingcentre_frame'] = pt.pointingcentre.frame.name
+    f.attrs['pointing_frame'] = pt.pointing_frame
+    f['data'] = pt.data
     f = convert_configuration_to_hdf(pt.configuration, f)
     return f
 
 
 def convert_hdf_to_pointingtable(f):
-    """Convert HDF root to a PointingTable
+    """ Convert HDF root to a PointingTable
 
     :param f:
     :return:
     """
-    assert f.attrs["RASCIL_data_model"] == "PointingTable", "Not a PointingTable"
-    receptor_frame = ReceptorFrame(f.attrs["receptor_frame"])
-    frequency = numpy.array(f.attrs["frequency"])
-    data = numpy.array(f["data"])
-    s = f.attrs["pointingcentre_coords"].split()
+    assert f.attrs['RASCIL_data_model'] == "PointingTable", "Not a PointingTable"
+    receptor_frame = ReceptorFrame(f.attrs['receptor_frame'])
+    frequency = numpy.array(f.attrs['frequency'])
+    data = numpy.array(f['data'])
+    s = f.attrs['pointingcentre_coords'].split()
     ss = [float(s[0]), float(s[1])] * u.deg
-    pointingcentre = SkyCoord(
-        ra=ss[0], dec=ss[1], frame=f.attrs["pointingcentre_frame"]
-    )
-    pointing_frame = f.attrs["pointing_frame"]
+    pointingcentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['pointingcentre_frame'])
+    pointing_frame = f.attrs['pointing_frame']
     configuration = convert_configuration_from_hdf(f)
-    pt = PointingTable(
-        data=data,
-        frequency=frequency,
-        receptor_frame=receptor_frame,
-        pointing_frame=pointing_frame,
-        pointingcentre=pointingcentre,
-        configuration=configuration,
-    )
+    pt = PointingTable(data=data, frequency=frequency, receptor_frame=receptor_frame, pointing_frame=pointing_frame,
+                       pointingcentre=pointingcentre, configuration=configuration)
     return pt
 
 
 def export_pointingtable_to_hdf5(pt: PointingTable, filename):
-    """Export a PointingTable to HDF5 format
+    """ Export a PointingTable to HDF5 format
 
     :param pt:
     :param filename:
@@ -612,11 +553,11 @@ def export_pointingtable_to_hdf5(pt: PointingTable, filename):
 
     if not isinstance(pt, collections.abc.Iterable):
         pt = [pt]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(pt)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(pt)
         for i, g in enumerate(pt):
             assert isinstance(g, PointingTable)
-            gf = f.create_group("PointingTable%d" % i)
+            gf = f.create_group('PointingTable%d' % i)
             convert_pointingtable_to_hdf(g, gf)
         f.flush()
 
@@ -628,12 +569,9 @@ def import_pointingtable_from_hdf5(filename):
     :return: single pointingtable or list of pointingtables
     """
 
-    with h5py.File(filename, "r") as f:
-        nptlist = f.attrs["number_data_models"]
-        ptlist = [
-            convert_hdf_to_pointingtable(f["PointingTable%d" % i])
-            for i in range(nptlist)
-        ]
+    with h5py.File(filename, 'r') as f:
+        nptlist = f.attrs['number_data_models']
+        ptlist = [convert_hdf_to_pointingtable(f['PointingTable%d' % i]) for i in range(nptlist)]
         if nptlist == 1:
             return ptlist[0]
         else:
@@ -641,52 +579,46 @@ def import_pointingtable_from_hdf5(filename):
 
 
 def convert_skycomponent_to_hdf(sc: Skycomponent, f):
-    """Convert Skycomponent to HDF
+    """ Convert Skycomponent to HDF
     :param sc: SkyComponent
     :param f: HDF root
     :return:
     """
     assert isinstance(sc, Skycomponent)
 
-    f.attrs["RASCIL_data_model"] = "Skycomponent"
-    f.attrs["direction"] = convert_direction_to_string(sc.direction)
-    f.attrs["frequency"] = sc.frequency
-    f.attrs["polarisation_frame"] = sc.polarisation_frame.type
-    f.attrs["flux"] = sc.flux
-    f.attrs["shape"] = sc.shape
-    f.attrs["params"] = str(sc.params)
-    f.attrs["name"] = numpy.string_(sc.name)
+    f.attrs['RASCIL_data_model'] = 'Skycomponent'
+    f.attrs['direction'] = convert_direction_to_string(sc.direction)
+    f.attrs['frequency'] = sc.frequency
+    f.attrs['polarisation_frame'] = sc.polarisation_frame.type
+    f.attrs['flux'] = sc.flux
+    f.attrs['shape'] = sc.shape
+    f.attrs['params'] = str(sc.params)
+    f.attrs['name'] = numpy.string_(sc.name)
     return f
 
 
 def convert_hdf_to_skycomponent(f):
-    """Convert HDF root to a SkyComponent
+    """ Convert HDF root to a SkyComponent
 
     :param f:
     :return:
     """
-    assert f.attrs["RASCIL_data_model"] == "Skycomponent", "Not a Skycomponent"
-    direction = convert_direction_from_string(f.attrs["direction"])
-    frequency = numpy.array(f.attrs["frequency"])
-    name = f.attrs["name"]
-    polarisation_frame = PolarisationFrame(f.attrs["polarisation_frame"])
-    flux = f.attrs["flux"]
-    shape = f.attrs["shape"]
-    params = ast.literal_eval(f.attrs["params"])
-    sc = Skycomponent(
-        direction=direction,
-        frequency=frequency,
-        name=name,
-        flux=flux,
-        polarisation_frame=polarisation_frame,
-        shape=shape,
-        params=params,
-    )
+    assert f.attrs['RASCIL_data_model'] == "Skycomponent", "Not a Skycomponent"
+    direction = convert_direction_from_string(f.attrs['direction'])
+    frequency = numpy.array(f.attrs['frequency'])
+    name = f.attrs['name']
+    polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
+    flux = f.attrs['flux']
+    shape = f.attrs['shape']
+    params = ast.literal_eval(f.attrs['params'])
+    sc = Skycomponent(direction=direction, frequency=frequency, name=name,
+                      flux=flux, polarisation_frame=polarisation_frame,
+                      shape=shape, params=params)
     return sc
 
 
 def export_skycomponent_to_hdf5(sc: Union[Skycomponent, list], filename):
-    """Export a Skycomponent to HDF5 format
+    """ Export a Skycomponent to HDF5 format
 
     :param sc: SkyComponent
     :param filename:
@@ -695,11 +627,11 @@ def export_skycomponent_to_hdf5(sc: Union[Skycomponent, list], filename):
 
     if not isinstance(sc, collections.abc.Iterable):
         sc = [sc]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(sc)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(sc)
         for i, s in enumerate(sc):
             assert isinstance(s, Skycomponent)
-            sf = f.create_group("Skycomponent%d" % i)
+            sf = f.create_group('Skycomponent%d' % i)
             convert_skycomponent_to_hdf(s, sf)
         f.flush()
 
@@ -711,11 +643,9 @@ def import_skycomponent_from_hdf5(filename):
     :return: single skycomponent or list of skycomponents
     """
 
-    with h5py.File(filename, "r") as f:
-        nsclist = f.attrs["number_data_models"]
-        sclist = [
-            convert_hdf_to_skycomponent(f["Skycomponent%d" % i]) for i in range(nsclist)
-        ]
+    with h5py.File(filename, 'r') as f:
+        nsclist = f.attrs['number_data_models']
+        sclist = [convert_hdf_to_skycomponent(f['Skycomponent%d' % i]) for i in range(nsclist)]
         if nsclist == 1:
             return sclist[0]
         else:
@@ -723,34 +653,31 @@ def import_skycomponent_from_hdf5(filename):
 
 
 def convert_image_to_hdf(im: Image, f):
-    """Convert Image to HDF
+    """ Convert Image to HDF
 
     :param im: Image
     :param f: HDF root
     :return:
     """
     if isinstance(im, Image):
-        f.attrs["RASCIL_data_model"] = "Image"
-        f["data"] = im.data
-        f.attrs["wcs"] = numpy.string_(im.wcs.to_header_string())
-        f.attrs["polarisation_frame"] = im.polarisation_frame.type
+        f.attrs['RASCIL_data_model'] = 'Image'
+        f['data'] = im.data
+        f.attrs['wcs'] = numpy.string_(im.wcs.to_header_string())
+        f.attrs['polarisation_frame'] = im.polarisation_frame.type
 
     return f
 
 
 def convert_hdf_to_image(f):
-    """Convert HDF root to an Image
+    """ Convert HDF root to an Image
 
     :param f:
     :return:
     """
-    if (
-        "RASCIL_data_model" in f.attrs.keys()
-        and f.attrs["RASCIL_data_model"] == "Image"
-    ):
-        data = numpy.array(f["data"])
-        polarisation_frame = PolarisationFrame(f.attrs["polarisation_frame"])
-        wcs = WCS(f.attrs["wcs"])
+    if 'RASCIL_data_model' in f.attrs.keys() and f.attrs['RASCIL_data_model'] == "Image":
+        data = numpy.array(f['data'])
+        polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
+        wcs = WCS(f.attrs['wcs'])
         im = Image(data, wcs=wcs, polarisation_frame=polarisation_frame)
         return im
     else:
@@ -758,7 +685,7 @@ def convert_hdf_to_image(f):
 
 
 def export_image_to_hdf5(im, filename):
-    """Export an Image to HDF5 format
+    """ Export an Image to HDF5 format
 
     :param im:
     :param filename:
@@ -767,11 +694,11 @@ def export_image_to_hdf5(im, filename):
 
     if not isinstance(im, collections.abc.Iterable):
         im = [im]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(im)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(im)
         for i, m in enumerate(im):
             assert isinstance(m, Image)
-            mf = f.create_group("Image%d" % i)
+            mf = f.create_group('Image%d' % i)
             convert_image_to_hdf(m, mf)
         f.flush()
         f.close()
@@ -784,9 +711,9 @@ def import_image_from_hdf5(filename):
     :return: single image or list of images
     """
 
-    with h5py.File(filename, "r") as f:
-        nimlist = f.attrs["number_data_models"]
-        imlist = [convert_hdf_to_image(f["Image%d" % i]) for i in range(nimlist)]
+    with h5py.File(filename, 'r') as f:
+        nimlist = f.attrs['number_data_models']
+        imlist = [convert_hdf_to_image(f['Image%d' % i]) for i in range(nimlist)]
         if nimlist == 1:
             return imlist[0]
         else:
@@ -794,7 +721,7 @@ def import_image_from_hdf5(filename):
 
 
 def export_skymodel_to_hdf5(sm, filename):
-    """Export a Skymodel to HDF5 format
+    """ Export a Skymodel to HDF5 format
 
     :param sm:
     :param filename:
@@ -804,11 +731,11 @@ def export_skymodel_to_hdf5(sm, filename):
     if not isinstance(sm, collections.abc.Iterable):
         sm = [sm]
 
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(sm)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(sm)
         for i, s in enumerate(sm):
             assert isinstance(s, SkyModel)
-            sf = f.create_group("SkyModel%d" % i)
+            sf = f.create_group('SkyModel%d' % i)
             convert_skymodel_to_hdf(s, sf)
         f.flush()
         f.close()
@@ -816,28 +743,28 @@ def export_skymodel_to_hdf5(sm, filename):
 
 def convert_skymodel_to_hdf(sm, f):
     """
-
+    
     :param sm:
     :param f:
     :return:
     """
-    f.attrs["RASCIL_data_model"] = "SkyModel"
-    f.attrs["fixed"] = sm.fixed
+    f.attrs['RASCIL_data_model'] = 'SkyModel'
+    f.attrs['fixed'] = sm.fixed
     if sm.components is not None:
-        f.attrs["number_skycomponents"] = len(sm.components)
+        f.attrs['number_skycomponents'] = len(sm.components)
         for i, sc in enumerate(sm.components):
-            cf = f.create_group("skycomponent%d" % i)
+            cf = f.create_group('skycomponent%d' % i)
             convert_skycomponent_to_hdf(sm.components[i], cf)
         else:
-            f.attrs["number_skycomponents"] = len(sm.components)
+            f.attrs['number_skycomponents'] = len(sm.components)
     if sm.image is not None:
-        cf = f.create_group("image")
+        cf = f.create_group('image')
         convert_image_to_hdf(sm.image, cf)
     if sm.mask is not None:
-        cf = f.create_group("mask")
+        cf = f.create_group('mask')
         convert_image_to_hdf(sm.mask, cf)
     if sm.gaintable is not None:
-        cf = f.create_group("gaintable")
+        cf = f.create_group('gaintable')
         convert_gaintable_to_hdf(sm.gaintable, cf)
     return f
 
@@ -849,9 +776,9 @@ def import_skymodel_from_hdf5(filename):
     :return: SkyModel
     """
 
-    with h5py.File(filename, "r") as f:
-        nsmlist = f.attrs["number_data_models"]
-        smlist = [convert_hdf_to_skymodel(f["SkyModel%d" % i]) for i in range(nsmlist)]
+    with h5py.File(filename, 'r') as f:
+        nsmlist = f.attrs['number_data_models']
+        smlist = [convert_hdf_to_skymodel(f['SkyModel%d' % i]) for i in range(nsmlist)]
         if nsmlist == 1:
             return smlist[0]
         else:
@@ -860,42 +787,40 @@ def import_skymodel_from_hdf5(filename):
 
 def convert_hdf_to_skymodel(f):
     """
-
+    
     :param f:
     :return:
     """
-    assert f.attrs["RASCIL_data_model"] == "SkyModel", f.attrs["RASCIL_data_model"]
+    assert f.attrs['RASCIL_data_model'] == "SkyModel", f.attrs['RASCIL_data_model']
 
-    fixed = f.attrs["fixed"]
+    fixed = f.attrs['fixed']
 
-    ncomponents = f.attrs["number_skycomponents"]
+    ncomponents = f.attrs['number_skycomponents']
     components = list()
     for i in range(ncomponents):
-        cf = f[("skycomponent%d" % i)]
+        cf = f[('skycomponent%d' % i)]
         components.append(convert_hdf_to_skycomponent(cf))
-    if "image" in f.keys():
-        cf = f["image"]
+    if 'image' in f.keys():
+        cf = f['image']
         image = convert_hdf_to_image(cf)
     else:
         image = None
-    if "mask" in f.keys():
-        cf = f["mask"]
+    if 'mask' in f.keys():
+        cf = f['mask']
         mask = convert_hdf_to_image(cf)
     else:
         mask = None
-    if "gaintable" in f.keys():
-        cf = f["gaintable"]
+    if 'gaintable' in f.keys():
+        cf = f['gaintable']
         gaintable = convert_hdf_to_gaintable(cf)
     else:
         gaintable = None
 
-    return SkyModel(
-        image=image, components=components, gaintable=gaintable, mask=mask, fixed=fixed
-    )
+    return SkyModel(image=image, components=components, gaintable=gaintable, mask=mask, fixed=fixed)
 
 
 def convert_griddata_to_hdf(gd: GridData, f):
-    """Convert Griddata to HDF
+    """ Convert Griddata to HDF
 
     :param gd: GridData
     :param f: HDF root
@@ -903,36 +828,32 @@ def convert_griddata_to_hdf(gd: GridData, f):
     """
     assert isinstance(gd, GridData)
 
-    f.attrs["RASCIL_data_model"] = "GridData"
-    f["data"] = gd.data
-    f.attrs["grid_wcs"] = numpy.string_(gd.grid_wcs.to_header_string())
-    f.attrs["projection_wcs"] = numpy.string_(gd.projection_wcs.to_header_string())
-    f.attrs["polarisation_frame"] = gd.polarisation_frame.type
+    f.attrs['RASCIL_data_model'] = 'GridData'
+    f['data'] = gd.data
+    f.attrs['grid_wcs'] = numpy.string_(gd.grid_wcs.to_header_string())
+    f.attrs['projection_wcs'] = numpy.string_(gd.projection_wcs.to_header_string())
+    f.attrs['polarisation_frame'] = gd.polarisation_frame.type
     return f
 
 
 def convert_hdf_to_griddata(f):
-    """Convert HDF root to a GridData
+    """ Convert HDF root to a GridData
 
     :param f:
     :return:
     """
-    assert f.attrs["RASCIL_data_model"] == "GridData", "Not a GridData"
-    data = numpy.array(f["data"])
-    polarisation_frame = PolarisationFrame(f.attrs["polarisation_frame"])
-    grid_wcs = WCS(f.attrs["grid_wcs"])
-    projection_wcs = WCS(f.attrs["projection_wcs"])
-    gd = GridData(
-        data=data,
-        grid_wcs=grid_wcs,
-        projection_wcs=projection_wcs,
-        polarisation_frame=polarisation_frame,
-    )
+    assert f.attrs['RASCIL_data_model'] == "GridData", "Not a GridData"
+    data = numpy.array(f['data'])
+    polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
+    grid_wcs = WCS(f.attrs['grid_wcs'])
+    projection_wcs = WCS(f.attrs['projection_wcs'])
+    gd = GridData(data=data, grid_wcs=grid_wcs, projection_wcs=projection_wcs,
+                  polarisation_frame=polarisation_frame)
     return gd
 
 
 def export_griddata_to_hdf5(gd, filename):
-    """Export a GridData to HDF5 format
+    """ Export a GridData to HDF5 format
 
     :param gd:
     :param filename:
@@ -941,11 +862,11 @@ def export_griddata_to_hdf5(gd, filename):
 
     if not isinstance(gd, collections.abc.Iterable):
         gd = [gd]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(gd)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(gd)
         for i, m in enumerate(gd):
             assert isinstance(m, GridData)
-            mf = f.create_group("GridData%d" % i)
+            mf = f.create_group('GridData%d' % i)
             convert_griddata_to_hdf(m, mf)
         f.flush()
         f.close()
@@ -958,9 +879,9 @@ def import_griddata_from_hdf5(filename):
     :return: single image or list of images
     """
 
-    with h5py.File(filename, "r") as f:
-        nimlist = f.attrs["number_data_models"]
-        gdlist = [convert_hdf_to_griddata(f["GridData%d" % i]) for i in range(nimlist)]
+    with h5py.File(filename, 'r') as f:
+        nimlist = f.attrs['number_data_models']
+        gdlist = [convert_hdf_to_griddata(f['GridData%d' % i]) for i in range(nimlist)]
         if nimlist == 1:
             return gdlist[0]
         else:
@@ -968,7 +889,7 @@ def import_griddata_from_hdf5(filename):
 
 
 def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
-    """Convert Griddata to HDF
+    """ Convert Griddata to HDF
 
     :param cf: ConvolutionFunction
     :param f: HDF root
@@ -976,38 +897,32 @@ def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
     """
     assert isinstance(cf, ConvolutionFunction)
 
-    f.attrs["RASCIL_data_model"] = "ConvolutionFunction"
-    f["data"] = cf.data
-    f.attrs["grid_wcs"] = numpy.string_(cf.grid_wcs.to_header_string())
-    f.attrs["projection_wcs"] = numpy.string_(cf.projection_wcs.to_header_string())
-    f.attrs["polarisation_frame"] = cf.polarisation_frame.type
+    f.attrs['RASCIL_data_model'] = 'ConvolutionFunction'
+    f['data'] = cf.data
+    f.attrs['grid_wcs'] = numpy.string_(cf.grid_wcs.to_header_string())
+    f.attrs['projection_wcs'] = numpy.string_(cf.projection_wcs.to_header_string())
+    f.attrs['polarisation_frame'] = cf.polarisation_frame.type
     return f
 
 
 def convert_hdf_to_convolutionfunction(f):
-    """Convert HDF root to a ConvolutionFunction
+    """ Convert HDF root to a ConvolutionFunction
 
     :param f:
     :return:
     """
-    assert (
-        f.attrs["RASCIL_data_model"] == "ConvolutionFunction"
-    ), "Not a ConvolutionFunction"
-    data = numpy.array(f["data"])
-    polarisation_frame = PolarisationFrame(f.attrs["polarisation_frame"])
-    grid_wcs = WCS(f.attrs["grid_wcs"])
-    projection_wcs = WCS(f.attrs["projection_wcs"])
-    gd = ConvolutionFunction(
-        data,
-        grid_wcs=grid_wcs,
-        projection_wcs=projection_wcs,
-        polarisation_frame=polarisation_frame,
-    )
+    assert f.attrs['RASCIL_data_model'] == "ConvolutionFunction", "Not a ConvolutionFunction"
+    data = numpy.array(f['data'])
+    polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
+    grid_wcs = WCS(f.attrs['grid_wcs'])
+    projection_wcs = WCS(f.attrs['projection_wcs'])
+    gd = ConvolutionFunction(data, grid_wcs=grid_wcs, projection_wcs=projection_wcs,
+                             polarisation_frame=polarisation_frame)
     return gd
 
 
 def export_convolutionfunction_to_hdf5(cf, filename):
-    """Export a ConvolutionFunction to HDF5 format
+    """ Export a ConvolutionFunction to HDF5 format
 
     :param cf:
     :param filename:
@@ -1016,11 +931,11 @@ def export_convolutionfunction_to_hdf5(cf, filename):
 
     if not isinstance(cf, collections.abc.Iterable):
         cf = [cf]
-    with h5py.File(filename, "w") as f:
-        f.attrs["number_data_models"] = len(cf)
+    with h5py.File(filename, 'w') as f:
+        f.attrs['number_data_models'] = len(cf)
         for i, m in enumerate(cf):
             assert isinstance(m, ConvolutionFunction)
-            mf = f.create_group("ConvolutionFunction%d" % i)
+            mf = f.create_group('ConvolutionFunction%d' % i)
             convert_convolutionfunction_to_hdf(m, mf)
         f.flush()
         f.close()
@@ -1033,12 +948,9 @@ def import_convolutionfunction_from_hdf5(filename):
     :return: single image or list of images
     """
 
-    with h5py.File(filename, "r") as f:
-        nimlist = f.attrs["number_data_models"]
-        cflist = [
-            convert_hdf_to_convolutionfunction(f["ConvolutionFunction%d" % i])
-            for i in range(nimlist)
-        ]
+    with h5py.File(filename, 'r') as f:
+        nimlist = f.attrs['number_data_models']
+        cflist = [convert_hdf_to_convolutionfunction(f['ConvolutionFunction%d' % i]) for i in range(nimlist)]
         if nimlist == 1:
             return cflist[0]
         else:
@@ -1046,7 +958,7 @@ def import_convolutionfunction_from_hdf5(filename):
 
 
 def memory_data_model_to_buffer(model, jbuff, dm):
-    """Copy a memory data model to a buffer data model
+    """ Copy a memory data model to a buffer data model
 
     The file type is derived from the file extension. All are hdf only.
 
@@ -1057,7 +969,6 @@ def memory_data_model_to_buffer(model, jbuff, dm):
     name = jbuff["directory"] + dm["name"]
 
     import os
-
     _, file_extension = os.path.splitext(dm["name"])
 
     if dm["data_model"] == "BlockVisibility":
@@ -1090,11 +1001,9 @@ def buffer_data_model_to_memory(jbuff, dm):
     :return: data model
     """
     import os
-
     name = os.path.join(jbuff["directory"], dm["name"])
 
     import os
-
     _, file_extension = os.path.splitext(dm["name"])
 
     if dm["data_model"] == "BlockVisibility":

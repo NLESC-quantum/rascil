@@ -8,15 +8,12 @@ import unittest
 import numpy
 from numpy.testing import assert_allclose
 
-from rascil.processing_components.fourier_transforms.fft_coordinates import (
-    w_beam,
-    coordinates,
-    coordinates2,
-    coordinateBounds,
-)
+from rascil.processing_components.fourier_transforms.fft_coordinates import w_beam, coordinates, \
+    coordinates2, coordinateBounds
 
 
 class TestFFTCoordinates(unittest.TestCase):
+    
     @staticmethod
     def assertAlmostEqualScalar(a, result=1.0):
         result * numpy.ones_like(result)
@@ -46,6 +43,5 @@ class TestFFTCoordinates(unittest.TestCase):
         self.assertAlmostEqualScalar(w_beam(10, 0.1, 100)[5, 5], 1)
         self.assertAlmostEqualScalar(w_beam(11, 0.1, 1000)[5, 5], 1)
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

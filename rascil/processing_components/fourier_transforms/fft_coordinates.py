@@ -8,17 +8,17 @@ e.g. for convolution kernels odd image sizes are preferred.
 
 """
 
-__all__ = ["w_beam", "grdsf", "coordinates"]
+__all__ = ['w_beam', 'grdsf', 'coordinates']
 
 import logging
 
 import numpy
 
-log = logging.getLogger("logger")
+log = logging.getLogger('logger')
 
 
 def coordinateBounds(npixel):
-    r"""Returns lowest and highest coordinates of an image/grid given:
+    r""" Returns lowest and highest coordinates of an image/grid given:
 
     1. Step size is :math:`1/npixel`:
 
@@ -37,7 +37,9 @@ def coordinateBounds(npixel):
 
 
 def coordinates(npixel: int):
-    """1D array which spans [-.5,.5[ with 0 at position npixel/2"""
+    """ 1D array which spans [-.5,.5[ with 0 at position npixel/2
+    
+    """
     return (numpy.arange(npixel) - npixel // 2) / npixel
 
 
@@ -66,9 +68,8 @@ def coordinates2Offset(npixel: int, cx: int, cy: int, quadrant=False):
         mg = numpy.mgrid[0:npixel, 0:npixel]
     else:
         # If npixel is even, we should create a grid with npixel//2+1
-        mg = numpy.mgrid[0 : npixel // 2 + 1, 0 : npixel // 2 + 1]
+        mg = numpy.mgrid[0:npixel//2+1, 0:npixel//2+1]
     return (mg[0] - cy) / npixel, (mg[1] - cx) / npixel
-
 
 def grdsf(nu):
     """Calculate PSWF using an old SDE routine re-written in Python
@@ -81,18 +82,10 @@ def grdsf(nu):
     to the edge. The grid correction function is just 1/GRDSF(NU) where NU
     is now the distance to the edge of the image.
     """
-    p = numpy.array(
-        [
-            [8.203343e-2, -3.644705e-1, 6.278660e-1, -5.335581e-1, 2.312756e-1],
-            [4.028559e-3, -3.697768e-2, 1.021332e-1, -1.201436e-1, 6.412774e-2],
-        ]
-    )
-    q = numpy.array(
-        [
-            [1.0000000e0, 8.212018e-1, 2.078043e-1],
-            [1.0000000e0, 9.599102e-1, 2.918724e-1],
-        ]
-    )
+    p = numpy.array([[8.203343e-2, -3.644705e-1, 6.278660e-1, -5.335581e-1, 2.312756e-1],
+                     [4.028559e-3, -3.697768e-2, 1.021332e-1, -1.201436e-1, 6.412774e-2]])
+    q = numpy.array([[1.0000000e0, 8.212018e-1, 2.078043e-1],
+                     [1.0000000e0, 9.599102e-1, 2.918724e-1]])
 
     _, np = p.shape
     _, nq = q.shape
@@ -100,7 +93,7 @@ def grdsf(nu):
     nu = numpy.abs(nu)
 
     nuend = numpy.zeros_like(nu)
-    part = numpy.zeros(len(nu), dtype="int")
+    part = numpy.zeros(len(nu), dtype='int')
     part[(nu >= 0.0) & (nu < 0.75)] = 0
     part[(nu >= 0.75) & (nu <= 1.0)] = 1
     nuend[(nu >= 0.0) & (nu < 0.75)] = 0.75
@@ -117,7 +110,7 @@ def grdsf(nu):
         bot += q[part, k] * numpy.power(delnusq, k)
 
     grdsf = numpy.zeros_like(nu)
-    ok = bot > 0.0
+    ok = (bot > 0.0)
     grdsf[ok] = top[ok] / bot[ok]
     ok = numpy.abs(nu > 1.0)
     grdsf[ok] = 0.0
@@ -127,8 +120,8 @@ def grdsf(nu):
 
 
 def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
-    """W beam, the fresnel diffraction pattern arising from non-coplanar baselines
-
+    """ W beam, the fresnel diffraction pattern arising from non-coplanar baselines
+    
     :param npixel: Size of the grid in pixels
     :param field_of_view: Field of view
     :param w: Baseline distance to the projection plane
@@ -182,7 +175,7 @@ def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
     r2 = field_of_view ** 2 * (ly ** 2 + mx ** 2)
     ph = -2 * numpy.pi * w * (1 - numpy.sqrt(1.0 - r2))
     numpy.putmask(ph, r2 >= 1.0, 0)
-    cp = numpy.zeros_like(r2, dtype="complex")
+    cp = numpy.zeros_like(r2, dtype='complex')
     cp = numpy.exp(1j * ph)
     numpy.putmask(cp, r2 >= 1.0, 0 + 0j)
     numpy.putmask(cp, r2 == 0, 1.0 + 0j)
@@ -190,10 +183,10 @@ def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
     if remove_shift:
         cp /= cp[-1, -1]
 
-    cp = numpy.pad(
-        cp, ((0, int(cx) + npixel % 2 - 1), (0, int(cy) + npixel % 2 - 1)), "reflect"
-    )
+    cp = numpy.pad(cp, ((0, int(cx) + npixel % 2 - 1), (0, int(cy) + npixel % 2 - 1)), 'reflect')
 
     # assert((cp==cp1).all())
 
     return cp
+
+

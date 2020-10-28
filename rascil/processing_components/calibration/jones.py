@@ -2,7 +2,7 @@ import numpy
 
 
 def apply_jones(ej, cfs, inverse=False, min_det=1e-6):
-    """Apply Jones matrix (or inverse)
+    """ Apply Jones matrix (or inverse)
 
     :param ej: 2x2 Jones matrix
     :param cfs: 2x2 matrix of stokes

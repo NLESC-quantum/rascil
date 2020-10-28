@@ -7,19 +7,16 @@ import unittest
 
 from numpy.testing import assert_allclose
 
-from rascil.processing_components.fourier_transforms.fft_support import (
-    extract_mid,
-    pad_mid,
-    extract_oversampled,
-)
+from rascil.processing_components.fourier_transforms.fft_support import extract_mid, pad_mid, extract_oversampled
 from rascil.processing_components.fourier_transforms.fft_coordinates import coordinates2
 
 
 class TestFFTSupport(unittest.TestCase):
+    
     @staticmethod
     def _pattern(npixel):
         return coordinates2(npixel)[0] + coordinates2(npixel)[1] * 1j
-
+    
     def test_pad_extract(self):
         for npixel, N2 in [(100, 128), (128, 256), (126, 128)]:
             # Make a 2D complex image of size (npixel, npixel) centred on (npixel//2, npixel//2)
@@ -35,16 +32,13 @@ class TestFFTSupport(unittest.TestCase):
             assert (equal + zero).all(), "Pad (%d, %d) failed" % (npixel, N2)
             # And extracting the middle should recover the original data_models
             assert_allclose(extract_mid(cs_pad, npixel), cs)
-
+    
     def test_extract_oversampled(self):
         for npixel, kernel_oversampling in [(1, 2), (2, 3), (3, 2), (4, 2), (5, 3)]:
             a = 1 + self._pattern(npixel * kernel_oversampling)
-            ex = (
-                extract_oversampled(a, 0, 0, kernel_oversampling, npixel)
-                / kernel_oversampling ** 2
-            )
+            ex = extract_oversampled(a, 0, 0, kernel_oversampling, npixel) / kernel_oversampling ** 2
             assert_allclose(ex, 1 + self._pattern(npixel))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

@@ -2,17 +2,9 @@
 
 """
 
-__all__ = [
-    "copy_skymodel",
-    "partition_skymodel_by_flux",
-    "show_skymodel",
-    "initialize_skymodel_voronoi",
-    "calculate_skymodel_equivalent_image",
-    "update_skymodel_from_gaintables",
-    "update_skymodel_from_image",
-    "expand_skymodel_by_skycomponents",
-    "create_skymodel_from_skycomponents_gaintables",
-]
+__all__ = ['copy_skymodel', 'partition_skymodel_by_flux', 'show_skymodel', 'initialize_skymodel_voronoi',
+           'calculate_skymodel_equivalent_image', 'update_skymodel_from_gaintables', 'update_skymodel_from_image',
+           'expand_skymodel_by_skycomponents', 'create_skymodel_from_skycomponents_gaintables']
 
 import logging
 
@@ -25,17 +17,13 @@ from rascil.processing_components.image import copy_image
 from rascil.processing_components.calibration.operations import copy_gaintable
 from rascil.processing_components.image.operations import smooth_image
 from rascil.processing_components.skycomponent.base import copy_skycomponent
-from rascil.processing_components.skycomponent.operations import (
-    filter_skycomponents_by_flux,
-    insert_skycomponent,
-    image_voronoi_iter,
-)
+from rascil.processing_components.skycomponent.operations import filter_skycomponents_by_flux, insert_skycomponent, image_voronoi_iter
 
-log = logging.getLogger("logger")
+log = logging.getLogger('logger')
 
 
 def copy_skymodel(sm):
-    """Copy a sky model
+    """ Copy a sky model
 
     :param sm: SkyModel to be copied
     :return: SkyModel
@@ -44,29 +32,24 @@ def copy_skymodel(sm):
         newcomps = [copy_skycomponent(comp) for comp in sm.components]
     else:
         newcomps = None
-
+    
     if sm.image is not None:
         newimage = copy_image(sm.image)
     else:
         newimage = None
-
+    
     if sm.mask is not None:
         newmask = copy_image(sm.mask)
     else:
         newmask = None
-
+    
     if sm.gaintable is not None:
         newgt = copy_gaintable(sm.gaintable)
     else:
         newgt = None
-
-    return SkyModel(
-        components=newcomps,
-        image=newimage,
-        gaintable=newgt,
-        mask=newmask,
-        fixed=sm.fixed,
-    )
+    
+    return SkyModel(components=newcomps, image=newimage, gaintable=newgt, mask=newmask,
+                    fixed=sm.fixed)
 
 
 def partition_skymodel_by_flux(sc, model, flux_threshold=-numpy.inf):
@@ -74,7 +57,7 @@ def partition_skymodel_by_flux(sc, model, flux_threshold=-numpy.inf):
 
     Bright skycomponents are put into a SkyModel as a list, and weak skycomponents
     are inserted into SkyModel as an image.
-
+    
     :param sc: List of skycomponents
     :param model: Model image
     :param flux_threshold:
@@ -92,22 +75,17 @@ def partition_skymodel_by_flux(sc, model, flux_threshold=-numpy.inf):
     """
     brightsc = filter_skycomponents_by_flux(sc, flux_min=flux_threshold)
     weaksc = filter_skycomponents_by_flux(sc, flux_max=flux_threshold)
-    log.info(
-        "Converted %d components into %d bright components and one image containing %d components"
-        % (len(sc), len(brightsc), len(weaksc))
-    )
+    log.info('Converted %d components into %d bright components and one image containing %d components'
+             % (len(sc), len(brightsc), len(weaksc)))
     im = copy_image(model)
     im = insert_skycomponent(im, weaksc)
-    return SkyModel(
-        components=[copy_skycomponent(comp) for comp in brightsc],
-        image=copy_image(im),
-        mask=None,
-        fixed=False,
-    )
+    return SkyModel(components=[copy_skycomponent(comp) for comp in brightsc],
+                    image=copy_image(im), mask=None,
+                    fixed=False)
 
 
-def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
-    """Show a list of SkyModels
+def show_skymodel(sms, psf_width=1.75, cm='Greys', vmax=None, vmin=None):
+    """ Show a list of SkyModels
 
     :param sms: List of SkyModels
     :param psf_width: Width of PSF in pixels
@@ -117,50 +95,48 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
     :return:
     """
     sp = 1
-
+    
     for ism, sm in enumerate(sms):
         plt.clf()
         plt.subplot(121, projection=sms[ism].image.wcs.sub([1, 2]))
         sp += 1
-
+        
         smodel = copy_image(sms[ism].image)
         smodel = insert_skycomponent(smodel, sms[ism].components)
         smodel = smooth_image(smodel, psf_width)
-
+        
         if vmax is None:
             vmax = numpy.max(smodel.data[0, 0, ...])
         if vmin is None:
             vmin = numpy.min(smodel.data[0, 0, ...])
-
-        plt.imshow(
-            smodel.data[0, 0, ...], origin="lower", cmap=cm, vmax=vmax, vmin=vmin
-        )
+        
+        plt.imshow(smodel.data[0, 0, ...], origin='lower', cmap=cm, vmax=vmax, vmin=vmin)
         plt.xlabel(sms[ism].image.wcs.wcs.ctype[0])
         plt.ylabel(sms[ism].image.wcs.wcs.ctype[1])
-
-        plt.title("SkyModel%d" % ism)
-
+        
+        plt.title('SkyModel%d' % ism)
+        
         components = sms[ism].components
         if components is not None:
             for sc in components:
-                x, y = skycoord_to_pixel(sc.direction, sms[ism].image.wcs, 0, "wcs")
-                plt.plot(x, y, marker="+", color="red")
-
+                x, y = skycoord_to_pixel(sc.direction, sms[ism].image.wcs, 0, 'wcs')
+                plt.plot(x, y, marker='+', color='red')
+        
         gaintable = sms[ism].gaintable
         if gaintable is not None:
             plt.subplot(122)
             sp += 1
             phase = numpy.angle(sm.gaintable.gain[:, :, 0, 0, 0])
             phase -= phase[:, 0][:, numpy.newaxis]
-            plt.imshow(phase, origin="lower")
-            plt.xlabel("Dish/Station")
-            plt.ylabel("Integration")
+            plt.imshow(phase, origin='lower')
+            plt.xlabel('Dish/Station')
+            plt.ylabel('Integration')
             plt.show()
 
 
 def initialize_skymodel_voronoi(model, comps, gt=None):
     """Create a skymodel by Voronoi partitioning of the components, fill with components
-
+    
     :param model: Model image
     :param comps: Skycomponents
     :param gt: Gaintable
@@ -180,12 +156,10 @@ def initialize_skymodel_voronoi(model, comps, gt=None):
             newgt = copy_gaintable(gt)
             newgt.phasecentre = comps[i].direction
         else:
-            newgt = None
-
-        skymodel_images.append(
-            SkyModel(image=im, components=None, gaintable=newgt, mask=mask)
-        )
-
+            newgt=None
+            
+        skymodel_images.append(SkyModel(image=im, components=None, gaintable=newgt, mask=mask))
+    
     return skymodel_images
 
 
@@ -205,7 +179,7 @@ def calculate_skymodel_equivalent_image(sm):
                 combined_model.data += th.mask.data * th.image.data
             else:
                 combined_model.data += th.image.data
-
+    
     return combined_model
 
 
@@ -221,11 +195,11 @@ def update_skymodel_from_image(sm, im, damping=0.5):
         if th.mask is not None:
             newim.data *= th.mask.data
         th.image.data += damping * newim.data
-
+    
     return sm
 
 
-def update_skymodel_from_gaintables(sm, gt_list, calibration_context="T", damping=0.5):
+def update_skymodel_from_gaintables(sm, gt_list, calibration_context='T', damping=0.5):
     """Update a skymodel from a list of gaintables
 
     :param sm: List of skymodels
@@ -234,62 +208,47 @@ def update_skymodel_from_gaintables(sm, gt_list, calibration_context="T", dampin
     :return: List of skymodels
     """
     assert len(sm) == len(gt_list)
-
+    
     for i, th in enumerate(sm):
         assert isinstance(th.gaintable, GainTable), th.gaintable
-        delta = numpy.exp(damping * 1j * gt_list[i][calibration_context].gain)
-        th.gaintable.data["gain"] *= numpy.exp(
-            damping * 1j * numpy.angle(gt_list[i][calibration_context].gain)
-        )
-
+        delta = numpy.exp(damping*1j*gt_list[i][calibration_context].gain)
+        th.gaintable.data['gain'] *= numpy.exp(damping*1j*numpy.angle(gt_list[i][calibration_context].gain))
+    
     return sm
 
 
 def expand_skymodel_by_skycomponents(sm, **kwargs):
-    """Expand a sky model so that all components and the image are in separate skymodels
-
+    """ Expand a sky model so that all components and the image are in separate skymodels
+    
     The mask and gaintable are taken to apply for all new skymodels.
-
+    
     :param sm: SkyModel
     :return: List of SkyModels
     """
-    result = [
-        SkyModel(
-            components=[comp],
-            image=None,
-            gaintable=copy_gaintable(sm.gaintable),
-            mask=copy_image(sm.mask),
-            fixed=sm.fixed,
-        )
-        for comp in sm.components
-    ]
+    result = [SkyModel(components=[comp],
+                       image=None,
+                       gaintable=copy_gaintable(sm.gaintable),
+                       mask=copy_image(sm.mask),
+                       fixed=sm.fixed) for comp in sm.components]
     if sm.image is not None:
-        result.append(
-            SkyModel(
-                components=None,
-                image=copy_image(sm.image),
-                gaintable=copy_gaintable(sm.gaintable),
-                mask=copy_image(sm.mask),
-                fixed=sm.fixed,
-            )
-        )
+        result.append(SkyModel(components=None,
+                               image=copy_image(sm.image),
+                               gaintable=copy_gaintable(sm.gaintable),
+                               mask=copy_image(sm.mask),
+                               fixed=sm.fixed))
     return result
 
 
 def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwargs):
-    """Create a list of sky model from lists of components and gaintables
+    """ Create a list of sky model from lists of components and gaintables
 
     :param sm: SkyModel
     :return: List of SkyModels
     """
     assert len(components) == len(gaintables)
-    result = [
-        SkyModel(
-            components=[copy_skycomponent(comp)],
-            image=None,
-            mask=None,
-            gaintable=copy_gaintable(gaintables[icomp]),
-        )
-        for icomp, comp in enumerate(components)
-    ]
+    result = [SkyModel(components=[copy_skycomponent(comp)],
+                       image=None,
+                       mask=None,
+                       gaintable=copy_gaintable(gaintables[icomp]))
+              for icomp, comp in enumerate(components)]
     return result

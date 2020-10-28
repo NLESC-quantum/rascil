@@ -30,22 +30,10 @@ from Bottom to Top.
 
 """
 
-__all__ = [
-    "xyz_at_latitude",
-    "xyz_to_baselines",
-    "xyz_to_uvw",
-    "uvw_to_xyz",
-    "uvw_transform",
-    "simulate_point",
-    "skycoord_to_lmn",
-    "lmn_to_skycoord",
-    "visibility_shift",
-    "azel_to_hadec",
-    "hadec_to_azel",
-    "baselines",
-    "pa_z",
-    "parallactic_angle",
-]
+__all__ = ['xyz_at_latitude', 'xyz_to_baselines', 'xyz_to_uvw', 'uvw_to_xyz',
+           'uvw_transform', 'simulate_point', 'skycoord_to_lmn', 'lmn_to_skycoord',
+           'visibility_shift', 'azel_to_hadec', 'hadec_to_azel', 'baselines',
+           'pa_z', 'parallactic_angle']
 
 import numpy
 from astropy.coordinates import SkyCoord, CartesianRepresentation
@@ -63,13 +51,13 @@ def xyz_at_latitude(local_xyz, lat):
     :param local_xyz: Array of local XYZ coordinates
     :return: Celestial XYZ coordinates
     """
-
+    
     x, y, z = numpy.hsplit(local_xyz, 3)  # pylint: disable=unbalanced-tuple-unpacking
-
+    
     lat2 = numpy.pi / 2 - lat
     y2 = -z * numpy.sin(lat2) + y * numpy.cos(lat2)
     z2 = z * numpy.cos(lat2) + y * numpy.sin(lat2)
-
+    
     return numpy.hstack([x, y2, z2])
 
 
@@ -88,9 +76,9 @@ def xyz_to_uvw(xyz, ha, dec):
     :param ha: hour angle of phase tracking centre (:math:`ha = ra - lst`)
     :param dec: declination of phase tracking centre.
     """
-
+    
     x, y, z = numpy.hsplit(xyz, 3)  # pylint: disable=unbalanced-tuple-unpacking
-
+    
     # Two rotations:
     #  1. by 'ha' along the z axis
     #  2. by '90-dec' along the u axis
@@ -98,7 +86,7 @@ def xyz_to_uvw(xyz, ha, dec):
     v0 = x * numpy.sin(ha) + y * numpy.cos(ha)
     w = z * numpy.sin(dec) - v0 * numpy.cos(dec)
     v = z * numpy.cos(dec) + v0 * numpy.sin(dec)
-
+    
     return numpy.hstack([u, v, w])
 
 
@@ -116,9 +104,9 @@ def uvw_to_xyz(uvw, ha, dec):
     :param ha: hour angle of phase tracking centre (:math:`ha = ra - lst`)
     :param dec: declination of phase tracking centre
     """
-
+    
     u, v, w = numpy.hsplit(uvw, 3)  # pylint: disable=unbalanced-tuple-unpacking
-
+    
     # Two rotations:
     #  1. by 'dec-90' along the u axis
     #  2. by '-ha' along the z axis
@@ -126,7 +114,7 @@ def uvw_to_xyz(uvw, ha, dec):
     z = v * numpy.cos(dec) + w * numpy.sin(dec)
     x = u * numpy.cos(ha) + v0 * numpy.sin(ha)
     y = -u * numpy.sin(ha) + v0 * numpy.cos(ha)
-
+    
     return numpy.hstack([x, y, z])
 
 
@@ -137,15 +125,15 @@ def baselines(ants_uvw):
 
     :param ants_uvw: `(u,v,w)` co-ordinates of antennas in array
     """
-
+    
     res = []
     nants = ants_uvw.shape[0]
     for a1 in range(nants):
         for a2 in range(a1 + 1, nants):
             res.append(ants_uvw[a2] - ants_uvw[a1])
-
+    
     basel_uvw = numpy.array(res)
-
+    
     return basel_uvw
 
 
@@ -159,10 +147,8 @@ def xyz_to_baselines(ants_xyz, ha_range, dec):
     :param ha_range: list of hour angle values for astronomical source as function of time
     :param dec: declination of astronomical source [constant, not :math:`f(t)`]
     """
-
-    dist_uvw = numpy.concatenate(
-        [baselines(xyz_to_uvw(ants_xyz, hax, dec)) for hax in ha_range]
-    )
+    
+    dist_uvw = numpy.concatenate([baselines(xyz_to_uvw(ants_xyz, hax, dec)) for hax in ha_range])
     return dist_uvw
 
 
@@ -178,11 +164,11 @@ def skycoord_to_lmn(pos: SkyCoord, phasecentre: SkyCoord):
 
     Note that this means that l increases east-wards
     """
-
+    
     # Determine relative sky position
     todc = pos.transform_to(phasecentre.skyoffset_frame())
     dc = todc.represent_as(CartesianRepresentation)
-
+    
     # Do coordinate transformation - astropy's relative coordinates do
     # not quite follow imaging conventions
     return dc.y.value, dc.z.value, dc.x.value - 1
@@ -200,17 +186,11 @@ def lmn_to_skycoord(lmn, phasecentre: SkyCoord):
 
     Note that this means that l increases east-wards
     """
-
+    
     # Convert l,m,n to SkyCoord convention, also enforce celestial sphere
     n = numpy.sqrt(1 - lmn[0] ** 2 - lmn[1] ** 2) - 1.0
     dc = n + 1, lmn[0], lmn[1]
-    target = SkyCoord(
-        x=dc[0],
-        y=dc[1],
-        z=dc[2],
-        representation_type="cartesian",
-        frame=phasecentre.skyoffset_frame(),
-    )
+    target = SkyCoord(x=dc[0], y=dc[1], z=dc[2], representation_type='cartesian', frame=phasecentre.skyoffset_frame())
     return target.transform_to(phasecentre.frame)
 
 
@@ -230,7 +210,7 @@ def simulate_point(dist_uvw, l, m):
     :param l: horizontal direction cosine relative to phase tracking centre
     :param m: orthogonal directon cosine relative to phase tracking centre
     """
-
+    
     # vector direction to source
     s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
     # complex valued Visibility data_models
@@ -251,7 +231,7 @@ def visibility_shift(uvw, vis, dl, dm):
     :return: New visibilities
 
     """
-
+    
     s = numpy.array([dl, dm])
     return vis * numpy.exp(-2j * numpy.pi * numpy.dot(uvw[:, 0:2], s))
 
@@ -270,7 +250,7 @@ def uvw_transform(uvw, transform_matrix):
     :param transform_matrix: 2x2 matrix for image transformation
     :return: New baseline coordinates
     """
-
+    
     # Apply to uv coordinates
     uv1 = numpy.dot(uvw[:, 0:2], transform_matrix)
     # Restack with original w values
@@ -279,24 +259,19 @@ def uvw_transform(uvw, transform_matrix):
 
 def parallactic_angle(ha, dec, lat):
     """Calculate parallactic angle of source at ha, dec observed from site at latitude dec
-
+    
     H = t - α
     sin(a) = sin(δ) sin(φ) + cos(δ) cos(φ) cos(H)
     sin(A) = - sin(H) cos(δ) / cos(a)
     cos(A) = { sin(δ) - sin(φ) sin(a) } / cos(φ) cos(a)
-
+    
     :param ha: Hour angle (radians)
     :param dec: Declination (radians)
     :param lat: Site latitude (radians)
     :return:
     """
-    return numpy.arctan2(
-        numpy.cos(lat) * numpy.sin(ha),
-        (
-            numpy.sin(lat) * numpy.cos(dec)
-            - numpy.cos(lat) * numpy.sin(dec) * numpy.cos(ha)
-        ),
-    )
+    return numpy.arctan2(numpy.cos(lat) * numpy.sin(ha),
+                         (numpy.sin(lat) * numpy.cos(dec) - numpy.cos(lat) * numpy.sin(dec) * numpy.cos(ha)))
 
 
 def pa_z(ha, dec, lat):
@@ -306,36 +281,26 @@ def pa_z(ha, dec, lat):
     sin(a) = sin(δ) sin(φ) + cos(δ) cos(φ) cos(H)
     sin(A) = - sin(H) cos(δ) / cos(a)
     cos(A) = { sin(δ) - sin(φ) sin(a) } / cos(φ) cos(a)
-
+    
     :param ha: Hour angle (radians)
     :param dec: Declination (radians)
     :param lat: Site latitude (radians)
     :return:
     """
-    sinz = numpy.sin(dec) * numpy.sin(lat) + numpy.cos(dec) * numpy.cos(
-        lat
-    ) * numpy.cos(ha)
-    return (
-        numpy.arctan2(
-            numpy.cos(lat) * numpy.sin(ha),
-            (
-                numpy.sin(lat) * numpy.cos(dec)
-                - numpy.cos(lat) * numpy.sin(dec) * numpy.cos(ha)
-            ),
-        ),
-        numpy.arcsin(sinz),
-    )
-
+    sinz = numpy.sin(dec) * numpy.sin(lat) + numpy.cos(dec) * numpy.cos(lat) * numpy.cos(ha)
+    return numpy.arctan2(numpy.cos(lat) * numpy.sin(ha),
+                         (numpy.sin(lat) * numpy.cos(dec) - numpy.cos(lat) * numpy.sin(dec) * numpy.cos(ha))), \
+           numpy.arcsin(sinz)
 
 def hadec_to_azel(ha, dec, latitude):
-    """Convert HA Dec to Az El
-
+    """ Convert HA Dec to Az El
+    
     TMS Appendix 4.1
-
+    
     sinel = sinlat sindec + coslat cosdec cosha
     cosel cosaz = coslat sindec - sinlat cosdec cosha
     cosel sinaz = - cosdec sinha
-
+    
     :param ha:
     :param dec:
     :param latitude:
@@ -347,21 +312,20 @@ def hadec_to_azel(ha, dec, latitude):
     sindec = numpy.sin(dec)
     cosha = numpy.cos(ha)
     sinha = numpy.sin(ha)
-
-    az = numpy.arctan2(-cosdec * sinha, (coslat * sindec - sinlat * cosdec * cosha))
+    
+    az = numpy.arctan2(- cosdec * sinha, (coslat * sindec - sinlat * cosdec * cosha))
     el = numpy.arcsin(sinlat * sindec + coslat * cosdec * cosha)
     return az, el
-
-
+    
 def azel_to_hadec(az, el, latitude):
     """Converting Az El to HA Dec
-
+    
     TMS Appendix 4.1
-
+    
     sindec = sinlat sinel + coslat cosel cosaz
     cosdec cosha = coslat sinel - sinlat cosel cosaz
     cosdec sinha = -cosel sinaz
-
+    
     :param az:
     :param el:
     :param latitude:

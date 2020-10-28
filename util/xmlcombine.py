@@ -3,7 +3,6 @@
 import sys
 from xml.etree import ElementTree
 
-
 def run(files):
     first = None
     for filename in files:
@@ -12,10 +11,10 @@ def run(files):
             first = data
         else:
             first.extend(data)
-
+    
     if first is not None:
         sys.stdout.buffer.write(ElementTree.tostring(first))
 
-
 if __name__ == "__main__":
     run(sys.argv[1:])
+

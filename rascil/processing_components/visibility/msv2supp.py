@@ -4,39 +4,17 @@
 
 import numpy
 
-__version__ = "0.1"
-__revision__ = "$Rev$"
-__all__ = ["STOKES_CODES", "NUMERIC_STOKES"]
+__version__ = '0.1'
+__revision__ = '$Rev$'
+__all__ = ['STOKES_CODES', 'NUMERIC_STOKES']
 
-STOKES_CODES = {
-    "I": 1,
-    "Q": 2,
-    "U": 3,
-    "V": 4,
-    "RR": 5,
-    "RL": 6,
-    "LR": 7,
-    "LL": 8,
-    "XX": 9,
-    "XY": 10,
-    "YX": 11,
-    "YY": 12,
-}
+STOKES_CODES = {'I': 1, 'Q': 2, 'U': 3, 'V': 4,
+                'RR': 5, 'RL': 6, 'LR': 7, 'LL': 8,
+                'XX': 9, 'XY': 10, 'YX': 11, 'YY': 12}
 
-NUMERIC_STOKES = {
-    1: "I",
-    2: "Q",
-    3: "U",
-    4: "V",
-    5: "RR",
-    6: "RL",
-    7: "LR",
-    8: "LL",
-    9: "XX",
-    10: "XY",
-    11: "YX",
-    12: "YY",
-}
+NUMERIC_STOKES = {1: 'I', 2: 'Q', 3: 'U', 4: 'V',
+                  5: 'RR', 6: 'RL', 7: 'LR', 8: 'LL',
+                  9: 'XX', 10: 'XY', 11: 'YX', 12: 'YY'}
 
 
 def geo_to_ecef(lat, lon, elev):
@@ -47,9 +25,7 @@ def geo_to_ecef(lat, lon, elev):
 
     WGS84_a = 6378137.00000000
     WGS84_b = 6356752.31424518
-    N = WGS84_a ** 2 / numpy.sqrt(
-        WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2
-    )
+    N = WGS84_a ** 2 / numpy.sqrt(WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2)
     x = (N + elev) * numpy.cos(lat) * numpy.cos(lon)
     y = (N + elev) * numpy.cos(lat) * numpy.sin(lon)
     z = ((WGS84_b ** 2 / WGS84_a ** 2) * N + elev) * numpy.sin(lat)
@@ -63,13 +39,9 @@ def get_eci_transform(lat):
     [east, north, elevation] to earth-centered inertial coordinates
     for that baseline [x, y, z].
     """
-    return numpy.array(
-        [
-            [0.0, -numpy.sin(lat), numpy.cos(lat)],
-            [1.0, 0.0, 0.0],
-            [0.0, numpy.cos(lat), numpy.sin(lat)],
-        ]
-    )
+    return numpy.array([[0.0, -numpy.sin(lat), numpy.cos(lat)],
+                        [1.0, 0.0, 0.0],
+                        [0.0, numpy.cos(lat), numpy.sin(lat)]])
 
 
 def _cmp_to_lt(self, other):
@@ -127,7 +99,7 @@ def cmp_to_total(cls):
     from the __cmp__() method.
     """
 
-    names = ["__lt__", "__le__", "__gt__", "__ge__", "__eq__", "__ne__"]
+    names = ['__lt__', '__le__', '__gt__', '__ge__', '__eq__', '__ne__']
     funcs = [_cmp_to_lt, _cmp_to_le, _cmp_to_gt, _cmp_to_ge, _cmp_to_eq, _cmp_to_ne]
 
     for name, func in zip(names, funcs):
@@ -145,7 +117,6 @@ def merge_baseline(ant1, ant2, shift=16):
     shift size.
     """
     return (ant1 << shift) | ant2
-
 
 def split_baseline(baseline, shift=16):
     """

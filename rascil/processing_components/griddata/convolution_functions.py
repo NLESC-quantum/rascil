@@ -11,16 +11,9 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 
 """
 
-__all__ = [
-    "create_convolutionfunction_from_image",
-    "copy_convolutionfunction",
-    "create_convolutionfunction_from_array",
-    "convolutionfunction_sizeof",
-    "calculate_bounding_box_convolutionfunction",
-    "convert_convolutionfunction_to_image",
-    "apply_bounding_box_convolutionfunction",
-    "qa_convolutionfunction",
-]
+__all__ = ['create_convolutionfunction_from_image', 'copy_convolutionfunction', 'create_convolutionfunction_from_array',
+           'convolutionfunction_sizeof', 'calculate_bounding_box_convolutionfunction', 'convert_convolutionfunction_to_image',
+           'apply_bounding_box_convolutionfunction', 'qa_convolutionfunction']
 import copy
 import logging
 
@@ -32,27 +25,24 @@ from rascil.data_models.memory_data_models import QA
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import create_image_from_array
 
-log = logging.getLogger("logger")
+log = logging.getLogger('logger')
 
 
 def convolutionfunction_sizeof(cf: ConvolutionFunction):
-    """Return size in GB"""
+    """ Return size in GB
+    """
     return cf.size()
 
 
-def create_convolutionfunction_from_array(
-    data: numpy.array,
-    grid_wcs: WCS,
-    projection_wcs: WCS,
-    polarisation_frame: PolarisationFrame,
-) -> ConvolutionFunction:
-    """Create a convolution function from an array and wcs's
-
+def create_convolutionfunction_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs: WCS,
+                                          polarisation_frame: PolarisationFrame) -> ConvolutionFunction:
+    """ Create a convolution function from an array and wcs's
+    
     The cf has axes [chan, pol, z, dy, dx, y, x] where z, y, x are spatial axes in either sky or Fourier plane. The
     order in the WCS is reversed so the grid_WCS describes UU, VV, WW, STOKES, FREQ axes
-
+    
     The axes UU,VV have the same physical stride as the image, The axes DUU, DVV are subsampled.
-
+    
     Convolution function holds the original sky plane projection in the projection_wcs.
 
     :param data: Numpy.array
@@ -60,23 +50,21 @@ def create_convolutionfunction_from_array(
     :param projection_wcs: Projection world coordinate system
     :param polarisation_frame: Polarisation Frame
     :return: GridData
-
+    
     """
     fconvfunc = ConvolutionFunction()
     fconvfunc.polarisation_frame = polarisation_frame
-
+    
     fconvfunc.data = data
     fconvfunc.grid_wcs = grid_wcs.deepcopy()
     fconvfunc.projection_wcs = projection_wcs.deepcopy()
-
+    
     assert isinstance(fconvfunc, ConvolutionFunction), "Type is %s" % type(fconvfunc)
     return fconvfunc
 
 
-def create_convolutionfunction_from_image(
-    im: numpy.array, nz=1, zstep=1e15, ztype="WW", oversampling=8, support=16
-):
-    """Create a convolution function from an image
+def create_convolutionfunction_from_image(im: numpy.array, nz=1, zstep=1e15, ztype='WW', oversampling=8, support=16):
+    """ Create a convolution function from an image
 
     The griddata has axes [chan, pol, z, dy, dx, y, x] where z, y, x are spatial axes in either sky or Fourier plane. The
     order in the WCS is reversed so the grid_WCS describes UU, VV, WW, STOKES, FREQ axes
@@ -95,23 +83,23 @@ def create_convolutionfunction_from_image(
 
     """
     assert len(im.shape) == 4
-    assert im.wcs.wcs.ctype[0] == "RA---SIN"
-    assert im.wcs.wcs.ctype[1] == "DEC--SIN"
-
+    assert im.wcs.wcs.ctype[0] == 'RA---SIN'
+    assert im.wcs.wcs.ctype[1] == 'DEC--SIN'
+    
     d2r = numpy.pi / 180.0
-
+    
     # WCS Coords are [x, y, dy, dx, z, pol, chan] where x, y, z are spatial axes in real space or Fourier space
     # Array Coords are [chan, pol, z, dy, dx, y, x] where x, y, z are spatial axes in real space or Fourier space
     cf_wcs = WCS(naxis=7)
-
-    cf_wcs.wcs.ctype[0] = "UU"
-    cf_wcs.wcs.ctype[1] = "VV"
-    cf_wcs.wcs.ctype[2] = "DUU"
-    cf_wcs.wcs.ctype[3] = "DVV"
+    
+    cf_wcs.wcs.ctype[0] = 'UU'
+    cf_wcs.wcs.ctype[1] = 'VV'
+    cf_wcs.wcs.ctype[2] = 'DUU'
+    cf_wcs.wcs.ctype[3] = 'DVV'
     cf_wcs.wcs.ctype[4] = ztype
     cf_wcs.wcs.ctype[5] = im.wcs.wcs.ctype[2]
     cf_wcs.wcs.ctype[6] = im.wcs.wcs.ctype[3]
-
+    
     cf_wcs.wcs.axis_types[0] = 0
     cf_wcs.wcs.axis_types[1] = 0
     cf_wcs.wcs.axis_types[2] = 0
@@ -119,7 +107,7 @@ def create_convolutionfunction_from_image(
     cf_wcs.wcs.axis_types[4] = 0
     cf_wcs.wcs.axis_types[5] = im.wcs.wcs.axis_types[2]
     cf_wcs.wcs.axis_types[6] = im.wcs.wcs.axis_types[3]
-
+    
     cf_wcs.wcs.crval[0] = 0.0
     cf_wcs.wcs.crval[1] = 0.0
     cf_wcs.wcs.crval[2] = 0.0
@@ -127,7 +115,7 @@ def create_convolutionfunction_from_image(
     cf_wcs.wcs.crval[4] = 0.0
     cf_wcs.wcs.crval[5] = im.wcs.wcs.crval[2]
     cf_wcs.wcs.crval[6] = im.wcs.wcs.crval[3]
-
+    
     cf_wcs.wcs.crpix[0] = float(support // 2) + 1.0
     cf_wcs.wcs.crpix[1] = float(support // 2) + 1.0
     cf_wcs.wcs.crpix[2] = float(oversampling // 2) + 1.0
@@ -135,7 +123,7 @@ def create_convolutionfunction_from_image(
     cf_wcs.wcs.crpix[4] = float(nz // 2 + 1)
     cf_wcs.wcs.crpix[5] = im.wcs.wcs.crpix[2]
     cf_wcs.wcs.crpix[6] = im.wcs.wcs.crpix[3]
-
+    
     # The sampling on the UU and VV axes should be the same as for the image.
     # The sampling on the DUU and DVV axes should be oversampling times finer.
     cf_wcs.wcs.cdelt[0] = 1.0 / (im.shape[3] * d2r * im.wcs.wcs.cdelt[0])
@@ -145,29 +133,27 @@ def create_convolutionfunction_from_image(
     cf_wcs.wcs.cdelt[4] = zstep
     cf_wcs.wcs.cdelt[5] = im.wcs.wcs.cdelt[2]
     cf_wcs.wcs.cdelt[6] = im.wcs.wcs.cdelt[3]
-
-    grid_data = im.data[..., numpy.newaxis, :, :].astype("complex")
+    
+    grid_data = im.data[..., numpy.newaxis, :, :].astype('complex')
     grid_data[...] = 0.0
-
+    
     nchan, npol, ny, nx = im.shape
-
+    
     fconvfunc = ConvolutionFunction()
     fconvfunc.polarisation_frame = im.polarisation_frame
-
-    fconvfunc.data = numpy.zeros(
-        [nchan, npol, nz, oversampling, oversampling, support, support], dtype="complex"
-    )
+    
+    fconvfunc.data = numpy.zeros([nchan, npol, nz, oversampling, oversampling, support, support], dtype='complex')
     fconvfunc.grid_wcs = cf_wcs.deepcopy()
     fconvfunc.projection_wcs = im.wcs.deepcopy()
-
+    
     assert isinstance(fconvfunc, ConvolutionFunction), "Type is %s" % type(fconvfunc)
-
+    
     return fconvfunc
 
 
 def convert_convolutionfunction_to_image(cf):
-    """Convert ConvolutionFunction to an image
-
+    """ Convert ConvolutionFunction to an image
+    
     :param cf:
     :return:
     """
@@ -204,10 +190,10 @@ def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
 
 def calculate_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     """Calculate bounding boxes
-
+    
     Returns a list of bounding boxes where each element is
     (z, (y0, y1), (x0, x1))
-
+    
     These can be used in griddata/degridding.
 
     :param cf:
@@ -232,23 +218,20 @@ def qa_convolutionfunction(cf, context="") -> QA:
     :return: QA
     """
     assert isinstance(cf, ConvolutionFunction), cf
-    data = {
-        "shape": str(cf.data.shape),
-        "max": numpy.max(cf.data),
-        "min": numpy.min(cf.data),
-        "rms": numpy.std(cf.data),
-        "sum": numpy.sum(cf.data),
-        "medianabs": numpy.median(numpy.abs(cf.data)),
-        "median": numpy.median(cf.data),
-    }
-
+    data = {'shape': str(cf.data.shape),
+            'max': numpy.max(cf.data),
+            'min': numpy.min(cf.data),
+            'rms': numpy.std(cf.data),
+            'sum': numpy.sum(cf.data),
+            'medianabs': numpy.median(numpy.abs(cf.data)),
+            'median': numpy.median(cf.data)}
+    
     qa = QA(origin="qa_image", data=data, context=context)
     return qa
 
-
 def copy_convolutionfunction(cf):
     """Make a copy of a convolution function
-
+    
     :param cf:
     :return:
     """
@@ -259,9 +242,7 @@ def copy_convolutionfunction(cf):
     fcf.projection_wcs = copy.deepcopy(cf.projection_wcs)
     fcf.grid_wcs = copy.deepcopy(cf.grid_wcs)
     if convolutionfunction_sizeof(fcf) >= 1.0:
-        log.debug(
-            "copy_convolutionfunction: copied %s convolution function of shape %s, size %.3f (GB)"
-            % (fcf.data.dtype, str(fcf.shape), convolutionfunction_sizeof(fcf))
-        )
+        log.debug("copy_convolutionfunction: copied %s convolution function of shape %s, size %.3f (GB)" %
+                  (fcf.data.dtype, str(fcf.shape), convolutionfunction_sizeof(fcf)))
     assert isinstance(fcf, ConvolutionFunction), fcf
     return fcf

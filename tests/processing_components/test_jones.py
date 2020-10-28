@@ -11,7 +11,7 @@ from numpy.testing import assert_array_almost_equal
 from rascil.data_models.polarisation import convert_pol_frame, PolarisationFrame
 from rascil.processing_components.calibration import apply_jones
 
-log = logging.getLogger("logger")
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 
@@ -23,23 +23,23 @@ class TestJones(unittest.TestCase):
     def test_apply_jones(self):
         nsucceeded = 0
         nfailures = 0
-        for flux in (
-            numpy.array([100.0, 0.0, 0.0, 0.0]),
-            numpy.array([100.0, 100.0, 0.0, 0.0]),
-            numpy.array([100.0, 0.0, 100.0, 0.0]),
-            numpy.array([100.0, 0.0, 0.0, 100.0]),
-            numpy.array([100.0, 1.0, -10.0, +60.0]),
-        ):
+        for flux in (numpy.array([100.0, 0.0, 0.0, 0.0]),
+                     numpy.array([100.0, 100.0, 0.0, 0.0]),
+                     numpy.array([100.0, 0.0, 100.0, 0.0]),
+                     numpy.array([100.0, 0.0, 0.0, 100.0]),
+                     numpy.array([100.0, 1.0, -10.0, +60.0])):
             vpol = PolarisationFrame("linear")
             cpol = PolarisationFrame("stokesIQUV")
-            cflux = convert_pol_frame(flux, cpol, vpol, 0).reshape([2, 2])
+            cflux = convert_pol_frame(flux, cpol, vpol, 0).reshape([2,2])
 
-            diagonal = numpy.array([[1.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0]])
-            skew = numpy.array([[0.0 + 0.0j, 1.0 + 0.0j], [1.0 + 0.0j, 0.0 + 0.0]])
-            leakage = numpy.array([[1.0 + 0.0j, 0.0 + 0.1j], [0.0 - 0.1j, 1.0 + 0.0]])
-            unbalanced = numpy.array(
-                [[100.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.03 + 0.0]]
-            )
+            diagonal = numpy.array([[1.0 + 0.0j, 0.0 + 0.0j],
+                                    [0.0 + 0.0j, 1.0 + 0.0]])
+            skew = numpy.array([[0.0 + 0.0j, 1.0 + 0.0j],
+                                [1.0 + 0.0j, 0.0 + 0.0]])
+            leakage = numpy.array([[1.0 + 0.0j, 0.0 + 0.1j],
+                                   [0.0 - 0.1j, 1.0 + 0.0]])
+            unbalanced = numpy.array([[100.0 + 0.0j, 0.0 + 0.0j],
+                                      [0.0 + 0.0j, 0.03 + 0.0]])
 
             for ej in (diagonal, skew, leakage, unbalanced):
                 try:
@@ -53,10 +53,8 @@ class TestJones(unittest.TestCase):
                     print(e)
                     print("{0} {1} {2} failed".format(vpol, str(ej), str(flux)))
                     nfailures += 1
-        assert nfailures == 0, "{0} tests succeeded, {1} failed".format(
-            nsucceeded, nfailures
-        )
+        assert nfailures == 0, "{0} tests succeeded, {1} failed".format(nsucceeded, nfailures)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

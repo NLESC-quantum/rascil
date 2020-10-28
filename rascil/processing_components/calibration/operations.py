@@ -5,7 +5,8 @@ merging gaintables.
 
 __all__ = ['gaintable_summary', 'qa_gaintable', 'apply_gaintable', 'append_gaintable',
            'create_gaintable_from_blockvisibility', 'create_gaintable_from_blockvisibility',
-           'gaintable_select', 'create_gaintable_from_rows', 'copy_gaintable']
+           'gaintable_select', 'create_gaintable_from_rows', 'copy_gaintable', 'gaintable_plot',
+           'multiply_gaintables']
 
 import copy
 import logging
@@ -448,4 +449,33 @@ def gaintable_plot(
                 ax[1].legend()
                 ax[1][1].legend()
 
+def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
+    """Multiply two gaintables
 
+    Returns gt * dgt
+
+    :param gt:
+    :param dgt:
+    :return:
+    """
+    assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
+    assert isinstance(dgt, GainTable), "gtdgt is not a GainTable: %r" % dgt
+
+    if dgt.nrec == gt.nrec:
+        if dgt.nrec == 2:
+            gt.data["gain"] = numpy.einsum("...ik,...ij->...kj", gt.gain, dgt.gain)
+            gt.data["weight"] *= dgt.weight
+        elif dgt.nrec == 1:
+            gt.data["gain"] *= dgt.gain
+            gt.data["weight"] *= dgt.weight
+        else:
+            raise ValueError(
+                "Gain tables have illegal structures {} {}".format(str(gt), str(dgt))
+            )
+
+    else:
+        raise ValueError(
+            "Gain tables have different structures {} {}".format(str(gt), str(dgt))
+        )
+
+    return gt

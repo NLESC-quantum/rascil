@@ -1245,11 +1245,17 @@ class BlockVisibility:
         """Default printer for BlockVisibility
 
         """
+        tstart = self.time[0]
+        from astropy.time import Time
+        tstart = Time([self.time[0] / 86400.0], format='mjd', scale='utc').iso[0]
+        tend = Time([self.time[-1] / 86400.0], format='mjd', scale='utc').iso[0]
+        
         s = "BlockVisibility:\n"
         s += "\tSource %s\n" % self.source
         s += "\tPhasecentre: %s\n" % self.phasecentre
         s += "\tNumber of visibility blocks: %s\n" % self.nvis
         s += "\tNumber of integrations: %s\n" % len(self.time)
+        s += "\tTime range: %s to %s\n" % (tstart, tend)
         s += "\tVisibility shape: %s\n" % str(self.vis.shape)
         s += "\tNumber of flags: %s\n" % str(numpy.sum(self.flags))
         s += "\tNumber of channels: %d\n" % len(self.frequency)

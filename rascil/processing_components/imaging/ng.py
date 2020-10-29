@@ -203,7 +203,8 @@ try:
                                     npixdirty, npixdirty, pixsize, pixsize, epsilon,
                                     do_wstacking=do_wstacking,
                                     nthreads=nthreads, verbosity=verbosity)
-                sumwt[0, :] += numpy.sum(wgtt[0, 0, :].T, axis=0)
+                sumwt[0, :] += numpy.sum(wgtt[0, :, :].T)
+                assert numpy.max(sumwt) > 0.0
                 im.data[0, :] += dirty.T
             else:
                 for vchan in range(vnchan):
@@ -230,7 +231,8 @@ try:
                                         npixdirty, npixdirty, pixsize, pixsize, epsilon,
                                         do_wstacking=do_wstacking,
                                         nthreads=nthreads, verbosity=verbosity)
-                    sumwt[0, pol] += numpy.sum(wgtt[pol, 0, :].T, axis=0)
+                    sumwt[0, pol] += numpy.sum(wgtt[pol, :, :].T)
+                    assert numpy.max(sumwt) > 0.0
                     im.data[0, pol] += dirty.T
                 else:
                     for vchan in range(vnchan):

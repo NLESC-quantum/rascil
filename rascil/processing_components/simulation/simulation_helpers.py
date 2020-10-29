@@ -3,7 +3,7 @@
 """
 
 __all__ = ['plot_visibility', 'plot_visibility_pol', 'find_times_above_elevation_limit', 'plot_uvcoverage',
-           'plot_uwcoverage', 'plot_vwcoverage',
+           'plot_uwcoverage', 'plot_vwcoverage', 'plot_configuration',
            'plot_azel', 'plot_gaintable', 'plot_pointingtable', 'find_pb_width_null',
            'create_simulation_components', 'create_mid_simulation_components', 'plot_pa']
 
@@ -150,6 +150,33 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
             plt.plot(-u.value, -v.value, '.', color='b', markersize=0.4)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
+    plt.title(title)
+    if plot_file is not None:
+        plt.savefig(plot_file)
+    plt.show(block=False)
+
+
+def plot_configuration(vis_list, ax=None, plot_file=None, title='Configuration', label=False, **kwargs):
+    """ Standard plot of uv coverage
+
+    :param vis_list:
+    :param plot_file:
+    :param kwargs:
+    :return:
+    """
+    
+    for ivis, vis in enumerate(vis_list):
+        antxyz = vis.configuration.xyz
+        names = vis.configuration.names
+        if label:
+            plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=2.4)
+            for iant, name in enumerate(names):
+                plt.annotate(name, (antxyz[iant, 0], antxyz[iant, 1]))
+        else:
+            plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=2.4)
+
+    plt.xlabel('X (m)')
+    plt.ylabel('Y (m)')
     plt.title(title)
     if plot_file is not None:
         plt.savefig(plot_file)

@@ -8,7 +8,8 @@ __all__ = ['create_configuration_from_file',
            'create_LOFAR_configuration',
            'create_named_configuration',
            'limit_rmax',
-           'find_vptype_from_name']
+           'find_vptype_from_name',
+           'select_configuration']
 
 import numpy
 from typing import Union
@@ -313,4 +314,31 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
                                             diameter=25.0, name=name, **kwargs)
     else:
         raise ValueError("No such Configuration %s" % name)
+    return fc
+
+def select_configuration(config, names=None):
+    """ Select a subset of antennas/names
+    
+    :param config:
+    :param names:
+    :return:
+    """
+    
+    if names is None:
+        return config
+    
+    ind = []
+    for iname, name in enumerate(config.names):
+        if name in names:
+            ind.append(iname)
+            
+    assert len(ind) > 0, "No antennas selected using names {}".format(names)
+    
+    fc = Configuration(location=config.location,
+                       names=config.names[ind],
+                       mount=config.mount[ind],
+                       xyz=config.xyz[ind],
+                       vp_type=config.vp_type[ind],
+                       diameter=config.diameter[ind],
+                       name=config.name)
     return fc

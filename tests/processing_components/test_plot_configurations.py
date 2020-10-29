@@ -46,8 +46,8 @@ class TestPlotConfigurations(unittest.TestCase):
 
     def test_select_configurations(self):
         for config in ['MID']:
-            names = ['M026', 'SKA084', 'SKA055', 'M003']
-            self.createVis(config, names=names)
+            names = ['SKA057', 'SKA062', 'SKA072', 'SKA071', 'SKA002', 'SKA049']
+            self.createVis(config, rmax=2e2, names=names)
             assert self.config.size() > 0.0
             plt.clf()
             plot_configuration([self.vis], title=config,

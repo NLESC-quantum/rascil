@@ -22,7 +22,7 @@ from rascil.processing_components.simulation import create_test_skycomponents_fr
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components import create_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

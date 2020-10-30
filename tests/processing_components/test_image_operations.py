@@ -18,7 +18,7 @@ from rascil.processing_components.image.operations import export_image_to_fits, 
     convert_stokes_to_polimage, smooth_image, scale_and_rotate_image
 from rascil.processing_components.simulation import create_test_image, create_low_test_image_from_gleam
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -31,10 +31,11 @@ class TestImage(unittest.TestCase):
         self.dir = rascil_path('test_results')
 
         self.m31image = create_test_image(cellsize=0.0001)
+        assert numpy.max(self.m31image.data) > 0.0, "Test image is empty"
         self.cellsize = 180.0 * 0.0001 / numpy.pi
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
-    def test_create_image_(self):
+    def test_create_image(self):
         newimage = create_image(npixel=1024, cellsize=0.001, polarisation_frame=PolarisationFrame("stokesIQUV"),
                                 frequency=numpy.linspace(0.8e9, 1.2e9, 5),
                                 channel_bandwidth=1e7 * numpy.ones([5]))
@@ -119,13 +120,14 @@ class TestImage(unittest.TestCase):
 
         newvp_data = vp.data.copy()
         for ip, p in enumerate(permute):
-            newvp_data[:,p,...] = vp.data[:,ip,...]
+            newvp_data[:,p,...] = vp.data.values[:,ip,...]
         vp.data = newvp_data
 
         assert vp.polarisation_frame == PolarisationFrame("linear")
 
     def test_smooth_image(self):
         smooth = smooth_image(self.m31image)
+        assert numpy.max(smooth.data) > 0.0
         assert numpy.max(smooth.data) > numpy.max(self.m31image.data)
 
     def test_calculate_image_frequency_moments(self):
@@ -163,13 +165,13 @@ class TestImage(unittest.TestCase):
         im.data = im.data.real
         for x in [256, 768]:
             for y in [256, 768]:
-                self.assertAlmostEqual(im.data[0, 0, y, x], -0.46042631800538464, 7)
+                self.assertAlmostEqual(im.data.values[0, 0, y, x], -0.46042631800538464, 7)
         if self.persist: export_image_to_fits(im, '%s/test_wterm.fits' % self.dir)
         assert im.data.shape == (5, 4, 1024, 1024), im.data.shape
         self.assertAlmostEqual(numpy.max(im.data.real), 1.0, 7)
 
     def test_fftim(self):
-        self.m31image = create_test_image(cellsize=0.001, frequency=[1e8], canonical=True)
+        self.m31image = create_test_image(cellsize=0.001, frequency=[1e8])
         m31_fft = fft_image(self.m31image)
         m31_fft_ifft = fft_image(m31_fft, self.m31image)
         numpy.testing.assert_array_almost_equal(self.m31image.data, m31_fft_ifft.data.real, 12)
@@ -179,7 +181,7 @@ class TestImage(unittest.TestCase):
     def test_fftim_factors(self):
         for i in [3, 5, 7]:
             npixel = 256 * i
-            m31image = create_test_image(cellsize=0.001, frequency=[1e8], canonical=True)
+            m31image = create_test_image(cellsize=0.001, frequency=[1e8])
             padded = pad_image(m31image, [1, 1, npixel, npixel])
             assert padded.shape == (1, 1, npixel, npixel)
             padded_fft = fft_image(padded)
@@ -189,12 +191,12 @@ class TestImage(unittest.TestCase):
             if self.persist: export_image_to_fits(padded_fft, fitsfile='%s/test_m31_fft_%d.fits' % (self.dir, npixel))
 
     def test_pad_image(self):
-        m31image = create_test_image(cellsize=0.001, frequency=[1e8], canonical=True)
+        m31image = create_test_image(cellsize=0.001, frequency=[1e8])
         padded = pad_image(m31image, [1, 1, 1024, 1024])
         assert padded.shape == (1, 1, 1024, 1024)
 
-        padded = pad_image(m31image, [3, 4, 2048, 2048])
-        assert padded.shape == (3, 4, 2048, 2048)
+        with self.assertRaises(AssertionError):
+            padded = pad_image(m31image, [3, 4, 2048, 2048])
 
         with self.assertRaises(ValueError):
             padded = pad_image(m31image, [1, 1, 100, 100])
@@ -215,14 +217,14 @@ class TestImage(unittest.TestCase):
     def test_apply_voltage_pattern(self):
     
         vp = create_vp(telescope='MID_FEKO_B2')
-        vp.data = vp.data[:,:,256:768,256:768]
         # vp = scale_and_rotate_image(vp, 30.0 * numpy.pi / 180.0, [1.0, 2.0])
         cellsize = vp.wcs.wcs.cdelt[1] * numpy.pi / 180.0
-        m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9], canonical=True)
-        padded = pad_image(m31image, [1, 1, 512, 512])
-        padded.data = numpy.repeat(padded.data, repeats=4, axis=1)
-        padded.polarisation_frame = PolarisationFrame("stokesIQUV")
-        padded.data[:, 1:, ...] = 0.0
+        m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9])
+        padded = pad_image(m31image, [1, 1, 1024, 1024])
+        padded_data = numpy.repeat(padded.data.values, repeats=4, axis=1)
+        padded = create_image_from_array(padded_data, polarisation_frame=PolarisationFrame("stokesIQUV"),
+                                         wcs=padded.wcs)
+        padded.data.values[:, 1:, ...] = 0.0
         applied = apply_voltage_pattern_to_image(padded, vp)
         unapplied = apply_voltage_pattern_to_image(applied, vp, inverse=True, min_det=1e-12)
         if self.persist:

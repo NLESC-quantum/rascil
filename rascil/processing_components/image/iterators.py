@@ -15,7 +15,7 @@ from rascil.processing_components.image.operations import create_image_from_arra
     image_is_canonical
 from rascil.processing_components.util.array_functions import tukey_filter
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def image_null_iter(im: Image, facets=1, overlap=0) -> collections.abc.Iterable:
@@ -143,17 +143,17 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
                     wcs.wcs.crpix[0] -= x
                     wcs.wcs.crpix[1] -= y
                     # yield image from slice (reference!)
-                    subim = create_image_from_array(im.data[..., y:y + dy, x:x + dx], wcs, im.polarisation_frame)
+                    subim = create_image_from_array(im.data.values[..., y:y + dy, x:x + dx], wcs, im.polarisation_frame)
                     if overlap > 0 and make_flat:
                         flat = create_empty_image_like(subim)
                         if taper == 'linear':
-                            flat.data[..., :, :] = taper_linear()
+                            flat.data.values[..., :, :] = taper_linear()
                         elif taper == 'quadratic':
-                            flat.data[..., :, :] = taper_quadratic()
+                            flat.data.values[..., :, :] = taper_quadratic()
                         elif taper == 'tukey':
-                            flat.data[..., :, :] = taper_tukey()
+                            flat.data.values[..., :, :] = taper_tukey()
                         else:
-                            flat.data[..., :, :] = taper_flat()
+                            flat.data.values[..., :, :] = taper_flat()
                         yield flat
                     else:
                         yield subim
@@ -202,4 +202,4 @@ def image_channel_iter(im: Image, subimages=1) -> collections.abc.Iterable:
         wcs.wcs.crpix[3] -= channel
         
         # Yield image from slice (reference!)
-        yield create_image_from_array(im.data[channel:channel_max, ...], wcs, im.polarisation_frame)
+        yield create_image_from_array(im.data.values[channel:channel_max, ...], wcs, im.polarisation_frame)

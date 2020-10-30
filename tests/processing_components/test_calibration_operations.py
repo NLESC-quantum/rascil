@@ -20,7 +20,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import copy_visibility, create_blockvisibility
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -68,17 +68,6 @@ class TestCalibrationOperations(unittest.TestCase):
                 assert numpy.max(numpy.abs(vis.vis - original.vis)) > 0.0
 
 
-    def test_create_gaintable_from_other(self):
-        for timeslice in [10.0, 'auto', 1e5]:
-            for spf, dpf in [('stokesI', 'stokesI'), ('stokesIQUV', 'linear'),
-                             ('stokesIQUV', 'circular')]:
-                self.actualSetup(spf, dpf)
-                gt = create_gaintable_from_blockvisibility(self.vis, timeslice=timeslice)
-                log.info("Created gain table: %s" % (gaintable_summary(gt)))
-                new_gt = GainTable(data=gt.data)
-                assert new_gt.data.shape == gt.data.shape
-
-
     def test_create_gaintable_from_visibility_interval(self):
         for timeslice in [10.0, 'auto', 1e5]:
             for spf, dpf in [('stokesI', 'stokesI'), ('stokesIQUV', 'linear'),
@@ -102,7 +91,7 @@ class TestCalibrationOperations(unittest.TestCase):
             original = copy_visibility(self.vis)
             vis = apply_gaintable(self.vis, gt)
             error = numpy.max(numpy.abs(vis.vis - original.vis))
-            assert error > 10.0, "Error = %f" % (error)
+            assert 71 > error > 10.0, "Error = %f" % (error)
 
     def test_apply_gaintable_and_inverse_phase_only(self):
         for spf, dpf in[('stokesI', 'stokesI'), ('stokesIQUV', 'linear'), ('stokesIQUV', 'circular')]:
@@ -137,16 +126,6 @@ class TestCalibrationOperations(unittest.TestCase):
             vis = apply_gaintable(self.vis, gt, inverse=True)
             error = numpy.max(numpy.abs(vis.vis[:,0,1,...] - original.vis[:,0,1,...]))
             assert error < 1e-12, "Error = %s" % (error)
-
-    def test_create_gaintable_from_rows_makecopy(self):
-        for spf, dpf in[('stokesI', 'stokesI'), ('stokesIQUV', 'linear'), ('stokesIQUV', 'circular')]:
-            self.actualSetup(spf, dpf)
-            gt = create_gaintable_from_blockvisibility(self.vis, timeslice='auto')
-            rows = gt.time > 150.0
-            for makecopy in [True, False]:
-                selected_gt = create_gaintable_from_rows(gt, rows, makecopy=makecopy)
-                assert selected_gt.ntimes == numpy.sum(numpy.array(rows))
-
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 import numpy
 
-from rascil.data_models.memory_data_models import Image, Visibility
+from rascil.data_models.memory_data_models import Image, BlockVisibility
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import image_is_canonical
 
@@ -29,11 +29,7 @@ def get_frequency_map(vis, im: Image = None):
         assert image_is_canonical(im)
 
         spectral_mode = 'mfs'
-        if vis.frequency_map is None:
-            vfrequencymap = numpy.zeros_like(vis.frequency, dtype='int')
-            vis.frequencymap = vfrequencymap
-        else:
-            vfrequencymap = vis.frequency_map
+        vfrequencymap = numpy.zeros_like(vis.frequency, dtype='int')
 
     else:
         assert image_is_canonical(im)
@@ -53,7 +49,7 @@ def get_frequency_map(vis, im: Image = None):
     return spectral_mode, vfrequencymap
 
 
-def get_polarisation_map(vis: Visibility, im: Image = None):
+def get_polarisation_map(vis: BlockVisibility, im: Image = None):
     """ Get the mapping of visibility polarisations to image polarisations
 
     """

@@ -16,7 +16,6 @@ See the jupyter notebooks below:
    :maxdepth: 3
 
    examples/notebooks/imaging.rst
-   examples/notebooks/imaging-wterm_rsexecute.rst
    examples/notebooks/simple-dask_rsexecute.rst
    examples/notebooks/imaging-pipelines_rsexecute.rst
    examples/notebooks//bandpass-calibration_serial.rst

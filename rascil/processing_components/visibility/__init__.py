@@ -1,12 +1,10 @@
-""" Functions for processing visibility. These operate on one or both of BlockVisibility and Visibility.
+""" Functions for processing visibility. These operate on BlockVisibility
 
 """
 
 from .base import *
-from .coalesce import *
-from .gather_scatter import *
-from .iterators import *
 from .operations import *
 from .visibility_fitting import *
 from .visibility_geometry import *
-from .vis_select import *
+from .visibility_selection import *
+

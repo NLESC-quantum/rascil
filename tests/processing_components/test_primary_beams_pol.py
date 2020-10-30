@@ -23,7 +23,7 @@ from rascil.processing_components.skycomponent import create_skycomponent, apply
     copy_skycomponent, apply_voltage_pattern_to_skycomponent, find_skycomponents
 from rascil.processing_components.visibility import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 

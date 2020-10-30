@@ -21,7 +21,7 @@ from rascil.processing_components.visibility.base import copy_visibility
 from rascil.workflows.rsexecute.calibration.calibration_rsexecute import calibrate_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -32,7 +32,7 @@ log.setLevel(logging.WARNING)
 class TestCalibrateGraphs(unittest.TestCase):
     
     def setUp(self):
-        rsexecute.set_client(use_dask=True)
+        rsexecute.set_client(use_dask=False)
     
         from rascil.data_models.parameters import rascil_path, rascil_data_path
         self.dir = rascil_path('test_results')
@@ -84,7 +84,7 @@ class TestCalibrateGraphs(unittest.TestCase):
                                                                    [self.channelwidth[i]],
                                                                    self.times,
                                                                    self.vis_pol,
-                                                                   self.phasecentre, block=True,
+                                                                   self.phasecentre,
                                                                    zerow=zerow)
              for i in range(nfreqwin)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)

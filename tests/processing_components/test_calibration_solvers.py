@@ -20,7 +20,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import copy_visibility, create_blockvisibility
 from rascil.processing_components.visibility.operations import divide_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -55,17 +55,17 @@ class TestCalibrationSolvers(unittest.TestCase):
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
 
     def test_solve_gaintable_stokesI(self):
-        self.actualSetup('stokesI', 'stokesI', f=[100.0], ntimes=300)
+        self.actualSetup('stokesI', 'stokesI', f=[100.0])
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
-        gt = simulate_gaintable(gt, phase_error=10.0, amplitude_error=0.1)
+        gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
         original = copy_visibility(self.vis)
         self.vis = apply_gaintable(self.vis, gt)
         gtsol = solve_gaintable(self.vis, original, phase_only=False, niter=200)
         self.vis = apply_gaintable(self.vis, gtsol)
         residual = numpy.max(gtsol.residual)
         assert residual < 3e-8, "Max residual = %s" % (residual)
-        assert numpy.max(numpy.abs(gtsol.gain - 1.0)) > 0.1, numpy.max(numpy.abs(gtsol.gain))
+        assert numpy.max(numpy.abs(gtsol.gain.values - 1.0)) > 0.1
 
     def test_solve_gaintable_stokesI_phaseonly(self):
         self.actualSetup('stokesI', 'stokesI', f=[100.0])
@@ -118,7 +118,7 @@ class TestCalibrationSolvers(unittest.TestCase):
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
         gt = simulate_gaintable(gt, phase_error=10.0, amplitude_error=0.0)
-        gt.data['gain'] = gt.gain[1,...]
+        gt.gain.values[...] = gt.gain.values[1,...]
         original = copy_visibility(self.vis)
         self.vis = apply_gaintable(self.vis, gt)
         gtsol = solve_gaintable(self.vis, original, phase_only=True, niter=200)

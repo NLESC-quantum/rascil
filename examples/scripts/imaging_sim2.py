@@ -9,12 +9,10 @@ import numpy
 from rascil.data_models import PolarisationFrame, rascil_data_path
 from rascil.processing_components import create_blockvisibility_from_ms, \
     export_image_to_fits, qa_image, \
-    deconvolve_cube, restore_cube, create_image_from_visibility, \
-    convert_blockvisibility_to_visibility, \
-    convert_visibility_to_stokes
+    deconvolve_cube, restore_cube, create_image_from_visibility, invert_2d
 from rascil.workflows import invert_list_serial_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -26,15 +24,11 @@ if __name__ == '__main__':
                                          end_chan=39)[0]
     vt.configuration.diameter[...] = 35.0
     
-    nants = vt.vis.shape[1]
-    for ant in range(nants):
-        vt.flags[:, ant, ant,...] = 1.0
-
     a2r = numpy.pi / (180.0 * 3600.0)
     model = create_image_from_visibility(vt, cellsize=20.0 * a2r, npixel=512,
                                          polarisation_frame=PolarisationFrame('stokesIQUV'))
-    dirty, sumwt = invert_list_serial_workflow([vt], [model], context='2d')[0]
-    psf, sumwt = invert_list_serial_workflow([vt], [model], context='2d', dopsf=True)[0]
+    dirty, sumwt = invert_2d(vt, model)
+    psf, sumwt = invert_2d(vt, model, dopsf=True)
     export_image_to_fits(dirty, '%s/rascil_imaging_sim_2_dirty.fits' % (results_dir))
     export_image_to_fits(psf, '%s/rascil_imaging_sim_2_psf.fits' % (results_dir))
 

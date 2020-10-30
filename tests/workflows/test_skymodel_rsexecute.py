@@ -19,7 +19,7 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
     create_low_test_skymodel_from_gleam
 from rascil.processing_components.simulation import create_named_configuration
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -39,7 +39,7 @@ class TestSkyModel(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
     
-    def actualSetUp(self, freqwin=1, block=True, dopol=False, zerow=False):
+    def actualSetUp(self, freqwin=1, dopol=False, zerow=False):
         
         self.npixel = 256
         self.low = create_named_configuration('LOWBD2', rmax=300.0)
@@ -74,7 +74,7 @@ class TestSkyModel(unittest.TestCase):
                                                                         [self.channelwidth[freqwin]],
                                                                         self.times,
                                                                         self.vis_pol,
-                                                                        self.phasecentre, block=block,
+                                                                        self.phasecentre,
                                                                         zerow=zerow)
                          for freqwin, _ in enumerate(self.frequency)]
         self.vis_list = rsexecute.compute(self.vis_list)
@@ -93,7 +93,7 @@ class TestSkyModel(unittest.TestCase):
         self.skymodel_list = rsexecute.compute(self.skymodel_list, sync=True)
         assert isinstance(self.skymodel_list[0].image, Image), self.skymodel_list[0].image
         assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
-        assert len(self.skymodel_list[0].components) == 26, len(self.skymodel_list[0].components)
+        assert len(self.skymodel_list[0].components) == 11, len(self.skymodel_list[0].components)
         assert numpy.max(numpy.abs(self.skymodel_list[0].image.data)) > 0.0, "Image is empty"
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
@@ -144,7 +144,7 @@ class TestSkyModel(unittest.TestCase):
             sm.image= None
             
         assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
-        assert len(self.skymodel_list[0].components) == 26, len(self.skymodel_list[0].components)
+        assert len(self.skymodel_list[0].components) == 11, len(self.skymodel_list[0].components)
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='2d')

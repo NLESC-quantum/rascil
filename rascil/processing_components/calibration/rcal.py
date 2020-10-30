@@ -18,7 +18,7 @@ def rcal(vis: BlockVisibility, components, **kwargs) -> GainTable:
     component-based sky model, and performs calibration solution, writing a gaintable for each chunk of
     visibilities.
 
-    :param vis: Visibility or Union(Visibility, Iterable)
+    :param vis: blockvisibility or Union(Visibility, Iterable)
     :param components: Component-based sky model
     :param kwargs: Parameters
     :return: gaintable

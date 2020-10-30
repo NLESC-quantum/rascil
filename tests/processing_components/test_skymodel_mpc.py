@@ -22,7 +22,7 @@ from rascil.processing_components.skymodel.operations import image_voronoi_iter
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components import create_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -50,8 +50,7 @@ class TestSkymodelMPC(unittest.TestCase):
                                   phasecentre=self.phasecentre)
     
     def test_expand_skymodel_by_skycomponents(self):
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
         
         beam = create_low_test_beam(beam, use_local=False)
         
@@ -66,7 +65,7 @@ class TestSkymodelMPC(unittest.TestCase):
         
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
         
-        assert len(actual_components) == 37, len(actual_components)
+        assert len(actual_components) == 11, len(actual_components)
         sm = SkyModel(image=self.model, components=actual_components)
         assert len(sm.components) == len(actual_components)
         
@@ -102,7 +101,7 @@ class TestSkymodelMPC(unittest.TestCase):
             # show_image(mask)
             # plt.show(block=False)
 
-        assert len(actual_components) == 9, len(actual_components)
+        assert len(actual_components) == 6, len(actual_components)
         sm = SkyModel(image=self.model, components=actual_components)
         assert len(sm.components) == len(actual_components)
         

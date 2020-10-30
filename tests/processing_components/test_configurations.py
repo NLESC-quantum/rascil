@@ -15,7 +15,7 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -62,14 +62,14 @@ class TestConfigurations(unittest.TestCase):
             assert "MID" in numpy.unique(self.config.vp_type)
 
     def test_SKA_LOW_configurations(self):
-        for config in ['LOW', 'LOWR3']:
+        for config in ['LOW', 'LOWR3', 'LOWBD2-CORE']:
             self.config = create_named_configuration(config)
             assert self.config.size() > 0.0
             assert "LOW" in numpy.unique(self.config.vp_type)
 
     def test_clip_configuration(self):
         for rmax in [100.0, 3000.0, 1000.0, 3000.0, 10000.0, 30000.0, 100000.0]:
-            self.config = create_named_configuration('LOWBD2', rmax=rmax)
+            self.config = create_named_configuration('LOW', rmax=rmax)
             assert self.config.size() > 0.0
     
     def test_unknown_configuration(self):

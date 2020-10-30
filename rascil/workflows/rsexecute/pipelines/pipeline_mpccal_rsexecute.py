@@ -16,7 +16,7 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import convolve_skym
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymodel_list_rsexecute_workflow, \
     invert_skymodel_list_rsexecute_workflow, crosssubtract_datamodels_skymodel_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def mpccal_skymodel_list_rsexecute_workflow(visobs, model, theta_list, nmajor=10,

@@ -15,7 +15,7 @@ from rascil.processing_components.image.iterators import image_raster_iter, imag
 from rascil.processing_components.image.operations import create_empty_image_like, pad_image
 from rascil.processing_components.simulation import create_test_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -58,16 +58,16 @@ class TestImageIterators(unittest.TestCase):
                     patch.data *= 2.0
             
     def test_channelise(self):
-        m31cube = create_test_image(polarisation_frame=PolarisationFrame('stokesI'),
-                                        frequency=numpy.linspace(1e8,1.1e8, 128))
+        m31cube = create_test_image(frequency=numpy.linspace(1e8, 1.1e8, 128),
+                                    polarisation_frame=PolarisationFrame('stokesI'))
         
         for subimages in [128, 16, 8, 2, 1]:
             for slab in image_channel_iter(m31cube, subimages=subimages):
                 assert slab.data.shape[0] == 128 // subimages
 
     def test_null(self):
-        m31cube = create_test_image(polarisation_frame=PolarisationFrame('stokesI'),
-                                    frequency=numpy.linspace(1e8, 1.1e8, 128))
+        m31cube = create_test_image(frequency=numpy.linspace(1e8, 1.1e8, 128),
+                                    polarisation_frame=PolarisationFrame('stokesI'))
     
         for i, im in enumerate(image_null_iter(m31cube)):
             assert i<1, "Null iterator returns more than one value"

@@ -20,11 +20,13 @@ probably more useful.
 
 """
 
+__all__ = ['PolarisationFrame', 'ReceptorFrame']
+
 import logging
 
 import numpy
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 class ReceptorFrame:

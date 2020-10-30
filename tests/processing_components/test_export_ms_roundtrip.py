@@ -34,6 +34,7 @@ try:
     import casacore
     from casacore.tables import table  # pylint: disable=import-error
     from rascil.processing_components.visibility import msv2
+    from rascil.processing_components.visibility import blockvisibility_select, blockvisibility_where
     from rascil.processing_components.visibility.msv2fund import Stand, Antenna
     run_ms_tests = True
 #            except ModuleNotFoundError:
@@ -81,36 +82,42 @@ class measurementset_tests(unittest.TestCase):
         cellsize = advice['cellsize']
 
         # Read the venerable test image, constructing a RASCIL Image
-        m31image = create_test_image(frequency=frequency, cellsize=cellsize,
-                                     phasecentre=vt.phasecentre)
+        m31image = create_test_image(cellsize=cellsize, frequency=frequency, phasecentre=vt.phasecentre)
 
         # Predict the visibility for the Image
         vt = predict_2d(vt, m31image, context='2d')
 
         model = create_image_from_visibility(vt, cellsize=cellsize, npixel=512)
         dirty_before, sumwt = invert_2d(vt, model, context='2d')
-        #export_image_to_fits(dirty_before, '%s/imaging_dirty_before.fits' % (results_dir))
+        export_image_to_fits(dirty_before,"{dir}/test_roundtrip_dirty_before.fits".format(dir=results_dir) )
 
-        # print("Before: Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
-        #       (dirty_before.data.max(), dirty_before.data.min(), sumwt))
+        #print("Before: Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
+        #      (dirty_before.data.max(), dirty_before.data.min(), sumwt))
 
         msname = "{dir}/test_roundtrip.ms".format(dir=results_dir)
-        ms = export_blockvisibility_to_ms(msname, [vt])
+        export_blockvisibility_to_ms(msname, [vt])
         vt_after = create_blockvisibility_from_ms(msname)[0]
-
+        
+        # Temporarily flag autocorrelations until MS writer is fixed
+        for ibaseline, (a1, a2) in enumerate(vt_after.baselines.values):
+            if a1 == a2:
+                vt_after.weight.values[:,ibaseline,...] = 0.0
+                vt_after.imaging_weight.values[:,ibaseline,...] = 0.0
+                vt_after.flags.values[:,ibaseline,...] = 1
+        
         # Make the dirty image and point spread function
         model = create_image_from_visibility(vt_after, cellsize=cellsize, npixel=512)
         dirty_after, sumwt = invert_2d(vt_after, model, context='2d')
+        export_image_to_fits(dirty_after,"{dir}/test_roundtrip_dirty_after.fits".format(dir=results_dir) )
 
-        # print("After: Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
-        #       (dirty_after.data.max(), dirty_after.data.min(), sumwt))
+        #print("After: Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
+        #      (dirty_after.data.max(), dirty_after.data.min(), sumwt))
 
         #export_image_to_fits(dirty_after, '%s/imaging_dirty_after.fits' % (results_dir))
 
-        error = numpy.max(numpy.abs(dirty_after.data - dirty_before.data)) / numpy.max(numpy.abs(dirty_after.data))
-        # print("Maximum fractional difference in dirty image before, after writing to MS = {}".format(error))
+        error = numpy.max(numpy.abs(dirty_after.data - dirty_before.data))/numpy.max(numpy.abs(dirty_before.data))
+        #print("Maximum fractional difference in peak of dirty image before, after writing to MS = {}".format(error))
 
-        assert error < 1e08, "Maximum fractional difference in dirty image before,after writing to MS execeeds tolerance"
-
+        assert error < 1e-8, "Maximum fractional difference in peak of dirty image before, after writing to MS execeeds tolerance"
         
 

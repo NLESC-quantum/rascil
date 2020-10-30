@@ -20,13 +20,12 @@ from rascil.processing_components.imaging.primary_beams import create_vp
 from rascil.processing_components.simulation import create_named_configuration, create_test_skycomponents_from_s3
 from rascil.processing_components.skycomponent import apply_voltage_pattern_to_skycomponent, \
     filter_skycomponents_by_flux
-from rascil.processing_components.visibility import create_blockvisibility, vis_timeslice_iter, \
-    create_visibility_from_rows
+from rascil.processing_components.visibility import create_blockvisibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines import continuum_imaging_list_rsexecute_workflow
 from rascil.workflows.rsexecute.imaging import weight_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.DEBUG)
 
@@ -122,13 +121,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.savefig('%s/test_primary_beams_pol_rsexecute_stokes_errors.png' % self.dir)
         plt.show(block=False)
 
-        split_times = False
-        if split_times:
-            bvis_list = list()
-            for rows in vis_timeslice_iter(bvis, vis_slices=8):
-                bvis_list.append(create_visibility_from_rows(bvis, rows))
-        else:
-            bvis_list = [bvis]
+        bvis_list = [bvis]
 
         bvis_list = rsexecute.scatter(bvis_list)
 

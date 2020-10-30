@@ -33,7 +33,7 @@ from rascil.data_models.data_model_helpers import buffer_data_model_to_memory, m
 from rascil.data_models.memory_data_models import Image, BlockVisibility, SkyModel, GainTable, GridData, \
     ConvolutionFunction, PointingTable, FlagTable
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 class BufferDataModel():

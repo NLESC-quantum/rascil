@@ -20,7 +20,7 @@ Functions that aid testing in various ways. A typical use would be::
                                                       cellsize=0.001,
                                                       polarisation_frame=PolarisationFrame('stokesI')
         
-        vis = create_visibility(lowcore, times=times, frequency=frequency,
+        vis = create_blockvisibility(lowcore, times=times, frequency=frequency,
                                      channel_bandwidth=channel_bandwidth,
                                      phasecentre=phasecentre, weight=1,
                                      polarisation_frame=PolarisationFrame('stokesI'),
@@ -63,24 +63,23 @@ from rascil.processing_components.image.operations import create_image_from_arra
 from rascil.processing_components.image.operations import import_image_from_fits
 from rascil.processing_components.imaging import predict_2d, dft_skycomponent_visibility, \
     create_image_from_visibility, advise_wide_field
-from rascil.processing_components.imaging.primary_beams import create_pb
+from rascil.processing_components.imaging.primary_beams import create_vp, create_pb
 from rascil.processing_components.skycomponent.operations import create_skycomponent, insert_skycomponent, \
-    apply_beam_to_skycomponent, filter_skycomponents_by_flux
-from rascil.processing_components.visibility.base import create_blockvisibility, create_visibility
+    apply_beam_to_skycomponent, filter_skycomponents_by_flux, apply_voltage_pattern_to_skycomponent
+from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.util.installation_checks import check_data_directory
 
 check_data_directory()
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
-def create_test_image(canonical=True, cellsize=None, frequency=None, channel_bandwidth=None,
-                      phasecentre=None, polarisation_frame=PolarisationFrame("stokesI")) -> Image:
+def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, phasecentre=None,
+                      polarisation_frame=PolarisationFrame("stokesI")) -> Image:
     """Create a useful test image
 
     This is the test image M31 widely used in ALMA and other simulations. It is actually part of an Halpha region in
     M31.
 
-    :param canonical: Make the image into a 4 dimensional image
     :param cellsize:
     :param frequency: Frequency (array) in Hz
     :param channel_bandwidth: Channel bandwidth (array) in Hz
@@ -93,30 +92,28 @@ def create_test_image(canonical=True, cellsize=None, frequency=None, channel_ban
     if frequency is None:
         frequency = [1e8]
     im = import_image_from_fits(rascil_data_path("models/M31.MOD"))
-    if canonical:
+    if polarisation_frame is None:
+        im.polarisation_frame = PolarisationFrame("stokesI")
+    elif isinstance(polarisation_frame, PolarisationFrame):
+        im.polarisation_frame = polarisation_frame
+    else:
+        raise ValueError("polarisation_frame is not valid")
 
-        if polarisation_frame is None:
-            im.polarisation_frame = PolarisationFrame("stokesI")
-        elif isinstance(polarisation_frame, PolarisationFrame):
-            im.polarisation_frame = polarisation_frame
+    im = replicate_image(im, frequency=frequency, polarisation_frame=im.polarisation_frame)
+    if cellsize is not None:
+        im.wcs.wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
+        im.wcs.wcs.cdelt[1] = +180.0 * cellsize / numpy.pi
+    if frequency is not None:
+        im.wcs.wcs.crval[3] = frequency[0]
+    if channel_bandwidth is not None:
+        im.wcs.wcs.cdelt[3] = channel_bandwidth[0]
+    else:
+        if len(frequency) > 1:
+            im.wcs.wcs.cdelt[3] = frequency[1] - frequency[0]
         else:
-            raise ValueError("polarisation_frame is not valid")
-
-        im = replicate_image(im, frequency=frequency, polarisation_frame=im.polarisation_frame)
-        if cellsize is not None:
-            im.wcs.wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
-            im.wcs.wcs.cdelt[1] = +180.0 * cellsize / numpy.pi
-        if frequency is not None:
-            im.wcs.wcs.crval[3] = frequency[0]
-        if channel_bandwidth is not None:
-            im.wcs.wcs.cdelt[3] = channel_bandwidth[0]
-        else:
-            if len(frequency) > 1:
-                im.wcs.wcs.cdelt[3] = frequency[1] - frequency[0]
-            else:
-                im.wcs.wcs.cdelt[3] = 0.001 * frequency[0]
-        im.wcs.wcs.radesys = 'ICRS'
-        im.wcs.wcs.equinox = 2000.00
+            im.wcs.wcs.cdelt[3] = 0.001 * frequency[0]
+    im.wcs.wcs.radesys = 'ICRS'
+    im.wcs.wcs.equinox = 2000.00
 
     if phasecentre is not None:
         im.wcs.wcs.crval[0] = phasecentre.ra.deg
@@ -442,7 +439,7 @@ def create_low_test_image_from_gleam(npixel=512, polarisation_frame=Polarisation
     model = insert_skycomponent(model, sc, insert_method=insert_method)
     if applybeam:
         beam = create_pb(model, telescope='LOW', use_local=False)
-        model.data[...] *= beam.data[...]
+        model.data.values[...] *= beam.data.values[...]
 
     return model
 
@@ -512,7 +509,7 @@ def create_low_test_skymodel_from_gleam(npixel=512, polarisation_frame=Polarisat
 
     if applybeam:
         beam = create_pb(model, telescope=telescope, use_local=False)
-        sc = apply_beam_to_skycomponent(sc, beam)
+        sc = apply_beam_to_skycomponent(sc, beam, phasecentre=phasecentre)
 
     weaksc = filter_skycomponents_by_flux(sc, flux_max=flux_threshold)
     brightsc = filter_skycomponents_by_flux(sc, flux_min=flux_threshold)
@@ -632,29 +629,29 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
     :return: Image
     """
 
+    newwcs = WCS(naxis=4)
+
+    newwcs.wcs.crpix = [im.wcs.wcs.crpix[0] + 1.0, im.wcs.wcs.crpix[1] + 1.0, 1.0, 1.0]
+    newwcs.wcs.cdelt = [im.wcs.wcs.cdelt[0], im.wcs.wcs.cdelt[1], 1.0, 1.0]
+    newwcs.wcs.crval = [im.wcs.wcs.crval[0], im.wcs.wcs.crval[1], 1.0, frequency[0]]
+    newwcs.wcs.ctype = [im.wcs.wcs.ctype[0], im.wcs.wcs.ctype[1], 'STOKES', 'FREQ']
+
+    phasecentre = SkyCoord(newwcs.wcs.crval[0] * u.deg, newwcs.wcs.crval[1] * u.deg)
+
+    nchan = len(frequency)
+    npol = polarisation_frame.npol
+
+    fshape = [nchan, npol, im.data.shape[-2], im.data.shape[-1]]
+    data = numpy.zeros(fshape)
+    log.info("replicate_image: replicating shape %s to %s" % (im.data.shape, data.shape))
     if len(im.data.shape) == 2:
-        fim = Image()
-
-        newwcs = WCS(naxis=4)
-
-        newwcs.wcs.crpix = [im.wcs.wcs.crpix[0] + 1.0, im.wcs.wcs.crpix[1] + 1.0, 1.0, 1.0]
-        newwcs.wcs.cdelt = [im.wcs.wcs.cdelt[0], im.wcs.wcs.cdelt[1], 1.0, 1.0]
-        newwcs.wcs.crval = [im.wcs.wcs.crval[0], im.wcs.wcs.crval[1], 1.0, frequency[0]]
-        newwcs.wcs.ctype = [im.wcs.wcs.ctype[0], im.wcs.wcs.ctype[1], 'STOKES', 'FREQ']
-
-        nchan = len(frequency)
-        npol = polarisation_frame.npol
-        fim.polarisation_frame = polarisation_frame
-
-        fim.wcs = newwcs
-        fshape = [nchan, npol, im.data.shape[1], im.data.shape[0]]
-        fim.data = numpy.zeros(fshape)
-        log.info("replicate_image: replicating shape %s to %s" % (im.data.shape, fim.data.shape))
-        for i3 in range(nchan):
-            fim.data[i3, 0, :, :] = im.data[:, :]
-        return fim
+        data[...] = im.data.values[numpy.newaxis, numpy.newaxis, ...]
     else:
-        return im
+        for pol in range(npol):
+            data[:, pol] = im.data.values[:, 0]
+        
+    return Image(data=data, phasecentre=phasecentre, polarisation_frame=polarisation_frame, wcs=newwcs,
+                 frequency=frequency)
 
 
 def create_blockvisibility_iterator(config: Configuration, times: numpy.array, frequency: numpy.array,
@@ -673,7 +670,7 @@ def create_blockvisibility_iterator(config: Configuration, times: numpy.array, f
         if i == 0:
             fullvis = vis
         else:
-            fullvis = append_visibility(fullvis, vis)
+            fullvis = concatenate_visibility(fullvis, vis)
 
 
     :param config: Configuration of antennas
@@ -687,7 +684,7 @@ def create_blockvisibility_iterator(config: Configuration, times: numpy.array, f
     :param model: Model image to be inserted
     :param components: Components to be inserted
     :param sleep_time: Time to sleep between yields
-    :return: Visibility
+    :return: BlockVisibility
 
     """
     for time in times:
@@ -755,31 +752,26 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
                     amp = amp / numpy.average(amp)
                 amps[time, ant, ...] = amp[..., numpy.newaxis, numpy.newaxis]
 
-    gt.data['gain'] = amps * numpy.exp(0 + 1j * phases)
+    gt.data['gain'].values = amps * numpy.exp(0 + 1j * phases)
     nrec = gt.data['gain'].shape[-1]
     if nrec > 1:
         if leakage > 0.0:
-            leak = numpy.random.normal(0, leakage, gt.data['gain'][..., 0, 0].shape) + 1j * \
-                   numpy.random.normal(0, leakage, gt.data['gain'][..., 0, 0].shape)
-            gt.data['gain'][..., 0, 1] = gt.data['gain'][..., 0, 0] * leak
-            leak = numpy.random.normal(0, leakage, gt.data['gain'][..., 1, 1].shape) + 1j * \
-                   numpy.random.normal(0, leakage, gt.data['gain'][..., 1, 1].shape)
-            gt.data['gain'][..., 1, 0] = gt.data['gain'][..., 1, 1] * leak
+            leak = numpy.random.normal(0, leakage, gt.data['gain'].values[..., 0, 0].shape) + 1j * \
+                   numpy.random.normal(0, leakage, gt.data['gain'].values[..., 0, 0].shape)
+            gt.data['gain'].values[..., 0, 1] = gt.data['gain'][..., 0, 0] * leak
+            leak = numpy.random.normal(0, leakage, gt.data['gain'].values[..., 1, 1].shape) + 1j * \
+                   numpy.random.normal(0, leakage, gt.data['gain'].values[..., 1, 1].shape)
+            gt.data['gain'].values[..., 1, 0] = gt.data['gain'][..., 1, 1].values * leak
         else:
-            gt.data['gain'][..., 0, 1] = 0.0
-            gt.data['gain'][..., 1, 0] = 0.0
+            gt.data['gain'].values[..., 0, 1] = 0.0
+            gt.data['gain'].values[..., 1, 0] = 0.0
 
     return gt
 
 
-def ingest_unittest_visibility(config, frequency, channel_bandwidth, times, vis_pol, phasecentre, block=False,
-                               zerow=False):
-    if block:
-        vt = create_blockvisibility(config, times, frequency, channel_bandwidth=channel_bandwidth,
+def ingest_unittest_visibility(config, frequency, channel_bandwidth, times, vis_pol, phasecentre, zerow=False):
+    vt = create_blockvisibility(config, times, frequency, channel_bandwidth=channel_bandwidth,
                                     phasecentre=phasecentre, weight=1.0, polarisation_frame=vis_pol, zerow=zerow)
-    else:
-        vt = create_visibility(config, times, frequency, channel_bandwidth=channel_bandwidth,
-                               phasecentre=phasecentre, weight=1.0, polarisation_frame=vis_pol, zerow=zerow)
     vt.data['vis'][...] = 0.0
     return vt
 

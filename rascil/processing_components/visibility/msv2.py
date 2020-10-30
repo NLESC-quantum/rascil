@@ -15,7 +15,7 @@ from astropy.time import Time
 from rascil.processing_components.visibility.msv2fund import MS_UVData, BaseData
 from rascil.processing_components.visibility.msv2supp import STOKES_CODES, geo_to_ecef, get_eci_transform
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 try:
     from casacore.tables import table, tableutil
@@ -87,7 +87,7 @@ try:
             else:
                 arrayX, arrayY, arrayZ = 0, 0, 0
 
-            xyz = site_config.xyz[:]
+            xyz = site_config.xyz.values[:]
 
             # Create the stand mapper
             # No use if don't need to consider antenna name
@@ -220,17 +220,17 @@ try:
             tb.putcol('STATION', [self.siteName, ] * self.nant, 0, self.nant)
 
             for i, ant in enumerate(self.array[0]['ants']):
-                tb.putcell('OFFSET', i, self.site_config.data['offset'][i])
+                tb.putcell('OFFSET', i, self.site_config.data['offset'].values[i])
                 # tb.putcell('OFFSET', i, [0.0, 0.0, 0.0])
                 tb.putcell('POSITION', i, [ant.x + self.array[0]['center'][0],
                                            ant.y + self.array[0]['center'][1],
                                            ant.z + self.array[0]['center'][2]])
                 # tb.putcell('TYPE', i, self.site_config.mount[i])
-                tb.putcell('DISH_DIAMETER', i, self.site_config.data['diameter'][i])
+                tb.putcell('DISH_DIAMETER', i, self.site_config.data['diameter'].values[i])
                 # tb.putcell('FLAG_ROW', i, False)
-                tb.putcell('MOUNT', i, self.site_config.data['mount'][i])
+                tb.putcell('MOUNT', i, self.site_config.data['mount'].values[i])
                 tb.putcell('NAME', i, ant.getName())
-                tb.putcell('STATION', i, self.site_config.data['stations'][i])
+                tb.putcell('STATION', i, self.site_config.data['stations'].values[i])
                 # tb.putcell('STATION', i, self.siteName)
 
             tb.flush()
@@ -773,7 +773,7 @@ try:
                 # Sort the data by packed baseline
                 try:
                     order
-                except NameError:
+                except (NameError, UnboundLocalError):
                     order = dataSet.argsort(mapper=mapper, shift=16)
 
                 # Deal with defininig the values of the new data set

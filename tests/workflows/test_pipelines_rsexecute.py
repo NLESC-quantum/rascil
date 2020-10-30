@@ -29,7 +29,7 @@ from rascil.workflows.rsexecute.pipelines.pipeline_rsexecute import ical_list_rs
 from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import ical_skymodel_list_rsexecute_workflow, \
     continuum_imaging_skymodel_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -82,7 +82,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                    [self.channelwidth[i]],
                                                                    self.times,
                                                                    self.vis_pol,
-                                                                   self.phasecentre, block=True,
+                                                                   self.phasecentre,
                                                                    zerow=zerow)
              for i in range(nfreqwin)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
@@ -136,7 +136,7 @@ class TestPipelineGraphs(unittest.TestCase):
             continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
                                                       context='2d',
-                                                      algorithm='mmclean', facets=1,
+                                                      algorithm='mmclean',
                                                       scales=[0],
                                                       niter=100, fractional_threshold=0.1, threshold=0.01,
                                                       nmoment=2,
@@ -155,8 +155,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.02925433354757) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976687707018) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.02925433354724) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.0714797668770724) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, zerow=True, dopol=True)
@@ -185,7 +185,7 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre])
         assert numpy.abs(qa.data['max'] - 100.02925433354756) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976687706512) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.07147976687706536) < 1.0e-7, str(qa)
     
     @unittest.skip("Not deterministic")
     def test_ical_pipeline(self):
@@ -473,8 +473,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_empty_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.02925433354756) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976687707507) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.02925433354758) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.07147976687707393) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
@@ -516,8 +516,8 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='restored')
         
-        assert numpy.abs(qa.data['max'] - 100.01311230112259) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.03596228994220672) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01311230112263) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.03596228994220364) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()

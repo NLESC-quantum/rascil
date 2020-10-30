@@ -5,7 +5,10 @@ Simple flagging operations (Still in development)
 __all__ = ['flagtable_summary',
            'copy_flagtable',
            'create_flagtable_from_blockvisibility',
-           'create_flagtable_from_rows',
+           'flagtable_select',
+           'flagtable_groupby',
+           'flagtable_groupby_bins',
+           'flagtable_where',
            'qa_flagtable']
 
 import copy
@@ -15,7 +18,7 @@ import numpy
 
 from rascil.data_models.memory_data_models import BlockVisibility, FlagTable, QA
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def flagtable_summary(ft: FlagTable):
@@ -30,8 +33,9 @@ def flagtable_summary(ft: FlagTable):
 def copy_flagtable(ft: FlagTable, zero=False) -> FlagTable:
     """Copy a flagtable
 
-    Performs a deepcopy of the data array
     :param ft: FlagTable
+    Performs a deepcopy of the data array
+    :param zero: Zero the flags
     :returns: FlagTable
 
     """
@@ -57,21 +61,59 @@ def create_flagtable_from_blockvisibility(bvis: BlockVisibility, **kwargs) -> Fl
                      polarisation_frame=bvis.polarisation_frame)
 
 
-def create_flagtable_from_rows(ft: FlagTable, rows: numpy.ndarray):
-    """ Create a FlagTable from selected rows
+def flagtable_select(ft, selection):
+    """ Select subset of FlagTable using xarray syntax
 
-    :param ft: FlagTable
-    :param rows: Boolean array of row selection
-    :return: FlagTable
+    :param ft:
+    :param selection:
+    :return:
     """
+    newft = copy.copy(ft)
+    newft.data = ft.data.sel(selection)
+    return newft
 
-    if rows is None or numpy.sum(rows) == 0:
-        return None
 
-    assert len(rows) == len(ft.data), "Length of rows does not agree with length of flagtable"
+def flagtable_where(ft, condition, **kwargs):
+    """ Select where a condition holds of FlagTable using xarray syntax
 
-    return FlagTable(ft.data[rows], frequency=ft.frequency, channel_bandwidth=ft.channel_bandwidth,
-                     configuration=ft.configuration)
+    :param ft:
+    :param condition:
+    :return:
+    """
+    newft = copy.copy(ft)
+    newft.data = ft.data.where(condition, **kwargs)
+    return newft
+
+
+def flagtable_groupby(ft, coordinate, **kwargs):
+    """ Group bu a coordinate condition holds of FlagTable using xarray syntax
+
+    Returns a sequence of (value, group) pairs where the value is that of the
+    coordinate, and group is the part of ft
+
+    :param ft:
+    :param coordinate:
+    :return:
+    """
+    for group in ft.data.groupby(coordinate, **kwargs):
+        newft = copy.copy(ft)
+        newft.data = group[1]
+        yield group[0], newft
+
+def flagtable_groupby_bins(ft, coordinate, bins, **kwargs):
+    """ Group bu a coordinate condition holds of FlagTable using xarray syntax
+
+    Returns a sequence of (value, group) pairs where the value is that of the
+    coordinate, and group is the part of ft
+
+    :param ft:
+    :param coordinate:
+    :return:
+    """
+    for group in ft.data.groupby_bins(coordinate, bins=bins, **kwargs):
+        newft = copy.copy(ft)
+        newft.data = group[1]
+        yield group[0], newft
 
 
 def qa_flagtable(ft: FlagTable, context=None) -> QA:

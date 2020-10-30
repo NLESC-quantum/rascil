@@ -10,7 +10,6 @@ __all__ = ['Configuration',
            'ConvolutionFunction',
            'Skycomponent',
            'SkyModel',
-           'Visibility',
            'BlockVisibility',
            'FlagTable',
            'QA',
@@ -19,42 +18,41 @@ __all__ = ['Configuration',
            'assert_vis_gt_compatible'
            ]
 
-
-
 import logging
 import sys
 import warnings
-from copy import deepcopy
-from typing import Union
 
 import numpy
+import xarray
+from astropy import constants as const
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.wcs import FITSFixedWarning
+from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
+
 
 warnings.simplefilter('ignore', FITSFixedWarning)
 warnings.simplefilter('ignore', AstropyDeprecationWarning)
 
-from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 class Configuration:
-    """ Describe a Configuration as locations in x,y,z, mount type, diameter, names, and
+    """ Describe a XConfiguration as locations in x,y,z, mount type, diameter, names, and
         overall location
     """
     
-    def __init__(self, name='', data=None, location=None,
-                 names="%s", xyz=None, mount="alt-az", frame="",
+    def __init__(self, name='', location=None,
+                 names=None, xyz=None, mount="alt-az", frame="",
                  receptor_frame=ReceptorFrame("linear"),
-                 diameter=None, offset=None, stations="%s", vp_type=""):
+                 diameter=None, offset=None, stations="%s", vp_type=None):
         
         """Configuration object describing data for processing
 
         :param name: Name of configuration e.g. 'LOWR3'
-        :param data: Data array (used in copying)
         :param location: Location of array as an astropy EarthLocation
         :param names: Names of the dishes/stations
         :param xyz: Geocentric coordinates of dishes/stations
@@ -66,36 +64,45 @@ class Configuration:
         :param stations: Identifiers of the dishes/stations
         :param vp_type: Type of voltage pattern (string)
         """
-        if data is None and xyz is not None:
-            desc = [('names', 'U12'),
-                    ('xyz', 'f8', (3,)),
-                    ('diameter', 'f8'),
-                    ('mount', 'U12'),
-                    ('vp_type', 'U12'),
-                    ('offset', 'f8', (3,)),
-                    ('stations', 'U12')]
-            nants = xyz.shape[0]
+        
+        nants = len(names)
+        if isinstance(stations, str):
+            stations = [stations % ant for ant in range(nants)]
             if isinstance(names, str):
                 names = [names % ant for ant in range(nants)]
             if isinstance(mount, str):
                 mount = numpy.repeat(mount, nants)
-            data = numpy.zeros(shape=[nants], dtype=desc)
-            data['names'] = names
-            data['xyz'] = xyz
-            data['mount'] = mount
-            data['diameter'] = diameter
-            if offset is not None:
-                data['offset'] = offset
-            if isinstance(stations, str):
-                stations = [stations % ant for ant in range(nants)]
-            data['stations'] = stations
-            data['vp_type'] = vp_type
+        if offset is None:
+            offset = numpy.zeros([nants, 3])
+        if vp_type is None:
+            vp_type = numpy.repeat("", nants)
         
-        self.name = name
-        self.data = data
-        self.location = location
-        self.frame = frame
+        coords = {
+            "id": list(range(nants)),
+            "spatial": ["X", "Y", "Z"]
+        }
+        datavars = dict()
+        datavars["names"] = xarray.DataArray(names, coords={"id": list(range(nants))}, dims=["id"])
+        datavars["xyz"] = xarray.DataArray(xyz, coords=coords, dims=["id", "spatial"])
+        datavars["diameter"] = xarray.DataArray(diameter, coords={"id": list(range(nants))}, dims=["id"])
+        datavars["mount"] = xarray.DataArray(mount, coords={"id": list(range(nants))}, dims=["id"])
+        datavars["vp_type"] = xarray.DataArray(vp_type, coords={"id": list(range(nants))}, dims=["id"])
+        datavars["offset"] = xarray.DataArray(offset, coords=coords, dims=["id", "spatial"])
+        datavars["stations"] = xarray.DataArray(stations, coords={"id": list(range(nants))}, dims=["id"])
+        
+        self.name = name  # Name of configuration
+        self.location = location  # EarthLocation
         self.receptor_frame = receptor_frame
+        self.frame = frame
+        
+        self.data = xarray.Dataset(datavars, coords=coords)
+    
+    def check(self):
+        """ Check that the internals are ok
+
+        :return:
+        """
+        assert isinstance(self.data, xarray.Dataset)
     
     def __str__(self):
         """Default printer for Configuration
@@ -111,26 +118,30 @@ class Configuration:
         s += "\tAxis offset: %s\n" % self.offset
         s += "\tStations: %s\n" % self.stations
         s += "\tVoltage pattern type: %s\n" % self.vp_type
-
+        
         return s
     
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.size * sys.getsizeof(self.data)
+        size = self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-
+    
     @property
     def names(self):
         """ Names of the dishes/stations"""
         return self.data['names']
-
+    
+    @property
+    def nants(self):
+        """ Names of the dishes/stations"""
+        return len(self.data['names'])
+    
     @property
     def vp_type(self):
         """ Names of the voltage pattern type"""
         return self.data['vp_type']
-
+    
     @property
     def diameter(self):
         """ Diameter of dishes/stations (m)
@@ -148,17 +159,18 @@ class Configuration:
         """ Mount types of dishes/stations ('azel' | 'equatorial'
         """
         return self.data['mount']
-
+    
     @property
     def offset(self):
         """ Axis offset [:, 3] (m)
         """
         return self.data['offset']
-
+    
     @property
     def stations(self):
         """ Station/dish identifier (may be the same as names)"""
         return self.data['stations']
+
 
 class GainTable:
     """ Gain table with data_models: time, antenna, gain[:, chan, rec, rec], weight columns
@@ -166,7 +178,7 @@ class GainTable:
     The weight is usually that output from gain solvers.
     """
     
-    def __init__(self, data=None, gain: numpy.array = None, time: numpy.array = None, interval=None,
+    def __init__(self, gain: numpy.array = None, time: numpy.array = None, interval=None,
                  weight: numpy.array = None, residual: numpy.array = None, frequency: numpy.array = None,
                  receptor_frame: ReceptorFrame = ReceptorFrame("linear"), phasecentre=None, configuration=None):
         """ Create a gaintable from arrays
@@ -175,7 +187,6 @@ class GainTable:
 
             Vobs = g_i g_j^* Vmodel
 
-        :param data: Structured data (used in copying)
         :param gain: Complex gain [nrows, nants, nchan, nrec, nrec]
         :param time: Centroid of solution [nrows]
         :param interval: Interval of validity
@@ -186,26 +197,24 @@ class GainTable:
         :param phasecentre: Phasecentre (SkyCoord)
         :param configuration: Configuration
         """
-        if data is None and gain is not None:
-            nrec = receptor_frame.nrec
-            nrows = gain.shape[0]
-            nants = gain.shape[1]
-            nchan = gain.shape[2]
-            assert len(frequency) == nchan, "Discrepancy in frequency channels"
-            desc = [('gain', 'c16', (nants, nchan, nrec, nrec)),
-                    ('weight', 'f8', (nants, nchan, nrec, nrec)),
-                    ('residual', 'f8', (nchan, nrec, nrec)),
-                    ('time', 'f8'),
-                    ('interval', 'f8')]
-            data = numpy.zeros(shape=[nrows], dtype=desc)
-            data['gain'] = gain
-            data['weight'] = weight
-            data['time'] = time
-            data['interval'] = interval
-            data['residual'] = residual
-        
-        self.data = data
-        self.frequency = frequency
+        ntimes, nants, nchan, nrec, _ = gain.shape
+        antennas = range(nants)
+        coords = {
+            "time": time,
+            "antenna": antennas,
+            "frequency": frequency,
+            "receptor1": receptor_frame.names,
+            "receptor2": receptor_frame.names,
+        }
+
+        datavars = dict()
+        datavars["gain"] = xarray.DataArray(gain, dims=["time", "antenna", "frequency", "receptor1", "receptor2"])
+        datavars["weight"] = xarray.DataArray(weight, dims=["time", "antenna", "frequency", "receptor1", "receptor2"])
+        datavars["residual"] = xarray.DataArray(residual, dims=["time", "frequency", "receptor1", "receptor2"])
+        datavars["interval"] = xarray.DataArray(interval, dims=["time"])
+        datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
+                                                dims="time")
+        self.data = xarray.Dataset(datavars, coords=coords)
         self.receptor_frame = receptor_frame
         self.phasecentre = phasecentre
         self.configuration = configuration
@@ -213,31 +222,47 @@ class GainTable:
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.size * sys.getsizeof(self.data)
-        return size / 1024.0 / 1024.0 / 1024.0
+        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
     
     @property
     def time(self):
-        """ Centroid of solution [nrows]
+        """ Centroid of solution [ntimes]
         """
         return self.data['time']
     
     @property
     def interval(self):
-        """ Interval of validity [nrows]
+        """ Interval of validity [ntimes]
         """
         return self.data['interval']
-    
+
     @property
     def gain(self):
-        """ Complex gain [nrows, nants, nchan, nrec, nrec]
+        """ Complex gain [ntimes, nants, nchan, nrec, nrec]
         """
         return self.data['gain']
-    
+
+    @property
+    def frequency(self):
+        """ Frequency [nchan]
+        """
+        return self.data['frequency']
+
+    @property
+    def receptor1(self):
+        """ Receptor name
+        """
+        return self.data['receptor1']
+
+    @property
+    def receptor2(self):
+        """ Receptor name
+        """
+        return self.data['receptor2']
+
     @property
     def weight(self):
-        """ Weight of gain [nrows, nchan, nrec, nrec]
+        """ Weight of gain [ntimes, nants, nchan, nrec, nrec]
 
         """
         return self.data['weight']
@@ -265,23 +290,32 @@ class GainTable:
         """ Number of channels
         """
         return self.data['gain'].shape[2]
-    
+
     @property
     def nrec(self):
         """ Number of receivers
 
         """
-        return self.receptor_frame.nrec
-    
+        return len(self.data['receptor1'])
+
+    @property
+    def receptors(self):
+        """ Receptors
+
+        """
+        return self.data['receptor1']
+
     def __str__(self):
         """Default printer for GainTable
 
         """
         s = "GainTable:\n"
+        s += "Dataset: {}".format(self.data)
         s += "\tTimes: %s\n" % str(self.ntimes)
         s += "\tData shape: %s\n" % str(self.data.shape)
-        s += "\tReceptor frame: %s\n" % str(self.receptor_frame.type)
+        s += "\tReceptor frames: %s\n" % str(self.receptors)
         s += "\tPhasecentre: %s\n" % str(self.phasecentre)
+        
         return s
 
 
@@ -311,39 +345,42 @@ class PointingTable:
         :param pointingcentre: SkyCoord
         :param configuration: Configuration
         """
-        if data is None and pointing is not None:
-            nrec = receptor_frame.nrec
-            nrows = pointing.shape[0]
-            nants = pointing.shape[1]
-            nchan = pointing.shape[2]
-            assert len(frequency) == nchan, "Discrepancy in frequency channels"
-            desc = [('pointing', 'f16', (nants, nchan, nrec, 2)),
-                    ('nominal', 'f16', (nants, nchan, nrec, 2)),
-                    ('weight', 'f8', (nants, nchan, nrec, 2)),
-                    ('residual', 'f8', (nchan, nrec, 2)),
-                    ('time', 'f8'),
-                    ('interval', 'f8')]
-            data = numpy.zeros(shape=[nrows], dtype=desc)
-            data['pointing'] = pointing
-            data['weight'] = weight
-            data['time'] = time
-            data['interval'] = interval
-            data['residual'] = residual
-            data['nominal'] = nominal
-        
         self.data = data
         self.frequency = frequency
         self.receptor_frame = receptor_frame
         self.pointing_frame = pointing_frame
         self.pointingcentre = pointingcentre
         self.configuration = configuration
+        
+        ntimes, nants, nchan, nrec, _ = pointing.shape
+        antennas = range(nants)
+        coords = {
+            "time": time,
+            "antenna": antennas,
+            "frequency": frequency,
+            "receptor": receptor_frame.names,
+            "angle": ["az", "el"]
+        }
+
+        datavars = dict()
+        datavars["pointing"] = xarray.DataArray(pointing, dims=["time", "antenna", "frequency", "receptor", "angle"])
+        datavars["nominal"] = xarray.DataArray(nominal, dims=["time", "antenna", "frequency", "receptor", "angle"])
+        datavars["weight"] = xarray.DataArray(weight, dims=["time", "antenna", "frequency", "receptor", "angle"])
+        datavars["residual"] = xarray.DataArray(residual, dims=["time", "frequency", "receptor", "angle"])
+        datavars["interval"] = xarray.DataArray(interval, dims=["time"])
+        datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64, dims="time")
+        self.data = xarray.Dataset(datavars, coords=coords)
+
+        self.receptor_frame = receptor_frame
+        self.pointing_frame = pointing_frame
+        self.pointingcentre = pointingcentre
+        self.configuration = configuration
+
     
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.size * sys.getsizeof(self.data)
-        return size / 1024.0 / 1024.0 / 1024.0
+        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
     
     @property
     def time(self):
@@ -409,19 +446,21 @@ class PointingTable:
 
         """
         s = "PointingTable:\n"
+        s += "Dataset: {}".format(self.data)
         s += "\tTimes: %s\n" % str(self.ntimes)
         s += "\tData shape: %s\n" % str(self.data.shape)
         s += "\tReceptor frame: %s\n" % str(self.receptor_frame.type)
         s += "\tPointing centre: %s\n" % str(self.pointingcentre)
         s += "\tConfiguration: %s\n" % str(self.configuration)
+        s += "Data: {}".format(self.data)
         return s
 
 
 class Image:
-    """Image class with Image data (as a numpy.array) and the AstroPy `implementation of
+    """Image class with Image data (as an xarray.DataArray) and the AstroPy `implementation of
     a World Coodinate System <http://docs.astropy.org/en/stable/wcs>`_
 
-    Many operations can be done conveniently using numpy processing_components on Image.data_models.
+    Many operations can be done conveniently using numpy processing_components on Image.data.
 
     Most of the imaging processing_components require an image in canonical format:
     - 4 axes: RA, DEC, POL, FREQ
@@ -436,38 +475,73 @@ class Image:
 
     """
     
-    def __init__(self, data=None, wcs=None, polarisation_frame=None):
-        """ Create Image
+    def __init__(self, phasecentre, frequency, polarisation_frame=None,
+                 data=None, wcs=None, chunksize=None):
+        """ Create an XImage
 
-        :param data: Data for image
-        :param wcs: Astropy WCS object
-        :param polarisation_frame: e.g. PolarisationFrame('stokesIQUV')
+        :param frequency:
+        :param phasecentre:
+        :param polarisation_frame:
+        :return: XImage
         """
-        self.data = data
+        
+        assert not numpy.isnan(numpy.sum(data)), "NaNs present in image data"
+        
+        nx, ny = data.shape[-2], data.shape[-1]
+        cellsize = numpy.abs(wcs.wcs.cdelt[1])
+        cx = phasecentre.ra.to("deg").value
+        cy = phasecentre.dec.to("deg").value
+        
+        assert cellsize > 0.0, "Cellsize must be positive"
+        
+        dims = ["frequency", "polarisation", "l", "m"]
+        coords = {
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx),
+            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny)
+        }
+        
         self.wcs = wcs
         self.polarisation_frame = polarisation_frame
+        
+        nchan = len(frequency)
+        npol = polarisation_frame.npol
+        
+        if len(data.shape) == 2:
+            data = data.reshape([nchan, npol, ny, nx])
+        
+        assert data.shape[0] == nchan, \
+            "Number of frequency channels {} and data shape {} are incompatible"\
+                .format(len(frequency),data.shape)
+        assert data.shape[1] == npol, \
+            "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
+                                                                                  data.shape)
+        assert coords["l"][0] != coords["l"][-1]
+        assert coords["m"][0] != coords["m"][-1]
+
+        assert len(coords["m"]) == ny
+        assert len(coords["l"]) == nx
+
+        #chunksize = (1, 1, 128, 128)
+        if chunksize is not None:
+            self.data = xarray.DataArray(data, dims=dims, coords=coords).chunk(chunksize)
+            print(self.data)
+        else:
+            self.data = xarray.DataArray(data, dims=dims, coords=coords)
+    
+    def check(self):
+        """ Check that the internals are ok
+
+        :return:
+        """
+        assert isinstance(self.data, xarray.DataArray)
     
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.nbytes
+        size = self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-    
-    def __copy__(self):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        return result
-    
-    # noinspection PyArgumentList
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
     
     @property
     def nchan(self):
@@ -480,18 +554,6 @@ class Image:
         """ Number of polarisations
         """
         return self.data.shape[1]
-    
-    @property
-    def nheight(self):
-        """ Number of pixels height i.e. y
-        """
-        return self.data.shape[2]
-    
-    @property
-    def nwidth(self):
-        """ Number of pixels width i.e. x
-        """
-        return self.data.shape[3]
     
     @property
     def frequency(self):
@@ -512,11 +574,23 @@ class Image:
         """
         return SkyCoord(self.wcs.wcs.crval[0] * u.deg, self.wcs.wcs.crval[1] * u.deg)
     
+    @property
+    def ra_dec_mesh(self):
+        """ RA, Dec mesh
+
+        :return:
+        """
+        ny = self.data.shape[-2]
+        nx = self.data.shape[-1]
+        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+        return self.wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
+    
     def __str__(self):
         """Default printer for Image
 
         """
         s = "Image:\n"
+        s += "{}\n".format(str(self.data))
         s += "\tShape: %s\n" % str(self.data.shape)
         s += "\tData type: %s\n" % str(self.data.dtype)
         s += "\tWCS: %s\n" % self.wcs.__repr__()
@@ -538,40 +612,72 @@ class GridData:
 
     """
     
-    def __init__(self, data=None, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
-        """Create Griddata
-        
-        :param data: Data for griddata
-        :param grid_wcs: Astropy WCS object for the grid
-        :param projection_wcs: Astropy WCS object for the projection
-        :param polarisation_frame: Polarisation_frame e.g. PolarisationFrame('linear')
+    def __init__(self, polarisation_frame=None,
+                 dtype=None, data=None, grid_wcs=None, projection_wcs=None):
+        """ Create a GridData
+
+        :param polarisation_frame:
+        :return: GridData
         """
-        self.data = data
+        
+        nchan, npol, nw, ny, nx = data.shape
+        frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
+        wrange = grid_wcs.sub([3]).wcs_pix2world(range(nw), 0)[0]
+        
+        assert npol == polarisation_frame.npol
+        cellsize = numpy.abs(projection_wcs.wcs.cdelt[1])
+        cellsize_rad = numpy.deg2rad(cellsize)
+        du = 1.0 / cellsize_rad
+        dv = 1.0 / cellsize_rad
+        cu = grid_wcs.wcs.crval[0]
+        cv = grid_wcs.wcs.crval[1]
+        
+        assert cellsize > 0.0, "Cellsize must be positive"
+        
+        dims = ["frequency", "polarisation", "w", "v", "u"]
+        coords = {
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "w": wrange,
+            "v": numpy.linspace(cv - dv * ny / 2, cv + dv * ny / 2, ny),
+            "u": numpy.linspace(cu - du * nx / 2, cu + du * nx / 2, nx)
+        }
+        
+        assert coords["u"][0] != coords["u"][-1]
+        assert coords["v"][0] != coords["v"][-1]
+        
         self.grid_wcs = grid_wcs
         self.projection_wcs = projection_wcs
         self.polarisation_frame = polarisation_frame
+        
+        nchan = len(frequency)
+        npol = polarisation_frame.npol
+        if dtype is None:
+            dtype = "float"
+        
+        if data is None:
+            data = numpy.zeros([nchan, npol, nw, ny, nx], dtype=dtype)
+        else:
+            if data.shape == (ny, nx):
+                data = data.reshape([1, 1, nw, ny, nx])
+            assert data.shape == (nchan, npol, nw, ny, nx), \
+                "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
+                                                                                  data.shape)
+        
+        self.data = xarray.DataArray(data, dims=dims, coords=coords)
+    
+    def check(self):
+        """ Check that the internals are ok
+        
+        :return:
+        """
+        assert isinstance(self.data, xarray.DataArray)
     
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.nbytes
+        size = self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-    
-    def __copy__(self):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        return result
-    
-    # noinspection PyArgumentList
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
     
     @property
     def nchan(self):
@@ -586,24 +692,6 @@ class GridData:
         return self.data.shape[1]
     
     @property
-    def nheight(self):
-        """ Number of pixels height i.e. y
-        """
-        return self.data.shape[2]
-    
-    @property
-    def nwidth(self):
-        """ Number of pixels width i.e. x
-        """
-        return self.data.shape[3]
-    
-    @property
-    def ndepth(self):
-        """ Number of pixels deep i.e. z
-        """
-        return self.data.shape[4]
-    
-    @property
     def frequency(self):
         """ Frequency values
         """
@@ -614,24 +702,35 @@ class GridData:
     def shape(self):
         """ Shape of data array
         """
-        assert len(self.data.shape) == 5
         return self.data.shape
     
     @property
     def phasecentre(self):
-        """ Phasecentre (from projection WCS)
-
+        """ Phasecentre (from WCS)
         """
-        return SkyCoord(self.projection_wcs.wcs.crval[0] * u.deg, self.projection_wcs.wcs.crval[1] * u.deg)
+        return SkyCoord(self.grid_wcs.wcs.crval[0] * u.deg, self.grid_wcs.wcs.crval[1] * u.deg)
+    
+    @property
+    def ra_dec_mesh(self):
+        """ RA, Dec mesh
+
+        :return:
+        """
+        ny = self.data.shape[-2]
+        nx = self.data.shape[-1]
+        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+        return self.projection_wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
     
     def __str__(self):
-        """Default printer for GriddedData
+        """Default printer for GridData
 
         """
-        s = "Gridded data:\n"
+        s = "GridData:\n"
+        s += "{}\n".format(str(self.data))
         s += "\tShape: %s\n" % str(self.data.shape)
-        s += "\tGrid WCS: %s\n" % self.grid_wcs
-        s += "\tProjection WCS: %s\n" % self.projection_wcs
+        s += "\tData type: %s\n" % str(self.data.dtype)
+        s += "\tGrid WCS: %s\n" % self.grid_wcs.__repr__()
+        s += "\tProjection WCS: %s\n" % self.projection_wcs.__repr__()
         s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
         return s
 
@@ -649,7 +748,7 @@ class ConvolutionFunction:
 
     """
     
-    def __init__(self, data=None, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
+    def __init__(self, data, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
         """Create ConvolutionFunction
 
         :param data: Data for cf
@@ -657,10 +756,62 @@ class ConvolutionFunction:
         :param projection_wcs: Astropy WCS object for the projection
         :param polarisation_frame: Polarisation_frame e.g. PolarisationFrame('linear')
         """
-        self.data = data
+        nchan, npol, nw, oversampling, _, support, _ = data.shape
+        frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
+        
+        assert npol == polarisation_frame.npol
+        cellsize = numpy.abs(projection_wcs.wcs.cdelt[1])
+        cellsize_rad = numpy.deg2rad(cellsize)
+        du = 1.0 / cellsize_rad
+        dv = 1.0 / cellsize_rad
+        ddu = 1.0 / cellsize_rad / oversampling
+        ddv = 1.0 / cellsize_rad / oversampling
+        cu = grid_wcs.wcs.crval[0]
+        cv = grid_wcs.wcs.crval[1]
+        cdu = oversampling // 2
+        cdv = oversampling // 2
+
+        assert cellsize > 0.0, "Cellsize must be positive"
+        
+        dims = ["frequency", "polarisation", "w", "dv", "du", "v", "u"]
+        coords = {
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "w": numpy.zeros([nw]),
+            "dv": numpy.linspace(cdv - ddv * oversampling / 2, cdv + ddv * oversampling / 2, oversampling,
+                                 endpoint=False),
+            "du": numpy.linspace(cdu - ddu * oversampling / 2, cdu + ddu * oversampling / 2, oversampling,
+                                 endpoint=False),
+            "v": numpy.linspace(cv - dv * support / 2, cv + dv * support / 2, support,
+                                endpoint=False),
+            "u": numpy.linspace(cu - du * support / 2, cu + du * support / 2, support,
+                                endpoint=False)
+        }
+        
+        assert coords["u"][0] != coords["u"][-1]
+        assert coords["v"][0] != coords["v"][-1]
+        
         self.grid_wcs = grid_wcs
         self.projection_wcs = projection_wcs
         self.polarisation_frame = polarisation_frame
+        
+        nchan = len(frequency)
+        npol = polarisation_frame.npol
+        if data is None:
+            data = numpy.zeros([nchan, npol, nw, oversampling, oversampling, support, support], dtype='complex')
+        else:
+            assert data.shape == (nchan, npol, nw, oversampling, oversampling, support, support), \
+                "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
+                                                                                  data.shape)
+        
+        self.data = xarray.DataArray(data, dims=dims, coords=coords)
+    
+    def check(self):
+        """ Check that the internals are ok
+
+        :return:
+        """
+        assert isinstance(self.data, xarray.DataArray)
     
     def size(self):
         """ Return size in GB
@@ -668,21 +819,6 @@ class ConvolutionFunction:
         size = 0
         size += self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-    
-    def __copy__(self):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update(self.__dict__)
-        return result
-    
-    # noinspection PyArgumentList
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
     
     @property
     def nchan(self):
@@ -695,20 +831,6 @@ class ConvolutionFunction:
         """ Number of polarisations
         """
         return self.data.shape[1]
-    
-    @property
-    def nheight(self):
-        """ Number of pixels height i.e. y
-        """
-        return self.data.shape[2]
-    
-    @property
-    def nwidth(self):
-        def nwidth(self):
-            """ Number of pixels width i.e. x
-            """
-
-        return self.data.shape[3]
     
     @property
     def ndepth(self):
@@ -741,6 +863,7 @@ class ConvolutionFunction:
 
         """
         s = "Convolution function:\n"
+        s += "{}\n".format(str(self.data))
         s += "\tShape: %s\n" % str(self.data.shape)
         s += "\tGrid WCS: %s\n" % self.grid_wcs
         s += "\tProjection WCS: %s\n" % self.projection_wcs
@@ -884,285 +1007,8 @@ class SkyModel:
         return s
 
 
-class Visibility:
-    """ Visibility table class
-
-    Visibility with uvw, time, integration_time, frequency, channel_bandwidth, a1, a2, vis, weight
-    as separate columns in a numpy structured array, The fundemental unit is a complex vector of polarisation.
-
-    Visibility is defined to hold an observation with one direction.
-    Polarisation frame is the same for the entire data set and can be stokes, circular, linear.
-    The configuration is also an attribute.
-
-    The phasecentre is the direct of delay tracking i.e. n=0. If uvw are rotated then this
-    should be updated with the new delay tracking centre. This is important for wstack and wproject
-    algorithms.
-
-    If a visibility is created by coalescence then the cindex column is filled with a pointer to the
-    row in the original block visibility that this row has a value for. The original blockvisibility
-    is also preserves as n attribute so that decoalescence is expedited. If you don't need that then
-    the storage can be released by setting self.blockvis to None
-    
-    There are two visibility formats:
-
-    :class:`BlockVisibility` is conceived as an ingest and calibration format. The visibility
-    data are kept in a block of shape (number antennas, number antennas, number channels,
-    number polarisation). One block is kept per integration. The other columns are time and uvw.
-    The sampling in time is therefore the same for all baselines.
-
-    :class:`Visibility` is designed to hold coalesced data where the integration time and
-    channel width can vary with baseline length. The visibility data are kept in a visibility
-    vector of length equal to the number of polarisations. Everything else is a separate
-    column: time, frequency, uvw, channel_bandwidth, integration time.
-
-    """
-    
-    def __init__(self,
-                 data=None, frequency=None, channel_bandwidth=None,
-                 phasecentre=None, configuration=None, uvw=None,
-                 time=None, antenna1=None, antenna2=None, vis=None, flags=None,
-                 weight=None, imaging_weight=None, integration_time=None,
-                 polarisation_frame=PolarisationFrame('stokesI'), cindex=None,
-                 blockvis=None, source='anonymous', meta=None):
-        """Visibility
-
-        :param data: Structured data (used in copying)
-        :param frequency: Frequency, one per row
-        :param channel_bandwidth: Channel bamdwidth, one per row
-        :param phasecentre: Phasecentre (skycoord)
-        :param configuration: Configuration
-        :param uvw: uvw coordinates [:,3]
-        :param time: Time (UTC) per row
-        :param antenna1: dish/station index
-        :param antenna2: dish/station index
-        :param vis: Complex visibility [:, npol]
-        :param flags: Flags [:, npol]
-        :param weight: Weight [: npol]
-        :param imaging_weight: Imaging weight [:, npol]
-        :param integration_time: Integration time, per row
-        :param polarisation_frame: Polarisation Frame e.g. Polarisation_frame("linear")
-        :param cindex: Index of row into original block visibility
-        :param blockvis: original block visibility
-        :param source: Source name
-        :param meta: Meta info
-        """
-        if data is None and vis is not None:
-            if imaging_weight is None:
-                imaging_weight = weight
-            nvis = vis.shape[0]
-            assert len(time) == nvis
-            assert len(frequency) == nvis
-            assert len(channel_bandwidth) == nvis
-            assert len(antenna1) == nvis
-            assert len(antenna2) == nvis
-            
-            npol = polarisation_frame.npol
-            desc = [('index', 'i8'),
-                    ('uvw', 'f8', (3,)),
-                    ('time', 'f8'),
-                    ('frequency', 'f8'),
-                    ('channel_bandwidth', 'f8'),
-                    ('integration_time', 'f8'),
-                    ('antenna1', 'i8'),
-                    ('antenna2', 'i8'),
-                    ('vis', 'c16', (npol,)),
-                    ('flags', 'i8', (npol,)),
-                    ('weight', 'f8', (npol,)),
-                    ('imaging_weight', 'f8', (npol,))]
-            data = numpy.zeros(shape=[nvis], dtype=desc)
-            data['index'] = list(range(nvis))
-            data['uvw'] = uvw
-            data['time'] = time
-            data['frequency'] = frequency
-            data['channel_bandwidth'] = channel_bandwidth
-            data['integration_time'] = integration_time
-            data['antenna1'] = antenna1
-            data['antenna2'] = antenna2
-            data['vis'] = vis
-            data['flags'] = flags
-            data['weight'] = weight
-            data['imaging_weight'] = imaging_weight
-        
-        self.data = data  # numpy structured array
-        self.cindex = cindex
-        self.blockvis = blockvis
-        self.phasecentre = phasecentre  # Phase centre of observation
-        self.configuration = configuration  # Antenna/station configuration
-        self.polarisation_frame = polarisation_frame
-        self.frequency_map = None
-        self.source = source
-        self.meta = meta
-    
-    def __str__(self):
-        """Default printer for Visibility
-
-        """
-        ufrequency = numpy.unique(self.frequency)
-        uchannel_bandwidth = numpy.unique(self.channel_bandwidth)
-        s = "Visibility:\n"
-        s += "\tSource: %s\n" % self.source
-        s += "\tNumber of visibilities: %s\n" % self.nvis
-        s += "\tNumber of channels: %d\n" % len(ufrequency)
-        s += "\tFrequency: %s\n" % str(ufrequency)
-        s += "\tChannel bandwidth: %s\n" % str(uchannel_bandwidth)
-        s += "\tNumber of polarisations: %s\n" % self.npol
-        s += "\tVisibility shape: %s\n" % str(self.vis.shape)
-        s += "\tNumber flags: %s\n" % numpy.sum(self.flags)
-        s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
-        s += "\tPhasecentre: %s\n" % self.phasecentre
-        s += "\tConfiguration: %s\n" % self.configuration.name
-        s += "\tMetadata: %s\n" % self.meta
-        
-        return s
-    
-    def size(self):
-        """ Return size in GB
-        """
-        size = 0
-        for col in self.data.dtype.fields.keys():
-            size += self.data[col].nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-    
-    @property
-    def index(self):
-        """ Index into BlockVisibility"""
-        return self.data['index']
-    
-    @property
-    def nchan(self):
-        """ Number of channels
-        """
-        return len(self.frequency)
-
-    @property
-    def npol(self):
-        """ Number of polarisations
-        """
-        return self.polarisation_frame.npol
-    
-    @property
-    def nvis(self):
-        """ Number of visibilities (i.e. rows)
-        """
-        return self.data['vis'].shape[0]
-    
-    @property
-    def uvw(self):
-        """ UVW coordinates (wavelengths) [nrows, 3]
-        """
-        return self.data['uvw']
-    
-    @property
-    def u(self):
-        """ u coordinate (wavelengths) [nrows]
-        """
-        return self.data['uvw'][:, 0]
-    
-    @property
-    def v(self):
-        """ v coordinate (wavelengths) [nrows]
-        """
-        return self.data['uvw'][:, 1]
-    
-    @property
-    def w(self):
-        """ w coordinate (wavelengths) [nrows]
-        """
-        return self.data['uvw'][:, 2]
-    
-    @property
-    def uvdist(self):
-        """ uv distance (wavelengths) [nrows]
-        """
-        return numpy.hypot(self.u, self.v)
-    
-    @property
-    def uvwdist(self):
-        """ uvw distance (wavelengths) [nrows]
-        """
-        return numpy.hypot(self.u, self.v, self.w)
-    
-    @property
-    def time(self):
-        """ Time (UTC) [nrows]
-        """
-        return self.data['time']
-    
-    @property
-    def integration_time(self):
-        """ Integration time [nrows]
-        """
-        return self.data['integration_time']
-    
-    @property
-    def frequency(self):
-        """ Frequency values
-        """
-        return self.data['frequency']
-    
-    @property
-    def channel_bandwidth(self):
-        """ Channel bandwidth values
-        """
-        return self.data['channel_bandwidth']
-    
-    @property
-    def antenna1(self):
-        """ Antenna index
-        """
-        return self.data['antenna1']
-    
-    @property
-    def antenna2(self):
-        """ Antenna index
-        """
-        return self.data['antenna2']
-
-    @property
-    def vis(self):
-        """Complex visibility [:, npol]
-        """
-        return self.data['vis']
-
-    @property
-    def flagged_vis(self):
-        """Flagged complex visibility [:, npol]
-        """
-        return self.data['vis'] * (1 - self.flags)
-
-    @property
-    def flags(self):
-        """flags [:, npol]
-        """
-        return self.data['flags']
-
-    @property
-    def weight(self):
-        """Weight [: npol]
-        """
-        return self.data['weight']
-
-    @property
-    def flagged_weight(self):
-        """Weight [: npol]
-        """
-        return self.data['weight'] * (1 - self.data['flags'])
-
-    @property
-    def imaging_weight(self):
-        """  Imaging weight [:, npol]
-        """
-        return self.data['imaging_weight']
-
-    @property
-    def flagged_imaging_weight(self):
-        """  Flagged Imaging weight [:, npol]
-        """
-        return self.data['imaging_weight'] * (1 - self.data['flags'])
-
-
 class BlockVisibility:
-    """ Block Visibility table class
+    """ BlockVisibility table class
 
     BlockVisibility with uvw, time, integration_time, frequency, channel_bandwidth, pol,
     a1, a2, vis, weight Columns in a numpy structured array.
@@ -1178,23 +1024,21 @@ class BlockVisibility:
     The configuration is also an attribute.
     """
     
-    def __init__(self,
-                 data=None, frequency=None, channel_bandwidth=None,
+    def __init__(self, frequency=None, channel_bandwidth=None,
                  phasecentre=None, configuration=None, uvw=None,
                  time=None, vis=None, weight=None, integration_time=None,
-                 flags=None,
+                 flags=None, baselines=None,
                  polarisation_frame=PolarisationFrame('stokesI'),
                  imaging_weight=None, source='anonymous', meta=None):
         """BlockVisibility
 
-        :param data: Structured data (used in copying)
         :param frequency: Frequency [nchan]
         :param channel_bandwidth: Channel bandwidth [nchan]
         :param phasecentre: Phasecentre (SkyCoord)
         :param configuration: Configuration
         :param uvw: UVW coordinates (m) [:, nant, nant, 3]
         :param time: Time (UTC) [:]
-        :param vis: Complex visibility [:, nant, nant, nchan, npol]
+        :param baselines: List of baselines
         :param flags: Flags [:, nant, nant, nchan]
         :param weight: [:, nant, nant, nchan, npol]
         :param imaging_weight: [:, nant, nant, nchan, npol]
@@ -1203,43 +1047,63 @@ class BlockVisibility:
         :param source: Source name
         :param meta: Meta info
         """
-        if meta is None:
-            meta = dict()
-        if data is None and vis is not None:
-            ntimes, nants, _, nchan, npol = vis.shape
-            assert vis.shape == weight.shape
-            if isinstance(frequency, list):
-                frequency = numpy.array(frequency)
-            assert len(frequency) == nchan
-            if isinstance(channel_bandwidth, list):
-                channel_bandwidth = numpy.array(channel_bandwidth)
-            assert len(channel_bandwidth) == nchan
-            desc = [('index', 'i8'),
-                    ('uvw', 'f8', (nants, nants, 3)),
-                    ('time', 'f8'),
-                    ('integration_time', 'f8'),
-                    ('vis', 'c16', (nants, nants, nchan, npol)),
-                    ('flags', 'i8', (nants, nants, nchan, npol)),
-                    ('weight', 'f8', (nants, nants, nchan, npol)),
-                    ('imaging_weight', 'f8', (nants, nants, nchan, npol))]
-            data = numpy.zeros(shape=[ntimes], dtype=desc)
-            data['index'] = list(range(ntimes))
-            data['uvw'] = uvw
-            data['time'] = time  # MJD in seconds
-            data['integration_time'] = integration_time  # seconds
-            data['vis'] = vis
-            data['flags'] = flags
-            data['weight'] = weight
-            data['imaging_weight'] = imaging_weight
         
-        self.data = data  # numpy structured array
-        self.frequency = frequency
-        self.channel_bandwidth = channel_bandwidth
+        if imaging_weight is None:
+            imaging_weight = weight
+        if integration_time is None:
+            integration_time = numpy.ones_like(time)
+        
+        k = (frequency / const.c).value
+        if len(frequency) == 1:
+            uvw_lambda = (uvw * k)[...,numpy.newaxis,:]
+        else:
+            uvw_lambda = numpy.einsum("tbs,k->tbks", uvw, k)
+            
+        dims = ["row", "baseline", "frequency", "polarisation", "uvw_index"]
+
+        coords = {
+            "time": time,
+            "baseline": baselines,
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "uvw_index": ["u", "v", "w"]
+        }
+        
+        datavars = dict()
+        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"], attrs={"units":"s"})
+        datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
+                                                dims=["time"], attrs={"units":"s"})
+        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"],
+                                           attrs={"units":"Jy"})
+        datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
+                                                      dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
+        
+        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"], attrs={"units":"m"})
+
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "uvw_index"],
+                                                  attrs={"units":"lambda"})
+        datavars["uvdist_lambda"] = xarray.DataArray(numpy.hypot(uvw_lambda[...,0], uvw_lambda[...,1]),
+                                                   dims=["time", "baseline", "frequency"], attrs={"units":"lambda"})
+
+        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"], attrs={"units":"Hz"})
+        
+        self.data = xarray.Dataset(datavars, coords=coords)
+
+
         self.phasecentre = phasecentre  # Phase centre of observation
         self.configuration = configuration  # Antenna/station configuration
         self.polarisation_frame = polarisation_frame
         self.source = source
         self.meta = meta
+    
+    def check(self):
+        """ Check that the internals are ok
+
+        :return:
+        """
+        assert isinstance(self.data, xarray.Dataset)
     
     def __str__(self):
         """Default printer for BlockVisibility
@@ -1265,119 +1129,189 @@ class BlockVisibility:
         s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
         s += "\tConfiguration: %s\n" % self.configuration.name
         s += "\tMetadata: %s\n" % self.meta
+        s += "\txarray.Dataset: %s\n" % str(self.data)
         
         return s
     
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        for col in self.data.dtype.fields.keys():
-            size += self.data[col].nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-    
+        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
+
+    @property
+    def rows(self):
+        """ Rows
+        """
+        return range(len(self.time))
+
+    @property
+    def ntimes(self):
+        """ Number of times (i.e. rows) in this table
+        """
+        return len(self.data['time'])
+
     @property
     def nchan(self):
         """ Number of channels
         """
-        return self.data['vis'].shape[3]
+        return len(self.data['frequency'])
+    
+    @property
+    def frequency(self):
+        """ Number of channels
+        """
+        return self.data['frequency']
+    
+    @property
+    def channel_bandwidth(self):
+        """ Number of channels
+        """
+        return self.data['channel_bandwidth']
     
     @property
     def npol(self):
         """ Number of polarisations
         """
-        return self.data['vis'].shape[4]
+        return self.polarisation_frame.npol
     
     @property
     def nants(self):
         """ Number of antennas
         """
-        return self.data['vis'].shape[1]
+        return self.configuration.nants
+    
+    @property
+    def baselines(self):
+        """ Baselines
+        """
+        return self.data["baseline"]
+    
+    @property
+    def nbaselines(self):
+        """ Number of Baselines
+        """
+        return len(self.data["baseline"])
     
     @property
     def uvw(self):
-        """ UVW coordinates (metres) [nrows, nant, nant, 3]
+        """ UVW coordinates (metres) [nrows, nbaseline, 3]
         """
         return self.data['uvw']
     
     @property
+    def uvw_lambda(self):
+        """ UVW coordinates (wavelengths) [nrows, nbaseline, nchan, 3]
+        """
+        return self.data['uvw_lambda']
+    
+    @property
     def u(self):
-        """ u coordinate (metres) [nrows, nant, nant]
+        """ u coordinate (metres) [nrows, nbaseline]
         """
         return self.data['uvw'][..., 0]
     
     @property
     def v(self):
-        """ v coordinate (metres) [nrows, nant, nant]
+        """ v coordinate (metres) [nrows, nbaseline]
         """
         return self.data['uvw'][..., 1]
     
     @property
     def w(self):
-        """ w coordinate (metres) [nrows, nant, nant]
+        """ w coordinate (metres) [nrows, nbaseline]
         """
         return self.data['uvw'][..., 2]
     
     @property
-    def uvdist(self):
-        """ uv distance (metres) [nrows, nant, nant]
+    def u_lambda(self):
+        """ u coordinate (wavelengths) [nrows, nbaseline]
         """
-        return numpy.hypot(self.u, self.v)
+        return self.data['uvw_lambda'][..., 0]
     
     @property
+    def v_lambda(self):
+        """ v coordinate (wavelengths) [nrows, nbaseline]
+        """
+        return self.data['uvw_lambda'][..., 1]
+    
+    @property
+    def w_lambda(self):
+        """ w coordinate (wavelengths) [nrows, nbaseline]
+        """
+        return self.data['uvw_lambda'][..., 2]
+    
+    @property
+    def uvdist(self):
+        """ uv distance (metres) [nrows, nbaseline]
+        """
+        return numpy.hypot(self.u, self.v)
+
+    @property
+    def uvdist_lambda(self):
+        """ uv distance (metres) [nrows, nbaseline]
+        """
+        return numpy.hypot(self.u_lambda, self.v_lambda)
+
+    @property
     def uvwdist(self):
-        """ uv distance (metres) [nrows, nant, nant]
+        """ uv distance (metres) [nrows, nbaseline]
         """
         return numpy.hypot(self.u, self.v, self.w)
-
+    
     @property
     def vis(self):
-        """ Complex visibility [nrows, nant, nant, ncha, npol]
+        """ Complex visibility [nrows, nbaseline, ncha, npol]
         """
         return self.data['vis']
-
+    
     @property
     def flagged_vis(self):
-        """Flagged complex visibility [nrows, nant, nant, ncha, npol]
+        """Flagged complex visibility [nrows, nbaseline, ncha, npol]
         """
         return self.data['vis'] * (1 - self.flags)
-
+    
     @property
     def flags(self):
-        """ Flags [nrows, nant, nant, nchan]
+        """ Flags [nrows, nbaseline, nchan]
         """
         return self.data['flags']
-
+    
     @property
     def weight(self):
-        """ Weight[nrows, nant, nant, ncha, npol]
+        """ Weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['weight']
-
+    
     @property
     def flagged_weight(self):
         """Weight [: npol]
         """
         return self.data['weight'] * (1 - self.data['flags'])
-
+    
     @property
     def imaging_weight(self):
-        """ Imaging_weight[nrows, nant, nant, ncha, npol]
+        """ Imaging_weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['imaging_weight']
-
+    
     @property
     def flagged_imaging_weight(self):
-        """ Flagged Imaging_weight[nrows, nant, nant, ncha, npol]
+        """ Flagged Imaging_weight[nrows, nbaseline, nchan, npol]
         """
         return self.data['imaging_weight'] * (1 - self.data['flags'])
-
+    
     @property
     def time(self):
         """ Time (UTC) [nrows]
         """
         return self.data['time']
     
+    @property
+    def datetime(self):
+        """ Time (UTC) [nrows]
+        """
+        return self.data['datetime']
+
     @property
     def integration_time(self):
         """ Integration time [nrows]
@@ -1388,54 +1322,55 @@ class BlockVisibility:
     def nvis(self):
         """ Number of visibilities (in total)
         """
-        return self.data.size
+        return numpy.product(self.data.vis.shape)
 
 
 class FlagTable:
     """ Flag table class
 
     Flags, time, integration_time, frequency, channel_bandwidth, pol,
-    in a numpy structured array.
+    in an xarray.
 
     The configuration is also an attribute
     """
-
-    def __init__(self, data=None, flags=None, frequency=None, channel_bandwidth=None,
+    
+    def __init__(self, baselines=None, flags=None,
+                 frequency=None, channel_bandwidth=None,
                  configuration=None, time=None, integration_time=None,
                  polarisation_frame=None):
         """FlagTable
 
-        :param data: Structured data (used in copying)
         :param frequency: Frequency [nchan]
         :param channel_bandwidth: Channel bandwidth [nchan]
         :param configuration: Configuration
         :param time: Time (UTC) [ntimes]
-        :param flags: Flags [ntimes, nant, nant, nchan]
+        :param flags: Flags [ntimes, nbaseline, nchan]
         :param integration_time: Integration time [ntimes]
         """
-        if data is None and flags is not None:
-            ntimes, nants, _, nchan, npol = flags.shape
-            assert len(frequency) == nchan
-            assert len(channel_bandwidth) == nchan
-            desc = [('time', 'f8'),
-                    ('integration_time', 'f8'),
-                    ('flags', 'i8', (nants, nants, nchan, npol))]
-            data = numpy.zeros(shape=[ntimes], dtype=desc)
-            data['time'] = time  # MJD in seconds
-            data['integration_time'] = integration_time  # seconds
-            data['flags'] = flags
-
-        self.data = data  # numpy structured array
-        self.frequency = frequency
-        self.channel_bandwidth = channel_bandwidth
+        coords = {
+            "time": time,
+            "baseline": baselines,
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+        }
+        
+        datavars = dict()
+        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
+        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
+        datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
+                                                dims="time")
+        self.data = xarray.Dataset(datavars, coords=coords)
+        
         self.polarisation_frame = polarisation_frame
         self.configuration = configuration  # Antenna/station configuration
-
+    
     def __str__(self):
         """Default printer for FlagTable
 
         """
         s = "FlagTable:\n"
+        s += "{}\n".format(str(self.data))
         s += "\tNumber of integrations: %s\n" % len(self.time)
         s += "\tFlags shape: %s\n" % str(self.flags.shape)
         s += "\tNumber of channels: %d\n" % len(self.frequency)
@@ -1444,52 +1379,79 @@ class FlagTable:
         s += "\tNumber of polarisations: %s\n" % self.npol
         s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
         s += "\tConfiguration: %s\n" % self.configuration.name
-
+        
         return s
-
+    
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        for col in self.data.dtype.fields.keys():
-            size += self.data[col].nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-
-    @property
-    def npol(self):
-        """ Number of polarisations
-        """
-        return self.data['flags'].shape[-1]
-
-    @property
-    def nchan(self):
-        """ Number of channels
-        """
-        return self.data['flags'].shape[-1]
-
-    @property
-    def nants(self):
-        """ Number of antennas
-        """
-        return self.data['vis'].shape[1]
-
-    @property
-    def flags(self):
-        """ Flags [nrows, nant, nant, nchan]
-        """
-        return self.data['flags']
+        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
 
     @property
     def time(self):
-        """ Time (UTC) [nrows]
+        """ Time
         """
         return self.data['time']
 
     @property
-    def integration_time(self):
-        """ Integration time [nrows]
+    def baseline(self):
+        """ Baselines
         """
-        return self.data['integration_time']
+        return self.data['baseline']
+
+    @property
+    def datetime(self):
+        """ DateTime
+        """
+        return self.data['datetime']
+    
+    @property
+    def flags(self):
+        """ Flags [nrows, nbaseline, ncha, npol]
+        """
+        return self.data['flags']
+    
+    @property
+    def nchan(self):
+        """ Number of channels
+        """
+        return len(self.data['frequency'])
+    
+    @property
+    def frequency(self):
+        """ Number of channels
+        """
+        return self.data['frequency']
+    
+    @property
+    def channel_bandwidth(self):
+        """ Number of channels
+        """
+        return self.data['channel_bandwidth']
+    
+    @property
+    def npol(self):
+        """ Number of polarisations
+        """
+        return self.polarisation_frame.npol
+    
+    @property
+    def nants(self):
+        """ Number of antennas
+        """
+        return self.configuration.nants
+    
+    @property
+    def baselines(self):
+        """ Baselines
+        """
+        return self.data["baseline"]
+    
+    @property
+    def nbaselines(self):
+        """ Number of Baselines
+        """
+        return len(self.data["baseline"])
 
 
 class QA:
@@ -1555,15 +1517,11 @@ def assert_same_chan_pol(o1, o2):
             (type(o1).__name__, type(o2).__name__, o1.nchan, o2.nchan)
 
 
-def assert_vis_gt_compatible(vis: Union[Visibility, BlockVisibility], gt: GainTable):
+def assert_vis_gt_compatible(vis: BlockVisibility, gt: GainTable):
     """ Check if visibility and gaintable are compatible
 
     :param vis:
     :param gt:
     :return: Bool
     """
-    assert vis.nchan == gt.nchan
-    if vis.npol == 4:
-        assert vis.npol == gt.nrec * gt.nrec
-    elif vis.npol == 2:
-        assert gt.nrec == 2
+    pass

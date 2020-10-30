@@ -13,9 +13,9 @@ from rascil.processing_components.image import export_image_to_fits, qa_image, c
 from rascil.processing_components.imaging import create_image_from_visibility
 from rascil.processing_components.imaging import create_vp_generic_numeric
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility import create_visibility
+from rascil.processing_components.visibility import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 if __name__ == '__main__':
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     assert len(config.names) == nants
     assert len(config.mount) == nants
 
-    vis = create_visibility(config, times, frequency,
+    vis = create_blockvisibility(config, times, frequency,
                             channel_bandwidth=channel_bandwidth,
                             phasecentre=phasecentre, weight=1.0,
                             polarisation_frame=PolarisationFrame('stokesI'))
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         row = (trial - 1) // 4
         col = (trial - 1) - 4 * row
         ax = axs[row, col]
-        ax.imshow(vp.data[0, 0], vmax=0.01, vmin=-0.001)
+        ax.imshow(vp.data.values[0, 0], vmax=0.01, vmin=-0.001)
         # ax.set_title('Noll %d' % noll)
         ax.axis('off')
 

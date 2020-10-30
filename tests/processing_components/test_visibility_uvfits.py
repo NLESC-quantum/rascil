@@ -11,15 +11,13 @@ import numpy
 from rascil.data_models.parameters import rascil_path, rascil_data_path
 from rascil.data_models.polarisation import PolarisationFrame
 
-from rascil.processing_components.visibility.base import create_blockvisibility_from_uvfits, create_visibility_from_uvfits
+from rascil.processing_components.visibility.base import create_blockvisibility_from_uvfits, create_blockvisibility_from_uvfits
 from rascil.processing_components.visibility.operations import integrate_visibility_by_channel
 from rascil.processing_components.imaging.base import invert_2d, create_image_from_visibility
-from rascil.processing_components.visibility.coalesce import convert_visibility_to_blockvisibility, \
-    convert_blockvisibility_to_visibility
 from rascil.processing_components.image.operations import export_image_to_fits
 
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -45,6 +43,7 @@ class TestCreateMS(unittest.TestCase):
     #         assert v.vis.data.shape[-1] == 4
     #         assert v.polarisation_frame.type == "circular"
     
+    @unittest.skip("Visibility with xarray not yet implemented")
     def test_create_list_spectral(self):
         
         uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")
@@ -54,7 +53,7 @@ class TestCreateMS(unittest.TestCase):
         nchan = 192
         for schan in range(0, nchan, nchan_ave):
             max_chan = min(nchan, schan + nchan_ave)
-            v = create_visibility_from_uvfits(uvfitsfile, range(schan, max_chan))
+            v = create_blockvisibility_from_uvfits(uvfitsfile, range(schan, max_chan))
             vis_by_channel.append(v[0])
         
         assert len(vis_by_channel) == 12
@@ -80,6 +79,7 @@ class TestCreateMS(unittest.TestCase):
             assert v.vis.data.shape[-2] == 1
             assert v.polarisation_frame.type == "linear"
 
+    @unittest.skip("Visibility with xarray not yet implemented")
     def test_invert(self):
         
         uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")
@@ -88,10 +88,9 @@ class TestCreateMS(unittest.TestCase):
         nchan = 192
         for schan in range(0, nchan, nchan_ave):
             max_chan = min(nchan, schan + nchan_ave)
-            bv = create_blockvisibility_from_uvfits(uvfitsfile, range(schan, max_chan))[0]
-            vis = convert_blockvisibility_to_visibility(bv)
-            from rascil.processing_components.visibility.operations import convert_visibility_to_stokesI
-            vis = convert_visibility_to_stokesI(vis)
+            vis = create_blockvisibility_from_uvfits(uvfitsfile, range(schan, max_chan))[0]
+            from rascil.processing_components.visibility.operations import convert_blockvisibility_to_stokesI
+            vis = convert_blockvisibility_to_stokesI(vis)
             model = create_image_from_visibility(vis, npixel=256, polarisation_frame=PolarisationFrame('stokesI'))
             dirty, sumwt = invert_2d(vis, model, context='2d')
             assert (numpy.max(numpy.abs(dirty.data))) > 0.0

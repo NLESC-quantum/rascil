@@ -19,10 +19,10 @@ from rascil.processing_components.image.deconvolution import deconvolve_cube, re
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.simulation import create_test_image
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.imaging.base import predict_2d, invert_2d, create_image_from_visibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -40,15 +40,14 @@ class TestImageDeconvolution(unittest.TestCase):
         self.frequency = numpy.array([1e8])
         self.channel_bandwidth = numpy.array([1e6])
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'), zerow=True)
         self.vis.data['vis'] *= 0.0
         
         # Create model
-        self.test_model = create_test_image(cellsize=0.001, phasecentre=self.vis.phasecentre,
-                                            frequency=self.frequency)
+        self.test_model = create_test_image(cellsize=0.001, frequency=self.frequency, phasecentre=self.vis.phasecentre)
         self.vis = predict_2d(self.vis, self.test_model)
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
         self.model = create_image_from_visibility(self.vis, npixel=512, cellsize=0.001,

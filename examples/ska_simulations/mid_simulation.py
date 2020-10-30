@@ -26,8 +26,6 @@ from rascil.processing_components.imaging.base import create_image_from_visibili
 from rascil.processing_components.imaging.primary_beams import create_vp
 from rascil.processing_components.simulation.simulation_helpers import find_pb_width_null
 from rascil.processing_components.visibility import qa_visibility, create_blockvisibility
-from rascil.processing_components.visibility import visibility_scatter_time, \
-    visibility_gather_time
 from rascil.processing_components.visibility.base import export_blockvisibility_to_ms, copy_visibility
 from rascil.workflows.rsexecute import invert_list_rsexecute_workflow, sum_invert_results_rsexecute, \
     weight_list_rsexecute_workflow
@@ -68,8 +66,7 @@ def make_images_workflow(args, bvis_list, state):
     model_list = rsexecute.persist(model_list)
     bvis_list = weight_list_rsexecute_workflow(bvis_list, model_list, weighting=args.weighting,
                                                robustness=args.robustness)
-    dirty_list = invert_list_rsexecute_workflow(bvis_list, template_model_imagelist=model_list,
-                                                context=imaging_context)
+    dirty_list = invert_list_rsexecute_workflow(bvis_list, template_model_imagelist=model_list, context=imaging_context)
     dirty_list = sum_invert_results_rsexecute(dirty_list)
     result = rsexecute.compute(dirty_list, sync=True)
     dirty, sumwt = result
@@ -131,7 +128,7 @@ def simulation(args):
                             level=logging.INFO)
     
     init_logging()
-    log = logging.getLogger("logger")
+    log = logging.getLogger('rascil-logger')
     
     log.info("Starting simulation of {}".format(args.mode))
     

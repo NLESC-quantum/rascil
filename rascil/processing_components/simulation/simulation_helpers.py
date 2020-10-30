@@ -27,7 +27,7 @@ from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles, \
     calculate_blockvisibility_azel, calculate_blockvisibility_parallactic_angles
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def find_times_above_elevation_limit(start_times, end_times, location, phasecentre, elevation_limit):
@@ -61,7 +61,7 @@ def find_times_above_elevation_limit(start_times, end_times, location, phasecent
     return valid_start_times
 
 
-def plot_visibility(vis_list, title='Visibility', y='amp', x='uvdist', plot_file=None, plot_zero=False, *kwargs):
+def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdist', plot_file=None, **kwargs):
     """ Standard plot of visibility
 
     :param vis_list:
@@ -70,15 +70,16 @@ def plot_visibility(vis_list, title='Visibility', y='amp', x='uvdist', plot_file
     :return:
     """
     plt.clf()
+    if colors is None:
+        colors = numpy.repeat(['b'], len(vis_list))
+        
     for ivis, vis in enumerate(vis_list):
         if y == 'amp':
-            yvalue = numpy.abs(vis.flagged_vis[..., 0, 0]).flat
+            yvalue = numpy.abs(vis.flagged_vis.values[..., 0, 0]).flat
         else:
-            yvalue = numpy.angle(vis.flagged_vis[..., 0, 0]).flat
-        xvalue = vis.uvdist.flat
-        plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color='b', markersize=0.2)
-        if plot_zero:
-            plt.plot(xvalue[yvalue == 0.0], yvalue[yvalue == 0.0], '.', color='r', markersize=0.2)
+            yvalue = numpy.angle(vis.flagged_visvalues[..., 0, 0]).flat
+        xvalue = vis.uvdist.values.flat
+        plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[ivis], markersize=0.2)
 
     plt.xlabel(x)
     plt.ylabel(y)
@@ -101,13 +102,13 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
         colors = ["red", "blue", "green", "purple"]
         for pol in range(vis.vis.shape[-1]):
             if y == 'amp':
-                yvalue = numpy.abs(vis.flagged_vis[..., 0, pol]).flat
+                yvalue = numpy.abs(vis.flagged_vis.values[..., 0, pol]).flat
             else:
-                yvalue = numpy.angle(vis.flagged_vis[..., 0, pol]).flat
+                yvalue = numpy.angle(vis.flagged_vis.values[..., 0, pol]).flat
             if x=="time":
-                xvalue = numpy.repeat(vis.time, len(yvalue))
+                xvalue = numpy.repeat(vis.time.values, len(yvalue))
             else:
-                xvalue = vis.uvdist.flat
+                xvalue = vis.uvdist.values.flat
             if ivis == 0:
                 plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[pol],
                          label=pols[pol])
@@ -134,20 +135,13 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
     """
     
     for ivis, vis in enumerate(vis_list):
-        u = numpy.array(vis.u[...].flat)
-        v = numpy.array(vis.v[...].flat)
-        if isinstance(vis, BlockVisibility):
-            k = (vis.frequency / constants.c).value
-            u = numpy.array(numpy.outer(u, k).flat)
-            v = numpy.array(numpy.outer(v, k).flat)
-            plt.plot(u, v, '.', color='b', markersize=0.4)
-            plt.plot(-u, -v, '.', color='b', markersize=0.4)
-        else:
-            k = vis.frequency / constants.c
-            u = u * k
-            v = v * k
-            plt.plot(u.value, v.value, '.', color='b', markersize=0.4)
-            plt.plot(-u.value, -v.value, '.', color='b', markersize=0.4)
+        u = numpy.array(vis.u.values[...].flat)
+        v = numpy.array(vis.v.values[...].flat)
+        k = (vis.frequency.values / constants.c).value
+        u = numpy.array(numpy.outer(u, k).flat)
+        v = numpy.array(numpy.outer(v, k).flat)
+        plt.plot(u, v, '.', color='b', markersize=0.2)
+        plt.plot(-u, -v, '.', color='b', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
     plt.title(title)
@@ -193,19 +187,13 @@ def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kw
     """
     
     for ivis, vis in enumerate(vis_list):
-        u = numpy.array(vis.u[...].flat)
-        w = numpy.array(vis.w[...].flat)
-        if isinstance(vis, BlockVisibility):
-            k = (vis.frequency / constants.c).value
-            u = numpy.array(numpy.outer(u, k).flat)
-            w = numpy.array(numpy.outer(w, k).flat)
-            plt.plot(u, w, '.', color='b', markersize=0.2)
-        else:
-            k = vis.frequency / constants.c
-            u = u * k
-            w = w * k
-            plt.plot(u.value, w.value, '.', color='b', markersize=0.2)
-            plt.plot(-u.value, -w.value, '.', color='b', markersize=0.2)
+        u = numpy.array(vis.u.values[...].flat)
+        w = numpy.array(vis.w.values[...].flat)
+        k = (vis.frequency.values / constants.c).value
+        u = numpy.array(numpy.outer(u, k).flat)
+        w = numpy.array(numpy.outer(w, k).flat)
+        plt.plot(u, w, '.', color='b', markersize=0.2)
+        plt.plot(-u, -w, '.', color='b', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('W (wavelengths)')
     plt.title(title)
@@ -224,19 +212,13 @@ def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kw
     """
     
     for ivis, vis in enumerate(vis_list):
-        v = numpy.array(vis.v[...].flat)
-        w = numpy.array(vis.w[...].flat)
-        if isinstance(vis, BlockVisibility):
-            k = (vis.frequency / constants.c).value
-            v = numpy.array(numpy.outer(v, k).flat)
-            w = numpy.array(numpy.outer(w, k).flat)
-            plt.plot(v, w, '.', color='b', markersize=0.2)
-        else:
-            k = vis.frequency / constants.c
-            v = v * k
-            w = w * k
-            plt.plot(v.value, w.value, '.', color='b', markersize=0.2)
-            plt.plot(-v.value, -w.value, '.', color='b', markersize=0.2)
+        v = numpy.array(vis.v.values[...].flat)
+        w = numpy.array(vis.w.values[...].flat)
+        k = (vis.frequency.values / constants.c).value
+        v = numpy.array(numpy.outer(v, k).flat)
+        w = numpy.array(numpy.outer(w, k).flat)
+        plt.plot(v, w, '.', color='b', markersize=0.2)
+        plt.plot(-v, -w, '.', color='b', markersize=0.2)
     plt.xlabel('V (wavelengths)')
     plt.ylabel('W (wavelengths)')
     plt.title(title)
@@ -300,7 +282,7 @@ def plot_pa(bvis_list, plot_file=None, **kwargs):
     plt.show(block=False)
 
 
-def plot_gaintable(gt_list, title='', value='amp', plot_file='gaintable.png', **kwargs):
+def plot_gaintable(gt_list, title='', value='amp', plot_file=None, **kwargs):
     """ Standard plot of gain table
     
     :param gt_list:
@@ -312,7 +294,7 @@ def plot_gaintable(gt_list, title='', value='amp', plot_file='gaintable.png', **
     plt.clf()
     for igt, gt in enumerate(gt_list):
         nrec = gt[0].nrec
-        names = gt[0].receptor_frame.names
+        names = gt[0].receptor1.values
         if nrec > 1:
             recs = [0, 1]
         else:

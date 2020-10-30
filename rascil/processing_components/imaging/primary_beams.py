@@ -17,7 +17,7 @@ from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.image.operations import import_image_from_fits, reproject_image, scale_and_rotate_image
 from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, fft_image, pad_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def set_pb_header(pb, use_local=True):
@@ -95,50 +95,50 @@ def create_vp(model=None, telescope='MID', pointingcentre=None, padding=4, use_l
         log.debug("create_vp: Using GRASP model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_GRASP_VP_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_GRASP_VP_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MID_FEKO_B1LOW' or telescope == 'MID_B1LOW':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0365_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0365_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MID_FEKO_B1' or telescope == 'MID_B1':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MID_FEKO_B2' or telescope == 'MID_B2':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MID_FEKO_Ku' or telescope == 'MID_Ku':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_Ku_45_12179_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_Ku_45_12179_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MEERKAT_B2':
         log.debug("create_vp: Using MEERKAT voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope == 'MEERKAT_B1':
         log.debug("create_vp: Using MID FEKO model for MEERKAT B1 voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_imag.fits'), fixpol=fixpol)
-        real_vp.data = real_vp.data + 1j * imag_vp.data
-        real_vp.data /= numpy.max(numpy.abs(real_vp.data))
+        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
+        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
         return real_vp
     elif telescope[0:3] == 'LOW':
         return create_low_test_vp(model)
@@ -157,11 +157,8 @@ def create_pb(model, telescope='MID', pointingcentre=None, use_local=True):
     :param telescope: 'VLA' or 'ASKAP'
     :return: Primary beam image
     """
-    if telescope == 'LOW':
-        beam = create_low_test_beam(model, use_local=use_local)
-    else:
-        beam = create_vp(model, telescope, pointingcentre, use_local=use_local)
-        beam.data = numpy.real(beam.data * numpy.conjugate(beam.data))
+    beam = create_vp(model, telescope, pointingcentre, use_local=use_local)
+    beam.data.values = numpy.real(beam.data.values * numpy.conjugate(beam.data.values))
     
     set_pb_header(beam, use_local=use_local)
     return beam
@@ -181,8 +178,8 @@ def mosaic_pb(model, telescope, pointingcentres, use_local=True):
     sumpb = create_empty_image_like(model)
     for pc in pointingcentres:
         pb = create_pb(model, telescope, pointingcentre=pc, use_local=use_local)
-        sumpb.data += pb.data ** 2
-    sumpb.data = numpy.sqrt(sumpb.data)
+        sumpb.data.values += pb.data.values ** 2
+    sumpb.data.values = numpy.sqrt(sumpb.data.values)
     return sumpb
 
 
@@ -197,7 +194,7 @@ def create_pb_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
     :return:
     """
     beam = create_vp_generic(model, pointingcentre, diameter, blockage, use_local=use_local)
-    beam.data = numpy.real(beam.data * numpy.conjugate(beam.data))
+    beam.data.values = numpy.real(beam.data.values * numpy.conjugate(beam.data.values))
     set_pb_header(beam, use_local=use_local)
     return beam
 
@@ -214,7 +211,7 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
     """
 
     beam = create_empty_image_like(model)
-    beam.data = numpy.zeros(beam.data.shape, dtype='complex')
+    beam.data.values = numpy.zeros(beam.data.shape, dtype='complex')
     
     nchan, npol, ny, nx = model.shape
     
@@ -249,7 +246,7 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
         combined = reflector - blockage_factor * blockage
 
         for pol in pols:
-            beam.data[chan, pol, ...] = combined
+            beam.data.values[chan, pol, ...] = combined
     
     set_pb_header(beam, use_local=use_local)
     return beam
@@ -286,7 +283,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     nchan, npol, ny, nx = beam.shape
     padded_shape = [nchan, npol, padding * ny, padding * nx]
     padded_beam = pad_image(beam, padded_shape)
-    padded_beam.data = numpy.zeros(padded_beam.data.shape, dtype='complex')
+    padded_beam.data.values = numpy.zeros(padded_beam.data.shape, dtype='complex')
     _, _, pny, pnx = padded_beam.shape
     
     xfr = fft_image(padded_beam)
@@ -316,7 +313,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
                                                     taper=taper)
 
         for pol in pols:
-            xfr.data[chan, pol, ...] = combined
+            xfr.data.values[chan, pol, ...] = combined
         
         if pointingcentre is not None:
             # Correct for pointing centre
@@ -347,16 +344,16 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
             blc = pnx // 2 - ndisk // 2
             trc = pnx // 2 + ndisk // 2
             for pol in range(npol):
-                xfr.data[chan, pol, blc:trc, blc:trc] = xfr.data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
+                xfr.data.values[chan, pol, blc:trc, blc:trc] = xfr.data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
     
     padded_beam = fft_image(xfr, padded_beam)
     
     # Undo padding
     beam = create_empty_image_like(model)
-    beam.data = padded_beam.data[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),
+    beam.data.values = padded_beam.data.values[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),
                 (pnx // 2 - nx // 2):(pnx // 2 + nx // 2)]
     for chan in range(nchan):
-        beam.data[chan, ...] /= numpy.max(numpy.abs(beam.data[chan, ...]))
+        beam.data.values[chan, ...] /= numpy.max(numpy.abs(beam.data.values[chan, ...]))
     
     set_pb_header(beam, use_local=use_local)
     return beam
@@ -370,46 +367,11 @@ def create_low_test_beam(model: Image, use_local=True) -> Image:
     :param model: Template image
     :return: Image
     """
-    beam = import_image_from_fits(rascil_data_path('models/SKA1_LOW_beam.fits'))
-    
-    # Scale the image cellsize to account for the different in frequencies. Eventually we will want to
-    # use a frequency cube
-    log.debug("create_low_test_beam: LOW voltage pattern is defined at %.3f MHz" % (beam.wcs.wcs.crval[2] * 1e-6))
-    
-    nchan, npol, ny, nx = model.shape
-    
-    # We need to interpolate each frequency channel separately. The beam is assumed to just scale with
-    # frequency.
-    
-    reprojected_beam = create_empty_image_like(model)
-    
-    for chan in range(nchan):
-        
-        model2dwcs = model.wcs.sub(2).deepcopy()
-        model2dshape = [model.shape[2], model.shape[3]]
-        beam2dwcs = beam.wcs.sub(2).deepcopy()
-        
-        # The frequency axis is the second to last in the beam
-        frequency = model.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
-        fscale = beam.wcs.wcs.crval[2] / frequency
-        
-        beam2dwcs.wcs.cdelt = fscale * beam.wcs.sub(2).wcs.cdelt
-        beam2dwcs.wcs.crpix = beam.wcs.sub(2).wcs.crpix
-        beam2dwcs.wcs.crval = model.wcs.sub(2).wcs.crval
-        beam2dwcs.wcs.ctype = model.wcs.sub(2).wcs.ctype
-        model2dwcs.wcs.crpix = [model.shape[2] // 2 + 1, model.shape[3] // 2 + 1]
-        
-        beam2d = create_image_from_array(beam.data[0, 0, :, :], beam2dwcs, model.polarisation_frame)
-        reprojected_beam2d, footprint = reproject_image(beam2d, model2dwcs, shape=model2dshape)
-        assert numpy.max(footprint.data) > 0.0, "No overlap between beam and model"
-        
-        reprojected_beam2d.data[footprint.data <= 0.0] = 0.0
-        for pol in range(npol):
-            reprojected_beam.data[chan, pol, :, :] = reprojected_beam2d.data[:, :]
-    
-    set_pb_header(reprojected_beam, use_local=use_local)
-    return reprojected_beam
+    beam = create_low_test_vp(model, use_local=use_local)
+    beam.data.values = numpy.real(beam.data.values * numpy.conjugate(beam.data.values))
 
+    set_pb_header(beam, use_local=use_local)
+    return beam
 
 def create_low_test_vp(model: Image, use_local=True) -> Image:
     """Create a test power beam for LOW using an example image from OSKAR
@@ -419,53 +381,8 @@ def create_low_test_vp(model: Image, use_local=True) -> Image:
     :param model: Template image
     :return: Image
     """
+    return create_vp_generic(model, diameter=38.0, blockage=0.0, use_local=use_local)
     
-    beam = import_image_from_fits(rascil_data_path('models/SKA1_LOW_beam.fits'))
-    beam.data = numpy.sqrt(beam.data).astype('complex')
-    
-    # Scale the image cellsize to account for the different in frequencies. Eventually we will want to
-    # use a frequency cube
-    log.debug("create_low_test_beam: LOW voltage pattern is defined at %.3f MHz" % (beam.wcs.wcs.crval[2] * 1e-6))
-    
-    nchan, npol, ny, nx = model.shape
-    
-    # We need to interpolate each frequency channel separately. The beam is assumed to just scale with
-    # frequency.
-    
-    reprojected_beam = create_empty_image_like(model)
-    reprojected_beam.data = reprojected_beam.data.astype('complex')
-    
-    for chan in range(nchan):
-        
-        model2dwcs = model.wcs.sub(2).deepcopy()
-        model2dshape = [model.shape[2], model.shape[3]]
-        beam2dwcs = beam.wcs.sub(2).deepcopy()
-        
-        # The frequency axis is the second to last in the beam
-        frequency = model.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
-        fscale = beam.wcs.wcs.crval[2] / frequency
-        
-        beam2dwcs.wcs.cdelt = fscale * beam.wcs.sub(2).wcs.cdelt
-        beam2dwcs.wcs.crpix = beam.wcs.sub(2).wcs.crpix
-        beam2dwcs.wcs.crval = model.wcs.sub(2).wcs.crval
-        beam2dwcs.wcs.ctype = model.wcs.sub(2).wcs.ctype
-        model2dwcs.wcs.crpix = [model.shape[2] // 2 + 1, model.shape[3] // 2 + 1]
-        
-        beam2d_real = create_image_from_array(numpy.real(beam.data[0, 0, :, :]), beam2dwcs, model.polarisation_frame)
-        beam2d_imag = create_image_from_array(numpy.imag(beam.data[0, 0, :, :]), beam2dwcs, model.polarisation_frame)
-        reprojected_beam2d_real, footprint = reproject_image(beam2d_real, model2dwcs, shape=model2dshape)
-        reprojected_beam2d_imag, footprint = reproject_image(beam2d_imag, model2dwcs, shape=model2dshape)
-        assert numpy.max(footprint.data) > 0.0, "No overlap between beam and model"
-        
-        reprojected_beam2d_real.data[footprint.data <= 0.0] = 0.0
-        reprojected_beam2d_imag.data[footprint.data <= 0.0] = 0.0
-        for pol in range(npol):
-            reprojected_beam.data[chan, pol, :, :] = reprojected_beam2d_real.data[:, :] \
-                                                     + 1j * reprojected_beam2d_imag.data[:, :]
-    
-    set_pb_header(reprojected_beam, use_local=use_local)
-    return reprojected_beam
-
 def convert_azelvp_to_radec(vp, im, pa):
     """ Convert AZELGEO image to image coords at specific parallactic angle
     
@@ -481,7 +398,7 @@ def convert_azelvp_to_radec(vp, im, pa):
     vp.wcs.wcs.ctype[1] = im.wcs.wcs.ctype[1]
 
     rvp, footprint = reproject_image(vp, im.wcs, shape=im.shape)
-    rvp.data[footprint.data < 1e-6] = 0.0
+    rvp.data.values[footprint.data.values < 1e-6] = 0.0
 
     return rvp
 
@@ -493,10 +410,10 @@ def normalise_vp(vp):
     :return:
     """
     g = numpy.zeros([4])
-    g[0] = numpy.max(numpy.abs(vp.data[:, 0, ...]))
-    g[3] = numpy.max(numpy.abs(vp.data[:, 3, ...]))
+    g[0] = numpy.max(numpy.abs(vp.data.values[:, 0, ...]))
+    g[3] = numpy.max(numpy.abs(vp.data.values[:, 3, ...]))
     g[1] = g[2] = numpy.sqrt(g[0] * g[3])
     for chan in range(4):
         if g[chan] > 0.0:
-            vp.data[:, chan, ...] /= g[chan]
+            vp.data.values[:, chan, ...] /= g[chan]
     return vp

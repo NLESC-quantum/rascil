@@ -10,7 +10,6 @@ This performs all necessary w term corrections, to high precision.
 __all__ = ['predict_ng', 'invert_ng']
 
 import logging
-from typing import Union
 
 import numpy
 
@@ -21,11 +20,11 @@ from rascil.data_models.polarisation import convert_pol_frame
 from rascil.processing_components.image.operations import copy_image, \
     image_is_canonical
 from rascil.processing_components.imaging.base import shift_vis_to_image, \
-    normalize_sumwt, fill_vis_for_psf
+    normalize_sumwt, fill_blockvis_for_psf
 from rascil.processing_components.visibility.base import copy_visibility
 
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 try:
     import nifty_gridder as ng
@@ -58,10 +57,12 @@ try:
         
         # Extracting data from BlockVisibility
         freq = bvis.frequency  # frequency, Hz
-        nrows, nants, _, vnchan, vnpol = bvis.vis.shape
+        nrows, nbaselines, vnchan, vnpol = bvis.vis.shape
         
-        uvw = newbvis.data['uvw'].reshape([nrows * nants * nants, 3])
-        vist = numpy.zeros([vnpol, vnchan, nants * nants * nrows], dtype='complex')
+        uvw = newbvis.uvw.values
+        uvw=uvw.reshape([nrows * nbaselines, 3])
+        uvw = numpy.nan_to_num(uvw)
+        vist = numpy.zeros([vnpol, vnchan, nbaselines * nrows], dtype='complex')
         
         # Get the image properties
         m_nchan, m_npol, ny, nx = model.data.shape
@@ -86,8 +87,8 @@ try:
         if mfs:
             for vpol in range(vnpol):
                 vist[vpol, : , :] = ng.dirty2ms(fuvw.astype(numpy.float64),
-                                               bvis.frequency.astype(numpy.float64),
-                                               model.data[0, vpol, :, :].T.astype(numpy.float64),
+                                               bvis.frequency.values.astype(numpy.float64),
+                                               model.data[0, vpol, :, :].values.T.astype(numpy.float64),
                                                pixsize_x=pixsize,
                                                pixsize_y=pixsize,
                                                epsilon=epsilon,
@@ -101,7 +102,7 @@ try:
                     imchan = vis_to_im[vchan]
                     vist[vpol, vchan, :] = ng.dirty2ms(fuvw.astype(numpy.float64),
                                                        numpy.array(freq[vchan:vchan + 1]).astype(numpy.float64),
-                                                       model.data[imchan, vpol, :, :].T.astype(numpy.float64),
+                                                       model.data[imchan, vpol, :, :].values.T.astype(numpy.float64),
                                                        pixsize_x=pixsize,
                                                        pixsize_y=pixsize,
                                                        epsilon=epsilon,
@@ -111,7 +112,8 @@ try:
         
         vis = convert_pol_frame(vist.T, model.polarisation_frame, bvis.polarisation_frame, polaxis=2)
 
-        newbvis.data['vis'] = vis.reshape([nrows, nants, nants, vnchan, vnpol])
+        vis = vis.reshape([nrows, nbaselines, vnchan, vnpol])
+        newbvis.vis.values = vis
     
         # Now we can shift the visibility from the image frame to the original visibility frame
         return shift_vis_to_image(newbvis, model, tangent=True, inverse=True)
@@ -149,24 +151,29 @@ try:
         sbvis = copy_visibility(bvis)
         sbvis = shift_vis_to_image(sbvis, im, tangent=True, inverse=False)
         
-        freq = sbvis.frequency  # frequency, Hz
+        freq = sbvis.frequency.data  # frequency, Hz
         
-        nrows, nants, _, vnchan, vnpol = sbvis.vis.shape
+        nrows, nbaselines, vnchan, vnpol = sbvis.vis.shape
         # if dopsf:
         #     sbvis = fill_vis_for_psf(sbvis)
 
-        ms = sbvis.vis.reshape([nrows * nants * nants, vnchan, vnpol])
+        ms = sbvis.flagged_vis.values
+        ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
         ms = convert_pol_frame(ms, bvis.polarisation_frame, im.polarisation_frame, polaxis=2)
 
-        uvw = sbvis.uvw.reshape([nrows * nants * nants, 3])
-        wgt = sbvis.flagged_imaging_weight.reshape([nrows * nants * nants, vnchan, vnpol])
+        uvw = sbvis.uvw.values
+        uvw = uvw.reshape([nrows * nbaselines, 3])
+        uvw = numpy.nan_to_num(uvw)
+        
+        wgt = sbvis.flagged_imaging_weight.values
+        wgt=wgt.reshape([nrows * nbaselines, vnchan, vnpol])
 
         if epsilon > 5.0e-6:
             ms = ms.astype("c8")
             wgt = wgt.astype("f4")
         
         # Find out the image size/resolution
-        npixdirty = im.nwidth
+        npixdirty = im.shape[-1]
         pixsize = numpy.abs(numpy.radians(im.wcs.wcs.cdelt[0]))
         
         fuvw = uvw.copy()
@@ -175,7 +182,7 @@ try:
         fuvw[:, 2] *= -1.0
         
         nchan, npol, ny, nx = im.shape
-        im.data[...] = 0.0
+        im.data.values[...] = 0.0
         sumwt = numpy.zeros([nchan, npol])
         
         # There's a latent problem here with the weights.
@@ -197,7 +204,7 @@ try:
 
             if mfs:
                 dirty = ng.ms2dirty(fuvw.astype(numpy.float64),
-                                    bvis.frequency.astype(numpy.float64),
+                                    bvis.frequency.values.astype(numpy.float64),
                                     numpy.ascontiguousarray(mst[0, :, :].T),
                                     numpy.ascontiguousarray(wgtt[0, :, :].T),
                                     npixdirty, npixdirty, pixsize, pixsize, epsilon,
@@ -211,21 +218,21 @@ try:
                     ichan = vis_to_im[vchan]
                     frequency = numpy.array(freq[vchan:vchan + 1]).astype(numpy.float64)
                     dirty = ng.ms2dirty(fuvw.astype(numpy.float64),
-                                        frequency.astype(numpy.float64),
+                                        frequency,
                                         numpy.ascontiguousarray(mst[0, vchan, :][..., numpy.newaxis]),
                                         numpy.ascontiguousarray(wgtt[0, vchan, :][..., numpy.newaxis]),
                                         npixdirty, npixdirty, pixsize, pixsize, epsilon,
                                         do_wstacking=do_wstacking,
                                         nthreads=nthreads, verbosity=verbosity)
                     sumwt[ichan, :] += numpy.sum(wgtt[0, ichan, :].T, axis=0)
-                    im.data[ichan, :] += dirty.T
+                    im.data.values[ichan, :] += dirty.T
         else:
             mst = ms.T
             wgtt = wgt.T
             for pol in range(npol):
                 if mfs:
                     dirty = ng.ms2dirty(fuvw.astype(numpy.float64),
-                                        bvis.frequency.astype(numpy.float64),
+                                        bvis.frequency.data.astype(numpy.float64),
                                         numpy.ascontiguousarray(mst[pol, :, :].T),
                                         numpy.ascontiguousarray(wgtt[pol, :, :].T),
                                         npixdirty, npixdirty, pixsize, pixsize, epsilon,
@@ -246,7 +253,7 @@ try:
                                             do_wstacking=do_wstacking,
                                             nthreads=nthreads, verbosity=verbosity)
                         sumwt[ichan, pol] += numpy.sum(wgtt[pol, ichan, :].T, axis=0)
-                        im.data[ichan, pol] += dirty.T
+                        im.data.values[ichan, pol] += dirty.T
 
         
         if normalize:

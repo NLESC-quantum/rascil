@@ -463,11 +463,11 @@ def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
 
     if dgt.nrec == gt.nrec:
         if dgt.nrec == 2:
-            gt.data["gain"] = numpy.einsum("...ik,...ij->...kj", gt.gain, dgt.gain)
-            gt.data["weight"] *= dgt.weight
+            gt.data["gain"].values = numpy.einsum("...ik,...ij->...kj", gt.gain.values, dgt.gain.values)
+            gt.data["weight"].values *= dgt.weight.values
         elif dgt.nrec == 1:
-            gt.data["gain"] *= dgt.gain
-            gt.data["weight"] *= dgt.weight
+            gt.data["gain"].values *= dgt.gain.values
+            gt.data["weight"].values *= dgt.weight.values
         else:
             raise ValueError(
                 "Gain tables have illegal structures {} {}".format(str(gt), str(dgt))

@@ -141,12 +141,12 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                     antgain[...] = 0.0
                     antwt[...] = 0.0
                     
-                gaintables[icomp].gain[row, :, :, :] = antgain[:, numpy.newaxis, :].reshape([nant, nchan, 2, 2])
-                gaintables[icomp].weight[row, :, :, :] = antwt[:, numpy.newaxis, :].reshape([nant, nchan, 2, 2])
+                gaintables[icomp].gain.values[row, :, :, :] = antgain.reshape([nant, gnchan, 2, 2])
+                gaintables[icomp].weight.values[row, :, :, :] = antwt.reshape([nant, gnchan, 2, 2])
                 gaintables[icomp].phasecentre = comp.direction
             else:
-                gaintables[icomp].gain[...] = 1.0 + 0.0j
-                gaintables[icomp].weight[row, :, :, :] = 0.0
+                gaintables[icomp].gain.values[...] = 1.0 + 0.0j
+                gaintables[icomp].weight.values[row, :, :, :] = 0.0
                 gaintables[icomp].phasecentre = comp.direction
                 number_bad += nant
     
@@ -256,10 +256,10 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
                     
                     antgain[ant] = 1.0 / antgain[ant]
                 
-                gaintables[icomp].gain[row, :, :, :] = antgain[:, numpy.newaxis, numpy.newaxis, numpy.newaxis]
+                gaintables[icomp].gain.values[row, :, :, :] = antgain[:, numpy.newaxis, numpy.newaxis, numpy.newaxis]
                 gaintables[icomp].phasecentre = comp.direction
         else:
-            gaintables[icomp].gain[...] = 1.0 + 0.0j
+            gaintables[icomp].gain.values[...] = 1.0 + 0.0j
             gaintables[icomp].phasecentre = comp.direction
             number_bad += nant
 

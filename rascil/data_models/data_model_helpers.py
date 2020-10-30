@@ -241,15 +241,15 @@ def convert_hdf_to_blockvisibility(f):
     source = f.attrs['source']
     nants = f.attrs['nants']
     meta = ast.literal_eval(f.attrs['meta'])
-    time = f["data_time"].value
-    frequency = f["data_frequency"].value
-    channel_bandwidth = f["data_channel_bandwidth"].value
-    uvw = f["data_uvw"].value
-    integration_time = f["data_integration_time"].value
-    vis = f["data_vis"].value
-    weight = f["data_weight"].value
-    imaging_weight = f["data_imaging_weight"].value
-    flags = f["data_flags"].value
+    time = f["data_time"][()]
+    frequency = f["data_frequency"][()]
+    channel_bandwidth = f["data_channel_bandwidth"][()]
+    uvw = f["data_uvw"][()]
+    integration_time = f["data_integration_time"][()]
+    vis = f["data_vis"][()]
+    weight = f["data_weight"][()]
+    imaging_weight = f["data_imaging_weight"][()]
+    flags = f["data_flags"][()]
     
     from rascil.processing_components import generate_baselines
     
@@ -299,11 +299,11 @@ def convert_hdf_to_flagtable(f):
     baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants),
                                               names=('antenna1', 'antenna2'))
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
-    frequency = f['data_frequency'].value
-    channel_bandwidth = f['data_channel_bandwidth'].value
-    time = f['data_time'].value
-    flags = f['data_flags'].value
-    integration_time = f['data_integration_time'].value
+    frequency = f['data_frequency'][()]
+    channel_bandwidth = f['data_channel_bandwidth'][()]
+    time = f['data_time'][()]
+    flags = f['data_flags'][()]
+    integration_time = f['data_integration_time'][()]
     ft = FlagTable(time=time, flags=flags, frequency=frequency,
                    baselines=baselines,
                    integration_time=integration_time,
@@ -414,12 +414,12 @@ def convert_hdf_to_gaintable(f):
     ss = [float(s[0]), float(s[1])] * u.deg
     phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['phasecentre_frame'])
     
-    time = f['data_time'].value
-    frequency = f['data_frequency'].value
-    gain = f['data_gain'].value
-    weight = f['data_weight'].value
-    residual = f['data_residual'].value
-    interval = f['data_interval'].value
+    time = f['data_time'][()]
+    frequency = f['data_frequency'][()]
+    gain = f['data_gain'][()]
+    weight = f['data_weight'][()]
+    residual = f['data_residual'][()]
+    interval = f['data_interval'][()]
     gt = GainTable(time=time, frequency=frequency, gain=gain, weight=weight,
                    residual=residual, interval=interval, receptor_frame=receptor_frame,
                    phasecentre=phasecentre)
@@ -499,13 +499,13 @@ def convert_hdf_to_pointingtable(f):
     pointing_frame = f.attrs['pointing_frame']
     configuration = convert_configuration_from_hdf(f)
     
-    time = f['data_time'].value
-    frequency = f['data_frequency'].value
-    pointing = f['data_pointing'].value
-    nominal = f['data_nominal'].value
-    weight = f['data_weight'].value
-    residual = f['data_residual'].value
-    interval = f['data_interval'].value
+    time = f['data_time'][()]
+    frequency = f['data_frequency'][()]
+    pointing = f['data_pointing'][()]
+    nominal = f['data_nominal'][()]
+    weight = f['data_weight'][()]
+    residual = f['data_residual'][()]
+    interval = f['data_interval'][()]
     
     pt = PointingTable(time=time, pointing=pointing, nominal=nominal,
                        weight=weight, residual=residual, interval=interval,

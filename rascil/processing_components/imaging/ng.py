@@ -165,12 +165,12 @@ try:
         uvw = uvw.reshape([nrows * nbaselines, 3])
         uvw = numpy.nan_to_num(uvw)
         
-        wgt = sbvis.flagged_imaging_weight.values
+        wgt = sbvis.flagged_imaging_weight.values.astype("f8")
         wgt=wgt.reshape([nrows * nbaselines, vnchan, vnpol])
 
-        if epsilon > 5.0e-6:
-            ms = ms.astype("c8")
-            wgt = wgt.astype("f4")
+        # if epsilon > 5.0e-6:
+        #     ms = ms.astype("c8")
+        #     wgt = wgt.astype("f4")
         
         # Find out the image size/resolution
         npixdirty = im.shape[-1]

@@ -127,6 +127,16 @@ class Configuration:
         size = self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
     
+    def datasizes(self):
+        """
+        Return sizes of data variables
+        :return:
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
+        for var in self.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+        return s
+
     @property
     def names(self):
         """ Names of the dishes/stations"""
@@ -224,6 +234,16 @@ class GainTable:
         """
         return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
     
+    def datasizes(self):
+        """
+        Return sizes of data variables
+        :return:
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
+        for var in self.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+        return s
+
     @property
     def time(self):
         """ Centroid of solution [ntimes]
@@ -382,6 +402,16 @@ class PointingTable:
         """
         return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
     
+    def datasizes(self):
+        """
+        Return sizes of data variables
+        :return:
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
+        for var in self.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+        return s
+
     @property
     def time(self):
         """ Time (s UTC) [:]
@@ -820,6 +850,16 @@ class ConvolutionFunction:
         size += self.data.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
     
+    def datasizes(self):
+        """
+        Return sizes of data variables
+        :return:
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
+        for var in self.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+        return s
+
     @property
     def nchan(self):
         """ Number of channels
@@ -1029,7 +1069,8 @@ class BlockVisibility:
                  time=None, vis=None, weight=None, integration_time=None,
                  flags=None, baselines=None,
                  polarisation_frame=PolarisationFrame('stokesI'),
-                 imaging_weight=None, source='anonymous', meta=None):
+                 imaging_weight=None, source='anonymous', meta=None,
+                 low_precision="float32"):
         """BlockVisibility
 
         :param frequency: Frequency [nchan]
@@ -1070,15 +1111,18 @@ class BlockVisibility:
         }
         
         datavars = dict()
-        datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"], attrs={"units":"s"})
+        datavars["integration_time"] = xarray.DataArray(integration_time.astype(low_precision),
+                                                        dims=["time"], attrs={"units":"s"})
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims=["time"], attrs={"units":"s"})
         datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"],
                                            attrs={"units":"Jy"})
-        datavars["weight"] = xarray.DataArray(weight, dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["imaging_weight"] = xarray.DataArray(imaging_weight,
+        datavars["weight"] = xarray.DataArray(weight.astype(low_precision),
+                                              dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["imaging_weight"] = xarray.DataArray(imaging_weight.astype(low_precision),
                                                       dims=["time", "baseline", "frequency", "polarisation"])
-        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["flags"] = xarray.DataArray(flags.astype(low_precision),
+                                             dims=["time", "baseline", "frequency", "polarisation"])
         
         datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"], attrs={"units":"m"})
 
@@ -1137,6 +1181,16 @@ class BlockVisibility:
         """ Return size in GB
         """
         return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
+
+    def datasizes(self):
+        """
+        Return sizes of data variables
+        :return:
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
+        for var in self.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+        return s
 
     @property
     def rows(self):
@@ -1386,6 +1440,16 @@ class FlagTable:
         """ Return size in GB
         """
         return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
+
+    def datasizes(self):
+        """
+        Return sizes of data variables
+        :return:
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
+        for var in self.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+        return s
 
     @property
     def time(self):

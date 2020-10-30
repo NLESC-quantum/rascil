@@ -160,8 +160,8 @@ def plot_configuration(vis_list, ax=None, plot_file=None, title='Configuration',
     """
     
     for ivis, vis in enumerate(vis_list):
-        antxyz = vis.configuration.xyz
-        names = vis.configuration.names
+        antxyz = vis.configuration.xyz.values
+        names = vis.configuration.names.values
         if label:
             plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=2.4)
             for iant, name in enumerate(names):

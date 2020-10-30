@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 from rascil.data_models import PolarisationFrame, rascil_path
 from rascil.processing_components.simulation import create_named_configuration, select_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility, create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.simulation import plot_uvcoverage, plot_configuration
 log = logging.getLogger('logger')
 

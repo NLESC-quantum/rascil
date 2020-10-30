@@ -642,9 +642,9 @@ try:
                 tb.putcell('MEAS_FREQ_REF', i, 5)  # https://github.com/ska-sa/pyxis/issues/27
                 tb.putcell('CHAN_FREQ', i, self.refVal + freq.bandFreq + numpy.arange(self.nchan) * self.channelWidth)
                 tb.putcell('REF_FREQUENCY', i, self.refVal)
-                tb.putcell('CHAN_WIDTH', i, [freq.chWidth for j in range(self.nchan)])
-                tb.putcell('EFFECTIVE_BW', i, [freq.chWidth for j in range(self.nchan)])
-                tb.putcell('RESOLUTION', i, [freq.chWidth for j in range(self.nchan)])
+                tb.putcell('CHAN_WIDTH', i, numpy.repeat(freq.chWidth, self.nchan))
+                tb.putcell('EFFECTIVE_BW', i, numpy.repeat(freq.chWidth, self.nchan))
+                tb.putcell('RESOLUTION', i, numpy.repeat(freq.chWidth, self.nchan))
                 tb.putcell('FLAG_ROW', i, False)
                 tb.putcell('FREQ_GROUP', i, i + 1)
                 tb.putcell('FREQ_GROUP_NAME', i, 'group%i' % (i + 1))

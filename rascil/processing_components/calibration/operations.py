@@ -383,7 +383,7 @@ def gaintable_plot(
 
     # with time_support(format = 'iso', scale = 'utc'):
     # time_axis = Time(gt.time/86400.0, format='mjd', out_subfmt='str')
-    time_axis = gt.time / 86400.0
+    time_axis = gt.time.values / 86400.0
 
     if cc == "B":
 
@@ -395,7 +395,7 @@ def gaintable_plot(
         ax[0].set_ylabel("RMS residual (Jy)")
 
         amp = numpy.abs(
-            gt.gain[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
+            gt.gain.values[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
         )
         ax[1].imshow(amp, cmap=cmap)
         ax[1].set_ylabel("Amplitude")
@@ -403,7 +403,7 @@ def gaintable_plot(
         ax[1].xaxis.set_tick_params(labelsize="small")
 
         phase = numpy.angle(
-            gt.gain[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
+            gt.gain.values[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
         )
         ax[2].imshow(phase, cmap=cmap)
         ax[2].set_ylabel("Phase (radian)")
@@ -420,7 +420,7 @@ def gaintable_plot(
         ax[0].set_title("{title} Residual {cc}".format(title=title, cc=cc))
 
         for ant in ants:
-            amp = numpy.abs(gt.gain[:, ant, channels, 0, 0])
+            amp = numpy.abs(gt.gain.values[:, ant, channels, 0, 0])
             ax[1].plot(
                 time_axis[amp[:, 0] > min_amp],
                 amp[amp[:, 0] > min_amp],
@@ -431,8 +431,8 @@ def gaintable_plot(
         ax[1].set_title("{title} Amplitude {cc}".format(title=title, cc=cc))
 
         for ant in ants:
-            amp = numpy.abs(gt.gain[:, ant, channels, 0, 0])
-            angle = numpy.angle(gt.gain[:, ant, channels, 0, 0])
+            amp = numpy.abs(gt.gain.values[:, ant, channels, 0, 0])
+            angle = numpy.angle(gt.gain.values[:, ant, channels, 0, 0])
             ax[2].plot(
                 time_axis[amp[:, 0] > min_amp],
                 angle[amp[:, 0] > min_amp],
@@ -445,7 +445,7 @@ def gaintable_plot(
         plt.xticks(rotation=0)
 
         if gt.configuration is not None:
-            if len(gt.configuration.names) < label_max:
+            if len(gt.configuration.names.values) < label_max:
                 ax[1].legend()
                 ax[1][1].legend()
 

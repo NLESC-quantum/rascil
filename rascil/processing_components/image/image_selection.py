@@ -102,6 +102,11 @@ def image_concat(im_list, dim, **kwargs):
 
     newim = copy_image(im_list[0])
     newim.data = xarray.concat([im.data for im in im_list], dim=dim, **kwargs)
+    
+    assert newim.shape[0] == len(im_list), \
+        "Input {} images, output {} channel image".format(len(im_list), newim.shape[0])
+    assert newim.shape[-2:] == im_list[0].shape[-2:], \
+        "Input shape {}, output shape {}".format(im_list[0].shape[-2:], newim.shape[-2:])
 
     assert not numpy.isnan(numpy.sum(newim.data.values)), \
         "NaNs present in output image {}".format(newim)

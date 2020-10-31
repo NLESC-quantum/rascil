@@ -39,7 +39,7 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymo
 
 results_dir = rascil_path('test_results')
 
-log = logging.getLogger()
+log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 mpl_logger = logging.getLogger("matplotlib")

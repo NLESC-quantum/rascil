@@ -20,7 +20,7 @@ from rascil.processing_components import create_blockvisibility_from_ms, show_im
 
 import logging
 
-log = logging.getLogger()
+log = logging.getLogger("rascil-logger")
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))
 mpl_logger = logging.getLogger("matplotlib")

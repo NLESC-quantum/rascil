@@ -13,7 +13,7 @@ from rascil.processing_components import create_blockvisibility, export_image_to
     deconvolve_cube, restore_cube, create_named_configuration, create_test_image, \
     create_image_from_visibility, advise_wide_field, invert_2d, predict_2d
 
-log = logging.getLogger()
+log = logging.getLogger("rascil-logger")
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler(sys.stdout))
 

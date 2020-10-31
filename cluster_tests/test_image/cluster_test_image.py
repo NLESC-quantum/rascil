@@ -18,7 +18,7 @@ from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.workflows.rsexecute.image.image_rsexecute import image_rsexecute_map_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
-log = logging.getLogger()
+log = logging.getLogger('rascil-logger')
 log.setLevel(logging.DEBUG)
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)

@@ -40,7 +40,7 @@ from rascil.workflows.rsexecute.simulation.simulation_rsexecute import \
     create_heterogeneous_gaintable_rsexecute_workflow
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymodel_list_rsexecute_workflow
 
-log = logging.getLogger()
+log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 

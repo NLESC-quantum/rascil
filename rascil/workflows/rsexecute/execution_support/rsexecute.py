@@ -233,8 +233,11 @@ class _rsexecutebase():
                 return value.compute()
             else:
                 import dask
-                scheduler = dask.config.get("scheduler")
-                assert scheduler == "distributed" or scheduler == "dask.distributed", scheduler
+                try:
+                    scheduler = dask.config.get("scheduler")
+                    assert scheduler == "distributed" or scheduler == "dask.distributed", scheduler
+                except:
+                    pass
                 future = self.client.compute(value, sync=sync)
                 wait(future)
                 if self._verbose:

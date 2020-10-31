@@ -43,7 +43,7 @@ from rascil.workflows import invert_list_rsexecute_workflow, \
 from rascil.workflows.rsexecute.execution_support import rsexecute
 
 if __name__ == '__main__':
-    log = logging.getLogger()
+    log = logging.getLogger('rascil-logger')
     log.setLevel(logging.INFO)
     log.addHandler(logging.StreamHandler(sys.stdout))
 

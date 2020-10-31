@@ -31,7 +31,7 @@ def init_logging():
 
 if __name__ == '__main__':
     
-    log = logging.getLogger()
+    log = logging.getLogger("rascil-logger")
     logging.info("Starting Imaging pipeline")
     
     rsexecute.set_client(use_dask=True)

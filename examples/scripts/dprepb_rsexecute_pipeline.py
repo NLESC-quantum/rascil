@@ -47,7 +47,7 @@ if __name__ == '__main__':
                             level=logging.INFO)
 
 
-    log = logging.getLogger()
+    log = logging.getLogger("rascil-logger")
     logging.info("Starting Imaging pipeline")
 
     if args.use_dask:

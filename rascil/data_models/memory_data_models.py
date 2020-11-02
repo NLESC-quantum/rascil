@@ -483,7 +483,7 @@ class PointingTable:
         return s
 
 
-class Image(xarray.DataArray):
+class Image(xarray.Dataset):
     """Image class with Image data (as an xarray.DataArray) and the AstroPy `implementation of
     a World Coodinate System <http://docs.astropy.org/en/stable/wcs>`_
 
@@ -501,21 +501,19 @@ class Image(xarray.DataArray):
         variable. The latter should be considered definitive.
 
     """
-    
-    def __init__(self, phasecentre, frequency, polarisation_frame=None,
-                 data=None, wcs=None, chunksize=None):
+
+    __slots__ = ['__dict__']
+
+    def __init__(self, data, phasecentre, frequency, polarisation_frame=None, wcs=None):
         """ Create an XImage
 
         :param frequency:
         :param phasecentre:
         :param polarisation_frame:
-        :return: XImage
+        :return: Image
         """
-
         super().__init__()
 
-        assert not numpy.isnan(numpy.sum(data)), "NaNs present in image data"
-        
         nx, ny = data.shape[-2], data.shape[-1]
         cellsize = numpy.abs(wcs.wcs.cdelt[1])
         cx = phasecentre.ra.to("deg").value
@@ -523,12 +521,12 @@ class Image(xarray.DataArray):
         
         assert cellsize > 0.0, "Cellsize must be positive"
         
-        dims = ["frequency", "polarisation", "l", "m"]
+        dims = ["frequency", "polarisation", "m", "l"]
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
-            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx),
-            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny)
+            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny),
+            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx)
         }
         
         nchan = len(frequency)
@@ -541,32 +539,38 @@ class Image(xarray.DataArray):
             "Number of frequency channels {} and data shape {} are incompatible" \
                 .format(len(frequency), data.shape)
         assert data.shape[1] == npol, \
-            "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
-                                                                              data.shape)
+            "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type, data.shape)
         assert coords["l"][0] != coords["l"][-1]
         assert coords["m"][0] != coords["m"][-1]
         
         assert len(coords["m"]) == ny
         assert len(coords["l"]) == nx
 
-        attrs = dict()
-        attrs["wcs"] = wcs
-        attrs["polarisation_frame"] = polarisation_frame
-
-        # chunksize = (1, 1, 128, 128)
-        super().__init__(data, dims=dims, coords=coords, attrs=attrs)
+        data_vars = dict()
+        data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
+        attrs = {"phasecentre": phasecentre, "wcs":wcs, "polarisation_frame":polarisation_frame}
+        
+        super().__init__(data_vars, coords=coords, attrs=attrs)
     
+    @property
+    def shape(self):
+        """ Shape of array
+        
+        :return:
+        """
+        return self["pixels"].data.shape
+        
     def check(self):
         """ Check that the internals are ok
 
         :return:
         """
-        assert isinstance(self.data, xarray.DataArray)
+        assert isinstance(self, xarray.DataArray)
     
     def size(self):
         """ Return size in GB
         """
-        size = self.data.nbytes
+        size = self.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
     
     @property
@@ -585,20 +589,14 @@ class Image(xarray.DataArray):
     def frequency(self):
         """ Frequency values
         """
-        w = self["wcs"].sub(['spectral'])
+        w = self.attrs["wcs"].sub(['spectral'])
         return w.wcs_pix2world(range(self.nchan), 0)[0]
-    
-    @property
-    def shape(self):
-        """ Shape of data array
-        """
-        return self.shape
     
     @property
     def phasecentre(self):
         """ Phasecentre (from WCS)
         """
-        return SkyCoord(self["wcs"].wcs.crval[0] * u.deg, self["wcs"].wcs.crval[1] * u.deg)
+        return SkyCoord(self.attrs["wcs"].wcs.crval[0] * u.deg, self.attrs["wcs"].wcs.crval[1] * u.deg)
     
     @property
     def ra_dec_mesh(self):
@@ -606,11 +604,27 @@ class Image(xarray.DataArray):
 
         :return:
         """
-        ny = self.data.shape[-2]
-        nx = self.data.shape[-1]
+        ny = self.shape[-2]
+        nx = self.shape[-1]
         ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
-        return self["wcs"].sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
-    
+        return self.attrs["wcs"].sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
+
+    @property
+    def wcs(self):
+        """
+
+        :return:
+        """
+        return self.attrs["wcs"]
+
+    @property
+    def polarisation_frame(self):
+        """
+
+        :return:
+        """
+        return self.attrs["polarisation_frame"]
+
 
 class GridData:
     """Class to hold Gridded data for Fourier processing
@@ -1129,32 +1143,6 @@ class BlockVisibility(xarray.Dataset):
         :return:
         """
         assert isinstance(self, xarray.Dataset)
-    
-    def __str__old(self):
-        """Default printer for BlockVisibility
-
-        """
-        tstart = self.time[0]
-        from astropy.time import Time
-        tstart = Time([self.time[0] / 86400.0], format='mjd', scale='utc').iso[0]
-        tend = Time([self.time[-1] / 86400.0], format='mjd', scale='utc').iso[0]
-        
-        s = "BlockVisibility:\n"
-        s += "\tSource %s\n" % self.source
-        s += "\tPhasecentre: %s\n" % self.phasecentre
-        s += "\tNumber of integrations: %s\n" % len(self.time)
-        s += "\tTime range: %s to %s\n" % (tstart, tend)
-        s += "\tVisibility shape: %s\n" % str(self.vis.shape)
-        s += "\tNumber of flags: %s\n" % str(numpy.sum(self.flags.values).astype(int))
-        s += "\tNumber of channels: %d\n" % len(self.frequency.values)
-        s += "\tFrequency: %s\n" % self.frequency.values
-        s += "\tChannel bandwidth: %s\n" % self.channel_bandwidth.values
-        s += "\tNumber of polarisations: %s\n" % self.npol
-        s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
-        s += "\tConfiguration: %s\n" % self.configuration.name
-        s += "\tMetadata: %s\n" % self.meta
-        
-        return s
     
     def size(self):
         """ Return size in GB

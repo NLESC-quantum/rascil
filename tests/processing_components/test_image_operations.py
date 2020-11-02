@@ -31,7 +31,7 @@ class TestImage(unittest.TestCase):
         self.dir = rascil_path('test_results')
 
         self.m31image = create_test_image(cellsize=0.0001)
-        assert numpy.max(self.m31image.data) > 0.0, "Test image is empty"
+        assert numpy.max(self.m31image["pixels"]) > 0.0, "Test image is empty"
         self.cellsize = 180.0 * 0.0001 / numpy.pi
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -41,8 +41,17 @@ class TestImage(unittest.TestCase):
                                 channel_bandwidth=1e7 * numpy.ones([5]))
         assert newimage.shape == (5, 4, 1024, 1024)
 
+    def test_copy_image(self):
+        newimage = create_image(npixel=1024, cellsize=0.001, polarisation_frame=PolarisationFrame("stokesIQUV"),
+                                frequency=numpy.linspace(0.8e9, 1.2e9, 5),
+                                channel_bandwidth=1e7 * numpy.ones([5]))
+        #print(newimage)
+        copy_image = newimage.copy(deep=True)
+        assert copy_image.shape == (5, 4, 1024, 1024)
+
     def test_create_image_from_array(self):
-        m31model_by_array = create_image_from_array(self.m31image.data, self.m31image.wcs,
+        m31model_by_array = create_image_from_array(self.m31image["pixels"],
+                                                    self.m31image.wcs,
                                                     self.m31image.polarisation_frame)
         add_image(self.m31image, m31model_by_array)
         assert m31model_by_array.shape == self.m31image.shape
@@ -51,8 +60,8 @@ class TestImage(unittest.TestCase):
 
     def test_create_empty_image_like(self):
         emptyimage = create_empty_image_like(self.m31image)
-        assert emptyimage.shape == self.m31image.shape
-        assert numpy.max(numpy.abs(emptyimage.data)) == 0.0
+        assert emptyimage["pixels"].shape == self.m31image["pixels"].shape
+        assert numpy.max(numpy.abs(emptyimage["pixels"].data)) == 0.0
 
     def test_reproject(self):
         # Reproject an image
@@ -61,7 +70,7 @@ class TestImage(unittest.TestCase):
         newwcs.wcs.cdelt[0] = -cellsize
         newwcs.wcs.cdelt[1] = +cellsize
 
-        newshape = numpy.array(self.m31image.data.shape)
+        newshape = numpy.array(self.m31image["pixels"].data.shape)
         newshape[2] /= 1.5
         newshape[3] /= 1.5
         newimage, footprint = reproject_image(self.m31image, newwcs, shape=newshape)
@@ -77,9 +86,9 @@ class TestImage(unittest.TestCase):
             assert polimage.polarisation_frame == polarisation_frame
             polarisation_frame_from_wcs(polimage.wcs, polimage.shape)
             rstokes = convert_polimage_to_stokes(polimage)
-            assert polimage.data.dtype == 'complex'
-            assert rstokes.data.dtype == 'float'
-            numpy.testing.assert_array_almost_equal(stokes.data, rstokes.data.real, 12)
+            assert polimage["pixels"].data.dtype == 'complex'
+            assert rstokes["pixels"].data.dtype == 'float'
+            numpy.testing.assert_array_almost_equal(stokes["pixels"].data, rstokes["pixels"].data.real, 12)
 
     def test_polarisation_frame_from_wcs(self):
         assert self.m31image.polarisation_frame == PolarisationFrame("stokesI")
@@ -113,22 +122,22 @@ class TestImage(unittest.TestCase):
     def test_polarisation_frame_from_wcs_jones(self):
         vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_real.fits'), fixpol=False)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'), fixpol=False)
-        vp.data = vp.data + 1j * imag_vp.data
+        vp["pixels"].data = vp["pixels"].data + 1j * imag_vp["pixels"].data
 
         polframe = polarisation_frame_from_wcs(vp.wcs, vp.shape)
         permute = polframe.fits_to_rascil[polframe.type]
 
-        newvp_data = vp.data.copy()
+        newvp_data = vp["pixels"].data.copy()
         for ip, p in enumerate(permute):
-            newvp_data[:,p,...] = vp.data.values[:,ip,...]
-        vp.data = newvp_data
+            newvp_data[:,p,...] = vp["pixels"].data[:,ip,...]
+        vp["pixels"].data = newvp_data
 
         assert vp.polarisation_frame == PolarisationFrame("linear")
 
     def test_smooth_image(self):
         smooth = smooth_image(self.m31image)
-        assert numpy.max(smooth.data) > 0.0
-        assert numpy.max(smooth.data) > numpy.max(self.m31image.data)
+        assert numpy.max(smooth["pixels"].data) > 0.0
+        assert numpy.max(smooth["pixels"].data) > numpy.max(self.m31image["pixels"].data)
 
     def test_calculate_image_frequency_moments(self):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
@@ -140,7 +149,7 @@ class TestImage(unittest.TestCase):
         reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)
         if self.persist: export_image_to_fits(reconstructed_cube, fitsfile='%s/test_moments_reconstructed_cube.fits' % (
             self.dir))
-        error = numpy.std(reconstructed_cube.data - original_cube.data)
+        error = numpy.std(reconstructed_cube["pixels"].data - original_cube["pixels"].data)
         assert error < 0.2
 
     def test_calculate_image_frequency_moments_1(self):
@@ -154,7 +163,7 @@ class TestImage(unittest.TestCase):
         if self.persist: export_image_to_fits(reconstructed_cube,
                                               fitsfile='%s/test_moments_1_reconstructed_cube.fits' % (
                                                   self.dir))
-        error = numpy.std(reconstructed_cube.data - original_cube.data)
+        error = numpy.std(reconstructed_cube["pixels"].data - original_cube["pixels"].data)
         assert error < 0.2
 
     def test_create_w_term_image(self):
@@ -162,20 +171,20 @@ class TestImage(unittest.TestCase):
                                 frequency=numpy.linspace(0.8e9, 1.2e9, 5),
                                 channel_bandwidth=1e7 * numpy.ones([5]))
         im = create_w_term_like(newimage, w=2000.0, remove_shift=True, dopol=True)
-        im.data = im.data.real
+        im["pixels"].data = im["pixels"].data.real
         for x in [256, 768]:
             for y in [256, 768]:
-                self.assertAlmostEqual(im.data.values[0, 0, y, x], -0.46042631800538464, 7)
+                self.assertAlmostEqual(im["pixels"].data[0, 0, y, x], -0.46042631800538464, 7)
         if self.persist: export_image_to_fits(im, '%s/test_wterm.fits' % self.dir)
-        assert im.data.shape == (5, 4, 1024, 1024), im.data.shape
-        self.assertAlmostEqual(numpy.max(im.data.real), 1.0, 7)
+        assert im["pixels"].data.shape == (5, 4, 1024, 1024), im["pixels"].data.shape
+        self.assertAlmostEqual(numpy.max(im["pixels"].data.real), 1.0, 7)
 
     def test_fftim(self):
         self.m31image = create_test_image(cellsize=0.001, frequency=[1e8])
         m31_fft = fft_image(self.m31image)
         m31_fft_ifft = fft_image(m31_fft, self.m31image)
-        numpy.testing.assert_array_almost_equal(self.m31image.data, m31_fft_ifft.data.real, 12)
-        m31_fft.data = numpy.abs(m31_fft.data)
+        numpy.testing.assert_array_almost_equal(self.m31image["pixels"].data, m31_fft_ifft["pixels"].data.real, 12)
+        m31_fft["pixels"].data = numpy.abs(m31_fft["pixels"].data)
         if self.persist: export_image_to_fits(m31_fft, fitsfile='%s/test_m31_fft.fits' % (self.dir))
 
     def test_fftim_factors(self):
@@ -186,8 +195,8 @@ class TestImage(unittest.TestCase):
             assert padded.shape == (1, 1, npixel, npixel)
             padded_fft = fft_image(padded)
             padded_fft_ifft = fft_image(padded_fft, m31image)
-            numpy.testing.assert_array_almost_equal(padded.data, padded_fft_ifft.data.real, 12)
-            padded_fft.data = numpy.abs(padded_fft.data)
+            numpy.testing.assert_array_almost_equal(padded["pixels"].data, padded_fft_ifft["pixels"].data.real, 12)
+            padded_fft["pixels"].data = numpy.abs(padded_fft["pixels"].data)
             if self.persist: export_image_to_fits(padded_fft, fitsfile='%s/test_m31_fft_%d.fits' % (self.dir, npixel))
 
     def test_pad_image(self):
@@ -210,7 +219,7 @@ class TestImage(unittest.TestCase):
         vp = scale_and_rotate_image(vp, 90.0 * numpy.pi / 180.0)
         self.persist = True
         if self.persist:
-            vp.data = vp.data.real
+            vp["pixels"].data = vp["pixels"].data.real
             fitsfile = '{}/test_vp_rotate_real.fits'.format(self.dir)
             export_image_to_fits(vp, fitsfile=fitsfile)
 
@@ -221,21 +230,21 @@ class TestImage(unittest.TestCase):
         cellsize = vp.wcs.wcs.cdelt[1] * numpy.pi / 180.0
         m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9])
         padded = pad_image(m31image, [1, 1, 1024, 1024])
-        padded_data = numpy.repeat(padded.data.values, repeats=4, axis=1)
+        padded_data = numpy.repeat(padded["pixels"].data, repeats=4, axis=1)
         padded = create_image_from_array(padded_data, polarisation_frame=PolarisationFrame("stokesIQUV"),
                                          wcs=padded.wcs)
-        padded.data.values[:, 1:, ...] = 0.0
+        padded["pixels"].data[:, 1:, ...] = 0.0
         applied = apply_voltage_pattern_to_image(padded, vp)
         unapplied = apply_voltage_pattern_to_image(applied, vp, inverse=True, min_det=1e-12)
         if self.persist:
-            applied.data = applied.data.real
+            applied["pixels"].data = applied["pixels"].data.real
             fitsfile = '{}/test_apply_voltage_pattern_real.fits'.format(self.dir)
             export_image_to_fits(applied, fitsfile=fitsfile)
-            unapplied.data = unapplied.data.real
+            unapplied["pixels"].data = unapplied["pixels"].data.real
             fitsfile = '{}/test_apply_voltage_pattern_inv_real.fits'.format(self.dir)
             export_image_to_fits(unapplied, fitsfile=fitsfile)
             
-        err = numpy.max(numpy.abs(unapplied.data-padded.data))
+        err = numpy.max(numpy.abs(unapplied["pixels"].data-padded["pixels"].data))
         assert err < 1e-12, err
 
 

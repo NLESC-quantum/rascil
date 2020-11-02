@@ -95,50 +95,50 @@ def create_vp(model=None, telescope='MID', pointingcentre=None, padding=4, use_l
         log.debug("create_vp: Using GRASP model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_GRASP_VP_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_GRASP_VP_imag.fits'), fixpol=fixpol)
-        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
-        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
+        real_vp["pixels"].data = real_vp["pixels"].data + 1j * imag_vp["pixels"].data
+        real_vp["pixels"].data /= numpy.max(numpy.abs(real_vp["pixels"].data))
         return real_vp
     elif telescope == 'MID_FEKO_B1LOW' or telescope == 'MID_B1LOW':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0365_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0365_imag.fits'), fixpol=fixpol)
-        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
-        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
+        real_vp["pixels"].data = real_vp["pixels"].data + 1j * imag_vp["pixels"].data
+        real_vp["pixels"].data /= numpy.max(numpy.abs(real_vp["pixels"].data))
         return real_vp
     elif telescope == 'MID_FEKO_B1' or telescope == 'MID_B1':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_imag.fits'), fixpol=fixpol)
-        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
-        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
+        real_vp["pixels"].data = real_vp["pixels"].data + 1j * imag_vp["pixels"].data
+        real_vp["pixels"].data /= numpy.max(numpy.abs(real_vp["pixels"].data))
         return real_vp
     elif telescope == 'MID_FEKO_B2' or telescope == 'MID_B2':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'), fixpol=fixpol)
-        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
-        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
+        real_vp["pixels"].data = real_vp["pixels"].data + 1j * imag_vp["pixels"].data
+        real_vp["pixels"].data /= numpy.max(numpy.abs(real_vp["pixels"].data))
         return real_vp
     elif telescope == 'MID_FEKO_Ku' or telescope == 'MID_Ku':
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_Ku_45_12179_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_Ku_45_12179_imag.fits'), fixpol=fixpol)
-        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
-        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
+        real_vp["pixels"].data = real_vp["pixels"].data + 1j * imag_vp["pixels"].data
+        real_vp["pixels"].data /= numpy.max(numpy.abs(real_vp["pixels"].data))
         return real_vp
     elif telescope == 'MEERKAT_B2':
         log.debug("create_vp: Using MEERKAT voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MeerKAT_VP_60_1360_imag.fits'), fixpol=fixpol)
-        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
-        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
+        real_vp["pixels"].data = real_vp["pixels"].data + 1j * imag_vp["pixels"].data
+        real_vp["pixels"].data /= numpy.max(numpy.abs(real_vp["pixels"].data))
         return real_vp
     elif telescope == 'MEERKAT_B1':
         log.debug("create_vp: Using MID FEKO model for MEERKAT B1 voltage pattern")
         real_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_real.fits'), fixpol=fixpol)
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B1_45_0765_imag.fits'), fixpol=fixpol)
-        real_vp.data.values = real_vp.data.values + 1j * imag_vp.data.values
-        real_vp.data.values /= numpy.max(numpy.abs(real_vp.data.values))
+        real_vp["pixels"].data = real_vp["pixels"].data + 1j * imag_vp["pixels"].data
+        real_vp["pixels"].data /= numpy.max(numpy.abs(real_vp["pixels"].data))
         return real_vp
     elif telescope[0:3] == 'LOW':
         return create_low_test_vp(model)
@@ -158,7 +158,7 @@ def create_pb(model, telescope='MID', pointingcentre=None, use_local=True):
     :return: Primary beam image
     """
     beam = create_vp(model, telescope, pointingcentre, use_local=use_local)
-    beam.data.values = numpy.real(beam.data.values * numpy.conjugate(beam.data.values))
+    beam["pixels"].data = numpy.real(beam["pixels"].data * numpy.conjugate(beam["pixels"].data))
     
     set_pb_header(beam, use_local=use_local)
     return beam
@@ -178,8 +178,8 @@ def mosaic_pb(model, telescope, pointingcentres, use_local=True):
     sumpb = create_empty_image_like(model)
     for pc in pointingcentres:
         pb = create_pb(model, telescope, pointingcentre=pc, use_local=use_local)
-        sumpb.data.values += pb.data.values ** 2
-    sumpb.data.values = numpy.sqrt(sumpb.data.values)
+        sumpb["pixels"].data += pb["pixels"].data ** 2
+    sumpb["pixels"].data = numpy.sqrt(sumpb["pixels"].data)
     return sumpb
 
 
@@ -194,7 +194,7 @@ def create_pb_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
     :return:
     """
     beam = create_vp_generic(model, pointingcentre, diameter, blockage, use_local=use_local)
-    beam.data.values = numpy.real(beam.data.values * numpy.conjugate(beam.data.values))
+    beam["pixels"].data = numpy.real(beam["pixels"].data * numpy.conjugate(beam["pixels"].data))
     set_pb_header(beam, use_local=use_local)
     return beam
 
@@ -211,7 +211,7 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
     """
 
     beam = create_empty_image_like(model)
-    beam.data.values = numpy.zeros(beam.data.shape, dtype='complex')
+    beam["pixels"].data = numpy.zeros(beam.data.shape, dtype='complex')
     
     nchan, npol, ny, nx = model.shape
     
@@ -246,7 +246,7 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
         combined = reflector - blockage_factor * blockage
 
         for pol in pols:
-            beam.data.values[chan, pol, ...] = combined
+            beam["pixels"].data[chan, pol, ...] = combined
     
     set_pb_header(beam, use_local=use_local)
     return beam
@@ -283,7 +283,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     nchan, npol, ny, nx = beam.shape
     padded_shape = [nchan, npol, padding * ny, padding * nx]
     padded_beam = pad_image(beam, padded_shape)
-    padded_beam.data.values = numpy.zeros(padded_beam.data.shape, dtype='complex')
+    padded_beam["pixels"].data = numpy.zeros(padded_beam.data.shape, dtype='complex')
     _, _, pny, pnx = padded_beam.shape
     
     xfr = fft_image(padded_beam)
@@ -313,7 +313,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
                                                     taper=taper)
 
         for pol in pols:
-            xfr.data.values[chan, pol, ...] = combined
+            xfr["pixels"].data[chan, pol, ...] = combined
         
         if pointingcentre is not None:
             # Correct for pointing centre
@@ -344,16 +344,16 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
             blc = pnx // 2 - ndisk // 2
             trc = pnx // 2 + ndisk // 2
             for pol in range(npol):
-                xfr.data.values[chan, pol, blc:trc, blc:trc] = xfr.data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
+                xfr["pixels"].data[chan, pol, blc:trc, blc:trc] = xfr.data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
     
     padded_beam = fft_image(xfr, padded_beam)
     
     # Undo padding
     beam = create_empty_image_like(model)
-    beam.data.values = padded_beam.data.values[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),
+    beam["pixels"].data = padded_beam["pixels"].data[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),
                 (pnx // 2 - nx // 2):(pnx // 2 + nx // 2)]
     for chan in range(nchan):
-        beam.data.values[chan, ...] /= numpy.max(numpy.abs(beam.data.values[chan, ...]))
+        beam["pixels"].data[chan, ...] /= numpy.max(numpy.abs(beam["pixels"].data[chan, ...]))
     
     set_pb_header(beam, use_local=use_local)
     return beam
@@ -368,7 +368,7 @@ def create_low_test_beam(model: Image, use_local=True) -> Image:
     :return: Image
     """
     beam = create_low_test_vp(model, use_local=use_local)
-    beam.data.values = numpy.real(beam.data.values * numpy.conjugate(beam.data.values))
+    beam["pixels"].data = numpy.real(beam["pixels"].data * numpy.conjugate(beam["pixels"].data))
 
     set_pb_header(beam, use_local=use_local)
     return beam
@@ -398,7 +398,7 @@ def convert_azelvp_to_radec(vp, im, pa):
     vp.wcs.wcs.ctype[1] = im.wcs.wcs.ctype[1]
 
     rvp, footprint = reproject_image(vp, im.wcs, shape=im.shape)
-    rvp.data.values[footprint.data.values < 1e-6] = 0.0
+    rvp["pixels"].data[footprint["pixels"].data < 1e-6] = 0.0
 
     return rvp
 
@@ -410,10 +410,10 @@ def normalise_vp(vp):
     :return:
     """
     g = numpy.zeros([4])
-    g[0] = numpy.max(numpy.abs(vp.data.values[:, 0, ...]))
-    g[3] = numpy.max(numpy.abs(vp.data.values[:, 3, ...]))
+    g[0] = numpy.max(numpy.abs(vp["pixels"].data[:, 0, ...]))
+    g[3] = numpy.max(numpy.abs(vp["pixels"].data[:, 3, ...]))
     g[1] = g[2] = numpy.sqrt(g[0] * g[3])
     for chan in range(4):
         if g[chan] > 0.0:
-            vp.data.values[:, chan, ...] /= g[chan]
+            vp["pixels"].data[:, chan, ...] /= g[chan]
     return vp

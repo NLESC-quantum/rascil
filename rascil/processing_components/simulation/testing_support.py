@@ -93,34 +93,34 @@ def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, pha
         frequency = [1e8]
     im = import_image_from_fits(rascil_data_path("models/M31.MOD"))
     if polarisation_frame is None:
-        im.polarisation_frame = PolarisationFrame("stokesI")
+        im.attrs["polarisation_frame"] = PolarisationFrame("stokesI")
     elif isinstance(polarisation_frame, PolarisationFrame):
-        im.polarisation_frame = polarisation_frame
+        im.attrs["polarisation_frame"] = polarisation_frame
     else:
         raise ValueError("polarisation_frame is not valid")
 
     im = replicate_image(im, frequency=frequency, polarisation_frame=im.polarisation_frame)
     if cellsize is not None:
-        im.wcs.wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
-        im.wcs.wcs.cdelt[1] = +180.0 * cellsize / numpy.pi
+        im.attrs["wcs"].wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
+        im.attrs["wcs"].wcs.cdelt[1] = +180.0 * cellsize / numpy.pi
     if frequency is not None:
-        im.wcs.wcs.crval[3] = frequency[0]
+        im.attrs["wcs"].wcs.crval[3] = frequency[0]
     if channel_bandwidth is not None:
-        im.wcs.wcs.cdelt[3] = channel_bandwidth[0]
+        im.attrs["wcs"].wcs.cdelt[3] = channel_bandwidth[0]
     else:
         if len(frequency) > 1:
-            im.wcs.wcs.cdelt[3] = frequency[1] - frequency[0]
+            im.attrs["wcs"].wcs.cdelt[3] = frequency[1] - frequency[0]
         else:
-            im.wcs.wcs.cdelt[3] = 0.001 * frequency[0]
-    im.wcs.wcs.radesys = 'ICRS'
-    im.wcs.wcs.equinox = 2000.00
+            im.attrs["wcs"].wcs.cdelt[3] = 0.001 * frequency[0]
+    im.attrs["wcs"].wcs.radesys = 'ICRS'
+    im.attrs["wcs"].wcs.equinox = 2000.00
 
     if phasecentre is not None:
-        im.wcs.wcs.crval[0] = phasecentre.ra.deg
-        im.wcs.wcs.crval[1] = phasecentre.dec.deg
+        im.attrs["wcs"].wcs.crval[0] = phasecentre.ra.deg
+        im.attrs["wcs"].wcs.crval[1] = phasecentre.dec.deg
         # WCS is 1 relative
-        im.wcs.wcs.crpix[0] = im.data.shape[3] // 2 + 1
-        im.wcs.wcs.crpix[1] = im.data.shape[2] // 2 + 1
+        im.attrs["wcs"].wcs.crpix[0] = im.data.shape[3] // 2 + 1
+        im.attrs["wcs"].wcs.crpix[1] = im.data.shape[2] // 2 + 1
 
     return im
 
@@ -439,7 +439,7 @@ def create_low_test_image_from_gleam(npixel=512, polarisation_frame=Polarisation
     model = insert_skycomponent(model, sc, insert_method=insert_method)
     if applybeam:
         beam = create_pb(model, telescope='LOW', use_local=False)
-        model.data.values[...] *= beam.data.values[...]
+        model.values[...] *= beam.values[...]
 
     return model
 
@@ -631,24 +631,24 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
 
     newwcs = WCS(naxis=4)
 
-    newwcs.wcs.crpix = [im.wcs.wcs.crpix[0] + 1.0, im.wcs.wcs.crpix[1] + 1.0, 1.0, 1.0]
-    newwcs.wcs.cdelt = [im.wcs.wcs.cdelt[0], im.wcs.wcs.cdelt[1], 1.0, 1.0]
-    newwcs.wcs.crval = [im.wcs.wcs.crval[0], im.wcs.wcs.crval[1], 1.0, frequency[0]]
-    newwcs.wcs.ctype = [im.wcs.wcs.ctype[0], im.wcs.wcs.ctype[1], 'STOKES', 'FREQ']
+    newwcs.wcs.crpix = [im.attrs["wcs"].wcs.crpix[0] + 1.0, im.attrs["wcs"].wcs.crpix[1] + 1.0, 1.0, 1.0]
+    newwcs.wcs.cdelt = [im.attrs["wcs"].wcs.cdelt[0], im.attrs["wcs"].wcs.cdelt[1], 1.0, 1.0]
+    newwcs.wcs.crval = [im.attrs["wcs"].wcs.crval[0], im.attrs["wcs"].wcs.crval[1], 1.0, frequency[0]]
+    newwcs.wcs.ctype = [im.attrs["wcs"].wcs.ctype[0], im.attrs["wcs"].wcs.ctype[1], 'STOKES', 'FREQ']
 
     phasecentre = SkyCoord(newwcs.wcs.crval[0] * u.deg, newwcs.wcs.crval[1] * u.deg)
 
     nchan = len(frequency)
     npol = polarisation_frame.npol
 
-    fshape = [nchan, npol, im.data.shape[-2], im.data.shape[-1]]
+    fshape = [nchan, npol, im.shape[-2], im.shape[-1]]
     data = numpy.zeros(fshape)
-    log.info("replicate_image: replicating shape %s to %s" % (im.data.shape, data.shape))
-    if len(im.data.shape) == 2:
-        data[...] = im.data.values[numpy.newaxis, numpy.newaxis, ...]
+    log.info("replicate_image: replicating shape %s to %s" % (im.shape, data.shape))
+    if len(im.shape) == 2:
+        data[...] = im.data[numpy.newaxis, numpy.newaxis, ...]
     else:
         for pol in range(npol):
-            data[:, pol] = im.data.values[:, 0]
+            data[:, pol] = im["pixels"][:, 0]
         
     return Image(data=data, phasecentre=phasecentre, polarisation_frame=polarisation_frame, wcs=newwcs,
                  frequency=frequency)

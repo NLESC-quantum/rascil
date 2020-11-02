@@ -248,14 +248,14 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     kernel.normalize()
 
     # Segment the average over all channels of Stokes I
-    image_sum = numpy.sum(im.data.values, axis=0)[0, ...] / float(im.shape[0])
+    image_sum = numpy.sum(im["pixels"].data, axis=0)[0, ...] / float(im.shape[0])
     segments = segmentation.detect_sources(image_sum, threshold, npixels=npixels, filter_kernel=kernel)
     assert segments is not None, "Failed to find any components"
 
     log.info("find_skycomponents: Identified %d segments" % segments.nlabels)
 
     # Now compute source properties for all polarisations and frequencies
-    comp_tbl = [[segmentation.source_properties(im.data.values[chan, pol], segments,
+    comp_tbl = [[segmentation.source_properties(im["pixels"].data[chan, pol], segments,
                                                 filter_kernel=kernel,
                                                 wcs=im.wcs.sub([1, 2])).to_table()
                  for pol in [0]]
@@ -299,7 +299,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         xs = numpy.sum(aflux * xs) / flux_sum
         ys = numpy.sum(aflux * ys) / flux_sum
 
-        point_flux = im.data.values[:, :, numpy.round(ys.value).astype('int'), numpy.round(xs.value).astype('int')]
+        point_flux = im["pixels"].data[:, :, numpy.round(ys.value).astype('int'), numpy.round(xs.value).astype('int')]
 
         # Add component
         comps.append(Skycomponent(
@@ -514,7 +514,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
 
     support = int(support / bandwidth)
 
-    nchan, npol, ny, nx = im.data.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
 
     if not isinstance(sc, collections.abc.Iterable):
         sc = [sc]
@@ -544,19 +544,19 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
             flux = comp.flux
 
         if insert_method == "Lanczos":
-            insert_array(im.data, pixloc[0], pixloc[1], flux, bandwidth, support,
+            insert_array(im["pixels"].data, pixloc[0], pixloc[1], flux, bandwidth, support,
                          insert_function=insert_function_L)
         elif insert_method == "Sinc":
-            insert_array(im.data, pixloc[0], pixloc[1], flux, bandwidth, support,
+            insert_array(im["pixels"].data, pixloc[0], pixloc[1], flux, bandwidth, support,
                          insert_function=insert_function_sinc)
         elif insert_method == "PSWF":
-            insert_array(im.data, pixloc[0], pixloc[1], flux, bandwidth, support,
+            insert_array(im["pixels"].data, pixloc[0], pixloc[1], flux, bandwidth, support,
                          insert_function=insert_function_pswf)
         else:
             insert_method = 'Nearest'
             y, x = numpy.round(pixloc[1]).astype('int'), numpy.round(pixloc[0]).astype('int')
             if 0 <= x < nx and 0 <= y < ny:
-                im.data.values[:, :, y, x] += flux[...]
+                im["pixels"].data[:, :, y, x] += flux[...]
 
     return im
 
@@ -605,7 +605,7 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
     :returns: generator of Images
     """
     if len(components) == 1:
-        mask = numpy.ones(im.data.shape)
+        mask = numpy.ones(im["pixels"].data.shape)
         yield create_image_from_array(mask, wcs=im.wcs,
                                       polarisation_frame=im.polarisation_frame)
     else:
@@ -613,7 +613,7 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
 
         nregions = numpy.max(vertex_array) + 1
         for region in range(nregions):
-            mask = numpy.zeros(im.data.shape)
+            mask = numpy.zeros(im["pixels"].data.shape)
             mask[(vertex_array == region)[numpy.newaxis, numpy.newaxis, ...]] = 1.0
             yield create_image_from_array(mask, wcs=im.wcs,
                                           polarisation_frame=im.polarisation_frame)

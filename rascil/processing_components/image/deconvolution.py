@@ -26,12 +26,14 @@ For example to make dirty image and PSF, deconvolve, and then restore::
 __all__ = ['deconvolve_cube', 'restore_cube']
 
 import logging
+import warnings
 
 from rascil.data_models.polarisation import PolarisationFrame
 
 import numpy
 from astropy.convolution import Gaussian2DKernel, convolve_fft
-from photutils import fit_2dgaussian
+from astropy.modeling import models, fitting
+# from photutils import fit_2dgaussian
 
 from rascil.data_models.memory_data_models import Image
 from rascil.data_models.parameters import get_parameter
@@ -333,6 +335,8 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     
     npixel = psf.data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)
+    y,x = numpy.mgrid[sl, sl]
+    z = psf.data[0, 0, sl, sl]
     
     size = get_parameter(kwargs, "psfwidth", None)
     
@@ -340,7 +344,14 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
         # isotropic at the moment!
         from scipy.optimize import minpack
         try:
-            fit = fit_2dgaussian(psf.data[0, 0, sl, sl])
+            p_init = models.Gaussian2D()
+            fit_p = fitting.LevMarLSQFitter()
+            with warnings.catch_warnings():
+                 # Ignore model linearity warning from the fitter
+                 warnings.simplefilter('ignore')
+                 fit = fit_p(p_init, x, y, z)
+            #fit = fit_2dgaussian(psf.data[0, 0, sl, sl])
+            
             if fit.x_stddev <= 0.0 or fit.y_stddev <= 0.0:
                 log.debug('restore_cube: error in fitting to psf, using 1 pixel stddev')
                 size = 1.0

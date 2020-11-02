@@ -90,7 +90,7 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
     
     # Initialize l,m,n to be in the direction of the component as defined in the frame of
     # visibility phasecentre
-    l, m, n = skycoord_to_lmn(sc.direction, vis.phasecentre)
+    l, m, n = skycoord_to_lmn(sc.direction, vis.attrs["phasecentre"])
     
     x0 = numpy.array([sc.flux[0, 0], l, m])
     
@@ -115,6 +115,6 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
     
     sc.flux[...] = res.x[0]
     lmn = (res.x[1], res.x[2], 0.0)
-    sc.direction = lmn_to_skycoord(lmn, vis.phasecentre)
+    sc.direction = lmn_to_skycoord(lmn, vis.attrs["phasecentre"])
     
     return sc, res

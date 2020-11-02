@@ -239,9 +239,9 @@ def create_blockvisibility(config: Configuration,
                           imaging_weight=rimaging_weight, flags=rflags,
                           integration_time=rintegrationtime,
                           channel_bandwidth=rchannel_bandwidth,
-                          polarisation_frame=polarisation_frame, source=source, meta=meta)
-    vis.phasecentre = phasecentre
-    vis.configuration = config
+                          polarisation_frame=polarisation_frame, source=source, meta=meta,
+                          phasecentre=phasecentre, configuration=config)
+
     log.debug("create_blockvisibility: %s" % (vis_summary(vis)))
     assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
     
@@ -263,7 +263,7 @@ def phaserotate_visibility(vis: BlockVisibility,
     :param inverse: Actually do the opposite
     :return: BlockVisibility or BlockVisibility
     """
-    l, m, n = skycoord_to_lmn(newphasecentre, vis.phasecentre)
+    l, m, n = skycoord_to_lmn(newphasecentre, vis.attrs["phasecentre"])
     
     # No significant change?
     if numpy.abs(n) < 1e-15:
@@ -273,11 +273,11 @@ def phaserotate_visibility(vis: BlockVisibility,
     newvis = copy_visibility(vis)
     
     phasor = calculate_blockvisibility_phasor(newphasecentre, newvis)
-    assert vis.data['vis'].values.shape == phasor.shape
+    assert vis['vis'].values.shape == phasor.shape
     if inverse:
-        newvis.data['vis'].values *= phasor
+        newvis['vis'].values *= phasor
     else:
-        newvis.data['vis'].values *= numpy.conj(phasor)
+        newvis['vis'].values *= numpy.conj(phasor)
     # To rotate UVW, rotate into the global XYZ coordinate system and back. We have the option of
     # staying on the tangent plane or not. If we stay on the tangent then the raster will
     # join smoothly at the edges. If we change the tangent then we will have to reproject to get
@@ -288,15 +288,15 @@ def phaserotate_visibility(vis: BlockVisibility,
         nrows, nbl, _ = vis.uvw.shape
         if inverse:
             uvw_linear = vis.uvw.values.reshape([nrows * nbl, 3])
-            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
+            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.attrs["phasecentre"].ra.rad, dec=newvis.attrs["phasecentre"].dec.rad)
             uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
         else:
             # This is the original (non-inverse) code
             uvw_linear = newvis.uvw.values.reshape([nrows * nbl, 3])
-            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
+            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.attrs["phasecentre"].ra.rad, dec=newvis.attrs["phasecentre"].dec.rad)
             uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
-        newvis.phasecentre = newphasecentre
-        newvis.data['uvw'].values[...] = uvw_linear.reshape([nrows, nbl, 3])
+        newvis.attrs["phasecentre"] = newphasecentre
+        newvis['uvw'].values[...] = uvw_linear.reshape([nrows, nbl, 3])
         newvis = calculate_blockvisibility_uvw_lambda(newvis)
     return newvis
 
@@ -390,27 +390,27 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         
         tbl.set_geometry(vis.configuration, antennas)
         
-        int_time = vis.data['integration_time'].values
-        # bv_vis = vis.data['vis']
-        # bv_uvw = vis.data['uvw']
+        int_time = vis['integration_time'].values
+        # bv_vis = vis['vis']
+        # bv_uvw = vis['uvw']
         #
         # Now easier since the BlockVisibility is baseline oriented
         
-        for ntime, time in enumerate(vis.data['time']):
+        for ntime, time in enumerate(vis['time']):
             for ipol, pol in enumerate(polarization):
                 if int_time[ntime] is not None:
                     tbl.add_data_set(time.values, int_time[ntime], bl_list,
-                                     vis.data['vis'].values[ntime, ..., ipol],
+                                     vis['vis'].values[ntime, ..., ipol],
                                      pol=pol,
                                      source=source_name,
-                                     phasecentre=vis.phasecentre,
-                                     uvw=vis.data['uvw'].values[ntime, :, :])
+                                     phasecentre=vis.attrs["phasecentre"],
+                                     uvw=vis['uvw'].values[ntime, :, :])
                 else:
                     tbl.add_data_set(time.values, 0, bl_list,
-                                     vis.data['vis'].values[ntime, ..., ipol],
+                                     vis['vis'].values[ntime, ..., ipol],
                                      pol=pol,
                                      source=source_name,
-                                     phasecentre=vis.phasecentre,
+                                     phasecentre=vis.attrs["phasecentre"],
                                      uvw=vis['uvw'].values[ntime, :, :])
     tbl.write()
 

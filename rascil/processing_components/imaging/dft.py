@@ -76,8 +76,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
 
 
         phasor = calculate_blockvisibility_phasor(comp.direction, vis)
-        # vis.data.values['vis'] += flux * phasor
-        vis.data['vis'].values += numpy.einsum("fp,...fp->...fp", vflux, phasor)
+        vis['vis'].values += numpy.einsum("fp,...fp->...fp", vflux, phasor)
 
     return vis
 

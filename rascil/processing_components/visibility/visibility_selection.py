@@ -48,7 +48,7 @@ def blockvisibility_fillna(bvis):
     """
     bvis.data.flags.fillna(1.0)
     for value in ["uvw", "uvw_lambda", "uvdist_lambda", "time", "integration_time", "channel_bandwidth"]:
-        bvis.data[value].fillna(0)
+        bvis[value].fillna(0)
     from datetime import datetime
     bvis.datetime.fillna(datetime(1970, 1, 1))
     return bvis

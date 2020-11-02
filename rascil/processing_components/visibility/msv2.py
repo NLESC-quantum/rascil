@@ -393,8 +393,8 @@ try:
             # tStart = utcStart.mjd
             # utcStop = Time(self.data[-1].obstime, format='mjd', scale='utc')
             # tStop = utcStop.mjd
-            tStart = self.data[0].obstime
-            tStop = self.data[-1].obstime
+            tStart = self[0].obstime
+            tStop = self[-1].obstime
 
             tb.putcell('TIME_RANGE', 0, [tStart, tStop])
             tb.putcell('LOG', 0, 'Not provided')

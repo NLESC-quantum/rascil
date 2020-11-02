@@ -2,8 +2,7 @@
 
 """
 
-__all__ = ['sort_visibility',
-           'concatenate_blockvisibility_frequency',
+__all__ = ['concatenate_blockvisibility_frequency',
            'concatenate_visibility',
            'subtract_visibility',
            'qa_visibility',
@@ -32,19 +31,6 @@ from rascil.processing_components.visibility import copy_visibility
 log = logging.getLogger('rascil-logger')
 
 
-def sort_visibility(vis, order=None):
-    """ Sort a visibility on a given column
-    
-    :param vis:
-    :param order: Array of string of column to be used for sortin
-    :return:
-    """
-    if order is None:
-        order = ['index']
-    vis.data = numpy.sort(vis.data, order=order)
-    return vis
-
-
 def concatenate_visibility(vis_list, dim='time'):
     """Concatenate a list of visibilities
 
@@ -55,15 +41,7 @@ def concatenate_visibility(vis_list, dim='time'):
 
     assert len(vis_list) > 0
     
-    newvis = copy.deepcopy(vis_list[0])
-    ds = [vis.data for vis in vis_list]
-    newvis.data = xarray.concat(ds, dim=dim)
-    
-    # If the dimension is frequency we need to remove the extraneous axis
-    if dim == "frequency":
-        for var in ["uvw", "integration_time"]:
-            newvis.data[var] = newvis.data[var].isel({dim: 0})
-    return newvis
+    return xarray.concat(vis_list, dim=dim)
 
 
 def concatenate_blockvisibility_frequency(bvis_list):
@@ -92,13 +70,11 @@ def subtract_visibility(vis, model_vis, inplace=False):
                                                     model_vis.vis.shape)
     
     if inplace:
-        vis.data['vis'].values = vis.data['vis'].values - \
-                                 model_vis.data['vis'].values
+        vis['vis'].values = vis['vis'].values - model_vis['vis'].values
         return vis
     else:
         residual_vis = copy_visibility(vis)
-        residual_vis.data['vis'].values = residual_vis.data['vis'].values \
-                                          - model_vis.data['vis'].values
+        residual_vis['vis'].values = residual_vis['vis'].values - model_vis['vis'].values
         return residual_vis
 
 
@@ -111,7 +87,7 @@ def qa_visibility(vis: BlockVisibility, context=None) -> QA:
     """
     assert isinstance(vis, BlockVisibility), vis
     
-    avis = numpy.abs(vis.data["vis"].values)
+    avis = numpy.abs(vis["vis"].values)
     data = {'maxabs': numpy.max(avis),
             'minabs': numpy.min(avis),
             'rms': numpy.std(avis),
@@ -148,9 +124,9 @@ def remove_continuum_blockvisibility(vis: BlockVisibility, degree=1,
                 wt = numpy.sqrt(vis.flagged_weight[row, ibaseline, :, pol])
                 if mask is not None:
                     wt[mask] = 0.0
-                fit = numpy.polyfit(x, vis.data['vis'][row, ibaseline, :, pol], w=wt, deg=degree)
+                fit = numpy.polyfit(x, vis['vis'][row, ibaseline, :, pol], w=wt, deg=degree)
                 prediction = numpy.polyval(fit, x)
-                vis.data['vis'][row, ibaseline, :, pol] -= prediction
+                vis['vis'][row, ibaseline, :, pol] -= prediction
     return vis
 
 
@@ -178,7 +154,7 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
                                       baselines=vis.baselines,
                                       frequency=vis.frequency.values,
                                       channel_bandwidth=vis.channel_bandwidth.values,
-                                      phasecentre=vis.phasecentre,
+                                      phasecentre=vis.attrs["phasecentre"],
                                       configuration=vis.configuration,
                                       uvw=vis.uvw.values,
                                       time=vis.time.values,
@@ -202,14 +178,14 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
     vis_shape = list(vis.vis.shape)
     ntimes, nbaselines, nchan, npol = vis_shape
     vis_shape[-2] = 1
-    # newvis.data['flags'].values[..., 0, :] = numpy.sum(vis.flags.values, axis=-2)
-    # newvis.data['flags'].values[newvis.data['flags'].values < nchan] = 0
-    # newvis.data['flags'].values[newvis.data['flags'].values > 1] = 1
+    # newvis['flags'].values[..., 0, :] = numpy.sum(vis.flags.values, axis=-2)
+    # newvis['flags'].values[newvis['flags'].values < nchan] = 0
+    # newvis['flags'].values[newvis['flags'].values > 1] = 1
     flags = numpy.sum(vis.flags.values, axis=-2)[..., numpy.newaxis, :]
     flags[flags < nchan] = 0
     flags[flags > 1] = 1
     
-    newvis = numpy.sum(vis.data['vis'].values * vis.flagged_weight.values, axis=-2)[..., numpy.newaxis, :]
+    newvis = numpy.sum(vis['vis'].values * vis.flagged_weight.values, axis=-2)[..., numpy.newaxis, :]
     newweights = numpy.sum(vis.flagged_weight.values, axis=-2)[..., numpy.newaxis, :]
     newimaging_weights = numpy.sum(vis.flagged_imaging_weight.values, axis=-2)[..., numpy.newaxis, :]
     mask = (1 - flags) * newweights > 0.0
@@ -218,7 +194,7 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
     return BlockVisibility(frequency=numpy.ones([1]) * numpy.average(vis.frequency.values),
                            channel_bandwidth=numpy.ones([1]) * numpy.sum(vis.channel_bandwidth.values),
                            baselines=vis.baselines.values,
-                           phasecentre=vis.phasecentre,
+                           phasecentre=vis.attrs["phasecentre"],
                            configuration=vis.configuration,
                            uvw=vis.uvw.values,
                            time=vis.time.values,
@@ -262,7 +238,7 @@ def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=Non
             BlockVisibility(frequency=freq,
                             channel_bandwidth=cb,
                             baselines=vis.baselines,
-                            phasecentre=vis.phasecentre,
+                            phasecentre=vis.attrs["phasecentre"],
                             configuration=vis.configuration,
                             uvw=vis.uvw,
                             time=vis.time,
@@ -279,15 +255,15 @@ def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=Non
         vfw = vis.flagged_weight[..., group[0]:group[1], :]
         vfiw = vis.flagged_imaging_weight[..., group[0]:group[1], :]
         
-        newvis.data['flags'][..., 0, :] = numpy.sum(vf, axis=-2)
-        newvis.data['flags'][newvis.data['flags'] < nchan] = 0
-        newvis.data['flags'][newvis.data['flags'] > 1] = 1
+        newvis['flags'][..., 0, :] = numpy.sum(vf, axis=-2)
+        newvis['flags'][newvis['flags'] < nchan] = 0
+        newvis['flags'][newvis['flags'] > 1] = 1
         
-        newvis.data['vis'][..., 0, :] = numpy.sum(vfvw, axis=-2)
-        newvis.data['weight'][..., 0, :] = numpy.sum(vfw, axis=-2)
-        newvis.data['imaging_weight'][..., 0, :] = numpy.sum(vfiw, axis=-2)
+        newvis['vis'][..., 0, :] = numpy.sum(vfvw, axis=-2)
+        newvis['weight'][..., 0, :] = numpy.sum(vfw, axis=-2)
+        newvis['imaging_weight'][..., 0, :] = numpy.sum(vfiw, axis=-2)
         mask = newvis.flagged_weight > 0.0
-        newvis.data['vis'][mask] = newvis.data['vis'][mask] / newvis.flagged_weight[mask]
+        newvis['vis'][mask] = newvis['vis'][mask] / newvis.flagged_weight[mask]
         
         newvis_list.append(newvis)
     
@@ -302,13 +278,13 @@ def convert_blockvisibility_to_stokes(vis):
     """
     poldef = vis.polarisation_frame
     if poldef == PolarisationFrame('linear'):
-        vis.data['vis'].values[...] = convert_linear_to_stokes(vis.data['vis'].values, polaxis=3)
-        vis.data['flags'].values[...] = \
+        vis['vis'].values[...] = convert_linear_to_stokes(vis['vis'].values, polaxis=3)
+        vis['flags'].values[...] = \
             numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[..., numpy.newaxis]
         vis.polarisation_frame = PolarisationFrame('stokesIQUV')
     elif poldef == PolarisationFrame('circular'):
-        vis.data['vis'].values[...] = convert_circular_to_stokes(vis.data['vis'].values, polaxis=3)
-        vis.data['flags'].values[...] = \
+        vis['vis'].values[...] = convert_circular_to_stokes(vis['vis'].values, polaxis=3)
+        vis['flags'].values[...] = \
             numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
                 ..., numpy.newaxis]
         vis.polarisation_frame = PolarisationFrame('stokesIQUV')
@@ -367,7 +343,7 @@ def convert_blockvisibility_to_stokesI(vis):
     
     return BlockVisibility(frequency=vis.frequency.values,
                            channel_bandwidth=vis.channel_bandwidth.values,
-                           phasecentre=vis.phasecentre,
+                           phasecentre=vis.attrs["phasecentre"],
                            baselines=vis.baselines,
                            configuration=vis.configuration, uvw=vis.uvw.values,
                            time=vis.time.values, vis=vis_data, flags=vis_flags,

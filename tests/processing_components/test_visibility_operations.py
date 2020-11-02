@@ -81,12 +81,12 @@ class TestVisibilityOperations(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
                                           weight=1.0, polarisation_frame=PolarisationFrame("stokesI"))
-        self.vis.data['vis'][..., :] = [2.0 + 0.0j]
+        self.vis['vis'][..., :] = [2.0 + 0.0j]
         self.othervis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                                channel_bandwidth=self.channel_bandwidth,
                                                phasecentre=self.phasecentre,
                                                weight=1.0, polarisation_frame=PolarisationFrame("stokesI"))
-        self.othervis.data['vis'][..., :] = [1.0 + 0.0j]
+        self.othervis['vis'][..., :] = [1.0 + 0.0j]
         self.ratiovis = divide_visibility(self.vis, self.othervis)
         assert self.ratiovis.nvis == self.vis.nvis
         assert numpy.max(numpy.abs(self.ratiovis.vis)) == 2.0, numpy.max(numpy.abs(self.ratiovis.vis))
@@ -96,12 +96,12 @@ class TestVisibilityOperations(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
                                           weight=1.0, polarisation_frame=PolarisationFrame("linear"))
-        self.vis.data['vis'][..., :] = [2.0 + 0.0j, 0.0j, 0.0j, 2.0 + 0.0j]
+        self.vis['vis'][..., :] = [2.0 + 0.0j, 0.0j, 0.0j, 2.0 + 0.0j]
         self.othervis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                                channel_bandwidth=self.channel_bandwidth,
                                                phasecentre=self.phasecentre,
                                                weight=1.0, polarisation_frame=PolarisationFrame("linear"))
-        self.othervis.data['vis'][..., :] = [1.0 + 0.0j, 0.0j, 0.0j, 1.0 + 0.0j]
+        self.othervis['vis'][..., :] = [1.0 + 0.0j, 0.0j, 0.0j, 1.0 + 0.0j]
         self.ratiovis = divide_visibility(self.vis, self.othervis)
         assert self.ratiovis.nvis == self.vis.nvis
         assert numpy.max(numpy.abs(self.ratiovis.vis)) == 2.0, numpy.max(numpy.abs(self.ratiovis.vis))
@@ -111,12 +111,12 @@ class TestVisibilityOperations(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
                                           weight=1.0, polarisation_frame=PolarisationFrame("linear"))
-        self.vis.data['vis'][..., :] = [2.0 + 0.0j, 2.0 + 0.0j, 2.0 + 0.0j, 2.0 + 0.0j]
+        self.vis['vis'][..., :] = [2.0 + 0.0j, 2.0 + 0.0j, 2.0 + 0.0j, 2.0 + 0.0j]
         self.othervis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                                channel_bandwidth=self.channel_bandwidth,
                                                phasecentre=self.phasecentre,
                                                weight=1.0, polarisation_frame=PolarisationFrame("linear"))
-        self.othervis.data['vis'][..., :] = [1.0 + 0.0j, 1.0 + 0.0j, 1.0 + 0.0j, 1.0 + 0.0j]
+        self.othervis['vis'][..., :] = [1.0 + 0.0j, 1.0 + 0.0j, 1.0 + 0.0j, 1.0 + 0.0j]
         self.ratiovis = divide_visibility(self.vis, self.othervis)
         assert self.ratiovis.nvis == self.vis.nvis
         assert numpy.max(numpy.abs(self.ratiovis.vis)) == 2.0, numpy.max(numpy.abs(self.ratiovis.vis))
@@ -127,10 +127,10 @@ class TestVisibilityOperations(unittest.TestCase):
                                           weight=1.0,
                                           polarisation_frame=PolarisationFrame("stokesIQUV"))
         vis = copy_visibility(self.vis)
-        self.vis.data['vis'][...] = 0.0
-        vis.data['vis'][...] = 1.0
-        assert (vis.data['vis'][0, 0].real.all() == 1.0)
-        assert (self.vis.data['vis'][0, 0].real.all() == 0.0)
+        self.vis['vis'][...] = 0.0
+        vis['vis'][...] = 1.0
+        assert (vis['vis'][0, 0].real.all() == 1.0)
+        assert (self.vis['vis'][0, 0].real.all() == 0.0)
     
     def test_phase_rotation_identity(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
@@ -192,12 +192,12 @@ class TestVisibilityOperations(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       phasecentre=self.phasecentre, weight=1.0,
                                       polarisation_frame=PolarisationFrame("stokesIQUV"))
-        vis1.data['vis'][...] = 1.0
+        vis1['vis'][...] = 1.0
         vis2 = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       phasecentre=self.phasecentre, weight=1.0,
                                       polarisation_frame=PolarisationFrame("stokesIQUV"))
-        vis2.data['vis'][...] = 1.0
+        vis2['vis'][...] = 1.0
         zerovis = subtract_visibility(vis1, vis2)
         qa = qa_visibility(zerovis, context='test_qa')
         self.assertAlmostEqual(qa.data['maxabs'], 0.0, 7)

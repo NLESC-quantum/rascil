@@ -105,9 +105,9 @@ def normalize_sumwt(im: Image, sumwt) -> Image:
     for chan in range(nchan):
         for pol in range(npol):
             if sumwt[chan, pol] > 0.0:
-                im["pixels"].data.values[chan, pol, :, :] = im["pixels"].data.values[chan, pol, :, :] / sumwt[chan, pol]
+                im["pixels"].data[chan, pol, :, :] = im["pixels"].data[chan, pol, :, :] / sumwt[chan, pol]
             else:
-                im["pixels"].data.values[chan, pol, :, :] = 0.0
+                im["pixels"].data[chan, pol, :, :] = 0.0
     return im
 
 
@@ -126,11 +126,11 @@ def predict_2d(vis: BlockVisibility, model: Image, gcfcf=None, **kwargs) -> Bloc
     if model is None:
         return vis
 
-    assert not numpy.isnan(numpy.sum(model.data.values)), "NaNs present in input model"
+    assert not numpy.isnan(numpy.sum(model["pixels"].data)), "NaNs present in input model"
 
     assert isinstance(vis, BlockVisibility), vis
 
-    _, _, ny, nx = model.data.shape
+    _, _, ny, nx = model["pixels"].data.shape
 
     if gcfcf is None:
         gcf, cf = create_pswf_convolutionfunction(model,
@@ -194,7 +194,7 @@ def invert_2d(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: b
 
     result = convert_polimage_to_stokes(result, **kwargs)
 
-    assert not numpy.isnan(numpy.sum(result.data.values)), "NaNs present in output image"
+    assert not numpy.isnan(numpy.sum(result["pixels"].data)), "NaNs present in output image"
 
     return result, sumwt
 
@@ -238,19 +238,19 @@ def fill_blockvis_for_psf(svis):
     :return: visibility with unit vis
     """
     if svis.polarisation_frame == PolarisationFrame("linear"):
-        svis.data['vis'].values[..., 0] = 1.0 + 0.0j
-        svis.data['vis'].values[..., 1:3] = 0.0 + 0.0j
-        svis.data['vis'].values[..., 3] = 1.0 + 0.0j
+        svis['vis'].data[..., 0] = 1.0 + 0.0j
+        svis['vis'].data[..., 1:3] = 0.0 + 0.0j
+        svis['vis'].data[..., 3] = 1.0 + 0.0j
     elif svis.polarisation_frame == PolarisationFrame("circular"):
-        svis.data['vis'].values[..., 0] = 1.0 + 0.0j
-        svis.data['vis'].values[..., 1:3] = 0.0 + 0.0j
-        svis.data['vis'].values[..., 3] = 1.0 + 0.0j
+        svis['vis'].data[..., 0] = 1.0 + 0.0j
+        svis['vis'].data[..., 1:3] = 0.0 + 0.0j
+        svis['vis'].data[..., 3] = 1.0 + 0.0j
     elif svis.polarisation_frame == PolarisationFrame("linearnp"):
-        svis.data['vis'].values[...] = 1.0 + 0.0j
+        svis['vis'].data[...] = 1.0 + 0.0j
     elif svis.polarisation_frame == PolarisationFrame("circularnp"):
-        svis.data['vis'].values[...] = 1.0 + 0.0j
+        svis['vis'].data[...] = 1.0 + 0.0j
     elif svis.polarisation_frame == PolarisationFrame("stokesI"):
-        svis.data['vis'].values[...] = 1.0 + 0.0j
+        svis['vis'].data[...] = 1.0 + 0.0j
     else:
         raise ValueError("Cannot calculate PSF for {}".format(svis.polarisation_frame))
     

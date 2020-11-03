@@ -44,7 +44,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     gnchan = gaintables[0].nchan
     frequency = gaintables[0].frequency
     
-    nchan, npol, ny, nx = vp.data.shape
+    nchan, npol, ny, nx = vp["pixels"].data.shape
     real_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data.values[chan, pol, ...].real, kx=order, ky=order)
                      for chan in range(nchan)] for pol in range(npol)]
     imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data.values[chan, pol, ...].imag, kx=order, ky=order)

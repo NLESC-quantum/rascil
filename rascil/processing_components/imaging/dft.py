@@ -76,7 +76,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
 
 
         phasor = calculate_blockvisibility_phasor(comp.direction, vis)
-        vis['vis'].values += numpy.einsum("fp,...fp->...fp", vflux, phasor)
+        vis['vis'].data += numpy.einsum("fp,...fp->...fp", vflux, phasor)
 
     return vis
 
@@ -105,8 +105,8 @@ def idft_visibility_skycomponent(vis: BlockVisibility,
         newcomp = copy_skycomponent(comp)
 
         phasor = numpy.conjugate(calculate_blockvisibility_phasor(comp.direction, vis))
-        flux = numpy.sum(vis.flagged_weight.values * vis.flagged_vis.values * phasor, axis=(0, 1))
-        weight = numpy.sum(vis.flagged_weight.values, axis=(0, 1))
+        flux = numpy.sum(vis.flagged_weight.data * vis.flagged_vis.data * phasor, axis=(0, 1))
+        weight = numpy.sum(vis.flagged_weight.data, axis=(0, 1))
 
         flux[weight > 0.0] = flux[weight > 0.0] / weight[weight > 0.0]
         flux[weight <= 0.0] = 0.0

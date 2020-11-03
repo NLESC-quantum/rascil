@@ -124,7 +124,7 @@ class TestImaging2D(unittest.TestCase):
         else:
             vis = predict_awprojection(self.vis, self.model, gcfcf=gcfcf, **kwargs)
 
-        vis.data['vis'] = self.vis.data['vis'] - vis.data['vis']
+        vis['vis'].data = self.vis['vis'].data - vis['vis'].data
         if gcfcf is None:
             dirty = invert_2d(vis, self.model, dopsf=False, normalize=True)
         else:
@@ -134,17 +134,16 @@ class TestImaging2D(unittest.TestCase):
             export_image_to_fits(dirty[0], '%s/test_imaging_%s_residual.fits' %
                                  (self.dir, name))
         for pol in range(dirty[0].npol):
-            assert numpy.max(numpy.abs(dirty[0].data[:, pol])), "Residual image pol {} is empty".format(pol)
+            assert numpy.max(numpy.abs(dirty[0]["pixels"].data[:, pol])), "Residual image pol {} is empty".format(pol)
         
-        maxabs = numpy.max(numpy.abs(dirty[0].data))
+        maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (maxabs, fluxthreshold)
     
     def _invert_base(self, fluxthreshold=1.0, positionthreshold=1.0, check_components=True,
                      name='invert_2d', gcfcf=None, **kwargs):
         
         if gcfcf is None:
-            dirty = invert_2d(self.vis, self.model, dopsf=False, normalize=True,
-                              **kwargs)
+            dirty = invert_2d(self.vis, self.model, dopsf=False, normalize=True, **kwargs)
         else:
             dirty = invert_awprojection(self.vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf,
                               **kwargs)
@@ -153,13 +152,13 @@ class TestImaging2D(unittest.TestCase):
             export_image_to_fits(dirty[0], '%s/test_imaging_%s_dirty.fits' %
                                  (self.dir, name))
         
-        dirtymax = numpy.max(numpy.abs(dirty[0].data))
+        dirtymax = numpy.max(numpy.abs(dirty[0]["pixels"].data))
         assert dirtymax < 200.0, "Dirty image peak {} is implausibly high".format(dirtymax)
         
         for pol in range(dirty[0].npol):
-            assert numpy.max(numpy.abs(dirty[0].data[:, pol])), "Dirty image pol {} is empty".format(pol)
+            assert numpy.max(numpy.abs(dirty[0]["pixels"].data[:, pol])), "Dirty image pol {} is empty".format(pol)
         for chan in range(dirty[0].nchan):
-            assert numpy.max(numpy.abs(dirty[0].data[chan])), "Dirty image channel {} is empty".format(chan)
+            assert numpy.max(numpy.abs(dirty[0]["pixels"].data[chan])), "Dirty image channel {} is empty".format(chan)
         
         if check_components:
             self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)
@@ -170,17 +169,17 @@ class TestImaging2D(unittest.TestCase):
     
     def test_predict_2d_point(self):
         self.actualSetUp(zerow=True)
-        self.model.data[...] = 0.0
+        self.model["pixels"].data[...] = 0.0
         nchan, npol, ny, nx = self.model.shape
-        self.model.data[0, 0, ny // 2, nx // 2] = 1.0
+        self.model["pixels"].data[0, 0, ny // 2, nx // 2] = 1.0
         vis = predict_2d(self.vis, self.model)
         assert numpy.max(numpy.abs(vis.vis - 1.0)) < 1e-12, numpy.max(numpy.abs(vis.vis - 1.0))
     
     def test_predict_2d_point_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
-        self.model.data[...] = 0.0
+        self.model["pixels"].data[...] = 0.0
         nchan, npol, ny, nx = self.model.shape
-        self.model.data[0, 0, ny // 2, nx // 2] = 1.0
+        self.model["pixels"].data[0, 0, ny // 2, nx // 2] = 1.0
         vis = predict_2d(self.vis, self.model)
         assert numpy.max(numpy.abs(vis.vis[..., 0] - 1.0)) < 1e-12
         assert numpy.max(numpy.abs(vis.vis[..., 1])) < 1e-12
@@ -311,23 +310,23 @@ class TestImaging2D(unittest.TestCase):
     def test_invert_psf(self):
         self.actualSetUp(zerow=False)
         psf = invert_2d(self.vis, self.model, dopsf=True)
-        error = numpy.max(psf[0].data) - 1.0
+        error = numpy.max(psf[0]["pixels"].data) - 1.0
         assert abs(error) < 1.0e-12, error
         if self.persist:
             export_image_to_fits(psf[0], '%s/test_imaging_2d_psf.fits' % self.dir)
         
-        assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
+        assert numpy.max(numpy.abs(psf[0]["pixels"].data)), "Image is empty"
     
     def test_invert_psf_weighting(self):
         self.actualSetUp(zerow=False)
         for weighting in ["natural", "uniform", "robust"]:
             self.vis = weight_visibility(self.vis, self.model, weighting=weighting)
             psf = invert_2d(self.vis, self.model, dopsf=True)
-            error = numpy.max(psf[0].data) - 1.0
+            error = numpy.max(psf[0]["pixels"].data) - 1.0
             assert abs(error) < 1.0e-12, error
             if self.persist:
                 export_image_to_fits(psf[0], '%s/test_imaging_2d_psf_%s.fits' % (self.dir, weighting))
-            assert numpy.max(numpy.abs(psf[0].data)), "Image is empty"
+            assert numpy.max(numpy.abs(psf[0]["pixels"].data)), "Image is empty"
 
 
 if __name__ == '__main__':

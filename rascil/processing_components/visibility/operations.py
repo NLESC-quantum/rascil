@@ -70,11 +70,11 @@ def subtract_visibility(vis, model_vis, inplace=False):
                                                     model_vis.vis.shape)
     
     if inplace:
-        vis['vis'].values = vis['vis'].values - model_vis['vis'].values
+        vis['vis'].data = vis['vis'].data - model_vis['vis'].data
         return vis
     else:
         residual_vis = copy_visibility(vis)
-        residual_vis['vis'].values = residual_vis['vis'].values - model_vis['vis'].values
+        residual_vis['vis'].data = residual_vis['vis'].data - model_vis['vis'].data
         return residual_vis
 
 
@@ -87,7 +87,7 @@ def qa_visibility(vis: BlockVisibility, context=None) -> QA:
     """
     assert isinstance(vis, BlockVisibility), vis
     
-    avis = numpy.abs(vis["vis"].values)
+    avis = numpy.abs(vis["vis"].data)
     data = {'maxabs': numpy.max(avis),
             'minabs': numpy.min(avis),
             'rms': numpy.std(avis),

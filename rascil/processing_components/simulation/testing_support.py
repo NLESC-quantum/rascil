@@ -772,7 +772,7 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
 def ingest_unittest_visibility(config, frequency, channel_bandwidth, times, vis_pol, phasecentre, zerow=False):
     vt = create_blockvisibility(config, times, frequency, channel_bandwidth=channel_bandwidth,
                                     phasecentre=phasecentre, weight=1.0, polarisation_frame=vis_pol, zerow=zerow)
-    vt.data['vis'][...] = 0.0
+    vt['vis'].data[...] = 0.0
     return vt
 
 
@@ -781,7 +781,7 @@ def create_unittest_components(model, flux, applypb=False, telescope='LOW', npix
     # Fill the visibility with exactly computed point sources.
 
     if npixel is None:
-        _, _, _, npixel = model.data.shape
+        _, _, _, npixel = model["pixels"].data.shape
     spacing_pixels = int(scale * npixel) // 4
     log.info('Spacing in pixels = %s' % spacing_pixels)
 

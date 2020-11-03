@@ -56,7 +56,7 @@ class TestAtmosphericScreen(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame('stokesI'))
-        self.vis.data['vis'] *= 0.0
+        self.vis['vis'].data *= 0.0
 
         # Create model
         self.model = create_image(npixel=512, cellsize=0.000015, polarisation_frame=PolarisationFrame("stokesI"),
@@ -65,7 +65,7 @@ class TestAtmosphericScreen(unittest.TestCase):
 
     def test_read_screen(self):
         screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-        assert screen.data.shape == (1, 3, 2000, 2000), screen.data.shape
+        assert screen["pixels"].data.shape == (1, 3, 2000, 2000), screen["pixels"].data.shape
 
     def test_create_gaintable_from_screen_ionosphere(self):
         self.actualSetup("ionosphere")

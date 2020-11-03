@@ -255,16 +255,16 @@ def deconvolve_list_serial_workflow(dirty_list, psf_list, model_imagelist, prefi
         
         if nmoment > 0:
             moment0 = calculate_image_frequency_moments(dirty)
-            this_peak = numpy.max(numpy.abs(moment0.data[0, ...])) / dirty.data.shape[0]
+            this_peak = numpy.max(numpy.abs(moment0.data[0, ...])) / dirty["pixels"].data.shape[0]
         else:
-            ref_chan = dirty.data.shape[0] // 2
+            ref_chan = dirty["pixels"].data.shape[0] // 2
             this_peak = numpy.max(numpy.abs(dirty.data[ref_chan, ...]))
         
         if this_peak > 1.1 * gthreshold:
             kwargs['threshold'] = gthreshold
             result, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
-            if result.data.shape[0] == model.data.shape[0]:
+            if result["pixels"].data.shape[0] == model["pixels"].data.shape[0]:
                 result.data += model.data
             return result
         else:

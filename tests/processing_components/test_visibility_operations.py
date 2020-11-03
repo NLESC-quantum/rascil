@@ -184,20 +184,20 @@ class TestVisibilityOperations(unittest.TestCase):
         rotatedvis = phaserotate_visibility(phaserotate_visibility(self.vismodel, there, tangent=False,
                                                                    inverse=False),
                                             self.phasecentre, tangent=False, inverse=False)
-        assert_allclose(rotatedvis.uvw.values, original_uvw.values, rtol=1e-7)
-        assert_allclose(rotatedvis.vis.values, original_vis.values, rtol=1e-7)
+        assert_allclose(rotatedvis.uvw.data, original_uvw.data, rtol=1e-7)
+        assert_allclose(rotatedvis["vis"].data, original_vis.data, rtol=1e-7)
     
     def test_subtract(self):
         vis1 = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       phasecentre=self.phasecentre, weight=1.0,
                                       polarisation_frame=PolarisationFrame("stokesIQUV"))
-        vis1['vis'][...] = 1.0
+        vis1['vis'].data[...] = 1.0
         vis2 = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       phasecentre=self.phasecentre, weight=1.0,
                                       polarisation_frame=PolarisationFrame("stokesIQUV"))
-        vis2['vis'][...] = 1.0
+        vis2['vis'].data[...] = 1.0
         zerovis = subtract_visibility(vis1, vis2)
         qa = qa_visibility(zerovis, context='test_qa')
         self.assertAlmostEqual(qa.data['maxabs'], 0.0, 7)

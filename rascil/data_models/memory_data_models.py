@@ -241,15 +241,15 @@ class GainTable(xarray.Dataset):
     def size(self):
         """ Return size in GB
         """
-        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
+        return self.nbytes / 1024.0 / 1024.0 / 1024.0
     
     def datasizes(self):
         """
         Return sizes of data variables
         :return:
         """
-        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
-        for var in self.data.data_vars:
+        s = "Dataset size: {:.3f} GB\n".format(self.nbytes / 1024 / 1024 / 1024)
+        for var in self.data_vars:
             s += "\t[{}]: \t{:.3f} GB\n".format(var, self[var].nbytes / 1024 / 1024 / 1024)
         return s
     
@@ -341,7 +341,7 @@ class GainTable(xarray.Dataset):
     #     s = "GainTable:\n"
     #     s += "Dataset: {}".format(self.data)
     #     s += "\tTimes: %s\n" % str(self.ntimes)
-    #     s += "\tData shape: %s\n" % str(self.data.shape)
+    #     s += "\tData shape: %s\n" % str(self["pixels"].data.shape)
     #     s += "\tReceptor frames: %s\n" % str(self.receptors)
     #     s += "\tPhasecentre: %s\n" % str(self.phasecentre)
     #     
@@ -485,7 +485,7 @@ class PointingTable(xarray.Dataset):
     #     s = "PointingTable:\n"
     #     s += "Dataset: {}".format(self.data)
     #     s += "\tTimes: %s\n" % str(self.ntimes)
-    #     s += "\tData shape: %s\n" % str(self.data.shape)
+    #     s += "\tData shape: %s\n" % str(self["pixels"].data.shape)
     #     s += "\tReceptor frame: %s\n" % str(self.receptor_frame.type)
     #     s += "\tPointing centre: %s\n" % str(self.pointingcentre)
     #     s += "\tConfiguration: %s\n" % str(self.configuration)
@@ -728,13 +728,13 @@ class GridData(xarray.Dataset):
     def nchan(self):
         """ Number of channels
         """
-        return self.data.shape[0]
+        return self["pixels"].data.shape[0]
     
     @property
     def npol(self):
         """ Number of polarisations
         """
-        return self.data.shape[1]
+        return self["pixels"].data.shape[1]
     
     @property
     def frequency(self):
@@ -747,7 +747,7 @@ class GridData(xarray.Dataset):
     def shape(self):
         """ Shape of data array
         """
-        return self.data.shape
+        return self["pixels"].data.shape
     
     @property
     def phasecentre(self):
@@ -761,8 +761,8 @@ class GridData(xarray.Dataset):
 
         :return:
         """
-        ny = self.data.shape[-2]
-        nx = self.data.shape[-1]
+        ny = self["pixels"].data.shape[-2]
+        nx = self["pixels"].data.shape[-1]
         ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
         return self.projection_wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
     
@@ -772,7 +772,7 @@ class GridData(xarray.Dataset):
     #     """
     #     s = "GridData:\n"
     #     s += "{}\n".format(str(self.data))
-    #     s += "\tShape: %s\n" % str(self.data.shape)
+    #     s += "\tShape: %s\n" % str(self["pixels"].data.shape)
     #     s += "\tData type: %s\n" % str(self.data.dtype)
     #     s += "\tGrid WCS: %s\n" % self.grid_wcs.__repr__()
     #     s += "\tProjection WCS: %s\n" % self.projection_wcs.__repr__()
@@ -885,13 +885,13 @@ class ConvolutionFunction(xarray.Dataset):
     def nchan(self):
         """ Number of channels
         """
-        return self.data.shape[0]
+        return self["pixels"].data.shape[0]
     
     @property
     def npol(self):
         """ Number of polarisations
         """
-        return self.data.shape[1]
+        return self["pixels"].data.shape[1]
     
     @property
     def ndepth(self):

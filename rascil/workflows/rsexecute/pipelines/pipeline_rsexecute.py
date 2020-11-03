@@ -62,7 +62,7 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
         
         def zero_model_image(im):
             log.info("ical_list_rsexecute_workflow: setting initial model to zero after initial selfcal")
-            im["pixels"].data.values[...] = 0.0
+            im["pixels"].data[...] = 0.0
             return im
         
         model_imagelist = [rsexecute.execute(zero_model_image, nout=1)(model) for model in model_imagelist]

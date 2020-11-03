@@ -179,12 +179,12 @@ class TestImaging(unittest.TestCase):
                                                gcfcf=gcfcf, **kwargs)
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
-        assert numpy.max(numpy.abs(dirty[0].data.values)), "Residual image is empty"
+        assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Residual image is empty"
         if self.persist:
             export_image_to_fits(dirty[0], '%s/test_imaging_predict_%s%s_%s_dirty.fits' %
                                  (self.dir, context, extra, rsexecute.type()))
         
-        maxabs = numpy.max(numpy.abs(dirty[0].data.values))
+        maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (maxabs, fluxthreshold)
     
     def _invert_base(self, context, extra='', fluxthreshold=1.0, positionthreshold=1.0, check_components=True,
@@ -277,14 +277,14 @@ class TestImaging(unittest.TestCase):
                               (vis_list[freqwin], self.components_list[freqwin])
                               for freqwin, _ in enumerate(self.frequency)]
         predicted_vis_list = rsexecute.compute(predicted_vis_list, sync=True)
-        assert numpy.max(numpy.abs(predicted_vis_list[centre].vis.values)) > 0.0, \
-            numpy.max(numpy.abs(predicted_vis_list[centre].vis.values))
+        assert numpy.max(numpy.abs(predicted_vis_list[centre].vis.data)) > 0.0, \
+            numpy.max(numpy.abs(predicted_vis_list[centre].vis.data))
         
         diff_vis_list = subtract_list_rsexecute_workflow(self.bvis_list, predicted_vis_list)
         diff_vis_list = rsexecute.compute(diff_vis_list, sync=True)
         
-        assert numpy.max(numpy.abs(diff_vis_list[centre].vis.values)) < 1e-15, \
-            numpy.max(numpy.abs(diff_vis_list[centre].vis.values))
+        assert numpy.max(numpy.abs(diff_vis_list[centre].vis.data)) < 1e-15, \
+            numpy.max(numpy.abs(diff_vis_list[centre].vis.data))
     
     def test_residual_list(self):
         self.actualSetUp(zerow=True)

@@ -123,7 +123,7 @@ class TestDPrepB(unittest.TestCase):
         qa = qa_image(restored_cube, context='CLEAN restored cube')
         print(qa)
 
-        assert restored_cube.data.shape == (40, 4, 256, 256)
+        assert restored_cube["pixels"].data.shape == (40, 4, 256, 256)
         assert numpy.abs(qa.data['max'] - 4.01307082) < 1.0e-6, str(qa)
         assert numpy.abs(qa.data['min'] + 0.52919064) < 1.0e-6, str(qa)
 

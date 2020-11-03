@@ -121,10 +121,10 @@ class TestCalibrationOperations(unittest.TestCase):
         for spf, dpf in[('stokesI', 'stokesI'), ('stokesIQUV', 'linear'), ('stokesIQUV', 'circular')]:
             self.actualSetup(spf, dpf)
             gt = create_gaintable_from_blockvisibility(self.vis, timeslice='auto')
-            gt.data['gain']*=0.0
+            gt['gain'].data *= 0.0
             original = copy_visibility(self.vis)
             vis = apply_gaintable(self.vis, gt, inverse=True)
-            error = numpy.max(numpy.abs(vis.vis[:,0,1,...] - original.vis[:,0,1,...]))
+            error = numpy.max(numpy.abs(vis["vis"].data[:,0,1,...] - original["vis"].data[:,0,1,...]))
             assert error < 1e-12, "Error = %s" % (error)
 
 

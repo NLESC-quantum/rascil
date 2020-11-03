@@ -53,7 +53,7 @@ class TestSkycomponentInsert(unittest.TestCase):
                                      channel_bandwidth=self.image_channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=self.vis_pol, zerow=True)
-        self.vis.data['vis'] *= 0.0
+        self.vis['vis'].data *= 0.0
         
         # Create model
         self.model = create_image(npixel=256, cellsize=0.0015, phasecentre=self.vis.phasecentre,
@@ -82,10 +82,10 @@ class TestSkycomponentInsert(unittest.TestCase):
         assert rpix[0] == npixel // 2
         assert rpix[1] == npixel // 2
         # The phase centre is at rpix[0], rpix[1] in 0-relative pixels
-        assert self.model.data[2, 0, rpix[1], rpix[0]] == self.pol_flux[0]
+        assert self.model["pixels"].data[2, 0, rpix[1], rpix[0]] == self.pol_flux[0]
         # If we predict the visibility, then the imaginary part must be zero. This is determined entirely
         # by shift_vis_to_image in processing_components.imaging.base
-        self.vis.data['vis'][...] = 0.0
+        self.vis["vis"].data[...] = 0.0
         self.vis = predict_2d(self.vis, self.model)
         # The actual phase centre of a numpy FFT is at nx //2, nx //2 (0 rel).
         assert numpy.max(numpy.abs(self.vis.vis.imag)) < 1e-3
@@ -105,16 +105,16 @@ class TestSkycomponentInsert(unittest.TestCase):
         assert rpix[0] == npixel // 2
         assert rpix[1] == npixel // 2
         # The phase centre is at rpix[0], rpix[1] in 0-relative pixels
-        assert_array_almost_equal(self.model.data[2, :, rpix[1], rpix[0]], self.flux[3, :], 8)
+        assert_array_almost_equal(self.model["pixels"].data[2, :, rpix[1], rpix[0]], self.flux[3, :], 8)
         
         # If we predict the visibility, then the imaginary part must be zero. This is determined entirely
         # by shift_vis_to_image in processing_components.imaging.base
-        self.vis.data['vis'][...] = 0.0
+        self.vis["vis"].data[...] = 0.0
         self.vis = predict_2d(self.vis, self.model)
         # The actual phase centre of a numpy FFT is at nx //2, nx //2 (0 rel).
 
-        assert numpy.max(numpy.abs(self.vis.vis[...,0].imag)) == 0.0
-        assert numpy.max(numpy.abs(self.vis.vis[...,3].imag)) == 0.0
+        assert numpy.max(numpy.abs(self.vis["vis"].data[...,0].imag)) == 0.0
+        assert numpy.max(numpy.abs(self.vis["vis"].data[...,3].imag)) == 0.0
 
     def test_insert_skycomponent_dft(self):
         self.actualSetup()
@@ -123,7 +123,7 @@ class TestSkycomponentInsert(unittest.TestCase):
                                     frequency=self.component_frequency,
                                     polarisation_frame=PolarisationFrame('stokesI'))
 
-        self.vis.data['vis'][...] = 0.0
+        self.vis["vis"].data[...] = 0.0
         self.vis = dft_skycomponent_visibility(self.vis, self.sc)
         im, sumwt = invert_2d(self.vis, self.model)
         if self.persist: export_image_to_fits(im, '%s/test_skycomponent_dft.fits' % self.dir)

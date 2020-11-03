@@ -24,7 +24,7 @@ def pointingtable_summary(pt: PointingTable):
     """Return string summarizing the Gaintable
 
     """
-    return "%s rows, %.3f GB" % (pt.data.shape, pt.size())
+    return "%s rows, %.3f GB" % (pt["pixels"].data.shape, pt.size())
 
 
 def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_frame='azel', timeslice=None,

@@ -160,7 +160,7 @@ def qa_griddata(gd, context="") -> QA:
     :return: QA
     """
     assert isinstance(gd, GridData), gd
-    data = {'shape': str(gd.data.shape),
+    data = {'shape': str(gd["pixels"].data.shape),
             'max': numpy.max(gd.data),
             'min': numpy.min(gd.data),
             'rms': numpy.std(gd.data),

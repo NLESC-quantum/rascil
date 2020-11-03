@@ -46,16 +46,16 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     if not isinstance(vp, collections.abc.Iterable):
         vp = [vp]
 
-    nchan, npol, ny, nx = vp[0].data.shape
+    nchan, npol, ny, nx = vp[0]["pixels"].data.shape
     
-    vp_types = numpy.unique(vis.configuration.vp_type.values)
+    vp_types = numpy.unique(vis.configuration.vp_type.data)
     
     nvp = len(vp_types)
     
     vp_for_ant = numpy.zeros([nant], dtype=int)
     for ivp in range(nvp):
         for ant in range(nant):
-            if vis.configuration.vp_type.values[ant] == vp_types[ivp]:
+            if vis.configuration.vp_type.data[ant] == vp_types[ivp]:
                 vp_for_ant[ant] = ivp
     
     # We construct interpolators for each voltage pattern type and for each polarisation, and for real, imaginary parts
@@ -141,12 +141,12 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                     antgain[...] = 0.0
                     antwt[...] = 0.0
                     
-                gaintables[icomp].gain.values[row, :, :, :] = antgain.reshape([nant, gnchan, 2, 2])
-                gaintables[icomp].weight.values[row, :, :, :] = antwt.reshape([nant, gnchan, 2, 2])
+                gaintables[icomp].gain.data[row, :, :, :] = antgain.reshape([nant, gnchan, 2, 2])
+                gaintables[icomp].weight.data[row, :, :, :] = antwt.reshape([nant, gnchan, 2, 2])
                 gaintables[icomp].phasecentre = comp.direction
             else:
-                gaintables[icomp].gain.values[...] = 1.0 + 0.0j
-                gaintables[icomp].weight.values[row, :, :, :] = 0.0
+                gaintables[icomp].gain.data[...] = 1.0 + 0.0j
+                gaintables[icomp].weight.data[row, :, :, :] = 0.0
                 gaintables[icomp].phasecentre = comp.direction
                 number_bad += nant
     
@@ -191,10 +191,11 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
         assert vp.wcs.wcs.ctype[0] == 'AZELGEO long', vp.wcs.wcs.ctype[0]
         assert vp.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.wcs.wcs.ctype[1]
         
-        nchan, npol, ny, nx = vp.data.shape
-        real_splines.append(RectBivariateSpline(range(ny), range(nx), vp.data.values[0, 0, ...].real, kx=order,
+        nchan, npol, ny, nx = vp["pixels"].data.shape
+        real_splines.append(RectBivariateSpline(range(ny), range(nx), vp["pixels"].data[0, 0, ...].real,
+                                                kx=order,
                                                 ky=order))
-        imag_splines.append(RectBivariateSpline(range(ny), range(nx), vp.data.values[0, 0, ...].imag, kx=order,
+        imag_splines.append(RectBivariateSpline(range(ny), range(nx), vp["pixels"].data[0, 0, ...].imag, kx=order,
                                                 ky=order))
     
     latitude = vis.configuration.location.lat.rad
@@ -229,7 +230,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
                 
                 for ant in range(nant):
                     for ivp, vp in enumerate(vp_list):
-                        nchan, npol, ny, nx = vp.data.shape
+                        nchan, npol, ny, nx = vp["pixels"].data.shape
                         wcs_azel = vp.wcs.deepcopy()
                         
                         # We use WCS sensible coordinate handling by labelling the axes misleadingly
@@ -256,10 +257,10 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
                     
                     antgain[ant] = 1.0 / antgain[ant]
                 
-                gaintables[icomp].gain.values[row, :, :, :] = antgain[:, numpy.newaxis, numpy.newaxis, numpy.newaxis]
+                gaintables[icomp].gain.data[row, :, :, :] = antgain[:, numpy.newaxis, numpy.newaxis, numpy.newaxis]
                 gaintables[icomp].phasecentre = comp.direction
         else:
-            gaintables[icomp].gain.values[...] = 1.0 + 0.0j
+            gaintables[icomp].gain.data[...] = 1.0 + 0.0j
             gaintables[icomp].phasecentre = comp.direction
             number_bad += nant
 

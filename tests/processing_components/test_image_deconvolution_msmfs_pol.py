@@ -43,7 +43,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame('linear'), zerow=True)
-        self.vis.data['vis'] *= 0.0
+        self.vis['vis'].data *= 0.0
         
         # Create model
         self.test_model = create_low_test_image_from_gleam(npixel=256, cellsize=0.001,

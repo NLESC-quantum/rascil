@@ -65,7 +65,7 @@ class TestDataModelHelpers(unittest.TestCase):
             assert numpy.max(numpy.abs(newvis.data[key]-self.vis.data[key])) < 1e-15
 
         assert numpy.array_equal(newvis.frequency, self.vis.frequency)
-        assert newvis.data.shape == self.vis.data.shape
+        assert newvis["pixels"].data.shape == self.vis.data.shape
         assert numpy.max(numpy.abs(self.vis.vis - newvis.vis)) < 1e-15
         assert numpy.max(numpy.abs(self.vis.uvw - newvis.uvw)) < 1e-15
         assert numpy.abs(newvis.configuration.location.x.value - self.vis.configuration.location.x.value) < 1e-15

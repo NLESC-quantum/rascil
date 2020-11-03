@@ -224,7 +224,7 @@ def calculate_sf_from_screen(screen):
     :return:
     """
     from scipy.signal import fftconvolve
-    nchan, ntimes, ny, nx = screen.data.shape
+    nchan, ntimes, ny, nx = screen["pixels"].data.shape
     
     sf = numpy.zeros([nchan, 1, 2 * ny - 1, 2 * nx - 1])
     for chan in range(nchan):

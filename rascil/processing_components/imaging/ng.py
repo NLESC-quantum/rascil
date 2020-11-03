@@ -59,13 +59,13 @@ try:
         freq = bvis.frequency  # frequency, Hz
         nrows, nbaselines, vnchan, vnpol = bvis.vis.shape
         
-        uvw = newbvis.uvw.values
+        uvw = newbvis.uvw.data
         uvw=uvw.reshape([nrows * nbaselines, 3])
         uvw = numpy.nan_to_num(uvw)
         vist = numpy.zeros([vnpol, vnchan, nbaselines * nrows], dtype='complex')
         
         # Get the image properties
-        m_nchan, m_npol, ny, nx = model.data.shape
+        m_nchan, m_npol, ny, nx = model["pixels"].data.shape
         # Check if the number of frequency channels matches in bvis and a model
         #        assert (m_nchan == v_nchan)
         assert (m_npol == vnpol)
@@ -88,7 +88,7 @@ try:
             for vpol in range(vnpol):
                 vist[vpol, : , :] = ng.dirty2ms(fuvw.astype(numpy.float64),
                                                bvis.frequency.values.astype(numpy.float64),
-                                               model.data[0, vpol, :, :].values.T.astype(numpy.float64),
+                                               model["pixels"].data[0, vpol, :, :].T.astype(numpy.float64),
                                                pixsize_x=pixsize,
                                                pixsize_y=pixsize,
                                                epsilon=epsilon,
@@ -102,7 +102,7 @@ try:
                     imchan = vis_to_im[vchan]
                     vist[vpol, vchan, :] = ng.dirty2ms(fuvw.astype(numpy.float64),
                                                        numpy.array(freq[vchan:vchan + 1]).astype(numpy.float64),
-                                                       model.data[imchan, vpol, :, :].values.T.astype(numpy.float64),
+                                                       model["pixels"].data[imchan, vpol, :, :].T.astype(numpy.float64),
                                                        pixsize_x=pixsize,
                                                        pixsize_y=pixsize,
                                                        epsilon=epsilon,
@@ -113,7 +113,7 @@ try:
         vis = convert_pol_frame(vist.T, model.polarisation_frame, bvis.polarisation_frame, polaxis=2)
 
         vis = vis.reshape([nrows, nbaselines, vnchan, vnpol])
-        newbvis.vis.values = vis
+        newbvis["vis"].data = vis
     
         # Now we can shift the visibility from the image frame to the original visibility frame
         return shift_vis_to_image(newbvis, model, tangent=True, inverse=True)
@@ -157,11 +157,11 @@ try:
         # if dopsf:
         #     sbvis = fill_vis_for_psf(sbvis)
 
-        ms = sbvis.flagged_vis.values
+        ms = sbvis.flagged_vis.data
         ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
         ms = convert_pol_frame(ms, bvis.polarisation_frame, im.polarisation_frame, polaxis=2)
 
-        uvw = sbvis.uvw.values
+        uvw = sbvis.uvw.data
         uvw = uvw.reshape([nrows * nbaselines, 3])
         uvw = numpy.nan_to_num(uvw)
         

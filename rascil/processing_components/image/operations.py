@@ -85,7 +85,7 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
         :py:func:`rascil.processing_components.image.operations.import_image_from_array`
 
     """
-    assert isinstance(im, Image), im
+    #assert isinstance(im, Image), im
     if im["pixels"].data.dtype == "complex":
         return fits.writeto(filename=fitsfile, data=numpy.real(im["pixels"].data), header=im.wcs.to_header(), overwrite=True)
     else:
@@ -167,7 +167,7 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
     :return: Reprojected Image, Footprint Image
     """
     
-    assert isinstance(im, Image), im
+    #assert isinstance(im, Image), im
     
     if len(im["pixels"].shape) == 4:
         nchan, npol, ny, nx = im["pixels"].shape
@@ -177,10 +177,10 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             foot = numpy.zeros(shape, dtype='float')
             for chan in range(nchan):
                 for pol in range(npol):
-                    rep_real[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data.real.values[chan, pol],
+                    rep_real[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data.real[chan, pol],
                                                                              im.wcs.sub(2)),
                                                                             newwcs.sub(2), shape[2:], order='bicubic')
-                    rep_imag[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data.imag.values[chan, pol],
+                    rep_imag[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data.imag[chan, pol],
                                                                              im.wcs.sub(2)),
                                                                             newwcs.sub(2), shape[2:], order='bicubic')
             rep = rep_real + 1j * rep_imag
@@ -189,7 +189,7 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             foot = numpy.zeros(shape, dtype='float')
             for chan in range(nchan):
                 for pol in range(npol):
-                    rep[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].values[chan, pol],
+                    rep[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data[chan, pol],
                                                                         im.wcs.sub(2)),
                                                                        newwcs.sub(2), shape[2:], order='bicubic')
         
@@ -356,6 +356,7 @@ def smooth_image(model: Image, width=1.0, normalise=True):
     from astropy.convolution import convolve_fft
     
     kernel = Gaussian2DKernel(width)
+    model_type = model["pixels"].data.dtype
     
     cmodel = create_empty_image_like(model)
     nchan, npol, _, _ = model.shape
@@ -364,6 +365,8 @@ def smooth_image(model: Image, width=1.0, normalise=True):
             cmodel["pixels"].data[chan, pol, :, :] = convolve_fft(model["pixels"].data[chan, pol, :, :], kernel,
                                                         normalize_kernel=False,
                                                         allow_huge=True)
+    # The convolve_fft step seems to return an object dtype
+    cmodel["pixels"].data = cmodel["pixels"].data.astype(model_type)
     if normalise and isinstance(kernel, Gaussian2DKernel):
         cmodel["pixels"].data *= 2 * numpy.pi * width ** 2
     
@@ -1039,7 +1042,7 @@ def scale_and_rotate_image(im, angle=0.0, scale=None, order=5):
     """
     from scipy.ndimage.interpolation import affine_transform
     
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     c_in = 0.5 * numpy.array([ny, nx])
     c_out = 0.5 * numpy.array([ny, nx])
     rot = numpy.array([[numpy.cos(angle), -numpy.sin(angle)],

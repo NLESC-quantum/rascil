@@ -101,9 +101,9 @@ class measurementset_tests(unittest.TestCase):
         # Temporarily flag autocorrelations until MS writer is fixed
         for ibaseline, (a1, a2) in enumerate(vt_after.baselines.values):
             if a1 == a2:
-                vt_after.weight.values[:,ibaseline,...] = 0.0
-                vt_after.imaging_weight.values[:,ibaseline,...] = 0.0
-                vt_after.flags.values[:,ibaseline,...] = 1
+                vt_after.weight.data[:,ibaseline,...] = 0.0
+                vt_after.imaging_weight.data[:,ibaseline,...] = 0.0
+                vt_after.flags.data[:,ibaseline,...] = 1
         
         # Make the dirty image and point spread function
         model = create_image_from_visibility(vt_after, cellsize=cellsize, npixel=512)

@@ -690,13 +690,13 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
         vp_list = []
         for vp_type in vp_types:
             vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
-            vpsym = 0.5 * (vp.data.values[:, 0, ...] + vp.data.values[:, 3, ...])
+            vpsym = 0.5 * (vp["pixels"].data[:, 0, ...] + vp["pixels"].data[:, 3, ...])
             if normalise:
                 vpsym /= numpy.max(numpy.abs(vpsym))
-            vp.data.values[:, 0, ...] = vpsym
-            vp.data.values[:, 1, ...] = 0.0 + 0.0j
-            vp.data.values[:, 2, ...] = 0.0 + 0.0j
-            vp.data.values[:, 3, ...] = vpsym
+            vp["pixels"].data[:, 0, ...] = vpsym
+            vp["pixels"].data[:, 1, ...] = 0.0 + 0.0j
+            vp["pixels"].data[:, 2, ...] = 0.0 + 0.0j
+            vp["pixels"].data[:, 3, ...] = vpsym
             vp_list.append(vp)
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list

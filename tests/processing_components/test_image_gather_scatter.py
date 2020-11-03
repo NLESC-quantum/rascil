@@ -36,12 +36,12 @@ class TestImageGatherScatters(unittest.TestCase):
             m31model = create_test_image(polarisation_frame=PolarisationFrame('stokesI'))
             image_list = image_scatter_facets(m31model, facets=nraster)
             for patch in image_list:
-                assert patch.data.shape[3] == (m31model.data.shape[3] // nraster), \
-                    "Number of pixels in each patch: %d not as expected: %d" % (patch.data.shape[3],
-                                                                                (m31model.data.shape[3] // nraster))
-                assert patch.data.shape[2] == (m31model.data.shape[2] // nraster), \
-                    "Number of pixels in each patch: %d not as expected: %d" % (patch.data.shape[2],
-                                                                                (m31model.data.shape[2] // nraster))
+                assert patch["pixels"].data.shape[3] == (m31model["pixels"].data.shape[3] // nraster), \
+                    "Number of pixels in each patch: %d not as expected: %d" % (patch["pixels"].data.shape[3],
+                                                                                (m31model["pixels"].data.shape[3] // nraster))
+                assert patch["pixels"].data.shape[2] == (m31model["pixels"].data.shape[2] // nraster), \
+                    "Number of pixels in each patch: %d not as expected: %d" % (patch["pixels"].data.shape[2],
+                                                                                (m31model["pixels"].data.shape[2] // nraster))
                 patch.data[...] = 1.0
             m31reconstructed = create_empty_image_like(m31model)
             m31reconstructed = image_gather_facets(image_list, m31reconstructed, facets=nraster)
@@ -59,7 +59,7 @@ class TestImageGatherScatters(unittest.TestCase):
             m31model = create_test_image(polarisation_frame=PolarisationFrame('stokesI'))
             image_list = image_scatter_facets(m31model, facets=nraster, overlap=overlap)
             for patch in image_list:
-                assert patch.data.shape[3] == (2 * overlap + m31model.data.shape[3] // nraster), \
+                assert patch["pixels"].data.shape[3] == (2 * overlap + m31model.data.shape[3] // nraster), \
                     "Number of pixels in each patch: %d not as expected: %d" % (patch.data.shape[3],
                                                                                 (2 * overlap + m31model.data.shape[3] //
                                                                                  nraster))

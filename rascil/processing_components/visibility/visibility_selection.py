@@ -21,9 +21,7 @@ def blockvisibility_select(bvis, selection):
     :param selection:
     :return:
     """
-    newbvis = copy.copy(bvis)
-    newbvis.data = bvis.data.sel(selection)
-    return newbvis
+    return bvis.sel(selection)
 
 
 def blockvisibility_iselect(bvis, selection):
@@ -33,9 +31,7 @@ def blockvisibility_iselect(bvis, selection):
     :param selection:
     :return:
     """
-    newbvis = copy.copy(bvis)
-    newbvis.data = bvis.data.isel(selection)
-    return newbvis
+    return bvis.data.isel(selection)
 
 def blockvisibility_fillna(bvis):
     """ Fill Nan's
@@ -46,7 +42,7 @@ def blockvisibility_fillna(bvis):
     :param bvis:
     :return:
     """
-    bvis.data.flags.fillna(1.0)
+    bvis.flags.fillna(1.0)
     for value in ["uvw", "uvw_lambda", "uvdist_lambda", "time", "integration_time", "channel_bandwidth"]:
         bvis[value].fillna(0)
     from datetime import datetime

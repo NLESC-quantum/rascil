@@ -67,7 +67,7 @@ def image_gather_facets(image_list: List[Image], im: Image, facets=1, overlap=0,
     out = create_empty_image_like(im)
     if overlap > 0:
         flat = create_empty_image_like(im)
-        flat.data.values[...] = 1.0
+        flat["pixels"].data[...] = 1.0
         flats = [f for f in image_raster_iter(flat, facets=facets, overlap=overlap, taper=taper, make_flat=True)]
         
         sum_flats = create_empty_image_like(im)
@@ -75,7 +75,7 @@ def image_gather_facets(image_list: List[Image], im: Image, facets=1, overlap=0,
         if return_flat:
             i = 0
             for sum_flat_facet in image_raster_iter(sum_flats, facets=facets, overlap=overlap, taper=taper):
-                sum_flat_facet.data.values[...] += flats[i].data.values[...]
+                sum_flat_facet["pixels"].data[...] += flats[i]["pixels"].data[...]
                 i += 1
             
             return sum_flats

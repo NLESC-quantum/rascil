@@ -142,24 +142,24 @@ def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     :return: bounded convolution function
     """
     newcf = copy_convolutionfunction(cf)
-    nx = newcf.data.shape[-1]
-    ny = newcf.data.shape[-2]
-    mask = numpy.max(numpy.abs(newcf.data.values), axis=(0, 1, 2, 3, 4))
+    nx = newcf["pixels"].data.shape[-1]
+    ny = newcf["pixels"].data.shape[-2]
+    mask = numpy.max(numpy.abs(newcf["pixels"].data), axis=(0, 1, 2, 3, 4))
     mask /= numpy.max(mask)
     coords = numpy.argwhere(mask > fractional_level)
     crpx = int(numpy.round(cf.grid_wcs.wcs.crpix[0]))
     crpy = int(numpy.round(cf.grid_wcs.wcs.crpix[1]))
-    x0, y0 = coords.min(axis=0, initial=cf.data.shape[-1])
+    x0, y0 = coords.min(axis=0, initial=cf["pixels"].data.shape[-1])
     dx = crpx - x0
     dy = crpy - y0
     x0 -= 1
     y0 -= 1
     x1 = crpx + dx - 1
     y1 = crpy + dy - 1
-    newcf = ConvolutionFunction(data=newcf.data.values[..., y0:y1, x0:x1], grid_wcs=newcf.grid_wcs,
+    newcf = ConvolutionFunction(data=newcf["pixels"].data[..., y0:y1, x0:x1], grid_wcs=newcf.grid_wcs,
                                 projection_wcs=newcf.projection_wcs,
                                 polarisation_frame=newcf.polarisation_frame)
-    nny, nnx = newcf.data.shape[-2], newcf.data.shape[-1]
+    nny, nnx = newcf["pixels"].data.shape[-2], newcf["pixels"].data.shape[-1]
     newcf.grid_wcs.wcs.crpix[0] += nnx / 2 - nx / 2
     newcf.grid_wcs.wcs.crpix[1] += nny / 2 - ny / 2
     return newcf
@@ -178,12 +178,12 @@ def calculate_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     :return: list of bounding boxes
     """
     bboxes = list()
-    threshold = fractional_level * numpy.max(numpy.abs(cf.data.values))
-    for z in range(cf.data.shape[2]):
-        mask = numpy.max(numpy.abs(cf.data.values[:, :, z, ...]), axis=(0, 1, 2, 3))
+    threshold = fractional_level * numpy.max(numpy.abs(cf["pixels"].data))
+    for z in range(cf["pixels"].data.shape[2]):
+        mask = numpy.max(numpy.abs(cf["pixels"].data[:, :, z, ...]), axis=(0, 1, 2, 3))
         coords = numpy.argwhere(mask > threshold)
-        x0, y0 = coords.min(axis=0, initial=cf.data.shape[-1])
-        x1, y1 = coords.max(axis=0, initial=cf.data.shape[-1])
+        x0, y0 = coords.min(axis=0, initial=cf["pixels"].data.shape[-1])
+        x1, y1 = coords.max(axis=0, initial=cf["pixels"].data.shape[-1])
         bboxes.append((z, (y0, y1), (x0, x1)))
     return bboxes
 
@@ -195,7 +195,7 @@ def qa_convolutionfunction(cf, context="") -> QA:
     :return: QA
     """
     assert isinstance(cf, ConvolutionFunction), cf
-    data = {'shape': str(cf.data.shape),
+    data = {'shape': str(cf["pixels"].data.shape),
             'max': numpy.max(cf.data),
             'min': numpy.min(cf.data),
             'rms': numpy.std(cf.data),
@@ -229,5 +229,5 @@ def export_convolutionfunction_to_fits(cf: ConvolutionFunction, fitsfile: str = 
 
     """
     assert isinstance(cf, ConvolutionFunction), cf
-    return fits.writeto(filename=fitsfile, data=numpy.real(cf.data.values), header=cf.grid_wcs.to_header(),
+    return fits.writeto(filename=fitsfile, data=numpy.real(cf["pixels"].data), header=cf.grid_wcs.to_header(),
                         overwrite=True)

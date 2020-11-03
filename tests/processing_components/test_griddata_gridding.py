@@ -106,7 +106,7 @@ class TestGridDataGridding(unittest.TestCase):
         self.cmodel.data *= pb.data
         if self.persist:
             export_image_to_fits(self.cmodel, '%s/test_gridding_cmodel_pb.fits' % self.dir)
-        self.peak = numpy.unravel_index(numpy.argmax(numpy.abs(self.cmodel.data.values)), self.cmodel.shape)
+        self.peak = numpy.unravel_index(numpy.argmax(numpy.abs(self.cmodel["pixels"].data)), self.cmodel.shape)
     
     def test_griddata_invert_pswf(self):
         self.actualSetUp(zerow=True)
@@ -195,7 +195,7 @@ class TestGridDataGridding(unittest.TestCase):
         self.check_peaks(im, 97.10594988489598, tol=1e-7)
     
     def check_peaks(self, im, peak, tol=1e-6):
-        assert numpy.abs(im["pixels"].data.values[self.peak] - peak) < tol, im["pixels"].data.values[self.peak]
+        assert numpy.abs(im["pixels"].data[self.peak] - peak) < tol, im["pixels"].data[self.peak]
     
     def test_griddata_invert_wterm(self):
         self.actualSetUp(zerow=False)
@@ -289,7 +289,7 @@ class TestGridDataGridding(unittest.TestCase):
         gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
         gd = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
         gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)]
-        assert numpy.max(numpy.abs(gd_list[0][0].data.values)) > 10.0
+        assert numpy.max(numpy.abs(gd_list[0][0]["pixels"].data)) > 10.0
         gd, sumwt = griddata_merge_weights(gd_list, algorithm='uniform')
         self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)

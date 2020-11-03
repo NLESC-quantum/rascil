@@ -94,7 +94,7 @@ def copy_visibility(vis: BlockVisibility, zero=False) -> BlockVisibility:
     
     newvis = copy.deepcopy(vis)
     if zero:
-        newvis.data['vis'].values[...] = 0.0
+        newvis['vis'].data[...] = 0.0
     return newvis
 
 
@@ -973,7 +973,7 @@ def calculate_blockvisibility_phasor(direction, vis):
     :return:
     """
     assert isinstance(vis, BlockVisibility)
-    ntimes, nbaseline, nchan, npol = vis.vis.values.shape
+    ntimes, nbaseline, nchan, npol = vis["vis"].data.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
     s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
     

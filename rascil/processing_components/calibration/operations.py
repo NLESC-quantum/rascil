@@ -67,15 +67,15 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             # Lookup the gain for this set of visibilities
             gain = gt['gain'].data[row]
             cgain = numpy.conjugate(gt['gain'].data[row])
-            gainwt = gt.data['weight'].values[row]
+            gainwt = gt['weight'].data[row]
             
             # The shape of the mueller matrix is
             nant, nchan, nrec, _ = gain.shape
             baselines = vis.baselines.values
             
-            original = vis.flagged_vis.values[vis_rows]
-            applied = copy.copy(vis.flagged_vis.values[vis_rows])
-            appliedwt = copy.copy(vis.flagged_weight.values[vis_rows])
+            original = vis.flagged_vis.data[vis_rows]
+            applied = copy.copy(vis.flagged_vis.data[vis_rows])
+            appliedwt = copy.copy(vis.flagged_weight.data[vis_rows])
             if vis.npol == 1:
                 if inverse:
                     # lgain = numpy.ones_like(gain)
@@ -188,7 +188,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 print("No row in gaintable for visibility time range  {} to {}".format(times[0].isot, times[-1].isot))
                 log.warning("No row in gaintable for visibility row, time range  {} to {}".format(times[0].isot, times[-1].isot))
 
-            vis.vis.values[vis_rows] = applied
+            vis["vis"].data[vis_rows] = applied
 
     return vis
 

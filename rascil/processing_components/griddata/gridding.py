@@ -49,7 +49,6 @@ def convolution_mapping_blockvisibility(vis, griddata, chan, cf, channel_toleran
     assert isinstance(vis, BlockVisibility), vis
     assert isinstance(griddata, GridData)
     assert isinstance(cf, ConvolutionFunction)
-    cf.check()
     assert vis.polarisation_frame == griddata.polarisation_frame
 
     u = vis.uvw_lambda.values[..., chan, 0].flat
@@ -76,7 +75,6 @@ def spatial_mapping(cf, griddata, u, v, w):
 
     assert isinstance(griddata, GridData)
     assert isinstance(cf, ConvolutionFunction)
-    cf.check()
     assert cf.polarisation_frame == griddata.polarisation_frame
 
     numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[0], cf.grid_wcs.wcs.cdelt[0], 7)
@@ -98,9 +96,9 @@ def spatial_mapping(cf, griddata, u, v, w):
     pu_offset, pv_offset = \
         numpy.round(cf.grid_wcs.sub([3, 4]).wcs_world2pix(wu_subsample, wv_subsample, 0)).astype('int')
     assert numpy.min(pu_offset) >= 0, "image sampling wrong: DU axis underflows: %f" % numpy.min(pu_offset)
-    assert numpy.max(pu_offset) < cf.shape[3], "DU axis overflows: %f" % numpy.max(pu_offset)
+    assert numpy.max(pu_offset) < cf["pixels"].data.shape[3], "DU axis overflows: %f" % numpy.max(pu_offset)
     assert numpy.min(pv_offset) >= 0, "image sampling wrong: DV axis underflows: %f" % numpy.min(pv_offset)
-    assert numpy.max(pv_offset) < cf.shape[4], "DV axis overflows: %f" % numpy.max(pv_offset)
+    assert numpy.max(pv_offset) < cf["pixels"].data.shape[4], "DV axis overflows: %f" % numpy.max(pv_offset)
     ###### W mapping for Grid
     # nchan, npol, w, v, u
     pwg_pixel = griddata.grid_wcs.sub([3]).wcs_world2pix(w, 0)[0]
@@ -110,7 +108,7 @@ def spatial_mapping(cf, griddata, u, v, w):
         print(w[0:10])
         print(cf.grid_wcs.sub([5]).__repr__())
     assert numpy.min(pwg_grid) >= 0, "W axis underflows: %f" % numpy.min(pwg_grid)
-    assert numpy.max(pwg_grid) < cf.shape[2], "W axis overflows: %f" % numpy.max(pwg_grid)
+    assert numpy.max(pwg_grid) < cf["pixels"].data.shape[2], "W axis overflows: %f" % numpy.max(pwg_grid)
     pwg_fraction = pwg_pixel - pwg_grid
     ###### W mapping for CF
     # nchan, npol, w, dv, du, v, u
@@ -120,7 +118,7 @@ def spatial_mapping(cf, griddata, u, v, w):
         print(w[0:10])
         print(cf.grid_wcs.sub([5]).__repr__())
     assert numpy.min(pwc_grid) >= 0, "W axis underflows: %f" % numpy.min(pwc_grid)
-    assert numpy.max(pwc_grid) < cf.shape[2], "W axis overflows: %f" % numpy.max(pwc_grid)
+    assert numpy.max(pwc_grid) < cf["pixels"].data.shape[2], "W axis overflows: %f" % numpy.max(pwc_grid)
     pwc_fraction = pwc_pixel - pwc_grid
     return pu_grid, pu_offset, pv_grid, pv_offset, pwc_fraction, pwc_grid, pwg_fraction, pwg_grid
 
@@ -137,28 +135,29 @@ def grid_blockvisibility_to_griddata(vis, griddata, cf):
     assert isinstance(vis, BlockVisibility), vis
     assert isinstance(griddata, GridData)
     assert isinstance(cf, ConvolutionFunction)
-    cf.check()
     assert vis.polarisation_frame == griddata.polarisation_frame
 
-    griddata.data.values[...] = 0.0
+    griddata["pixels"].data[...] = 0.0
 
     vis_to_im = numpy.round(
         griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.values, 0)[0]).astype('int')
 
-    nrows, nbaselines, nvchan, nvpol = vis.vis.values.shape
-    nichan, nipol, _, _, _ = griddata.data.values.shape
+    nrows, nbaselines, nvchan, nvpol = vis["vis"].data.shape
+    nichan, nipol, _, _, _ = griddata["pixels"].data.shape
 
     fvist = numpy.nan_to_num(vis.flagged_vis.values.reshape([nrows * nbaselines, nvchan, nvpol]).T)
     fwtt = numpy.nan_to_num(vis.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T)
     # Do this in place to avoid creating a new copy. Doing the conjugation outside the loop
     # reduces run time immensely
-    ccf = numpy.conjugate(cf.data.values)
+    ccf = numpy.conjugate(cf["pixels"].data)
     ccf = numpy.nan_to_num(ccf)
     _, _, _, _, _, gv, gu = ccf.shape
     du = gu // 2
     dv = gv // 2
 
     sumwt = numpy.zeros([nichan, nipol])
+    
+    gd = griddata["pixels"].data
     
     for vchan in range(nvchan):
         imchan = vis_to_im[vchan]
@@ -172,7 +171,7 @@ def grid_blockvisibility_to_griddata(vis, griddata, cf):
                         pv_offset[row],
                         pu_offset[row],
                         :, :]
-                griddata.data.values[imchan, \
+                gd[imchan, \
                 pol, \
                 pwg_grid[row], \
                 (pv_grid[row] - dv):(pv_grid[row] + dv), \
@@ -180,7 +179,7 @@ def grid_blockvisibility_to_griddata(vis, griddata, cf):
                     += subcf * fvist[pol, vchan, row] * fwtt[pol, vchan, row]
                 sumwt[imchan, pol] += fwtt[pol, vchan, row]
     
-    griddata.data.values = numpy.nan_to_num(griddata.data)
+    griddata["pixels"].data = numpy.nan_to_num(gd)
     return griddata, numpy.nan_to_num(sumwt)
 
 
@@ -195,7 +194,6 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
     assert isinstance(vis, BlockVisibility), vis
     assert isinstance(griddata, GridData)
     assert isinstance(cf, ConvolutionFunction)
-    cf.check()
     assert vis.polarisation_frame == griddata.polarisation_frame
     assert cf.polarisation_frame == griddata.polarisation_frame
 
@@ -203,12 +201,12 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
     nchan, npol, nw, ny, nx = griddata.shape
     sumwt = numpy.zeros([nchan, npol])
 
-    _, _, _, _, _, gv, gu = cf.shape
+    _, _, _, _, _, gv, gu = cf["pixels"].data.shape
     vis_to_im = numpy.round(
         griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.values, 0)[0]).astype('int')
 
-    griddata.data[...] = 0.0
-    real_gd = numpy.real(griddata.data.values)
+    griddata["pixels"].data[...] = 0.0
+    real_gd = numpy.real(griddata["pixels"].data)
 
     nrows, nbaselines, nvchan, nvpol = vis.vis.shape
 
@@ -226,7 +224,7 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
                     pol, vchan, row]
                 sumwt[imchan, pol] += fwtt[pol, vchan, row]
 
-    griddata.data.values = real_gd.astype("complex")
+    griddata["pixels"].data = real_gd.astype("complex")
 
     return griddata, sumwt
 
@@ -248,7 +246,7 @@ def griddata_merge_weights(gd_list, algorithm='uniform'):
 
     for i, g in enumerate(gd_list):
         if i != centre:
-            gd.data.values += g[0].data.values
+            gd["pixels"].data += g[0]["pixels"].data
             sumwt += g[1]
         frequency += g[0].grid_wcs.wcs.crval[4]
         bandwidth += g[0].grid_wcs.wcs.cdelt[4]
@@ -270,13 +268,12 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
     assert isinstance(vis, BlockVisibility), vis
     assert isinstance(griddata, GridData)
     assert isinstance(cf, ConvolutionFunction)
-    cf.check()
     assert vis.polarisation_frame == griddata.polarisation_frame
     assert cf.polarisation_frame == griddata.polarisation_frame
     
     assert weighting in ["natural", "uniform", "robust"], "Weighting {} not supported".format(weighting)
     
-    real_gd = numpy.real(griddata.data.values)
+    real_gd = numpy.real(griddata["pixels"].data)
     
     vis_to_im = numpy.round(
         griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency, 0)[0]).astype('int')
@@ -295,7 +292,7 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
                     if wt > 0.0:
                         fwtt[pol, vchan, row] /= wt
         
-        vis.data['imaging_weight'][...] = fwtt.T.reshape([nrows, nbaselines, nvchan, nvpol])
+        vis['imaging_weight'].data[...] = fwtt.T.reshape([nrows, nbaselines, nvchan, nvpol])
     
     elif weighting == "robust":
         # Equation 3.15, 3.16 in Briggs thesis
@@ -311,10 +308,10 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
                     wt = real_gd[imchan, pol, pwg_grid[row], pv_grid[row], pu_grid[row]]
                     fwtt[pol, vchan, row] /= (1 + f2 * wt)
         
-        vis.data['imaging_weight'][...] = fwtt.T.reshape([nrows, nbaselines, nvchan, nvpol])
+        vis['imaging_weight'].data[...] = fwtt.T.reshape([nrows, nbaselines, nvchan, nvpol])
         
     elif weighting == "natural":
-        vis.data['imaging_weight'][...] = vis.data['weight'][...]
+        vis['imaging_weight'].data[...] = vis['weight'].data[...]
     
     return vis
 
@@ -331,36 +328,37 @@ def degrid_blockvisibility_from_griddata(vis, griddata, cf, **kwargs):
     assert isinstance(vis, BlockVisibility), vis
     assert isinstance(griddata, GridData)
     assert isinstance(cf, ConvolutionFunction)
-    cf.check()
     assert vis.polarisation_frame == griddata.polarisation_frame
     assert cf.polarisation_frame == griddata.polarisation_frame
 
     newvis = copy_visibility(vis, zero=True)
 
-    nchan, npol, nz, oversampling, _, support, _ = cf.shape
+    nchan, npol, nz, oversampling, _, support, _ = cf["pixels"].data.shape
     vis_to_im = numpy.round(
         griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.values, 0)[0]).astype('int')
 
     nrows, nbaselines, nvchan, nvpol = vis.vis.shape
     fvist = numpy.zeros([nvpol, nvchan, nrows * nbaselines], dtype='complex')
 
-    _, _, _, _, _, gv, gu = cf.shape
+    _, _, _, _, _, gv, gu = cf["pixels"].data.shape
 
     du = gu // 2
     dv = gv // 2
 
+    gd = griddata["pixels"].data
+    scf = cf["pixels"].data
     for vchan in range(nvchan):
         imchan = vis_to_im[vchan]
         pu_grid, pu_offset, pv_grid, pv_offset, pwg_grid, pwg_fraction, pwc_grid, pwc_fraction = \
             convolution_mapping_blockvisibility(vis, griddata, vchan, cf)
         for pol in range(nvpol):
             for row in range(nrows * nbaselines):
-                subgrid = griddata.data.values[imchan, \
+                subgrid = gd[imchan, \
                           pol, \
                           pwg_grid[row], \
                           (pv_grid[row] - dv):(pv_grid[row] + dv), \
                           (pu_grid[row] - du):(pu_grid[row] + du)]
-                subcf = cf.data.values[imchan,
+                subcf = scf[imchan,
                         pol,
                         pwc_grid[row],
                         pv_offset[row],
@@ -382,7 +380,7 @@ def degrid_blockvisibility_from_griddata(vis, griddata, cf, **kwargs):
         # plt.title("U vs V offset")
         # plt.show(block=False)
 
-    newvis.data['vis'][...] = fvist.T.reshape([nrows, nbaselines, nvchan, nvpol])
+    newvis["vis"].data[...] = fvist.T.reshape([nrows, nbaselines, nvchan, nvpol])
 
     return newvis
 
@@ -397,15 +395,14 @@ def fft_griddata_to_image(griddata, gcf=None):
     :return:
     """
     assert isinstance(griddata, GridData)
-    griddata.check()
 
-    projected = numpy.sum(griddata.data.values, axis=2)
-    ny, nx = projected.data.shape[-2], projected.data.shape[-1]
+    projected = numpy.sum(griddata["pixels"].data, axis=2)
+    ny, nx = projected.shape[-2], projected.shape[-1]
 
     if gcf is None:
         im_data = ifft(projected) * float(nx) * float(ny)
     else:
-        im_data = ifft(projected) * gcf.data.values * float(nx) * float(ny)
+        im_data = ifft(projected) * gcf["pixels"].data * float(nx) * float(ny)
 
     return create_image_from_array(im_data, griddata.projection_wcs, griddata.polarisation_frame)
 
@@ -420,12 +417,12 @@ def fft_image_to_griddata(im, griddata, gcf=None):
     # chan, pol, z, u, v, w
     assert isinstance(im, Image)
     assert isinstance(griddata, GridData)
-    griddata.check()
     assert im.polarisation_frame == griddata.polarisation_frame
 
     if gcf is None:
-        griddata.data[:, :, :, ...] = fft(im["pixels"].data.values)[:, :, numpy.newaxis, ...]
+        griddata["pixels"].data[:, :, :, ...] = fft(im["pixels"].data)[:, :, numpy.newaxis, ...]
     else:
-        griddata.data[:, :, :, ...] = fft(im["pixels"].data.values * gcf.data.values)[:, :, numpy.newaxis, ...]
+        griddata["pixels"].data[:, :, :, ...] = fft(im["pixels"].data * \
+                                                    gcf["pixels"].data)[:, :, numpy.newaxis, ...]
 
     return griddata

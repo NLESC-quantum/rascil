@@ -196,7 +196,7 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
         if numpy.sum(foot.data) < 1e-12:
             log.warning("reproject_image: no valid points in reprojection")
     elif len(im.shape) == 2:
-        if im.data.dtype == 'complex':
+        if im["pixels"].data.dtype == 'complex':
             rep_real, foot = reproject_interp((im["pixels"].data.real, im.wcs), newwcs, shape, order='bicubic')
             rep_imag, foot = reproject_interp((im["pixels"].data.imag, im.wcs), newwcs, shape, order='bicubic')
             rep = rep_real + 1j * rep_imag
@@ -277,10 +277,10 @@ def show_image(im: Image, fig=None, title: str = '', pol=0, chan=0, cm='Greys', 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1, projection=im.wcs.sub([1, 2]))
     
-    if len(im.data.shape) == 4:
+    if len(im["pixels"].data.shape) == 4:
         data_array = numpy.real(im["pixels"].data[chan, pol, :, :])
     else:
-        data_array = numpy.real(im.data)
+        data_array = numpy.real(im["pixels"].data)
     
     if vmax is None:
         vmax = vscale * numpy.max(data_array)
@@ -329,7 +329,7 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, titl
         newim = copy_image(im)
         plt.subplot(111, projection=newim.wcs.sub([1, 2]))
         centre = numpy.round(skycoord_to_pixel(sc.direction, newim.wcs, 1, 'wcs')).astype('int')
-        newim.data = \
+        newim["pixels"].data = \
             newim["pixels"].data[:, :, (centre[1] - npixels // 2):(centre[1] + npixels // 2),
             (centre[0] - npixels // 2):(centre[0] + npixels // 2)]
         newim.wcs.wcs.crpix[0] -= centre[0] - npixels // 2
@@ -1088,11 +1088,11 @@ def rotate_image(im, angle=0.0, order=5):
     
     from scipy.ndimage.interpolation import rotate
     newim = copy_image(im)
-    if newim.data.dtype == "complex":
-        newim.data = rotate(im["pixels"].data.real, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order) + \
+    if newim["pixels"].data.dtype == "complex":
+        newim["pixels"].data = rotate(im["pixels"].data.real, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order) + \
                      1j * rotate(im["pixels"].data.imag, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order)
     else:
-        newim.data = rotate(im["pixels"].data, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order)
+        newim["pixels"].data = rotate(im["pixels"].data, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order)
     return newim
 
 

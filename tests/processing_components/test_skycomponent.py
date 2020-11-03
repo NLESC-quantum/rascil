@@ -146,7 +146,7 @@ class TestSkycomponent(unittest.TestCase):
         bright_components = filter_skycomponents_by_flux(bright_components, flux_min=2.0)
 
         for im in image_voronoi_iter(model, bright_components):
-            assert numpy.sum(im.data) > 1
+            assert numpy.sum(im["pixels"].data) > 1
 
     def test_partition_skycomponent_neighbours(self):
         all_components = create_low_test_skycomponents_from_gleam(flux_limit=0.1,

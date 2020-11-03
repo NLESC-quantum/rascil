@@ -63,11 +63,11 @@ def sum_invert_results_local(image_list):
                 scale = arg[1]
             if first:
                 im = copy_image(arg[0])
-                im.data *= scale
+                im["pixels"].data *= scale
                 sumwt = arg[1].copy()
                 first = False
             else:
-                im.data += scale * arg[0].data
+                im["pixels"].data += scale * arg[0].data
                 sumwt += arg[1]
     
     assert not first, "No invert results"
@@ -90,7 +90,7 @@ def sum_invert_results(image_list, normalize=True):
     
     for i, arg in enumerate(image_list):
         if arg is not None:
-            im.data.values += arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0].data.values
+            im["pixels"].data.values += arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0].data.values
             sumwt += arg[1]
     
     if normalize:

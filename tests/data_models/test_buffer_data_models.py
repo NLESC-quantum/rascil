@@ -150,9 +150,9 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         newsm = bdm.memory_data_model
 
         assert newsm.components[0].flux.shape == self.comp.flux.shape
-        assert newsm.image.data.shape == im.data.shape
+        assert newsm.image.data.shape == im["pixels"].data.shape
         assert newsm.gaintable.gain.shape == gt.gain.shape
-        assert numpy.max(numpy.abs(newsm.image.data - im.data)) < 1e-15
+        assert numpy.max(numpy.abs(newsm.image.data - im["pixels"].data)) < 1e-15
 
     def test_readwriteskymodel_no_image(self):
         vis = create_blockvisibility(self.midcore, self.times, self.frequency,
@@ -187,8 +187,8 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         new_bdm.sync()
         newim = bdm.memory_data_model
 
-        assert newim.data.shape == im.data.shape
-        assert numpy.max(numpy.abs(im.data - newim.data)) < 1e-15
+        assert newim["pixels"].data.shape == im["pixels"].data.shape
+        assert numpy.max(numpy.abs(im["pixels"].data - newim["pixels"].data)) < 1e-15
 
     def test_readwriteimage_assertion(self):
         im = create_test_image()

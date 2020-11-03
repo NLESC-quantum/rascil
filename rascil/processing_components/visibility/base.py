@@ -147,10 +147,10 @@ def create_blockvisibility(config: Configuration,
         polarisation_frame = correlate_polarisation(config.receptor_frame)
     
     latitude = config.location.geodetic[1].to('rad').value
-    ants_xyz = config.data['xyz'].values
+    ants_xyz = config['xyz'].data
     ants_xyz = xyz_at_latitude(ants_xyz, latitude)
     
-    nants = len(config.data['names'].values)
+    nants = len(config['names'].data)
     
     baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
     nbaselines = len(baselines)

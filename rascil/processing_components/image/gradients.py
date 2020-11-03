@@ -32,8 +32,8 @@ def image_gradients(im: Image):
     nchan, npol, ny, nx = im.shape
     
     gradientx = create_empty_image_like(im)
-    gradientx.data.values[..., :, 1:nx] = im.data.values[..., :, 1:nx] - im.data.values[..., :, 0:(nx - 1)]
+    gradientx.data.values[..., :, 1:nx] = im["pixels"].data.values[..., :, 1:nx] - im["pixels"].data.values[..., :, 0:(nx - 1)]
     gradienty = create_empty_image_like(im)
-    gradienty.data.values[..., 1:ny, :] = im.data.values[..., 1:ny, :] - im.data.values[..., 0:(ny - 1), :]
+    gradienty.data.values[..., 1:ny, :] = im["pixels"].data.values[..., 1:ny, :] - im["pixels"].data.values[..., 0:(ny - 1), :]
     
     return gradientx, gradienty

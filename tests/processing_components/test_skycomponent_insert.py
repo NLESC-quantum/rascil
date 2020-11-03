@@ -134,8 +134,8 @@ class TestSkycomponentInsert(unittest.TestCase):
     
         insert_skycomponent(self.model, self.sc, insert_method='Nearest')
         # These test a regression but are not known a priori to be correct
-        self.assertAlmostEqual(self.model.data.values[2, 0, 151, 122], 1.0, 7)
-        self.assertAlmostEqual(self.model.data.values[2, 0, 152, 122], 0.0, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 151, 122], 1.0, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 152, 122], 0.0, 7)
 
     def test_insert_skycomponent_nearest_IQUV(self):
         self.actualSetup(dopol=True)
@@ -143,32 +143,32 @@ class TestSkycomponentInsert(unittest.TestCase):
         insert_skycomponent(self.model, self.sc, insert_method='Nearest')
         # These test a regression but are not known a priori to be correct
         for pol in range(4):
-            self.assertAlmostEqual(self.model.data.values[2, pol, 151, 122], self.pol_flux[pol], 7)
-            self.assertAlmostEqual(self.model.data.values[2, pol, 152, 122], 0.0, 7)
+            self.assertAlmostEqual(self.model["pixels"].data[2, pol, 151, 122], self.pol_flux[pol], 7)
+            self.assertAlmostEqual(self.model["pixels"].data[2, pol, 152, 122], 0.0, 7)
 
     def test_insert_skycomponent_sinc(self):
         self.actualSetup()
     
         insert_skycomponent(self.model, self.sc, insert_method='Sinc')
         # These test a regression but are not known a priori to be correct
-        self.assertAlmostEqual(self.model.data.values[2, 0, 151, 122], 0.87684398703184396, 7)
-        self.assertAlmostEqual(self.model.data.values[2, 0, 152, 122], 0.2469311811046056, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 151, 122], 0.87684398703184396, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 152, 122], 0.2469311811046056, 7)
     
     def test_insert_skycomponent_sinc_bandwidth(self):
         self.actualSetup()
     
         insert_skycomponent(self.model, self.sc, insert_method='Sinc', bandwidth=0.5)
         # These test a regression but are not known a priori to be correct
-        self.assertAlmostEqual(self.model.data.values[2, 0, 151, 122], 0.25133066186805758, 7)
-        self.assertAlmostEqual(self.model.data.values[2, 0, 152, 122], 0.19685222464041874, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 151, 122], 0.25133066186805758, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 152, 122], 0.19685222464041874, 7)
     
     def test_insert_skycomponent_lanczos(self):
         self.actualSetup()
     
         insert_skycomponent(self.model, self.sc, insert_method='Lanczos')
         # These test a regression but are not known a priori to be correct
-        self.assertAlmostEqual(self.model.data.values[2, 0, 151, 122], 0.87781267543090036, 7)
-        self.assertAlmostEqual(self.model.data.values[2, 0, 152, 122], 0.23817562762032077, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 151, 122], 0.87781267543090036, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 152, 122], 0.23817562762032077, 7)
 
     def test_insert_skycomponent_lanczos_IQUV(self):
         self.actualSetup(dopol=True)
@@ -176,16 +176,16 @@ class TestSkycomponentInsert(unittest.TestCase):
         insert_skycomponent(self.model, self.sc, insert_method='Lanczos')
         # These test a regression but are not known a priori to be correct
         for pol in range(4):
-            self.assertAlmostEqual(self.model.data.values[2, pol, 151, 122], self.pol_flux[pol] * 0.87781267543090036, 7)
-            self.assertAlmostEqual(self.model.data.values[2, pol, 152, 122], self.pol_flux[pol] * 0.23817562762032077, 7)
+            self.assertAlmostEqual(self.model["pixels"].data[2, pol, 151, 122], self.pol_flux[pol] * 0.87781267543090036, 7)
+            self.assertAlmostEqual(self.model["pixels"].data[2, pol, 152, 122], self.pol_flux[pol] * 0.23817562762032077, 7)
 
     def test_insert_skycomponent_lanczos_bandwidth(self):
         self.actualSetup()
     
         insert_skycomponent(self.model, self.sc, insert_method='Lanczos', bandwidth=0.5)
         # These test a regression but are not known a priori to be correct
-        self.assertAlmostEqual(self.model.data.values[2, 0, 151, 122], 0.24031092091707615, 7)
-        self.assertAlmostEqual(self.model.data.values[2, 0, 152, 122], 0.18648989466050975, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 151, 122], 0.24031092091707615, 7)
+        self.assertAlmostEqual(self.model["pixels"].data[2, 0, 152, 122], 0.18648989466050975, 7)
 
 
 if __name__ == '__main__':

@@ -40,14 +40,14 @@ def create_box_convolutionfunction(im, oversampling=1, support=1, polarisation_f
     
     # Now calculate the griddata correction function as an image with the same coordinates as the image
     # which is necessary so that the correction function can be applied directly to the image
-    nchan, npol, ny, nx = im.data.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     nu = numpy.abs(coordinates(nx))
     
     gcf1d = numpy.sinc(nu)
     gcf = numpy.outer(gcf1d, gcf1d)
     gcf = 1.0 / gcf
     
-    gcf_data = numpy.zeros_like(im.data)
+    gcf_data = numpy.zeros_like(im["pixels"].data)
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
     gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
     
@@ -98,13 +98,13 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8, polarisatio
     
     # Now calculate the griddata correction function as an image with the same coordinates as the image
     # which is necessary so that the correction function can be applied directly to the image
-    nchan, npol, ny, nx = im.data.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     nu = numpy.abs(2.0 * coordinates(nx))
     gcf1d = grdsf(nu)[0]
     gcf = numpy.outer(gcf1d, gcf1d)
     gcf[gcf > 0.0] = gcf.max() / gcf[gcf > 0.0]
     
-    gcf_data = numpy.zeros_like(im.data)
+    gcf_data = numpy.zeros_like(im["pixels"].data)
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
     gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
     
@@ -132,7 +132,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     
     # We only need the griddata correction function for the PSWF so we make
     # it for the shape of the image
-    nchan, npol, ony, onx = im.data.shape
+    nchan, npol, ony, onx = im["pixels"].data.shape
     
     assert isinstance(im, Image)
     # Calculate the template convolution kernel.
@@ -253,7 +253,7 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     
     # We only need the griddata correction function for the PSWF so we make
     # it for the shape of the image
-    nchan, npol, ony, onx = im.data.shape
+    nchan, npol, ony, onx = im["pixels"].data.shape
     
     assert isinstance(im, Image)
     # Calculate the template convolution kernel.
@@ -277,7 +277,7 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     subim = copy_image(im)
     ccell = onx * numpy.abs(d2r * subim.wcs.wcs.cdelt[0]) / qnx
     
-    subim.data = numpy.zeros([nchan, npol, qny, qnx])
+    subim["pixels"].data = numpy.zeros([nchan, npol, qny, qnx])
     subim.wcs.wcs.cdelt[0] = -ccell / d2r
     subim.wcs.wcs.cdelt[1] = +ccell / d2r
     subim.wcs.wcs.crpix[0] = qnx // 2 + 1.0

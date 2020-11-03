@@ -66,12 +66,12 @@ class TestImagingFunctions(unittest.TestCase):
     def test_create_image_from_visibility(self):
         self.actualSetUp()
         im = create_image_from_visibility(self.vis, nchan=1, npixel=128)
-        assert im.data.shape == (1, 1, 128, 128)
+        assert im["pixels"].data.shape == (1, 1, 128, 128)
         im = create_image_from_visibility(self.vis, frequency=self.frequency, npixel=128)
-        assert im.data.shape == (len(self.frequency), 1, 128, 128)
+        assert im["pixels"].data.shape == (len(self.frequency), 1, 128, 128)
         im = create_image_from_visibility(self.vis, frequency=self.frequency, npixel=128,
                                           nchan=1)
-        assert im.data.shape == (1, 1, 128, 128)
+        assert im["pixels"].data.shape == (1, 1, 128, 128)
 
 
 if __name__ == '__main__':

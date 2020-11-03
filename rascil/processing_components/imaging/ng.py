@@ -182,7 +182,7 @@ try:
         fuvw[:, 2] *= -1.0
         
         nchan, npol, ny, nx = im.shape
-        im.data.values[...] = 0.0
+        im["pixels"].data.values[...] = 0.0
         sumwt = numpy.zeros([nchan, npol])
         
         # There's a latent problem here with the weights.
@@ -212,7 +212,7 @@ try:
                                     nthreads=nthreads, verbosity=verbosity)
                 sumwt[0, :] += numpy.sum(wgtt[0, :, :].T)
                 assert numpy.max(sumwt) > 0.0
-                im.data[0, :] += dirty.T
+                im["pixels"].data[0, :] += dirty.T
             else:
                 for vchan in range(vnchan):
                     ichan = vis_to_im[vchan]
@@ -225,7 +225,7 @@ try:
                                         do_wstacking=do_wstacking,
                                         nthreads=nthreads, verbosity=verbosity)
                     sumwt[ichan, :] += numpy.sum(wgtt[0, ichan, :].T, axis=0)
-                    im.data.values[ichan, :] += dirty.T
+                    im["pixels"].data.values[ichan, :] += dirty.T
         else:
             mst = ms.T
             wgtt = wgt.T
@@ -240,7 +240,7 @@ try:
                                         nthreads=nthreads, verbosity=verbosity)
                     sumwt[0, pol] += numpy.sum(wgtt[pol, :, :].T)
                     assert numpy.max(sumwt) > 0.0
-                    im.data[0, pol] += dirty.T
+                    im["pixels"].data[0, pol] += dirty.T
                 else:
                     for vchan in range(vnchan):
                         ichan = vis_to_im[vchan]
@@ -253,7 +253,7 @@ try:
                                             do_wstacking=do_wstacking,
                                             nthreads=nthreads, verbosity=verbosity)
                         sumwt[ichan, pol] += numpy.sum(wgtt[pol, ichan, :].T, axis=0)
-                        im.data.values[ichan, pol] += dirty.T
+                        im["pixels"].data.values[ichan, pol] += dirty.T
 
         
         if normalize:

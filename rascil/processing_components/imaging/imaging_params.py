@@ -25,7 +25,7 @@ def get_frequency_map(vis, im: Image = None):
 
         assert min(vfrequencymap) >= 0, "Invalid frequency map: visibility channel < 0: %s" % str(vfrequencymap)
 
-    elif im.data.shape[0] == 1 and vnchan >= 1:
+    elif im["pixels"].data.shape[0] == 1 and vnchan >= 1:
         assert image_is_canonical(im)
 
         spectral_mode = 'mfs'

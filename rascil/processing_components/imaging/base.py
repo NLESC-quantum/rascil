@@ -68,7 +68,7 @@ def shift_vis_to_image(vis: BlockVisibility, im: Image, tangent: bool = True, in
     """
     assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
 
-    nchan, npol, ny, nx = im.data.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
 
     # Convert the FFT definition of the phase center to world coordinates (1 relative)
     # This is the only place in RASCIL where the relationship between the image and visibility
@@ -94,10 +94,10 @@ def normalize_sumwt(im: Image, sumwt) -> Image:
     The gridding weights are accumulated as a function of channel and polarisation. This function
     corrects for this sum of weights.
 
-    :param im: Image, im.data has shape [nchan, npol, ny, nx]
+    :param im: Image, im["pixels"].data has shape [nchan, npol, ny, nx]
     :param sumwt: Sum of weights [nchan, npol]
     """
-    nchan, npol, _, _ = im.data.shape
+    nchan, npol, _, _ = im["pixels"].data.shape
     assert isinstance(im, Image), im
     assert sumwt is not None
     assert nchan == sumwt.shape[0]
@@ -105,9 +105,9 @@ def normalize_sumwt(im: Image, sumwt) -> Image:
     for chan in range(nchan):
         for pol in range(npol):
             if sumwt[chan, pol] > 0.0:
-                im.data.values[chan, pol, :, :] = im.data.values[chan, pol, :, :] / sumwt[chan, pol]
+                im["pixels"].data.values[chan, pol, :, :] = im["pixels"].data.values[chan, pol, :, :] / sumwt[chan, pol]
             else:
-                im.data.values[chan, pol, :, :] = 0.0
+                im["pixels"].data.values[chan, pol, :, :] = 0.0
     return im
 
 

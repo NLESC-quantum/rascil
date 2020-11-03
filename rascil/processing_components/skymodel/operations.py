@@ -151,7 +151,7 @@ def initialize_skymodel_voronoi(model, comps, gt=None):
     skymodel_images = list()
     for i, mask in enumerate(image_voronoi_iter(model, comps)):
         im = copy_image(model)
-        im.data *= mask.data
+        im["pixels"].data *= mask.data
         if gt is not None:
             newgt = copy_gaintable(gt)
             newgt.phasecentre = comps[i].direction
@@ -193,8 +193,8 @@ def update_skymodel_from_image(sm, im, damping=0.5):
     for i, th in enumerate(sm):
         newim = copy_image(im)
         if th.mask is not None:
-            newim.data *= th.mask.data
-        th.image.data += damping * newim.data
+            newim["pixels"].data *= th.mask.data
+        th.image.data += damping * newim["pixels"].data
     
     return sm
 

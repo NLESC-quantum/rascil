@@ -26,7 +26,7 @@ def image_rsexecute_map_workflow(im, imfunction, facets=1, overlap=0, taper=None
         model = create_test_image(frequency=frequency, phasecentre=phasecentre, cellsize=0.001,
                                          polarisation_frame=PolarisationFrame('stokesI'))
         def imagerooter(im, **kwargs):
-            im.data = numpy.sqrt(numpy.abs(im.data))
+            im["pixels"].data = numpy.sqrt(numpy.abs(im["pixels"].data))
             return im
         root_graph = image_rsexecute_map_workflow(model, imagerooter, facets=16)
         root_image = rsexecute.compute(root_graph, sync=True)

@@ -106,8 +106,8 @@ class TestDataModelHelpers(unittest.TestCase):
         export_image_to_hdf5(im, '%s/test_data_model_helpers_image.hdf' % self.dir)
         newim = import_image_from_hdf5('%s/test_data_model_helpers_image.hdf' % self.dir)
         
-        assert newim.data.shape == im.data.shape
-        assert numpy.max(numpy.abs(im.data - newim.data)) < 1e-15
+        assert newim["pixels"].data.shape == im["pixels"].data.shape
+        assert numpy.max(numpy.abs(im["pixels"].data - newim["pixels"].data)) < 1e-15
 
     def test_readwriteskycomponent(self):
         export_skycomponent_to_hdf5(self.comp, '%s/test_data_model_helpers_skycomponent.hdf' % self.dir)
@@ -129,8 +129,8 @@ class TestDataModelHelpers(unittest.TestCase):
         newsm = import_skymodel_from_hdf5('%s/test_data_model_helpers_skymodel.hdf' % self.dir)
     
         assert newsm.components[0].flux.shape == self.comp.flux.shape
-        assert newsm.image.data.shape == im.data.shape
-        assert numpy.max(numpy.abs(newsm.image.data - im.data)) < 1e-15
+        assert newsm.image.data.shape == im["pixels"].data.shape
+        assert numpy.max(numpy.abs(newsm.image.data - im["pixels"].data)) < 1e-15
 
     def test_readwritegriddata(self):
         im = create_test_image()

@@ -390,7 +390,7 @@ def convert_gaintable_to_hdf(gt: GainTable, f):
     :param f: HDF root
     :return:
     """
-    assert isinstance(gt, GainTable)
+    #assert isinstance(gt, GainTable)
     
     f.attrs['RASCIL_data_model'] = 'GainTable'
     f.attrs['receptor_frame'] = gt.receptor_frame.type
@@ -439,7 +439,7 @@ def export_gaintable_to_hdf5(gt: GainTable, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(gt)
         for i, g in enumerate(gt):
-            assert isinstance(g, GainTable)
+            #assert isinstance(g, GainTable)
             gf = f.create_group('GainTable%d' % i)
             convert_gaintable_to_hdf(g, gf)
         f.flush()
@@ -632,7 +632,7 @@ def convert_image_to_hdf(im: Image, f):
     """
     if isinstance(im, Image):
         f.attrs['RASCIL_data_model'] = 'Image'
-        f['data'] = im.data
+        f['data'] = im["pixels"].data
         f.attrs['wcs'] = numpy.string_(im.wcs.to_header_string())
         f.attrs['polarisation_frame'] = im.polarisation_frame.type
         f.attrs['phasecentre_coords'] = im.phasecentre.to_string()

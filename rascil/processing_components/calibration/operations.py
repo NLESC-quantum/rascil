@@ -65,8 +65,8 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
         if len(vis_rows) > 0:
             
             # Lookup the gain for this set of visibilities
-            gain = gt.data['gain'].values[row]
-            cgain = numpy.conjugate(gt.data['gain'].values[row])
+            gain = gt['gain'].data[row]
+            cgain = numpy.conjugate(gt['gain'].data[row])
             gainwt = gt.data['weight'].values[row]
             
             # The shape of the mueller matrix is

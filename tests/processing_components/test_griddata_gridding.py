@@ -195,7 +195,7 @@ class TestGridDataGridding(unittest.TestCase):
         self.check_peaks(im, 97.10594988489598, tol=1e-7)
     
     def check_peaks(self, im, peak, tol=1e-6):
-        assert numpy.abs(im.data.values[self.peak] - peak) < tol, im.data.values[self.peak]
+        assert numpy.abs(im["pixels"].data.values[self.peak] - peak) < tol, im["pixels"].data.values[self.peak]
     
     def test_griddata_invert_wterm(self):
         self.actualSetUp(zerow=False)

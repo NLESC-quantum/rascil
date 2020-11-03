@@ -210,7 +210,7 @@ def calculate_residual_from_gaintables_rsexecute_workflow(bvis_list, components,
     
     def subtract(im1, im2):
         im = copy_image(im1[0])
-        im.data -= im2[0].data
+        im["pixels"].data -= im2[0].data
         return im, im1[1]
     
     residual_list = rsexecute.execute(subtract, nout=1)(error_dirty_list, no_error_dirty_list)

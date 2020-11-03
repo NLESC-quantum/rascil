@@ -424,8 +424,8 @@ def fft_image_to_griddata(im, griddata, gcf=None):
     assert im.polarisation_frame == griddata.polarisation_frame
 
     if gcf is None:
-        griddata.data[:, :, :, ...] = fft(im.data.values)[:, :, numpy.newaxis, ...]
+        griddata.data[:, :, :, ...] = fft(im["pixels"].data.values)[:, :, numpy.newaxis, ...]
     else:
-        griddata.data[:, :, :, ...] = fft(im.data.values * gcf.data.values)[:, :, numpy.newaxis, ...]
+        griddata.data[:, :, :, ...] = fft(im["pixels"].data.values * gcf.data.values)[:, :, numpy.newaxis, ...]
 
     return griddata

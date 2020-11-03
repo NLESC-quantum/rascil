@@ -38,7 +38,7 @@ warnings.simplefilter('ignore', AstropyDeprecationWarning)
 log = logging.getLogger('rascil-logger')
 
 
-class Configuration:
+class Configuration(xarray.Dataset):
     """ Describe a XConfiguration as locations in x,y,z, mount type, diameter, names, and
         overall location
     """
@@ -62,6 +62,8 @@ class Configuration:
         :param stations: Identifiers of the dishes/stations
         :param vp_type: Type of voltage pattern (string)
         """
+        
+        super().__init__()
         
         nants = len(names)
         if isinstance(stations, str):
@@ -87,42 +89,44 @@ class Configuration:
         datavars["vp_type"] = xarray.DataArray(vp_type, coords={"id": list(range(nants))}, dims=["id"])
         datavars["offset"] = xarray.DataArray(offset, coords=coords, dims=["id", "spatial"])
         datavars["stations"] = xarray.DataArray(stations, coords={"id": list(range(nants))}, dims=["id"])
-        
-        self.name = name  # Name of configuration
-        self.location = location  # EarthLocation
-        self.receptor_frame = receptor_frame
-        self.frame = frame
-        
-        self.data = xarray.Dataset(datavars, coords=coords)
-    
-    def check(self):
-        """ Check that the internals are ok
 
-        :return:
-        """
-        assert isinstance(self.data, xarray.Dataset)
-    
-    def __str__(self):
-        """Default printer for Configuration
+        attrs = dict()
 
-        """
-        s = "Configuration:\n"
-        s += "\nName: %s\n" % self.name
-        s += "\tNumber of antennas/stations: %s\n" % len(self.names)
-        s += "\tNames: %s\n" % self.names
-        s += "\tDiameter: %s\n" % self.diameter
-        s += "\tMount: %s\n" % self.mount
-        s += "\tXYZ: %s\n" % self.xyz
-        s += "\tAxis offset: %s\n" % self.offset
-        s += "\tStations: %s\n" % self.stations
-        s += "\tVoltage pattern type: %s\n" % self.vp_type
+        attrs["name"] = name  # Name of configuration
+        attrs["location"] = location  # EarthLocation
+        attrs["receptor_frame"] = receptor_frame
+        attrs["frame"] = frame
         
-        return s
+        super().__init__(datavars, coords=coords, attrs=attrs)
+    
+    # def check(self):
+    #     """ Check that the internals are ok
+    #
+    #     :return:
+    #     """
+    #     assert isinstance(self.data, xarray.Dataset)
+    #
+    # def __str__(self):
+    #     """Default printer for Configuration
+    #
+    #     """
+    #     s = "Configuration:\n"
+    #     s += "\nName: %s\n" % self.name
+    #     s += "\tNumber of antennas/stations: %s\n" % len(self.names)
+    #     s += "\tNames: %s\n" % self.names
+    #     s += "\tDiameter: %s\n" % self.diameter
+    #     s += "\tMount: %s\n" % self.mount
+    #     s += "\tXYZ: %s\n" % self.xyz
+    #     s += "\tAxis offset: %s\n" % self.offset
+    #     s += "\tStations: %s\n" % self.stations
+    #     s += "\tVoltage pattern type: %s\n" % self.vp_type
+    #
+    #     return s
     
     def size(self):
         """ Return size in GB
         """
-        size = self.data.nbytes
+        size = self.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
     
     def datasizes(self):
@@ -130,57 +134,57 @@ class Configuration:
         Return sizes of data variables
         :return:
         """
-        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
+        s = "Dataset size: {:.3f} GB\n".format(self.nbytes / 1024 / 1024 / 1024)
         for var in self.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self[var].nbytes / 1024 / 1024 / 1024)
         return s
     
     @property
     def names(self):
         """ Names of the dishes/stations"""
-        return self.data['names']
+        return self['names']
     
     @property
     def nants(self):
         """ Names of the dishes/stations"""
-        return len(self.data['names'])
+        return len(self['names'])
     
     @property
     def vp_type(self):
         """ Names of the voltage pattern type"""
-        return self.data['vp_type']
+        return self['vp_type']
     
     @property
     def diameter(self):
         """ Diameter of dishes/stations (m)
         """
-        return self.data['diameter']
+        return self['diameter']
     
     @property
     def xyz(self):
         """ XYZ locations of dishes/stations [:,3] (m)
         """
-        return self.data['xyz']
+        return self['xyz']
     
     @property
     def mount(self):
         """ Mount types of dishes/stations ('azel' | 'equatorial'
         """
-        return self.data['mount']
+        return self['mount']
     
     @property
     def offset(self):
         """ Axis offset [:, 3] (m)
         """
-        return self.data['offset']
+        return self['offset']
     
     @property
     def stations(self):
         """ Station/dish identifier (may be the same as names)"""
-        return self.data['stations']
+        return self['stations']
 
 
-class GainTable:
+class GainTable(xarray.Dataset):
     """ Gain table with data_models: time, antenna, gain[:, chan, rec, rec], weight columns
 
     The weight is usually that output from gain solvers.
@@ -205,6 +209,9 @@ class GainTable:
         :param phasecentre: Phasecentre (SkyCoord)
         :param configuration: Configuration
         """
+        
+        super().__init__()
+        
         ntimes, nants, nchan, nrec, _ = gain.shape
         antennas = range(nants)
         coords = {
@@ -222,10 +229,14 @@ class GainTable:
         datavars["interval"] = xarray.DataArray(interval, dims=["time"])
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims="time")
-        self.data = xarray.Dataset(datavars, coords=coords)
-        self.receptor_frame = receptor_frame
-        self.phasecentre = phasecentre
-        self.configuration = configuration
+        attrs = dict()
+        
+        attrs["receptor_frame"] = receptor_frame
+        attrs["phasecentre"] = phasecentre
+        attrs["configuration"] = configuration
+
+        super().__init__(datavars, coords=coords, attrs=attrs)
+        
     
     def size(self):
         """ Return size in GB
@@ -239,105 +250,105 @@ class GainTable:
         """
         s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
         for var in self.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self[var].nbytes / 1024 / 1024 / 1024)
         return s
     
     @property
     def time(self):
         """ Centroid of solution [ntimes]
         """
-        return self.data['time']
+        return self['time']
     
     @property
     def interval(self):
         """ Interval of validity [ntimes]
         """
-        return self.data['interval']
+        return self['interval']
     
     @property
     def gain(self):
         """ Complex gain [ntimes, nants, nchan, nrec, nrec]
         """
-        return self.data['gain']
+        return self['gain']
     
     @property
     def frequency(self):
         """ Frequency [nchan]
         """
-        return self.data['frequency']
+        return self['frequency']
     
     @property
     def receptor1(self):
         """ Receptor name
         """
-        return self.data['receptor1']
+        return self['receptor1']
     
     @property
     def receptor2(self):
         """ Receptor name
         """
-        return self.data['receptor2']
+        return self['receptor2']
     
     @property
     def weight(self):
         """ Weight of gain [ntimes, nants, nchan, nrec, nrec]
 
         """
-        return self.data['weight']
+        return self['weight']
     
     @property
     def residual(self):
         """ Residual of fit [nchan, nrec, nrec]
         """
-        return self.data['residual']
+        return self['residual']
     
     @property
     def ntimes(self):
         """ Number of times (i.e. rows) in this table
         """
-        return self.data['gain'].shape[0]
+        return self['gain'].shape[0]
     
     @property
     def nants(self):
         """ Number of dishes/stations
         """
-        return self.data['gain'].shape[1]
+        return self['gain'].shape[1]
     
     @property
     def nchan(self):
         """ Number of channels
         """
-        return self.data['gain'].shape[2]
+        return self['gain'].shape[2]
     
     @property
     def nrec(self):
         """ Number of receivers
 
         """
-        return len(self.data['receptor1'])
+        return len(self['receptor1'])
     
     @property
     def receptors(self):
         """ Receptors
 
         """
-        return self.data['receptor1']
+        return self['receptor1']
     
-    def __str__(self):
-        """Default printer for GainTable
+    # def __str__(self):
+    #     """Default printer for GainTable
+    # 
+    #     """
+    #     s = "GainTable:\n"
+    #     s += "Dataset: {}".format(self.data)
+    #     s += "\tTimes: %s\n" % str(self.ntimes)
+    #     s += "\tData shape: %s\n" % str(self.data.shape)
+    #     s += "\tReceptor frames: %s\n" % str(self.receptors)
+    #     s += "\tPhasecentre: %s\n" % str(self.phasecentre)
+    #     
+    #     return s
 
-        """
-        s = "GainTable:\n"
-        s += "Dataset: {}".format(self.data)
-        s += "\tTimes: %s\n" % str(self.ntimes)
-        s += "\tData shape: %s\n" % str(self.data.shape)
-        s += "\tReceptor frames: %s\n" % str(self.receptors)
-        s += "\tPhasecentre: %s\n" % str(self.phasecentre)
-        
-        return s
 
-
-class PointingTable:
+class PointingTable(xarray.Dataset):
     """ Pointing table with data_models: time, antenna, offset[:, chan, rec, 2], weight columns
 
     The weight is usually that output from gain solvers.
@@ -363,13 +374,8 @@ class PointingTable:
         :param pointingcentre: SkyCoord
         :param configuration: Configuration
         """
-        self.data = data
-        self.frequency = frequency
-        self.receptor_frame = receptor_frame
-        self.pointing_frame = pointing_frame
-        self.pointingcentre = pointingcentre
-        self.configuration = configuration
-        
+        super().__init__()
+
         ntimes, nants, nchan, nrec, _ = pointing.shape
         antennas = range(nants)
         coords = {
@@ -387,12 +393,16 @@ class PointingTable:
         datavars["residual"] = xarray.DataArray(residual, dims=["time", "frequency", "receptor", "angle"])
         datavars["interval"] = xarray.DataArray(interval, dims=["time"])
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64, dims="time")
-        self.data = xarray.Dataset(datavars, coords=coords)
+
+        attrs = dict()
+        attrs["frequency"] = frequency
+        attrs["receptor_frame"] = receptor_frame
+        attrs["pointing_frame"] = pointing_frame
+        attrs["pointingcentre"] = pointingcentre
+        attrs["configuration"] = configuration
+
+        super().__init__(datavars, coords=coords, attrs=attrs)
         
-        self.receptor_frame = receptor_frame
-        self.pointing_frame = pointing_frame
-        self.pointingcentre = pointingcentre
-        self.configuration = configuration
     
     def size(self):
         """ Return size in GB
@@ -406,61 +416,61 @@ class PointingTable:
         """
         s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
         for var in self.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self[var].nbytes / 1024 / 1024 / 1024)
         return s
     
     @property
     def time(self):
         """ Time (s UTC) [:]
         """
-        return self.data['time']
+        return self['time']
     
     @property
     def interval(self):
         """ Interval of validity (s) [:]
         """
-        return self.data['interval']
+        return self['interval']
     
     @property
     def nominal(self):
         """ Nominal pointing (rad) [:, nants, nchan, nrec, 2]
         """
-        return self.data['nominal']
+        return self['nominal']
     
     @property
     def pointing(self):
         """ Pointing (rad) [:, nants, nchan, nrec, 2]
         """
-        return self.data['pointing']
+        return self['pointing']
     
     @property
     def weight(self):
         """ Weight [: nants, nchan, nrec]
         """
-        return self.data['weight']
+        return self['weight']
     
     @property
     def residual(self):
         """ Residual [: nants, nchan, nrec, 2]
         """
-        return self.data['residual']
+        return self['residual']
     
     @property
     def ntimes(self):
         """ Number of time (i.e. rows in table)"""
-        return self.data['pointing'].shape[0]
+        return self['pointing'].shape[0]
     
     @property
     def nants(self):
         """ Number of dishes/stations
         """
-        return self.data['pointing'].shape[1]
+        return self['pointing'].shape[1]
     
     @property
     def nchan(self):
         """ Number of channels
         """
-        return self.data['pointing'].shape[2]
+        return self['pointing'].shape[2]
     
     @property
     def nrec(self):
@@ -468,20 +478,20 @@ class PointingTable:
         """
         return self.receptor_frame.nrec
     
-    def __str__(self):
-        """Default printer for PointingTable
-
-        """
-        s = "PointingTable:\n"
-        s += "Dataset: {}".format(self.data)
-        s += "\tTimes: %s\n" % str(self.ntimes)
-        s += "\tData shape: %s\n" % str(self.data.shape)
-        s += "\tReceptor frame: %s\n" % str(self.receptor_frame.type)
-        s += "\tPointing centre: %s\n" % str(self.pointingcentre)
-        s += "\tConfiguration: %s\n" % str(self.configuration)
-        s += "Data: {}".format(self.data)
-        return s
-
+    # def __str__(self):
+    #     """Default printer for PointingTable
+    #
+    #     """
+    #     s = "PointingTable:\n"
+    #     s += "Dataset: {}".format(self.data)
+    #     s += "\tTimes: %s\n" % str(self.ntimes)
+    #     s += "\tData shape: %s\n" % str(self.data.shape)
+    #     s += "\tReceptor frame: %s\n" % str(self.receptor_frame.type)
+    #     s += "\tPointing centre: %s\n" % str(self.pointingcentre)
+    #     s += "\tConfiguration: %s\n" % str(self.configuration)
+    #     s += "Data: {}".format(self.data)
+    #     return s
+    #
 
 class Image(xarray.Dataset):
     """Image class with Image data (as an xarray.DataArray) and the AstroPy `implementation of
@@ -529,16 +539,16 @@ class Image(xarray.Dataset):
             "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx)
         }
         
-        nchan = len(frequency)
-        npol = polarisation_frame.npol
+        anchan = len(frequency)
+        anpol = polarisation_frame.npol
         
         if len(data.shape) == 2:
-            data = data.reshape([nchan, npol, ny, nx])
+            data = data.reshape([anchan, anpol, ny, nx])
         
-        assert data.shape[0] == nchan, \
+        assert data.shape[0] == anchan, \
             "Number of frequency channels {} and data shape {} are incompatible" \
                 .format(len(frequency), data.shape)
-        assert data.shape[1] == npol, \
+        assert data.shape[1] == anpol, \
             "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type, data.shape)
         assert coords["l"][0] != coords["l"][-1]
         assert coords["m"][0] != coords["m"][-1]
@@ -626,7 +636,7 @@ class Image(xarray.Dataset):
         return self.attrs["polarisation_frame"]
 
 
-class GridData:
+class GridData(xarray.Dataset):
     """Class to hold Gridded data for Fourier processing
     - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
 
@@ -647,6 +657,9 @@ class GridData:
         :param polarisation_frame:
         :return: GridData
         """
+        
+        super().__init__()
+
         
         nchan, npol, nw, ny, nx = data.shape
         frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
@@ -674,9 +687,10 @@ class GridData:
         assert coords["u"][0] != coords["u"][-1]
         assert coords["v"][0] != coords["v"][-1]
         
-        self.grid_wcs = grid_wcs
-        self.projection_wcs = projection_wcs
-        self.polarisation_frame = polarisation_frame
+        attrs = dict()
+        attrs["grid_wcs"] = grid_wcs
+        attrs["projection_wcs"] = projection_wcs
+        attrs["polarisation_frame"] = polarisation_frame
         
         nchan = len(frequency)
         npol = polarisation_frame.npol
@@ -692,7 +706,10 @@ class GridData:
                 "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
                                                                                   data.shape)
         
-        self.data = xarray.DataArray(data, dims=dims, coords=coords)
+        data_vars = dict()
+        data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
+        super().__init__(data_vars, coords=coords, attrs=attrs)
+
     
     def check(self):
         """ Check that the internals are ok
@@ -749,21 +766,21 @@ class GridData:
         ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
         return self.projection_wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
     
-    def __str__(self):
-        """Default printer for GridData
+    # def __str__(self):
+    #     """Default printer for GridData
+    # 
+    #     """
+    #     s = "GridData:\n"
+    #     s += "{}\n".format(str(self.data))
+    #     s += "\tShape: %s\n" % str(self.data.shape)
+    #     s += "\tData type: %s\n" % str(self.data.dtype)
+    #     s += "\tGrid WCS: %s\n" % self.grid_wcs.__repr__()
+    #     s += "\tProjection WCS: %s\n" % self.projection_wcs.__repr__()
+    #     s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
+    #     return s
+    # 
 
-        """
-        s = "GridData:\n"
-        s += "{}\n".format(str(self.data))
-        s += "\tShape: %s\n" % str(self.data.shape)
-        s += "\tData type: %s\n" % str(self.data.dtype)
-        s += "\tGrid WCS: %s\n" % self.grid_wcs.__repr__()
-        s += "\tProjection WCS: %s\n" % self.projection_wcs.__repr__()
-        s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
-        return s
-
-
-class ConvolutionFunction:
+class ConvolutionFunction(xarray.Dataset):
     """Class to hold Convolution function for Fourier processing
     - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
 
@@ -784,6 +801,9 @@ class ConvolutionFunction:
         :param projection_wcs: Astropy WCS object for the projection
         :param polarisation_frame: Polarisation_frame e.g. PolarisationFrame('linear')
         """
+        
+        super().__init__()
+
         nchan, npol, nw, oversampling, _, support, _ = data.shape
         frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
         
@@ -819,9 +839,10 @@ class ConvolutionFunction:
         assert coords["u"][0] != coords["u"][-1]
         assert coords["v"][0] != coords["v"][-1]
         
-        self.grid_wcs = grid_wcs
-        self.projection_wcs = projection_wcs
-        self.polarisation_frame = polarisation_frame
+        attrs = dict()
+        attrs["grid_wcs"] = grid_wcs
+        attrs["projection_wcs"] = projection_wcs
+        attrs["polarisation_frame"] = polarisation_frame
         
         nchan = len(frequency)
         npol = polarisation_frame.npol
@@ -831,8 +852,10 @@ class ConvolutionFunction:
             assert data.shape == (nchan, npol, nw, oversampling, oversampling, support, support), \
                 "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type,
                                                                                   data.shape)
-        
-        self.data = xarray.DataArray(data, dims=dims, coords=coords)
+        data_vars = dict()
+        data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
+        super().__init__(data_vars, coords=coords, attrs=attrs)
+
     
     def check(self):
         """ Check that the internals are ok
@@ -855,7 +878,7 @@ class ConvolutionFunction:
         """
         s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
         for var in self.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self[var].nbytes / 1024 / 1024 / 1024)
         return s
     
     @property
@@ -896,17 +919,17 @@ class ConvolutionFunction:
         """
         return SkyCoord(self.projection_wcs.wcs.crval[0] * u.deg, self.projection_wcs.wcs.crval[1] * u.deg)
     
-    def __str__(self):
-        """Default printer for ConvolutionFunction
-
-        """
-        s = "Convolution function:\n"
-        s += "{}\n".format(str(self.data))
-        s += "\tShape: %s\n" % str(self.data.shape)
-        s += "\tGrid WCS: %s\n" % self.grid_wcs
-        s += "\tProjection WCS: %s\n" % self.projection_wcs
-        s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
-        return s
+    # def __str__(self):
+    #     """Default printer for ConvolutionFunction
+    #
+    #     """
+    #     s = "Convolution function:\n"
+    #     s += "{}\n".format(str(self.data))
+    #     s += "\tShape: %s\n" % str(self.data.shape)
+    #     s += "\tGrid WCS: %s\n" % self.grid_wcs
+    #     s += "\tProjection WCS: %s\n" % self.projection_wcs
+    #     s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
+    #     return s
 
 
 class Skycomponent:
@@ -1346,7 +1369,7 @@ class BlockVisibility(xarray.Dataset):
         return numpy.product(self.vis.shape)
 
 
-class FlagTable:
+class FlagTable(xarray.Dataset):
     """ Flag table class
 
     Flags, time, integration_time, frequency, channel_bandwidth, pol,
@@ -1368,6 +1391,8 @@ class FlagTable:
         :param flags: Flags [ntimes, nbaseline, nchan]
         :param integration_time: Integration time [ntimes]
         """
+        super().__init__()
+        
         coords = {
             "time": time,
             "baseline": baselines,
@@ -1381,84 +1406,86 @@ class FlagTable:
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims="time")
-        self.data = xarray.Dataset(datavars, coords=coords)
         
-        self.polarisation_frame = polarisation_frame
-        self.configuration = configuration  # Antenna/station configuration
+        attrs = dict()
+        attrs["polarisation_frame"] = polarisation_frame
+        attrs["configuration"] = configuration  # Antenna/station configuration
+        
+        super().__init__(datavars, coords=coords, attrs=attrs)
     
-    def __str__(self):
-        """Default printer for FlagTable
-
-        """
-        s = "FlagTable:\n"
-        s += "{}\n".format(str(self.data))
-        s += "\tNumber of integrations: %s\n" % len(self.time)
-        s += "\tFlags shape: %s\n" % str(self.flags.shape)
-        s += "\tNumber of channels: %d\n" % len(self.frequency)
-        s += "\tFrequency: %s\n" % self.frequency
-        s += "\tChannel bandwidth: %s\n" % self.channel_bandwidth
-        s += "\tNumber of polarisations: %s\n" % self.npol
-        s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
-        s += "\tConfiguration: %s\n" % self.configuration.name
-        
-        return s
+    # def __str__(self):
+    #     """Default printer for FlagTable
+    #
+    #     """
+    #     s = "FlagTable:\n"
+    #     s += "{}\n".format(str(self.data))
+    #     s += "\tNumber of integrations: %s\n" % len(self.time)
+    #     s += "\tFlags shape: %s\n" % str(self.flags.shape)
+    #     s += "\tNumber of channels: %d\n" % len(self.frequency)
+    #     s += "\tFrequency: %s\n" % self.frequency
+    #     s += "\tChannel bandwidth: %s\n" % self.channel_bandwidth
+    #     s += "\tNumber of polarisations: %s\n" % self.npol
+    #     s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
+    #     s += "\tConfiguration: %s\n" % self.configuration.name
+    #
+    #     return s
     
     def size(self):
         """ Return size in GB
         """
-        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
+        return self.nbytes / 1024.0 / 1024.0 / 1024.0
     
     def datasizes(self):
         """
         Return sizes of data variables
         :return:
         """
-        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
-        for var in self.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self.data[var].nbytes / 1024 / 1024 / 1024)
+        s = "Dataset size: {:.3f} GB\n".format(self.nbytes / 1024 / 1024 / 1024)
+        for var in self.data_vars():
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self[var].nbytes / 1024 / 1024 / 1024)
         return s
     
     @property
     def time(self):
         """ Time
         """
-        return self.data['time']
+        return self['time']
     
     @property
     def baseline(self):
         """ Baselines
         """
-        return self.data['baseline']
+        return self['baseline']
     
     @property
     def datetime(self):
         """ DateTime
         """
-        return self.data['datetime']
+        return self['datetime']
     
     @property
     def flags(self):
         """ Flags [nrows, nbaseline, ncha, npol]
         """
-        return self.data['flags']
+        return self['flags']
     
     @property
     def nchan(self):
         """ Number of channels
         """
-        return len(self.data['frequency'])
+        return len(self['frequency'])
     
     @property
     def frequency(self):
         """ Number of channels
         """
-        return self.data['frequency']
+        return self['frequency']
     
     @property
     def channel_bandwidth(self):
         """ Number of channels
         """
-        return self.data['channel_bandwidth']
+        return self['channel_bandwidth']
     
     @property
     def npol(self):
@@ -1476,13 +1503,13 @@ class FlagTable:
     def baselines(self):
         """ Baselines
         """
-        return self.data["baseline"]
+        return self["baseline"]
     
     @property
     def nbaselines(self):
         """ Number of Baselines
         """
-        return len(self.data["baseline"])
+        return len(self["baseline"])
 
 
 class QA:
@@ -1514,7 +1541,7 @@ class QA:
         s += "\tContext: %s\n" % self.context
         s += "\tData:\n"
         for dataname in self.data.keys():
-            s += "\t\t%s: %r\n" % (dataname, str(self.data[dataname]))
+            s += "\t\t%s: %r\n" % (dataname, str(self[dataname]))
         return s
 
 

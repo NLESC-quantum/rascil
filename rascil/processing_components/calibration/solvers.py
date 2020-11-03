@@ -90,50 +90,50 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
                 x = x.reshape(x_shape)
                 
                 if vis.npol == 1:
-                    gt.data['gain'].values[row, ...], gt.data['weight'].values[row, ...], \
+                    gt['gain'].data[row, ...], gt.data['weight'].values[row, ...], \
                     gt.data['residual'].values[row, ...] = \
-                        solve_antenna_gains_itsubs_scalar(gt.data['gain'].values[row, ...],
+                        solve_antenna_gains_itsubs_scalar(gt['gain'].data[row, ...],
                                                           gt.data['weight'].values[row, ...],
                                                           x, xwt, phase_only=phase_only, niter=niter,
                                                           tol=tol)
                 elif vis.npol == 2:
-                    gt.data['gain'].values[row, ...], \
+                    gt['gain'].data[row, ...], \
                     gt.data['weight'].values[row, ...], \
                     gt.data['residual'].values[row, ...] = \
-                        solve_antenna_gains_itsubs_nocrossdata(gt.data['gain'].values[row, ...],
+                        solve_antenna_gains_itsubs_nocrossdata(gt['gain'].data[row, ...],
                                                                gt.data['weight'].values[row, ...],
                                                                x, xwt, phase_only=phase_only, niter=niter,
                                                                tol=tol)
                 elif vis.npol == 4:
                     if crosspol:
-                        gt.data['gain'].values[row, ...], \
+                        gt['gain'].data[row, ...], \
                         gt.data['weight'].values[row, ...], \
                         gt.data['residual'].values[row, ...] = \
-                            solve_antenna_gains_itsubs_matrix(gt.data['gain'].values[row, ...],
+                            solve_antenna_gains_itsubs_matrix(gt['gain'].data[row, ...],
                                                               gt.data['weight'].values[row, ...],
                                                               x, xwt, phase_only=phase_only, niter=niter,
                                                               tol=tol)
                     else:
-                        gt.data['gain'].values[row, ...], gt.data['weight'].values[row, ...], \
+                        gt['gain'].data[row, ...], gt.data['weight'].values[row, ...], \
                         gt.data['residual'].values[row, ...] = \
-                            solve_antenna_gains_itsubs_nocrossdata(gt.data['gain'].values[row, ...],
+                            solve_antenna_gains_itsubs_nocrossdata(gt['gain'].data[row, ...],
                                                               gt.data['weight'].values[row, ...],
                                                               x, xwt, phase_only=phase_only, niter=niter,
                                                               tol=tol)
                 
                 else:
-                    gt.data['gain'].values[row, ...], gt.data['weight'].values[row, ...], \
+                    gt['gain'].data[row, ...], gt.data['weight'].values[row, ...], \
                     gt.data['residual'].values[row, ...] = \
-                        solve_antenna_gains_itsubs_scalar(gt.data['gain'].values[row, ...],
+                        solve_antenna_gains_itsubs_scalar(gt['gain'].data[row, ...],
                                                           gt.data['weight'].values[row, ...],
                                                           x, xwt, phase_only=phase_only, niter=niter,
                                                           tol=tol)
                 
                 if normalise_gains and not phase_only:
-                    gabs = numpy.average(numpy.abs(gt.data['gain'].values[row]))
-                    gt.data['gain'].values[row] /= gabs
+                    gabs = numpy.average(numpy.abs(gt['gain'].data[row]))
+                    gt['gain'].data[row] /= gabs
             else:
-                gt.data['gain'].values[row, ...] = 1.0 + 0.0j
+                gt['gain'].data[row, ...] = 1.0 + 0.0j
                 gt.data['weight'].values[row, ...] = 0.0
                 gt.data['residual'].values[row, ...] = 0.0
         

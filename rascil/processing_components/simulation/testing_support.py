@@ -119,8 +119,8 @@ def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, pha
         im.attrs["wcs"].wcs.crval[0] = phasecentre.ra.deg
         im.attrs["wcs"].wcs.crval[1] = phasecentre.dec.deg
         # WCS is 1 relative
-        im.attrs["wcs"].wcs.crpix[0] = im.data.shape[3] // 2 + 1
-        im.attrs["wcs"].wcs.crpix[1] = im.data.shape[2] // 2 + 1
+        im.attrs["wcs"].wcs.crpix[0] = im["pixels"].data.shape[3] // 2 + 1
+        im.attrs["wcs"].wcs.crpix[1] = im["pixels"].data.shape[2] // 2 + 1
 
     return im
 
@@ -645,7 +645,7 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
     data = numpy.zeros(fshape)
     log.info("replicate_image: replicating shape %s to %s" % (im.shape, data.shape))
     if len(im.shape) == 2:
-        data[...] = im.data[numpy.newaxis, numpy.newaxis, ...]
+        data[...] = im["pixels"].data[numpy.newaxis, numpy.newaxis, ...]
     else:
         for pol in range(npol):
             data[:, pol] = im["pixels"][:, 0]
@@ -732,9 +732,9 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
               % (amplitude_error, phase_error))
     amps = 1.0
     phases = 1.0
-    ntimes, nant, nchan, nrec, _ = gt.data['gain'].shape
+    ntimes, nant, nchan, nrec, _ = gt['gain'].data.shape
     if phase_error > 0.0:
-        phases = numpy.zeros(gt.data['gain'].shape)
+        phases = numpy.zeros(gt['gain'].data.shape)
         for time in range(ntimes):
             for ant in range(nant):
                 phase = numpy.random.normal(0, phase_error, nchan + int(smooth_channels) - 1)
@@ -743,7 +743,7 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
                 phases[time, ant, ...] = phase[..., numpy.newaxis, numpy.newaxis]
 
     if amplitude_error > 0.0:
-        amps = numpy.ones(gt.data['gain'].shape, dtype='complex')
+        amps = numpy.ones(gt['gain'].data.shape, dtype='complex')
         for time in range(ntimes):
             for ant in range(nant):
                 amp = numpy.random.lognormal(mean=0.0, sigma=amplitude_error, size=nchan + int(smooth_channels) - 1)
@@ -752,19 +752,19 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
                     amp = amp / numpy.average(amp)
                 amps[time, ant, ...] = amp[..., numpy.newaxis, numpy.newaxis]
 
-    gt.data['gain'].values = amps * numpy.exp(0 + 1j * phases)
-    nrec = gt.data['gain'].shape[-1]
+    gt['gain'].data = amps * numpy.exp(0 + 1j * phases)
+    nrec = gt['gain'].data.shape[-1]
     if nrec > 1:
         if leakage > 0.0:
-            leak = numpy.random.normal(0, leakage, gt.data['gain'].values[..., 0, 0].shape) + 1j * \
-                   numpy.random.normal(0, leakage, gt.data['gain'].values[..., 0, 0].shape)
-            gt.data['gain'].values[..., 0, 1] = gt.data['gain'][..., 0, 0] * leak
-            leak = numpy.random.normal(0, leakage, gt.data['gain'].values[..., 1, 1].shape) + 1j * \
-                   numpy.random.normal(0, leakage, gt.data['gain'].values[..., 1, 1].shape)
-            gt.data['gain'].values[..., 1, 0] = gt.data['gain'][..., 1, 1].values * leak
+            leak = numpy.random.normal(0, leakage, gt['gain'].data[..., 0, 0].shape) + 1j * \
+                   numpy.random.normal(0, leakage, gt['gain'].data[..., 0, 0].shape)
+            gt['gain'].data[..., 0, 1] = gt['gain'].data[..., 0, 0] * leak
+            leak = numpy.random.normal(0, leakage, gt['gain'].data[..., 1, 1].shape) + 1j * \
+                   numpy.random.normal(0, leakage, gt['gain'].data[..., 1, 1].shape)
+            gt['gain'].data[..., 1, 0] = gt['gain'].data[..., 1, 1].values * leak
         else:
-            gt.data['gain'].values[..., 0, 1] = 0.0
-            gt.data['gain'].values[..., 1, 0] = 0.0
+            gt['gain'].data[..., 0, 1] = 0.0
+            gt['gain'].data[..., 1, 0] = 0.0
 
     return gt
 

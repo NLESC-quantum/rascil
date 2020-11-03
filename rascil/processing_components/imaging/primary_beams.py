@@ -211,7 +211,7 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
     """
 
     beam = create_empty_image_like(model)
-    beam["pixels"].data = numpy.zeros(beam.data.shape, dtype='complex')
+    beam["pixels"].data = numpy.zeros(beam["pixels"].data.shape, dtype='complex')
     
     nchan, npol, ny, nx = model.shape
     

@@ -324,13 +324,13 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
     :param sc: SkyComponent or list of SkyComponents
     :return: List of skycomponents
     """
-    assert isinstance(beam, Image)
+    #assert isinstance(beam, Image)
     single = not isinstance(sc, collections.abc.Iterable)
 
     if single:
         sc = [sc]
 
-    nchan, npol, ny, nx = beam.shape
+    nchan, npol, ny, nx = beam["pixels"].data.shape
 
     log.debug('apply_beam_to_skycomponent: Processing %d components' % (len(sc)))
 
@@ -353,13 +353,13 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
 
-        assert_same_chan_pol(beam, comp)
+        #assert_same_chan_pol(beam, comp)
 
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         if not numpy.isnan(pixloc).any():
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
-                comp_flux = comp.flux * beam.data[:, :, y, x].values
+                comp_flux = comp.flux * beam["pixels"].data[:, :, y, x]
                 total_flux += comp_flux
             else:
                 comp_flux = 0.0 * comp.flux

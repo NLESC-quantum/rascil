@@ -250,7 +250,7 @@ def create_test_image_from_s3(npixel=16384, polarisation_frame=PolarisationFrame
              'image = %.3f' % (total_flux / float(nchan), actual_flux / float(nchan)))
     for chan in range(nchan):
         for iflux, flux in enumerate(fluxes):
-            model.data[chan, 0, ps[1, iflux], ps[0, iflux]] = flux[chan]
+            model["pixels"].data[chan, 0, ps[1, iflux], ps[0, iflux]] = flux[chan]
 
     return model
 
@@ -439,7 +439,7 @@ def create_low_test_image_from_gleam(npixel=512, polarisation_frame=Polarisation
     model = insert_skycomponent(model, sc, insert_method=insert_method)
     if applybeam:
         beam = create_pb(model, telescope='LOW', use_local=False)
-        model.values[...] *= beam.values[...]
+        model["pixels"].data[...] *= beam["pixels"].data[...]
 
     return model
 
@@ -641,10 +641,10 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
     nchan = len(frequency)
     npol = polarisation_frame.npol
 
-    fshape = [nchan, npol, im.shape[-2], im.shape[-1]]
+    fshape = [nchan, npol, im["pixels"].data.shape[-2], im["pixels"].data.shape[-1]]
     data = numpy.zeros(fshape)
-    log.info("replicate_image: replicating shape %s to %s" % (im.shape, data.shape))
-    if len(im.shape) == 2:
+    log.info("replicate_image: replicating shape %s to %s" % (im["pixels"].data.shape, data.shape))
+    if len(im["pixels"].data.shape) == 2:
         data[...] = im["pixels"].data[numpy.newaxis, numpy.newaxis, ...]
     else:
         for pol in range(npol):

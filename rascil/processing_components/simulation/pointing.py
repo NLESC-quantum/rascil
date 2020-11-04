@@ -17,8 +17,6 @@ from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.data_models.memory_data_models import PointingTable
 from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
-from rascil.processing_components.visibility import blockvisibility_select
-from rascil.processing_components.calibration import pointingtable_select, gaintable_select
 from rascil.processing_components.util.geometry import calculate_azel
 
 log = logging.getLogger('rascil-logger')
@@ -45,9 +43,9 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     frequency = gaintables[0].frequency
     
     nchan, npol, ny, nx = vp["pixels"].data.shape
-    real_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data.values[chan, pol, ...].real, kx=order, ky=order)
+    real_spline = [[RectBivariateSpline(range(ny), range(nx), vp["pixels"].data[chan, pol, ...].real, kx=order, ky=order)
                      for chan in range(nchan)] for pol in range(npol)]
-    imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data.values[chan, pol, ...].imag, kx=order, ky=order)
+    imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp["pixels"].data[chan, pol, ...].imag, kx=order, ky=order)
                      for chan in range(nchan)] for pol in range(npol)]
 
     assert npol == vis.npol, "Voltage pattern and visibility have incompatible polarisations"
@@ -69,7 +67,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
 
     for row in range(pt.ntimes):
         time_slice = {"time": slice(pt.time[row] - pt.interval[row] / 2, pt.time[row] + pt.interval[row] / 2)}
-        pt_sel = pointingtable_select(pt, time_slice)
+        pt_sel = pt.sel(time_slice)
         if pt_sel.ntimes > 0:
             pointing_ha = pt_sel.pointing.values[0, ...]
             utc_time = Time([numpy.average(pt_sel.time)/86400.0], format='mjd', scale='utc')
@@ -80,7 +78,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
             
             # Calculate the az el for this hourangle and the phasecentre declination
             for icomp, comp in enumerate(sc):
-                gt_sel = gaintable_select(gaintables[icomp], time_slice)
+                gt_sel = gaintables[icomp].sel(time_slice)
                 nrec = gt_sel.nrec
                 if elevation_centre >= elevation_limit:
                     
@@ -169,26 +167,26 @@ def simulate_pointingtable(pt: PointingTable, pointing_error, static_pointing_er
         static_pointing_error = [0.0, 0.0]
     
     r2s = 180.0 * 3600.0 / numpy.pi
-    pt.data['pointing'].values = numpy.zeros(pt.data['pointing'].shape)
+    pt['pointing'].data = numpy.zeros(pt['pointing'].data.shape)
     
-    ntimes, nant, nchan, nrec, _ = pt.data['pointing'].shape
+    ntimes, nant, nchan, nrec, _ = pt['pointing'].data.shape
     if pointing_error > 0.0:
         log.debug("simulate_pointingtable: Simulating dynamic pointing error = %g (rad) %g (arcsec)"
                   % (pointing_error, r2s * pointing_error))
         
-        pt.data['pointing'] += numpy.random.normal(0.0, pointing_error, pt.data['pointing'].shape)
+        pt["pointing"].data += numpy.random.normal(0.0, pointing_error, pt["pointing"].data.shape)
     if (abs(static_pointing_error[0]) > 0.0) or (abs(static_pointing_error[1]) > 0.0):
         numpy.random.seed(18051955)
         log.debug("simulate_pointingtable: Simulating static pointing error = (%g, %g) (rad) (%g, %g)(arcsec)"
                   % (static_pointing_error[0], static_pointing_error[1],
                      r2s * static_pointing_error[0], r2s * static_pointing_error[1]))
         
-        static_pe = numpy.zeros(pt.data['pointing'].shape[1:])
+        static_pe = numpy.zeros(pt["pointing"].data.shape[1:])
         static_pe[..., 0] = numpy.random.normal(0.0, static_pointing_error[0],
                                                 static_pe[..., 0].shape)[numpy.newaxis, ...]
         static_pe[..., 1] = numpy.random.normal(0.0, static_pointing_error[1],
                                                 static_pe[..., 1].shape)[numpy.newaxis, ...]
-        pt.data['pointing'] += static_pe
+        pt["pointing"].data += static_pe
     
     if global_pointing_error is not None:
         if seed is not None:
@@ -197,7 +195,7 @@ def simulate_pointingtable(pt: PointingTable, pointing_error, static_pointing_er
         log.debug("simulate_pointingtable: Simulating global pointing error = [%g, %g] (rad) [%g,s %g] (arcsec)"
                   % (global_pointing_error[0], global_pointing_error[1],
                      r2s * global_pointing_error[0], r2s * global_pointing_error[1]))
-        pt.data['pointing'][..., :] += global_pointing_error
+        pt["pointing"].data[..., :] += global_pointing_error
     
     return pt
 
@@ -220,9 +218,9 @@ def simulate_pointingtable_from_timeseries(pt, type='wind', time_series_type='pr
     if pointing_directory is None:
         pointing_directory = rascil_data_path("models/%s" % time_series_type)
     
-    pt.data['pointing'].values = numpy.zeros(pt.data['pointing'].shape)
+    pt['pointing'].data = numpy.zeros(pt["pointing"].data.shape)
     
-    ntimes, nant, nchan, nrec, _ = pt.data['pointing'].shape
+    ntimes, nant, nchan, nrec, _ = pt["pointing"].data.shape
     
     # Use az and el at the beginning of this pointingtable
     axis_values = pt.nominal[0, 0, 0, 0, 0]
@@ -391,13 +389,13 @@ def simulate_pointingtable_from_timeseries(pt, type='wind', time_series_type='pr
             
             #            pt.data['time'] = times[:ntimes]
             if axis == 'az':
-                pt.data['pointing'].values[:, ant, :, :, 0] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
+                pt['pointing'].data[:, ant, :, :, 0] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
             elif axis == 'el':
-                pt.data['pointing'].values[:, ant, :, :, 1] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
+                pt['pointing'].data[:, ant, :, :, 1] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
             elif axis == 'pxel':
-                pt.data['pointing'].values[:, ant, :, :, 0] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
+                pt['pointing'].data[:, ant, :, :, 0] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
             elif axis == 'pel':
-                pt.data['pointing'].values[:, ant, :, :, 1] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
+                pt['pointing'].data[:, ant, :, :, 1] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
             else:
                 raise ValueError("Unknown axis %s" % axis)
     

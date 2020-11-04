@@ -12,7 +12,7 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 """
 
 __all__ = ['griddata_sizeof', 'create_griddata_from_image', 'create_griddata_from_array', 'copy_griddata',
-           'convert_griddata_to_image', 'qa_griddata', 'griddata_select']
+           'convert_griddata_to_image', 'qa_griddata']
 
 import copy
 import logging
@@ -26,18 +26,6 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.operations import create_image_from_array
 
 log = logging.getLogger('rascil-logger')
-
-
-def griddata_select(gd, selection):
-    """ Select subset of GridData using xarray syntax
-
-    :param gd:
-    :param selection:
-    :return:
-    """
-    newgd = copy.copy(gd)
-    newgd.data = gd.data.sel(selection)
-    return newgd
 
 
 def copy_griddata(gd):
@@ -90,7 +78,7 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     :param wstep: Increment in w
     :return: GridData
     """
-    assert len(im.shape) == 4
+    assert len(im["pixels"].data.shape) == 4
     assert im.wcs.wcs.ctype[0] == 'RA---SIN'
     assert im.wcs.wcs.ctype[1] == 'DEC--SIN'
 
@@ -119,19 +107,19 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     grid_wcs.wcs.crval[3] = im.wcs.wcs.crval[2]
     grid_wcs.wcs.crval[4] = im.wcs.wcs.crval[3]
 
-    grid_wcs.wcs.crpix[0] = im.shape[3] // 2 + 1
-    grid_wcs.wcs.crpix[1] = im.shape[2] // 2 + 1
+    grid_wcs.wcs.crpix[0] = im["pixels"].data.shape[3] // 2 + 1
+    grid_wcs.wcs.crpix[1] = im["pixels"].data.shape[2] // 2 + 1
     grid_wcs.wcs.crpix[2] = nw // 2 + 1
     grid_wcs.wcs.crpix[3] = im.wcs.wcs.crpix[2]
     grid_wcs.wcs.crpix[4] = im.wcs.wcs.crpix[3]
 
-    grid_wcs.wcs.cdelt[0] = 1.0 / (im.shape[3] * d2r * im.wcs.wcs.cdelt[0])
-    grid_wcs.wcs.cdelt[1] = 1.0 / (im.shape[2] * d2r * im.wcs.wcs.cdelt[1])
+    grid_wcs.wcs.cdelt[0] = 1.0 / (im["pixels"].data.shape[3] * d2r * im.wcs.wcs.cdelt[0])
+    grid_wcs.wcs.cdelt[1] = 1.0 / (im["pixels"].data.shape[2] * d2r * im.wcs.wcs.cdelt[1])
     grid_wcs.wcs.cdelt[2] = wstep
     grid_wcs.wcs.cdelt[3] = im.wcs.wcs.cdelt[2]
     grid_wcs.wcs.cdelt[4] = im.wcs.wcs.cdelt[3]
 
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     grid_data = numpy.zeros([nchan, npol, nw, ny, nx], dtype='complex')
 
     if polarisation_frame is not None:

@@ -12,8 +12,7 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_flagtable_from_blockvisibility, \
-    create_blockvisibility, flagtable_select, flagtable_groupby, flagtable_groupby_bins, \
-    flagtable_where
+    create_blockvisibility
 from rascil.processing_components.simulation import create_named_configuration
 
 
@@ -51,7 +50,7 @@ class TestFlagTableOperations(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
         ft = create_flagtable_from_blockvisibility(bvis)
-        times = numpy.array([result[0] for result in flagtable_groupby(ft, "time")])
+        times = numpy.array([result[0] for result in ft.groupby("time")])
         assert times.all() == bvis.time.all()
 
     def test_flagtable_groupby_bins_time(self):
@@ -60,7 +59,7 @@ class TestFlagTableOperations(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
         ft = create_flagtable_from_blockvisibility(bvis)
-        for result in flagtable_groupby_bins(ft, "time", 3):
+        for result in ft.groupby_bins("time", 3):
             print(result[0])
 
     def test_flagtable_where(self):
@@ -69,7 +68,7 @@ class TestFlagTableOperations(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
         ft = create_flagtable_from_blockvisibility(bvis)
-        print(flagtable_where(ft, ft.data["flags"]==0))
+        print(ft.where(ft["flags"]==0))
 
     def test_flagtable_select_time(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
@@ -78,7 +77,7 @@ class TestFlagTableOperations(unittest.TestCase):
                                       phasecentre=self.phasecentre, weight=1.0)
         ft = create_flagtable_from_blockvisibility(bvis)
         times = ft.time
-        selected_ft = flagtable_select(ft, {"time": slice(times[1], times[2])})
+        selected_ft = ft.sel({"time": slice(times[1], times[2])})
         assert len(selected_ft.time) == 2
 
     def test_flagtable_select_frequency(self):
@@ -88,7 +87,7 @@ class TestFlagTableOperations(unittest.TestCase):
                                       phasecentre=self.phasecentre, weight=1.0)
         ft = create_flagtable_from_blockvisibility(bvis)
         frequency = ft.frequency
-        selected_ft = flagtable_select(ft, {"frequency": slice(frequency[1], frequency[2])})
+        selected_ft = ft.sel({"frequency": slice(frequency[1], frequency[2])})
         assert len(selected_ft.frequency) == 2
 
 

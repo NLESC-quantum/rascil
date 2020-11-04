@@ -248,7 +248,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     kernel.normalize()
 
     # Segment the average over all channels of Stokes I
-    image_sum = numpy.sum(im["pixels"].data, axis=0)[0, ...] / float(im.shape[0])
+    image_sum = numpy.sum(im["pixels"].data, axis=0)[0, ...] / float(im["pixels"].data.shape[0])
     segments = segmentation.detect_sources(image_sum, threshold, npixels=npixels, filter_kernel=kernel)
     assert segments is not None, "Failed to find any components"
 
@@ -398,7 +398,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     assert (vp.polarisation_frame == PolarisationFrame("linear")) or \
            (vp.polarisation_frame == PolarisationFrame("circular"))
 
-    assert vp.data.dtype == "complex128"
+    #assert vp.data.dtype == "complex128"
     single = not isinstance(sc, collections.abc.Iterable)
 
     if single:
@@ -445,9 +445,9 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
                 # Now we want to left and right multiply by the Jones matrices
-                # comp_flux = vp.data.values[:, :, y, x] * comp_flux_cstokes * numpy.vp.data.values[:, :, y, x]
+                # comp_flux = vp["pixels"].data[:, :, y, x] * comp_flux_cstokes * numpy.vp["pixels"].data[:, :, y, x]
                 for chan in range(nchan):
-                    ej = vp.data.values[chan, :, y, x].reshape([2, 2])
+                    ej = vp["pixels"].data[chan, :, y, x].reshape([2, 2])
                     cfs = comp_flux_cstokes[chan].reshape([2,2])
                     comp_flux[chan, :] = apply_jones(ej, cfs, inverse).reshape([4])
 
@@ -510,7 +510,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
     :return: Image
     """
 
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
 
     support = int(support / bandwidth)
 
@@ -588,7 +588,7 @@ def voronoi_decomposition(im, comps):
     points = [(x[i], y[i]) for i, _ in enumerate(x)]
     vor = Voronoi(points)
 
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     vertex_image = numpy.zeros([ny, nx]).astype('int')
     for j in range(ny):
         for i in range(nx):

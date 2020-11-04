@@ -414,7 +414,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
                                  tol=1e-8, crosspol=False, normalise_gains=True, **kwargs)
             error_bvis = apply_gaintable(error_bvis, gt)
         if residual:
-            error_bvis.data['vis'] = error_bvis.data['vis'] - no_error_bvis.data['vis']
+            error_bvis['vis'].data = error_bvis['vis'].data - no_error_bvis['vis'].data
         return error_bvis
     
     error_vis_list = [rsexecute.execute(selfcal_convert)(error_bvis_list[ibv],

@@ -17,8 +17,6 @@ from scipy.interpolate import RectBivariateSpline
 from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
-from rascil.processing_components.visibility import blockvisibility_select
-from rascil.processing_components.calibration import gaintable_select
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 from rascil.processing_components.util.geometry import calculate_azel
 
@@ -85,7 +83,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
         gt = gaintables[icomp]
         for row in range(gt.ntimes):
             time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
-            v = blockvisibility_select(vis, time_slice)
+            v = vis.sel(time_slice)
             ha = numpy.average(calculate_blockvisibility_hourangles(v).to('rad').value)
         
             utc_time = Time([numpy.average(v.time)/86400.0], format='mjd', scale='utc')
@@ -209,7 +207,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
         gt = gaintables[icomp]
         for row in range(gt.ntimes):
             time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
-            vis_sel = blockvisibility_select(vis, time_slice)
+            vis_sel = vis.sel(time_slice)
             ha = numpy.average(calculate_blockvisibility_hourangles(vis_sel).to('rad').value)
             
             # Calculate the az el for this hourangle and the phasecentre declination

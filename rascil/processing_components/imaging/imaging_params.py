@@ -43,7 +43,7 @@ def get_frequency_map(vis, im: Image = None):
         vfrequencymap = [v2im_map[row2vis[row]] for row in range(nrows)]
 
         assert min(vfrequencymap) >= 0, "Invalid frequency map: image channel < 0 %s" % str(vfrequencymap)
-        assert max(vfrequencymap) < im.shape[0], "Invalid frequency map: image channel > number image channels %s" % \
+        assert max(vfrequencymap) < im["pixels"].data.shape[0], "Invalid frequency map: image channel > number image channels %s" % \
                                                  str(vfrequencymap)
 
     return spectral_mode, vfrequencymap

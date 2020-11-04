@@ -165,7 +165,7 @@ try:
         uvw = uvw.reshape([nrows * nbaselines, 3])
         uvw = numpy.nan_to_num(uvw)
         
-        wgt = sbvis.flagged_imaging_weight.values.astype("f8")
+        wgt = sbvis.flagged_imaging_weight.data.astype("f8")
         wgt=wgt.reshape([nrows * nbaselines, vnchan, vnpol])
 
         # if epsilon > 5.0e-6:
@@ -173,7 +173,7 @@ try:
         #     wgt = wgt.astype("f4")
         
         # Find out the image size/resolution
-        npixdirty = im.shape[-1]
+        npixdirty = im["pixels"].data.shape[-1]
         pixsize = numpy.abs(numpy.radians(im.wcs.wcs.cdelt[0]))
         
         fuvw = uvw.copy()
@@ -181,8 +181,8 @@ try:
         fuvw[:, 0] *= -1.0
         fuvw[:, 2] *= -1.0
         
-        nchan, npol, ny, nx = im.shape
-        im["pixels"].data.values[...] = 0.0
+        nchan, npol, ny, nx = im["pixels"].data.shape
+        im["pixels"].data[...] = 0.0
         sumwt = numpy.zeros([nchan, npol])
         
         # There's a latent problem here with the weights.
@@ -225,7 +225,7 @@ try:
                                         do_wstacking=do_wstacking,
                                         nthreads=nthreads, verbosity=verbosity)
                     sumwt[ichan, :] += numpy.sum(wgtt[0, ichan, :].T, axis=0)
-                    im["pixels"].data.values[ichan, :] += dirty.T
+                    im["pixels"].data[ichan, :] += dirty.T
         else:
             mst = ms.T
             wgtt = wgt.T
@@ -253,7 +253,7 @@ try:
                                             do_wstacking=do_wstacking,
                                             nthreads=nthreads, verbosity=verbosity)
                         sumwt[ichan, pol] += numpy.sum(wgtt[pol, ichan, :].T, axis=0)
-                        im["pixels"].data.values[ichan, pol] += dirty.T
+                        im["pixels"].data[ichan, pol] += dirty.T
 
         
         if normalize:

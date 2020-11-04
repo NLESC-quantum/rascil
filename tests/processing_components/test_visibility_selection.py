@@ -10,8 +10,6 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility import blockvisibility_select, blockvisibility_groupby, \
-    blockvisibility_groupby_bins, blockvisibility_where
 from rascil.processing_components.visibility.base import create_blockvisibility
 
 log = logging.getLogger('rascil-logger')
@@ -39,7 +37,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        times = numpy.array([result[0] for result in blockvisibility_groupby(bvis, "time")])
+        times = numpy.array([result[0] for result in bvis.groupby("time")])
         assert times.all() == bvis.time.all()
 
     def test_blockvisibility_groupby_bins_time(self):
@@ -47,7 +45,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        for result in blockvisibility_groupby_bins(bvis, "time", 3):
+        for result in bvis.groupby_bins("time", 3):
             print(result[0])
 
     def test_blockvisibility_where(self):
@@ -55,7 +53,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        selected_vis = blockvisibility_where(bvis, bvis.data["flags"] == 0)
+        selected_vis = bvis.where(bvis["flags"] == 0)
         print(selected_vis)
         print(bvis.size(), selected_vis.size())
 
@@ -65,7 +63,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
         print(bvis)
-        selected_vis = blockvisibility_where(bvis, numpy.abs(bvis.u_lambda) < 30.0)
+        selected_vis = bvis.where(numpy.abs(bvis.u_lambda) < 30.0)
         print(selected_vis)
         print(bvis.size(), selected_vis.size())
 
@@ -75,7 +73,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
         times = bvis.time
-        selected_bvis = blockvisibility_select(bvis, {"time": slice(times[1], times[2])})
+        selected_bvis = bvis.sel({"time": slice(times[1], times[2])})
         assert len(selected_bvis.time) == 2
     
     def test_blockvisibility_select_frequency(self):
@@ -84,7 +82,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
         frequency = bvis.frequency
-        selected_bvis = blockvisibility_select(bvis, {"frequency": slice(frequency[1], frequency[2])})
+        selected_bvis = bvis.sel({"frequency": slice(frequency[1], frequency[2])})
         assert len(selected_bvis.frequency) == 2
     
     def test_blockvisibility_select_multiple(self):
@@ -93,7 +91,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
         frequency = bvis.frequency
-        selected_bvis = blockvisibility_select(bvis, {"frequency": slice(frequency[1], frequency[2]),
+        selected_bvis = bvis.sel({"frequency": slice(frequency[1], frequency[2]),
                                                       "polarisation": ["XX", "YY"],
                                                       "uvw_index": ["u", "v"]})
         print(selected_bvis)

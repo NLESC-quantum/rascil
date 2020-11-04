@@ -21,7 +21,6 @@ import numpy
 from rascil.data_models.memory_data_models import BlockVisibility, GainTable, assert_vis_gt_compatible
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
 from rascil.processing_components.visibility.operations import divide_visibility
-from rascil.processing_components.visibility.visibility_selection import blockvisibility_select
 
 log = logging.getLogger('rascil-logger')
 
@@ -65,7 +64,7 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
     
     for row in range(gt.ntimes):
         time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
-        pointvis_sel = blockvisibility_select(pointvis, time_slice)
+        pointvis_sel = pointvis.sel(time_slice)
         if pointvis.ntimes > 0:
             x_b = numpy.sum((pointvis_sel.vis.values * pointvis_sel.weight.values)
                           * (1 - pointvis_sel.flags.values), axis=0)

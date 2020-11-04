@@ -21,8 +21,8 @@ class TestXarrayOperations(unittest.TestCase):
     
     def test_read_write_screen(self):
         screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-        assert screen.shape == (1, 3, 2000, 2000), screen.shape
-        assert numpy.unravel_index(numpy.argmax(screen.values), screen.shape) == (0, 2, 79, 1814)
+        assert screen["pixels"].data.shape == (1, 3, 2000, 2000), screen["pixels"].data.shape
+        assert numpy.unravel_index(numpy.argmax(screen["pixels"].values), screen["pixels"].data.shape) == (0, 2, 79, 1814)
         export_xarray_to_fits(screen, rascil_path('test_results/test_export_xarray.fits'))
     
     def test_read_write_screen_complex_fails(self):

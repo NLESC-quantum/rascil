@@ -154,8 +154,8 @@ class TestPipelineMPC(unittest.TestCase):
             result = predict_skymodel_list_rsexecute_workflow(future_vis, chunk, context='2d', docal=True)
             work_vis = rsexecute.compute(result, sync=True)
             for w in work_vis:
-                self.all_skymodel_noniso_vis.data['vis'] += w.data['vis']
-            assert numpy.max(numpy.abs(self.all_skymodel_noniso_vis.data['vis'])) > 0.0
+                self.all_skymodel_noniso_vis['vis'].data += w.data['vis']
+            assert numpy.max(numpy.abs(self.all_skymodel_noniso_vis['vis'].data)) > 0.0
 
         self.all_skymodel_noniso_blockvis = copy_visibility(self.all_skymodel_noniso_vis)
 

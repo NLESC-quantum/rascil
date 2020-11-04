@@ -135,12 +135,12 @@ def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False,
             assert i < len(results), "Too few results in gather_image_iteration_results"
             if results[i] is not None:
                 assert len(results[i]) == 2, results[i]
-                dpatch.data.values[...] += results[i][0].data.values[...]
+                dpatch["pixels"].data[...] += results[i][0]["pixels"].data[...]
                 sumwt += results[i][1]
                 i += 1
         flat = image_gather_facets(results, flat, facets=facets, overlap=overlap, taper=taper, return_flat=True)
-        result.data.values[flat.data.values > 0.5] /= flat.data.values[flat.data.values > 0.5]
-        result.data.values[flat.data.values <= 0.5] = 0.0
+        result["pixels"].data[flat["pixels"].data > 0.5] /= flat["pixels"].data[flat["pixels"].data > 0.5]
+        result["pixels"].data[flat["pixels"].data <= 0.5] = 0.0
         return result, sumwt
     
     def invert_ignore_none(vis, model, gg):
@@ -443,7 +443,7 @@ def zero_list_serial_workflow(vis_list):
     def zero(vis):
         if vis is not None:
             zerovis = copy_visibility(vis)
-            zerovis.data['vis'][...] = 0.0
+            zerovis['vis'].data[...] = 0.0
             return zerovis
         else:
             return None
@@ -463,7 +463,7 @@ def subtract_list_serial_workflow(vis_list, model_vislist):
         if vis is not None and model_vis is not None:
             assert vis.flagged_vis.shape == model_vis.flagged_vis.shape
             subvis = copy_visibility(vis)
-            subvis.data['vis'][...] -= model_vis.data['vis'][...]
+            subvis['vis'].data[...] -= model_vis['vis'].data[...]
             return subvis
         else:
             return None

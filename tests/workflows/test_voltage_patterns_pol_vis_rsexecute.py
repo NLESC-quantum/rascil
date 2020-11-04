@@ -104,17 +104,17 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
             def find_vp_actual(telescope, normalise=True):
                 vp = create_vp(telescope=telescope)
                 if test_vp:
-                    vp.data.values[:, 0, ...] = 1.0
-                    vp.data.values[:, 1, ...] = 0.0
-                    vp.data.values[:, 2, ...] = 0.0
-                    vp.data.values[:, 3, ...] = 1.0
+                    vp["pixels"].data[:, 0, ...] = 1.0
+                    vp["pixels"].data[:, 1, ...] = 0.0
+                    vp["pixels"].data[:, 2, ...] = 0.0
+                    vp["pixels"].data[:, 3, ...] = 1.0
                 if normalise:
                     g = numpy.zeros([4])
-                    g[0] = numpy.max(numpy.abs(vp.data.values[:, 0, ...]))
-                    g[3] = numpy.max(numpy.abs(vp.data.values[:, 3, ...]))
+                    g[0] = numpy.max(numpy.abs(vp["pixels"].data[:, 0, ...]))
+                    g[3] = numpy.max(numpy.abs(vp["pixels"].data[:, 3, ...]))
                     g[1] = g[2] = numpy.sqrt(g[0] * g[3])
                     for chan in range(4):
-                        vp.data.values[:, chan, ...] /= g[chan]
+                        vp["pixels"].data[:, chan, ...] /= g[chan]
                 return vp
             
             future_model_list = [

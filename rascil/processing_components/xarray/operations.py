@@ -46,7 +46,7 @@ def xarray_to_fits_header(xa: xarray.DataArray):
     return header
 
 
-def export_xarray_to_fits(xa: xarray.DataArray, fitsfile: Union[str, List] = 'xarray.fits'):
+def export_xarray_to_fits(xa: xarray.Dataset, fitsfile: Union[str, List] = 'xarray.fits'):
     """ Write an image to fits
 
     :param xa: xarray.DataArray
@@ -57,18 +57,18 @@ def export_xarray_to_fits(xa: xarray.DataArray, fitsfile: Union[str, List] = 'xa
         :py:func:`rascil.processing_components.image.operations.import_image_from_fits`
 
     """
-    assert isinstance(xa, xarray.DataArray), xa
-    if xa.data.dtype == "complex":
+    #assert isinstance(xa, xarray.DataArray), xa
+    if xa["pixels"].data.dtype == "complex":
         assert len(fitsfile) == 2, "Need file names for real, imaginary parts"
-        return fits.writeto(filename=fitsfile[0], data=numpy.real(xa.values), header=xarray_to_fits_header(xa),
+        return fits.writeto(filename=fitsfile[0], data=numpy.real(xa["pixels"].data), header=xarray_to_fits_header(xa),
                             overwrite=True) and \
-               fits.writeto(filename=fitsfile[1], data=numpy.imag(xa.values), header=xarray_to_fits_header(xa),
+               fits.writeto(filename=fitsfile[1], data=numpy.imag(xa["pixels"].data), header=xarray_to_fits_header(xa),
                             overwrite=True)
     else:
-        return fits.writeto(filename=fitsfile, data=xa.values, header=xarray_to_fits_header(xa), overwrite=True)
+        return fits.writeto(filename=fitsfile, data=xa["pixels"].data, header=xarray_to_fits_header(xa), overwrite=True)
 
 
-def import_xarray_from_fits(fitsfile: str) -> xarray.DataArray:
+def import_xarray_from_fits(fitsfile: str) -> xarray.Dataset:
     """ Read an xarray from fits
 
     :param fitsfile: FITS file in storage
@@ -94,5 +94,7 @@ def import_xarray_from_fits(fitsfile: str) -> xarray.DataArray:
     attrs = {}
     attrs['wcs'] = wcs
     attrs['header'] = hdulist[0].header
+    datavars = dict()
+    datavars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
     
-    return xarray.DataArray(data, dims=dims, coords=coords, attrs=attrs)
+    return xarray.Dataset(datavars, coords=coords, attrs=attrs)

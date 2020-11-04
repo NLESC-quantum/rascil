@@ -103,10 +103,11 @@ class TestGridDataGridding(unittest.TestCase):
             export_image_to_fits(self.model, '%s/test_gridding_model.fits' % self.dir)
             export_image_to_fits(self.cmodel, '%s/test_gridding_cmodel.fits' % self.dir)
         pb = create_pb_generic(self.model, diameter=35.0, blockage=0.0, use_local=False)
-        self.cmodel.data *= pb.data
+        self.cmodel["pixels"].data *= pb["pixels"].data
         if self.persist:
             export_image_to_fits(self.cmodel, '%s/test_gridding_cmodel_pb.fits' % self.dir)
-        self.peak = numpy.unravel_index(numpy.argmax(numpy.abs(self.cmodel["pixels"].data)), self.cmodel.shape)
+        self.peak = numpy.unravel_index(numpy.argmax(numpy.abs(self.cmodel["pixels"].data)),
+                                        self.cmodel["pixels"].shape)
     
     def test_griddata_invert_pswf(self):
         self.actualSetUp(zerow=True)
@@ -262,7 +263,7 @@ class TestGridDataGridding(unittest.TestCase):
         griddata = create_griddata_from_image(modelIQUV, polarisation_frame=self.vis_pol)
         griddata = fft_image_to_griddata(modelIQUV, griddata, gcf)
         newvis = degrid_blockvisibility_from_griddata(self.vis, griddata=griddata, cf=cf)
-        newvis.data['vis'][...] -= self.vis.data['vis'][...]
+        newvis['vis'].data[...] -= self.vis['vis'].data[...]
         qa = qa_visibility(newvis)
         self.plot_vis(newvis, 'wterm')
         assert qa.data['rms'] < 25.0, str(qa)
@@ -305,7 +306,7 @@ class TestGridDataGridding(unittest.TestCase):
         gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
         gd = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
         gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)]
-        assert numpy.max(numpy.abs(gd_list[0][0].data)) > 10.0
+        assert numpy.max(numpy.abs(gd_list[0][0]["pixels"].data)) > 10.0
         gd, sumwt = griddata_merge_weights(gd_list, algorithm='uniform')
         self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
@@ -321,7 +322,7 @@ class TestGridDataGridding(unittest.TestCase):
         gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
         gd = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
         gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)]
-        assert numpy.max(numpy.abs(gd_list[0][0].data)) > 10.0
+        assert numpy.max(numpy.abs(gd_list[0][0]["pixels"].data)) > 10.0
         gd, sumwt = griddata_merge_weights(gd_list, algorithm='uniform')
         self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)

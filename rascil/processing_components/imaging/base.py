@@ -98,7 +98,7 @@ def normalize_sumwt(im: Image, sumwt) -> Image:
     :param sumwt: Sum of weights [nchan, npol]
     """
     nchan, npol, _, _ = im["pixels"].data.shape
-    assert isinstance(im, Image), im
+    #assert isinstance(im, Image), im
     assert sumwt is not None
     assert nchan == sumwt.shape[0]
     assert npol == sumwt.shape[1]

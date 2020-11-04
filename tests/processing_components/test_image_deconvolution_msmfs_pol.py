@@ -54,7 +54,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
                                                            flux_limit=1.0)
         beam = create_low_test_beam(self.test_model)
         if self.persist: export_image_to_fits(beam, "%s/test_deconvolve_mmclean_beam.fits" % self.dir)
-        self.test_model.data *= beam.data
+        self.test_model["pixels"].data *= beam["pixels"].data
         if self.persist: export_image_to_fits(self.test_model, "%s/test_deconvolve_mmclean_model.fits" % self.dir)
         self.vis = predict_2d(self.vis, self.test_model)
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0

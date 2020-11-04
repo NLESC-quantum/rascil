@@ -75,8 +75,8 @@ class TestWeighting(unittest.TestCase):
                                                    phasecentre=self.phasecentre,
                                                    weight=1.0, polarisation_frame=self.vis_pol)
         
-        self.uvw = self.componentvis.data['uvw']
-        self.componentvis.data['vis'] *= 0.0
+        self.uvw = self.componentvis['uvw'].data
+        self.componentvis['vis'].data *= 0.0
         
         # Create model
         self.model = create_image_from_visibility(self.componentvis, npixel=self.npixel, cellsize=0.0005,
@@ -93,12 +93,12 @@ class TestWeighting(unittest.TestCase):
             if self.persist:
                 export_image_to_fits(psf, '%s/test_weighting_gaussian_taper_psf_block%s.fits' % (self.dir, block))
             xfr = fft_image(psf)
-            xfr.data = xfr.data.real.astype('float')
+            xfr["pixels"].data = xfr["pixels"].data.real.astype('float')
             if self.persist:
                 export_image_to_fits(xfr, '%s/test_weighting_gaussian_taper_xfr_block%s.fits' % (self.dir, block))
-            npixel = psf.data.shape[3]
+            npixel = psf["pixels"].data.shape[3]
             sl = slice(npixel // 2 - 7, npixel // 2 + 8)
-            fit = fit_2dgaussian(psf.data[0, 0, sl, sl])
+            fit = fit_2dgaussian(psf["pixels"].data[0, 0, sl, sl])
             # if fit.x_stddev <= 0.0 or fit.y_stddev <= 0.0:
             #     raise ValueError('Error in fitting to psf')
             # fit_2dgaussian returns sqrt of variance. We need to convert that to FWHM.
@@ -120,7 +120,7 @@ class TestWeighting(unittest.TestCase):
             if self.persist:
                 export_image_to_fits(psf, '%s/test_weighting_tukey_taper_psf_block%s.fits' % (self.dir, block))
             xfr = fft_image(psf)
-            xfr.data = xfr.data.real.astype('float')
+            xfr["pixels"].data = xfr["pixels"].data.real.astype('float')
             if self.persist:
                 export_image_to_fits(xfr, '%s/test_weighting_tukey_taper_xfr_block%s.fits' % (self.dir, block))
 

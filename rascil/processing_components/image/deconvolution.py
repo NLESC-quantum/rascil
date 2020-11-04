@@ -27,20 +27,19 @@ __all__ = ['deconvolve_cube', 'restore_cube']
 
 import logging
 import warnings
-from astropy.utils.exceptions import AstropyDeprecationWarning
-
-from rascil.data_models.polarisation import PolarisationFrame
 
 import numpy
 from astropy.convolution import Gaussian2DKernel, convolve_fft
+from astropy.utils.exceptions import AstropyDeprecationWarning
 from photutils import fit_2dgaussian
 
 from rascil.data_models.memory_data_models import Image
 from rascil.data_models.parameters import get_parameter
+from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.arrays.cleaners import hogbom, hogbom_complex, msclean, msmfsclean
-from rascil.processing_components.image.operations import create_image_from_array, copy_image
 from rascil.processing_components.image.operations import calculate_image_frequency_moments, \
     calculate_image_from_frequency_moments, image_is_canonical
+from rascil.processing_components.image.operations import create_image_from_array, copy_image
 
 warnings.simplefilter('ignore', AstropyDeprecationWarning)
 
@@ -95,20 +94,20 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     assert image_is_canonical(dirty)
     assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
-
+    
     window_shape = get_parameter(kwargs, 'window_shape', None)
     if window_shape == 'quarter':
         log.info("deconvolve_cube %s: window is inner quarter" % prefix)
         qx = dirty.shape[3] // 4
         qy = dirty.shape[2] // 4
-        window = numpy.zeros_like(dirty.data.values)
+        window = numpy.zeros_like(dirty["pixels"].data)
         window[..., (qy + 1):3 * qy, (qx + 1):3 * qx] = 1.0
         log.info('deconvolve_cube %s: Cleaning inner quarter of each sky plane' % prefix)
     elif window_shape == 'no_edge':
         edge = get_parameter(kwargs, 'window_edge', 16)
         nx = dirty.shape[3]
         ny = dirty.shape[2]
-        window = numpy.zeros_like(dirty.data.values)
+        window = numpy.zeros_like(dirty["pixels"].data)
         window[..., (edge + 1):(ny - edge), (edge + 1):(nx - edge)] = 1.0
         log.info('deconvolve_cube %s: Window omits %d-pixel edge of each sky plane' % (prefix, edge))
     elif window_shape is None:
@@ -116,23 +115,24 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         window = None
     else:
         raise ValueError("Window shape %s is not recognized" % window_shape)
-        
+    
     mask = get_parameter(kwargs, 'mask', None)
     if isinstance(mask, Image):
         if window is not None:
             log.warning('deconvolve_cube %s: Overriding window_shape with mask image' % (prefix))
-        window = mask.data.values
-
+        window = mask["pixels"]["pixels"].data
+    
     psf_support = get_parameter(kwargs, 'psf_support', max(dirty.shape[2] // 2, dirty.shape[3] // 2))
     if (psf_support <= psf.shape[2] // 2) and ((psf_support <= psf.shape[3] // 2)):
         centre = [psf.shape[2] // 2, psf.shape[3] // 2]
-        psf.data = psf.data.isel({"l":slice((centre[0] - psf_support), (centre[0] + psf_support)),
-                                  "m":slice((centre[0] - psf_support), (centre[0] + psf_support))})
+        subpsf = psf["pixels"].isel({"l": slice((centre[0] - psf_support), (centre[0] + psf_support)),
+                                            "m": slice((centre[0] - psf_support), (centre[0] + psf_support))}).data
+        psf = create_image_from_array(subpsf, wcs=psf.wcs, polarisation_frame=psf.polarisation_frame)
         log.info('deconvolve_cube %s: PSF support = +/- %d pixels' % (prefix, psf_support))
-        log.info('deconvolve_cube %s: PSF shape %s' % (prefix, str(psf.data.values.shape)))
+        log.info('deconvolve_cube %s: PSF shape %s' % (prefix, str(psf["pixels"].data.shape)))
     
     algorithm = get_parameter(kwargs, 'algorithm', 'msclean')
-
+    
     if algorithm == 'msclean':
         log.info("deconvolve_cube %s: Multi-scale clean of each polarisation and channel separately" %
                  prefix)
@@ -146,19 +146,19 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.01)
         assert 0.0 < fracthresh < 1.0
         
-        comp_array = numpy.zeros_like(dirty.data.values)
-        residual_array = numpy.zeros_like(dirty.data.values)
-        for channel in range(dirty.data.values.shape[0]):
-            for pol in range(dirty.data.values.shape[1]):
-                if psf.data.values[channel, pol, :, :].max():
+        comp_array = numpy.zeros_like(dirty["pixels"].data)
+        residual_array = numpy.zeros_like(dirty["pixels"].data)
+        for channel in range(dirty["pixels"].data.shape[0]):
+            for pol in range(dirty["pixels"].data.shape[1]):
+                if psf["pixels"].data[channel, pol, :, :].max():
                     log.info("deconvolve_cube %s: Processing pol %d, channel %d" % (prefix, pol, channel))
                     if window is None:
                         comp_array[channel, pol, :, :], residual_array[channel, pol, :, :] = \
-                            msclean(dirty.data.values[channel, pol, :, :], psf.data.values[channel, pol, :, :],
+                            msclean(dirty["pixels"].data[channel, pol, :, :], psf["pixels"].data[channel, pol, :, :],
                                     None, gain, thresh, niter, scales, fracthresh, prefix)
                     else:
                         comp_array[channel, pol, :, :], residual_array[channel, pol, :, :] = \
-                            msclean(dirty.data.values[channel, pol, :, :], psf.data.values[channel, pol, :, :],
+                            msclean(dirty["pixels"].data[channel, pol, :, :], psf["pixels"].data[channel, pol, :, :],
                                     window[channel, pol, :, :], gain, thresh, niter, scales, fracthresh,
                                     prefix)
                 else:
@@ -183,9 +183,9 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
             psf_taylor = calculate_image_frequency_moments(psf, nmoment=2 * nmoment)
         else:
             psf_taylor = calculate_image_frequency_moments(psf, nmoment=1)
-        psf_peak = numpy.max(psf_taylor.data.values)
-        dirty_taylor.data.values /= psf_peak
-        psf_taylor.data.values /= psf_peak
+        psf_peak = numpy.max(psf_taylor["pixels"].data)
+        dirty_taylor["pixels"].data /= psf_peak
+        psf_taylor["pixels"].data /= psf_peak
         log.info("deconvolve_cube %s: Shape of Dirty moments image %s" %
                  (prefix, str(dirty_taylor.shape)))
         log.info("deconvolve_cube %s: Shape of PSF moments image %s" % (prefix, str(psf_taylor.shape)))
@@ -199,21 +199,22 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.1)
         assert 0.0 < fracthresh < 1.0
         
-        comp_array = numpy.zeros(dirty_taylor.data.values.shape)
-        residual_array = numpy.zeros(dirty_taylor.data.values.shape)
-        for pol in range(dirty_taylor.data.values.shape[1]):
+        comp_array = numpy.zeros(dirty_taylor["pixels"].data.shape)
+        residual_array = numpy.zeros(dirty_taylor["pixels"].data.shape)
+        for pol in range(dirty_taylor["pixels"].data.shape[1]):
             # Always use the Stokes I PSF
-            if psf_taylor.data.values[0, 0, :, :].max():
+            if psf_taylor["pixels"].data[0, 0, :, :].max():
                 log.info("deconvolve_cube %s: Processing pol %d" % (prefix, pol))
                 if window is None:
                     comp_array[:, pol, :, :], residual_array[:, pol, :, :] = \
-                        msmfsclean(dirty_taylor.data.values[:, pol, :, :], psf_taylor.data.values[:, 0, :, :],
+                        msmfsclean(dirty_taylor["pixels"].data[:, pol, :, :],
+                                   psf_taylor["pixels"].data[:, 0, :, :],
                                    None, gain, thresh, niter, scales, fracthresh, findpeak, prefix)
                 else:
                     log.info('deconvolve_cube %s: Clean window has %d valid pixels'
-                             % (prefix, int(numpy.sum(window[0,pol]))))
+                             % (prefix, int(numpy.sum(window[0, pol]))))
                     comp_array[:, pol, :, :], residual_array[:, pol, :, :] = \
-                        msmfsclean(dirty_taylor.data.values[:, pol, :, :], psf_taylor.data.values[:, 0, :, :],
+                        msmfsclean(dirty_taylor["pixels"].data[:, pol, :, :], psf_taylor["pixels"].data[:, 0, :, :],
                                    window[0, pol, :, :], gain, thresh, niter, scales, fracthresh,
                                    findpeak, prefix)
             else:
@@ -242,19 +243,19 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.1)
         assert 0.0 < fracthresh < 1.0
         
-        comp_array = numpy.zeros(dirty.data.values.shape)
-        residual_array = numpy.zeros(dirty.data.values.shape)
-        for channel in range(dirty.data.values.shape[0]):
-            for pol in range(dirty.data.values.shape[1]):
-                if psf.data.values[channel, pol, :, :].max():
+        comp_array = numpy.zeros(dirty["pixels"].data.shape)
+        residual_array = numpy.zeros(dirty["pixels"].data.shape)
+        for channel in range(dirty["pixels"].data.shape[0]):
+            for pol in range(dirty["pixels"].data.shape[1]):
+                if psf["pixels"].data[channel, pol, :, :].max():
                     log.info("deconvolve_cube %s: Processing pol %d, channel %d" % (prefix, pol, channel))
                     if window is None:
                         comp_array[channel, pol, :, :], residual_array[channel, pol, :, :] = \
-                            hogbom(dirty.data.values[channel, pol, :, :], psf.data.values[channel, pol, :, :],
+                            hogbom(dirty["pixels"].data[channel, pol, :, :], psf["pixels"].data[channel, pol, :, :],
                                    None, gain, thresh, niter, fracthresh, prefix)
                     else:
                         comp_array[channel, pol, :, :], residual_array[channel, pol, :, :] = \
-                            hogbom(dirty.data.values[channel, pol, :, :], psf.data.values[channel, pol, :, :],
+                            hogbom(dirty["pixels"].data[channel, pol, :, :], psf["pixels"].data[channel, pol, :, :],
                                    window[channel, pol, :, :], gain, thresh, niter, fracthresh, prefix)
                 else:
                     log.info("deconvolve_cube %s: Skipping pol %d, channel %d" % (prefix, pol, channel))
@@ -271,49 +272,52 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         assert niter > 0
         fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.1)
         assert 0.0 <= fracthresh < 1.0
-    
-        comp_array = numpy.zeros(dirty.data.values.shape)
-        residual_array = numpy.zeros(dirty.data.values.shape)
-        for channel in range(dirty.data.values.shape[0]):
-            for pol in range(dirty.data.values.shape[1]):
+        
+        comp_array = numpy.zeros(dirty["pixels"].data.shape)
+        residual_array = numpy.zeros(dirty["pixels"].data.shape)
+        for channel in range(dirty["pixels"].data.shape[0]):
+            for pol in range(dirty["pixels"].data.shape[1]):
                 if pol == 0 or pol == 3:
-                    if psf.data.values[channel, pol, :, :].max():
+                    if psf["pixels"].data[channel, pol, :, :].max():
                         log.info("deconvolve_cube_complex: Processing pol %d, channel %d" % (pol, channel))
                         if window is None:
                             comp_array[channel, pol, :, :], residual_array[channel, pol, :, :] = \
-                                hogbom(dirty.data.values[channel, pol, :, :], psf.data.values[channel, pol, :, :],
+                                hogbom(dirty["pixels"].data[channel, pol, :, :], psf["pixels"].data[channel, pol, :, :],
                                        None, gain, thresh, niter, fracthresh)
                         else:
                             comp_array[channel, pol, :, :], residual_array[channel, pol, :, :] = \
-                                hogbom(dirty.data.values[channel, pol, :, :], psf.data.values[channel, pol, :, :],
+                                hogbom(dirty["pixels"].data[channel, pol, :, :], psf["pixels"].data[channel, pol, :, :],
                                        window[channel, pol, :, :], gain, thresh, niter, fracthresh)
                     else:
                         log.info("deconvolve_cube_complex: Skipping pol %d, channel %d" % (pol, channel))
                 if pol == 1:
-                    if psf.data.values[channel, 1:2, :, :].max():
+                    if psf["pixels"].data[channel, 1:2, :, :].max():
                         log.info("deconvolve_cube_complex: Processing pol 1 and 2, channel %d" % (channel))
                         if window is None:
                             comp_array[channel, 1, :, :], comp_array[channel, 2, :, :], residual_array[channel, 1, :,
                                                                                         :], residual_array[channel, 2,
                                                                                             :, :] = hogbom_complex(
-                                dirty.data.values[channel, 1, :, :], dirty.data.values[channel, 2, :, :], psf.data.values[channel, 1, :, :],
-                                psf.data.values[channel, 2, :, :], None, gain, thresh, niter, fracthresh)
+                                dirty["pixels"].data[channel, 1, :, :], dirty["pixels"].data[channel, 2, :, :],
+                                psf["pixels"].data[channel, 1, :, :],
+                                psf["pixels"].data[channel, 2, :, :], None, gain, thresh, niter, fracthresh)
                         else:
                             comp_array[channel, 1, :, :], comp_array[channel, 2, :, :], residual_array[channel, 1, :,
                                                                                         :], residual_array[channel, 2,
                                                                                             :, :] = hogbom_complex(
-                                dirty.data.values[channel, 1, :, :], dirty.data.values[channel, 2, :, :], psf.data.values[channel, 1, :, :],
-                                psf.data.values[channel, 2, :, :], window[channel, pol, :, :], gain, thresh, niter, fracthresh)
+                                dirty["pixels"].data[channel, 1, :, :], dirty["pixels"].data[channel, 2, :, :],
+                                psf["pixels"].data[channel, 1, :, :],
+                                psf["pixels"].data[channel, 2, :, :], window[channel, pol, :, :], gain, thresh, niter,
+                                fracthresh)
                     else:
                         log.info("deconvolve_cube_complex: Skipping pol 1 and 2, channel %d" % (channel))
                 if pol == 2:
                     continue
-    
+        
         comp_image = create_image_from_array(comp_array, dirty.wcs, polarisation_frame=PolarisationFrame('stokesIQUV'))
         residual_image = create_image_from_array(residual_array, dirty.wcs,
                                                  polarisation_frame=PolarisationFrame('stokesIQUV'))
-
-
+    
+    
     else:
         raise ValueError('deconvolve_cube %s: Unknown algorithm %s' % (prefix, algorithm))
     
@@ -327,17 +331,17 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     :return: restored image
 
     """
-    assert isinstance(model, Image), model
+    #assert isinstance(model, Image), model
     assert image_is_canonical(model)
-    assert isinstance(psf, Image), psf
+    #assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
-
-    assert residual is None or isinstance(residual, Image), residual
+    
+    #assert residual is None or isinstance(residual, Image), residual
     assert image_is_canonical(residual)
     
     restored = copy_image(model)
     
-    npixel = psf.data.values.shape[3]
+    npixel = psf["pixels"].data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)
     
     size = get_parameter(kwargs, "psfwidth", None)
@@ -346,7 +350,7 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
         # isotropic at the moment!
         from scipy.optimize import minpack
         try:
-            fit = fit_2dgaussian(psf.data.values[0, 0, sl, sl])
+            fit = fit_2dgaussian(psf["pixels"].data[0, 0, sl, sl])
             if fit.x_stddev <= 0.0 or fit.y_stddev <= 0.0:
                 log.debug('restore_cube: error in fitting to psf, using 1 pixel stddev')
                 size = 1.0
@@ -361,20 +365,22 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
             size = 1.0
     else:
         log.debug('restore_cube: Using specified psfwidth = %s' % (size))
-
+    
     # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
     norm = 2.0 * numpy.pi * size ** 2
     if isinstance(size, float):
         gk = Gaussian2DKernel(size)
     else:
         gk = Gaussian2DKernel(size.value)
-        
+    
     for chan in range(model.shape[0]):
         for pol in range(model.shape[1]):
-            restored.data.values[chan, pol, :, :] = norm * convolve_fft(model.data.values[chan, pol, :, :], gk,
-                                                                 normalize_kernel=False, allow_huge=True)
+            restored["pixels"].data[chan, pol, :, :] = norm * convolve_fft(model["pixels"].data[chan, pol, :, :], gk,
+                                                                           normalize_kernel=False, allow_huge=True)
     if residual is not None:
-        restored.data.values += residual.data.values
-        
+        restored["pixels"].data += residual["pixels"].data
+
+    restored["pixels"].data = restored["pixels"].data.astype("float")
+    
     log.info('Restore done!')
     return restored

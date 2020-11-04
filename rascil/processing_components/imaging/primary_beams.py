@@ -29,7 +29,7 @@ def set_pb_header(pb, use_local=True):
     :return:
     """
     if use_local:
-        nchan, npol, ny, nx = pb.shape
+        nchan, npol, ny, nx = pb["pixels"].data.shape
         pb.wcs.wcs.ctype[0] = 'AZELGEO long'
         pb.wcs.wcs.ctype[1] = 'AZELGEO lati'
         pb.wcs.wcs.crval[0] = 0.0
@@ -213,7 +213,7 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
     beam = create_empty_image_like(model)
     beam["pixels"].data = numpy.zeros(beam["pixels"].data.shape, dtype='complex')
     
-    nchan, npol, ny, nx = model.shape
+    nchan, npol, ny, nx = model["pixels"].shape
     
     if pointingcentre is not None:
         cx, cy = pointingcentre.to_pixel(model.wcs, origin=0)
@@ -280,7 +280,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     :return:
     """
     beam = create_empty_image_like(model)
-    nchan, npol, ny, nx = beam.shape
+    nchan, npol, ny, nx = beam["pixels"].data.shape
     padded_shape = [nchan, npol, padding * ny, padding * nx]
     padded_beam = pad_image(beam, padded_shape)
     padded_beam["pixels"].data = numpy.zeros(padded_beam["pixels"].data.shape, dtype='complex')
@@ -344,7 +344,8 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
             blc = pnx // 2 - ndisk // 2
             trc = pnx // 2 + ndisk // 2
             for pol in range(npol):
-                xfr["pixels"].data[chan, pol, blc:trc, blc:trc] = xfr.data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
+                xfr["pixels"].data[chan, pol, blc:trc, blc:trc] = \
+                    xfr["pixels"].data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
     
     padded_beam = fft_image(xfr, padded_beam)
     
@@ -397,7 +398,7 @@ def convert_azelvp_to_radec(vp, im, pa):
     vp.wcs.wcs.ctype[0] = im.wcs.wcs.ctype[0]
     vp.wcs.wcs.ctype[1] = im.wcs.wcs.ctype[1]
 
-    rvp, footprint = reproject_image(vp, im.wcs, shape=im.shape)
+    rvp, footprint = reproject_image(vp, im.wcs, shape=im["pixels"].data.shape)
     rvp["pixels"].data[footprint["pixels"].data < 1e-6] = 0.0
 
     return rvp

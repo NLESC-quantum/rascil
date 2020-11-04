@@ -220,17 +220,17 @@ try:
             tb.putcol('STATION', [self.siteName, ] * self.nant, 0, self.nant)
 
             for i, ant in enumerate(self.array[0]['ants']):
-                tb.putcell('OFFSET', i, self.site_config.data['offset'].values[i])
+                tb.putcell('OFFSET', i, self.site_config['offset'].data[i])
                 # tb.putcell('OFFSET', i, [0.0, 0.0, 0.0])
                 tb.putcell('POSITION', i, [ant.x + self.array[0]['center'][0],
                                            ant.y + self.array[0]['center'][1],
                                            ant.z + self.array[0]['center'][2]])
                 # tb.putcell('TYPE', i, self.site_config.mount[i])
-                tb.putcell('DISH_DIAMETER', i, self.site_config.data['diameter'].values[i])
+                tb.putcell('DISH_DIAMETER', i, self.site_config['diameter'].data[i])
                 # tb.putcell('FLAG_ROW', i, False)
-                tb.putcell('MOUNT', i, self.site_config.data['mount'].values[i])
+                tb.putcell('MOUNT', i, self.site_config['mount'].data[i])
                 tb.putcell('NAME', i, ant.getName())
-                tb.putcell('STATION', i, self.site_config.data['stations'].values[i])
+                tb.putcell('STATION', i, self.site_config['stations'].data[i])
                 # tb.putcell('STATION', i, self.siteName)
 
             tb.flush()
@@ -393,8 +393,8 @@ try:
             # tStart = utcStart.mjd
             # utcStop = Time(self.data[-1].obstime, format='mjd', scale='utc')
             # tStop = utcStop.mjd
-            tStart = self[0].obstime
-            tStop = self[-1].obstime
+            tStart = self.data[0].obstime
+            tStop = self.data[-1].obstime
 
             tb.putcell('TIME_RANGE', 0, [tStart, tStop])
             tb.putcell('LOG', 0, 'Not provided')

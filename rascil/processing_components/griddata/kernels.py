@@ -33,10 +33,10 @@ def create_box_convolutionfunction(im, oversampling=1, support=1, polarisation_f
     assert isinstance(im, Image)
     cf = create_convolutionfunction_from_image(im, oversampling=1, support=4, polarisation_frame=polarisation_frame)
     
-    nchan, npol, _, _ = im.shape
+    nchan, npol, _, _ = im["pixels"].data.shape
     
-    cf.data[...] = 0.0 + 0.0j
-    cf.data[..., 2, 2] = 1.0 + 0.0j
+    cf["pixels"].data[...] = 0.0 + 0.0j
+    cf["pixels"].data[..., 2, 2] = 1.0 + 0.0j
     
     # Now calculate the griddata correction function as an image with the same coordinates as the image
     # which is necessary so that the correction function can be applied directly to the image
@@ -50,7 +50,9 @@ def create_box_convolutionfunction(im, oversampling=1, support=1, polarisation_f
     gcf_data = numpy.zeros_like(im["pixels"].data)
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
     gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
-    
+
+    assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
+    assert gcf_image['pixels'].data.dtype == "float", gcf_image['pixels'].data.dtype
     return gcf_image, cf
 
 
@@ -66,7 +68,7 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8, polarisatio
     :param oversampling: Oversampling of the convolution function in uv space
     :return: griddata correction Image, griddata kernel as ConvolutionFunction
     """
-    assert isinstance(im, Image), im
+    #assert isinstance(im, Image), im
     if oversampling % 2 == 0:
         oversampling += 1
         log.info("Setting oversampling to next greatest odd number {}".format(oversampling))
@@ -84,7 +86,7 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8, polarisatio
     
     kernel /= numpy.sum(numpy.real(kernel[oversampling // 2, :]))
     
-    nchan, npol, _, _ = im.shape
+    nchan, npol, _, _ = im["pixels"].data.shape
     
     cf["pixels"].data = numpy.zeros([nchan, npol, 1, oversampling, oversampling, support, support]).astype('complex')
     for y in range(oversampling):
@@ -108,6 +110,8 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8, polarisatio
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
     gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
     
+    assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
+    assert gcf_image['pixels'].data.dtype == "float", gcf['pixels'].data.dtype
     return gcf_image, cf
 
 
@@ -182,7 +186,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     # We might need to work with a larger image
     padded_shape = [nchan, npol, ny, nx]
     thisplane = copy_image(subim)
-    thisplane["pixels"].data = numpy.zeros(thisplane.shape, dtype='complex')
+    thisplane["pixels"].data = numpy.zeros(thisplane["pixels"].data.shape, dtype='complex')
     scf = cf["pixels"].data[...]
     for z, w in enumerate(w_list):
         thisplane["pixels"].data[...] = 0.0 + 0.0j
@@ -228,8 +232,10 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
                                                       polarisation_frame=polarisation_frame)
     else:
         pswf_gcf = create_empty_image_like(im)
-        pswf_gcf.data[...] = 1.0
+        pswf_gcf["pixels"].data[...] = 1.0
     
+    assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
+    assert pswf_gcf['pixels'].data.dtype == "float64", pswf_gcf['pixels'].data.dtype
     return pswf_gcf, cf
 
 
@@ -274,14 +280,16 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     
     cf.data[...] = 0.0
     
-    subim = copy_image(im)
-    ccell = onx * numpy.abs(d2r * subim.wcs.wcs.cdelt[0]) / qnx
+    ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
     
-    subim["pixels"].data = numpy.zeros([nchan, npol, qny, qnx])
-    subim.wcs.wcs.cdelt[0] = -ccell / d2r
-    subim.wcs.wcs.cdelt[1] = +ccell / d2r
-    subim.wcs.wcs.crpix[0] = qnx // 2 + 1.0
-    subim.wcs.wcs.crpix[1] = qny // 2 + 1.0
+    wcs = im.wcs
+    wcs.wcs.cdelt[0] = -ccell / d2r
+    wcs.wcs.cdelt[1] = +ccell / d2r
+    wcs.wcs.crpix[0] = qnx // 2 + 1.0
+    wcs.wcs.crpix[1] = qny // 2 + 1.0
+    
+    subim = create_image_from_array(numpy.zeros([nchan, npol, qny, qnx]), wcs=wcs,
+                                    polarisation_frame=im.polarisation_frame)
     
     vp = make_vp(subim)
     
@@ -293,7 +301,7 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     if use_aaf:
         this_pswf_gcf, _ = create_pswf_convolutionfunction(subim, oversampling=1, support=6,
                                                            polarisation_frame=polarisation_frame)
-        rvp.data.values /= this_pswf_gcf["pixels"].data
+        rvp["pixels"].data /= this_pswf_gcf["pixels"].data
     
     # We might need to work with a larger image
     padded_shape = [nchan, npol, ny, nx]
@@ -311,11 +319,11 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
             
             # uu = range(xbeg, xend, -oversampling)
             cf.data[..., 0, y, x, :, :] = \
-                paddedplane.data[..., ybeg:yend:-oversampling, xbeg:xend:-oversampling]
+                paddedplane["pixels"].data[..., ybeg:yend:-oversampling, xbeg:xend:-oversampling]
     
     if normalise:
-        cf.data /= numpy.sum(numpy.real(cf.data[0, 0, 0, oversampling // 2, oversampling // 2, :, :]))
-    cf.data = numpy.conjugate(cf.data)
+        cf["pixels"].data /= numpy.sum(numpy.real(cf["pixels"].data[0, 0, 0, oversampling // 2, oversampling // 2, :, :]))
+    cf["pixels"].data = numpy.conjugate(cf["pixels"].data)
     
     if use_aaf:
         pswf_gcf, _ = create_pswf_convolutionfunction(im, oversampling=1, support=6,
@@ -324,4 +332,6 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
         pswf_gcf = create_empty_image_like(im)
         pswf_gcf["pixels"].data[...] = 1.0
     
+    assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
+    assert pswf_gcf['pixels'].data.dtype == "complex", pswf_gcf['pixels'].data.dtype
     return pswf_gcf, cf

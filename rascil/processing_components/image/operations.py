@@ -62,7 +62,7 @@ def image_is_canonical(im: Image):
         return True
     
     canonical = True
-    canonical = canonical and len(im.shape) == 4
+    canonical = canonical and len(im["pixels"].data.shape) == 4
     canonical = canonical and im.wcs.wcs.ctype[0] == 'RA---SIN' and im.wcs.wcs.ctype[1] == 'DEC--SIN'
     canonical = canonical and im.wcs.wcs.ctype[2] == 'STOKES'
     canonical = canonical and (im.wcs.wcs.ctype[3] == 'FREQ' or im.wcs.wcs.ctype[3] == "MOMENT")
@@ -195,7 +195,7 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
         
         if numpy.sum(foot.data) < 1e-12:
             log.warning("reproject_image: no valid points in reprojection")
-    elif len(im.shape) == 2:
+    elif len(im["pixels"].data.shape) == 2:
         if im["pixels"].data.dtype == 'complex':
             rep_real, foot = reproject_interp((im["pixels"].data.real, im.wcs), newwcs, shape, order='bicubic')
             rep_imag, foot = reproject_interp((im["pixels"].data.imag, im.wcs), newwcs, shape, order='bicubic')
@@ -239,9 +239,9 @@ def qa_image(im: Image, context="") -> QA:
     :param im:
     :return: QA
     """
-    assert isinstance(im, Image), im
+    #assert isinstance(im, Image), im
     im_data = im["pixels"].data
-    data = {'shape': str(im.shape),
+    data = {'shape': str(im["pixels"].data.shape),
             'max': numpy.max(im_data),
             'min': numpy.min(im_data),
             'maxabs': numpy.max(numpy.abs(im_data)),
@@ -272,7 +272,7 @@ def show_image(im: Image, fig=None, title: str = '', pol=0, chan=0, cm='Greys', 
     """
     import matplotlib.pyplot as plt
     
-    assert isinstance(im, Image), im
+    #assert isinstance(im, Image), im
     
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1, projection=im.wcs.sub([1, 2]))
@@ -399,7 +399,7 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     assert image_is_canonical(im)
     
     assert nmoment > 0
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     channels = numpy.arange(nchan)
     freq = im.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
     
@@ -452,7 +452,7 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
     :return: reconstructed image
     """
     assert isinstance(im, Image)
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     nmoment, mnpol, mny, mnx = moment_image.shape
     assert nmoment > 0
     
@@ -499,7 +499,7 @@ def remove_continuum_image(im: Image, degree=1, mask=None):
     if mask is not None:
         assert numpy.sum(mask) > 2 * degree, "Insufficient channels for fit"
     
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     channels = numpy.arange(nchan)
     frequency = im.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
     frequency -= frequency[nchan // 2]
@@ -572,7 +572,7 @@ def convert_polimage_to_stokes(im: Image, complex_image=False, **kwargs):
 
     """
     assert isinstance(im, Image)
-    assert im["pixels"].data.dtype == 'complex'
+    assert im["pixels"].data.dtype == 'complex', im["pixels"].data.dtype
     
     def to_required(cimarr):
         if complex_image:
@@ -766,7 +766,7 @@ def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
         linear [-5,-6,-7,-8]
 
     For example::
-        pol_frame = polarisation_frame_from_wcs(im.wcs, im.shape)
+        pol_frame = polarisation_frame_from_wcs(im.wcs, im["pixels"].data.shape)
 
 
     :param wcs: World Coordinate System
@@ -803,7 +803,7 @@ def copy_image(im: Image):
     :param im:
     :return: Image
     """
-    return im.copy()
+    return im.copy(deep=True).astype(Image)
 
 
 def create_empty_image_like(im: Image) -> Image:
@@ -818,7 +818,11 @@ def create_empty_image_like(im: Image) -> Image:
         :py:func:`rascil.processing_components.image.base.copy_image`
     """
     
-    return xarray.zeros_like(im).astype(Image)
+    #assert isinstance(newim, Image), newim
+    newim = create_image_from_array(im["pixels"].data, wcs=im.wcs,
+                                    polarisation_frame=im.polarisation_frame)
+    newim["pixels"].data[...] = 0.0
+    return newim
 
 
 def fft_image(im, template_image=None):
@@ -871,10 +875,10 @@ def fft_image(im, template_image=None):
         :py:func:`rascil.processing_components.fourier_transforms.fft_support.fft`
         :py:func:`rascil.processing_components.fourier_transforms.fft_support.ifft`
     """
-    assert len(im.shape) == 4
+    assert len(im["pixels"].data.shape) == 4
     d2r = numpy.pi / 180.0
     ft_wcs = copy.deepcopy(im.wcs)
-    ft_shape = im.shape
+    ft_shape = im["pixels"].data.shape
     if im.wcs.wcs.ctype[0] == 'RA---SIN' and im.wcs.wcs.ctype[1] == 'DEC--SIN':
         assert image_is_canonical(im)
         ft_wcs.wcs.axis_types[0] = 0
@@ -966,22 +970,22 @@ def pad_image(im: Image, shape):
     :return: Padded image
     """
     
-    if im.shape == shape:
+    if im["pixels"].data.shape == shape:
         return im
     else:
         newwcs = copy.deepcopy(im.wcs)
-        newwcs.wcs.crpix[0] = im.wcs.wcs.crpix[0] + shape[3] // 2 - im.shape[3] // 2
-        newwcs.wcs.crpix[1] = im.wcs.wcs.crpix[1] + shape[2] // 2 - im.shape[2] // 2
+        newwcs.wcs.crpix[0] = im.wcs.wcs.crpix[0] + shape[3] // 2 - im["pixels"].data.shape[3] // 2
+        newwcs.wcs.crpix[1] = im.wcs.wcs.crpix[1] + shape[2] // 2 - im["pixels"].data.shape[2] // 2
         
-        for axis, _ in enumerate(im.shape):
-            if shape[axis] < im.shape[axis]:
-                raise ValueError("Padded shape %s is smaller than input shape %s" % (shape, im.shape))
+        for axis, _ in enumerate(im["pixels"].data.shape):
+            if shape[axis] < im["pixels"].data.shape[axis]:
+                raise ValueError("Padded shape %s is smaller than input shape %s" % (shape, im["pixels"].data.shape))
         
         newdata = numpy.zeros(shape, dtype=im["pixels"].dtype)
-        ystart = shape[2] // 2 - im.shape[2] // 2
-        yend = ystart + im.shape[2]
-        xstart = shape[3] // 2 - im.shape[3] // 2
-        xend = xstart + im.shape[3]
+        ystart = shape[2] // 2 - im["pixels"].data.shape[2] // 2
+        yend = ystart + im["pixels"].data.shape[2]
+        xstart = shape[3] // 2 - im["pixels"].data.shape[3] // 2
+        xend = xstart + im["pixels"].data.shape[3]
         newdata[..., ystart:yend, xstart:xend] = im["pixels"][...]
         return create_image_from_array(newdata, newwcs, polarisation_frame=im.polarisation_frame)
 
@@ -1004,8 +1008,8 @@ def create_w_term_like(im: Image, w, phasecentre=None, remove_shift=False, dopol
     :return: Image
     """
     
-    assert image_is_canonical(im)
-    fim_shape = list(im.shape)
+    #assert image_is_canonical(im)
+    fim_shape = list(im["pixels"].data.shape)
     if not dopol:
         fim_shape[1] = 1
     
@@ -1062,18 +1066,18 @@ def scale_and_rotate_image(im, angle=0.0, scale=None, order=5):
                                                          inv_transform,
                                                          offset=offset,
                                                          order=order,
-                                                         output_shape=(ny, nx)) + \
+                                                         output_shape=(ny, nx)).astype("float") + \
                                         1.0j * affine_transform(im["pixels"].data[chan, pol].imag,
                                                                 inv_transform,
                                                                 offset=offset,
                                                                 order=order,
-                                                                output_shape=(ny, nx))
+                                                                output_shape=(ny, nx)).astype("float")
             elif im["pixels"].data.dtype == "float":
                 newim["pixels"].data[chan, pol] = affine_transform(im["pixels"].data[chan, pol].real,
                                                          inv_transform,
                                                          offset=offset,
                                                          order=order,
-                                                         output_shape=(ny, nx))
+                                                         output_shape=(ny, nx)).astype("float")
             else:
                 raise ValueError("Cannot process data type {}".format(im["pixels"].data.dtype))
     
@@ -1127,9 +1131,9 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
     
     is_scalar = vp.shape[1] == 1
     
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     
-    assert im.shape == vp.shape
+    assert im["pixels"].data.shape == vp["pixels"].data.shape
     
     if is_scalar:
         log.debug('apply_voltage_pattern_to_image: Scalar voltage pattern')

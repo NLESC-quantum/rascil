@@ -19,9 +19,7 @@ from astropy.wcs import WCS
 from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility, \
     create_gaintable_from_rows
-from rascil.processing_components.calibration import gaintable_select
 from rascil.processing_components.image.operations import copy_image, create_empty_image_like
-from rascil.processing_components.visibility import blockvisibility_select
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 from rascil.processing_components.util.coordinate_support import xyz_to_uvw, skycoord_to_lmn
 
@@ -94,7 +92,7 @@ def create_gaintable_from_screen(vis, sc, screen, height=None, vis_slices=None, 
         gt = gaintables[icomp]
         for row in range(gt.ntimes):
             time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
-            v = blockvisibility_select(vis, time_slice)
+            v = vis.sel(time_slice)
             ha = numpy.average(calculate_blockvisibility_hourangles(v).to('rad').value)
             scr = numpy.zeros([nant, vis.nchan])
             pp = find_pierce_points(station_locations, (comp.direction.ra.rad + t2r * ha) * units.rad,
@@ -123,7 +121,7 @@ def create_gaintable_from_screen(vis, sc, screen, height=None, vis_slices=None, 
             if gt.gain.values.shape[-1] == 2:
                 gt.gain.values[..., 0, 1] *= 0.0
                 gt.gain.values[..., 1, 0] *= 0.0
-            gt.phasecentre = comp.direction
+            gt.attrs["phasecentre"] = comp.direction
 
         # if reference_component is not None:
         #     scr -= scr[reference_component, ...][numpy.newaxis, ...]
@@ -164,10 +162,10 @@ def grid_gaintable_to_screen(vis, gaintables, screen, height=3e5, gaintable_slic
     t2r = numpy.pi / 43200.0
     
     newscreen = screen.copy(deep=True)
-    newscreen.values[...] = 0.0
+    newscreen["pixels"].data[...] = 0.0
     weights = screen.copy(deep=True)
-    weights.values[...] = 0.0
-    nchan, ntimes, ny, nx = screen.shape
+    weights["pixels"].data[...] = 0.0
+    nchan, ntimes, ny, nx = screen["pixels"].data.shape
 
     number_no_weight = 0
 
@@ -175,7 +173,7 @@ def grid_gaintable_to_screen(vis, gaintables, screen, height=3e5, gaintable_slic
         ha_zero = numpy.average(calculate_blockvisibility_hourangles(vis))
         for row in range(gt.ntimes):
             time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
-            v = blockvisibility_select(vis, time_slice)
+            v = vis.sel(time_slice)
             ha = numpy.average(calculate_blockvisibility_hourangles(v) - ha_zero).to('rad').value
             pp = find_pierce_points(station_locations, (gt.phasecentre.ra.rad + t2r * ha) * units.rad,
                                     gt.phasecentre.dec,
@@ -201,16 +199,17 @@ def grid_gaintable_to_screen(vis, gaintables, screen, height=3e5, gaintable_slic
                     assert pixloc[1] >= 0
                     assert pixloc[1] < ny
                     pixloc[3] = 0
-                    newscreen.values[pixloc[3], pixloc[2], pixloc[1], pixloc[0]] += wt[ant] * scr[ant] / screen_to_phase
-                    weights.values[pixloc[3], pixloc[2], pixloc[1], pixloc[0]] += wt[ant]
+                    newscreen["pixels"].data[pixloc[3], pixloc[2], pixloc[1], pixloc[0]] += wt[ant] * scr[ant] / screen_to_phase
+                    weights["pixels"].data[pixloc[3], pixloc[2], pixloc[1], pixloc[0]] += wt[ant]
                     if wt[ant] == 0.0:
                         number_no_weight += 1
     if number_no_weight > 0:
         log.warning("grid_gaintable_to_screen: %d pierce points are have no weight" % (number_no_weight))
 
-    assert numpy.max(weights.data) > 0.0, "No points were gridded"
+    assert numpy.max(weights["pixels"].data) > 0.0, "No points were gridded"
 
-    newscreen.data[weights.data > 0.0] = newscreen.data[weights.data > 0.0] / weights.data[weights.data > 0.0]
+    newscreen["pixels"].data[weights["pixels"].data > 0.0] = newscreen["pixels"].data[weights["pixels"].data > 0.0] \
+                                                             / weights["pixels"].data[weights["pixels"].data > 0.0]
 
     return newscreen, weights
 
@@ -269,7 +268,7 @@ def plot_gaintable_on_screen(vis, gaintables, height=3e5, gaintable_slices=None,
         time_zero = numpy.average(gt.time)
         for row in range(gt.ntimes):
             time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
-            gt_sel = gaintable_select(gt, time_slice)
+            gt_sel = gt.sel(time_slice)
             ha = numpy.average(gt_sel.time-time_zero)
             
             pp = find_pierce_points(station_locations,

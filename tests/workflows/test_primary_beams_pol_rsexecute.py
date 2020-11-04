@@ -97,7 +97,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.show(block=False)
 
         vpcomp = apply_voltage_pattern_to_skycomponent(s3_components, vpbeam)
-        bvis.data['vis'][...] = 0.0 + 0.0j
+        bvis['vis'].data[...] = 0.0 + 0.0j
         bvis = dft_skycomponent_visibility(bvis, vpcomp)
 
         rec_comp = idft_visibility_skycomponent(bvis, vpcomp)[0]

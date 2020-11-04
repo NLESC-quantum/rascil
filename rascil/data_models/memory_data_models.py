@@ -1028,8 +1028,8 @@ class SkyModel:
         if components is None:
             components = []
         
-        if image is not None:
-            assert isinstance(image, Image), image
+        #if image is not None:
+            #assert isinstance(image, Image), image
         self.image = image
         
         if components is not None:
@@ -1042,8 +1042,8 @@ class SkyModel:
             assert isinstance(gaintable, GainTable), gaintable
         self.gaintable = gaintable
         
-        if mask is not None:
-            assert isinstance(mask, Image), mask
+        #if mask is not None:
+        #    assert isinstance(mask, Image), mask
         self.mask = mask
         
         self.fixed = fixed

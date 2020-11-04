@@ -163,7 +163,7 @@ class TestPrimaryBeamsPol(unittest.TestCase):
                                             frequency=self.frequency,
                                             polarisation_frame=PolarisationFrame("stokesIQUV"))
             vpcomp = apply_voltage_pattern_to_skycomponent(component, vpbeam)
-            bvis.data['vis'][...] = 0.0 + 0.0j
+            bvis['vis'].data[...] = 0.0 + 0.0j
             bvis = dft_skycomponent_visibility(bvis, vpcomp)
             polimage, sumwt = invert_2d(bvis, model, dopsf=False)
             export_image_to_fits(polimage, "{0}/test_primary_beams_pol_case{1}.fits".format(self.dir, case))

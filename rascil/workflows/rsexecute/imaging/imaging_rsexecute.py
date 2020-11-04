@@ -235,17 +235,17 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         
         if nmoment > 0:
             moment0 = calculate_image_frequency_moments(dirty)
-            this_peak = numpy.max(numpy.abs(moment0.data.values[0, ...])) / dirty["pixels"].data.shape[0]
+            this_peak = numpy.max(numpy.abs(moment0["pixels"].data[0, ...])) / dirty["pixels"].data.shape[0]
         else:
             ref_chan = dirty["pixels"].data.shape[0] // 2
-            this_peak = numpy.max(numpy.abs(dirty.data.values[ref_chan, ...]))
+            this_peak = numpy.max(numpy.abs(dirty["pixels"].data[ref_chan, ...]))
         
         if this_peak > 1.1 * gthreshold:
             kwargs['threshold'] = gthreshold
             result, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
             if result["pixels"].data.shape[0] == model["pixels"].data.shape[0]:
-                result.data.values = result.data.values + model.data.values
+                result["pixels"].data = result["pixels"].data + model["pixels"].data
             return result
         else:
             return copy_image(model)
@@ -285,7 +285,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
     psf_list_trimmed = rsexecute.execute(remove_sumwt, nout=nchan)(psf_list)
     
     def extract_psf(psf, facets):
-        assert not numpy.isnan(numpy.sum(psf.data.values)), "NaNs present in PSF"
+        assert not numpy.isnan(numpy.sum(psf["pixels"].data)), "NaNs present in PSF"
         cx = psf.shape[3] // 2
         cy = psf.shape[2] // 2
         wx = psf.shape[3] // facets
@@ -496,7 +496,7 @@ def subtract_list_rsexecute_workflow(vis_list, model_vislist):
         if vis is not None and model_vis is not None:
             assert vis.vis.shape == model_vis.vis.shape
             subvis = copy_visibility(vis)
-            subvis.data['vis'][...] -= model_vis.data['vis'][...]
+            subvis['vis'].data[...] -= model_vis['vis'].data[...]
             return subvis
         else:
             return None

@@ -127,7 +127,7 @@ class TestImagingNG(unittest.TestCase):
         from rascil.processing_components.imaging.ng import predict_ng, invert_ng
         original_vis = copy_visibility(self.blockvis)
         vis = predict_ng(self.blockvis, self.model, verbosity=self.verbosity, **kwargs)
-        vis.data['vis'] = vis.data['vis'] - original_vis.data['vis']
+        vis['vis'].data = vis['vis'].data - original_vis['vis'].data
         dirty = invert_ng(vis, self.model, dopsf=False, normalize=True, verbosity=self.verbosity,
                           **kwargs)
         
@@ -165,7 +165,7 @@ class TestImagingNG(unittest.TestCase):
         #     plt.clf()
         #     show_image(dirty[0], pol=pol)
         #     plt.show(block=False)
-        assert numpy.max(numpy.abs(dirty[0].data)), "Image is empty"
+        assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Image is empty"
         
         if check_components:
             self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)

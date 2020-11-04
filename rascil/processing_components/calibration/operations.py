@@ -5,7 +5,7 @@ merging gaintables.
 
 __all__ = ['gaintable_summary', 'qa_gaintable', 'apply_gaintable', 'append_gaintable',
            'create_gaintable_from_blockvisibility', 'create_gaintable_from_blockvisibility',
-           'gaintable_select', 'create_gaintable_from_rows', 'copy_gaintable', 'gaintable_plot',
+           'create_gaintable_from_rows', 'copy_gaintable', 'gaintable_plot',
            'multiply_gaintables']
 
 import copy
@@ -57,7 +57,6 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     # row_numbers = numpy.array(list(range(len(vis.time))), dtype='int')
     row_numbers = numpy.arange(len(vis.time))
     done = numpy.zeros(len(row_numbers), dtype='int')
-    from rascil.processing_components import blockvisibility_select, gaintable_select
 
     for row in range(ntimes):
         vis_rows = numpy.abs(vis.time.values - gt.time.values[row]) < gt.interval.values[row] / 2.0
@@ -280,25 +279,13 @@ def copy_gaintable(gt: GainTable, zero=False):
     if gt is None:
         return gt
     
-    assert isinstance(gt, GainTable), gt
+    #assert isinstance(gt, GainTable), gt
     
     newgt = copy.copy(gt)
-    newgt.data = copy.deepcopy(gt.data)
     if zero:
-        newgt.data['gt'].values[...] = 0.0
+        newgt['gain'].data[...] = 0.0
     return newgt
 
-
-def gaintable_select(gt, selection):
-    """ Select subset of GainTable using xarray syntax
-
-    :param ft:
-    :param selection:
-    :return:
-    """
-    newgt = copy.copy(gt)
-    newgt.data = gt.data.sel(selection)
-    return newgt
 
 def create_gaintable_from_rows(gt: GainTable, rows: numpy.ndarray, makecopy=True) \
         -> Union[GainTable, None]:
@@ -333,9 +320,9 @@ def qa_gaintable(gt: GainTable, context=None) -> QA:
     :param gt:
     :return: QA
     """
-    agt = numpy.abs(gt.gain.values[gt.weight.values > 0.0])
-    pgt = numpy.angle(gt.gain.values[gt.weight.values > 0.0])
-    rgt = gt.residual.values[numpy.sum(gt.weight.values, axis=1) > 0.0]
+    agt = numpy.abs(gt.gain.data[gt.weight.data > 0.0])
+    pgt = numpy.angle(gt.gain.data[gt.weight.data > 0.0])
+    rgt = gt.residual.data[numpy.sum(gt.weight.data, axis=1) > 0.0]
     data = {'shape': gt.gain.shape,
             'maxabs-amp': numpy.max(agt),
             'minabs-amp': numpy.min(agt),
@@ -395,7 +382,7 @@ def gaintable_plot(
         ax[0].set_ylabel("RMS residual (Jy)")
 
         amp = numpy.abs(
-            gt.gain.values[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
+            gt["gain"].data[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
         )
         ax[1].imshow(amp, cmap=cmap)
         ax[1].set_ylabel("Amplitude")
@@ -403,7 +390,7 @@ def gaintable_plot(
         ax[1].xaxis.set_tick_params(labelsize="small")
 
         phase = numpy.angle(
-            gt.gain.values[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
+            gt["gain"].data[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
         )
         ax[2].imshow(phase, cmap=cmap)
         ax[2].set_ylabel("Phase (radian)")
@@ -431,8 +418,8 @@ def gaintable_plot(
         ax[1].set_title("{title} Amplitude {cc}".format(title=title, cc=cc))
 
         for ant in ants:
-            amp = numpy.abs(gt.gain.values[:, ant, channels, 0, 0])
-            angle = numpy.angle(gt.gain.values[:, ant, channels, 0, 0])
+            amp = numpy.abs(gt["gain"].data[:, ant, channels, 0, 0])
+            angle = numpy.angle(gt["gain"].data[:, ant, channels, 0, 0])
             ax[2].plot(
                 time_axis[amp[:, 0] > min_amp],
                 angle[amp[:, 0] > min_amp],
@@ -445,7 +432,7 @@ def gaintable_plot(
         plt.xticks(rotation=0)
 
         if gt.configuration is not None:
-            if len(gt.configuration.names.values) < label_max:
+            if len(gt.configuration.names.data) < label_max:
                 ax[1].legend()
                 ax[1][1].legend()
 

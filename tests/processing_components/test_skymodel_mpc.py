@@ -92,10 +92,10 @@ class TestSkymodelMPC(unittest.TestCase):
         _, actual_components = remove_neighbouring_components(actual_components, 0.05)
         
         for imask, mask in enumerate(image_voronoi_iter(self.model, actual_components)):
-            mask.data *= beam.data
+            mask["pixels"].data *= beam["pixels"].data
             assert isinstance(mask, Image)
-            assert mask.data.dtype == "float"
-            assert numpy.sum(mask.data) > 1
+            assert mask["pixels"].data.dtype == "float"
+            assert numpy.sum(mask["pixels"].data) > 1
             # import matplotlib.pyplot as plt
             # from rascil.processing_components.image.operations import show_image
             # show_image(mask)

@@ -66,7 +66,7 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
 
     assert image_is_canonical(im)
 
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     assert facets <= ny, "Cannot have more raster elements than pixels"
     assert facets <= nx, "Cannot have more raster elements than pixels"
     
@@ -184,7 +184,7 @@ def image_channel_iter(im: Image, subimages=1) -> collections.abc.Iterable:
 
     assert image_is_canonical(im)
 
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     
     assert subimages <= nchan, "More subimages %d than channels %d" % (subimages, nchan)
     step = nchan // subimages

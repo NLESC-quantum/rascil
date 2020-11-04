@@ -66,9 +66,9 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     :return: Convolution Function
 
     """
-    assert len(im.shape) == 4
-    assert im.wcs.wcs.ctype[0] == 'RA---SIN'
-    assert im.wcs.wcs.ctype[1] == 'DEC--SIN'
+    assert len(im["pixels"].data.shape) == 4
+    assert im.wcs.wcs.ctype[0] == 'RA---SIN', im.wcs.wcs.ctype[0]
+    assert im.wcs.wcs.ctype[1] == 'DEC--SIN', im.wcs.wcs.ctype[1]
     
     d2r = numpy.pi / 180.0
     
@@ -110,15 +110,15 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     
     # The sampling on the UU and VV axes should be the same as for the image.
     # The sampling on the DUU and DVV axes should be oversampling times finer.
-    cf_wcs.wcs.cdelt[0] = 1.0 / (im.shape[3] * d2r * im.wcs.wcs.cdelt[0])
-    cf_wcs.wcs.cdelt[1] = 1.0 / (im.shape[2] * d2r * im.wcs.wcs.cdelt[1])
+    cf_wcs.wcs.cdelt[0] = 1.0 / (im["pixels"].data.shape[3] * d2r * im.wcs.wcs.cdelt[0])
+    cf_wcs.wcs.cdelt[1] = 1.0 / (im["pixels"].data.shape[2] * d2r * im.wcs.wcs.cdelt[1])
     cf_wcs.wcs.cdelt[2] = cf_wcs.wcs.cdelt[0] / oversampling
     cf_wcs.wcs.cdelt[3] = cf_wcs.wcs.cdelt[1] / oversampling
     cf_wcs.wcs.cdelt[4] = wstep
     cf_wcs.wcs.cdelt[5] = im.wcs.wcs.cdelt[2]
     cf_wcs.wcs.cdelt[6] = im.wcs.wcs.cdelt[3]
     
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     
     cf_data = numpy.zeros([nchan, npol, nw, oversampling, oversampling, support, support], dtype='complex')
     

@@ -177,8 +177,8 @@ if __name__ == '__main__':
                                                           docal=True)
         work_vis = rsexecute.compute(result, sync=True)
         for w in work_vis:
-            all_skymodel_blockvis.data['vis'] += w.data['vis']
-        assert numpy.max(numpy.abs(all_skymodel_blockvis.data['vis'])) > 0.0
+            all_skymodel_blockvis['vis'].data += w.data['vis']
+        assert numpy.max(numpy.abs(all_skymodel_blockvis['vis'].data)) > 0.0
 
 
     #######################################################################################################

@@ -140,7 +140,7 @@ class TestAtmosphericScreen(unittest.TestCase):
         newscreen = old_screen.copy(deep=True)
 
         newscreen, weights = grid_gaintable_to_screen(self.vis, gaintables, newscreen)
-        assert numpy.max(numpy.abs(screen.data)) > 0.0
+        assert numpy.max(numpy.abs(screen["pixels"].data)) > 0.0
         if self.persist: export_image_to_fits(newscreen, rascil_path('test_results/test_mpc_screen_gridded.fits'))
         if self.persist: export_image_to_fits(weights, rascil_path('test_results/test_mpc_screen_gridded_weights.fits'))
 

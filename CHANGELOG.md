@@ -1,6 +1,11 @@
 
-0.1.11b
--------
+0.1.11
+------
+
+* Final release before 0.2.0
+* Fixed error in circularnp, linearnp calibration
+* Gain=0.0 case trapped
+* psfwidth was not propagated in the pipelines
 
 0.1.10
 ------

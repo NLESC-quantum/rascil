@@ -14,7 +14,7 @@ from astropy.wcs import WCS
 from rascil.data_models import Image
 from rascil.processing_components.fourier_transforms.fft_coordinates import coordinates, grdsf
 from rascil.processing_components.griddata.convolution_functions import create_convolutionfunction_from_image
-from rascil.processing_components.image.operations import create_image_from_array, copy_image, create_empty_image_like, \
+from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, \
     fft_image, pad_image, create_w_term_like
 from rascil.processing_components.imaging.primary_beams import convert_azelvp_to_radec
 
@@ -185,7 +185,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     
     # We might need to work with a larger image
     padded_shape = [nchan, npol, ny, nx]
-    thisplane = copy_image(subim)
+    thisplane = subim.copy()
     thisplane["pixels"].data = numpy.zeros(thisplane["pixels"].data.shape, dtype='complex')
     scf = cf["pixels"].data[...]
     for z, w in enumerate(w_list):

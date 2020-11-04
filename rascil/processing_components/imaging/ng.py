@@ -17,8 +17,7 @@ from rascil.data_models.memory_data_models import BlockVisibility, \
     Image
 from rascil.data_models.parameters import get_parameter
 from rascil.data_models.polarisation import convert_pol_frame
-from rascil.processing_components.image.operations import copy_image, \
-    image_is_canonical
+from rascil.processing_components.image.operations import image_is_canonical
 from rascil.processing_components.imaging.base import shift_vis_to_image, \
     normalize_sumwt, fill_blockvis_for_psf
 from rascil.processing_components.visibility.base import copy_visibility
@@ -141,7 +140,7 @@ try:
         
         assert isinstance(bvis, BlockVisibility), bvis
         
-        im = copy_image(model)
+        im = model.copy()
         
         nthreads = get_parameter(kwargs, "threads", 4)
         epsilon = get_parameter(kwargs, "epsilon", 1e-12)
@@ -157,7 +156,7 @@ try:
         # if dopsf:
         #     sbvis = fill_vis_for_psf(sbvis)
 
-        ms = sbvis.flagged_vis.data
+        ms = sbvis.blockvisibility_acc.flagged_vis.data
         ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
         ms = convert_pol_frame(ms, bvis.polarisation_frame, im.polarisation_frame, polaxis=2)
 
@@ -165,7 +164,7 @@ try:
         uvw = uvw.reshape([nrows * nbaselines, 3])
         uvw = numpy.nan_to_num(uvw)
         
-        wgt = sbvis.flagged_imaging_weight.data.astype("f8")
+        wgt = sbvis.blockvisibility_acc.flagged_imaging_weight.data.astype("f8")
         wgt=wgt.reshape([nrows * nbaselines, vnchan, vnpol])
 
         # if epsilon > 5.0e-6:

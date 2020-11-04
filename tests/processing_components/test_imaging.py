@@ -109,7 +109,7 @@ class TestImaging2D(unittest.TestCase):
         comps = find_skycomponents(dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5)
         assert len(comps) == len(self.components), "Different number of components found: original %d, recovered %d" % \
                                                    (len(self.components), len(comps))
-        cellsize = abs(dirty.wcs.wcs.cdelt[0])
+        cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
         
         for comp in comps:
             # Check for agreement in direction
@@ -133,7 +133,7 @@ class TestImaging2D(unittest.TestCase):
         if self.persist:
             export_image_to_fits(dirty[0], '%s/test_imaging_%s_residual.fits' %
                                  (self.dir, name))
-        for pol in range(dirty[0].npol):
+        for pol in range(dirty[0].image_acc.npol):
             assert numpy.max(numpy.abs(dirty[0]["pixels"].data[:, pol])), "Residual image pol {} is empty".format(pol)
         
         maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
@@ -155,9 +155,9 @@ class TestImaging2D(unittest.TestCase):
         dirtymax = numpy.max(numpy.abs(dirty[0]["pixels"].data))
         assert dirtymax < 200.0, "Dirty image peak {} is implausibly high".format(dirtymax)
         
-        for pol in range(dirty[0].npol):
+        for pol in range(dirty[0].image_acc.npol):
             assert numpy.max(numpy.abs(dirty[0]["pixels"].data[:, pol])), "Dirty image pol {} is empty".format(pol)
-        for chan in range(dirty[0].nchan):
+        for chan in range(dirty[0].image_acc.nchan):
             assert numpy.max(numpy.abs(dirty[0]["pixels"].data[chan])), "Dirty image channel {} is empty".format(chan)
         
         if check_components:
@@ -170,7 +170,7 @@ class TestImaging2D(unittest.TestCase):
     def test_predict_2d_point(self):
         self.actualSetUp(zerow=True)
         self.model["pixels"].data[...] = 0.0
-        nchan, npol, ny, nx = self.model.shape
+        nchan, npol, ny, nx = self.model.image_acc.shape
         self.model["pixels"].data[0, 0, ny // 2, nx // 2] = 1.0
         vis = predict_2d(self.vis, self.model)
         assert numpy.max(numpy.abs(vis.vis - 1.0)) < 1e-12, numpy.max(numpy.abs(vis.vis - 1.0))
@@ -178,7 +178,7 @@ class TestImaging2D(unittest.TestCase):
     def test_predict_2d_point_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         self.model["pixels"].data[...] = 0.0
-        nchan, npol, ny, nx = self.model.shape
+        nchan, npol, ny, nx = self.model.image_acc.shape
         self.model["pixels"].data[0, 0, ny // 2, nx // 2] = 1.0
         vis = predict_2d(self.vis, self.model)
         assert numpy.max(numpy.abs(vis.vis[..., 0] - 1.0)) < 1e-12

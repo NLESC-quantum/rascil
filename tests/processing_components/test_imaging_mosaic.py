@@ -13,7 +13,6 @@ from rascil.data_models.polarisation import PolarisationFrame
 
 from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-from rascil.processing_components import copy_image
 from rascil.processing_components import create_blockvisibility_from_ms, show_image, create_pb, \
     create_image_from_visibility, invert_awprojection, create_awterm_convolutionfunction, \
     export_convolutionfunction_to_fits, export_image_to_fits, weight_visibility
@@ -57,7 +56,7 @@ class TestImaging2D(unittest.TestCase):
         gcfcf = create_awterm_convolutionfunction(model, make_pb=make_pb,
                                                   polarisation_frame=PolarisationFrame('circular'),
                                                   oversampling=17, support=10)
-        mosaic = copy_image(model)
+        mosaic = model.copy()
         
         for vt in vis_list:
             vt = weight_visibility(vt, model)

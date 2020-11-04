@@ -10,7 +10,7 @@ import logging
 import numpy
 
 from rascil.processing_components.image import calculate_image_frequency_moments
-from rascil.processing_components.image.operations import copy_image, create_empty_image_like
+from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.processing_components.imaging import normalize_sumwt
 from rascil.processing_components.imaging import predict_2d, invert_2d, predict_awprojection, invert_awprojection
 from rascil.processing_components.visibility import copy_visibility
@@ -62,7 +62,7 @@ def sum_invert_results_local(image_list):
             else:
                 scale = arg[1]
             if first:
-                im = copy_image(arg[0])
+                im = arg[0].copy()
                 im["pixels"].data *= scale
                 sumwt = arg[1].copy()
                 first = False

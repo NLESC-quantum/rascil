@@ -42,8 +42,8 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokesI(vis)
-            assert visi.polarisation_frame.type == 'stokesI'
-            assert visi.npol == 1
+            assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesI'
+            assert visi.blockvisibility_acc.npol == 1
     
     def test_convert_visibility_stokes(self):
         for pol in ['linear', 'circular']:
@@ -52,8 +52,8 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokes(vis)
-            assert visi.polarisation_frame.type == 'stokesIQUV'
-            assert visi.npol == 4
+            assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesIQUV'
+            assert visi.blockvisibility_acc.npol == 4
     
     def test_convert_blockvisibility_I(self):
         for pol in ['linear', 'circular']:
@@ -62,8 +62,8 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokesI(vis)
-            assert visi.polarisation_frame.type == 'stokesI'
-            assert visi.npol == 1
+            assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesI'
+            assert visi.blockvisibility_acc.npol == 1
     
     def test_convert_blockvisibility_stokes(self):
         for pol in ['linear', 'circular']:
@@ -72,8 +72,9 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokes(vis)
-            assert visi.polarisation_frame.type == 'stokesIQUV'
-            assert visi.npol == 4
+            print(visi.blockvisibility_acc.polarisation_frame.type)
+            assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesIQUV'
+            assert visi.blockvisibility_acc.npol == 4
 
 
 if __name__ == '__main__':

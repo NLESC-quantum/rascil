@@ -91,7 +91,7 @@ def taper_visibility_gaussian(vis, beam=None):
         wave = constants.c.to('m s^-1').value / freq
         uvdistsq = (vis.u.values ** 2 + vis.v.values ** 2) / wave**2
         wt = numpy.exp(-scale_factor * uvdistsq)
-        vis['imaging_weight'].data[..., chan, :] = vis.flagged_imaging_weight.data[..., chan, :] * \
+        vis['imaging_weight'].data[..., chan, :] = vis.blockvisibility_acc.flagged_imaging_weight.data[..., chan, :] * \
                                                    wt[..., numpy.newaxis]
 
     return vis
@@ -125,7 +125,7 @@ def taper_visibility_tukey(vis, tukey=0.1):
         uvdistmax = numpy.max(uvdist)
         uvdist /= uvdistmax
         wt = numpy.array([tukey_filter(uv, tukey) for uv in uvdist]).reshape(oshape)
-        vis['imaging_weight'].data[..., chan, :] = vis.flagged_imaging_weight.data[..., chan, :] \
+        vis['imaging_weight'].data[..., chan, :] = vis.blockvisibility_acc.flagged_imaging_weight.data[..., chan, :] \
                                                         * wt[..., numpy.newaxis]
 
     return vis

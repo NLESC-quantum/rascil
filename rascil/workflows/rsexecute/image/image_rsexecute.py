@@ -3,7 +3,6 @@ __all__ = ['image_rsexecute_map_workflow', 'sum_images_rsexecute']
 
 import logging
 
-from rascil.processing_components.image import copy_image
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.processing_components.image import image_scatter_facets, image_gather_facets
 
@@ -58,8 +57,8 @@ def sum_images_rsexecute(image_list, split=2):
 
     """
     def sum_images(imagelist):
-        out = copy_image(imagelist[0])
-        out.data += imagelist[1].data
+        out = imagelist[0].copy()
+        out["pixels"].data += imagelist[1]["pixels"].data
         return out
     
     if len(image_list) > split:

@@ -14,7 +14,7 @@ import numpy
 
 from rascil.data_models.memory_data_models import Image, BlockVisibility
 from rascil.data_models.parameters import get_parameter
-from rascil.processing_components.image.operations import copy_image, create_empty_image_like
+from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.workflows.shared.imaging import imaging_context
 from rascil.workflows.shared.imaging import sum_invert_results, remove_sumwt, sum_predict_results, \
     threshold_list
@@ -269,7 +269,7 @@ def deconvolve_list_serial_workflow(dirty_list, psf_list, model_imagelist, prefi
             return result
         else:
             
-            return copy_image(model)
+            return model.copy()
     
     deconvolve_facets = get_parameter(kwargs, 'deconvolve_facets', 1)
     deconvolve_overlap = get_parameter(kwargs, 'deconvolve_overlap', 0)
@@ -461,7 +461,7 @@ def subtract_list_serial_workflow(vis_list, model_vislist):
     
     def subtract_vis(vis, model_vis):
         if vis is not None and model_vis is not None:
-            assert vis.flagged_vis.shape == model_vis.flagged_vis.shape
+            assert vis.blockvisibility_acc.flagged_vis.shape == model_vis.blockvisibility_acc.flagged_vis.shape
             subvis = copy_visibility(vis)
             subvis['vis'].data[...] -= model_vis['vis'].data[...]
             return subvis

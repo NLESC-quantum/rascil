@@ -14,7 +14,7 @@ from rascil.data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import calculate_blockvisibility_parallactic_angles, convert_azelvp_to_radec, \
     simulate_gaintable_from_voltage_pattern
-from rascil.processing_components.image import export_image_to_fits, copy_image, qa_image
+from rascil.processing_components.image import export_image_to_fits, qa_image
 from rascil.processing_components.imaging import create_image_from_visibility
 from rascil.processing_components.imaging.primary_beams import create_vp
 from rascil.processing_components.simulation import create_named_configuration
@@ -185,7 +185,7 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
             
             for ipol, pol in enumerate(["I", "Q", "U", "V"]):
                 result["model_{}".format(pol)] = flux[0][ipol]
-                polimage = copy_image(dirty_list[0])
+                polimage = dirty_list[0].copy()
                 polimage.data = polimage.data[:, ipol, ...][:, numpy.newaxis, ...]
                 qa = qa_image(polimage, context="Stokes " + pol)
                 result["peak_{}_{}".format(method, pol)] = max(qa.data['min'], qa.data['max'], key=abs)

@@ -79,7 +79,7 @@ def vis_summary(vis: BlockVisibility):
     :param vis: BlockVisibility
     :return: string
     """
-    return "%d rows, %.3f GB" % (vis.nvis, vis.size())
+    return "%d rows, %.3f GB" % (vis.blockvisibility_acc.nvis, vis.blockvisibility_acc.size())
 
 
 def copy_visibility(vis: BlockVisibility, zero=False) -> BlockVisibility:
@@ -343,35 +343,35 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         if source_name is None:
             source_name = vis.source
         # Check polarisation
-        npol = vis.npol
-        nchan = vis.nchan
-        if vis.polarisation_frame.type == 'linear':
+        npol = vis.blockvisibility_acc.npol
+        nchan = vis.blockvisibility_acc.nchan
+        if vis.blockvisibility_acc.polarisation_frame.type == 'linear':
             polarization = ['XX', 'XY', 'YX', 'YY']
-        elif vis.polarisation_frame.type == 'linearnp':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'linearnp':
             polarization = ['XX', 'YY']
-        elif vis.polarisation_frame.type == 'stokesI':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesI':
             polarization = ['XX']
-        elif vis.polarisation_frame.type == 'circular':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'circular':
             polarization = ['RR', 'RL', 'LR', 'LL']
-        elif vis.polarisation_frame.type == 'circularnp':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'circularnp':
             polarization = ['RR', 'LL']
-        elif vis.polarisation_frame.type == 'stokesIQUV':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIQUV':
             polarization = ['I', 'Q', 'U', 'V']
-        elif vis.polarisation_frame.type == 'stokesIQ':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIQ':
             polarization = ['I', 'Q']
-        elif vis.polarisation_frame.type == 'stokesIV':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIV':
             polarization = ['I', 'V']
         else:
             raise ValueError(
                 "Unknown visibility polarisation %s" % (vis.polarisation_frame.type))
         
         tbl.set_stokes(polarization)
-        tbl.set_frequency(vis.frequency.values, vis.channel_bandwidth.values)
-        n_ant = len(vis.configuration.xyz)
+        tbl.set_frequency(vis.blockvisibility_acc.frequency.values, vis.blockvisibility_acc.channel_bandwidth.values)
+        n_ant = len(vis.blockvisibility_acc.configuration.xyz)
         
         antennas = []
-        names = vis.configuration.names.values
-        xyz = vis.configuration.xyz.values
+        names = vis.blockvisibility_acc.configuration.configuration_acc.names.values
+        xyz = vis.blockvisibility_acc.configuration.configuration_acc.xyz.values
         for i in range(len(names)):
             antennas.append(Antenna(i, Stand(names[i], xyz[i, 0], xyz[i, 1], xyz[i, 2])))
         
@@ -388,7 +388,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
             for a2 in range(a1, n_ant):
                 bl_list.append((antennas[a1], antennas2[a2]))
         
-        tbl.set_geometry(vis.configuration, antennas)
+        tbl.set_geometry(vis.blockvisibility_acc.configuration, antennas)
         
         int_time = vis['integration_time'].values
         # bv_vis = vis['vis']

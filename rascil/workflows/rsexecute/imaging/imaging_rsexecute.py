@@ -20,11 +20,11 @@ from rascil.processing_components.griddata import create_pswf_convolutionfunctio
 from rascil.processing_components.griddata import \
     grid_blockvisibility_weight_to_griddata, griddata_blockvisibility_reweight, \
     griddata_merge_weights
-from rascil.processing_components.image import calculate_image_frequency_moments, image_iselect
+from rascil.processing_components.image import calculate_image_frequency_moments
 from rascil.processing_components.image import deconvolve_cube, restore_cube
 from rascil.processing_components.image import image_scatter_facets, image_gather_facets, \
     image_scatter_channels, image_gather_channels
-from rascil.processing_components.image.operations import copy_image, create_empty_image_like
+from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.processing_components.imaging import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
@@ -248,7 +248,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
                 result["pixels"].data = result["pixels"].data + model["pixels"].data
             return result
         else:
-            return copy_image(model)
+            return model.copy()
     
     deconvolve_facets = get_parameter(kwargs, 'deconvolve_facets', 1)
     deconvolve_overlap = get_parameter(kwargs, 'deconvolve_overlap', 0)

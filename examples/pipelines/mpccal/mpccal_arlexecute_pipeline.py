@@ -34,8 +34,7 @@ from rascil.processing_components import create_gaintable_from_blockvisibility, 
     insert_skycomponent, filter_skycomponents_by_flux, create_blockvisibility, \
     copy_visibility, \
     create_image_from_visibility
-from rascil.processing_components.image.operations import copy_image, \
-    create_empty_image_like
+from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.workflows import invert_list_rsexecute_workflow, \
     restore_list_rsexecute_workflow, \
     mpccal_skymodel_list_rsexecute_workflow, predict_skymodel_list_rsexecute_workflow, \
@@ -355,7 +354,7 @@ if __name__ == '__main__':
     plt.legend()
     plt.show(block=block_plots)
 
-    difference_image = copy_image(mpccal_restored)
+    difference_image = mpccal_restored.copy()
     difference_image.data -= ical_restored.data
 
     print(qa_image(difference_image, context='MPCCAL - ICAL image'))

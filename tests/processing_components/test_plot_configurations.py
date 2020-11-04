@@ -48,7 +48,7 @@ class TestPlotConfigurations(unittest.TestCase):
         for config in ['MID']:
             names = ['SKA057', 'SKA062', 'SKA072', 'SKA071', 'SKA002', 'SKA049']
             self.createVis(config, rmax=2e2, names=names)
-            assert self.config.size() > 0.0
+            assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_configuration([self.vis], title=config,
                                plot_file='{dir}/test_plot_{config}_configuration.png'.format(
@@ -59,7 +59,7 @@ class TestPlotConfigurations(unittest.TestCase):
     def test_plot_configurations(self):
         for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MEERKAT+']:
             self.createVis(config)
-            assert self.config.size() > 0.0
+            assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_configuration([self.vis], title=config,
                             plot_file='{dir}/test_plot_{config}_configuration.png'.format(
@@ -67,7 +67,7 @@ class TestPlotConfigurations(unittest.TestCase):
 
             for config in ['LOFAR', 'VLAA', 'VLAA_north']:
                 self.createVis(config, +35.0)
-                assert self.config.size() > 0.0
+                assert self.config.configuration_acc.size() > 0.0
                 plt.clf()
                 plot_configuration([self.vis], title=config,
                                    plot_file='{dir}/test_plot_{config}_configuration.png'.format(
@@ -77,7 +77,7 @@ class TestPlotConfigurations(unittest.TestCase):
     def test_plot_configurations_uvcoverage(self):
         for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MEERKAT+']:
             self.createVis(config)
-            assert self.config.size() > 0.0
+            assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_uvcoverage([self.vis], title=config,
                             plot_file='{dir}/test_plot_{config}_uvcoverage.png'.format(
@@ -86,7 +86,7 @@ class TestPlotConfigurations(unittest.TestCase):
     
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
             self.createVis(config, +35.0)
-            assert self.config.size() > 0.0
+            assert self.config.configuration_acc.size() > 0.0
             assert len(self.config.vp_type) == len(self.config.names)
             plt.clf()
             plot_uvcoverage([self.vis], title=config, plot_file='{dir}/test_plot_{config}_uvcoverage.png'.format(

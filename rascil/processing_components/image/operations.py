@@ -7,7 +7,6 @@ __all__ = ['add_image',
            'calculate_image_from_frequency_moments',
            'convert_polimage_to_stokes',
            'convert_stokes_to_polimage',
-           'copy_image',
            'create_empty_image_like',
            'create_image',
            'create_image_from_array',
@@ -326,7 +325,7 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, titl
     assert image_is_canonical(im)
     
     for isc, sc in enumerate(comps):
-        newim = copy_image(im)
+        newim = im.copy()
         plt.subplot(111, projection=newim.wcs.sub([1, 2]))
         centre = numpy.round(skycoord_to_pixel(sc.direction, newim.wcs, 1, 'wcs')).astype('int')
         newim["pixels"].data = \
@@ -349,7 +348,7 @@ def smooth_image(model: Image, width=1.0, normalise=True):
     :param normalise: Normalise kernel peak to unity
 
     """
-    assert isinstance(model, Image), model
+    #assert isinstance(model, Image), model
     assert image_is_canonical(model)
     
     from astropy.convolution.kernels import Gaussian2DKernel
@@ -359,7 +358,7 @@ def smooth_image(model: Image, width=1.0, normalise=True):
     model_type = model["pixels"].data.dtype
     
     cmodel = create_empty_image_like(model)
-    nchan, npol, _, _ = model.shape
+    nchan, npol, _, _ = model.image_acc.shape
     for pol in range(npol):
         for chan in range(nchan):
             cmodel["pixels"].data[chan, pol, :, :] = convolve_fft(model["pixels"].data[chan, pol, :, :], kernel,
@@ -453,23 +452,23 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
     """
     assert isinstance(im, Image)
     nchan, npol, ny, nx = im["pixels"].data.shape
-    nmoment, mnpol, mny, mnx = moment_image.shape
+    nmoment, mnpol, mny, mnx = moment_image.image_acc.shape
     assert nmoment > 0
     
     assert npol == mnpol
     assert ny == mny
     assert nx == mnx
     
-    assert moment_image.wcs.wcs.ctype[3] == 'MOMENT', "Second image should be a moment image"
+    assert moment_image.image_acc.wcs.wcs.ctype[3] == 'MOMENT', "Second image should be a moment image"
     
     channels = numpy.arange(nchan)
-    freq = im.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
+    freq = im.image_acc.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
     
     if reference_frequency is None:
         reference_frequency = numpy.average(freq)
     log.debug("calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)" % (reference_frequency))
     
-    newim = copy_image(im)
+    newim = im.copy()
     
     newim["pixels"].data[...] = 0.0
     
@@ -795,17 +794,6 @@ def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
     return polarisation_frame
 
 
-def copy_image(im: Image):
-    """ Copy an image
-
-    Performs deepcopy of data_models, breaking reference semantics
-
-    :param im:
-    :return: Image
-    """
-    return im.copy(deep=True).astype(Image)
-
-
 def create_empty_image_like(im: Image) -> Image:
     """ Create an empty image like another in shape and wcs
 
@@ -819,8 +807,7 @@ def create_empty_image_like(im: Image) -> Image:
     """
     
     #assert isinstance(newim, Image), newim
-    newim = create_image_from_array(im["pixels"].data, wcs=im.wcs,
-                                    polarisation_frame=im.polarisation_frame)
+    newim = im.copy(deep=True)
     newim["pixels"].data[...] = 0.0
     return newim
 
@@ -1055,7 +1042,7 @@ def scale_and_rotate_image(im, angle=0.0, scale=None, order=5):
     if scale is None:
         scale = [1.0, 1.0]
     
-    newim = copy_image(im)
+    newim = im.copy()
     inv_scale = numpy.diag(scale)
     inv_transform = numpy.dot(inv_scale, inv_rot)
     offset = c_in - numpy.dot(inv_transform, c_out)
@@ -1094,7 +1081,7 @@ def rotate_image(im, angle=0.0, order=5):
     """
     
     from scipy.ndimage.interpolation import rotate
-    newim = copy_image(im)
+    newim = im.copy()
     if newim["pixels"].data.dtype == "complex":
         newim["pixels"].data = rotate(im["pixels"].data.real, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order) + \
                      1j * rotate(im["pixels"].data.imag, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order)
@@ -1129,7 +1116,7 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
     else:
         log.debug('apply_gaintable: Apply voltage pattern image')
     
-    is_scalar = vp.shape[1] == 1
+    is_scalar = vp.image_acc.shape[1] == 1
     
     nchan, npol, ny, nx = im["pixels"].data.shape
     
@@ -1148,7 +1135,7 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
                 newim["pixels"].data[chan, 0, ...][mask] /= pb[mask]
     else:
         log.debug('apply_voltage_pattern_to_image: Full Jones voltage pattern')
-        polim = convert_stokes_to_polimage(im, vp.polarisation_frame)
+        polim = convert_stokes_to_polimage(im, vp.image_acc.polarisation_frame)
         assert npol == 4
         im_t = numpy.transpose(polim["pixels"].data, (0, 2, 3, 1)).reshape([nchan, ny, nx, 2, 2])
         vp_t = numpy.transpose(vp["pixels"].data, (0, 2, 3, 1)).reshape([nchan, ny, nx, 2, 2])
@@ -1159,8 +1146,8 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
                     newim_t[chan, y, x] = apply_jones(vp_t[chan, y, x], im_t[chan, y, x], inverse, min_det=min_det)
         
         newim = create_image_from_array(newim_t.reshape([nchan, ny, nx, 4]).transpose((0, 3, 1, 2)),
-                                        wcs=im.wcs,
-                                        polarisation_frame=vp.polarisation_frame)
+                                        wcs=im.image_acc.wcs,
+                                        polarisation_frame=vp.image_acc.polarisation_frame)
         newim = convert_polimage_to_stokes(newim)
         
         return newim

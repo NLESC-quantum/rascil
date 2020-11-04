@@ -121,7 +121,7 @@ def remove_continuum_blockvisibility(vis: BlockVisibility, degree=1,
     for row in range(vis.nvis):
         for ibaseline, baseline in enumerate(vis.baselines):
             for pol in range(vis.polarisation_frame.npol):
-                wt = numpy.sqrt(vis.flagged_weight[row, ibaseline, :, pol])
+                wt = numpy.sqrt(vis.blockvisibility_acc.flagged_weight[row, ibaseline, :, pol])
                 if mask is not None:
                     wt[mask] = 0.0
                 fit = numpy.polyfit(x, vis['vis'][row, ibaseline, :, pol], w=wt, deg=degree)
@@ -145,10 +145,10 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
     """
     assert isinstance(vis, BlockVisibility), vis
     
-    x = numpy.zeros_like(vis.flagged_vis.values)
-    xwt = numpy.abs(modelvis.flagged_vis.values) ** 2 * vis.flagged_weight.values
+    x = numpy.zeros_like(vis.blockvisibility_acc.flagged_vis.values)
+    xwt = numpy.abs(modelvis.blockvisibility_acc.flagged_vis.values) ** 2 * vis.blockvisibility_acc.flagged_weight.values
     mask = xwt > 0.0
-    x[mask] = vis.flagged_vis.values[mask] / modelvis.flagged_vis.values[mask]
+    x[mask] = vis.blockvisibility_acc.flagged_vis.values[mask] / modelvis.blockvisibility_acc.flagged_vis.values[mask]
     
     pointsource_vis = BlockVisibility(flags=vis.flags.values,
                                       baselines=vis.baselines,
@@ -185,9 +185,9 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
     flags[flags < nchan] = 0
     flags[flags > 1] = 1
     
-    newvis = numpy.sum(vis['vis'].values * vis.flagged_weight.values, axis=-2)[..., numpy.newaxis, :]
-    newweights = numpy.sum(vis.flagged_weight.values, axis=-2)[..., numpy.newaxis, :]
-    newimaging_weights = numpy.sum(vis.flagged_imaging_weight.values, axis=-2)[..., numpy.newaxis, :]
+    newvis = numpy.sum(vis['vis'].values * vis.blockvisibility_acc.flagged_weight.values, axis=-2)[..., numpy.newaxis, :]
+    newweights = numpy.sum(vis.blockvisibility_acc.flagged_weight.values, axis=-2)[..., numpy.newaxis, :]
+    newimaging_weights = numpy.sum(vis.blockvisibility_acc.flagged_imaging_weight.values, axis=-2)[..., numpy.newaxis, :]
     mask = (1 - flags) * newweights > 0.0
     newvis[mask] = newvis[mask] / ((1 - flags) * newweights)[mask]
     
@@ -251,9 +251,9 @@ def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=Non
                             source=vis.source,
                             meta=vis.meta)
         vf = vis.flags[..., group[0]:group[1], :]
-        vfvw = vis.flagged_vis[..., group[0]:group[1], :] * vis.weight[..., group[0]:group[1], :]
-        vfw = vis.flagged_weight[..., group[0]:group[1], :]
-        vfiw = vis.flagged_imaging_weight[..., group[0]:group[1], :]
+        vfvw = vis.blockvisibility_acc.flagged_vis[..., group[0]:group[1], :] * vis.weight[..., group[0]:group[1], :]
+        vfw = vis.blockvisibility_acc.flagged_weight[..., group[0]:group[1], :]
+        vfiw = vis.blockvisibility_acc.flagged_imaging_weight[..., group[0]:group[1], :]
         
         newvis['flags'][..., 0, :] = numpy.sum(vf, axis=-2)
         newvis['flags'][newvis['flags'] < nchan] = 0
@@ -262,8 +262,8 @@ def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=Non
         newvis['vis'][..., 0, :] = numpy.sum(vfvw, axis=-2)
         newvis['weight'][..., 0, :] = numpy.sum(vfw, axis=-2)
         newvis['imaging_weight'][..., 0, :] = numpy.sum(vfiw, axis=-2)
-        mask = newvis.flagged_weight > 0.0
-        newvis['vis'][mask] = newvis['vis'][mask] / newvis.flagged_weight[mask]
+        mask = newvis.blockvisibility_acc.flagged_weight > 0.0
+        newvis['vis'][mask] = newvis['vis'][mask] / newvis.blockvisibility_acc.flagged_weight[mask]
         
         newvis_list.append(newvis)
     
@@ -276,18 +276,18 @@ def convert_blockvisibility_to_stokes(vis):
     :param vis: blockvisibility
     :return: Converted visibility data.
     """
-    poldef = vis.polarisation_frame
+    poldef = vis.blockvisibility_acc.polarisation_frame
     if poldef == PolarisationFrame('linear'):
         vis['vis'].values[...] = convert_linear_to_stokes(vis['vis'].values, polaxis=3)
         vis['flags'].values[...] = \
             numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[..., numpy.newaxis]
-        vis.polarisation_frame = PolarisationFrame('stokesIQUV')
+        vis.attrs["polarisation_frame"] = PolarisationFrame('stokesIQUV')
     elif poldef == PolarisationFrame('circular'):
         vis['vis'].values[...] = convert_circular_to_stokes(vis['vis'].values, polaxis=3)
         vis['flags'].values[...] = \
             numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
                 ..., numpy.newaxis]
-        vis.polarisation_frame = PolarisationFrame('stokesIQUV')
+        vis.attrs["polarisation_frame"] = PolarisationFrame('stokesIQUV')
     return vis
 
 
@@ -303,51 +303,56 @@ def convert_blockvisibility_to_stokesI(vis):
     polarisation_frame = PolarisationFrame('stokesI')
     poldef = vis.polarisation_frame
     if poldef == PolarisationFrame('linear'):
-        vis_data = convert_linear_to_stokesI(vis.flagged_vis.values)
+        vis_data = convert_linear_to_stokesI(vis.blockvisibility_acc.flagged_vis.values)
         vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
             ..., numpy.newaxis]
-        vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 3])[
+        vis_weight = (vis.blockvisibility_acc.flagged_weight.values[..., 0] + vis.blockvisibility_acc.flagged_weight.values[..., 3])[
             ..., numpy.newaxis]
-        vis_imaging_weight = (vis.flagged_imaging_weight.values[..., 0] +
-                              vis.flagged_imaging_weight.values[..., 3])[
+        vis_imaging_weight = (vis.blockvisibility_acc.flagged_imaging_weight.values[..., 0] +
+                              vis.blockvisibility_acc.flagged_imaging_weight.values[..., 3])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('linearnp'):
-        vis_data = convert_linear_to_stokesI(vis.flagged_vis.values)
+        vis_data = convert_linear_to_stokesI(vis.blockvisibility_acc.flagged_vis.values)
         vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 1])[
             ..., numpy.newaxis]
-        vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 1])[
+        vis_weight = (vis.blockvisibility_acc.flagged_weight.values[..., 0] + vis.blockvisibility_acc.flagged_weight.values[..., 1])[
             ..., numpy.newaxis]
-        vis_imaging_weight = (vis.flagged_imaging_weight.values[..., 0] +
-                              vis.flagged_imaging_weight.values[..., 1])[
+        vis_imaging_weight = (vis.blockvisibility_acc.flagged_imaging_weight.values[..., 0] +
+                              vis.blockvisibility_acc.flagged_imaging_weight.values[..., 1])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('circular'):
-        vis_data = convert_circular_to_stokesI(vis.flagged_vis.values)
+        vis_data = convert_circular_to_stokesI(vis.blockvisibility_acc.flagged_vis.values)
         vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
             ..., numpy.newaxis]
-        vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 3])[
+        vis_weight = (vis.blockvisibility_acc.flagged_weight.values[..., 0] + vis.blockvisibility_acc.flagged_weight.values[..., 3])[
             ..., numpy.newaxis]
-        vis_imaging_weight = (vis.flagged_imaging_weight.values[..., 0] +
-                              vis.flagged_imaging_weight.values[..., 3])[
+        vis_imaging_weight = (vis.blockvisibility_acc.flagged_imaging_weight.values[..., 0] +
+                              vis.blockvisibility_acc.flagged_imaging_weight.values[..., 3])[
             ..., numpy.newaxis]
     elif poldef == PolarisationFrame('circularnp'):
-        vis_data = convert_circular_to_stokesI(vis.flagged_vis.values)
+        vis_data = convert_circular_to_stokesI(vis.blockvisibility_acc.flagged_vis.values)
         vis_flags = numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 1])[
             ..., numpy.newaxis]
-        vis_weight = (vis.flagged_weight.values[..., 0] + vis.flagged_weight.values[..., 1])[
+        vis_weight = (vis.blockvisibility_acc.flagged_weight.values[..., 0] + vis.blockvisibility_acc.flagged_weight.values[..., 1])[
             ..., numpy.newaxis]
-        vis_imaging_weight = (vis.flagged_imaging_weight.values[..., 0] +
-                              vis.flagged_imaging_weight.values[..., 1])[
+        vis_imaging_weight = (vis.blockvisibility_acc.flagged_imaging_weight.values[..., 0] +
+                              vis.blockvisibility_acc.flagged_imaging_weight.values[..., 1])[
             ..., numpy.newaxis]
     else:
         raise NameError("Polarisation frame %s unknown" % poldef)
     
-    return BlockVisibility(frequency=vis.frequency.values,
-                           channel_bandwidth=vis.channel_bandwidth.values,
+    return BlockVisibility(frequency=vis.blockvisibility_acc.frequency.values,
+                           channel_bandwidth=vis.blockvisibility_acc.channel_bandwidth.values,
                            phasecentre=vis.attrs["phasecentre"],
-                           baselines=vis.baselines,
-                           configuration=vis.configuration, uvw=vis.uvw.values,
-                           time=vis.time.values, vis=vis_data, flags=vis_flags,
-                           weight=vis_weight, imaging_weight=vis_imaging_weight,
-                           integration_time=vis.integration_time.values,
+                           baselines=vis.blockvisibility_acc.baselines,
+                           configuration=vis.blockvisibility_acc.configuration,
+                           uvw=vis.blockvisibility_acc.uvw.values,
+                           time=vis.blockvisibility_acc.time.values,
+                           vis=vis_data,
+                           flags=vis_flags,
+                           weight=vis_weight,
+                           imaging_weight=vis_imaging_weight,
+                           integration_time=vis.blockvisibility_acc.integration_time.values,
                            polarisation_frame=polarisation_frame,
-                           source=vis.source, meta=vis.meta)
+                           source=vis.blockvisibility_acc.source,
+                           meta=vis.blockvisibility_acc.meta)

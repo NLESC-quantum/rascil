@@ -9,7 +9,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image import export_image_to_fits, qa_image, copy_image
+from rascil.processing_components.image import export_image_to_fits, qa_image
 from rascil.processing_components.imaging import create_image_from_visibility
 from rascil.processing_components.imaging import create_vp_generic_numeric
 from rascil.processing_components.simulation import create_named_configuration
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     for trial in range(ntrials):
         coeffs = numpy.random.normal(0.0, 0.03, len(key_nolls))
-        vp = copy_image(default_vp)
+        vp = default_vp.copy()
         for i in range(len(key_nolls)):
             vp.data += coeffs[i] * zernikes[i]['vp'].data
 

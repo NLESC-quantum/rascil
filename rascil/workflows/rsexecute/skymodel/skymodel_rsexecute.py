@@ -12,7 +12,6 @@ import numpy
 from rascil.data_models.memory_data_models import Image, GainTable, SkyModel, \
     ConvolutionFunction, BlockVisibility
 from rascil.processing_components.calibration import apply_gaintable
-from rascil.processing_components.image import copy_image
 from rascil.processing_components.image import image_scatter_facets, image_gather_facets
 from rascil.processing_components.image import restore_cube
 from rascil.processing_components.imaging import dft_skycomponent_visibility
@@ -68,7 +67,7 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
             if numpy.max(numpy.abs(sm.image.data)) > 0.0:
                 imgv = copy_visibility(ov, zero=True)
                 if isinstance(sm.mask, Image):
-                    model = copy_image(sm.image)
+                    model = sm.image.copy()
                     model.data *= sm.mask.data
                     imgv = predict_list_serial_workflow([imgv], [model], context=context,
                                                      vis_slices=vis_slices, facets=facets, gcfcf=[g],
@@ -208,7 +207,7 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
     psf_list = rsexecute.execute(remove_sumwt, nout=len(psf_imagelist))(psf_imagelist)
     
     def skymodel_scatter_facets(sm, facets, overlap, taper):
-        im = copy_image(sm.image)
+        im = sm.image.copy()
         im = insert_skycomponent(im, sm.components, **kwargs)
         return image_scatter_facets(im, facets, overlap, taper)
     
@@ -320,7 +319,7 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
         if isinstance(sm.image, Image):
             if numpy.max(numpy.abs(sm.image.data)) > 0.0:
                 if isinstance(sm.mask, Image):
-                    model = copy_image(sm.image)
+                    model = sm.image.copy()
                     model.data *= sm.mask.data
                 else:
                     model = sm.image

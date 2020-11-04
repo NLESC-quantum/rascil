@@ -225,7 +225,7 @@ def solve_calibrate_chain(vis, model_vis, gaintables=None, calibration_context='
                 create_gaintable_from_blockvisibility(avis,
                                                       timeslice=controls[c]['timeslice'])
         if iteration >= controls[c]['first_selfcal']:
-            if numpy.max(numpy.abs(vis.flagged_weight)) > 0.0 and (amvis is None or numpy.max(numpy.abs(amvis.vis)) > 0.0):
+            if numpy.max(numpy.abs(vis.blockvisibility_acc.flagged_weight)) > 0.0 and (amvis is None or numpy.max(numpy.abs(amvis.vis)) > 0.0):
                 gaintables[c] = solve_gaintable(avis, amvis,
                                                 gt=gaintables[c],
                                                 timeslice=controls[c]['timeslice'],

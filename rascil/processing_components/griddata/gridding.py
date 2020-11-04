@@ -86,9 +86,9 @@ def spatial_mapping(cf, griddata, u, v, w):
     pu_grid, pv_grid = \
         numpy.round(griddata.grid_wcs.sub([1, 2]).wcs_world2pix(u, v, 0)).astype('int')
     assert numpy.min(pu_grid) >= 0, "image sampling wrong: U axis underflows: %f" % numpy.min(pu_grid)
-    assert numpy.max(pu_grid) < griddata.shape[3], "U axis overflows: %f" % numpy.max(pu_grid)
+    assert numpy.max(pu_grid) < griddata.griddata_acc.shape[3], "U axis overflows: %f" % numpy.max(pu_grid)
     assert numpy.min(pv_grid) >= 0, "image sampling wrong: V axis underflows: %f" % numpy.min(pv_grid)
-    assert numpy.max(pv_grid) < griddata.shape[4], "V axis overflows: %f" % numpy.max(pv_grid)
+    assert numpy.max(pv_grid) < griddata.griddata_acc.shape[4], "V axis overflows: %f" % numpy.max(pv_grid)
     # We now have the location of grid points, convert back to uv space and find the remainder (in wavelengths). We
     # then use this to calculate the subsampling indices (DUU, DVV)
     wu_grid, wv_grid = griddata.grid_wcs.sub([1, 2]).wcs_pix2world(pu_grid, pv_grid, 0)
@@ -145,8 +145,8 @@ def grid_blockvisibility_to_griddata(vis, griddata, cf):
     nrows, nbaselines, nvchan, nvpol = vis["vis"].data.shape
     nichan, nipol, _, _, _ = griddata["pixels"].data.shape
 
-    fvist = numpy.nan_to_num(vis.flagged_vis.values.reshape([nrows * nbaselines, nvchan, nvpol]).T)
-    fwtt = numpy.nan_to_num(vis.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T)
+    fvist = numpy.nan_to_num(vis.blockvisibility_acc.flagged_vis.values.reshape([nrows * nbaselines, nvchan, nvpol]).T)
+    fwtt = numpy.nan_to_num(vis.blockvisibility_acc.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T)
     # Do this in place to avoid creating a new copy. Doing the conjugation outside the loop
     # reduces run time immensely
     ccf = numpy.conjugate(cf["pixels"].data)
@@ -198,7 +198,7 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
     assert cf.polarisation_frame == griddata.polarisation_frame
 
 
-    nchan, npol, nw, ny, nx = griddata.shape
+    nchan, npol, nw, ny, nx = griddata.griddata_acc.shape
     sumwt = numpy.zeros([nchan, npol])
 
     _, _, _, _, _, gv, gu = cf["pixels"].data.shape
@@ -212,7 +212,7 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
 
 
     # Transpose to get row varying fastest
-    fwtt = vis.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T
+    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T
 
     for vchan in range(nvchan):
         imchan = vis_to_im[vchan]
@@ -279,7 +279,7 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
         griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency, 0)[0]).astype('int')
     
     nrows, nbaselines,nvchan, nvpol = vis.vis.shape
-    fwtt = vis.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T
+    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T
 
     if weighting == "uniform":
         for pol in range(nvpol):
@@ -297,7 +297,7 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
     elif weighting == "robust":
         # Equation 3.15, 3.16 in Briggs thesis
         sumlocwt = numpy.sum(real_gd)
-        sumwt = numpy.sum(vis.flagged_weight)
+        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight)
         f2 = (5.0 * numpy.power(10.0, -robustness))**2 * sumwt / sumlocwt
         for pol in range(nvpol):
             for vchan in range(nvchan):

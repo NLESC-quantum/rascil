@@ -44,33 +44,33 @@ class TestConfigurations(unittest.TestCase):
     def test_named_configurations(self):
         for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LOWR3', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
             self.createVis(config)
-            assert self.config.size() > 0.0
+            assert self.config.configuration_acc.size() > 0.0
             #print("Config ", config, " has centre", self.config.location.geodetic)
  
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
             self.createVis(config, +35.0)
-            assert self.config.size() > 0.0
-            assert len(self.config.vp_type) == len(self.config.names)
+            assert self.config.configuration_acc.size() > 0.0
+            assert len(self.config.configuration_acc.vp_type) == len(self.config.configuration_acc.names)
 
     
     def test_SKA_MID_configurations(self):
         for config in ['MID', 'MIDR5']:
             self.config = create_named_configuration(config)
-            assert self.config.size() > 0.0
-            assert len(self.config.vp_type) == len(self.config.names)
-            assert "MEERKAT" in numpy.unique(self.config.vp_type)
-            assert "MID" in numpy.unique(self.config.vp_type)
+            assert self.config.configuration_acc.size() > 0.0
+            assert len(self.config.configuration_acc.vp_type) == len(self.config.configuration_acc.names)
+            assert "MEERKAT" in numpy.unique(self.config.configuration_acc.vp_type)
+            assert "MID" in numpy.unique(self.config.configuration_acc.vp_type)
 
     def test_SKA_LOW_configurations(self):
         for config in ['LOW', 'LOWR3', 'LOWBD2-CORE']:
             self.config = create_named_configuration(config)
-            assert self.config.size() > 0.0
+            assert self.config.configuration_acc.size() > 0.0
             assert "LOW" in numpy.unique(self.config.vp_type)
 
     def test_clip_configuration(self):
         for rmax in [100.0, 3000.0, 1000.0, 3000.0, 10000.0, 30000.0, 100000.0]:
             self.config = create_named_configuration('LOW', rmax=rmax)
-            assert self.config.size() > 0.0
+            assert self.config.configuration_acc.size() > 0.0
     
     def test_unknown_configuration(self):
         with self.assertRaises(ValueError):

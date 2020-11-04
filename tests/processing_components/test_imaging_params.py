@@ -45,7 +45,7 @@ class TestImagingParams(unittest.TestCase):
                                                   nchan=self.vnchan,
                                                   frequency=self.startfrequency)
         spectral_mode, vfrequency_map = get_frequency_map(self.vis, self.model)
-        assert numpy.max(vfrequency_map) == self.model.nchan - 1
+        assert numpy.max(vfrequency_map) == self.model.image_acc.nchan - 1
         assert numpy.min(vfrequency_map) == 0
         assert spectral_mode == 'channel'
     
@@ -54,7 +54,7 @@ class TestImagingParams(unittest.TestCase):
                                                   frequency=self.startfrequency, nchan=3,
                                                   channel_bandwidth=2e7)
         spectral_mode, vfrequency_map = get_frequency_map(self.vis, self.model)
-        assert numpy.max(vfrequency_map) == self.model.nchan - 1
+        assert numpy.max(vfrequency_map) == self.model.image_acc.nchan - 1
         assert spectral_mode == 'channel'
     
     def test_get_frequency_map_mfs(self):
@@ -68,7 +68,7 @@ class TestImagingParams(unittest.TestCase):
         self.model = create_low_test_image_from_gleam(npixel=128, cellsize=0.001, frequency=self.frequency,
                                                       channel_bandwidth=self.channel_bandwidth, flux_limit=10.0)
         spectral_mode, vfrequency_map = get_frequency_map(self.vis, self.model)
-        assert numpy.max(vfrequency_map) == self.model.nchan - 1
+        assert numpy.max(vfrequency_map) == self.model.image_acc.nchan - 1
         assert spectral_mode == 'channel'
 
 

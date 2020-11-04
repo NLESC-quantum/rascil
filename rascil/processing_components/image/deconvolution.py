@@ -39,7 +39,7 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.arrays.cleaners import hogbom, hogbom_complex, msclean, msmfsclean
 from rascil.processing_components.image.operations import calculate_image_frequency_moments, \
     calculate_image_from_frequency_moments, image_is_canonical
-from rascil.processing_components.image.operations import create_image_from_array, copy_image
+from rascil.processing_components.image.operations import create_image_from_array
 
 warnings.simplefilter('ignore', AstropyDeprecationWarning)
 
@@ -339,7 +339,7 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     #assert residual is None or isinstance(residual, Image), residual
     assert image_is_canonical(residual)
     
-    restored = copy_image(model)
+    restored = model.copy()
     
     npixel = psf["pixels"].data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)

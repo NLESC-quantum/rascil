@@ -259,12 +259,12 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
                                                 filter_kernel=kernel,
                                                 wcs=im.wcs.sub([1, 2])).to_table()
                  for pol in [0]]
-                for chan in range(im.nchan)]
+                for chan in range(im.image_acc.nchan)]
 
     def comp_prop(comp, prop_name):
         return [[comp_tbl[chan][pol][comp][prop_name]
                  for pol in [0]]
-                for chan in range(im.nchan)]
+                for chan in range(im.image_acc.nchan)]
 
     # Generate components
     comps = []
@@ -282,7 +282,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         ys = u.Quantity(list(map(u.Quantity,
                                  comp_prop(segment, "ycentroid"))))
 
-        sc = pixel_to_skycoord(xs, ys, im.wcs, 0)
+        sc = pixel_to_skycoord(xs, ys, im.image_acc.wcs, 0)
         ras = sc.ra
         decs = sc.dec
 
@@ -304,11 +304,11 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         # Add component
         comps.append(Skycomponent(
             direction=SkyCoord(ra=ra, dec=dec),
-            frequency=im.frequency,
+            frequency=im.image_acc.frequency,
             name="Segment %d" % segment,
             flux=point_flux,
             shape='Point',
-            polarisation_frame=im.polarisation_frame,
+            polarisation_frame=im.image_acc.polarisation_frame,
             params={}))
 
     return comps
@@ -428,7 +428,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     for icomp, comp in enumerate(sc):
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
-        assert_same_chan_pol(vp, comp)
+        #assert_same_chan_pol(vp, comp)
 
         # Convert to linear (xx, xy, yx, yy) or circular (rr, rl, lr, ll)
         nchan, npol = comp.flux.shape
@@ -532,7 +532,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
 
-        assert_same_chan_pol(im, comp)
+        #assert_same_chan_pol(im, comp)
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         flux = numpy.zeros([nchan, npol])
 

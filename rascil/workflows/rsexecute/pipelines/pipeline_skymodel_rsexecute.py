@@ -9,7 +9,6 @@ import logging
 
 from rascil.data_models.parameters import get_parameter
 from rascil.processing_components.griddata import create_pswf_convolutionfunction
-from rascil.processing_components.image.operations import copy_image
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.calibration.calibration_rsexecute import calibrate_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
@@ -48,7 +47,7 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
     
     # Function to copy image into a SkyModel
     def set_image(sm, dcm):
-        sm.image = copy_image(dcm)
+        sm.image = dcm.copy()
         return sm
     
     # Make wkernels

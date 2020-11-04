@@ -72,9 +72,9 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             nant, nchan, nrec, _ = gain.shape
             baselines = vis.baselines.values
             
-            original = vis.flagged_vis.data[vis_rows]
-            applied = copy.copy(vis.flagged_vis.data[vis_rows])
-            appliedwt = copy.copy(vis.flagged_weight.data[vis_rows])
+            original = vis.blockvisibility_acc.flagged_vis.data[vis_rows]
+            applied = copy.copy(vis.blockvisibility_acc.flagged_vis.data[vis_rows])
+            appliedwt = copy.copy(vis.blockvisibility_acc.flagged_weight.data[vis_rows])
             if vis.npol == 1:
                 if inverse:
                     # lgain = numpy.ones_like(gain)

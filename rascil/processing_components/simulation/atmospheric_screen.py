@@ -19,7 +19,6 @@ from astropy.wcs import WCS
 from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility, \
     create_gaintable_from_rows
-from rascil.processing_components.image.operations import copy_image, create_empty_image_like
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 from rascil.processing_components.util.coordinate_support import xyz_to_uvw, skycoord_to_lmn
 
@@ -233,7 +232,7 @@ def calculate_sf_from_screen(screen):
         sf[chan, 0, ...] /= numpy.max(sf[chan, 0, ...])
         sf[chan, 0, ...] = 1.0 - sf[chan, 0, ...]
     
-    sf_image = copy_image(screen)
+    sf_image = screen.copy()
     sf_image.data = sf[:, :, (ny - ny // 4):(ny + ny // 4), (nx - nx // 4):(nx + nx // 4)]
     sf_image.wcs.wcs.crpix[0] = ny // 4 + 1
     sf_image.wcs.wcs.crpix[1] = ny // 4 + 1

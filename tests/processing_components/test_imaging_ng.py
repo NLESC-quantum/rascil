@@ -114,7 +114,7 @@ class TestImagingNG(unittest.TestCase):
         comps = find_skycomponents(dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5)
         assert len(comps) == len(self.components), "Different number of components found: original %d, recovered %d" % \
                                                    (len(self.components), len(comps))
-        cellsize = abs(dirty.wcs.wcs.cdelt[0])
+        cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
         
         for comp in comps:
             # Check for agreement in direction
@@ -144,7 +144,7 @@ class TestImagingNG(unittest.TestCase):
         
         # assert numpy.max(numpy.abs(dirty[0].data)), "Residual image is empty"
         
-        maxabs = numpy.max(numpy.abs(dirty[0].data))
+        maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (maxabs, fluxthreshold)
     
     def _invert_base(self, fluxthreshold=1.0, positionthreshold=1.0, check_components=True,

@@ -90,23 +90,23 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
 
     """
     
-    #assert isinstance(dirty, Image), dirty
+    # assert isinstance(dirty, Image), dirty
     assert image_is_canonical(dirty)
-    #assert isinstance(psf, Image), psf
+    # assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
     
     window_shape = get_parameter(kwargs, 'window_shape', None)
     if window_shape == 'quarter':
         log.info("deconvolve_cube %s: window is inner quarter" % prefix)
-        qx = dirty.shape[3] // 4
-        qy = dirty.shape[2] // 4
+        qx = dirty["pixels"].shape[3] // 4
+        qy = dirty["pixels"].shape[2] // 4
         window = numpy.zeros_like(dirty["pixels"].data)
         window[..., (qy + 1):3 * qy, (qx + 1):3 * qx] = 1.0
         log.info('deconvolve_cube %s: Cleaning inner quarter of each sky plane' % prefix)
     elif window_shape == 'no_edge':
         edge = get_parameter(kwargs, 'window_edge', 16)
-        nx = dirty.shape[3]
-        ny = dirty.shape[2]
+        nx = dirty["pixels"].shape[3]
+        ny = dirty["pixels"].shape[2]
         window = numpy.zeros_like(dirty["pixels"].data)
         window[..., (edge + 1):(ny - edge), (edge + 1):(nx - edge)] = 1.0
         log.info('deconvolve_cube %s: Window omits %d-pixel edge of each sky plane' % (prefix, edge))
@@ -122,12 +122,12 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
             log.warning('deconvolve_cube %s: Overriding window_shape with mask image' % (prefix))
         window = mask["pixels"].data
     
-    psf_support = get_parameter(kwargs, 'psf_support', max(dirty.shape[2] // 2, dirty.shape[3] // 2))
-    if (psf_support <= psf.shape[2] // 2) and ((psf_support <= psf.shape[3] // 2)):
-        centre = [psf.shape[2] // 2, psf.shape[3] // 2]
-        subpsf = psf["pixels"].isel({"l": slice((centre[0] - psf_support), (centre[0] + psf_support)),
-                                            "m": slice((centre[0] - psf_support), (centre[0] + psf_support))}).data
-        psf = create_image_from_array(subpsf, wcs=psf.wcs, polarisation_frame=psf.polarisation_frame)
+    psf_support = get_parameter(kwargs, 'psf_support',
+                                max(dirty["pixels"].shape[2] // 2, dirty["pixels"].shape[3] // 2))
+    if (psf_support <= psf["pixels"].shape[2] // 2) and ((psf_support <= psf["pixels"].shape[3] // 2)):
+        centre = [psf["pixels"].shape[2] // 2, psf["pixels"].shape[3] // 2]
+        psf = psf.isel(l=slice((centre[0] - psf_support), (centre[0] + psf_support)),
+                       m=slice((centre[1] - psf_support), (centre[1] + psf_support)))
         log.info('deconvolve_cube %s: PSF support = +/- %d pixels' % (prefix, psf_support))
         log.info('deconvolve_cube %s: PSF shape %s' % (prefix, str(psf["pixels"].data.shape)))
     
@@ -174,7 +174,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
                  % prefix)
         nmoment = get_parameter(kwargs, "nmoment", 3)
         assert nmoment >= 1, "Number of frequency moments must be greater than or equal to one"
-        nchan = dirty.shape[0]
+        nchan = dirty["pixels"].shape[0]
         assert nchan > 2 * (nmoment - 1), "Require nchan %d > 2 * (nmoment %d - 1)" % (nchan, 2 * (nmoment - 1))
         dirty_taylor = calculate_image_frequency_moments(dirty, nmoment=nmoment)
         if nmoment > 1:
@@ -187,8 +187,8 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         dirty_taylor["pixels"].data /= psf_peak
         psf_taylor["pixels"].data /= psf_peak
         log.info("deconvolve_cube %s: Shape of Dirty moments image %s" %
-                 (prefix, str(dirty_taylor.shape)))
-        log.info("deconvolve_cube %s: Shape of PSF moments image %s" % (prefix, str(psf_taylor.shape)))
+                 (prefix, str(dirty_taylor["pixels"].shape)))
+        log.info("deconvolve_cube %s: Shape of PSF moments image %s" % (prefix, str(psf_taylor["pixels"].shape)))
         gain = get_parameter(kwargs, 'gain', 0.7)
         assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
         thresh = get_parameter(kwargs, 'threshold', 0.0)
@@ -336,7 +336,7 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     ##assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
     
-    #assert residual is None or isinstance(residual, Image), residual
+    # assert residual is None or isinstance(residual, Image), residual
     assert image_is_canonical(residual)
     
     restored = model.copy(deep=True)
@@ -373,13 +373,13 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     else:
         gk = Gaussian2DKernel(size.value)
     
-    for chan in range(model.shape[0]):
-        for pol in range(model.shape[1]):
+    for chan in range(model["pixels"].shape[0]):
+        for pol in range(model["pixels"].shape[1]):
             restored["pixels"].data[chan, pol, :, :] = norm * convolve_fft(model["pixels"].data[chan, pol, :, :], gk,
                                                                            normalize_kernel=False, allow_huge=True)
     if residual is not None:
         restored["pixels"].data += residual["pixels"].data
-
+    
     restored["pixels"].data = restored["pixels"].data.astype("float")
     
     log.info('Restore done!')

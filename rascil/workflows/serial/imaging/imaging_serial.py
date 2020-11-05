@@ -130,7 +130,7 @@ def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False,
         result = create_empty_image_like(template_model)
         flat = create_empty_image_like(template_model)
         i = 0
-        sumwt = numpy.zeros([template_model.nchan, template_model.npol])
+        sumwt = numpy.zeros([template_model.image_acc.nchan, template_model.image_acc.npol])
         for dpatch in image_scatter_facets(result, facets=facets, overlap=overlap, taper=taper):
             assert i < len(results), "Too few results in gather_image_iteration_results"
             if results[i] is not None:
@@ -411,7 +411,7 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
                 # Ensure that the griddata has the right axes so that the convolution
                 # function mapping works
                 agd = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
-                agd.data = gd[0].data
+                agd['pixels'].data = gd[0]['pixels'].data
                 vis = griddata_blockvisibility_reweight(vis, agd, g[0][1])
                 return vis
             else:

@@ -90,7 +90,7 @@ def sum_invert_results(image_list, normalize=True):
     
     for i, arg in enumerate(image_list):
         if arg is not None:
-            im["pixels"].data += arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0].data
+            im["pixels"].data += arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0]["pixels"].data
             sumwt += arg[1]
     
     if normalize:
@@ -139,7 +139,7 @@ def threshold_list(imagelist, threshold, fractional_threshold, use_moment0=True,
     for i, result in enumerate(imagelist):
         if use_moment0:
             moments = calculate_image_frequency_moments(result)
-            this_peak = numpy.max(numpy.abs(moments["pixels"].data[0, ...] / result.shape[0]))
+            this_peak = numpy.max(numpy.abs(moments["pixels"].data[0, ...] / result["pixels"].shape[0]))
             peak = max(peak, this_peak)
             log.info("threshold_list: using moment 0, sub_image %d, peak = %f," % (i, this_peak))
         else:

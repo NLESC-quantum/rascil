@@ -393,8 +393,7 @@ class Image(xarray.Dataset):
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         
-        attrs = {"shape":data.shape,
-                 "phasecentre": phasecentre,
+        attrs = {"phasecentre": phasecentre,
                  "wcs":wcs,
                  "polarisation_frame":polarisation_frame}
         
@@ -509,7 +508,6 @@ class GridData(xarray.Dataset):
         assert coords["v"][0] != coords["v"][-1]
         
         attrs = dict()
-        attrs["shape"] = data.shape
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
@@ -648,7 +646,6 @@ class ConvolutionFunction(xarray.Dataset):
         assert coords["v"][0] != coords["v"][-1]
         
         attrs = dict()
-        attrs["shape"] = data.shape
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame

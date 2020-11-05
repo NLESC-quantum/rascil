@@ -153,7 +153,7 @@ def initialize_skymodel_voronoi(model, comps, gt=None):
         im["pixels"].data *= mask["pixels"].data
         if gt is not None:
             newgt = copy_gaintable(gt)
-            newgt.phasecentre = comps[i].direction
+            newgt.attrs["phasecentre"] = comps[i].direction
         else:
             newgt=None
             
@@ -175,7 +175,7 @@ def calculate_skymodel_equivalent_image(sm):
     for th in sm:
         if th.image is not None:
             if th.mask is not None:
-                combined_model["pixels"].data += th.mask["pixels"].data * th["pixels"].data
+                combined_model["pixels"].data += th.mask["pixels"].data * th.image["pixels"].data
             else:
                 combined_model["pixels"].data += th.image["pixels"].data
     

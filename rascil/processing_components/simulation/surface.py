@@ -41,8 +41,8 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     gnchan = gaintables[0].gaintable_acc.nchan
     frequency = gaintables[0].frequency
     
-    if not isinstance(vp, collections.abc.Iterable):
-        vp = [vp]
+    #if not isinstance(vp, collections.abc.Iterable):
+    vp = [vp]
 
     nchan, npol, ny, nx = vp[0]["pixels"].data.shape
     
@@ -62,9 +62,11 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     else:
         assert len(vp) == len(vp_types)
 
-    real_spline = [[[RectBivariateSpline(range(ny), range(nx), vp[ivp]["pixels"].data[chan, pol, ...].real, kx=order, ky=order)
+    real_spline = [[[RectBivariateSpline(range(ny), range(nx),
+                                         vp[ivp]["pixels"].data[chan, pol, ...].real, kx=order, ky=order)
                    for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
-    imag_spline = [[[RectBivariateSpline(range(ny), range(nx), vp[ivp]["pixels"].data[chan, pol, ...].imag, kx=order, ky=order)
+    imag_spline = [[[RectBivariateSpline(range(ny), range(nx),
+                                         vp[ivp]["pixels"].data[chan, pol, ...].imag, kx=order, ky=order)
                    for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
     
     #assert isinstance(vis, BlockVisibility)
@@ -81,11 +83,10 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     # voltage pattern
     for icomp, comp in enumerate(sc):
         gt = gaintables[icomp]
-        for row in range(gt.ntimes):
-            time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
+        for row, time in enumerate(gt.time):
+            time_slice = {"time": slice(time - gt.interval[row] / 2,
+                                        time + gt.interval[row] / 2)}
             v = vis.sel(time_slice)
-            ha = numpy.average(calculate_blockvisibility_hourangles(v).to('rad').value)
-        
             utc_time = Time([numpy.average(v.time)/86400.0], format='mjd', scale='utc')
             azimuth_centre, elevation_centre = calculate_azel(v.configuration.location, utc_time,
                                                               vis.phasecentre)
@@ -141,11 +142,11 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                     
                 gaintables[icomp].gain.data[row, :, :, :] = antgain.reshape([nant, gnchan, 2, 2])
                 gaintables[icomp].weight.data[row, :, :, :] = antwt.reshape([nant, gnchan, 2, 2])
-                gaintables[icomp].phasecentre = comp.direction
+                gaintables[icomp].attrs["phasecentre"] = comp.direction
             else:
                 gaintables[icomp].gain.data[...] = 1.0 + 0.0j
                 gaintables[icomp].weight.data[row, :, :, :] = 0.0
-                gaintables[icomp].phasecentre = comp.direction
+                gaintables[icomp].attrs["phasecentre"] = comp.direction
                 number_bad += nant
     
     assert number_good > 0, "simulate_gaintable_from_voltage_pattern: No points inside the voltage pattern image"
@@ -257,10 +258,10 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
                     antgain[ant] = 1.0 / antgain[ant]
                 
                 gaintables[icomp].gain.data[row, :, :, :] = antgain[:, numpy.newaxis, numpy.newaxis, numpy.newaxis]
-                gaintables[icomp].phasecentre = comp.direction
+                gaintables[icomp].attrs["phasecentre"] = comp.direction
         else:
             gaintables[icomp].gain.data[...] = 1.0 + 0.0j
-            gaintables[icomp].phasecentre = comp.direction
+            gaintables[icomp].attrs["phasecentre"] = comp.direction
             number_bad += nant
 
     

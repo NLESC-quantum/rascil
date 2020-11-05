@@ -139,7 +139,7 @@ class TestMPC(unittest.TestCase):
         result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel,
                                                                    context='2d', docal=True)
         results = rsexecute.compute(result_skymodel, sync=True)
-        assert numpy.max(numpy.abs(results[0][0].data)) > 0.0
+        assert numpy.max(numpy.abs(results[0][0]["pixels"].data)) > 0.0
         assert numpy.max(numpy.abs(results[0][1])) > 0.0
         if self.plot:
             import matplotlib.pyplot as plt
@@ -169,7 +169,7 @@ class TestMPC(unittest.TestCase):
         result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel,
                                                                    context='2d', docal=True)
         results = rsexecute.compute(result_skymodel, sync=True)
-        assert numpy.max(numpy.abs(results[0][0].data)) > 0.0
+        assert numpy.max(numpy.abs(results[0][0]["pixels"].data)) > 0.0
         assert numpy.max(numpy.abs(results[0][1])) > 0.0
         if self.plot:
             import matplotlib.pyplot as plt

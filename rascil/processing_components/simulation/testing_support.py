@@ -93,9 +93,9 @@ def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, pha
         frequency = [1e8]
     im = import_image_from_fits(rascil_data_path("models/M31.MOD"))
     if polarisation_frame is None:
-        im.polarisation_frame = PolarisationFrame("stokesI")
+        im.attrs["polarisation_frame"] =PolarisationFrame("stokesI")
     elif isinstance(polarisation_frame, PolarisationFrame):
-        im.polarisation_frame = polarisation_frame
+        im.attrs["polarisation_frame"] =polarisation_frame
     else:
         raise ValueError("polarisation_frame is not valid")
 

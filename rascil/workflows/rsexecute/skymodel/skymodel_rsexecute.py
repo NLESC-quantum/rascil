@@ -55,20 +55,20 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
 
         if len(sm.components) > 0:
             dftv = copy_visibility(ov, zero=True)
-            if isinstance(sm.mask, Image):
+            if sm.mask is not None:
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
                 dftv = dft_skycomponent_visibility(dftv, comps)
             else:
                 dftv = dft_skycomponent_visibility(dftv, sm.components)
-            v['vis'].data += dftv.vis
+            v['vis'].data += dftv['vis'].data
         
-        if isinstance(sm.image, Image):
+        if sm.image is not None:
             if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
                 imgv = copy_visibility(ov, zero=True)
-                if isinstance(sm.mask, Image):
+                if sm.mask is not None:
                     model = sm.image.copy(deep=True)
-                    model.data *= sm.mask.data
+                    model["pixels"].data *= sm.mask["pixels"].data
                     imgv = predict_list_serial_workflow([imgv], [model], context=context,
                                                      vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                      **kwargs)[0]
@@ -76,9 +76,9 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
                     imgv = predict_list_serial_workflow([imgv], [sm.image], context=context,
                                                      vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                      **kwargs)[0]
-                v['vis'].data += imgv.vis
+                v['vis'].data += imgv['vis'].data
         
-        if docal and isinstance(sm.gaintable, GainTable):
+        if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable, inverse=True)
        
         return v
@@ -120,14 +120,14 @@ def predict_skymodel_list_compsonly_rsexecute_workflow(obsvis, skymodel_list, do
         
         assert len(sm.components) > 0
         
-        if isinstance(sm.mask, Image):
+        if sm.mask is not None:
             comps = copy_skycomponent(sm.components)
             comps = apply_beam_to_skycomponent(comps, sm.mask)
             bv = dft_skycomponent_visibility(bv, comps)
         else:
             bv = dft_skycomponent_visibility(bv, sm.components)
         
-        if docal and isinstance(sm.gaintable, GainTable):
+        if docal and sm.gaintable is not None:
             bv = apply_gaintable(bv, sm.gaintable, inverse=True)
         
         return bv
@@ -161,14 +161,14 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vi
             #assert isinstance(g[0], Image), g[0]
             #assert isinstance(g[1], ConvolutionFunction), g[1]
         
-        if docal and isinstance(sm.gaintable, GainTable):
+        if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
             
         result = invert_list_serial_workflow([v], [sm.image], context=context,
                                              vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                              **kwargs)[0]
-        if isinstance(sm.mask, Image):
-            result[0].data *= sm.mask.data
+        if sm.mask is not None:
+            result[0]["pixels"].data *= sm.mask["pixels"].data
         
         return result
     
@@ -309,31 +309,29 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
         
         if len(sm.components) > 0:
             
-            if isinstance(sm.mask, Image):
+            if sm.mask is not None:
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
                 v = dft_skycomponent_visibility(v, comps)
             else:
                 v = dft_skycomponent_visibility(v, sm.components)
         
-        if isinstance(sm.image, Image):
-            if numpy.max(numpy.abs(sm.image.data)) > 0.0:
-                if isinstance(sm.mask, Image):
+        if sm.image is not None:
+            if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
+                if sm.mask is not None:
                     model = sm.image.copy(deep=True)
-                    model.data *= sm.mask.data
+                    model["pixels"].data *= sm.mask["pixels"].data
                 else:
                     model = sm.image
                 v = predict_list_serial_workflow([v], [model], context=context,
                                                  vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                  **kwargs)[0]
         
-        #assert isinstance(sm.image, Image), sm.image
-        
         result = invert_list_serial_workflow([v], [sm.image], context=context,
                                              vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                              **kwargs)[0]
-        if isinstance(sm.mask, Image):
-            result[0].data *= sm.mask.data
+        if sm.mask is not None:
+            result[0]["pixels"].data *= sm.mask["pixels"].data
         return result
     
     if gcfcf is None:

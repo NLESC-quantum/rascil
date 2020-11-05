@@ -259,13 +259,12 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         deconvolve_number_facets = deconvolve_facets ** 2
     
     scattered_channels_facets_model_list = \
-        [rsexecute.execute(image_scatter_facets, nout=deconvolve_number_facets)(m, facets=deconvolve_facets,
-                                                                                overlap=deconvolve_overlap,
-                                                                                taper=deconvolve_taper)
+        [rsexecute.execute(image_scatter_facets, nout=deconvolve_number_facets)
+         (m, facets=deconvolve_facets, overlap=deconvolve_overlap, taper=deconvolve_taper)
          for m in model_imagelist]
     scattered_facets_model_list = [
-        rsexecute.execute(image_gather_channels, nout=1)([scattered_channels_facets_model_list[chan][facet]
-                                                          for chan in range(nchan)])
+        rsexecute.execute(image_gather_channels, nout=1)
+        ([scattered_channels_facets_model_list[chan][facet] for chan in range(nchan)])
         for facet in range(deconvolve_number_facets)]
     
     # Scatter the separate channel images into deconvolve facets and then gather channels for each facet.
@@ -286,10 +285,10 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
     
     def extract_psf(psf, facets):
         assert not numpy.isnan(numpy.sum(psf["pixels"].data)), "NaNs present in PSF"
-        cx = psf.shape[3] // 2
-        cy = psf.shape[2] // 2
-        wx = psf.shape[3] // facets
-        wy = psf.shape[2] // facets
+        cx = psf["pixels"].shape[3] // 2
+        cy = psf["pixels"].shape[2] // 2
+        wx = psf["pixels"].shape[3] // facets
+        wy = psf["pixels"].shape[2] // facets
         xbeg = cx - wx // 2
         xend = cx + wx // 2
         ybeg = cy - wy // 2

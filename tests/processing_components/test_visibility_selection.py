@@ -55,7 +55,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       phasecentre=self.phasecentre, weight=1.0)
         selected_vis = bvis.where(bvis["flags"] == 0)
         print(selected_vis)
-        print(bvis.size(), selected_vis.size())
+        print(bvis.blockvisibility_acc.size(), selected_vis.blockvisibility_acc.size())
 
     def test_blockvisibility_where_absu(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
@@ -63,9 +63,9 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
         print(bvis)
-        selected_vis = bvis.where(numpy.abs(bvis.u_lambda) < 30.0)
+        selected_vis = bvis.where(numpy.abs(bvis.blockvisibility_acc.u_lambda) < 30.0)
         print(selected_vis)
-        print(bvis.size(), selected_vis.size())
+        print(bvis.blockvisibility_acc.size(), selected_vis.blockvisibility_acc.size())
 
     def test_blockvisibility_select_time(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,

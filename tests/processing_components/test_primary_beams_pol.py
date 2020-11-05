@@ -181,7 +181,8 @@ class TestPrimaryBeamsPol(unittest.TestCase):
             vpbeam.wcs.wcs.crval[0] = polimage.wcs.wcs.crval[0]
             vpbeam.wcs.wcs.crval[1] = polimage.wcs.wcs.crval[1]
 
-            vpbeam_regrid, footprint = reproject_image(vpbeam, polimage.wcs, polimage.shape)
+            vpbeam_regrid, footprint = reproject_image(vpbeam, polimage.wcs,
+                                                       polimage['pixels'].shape)
             polimage_corrected = apply_voltage_pattern_to_image(polimage, vpbeam_regrid, inverse=True, min_det=0.3)
 
             export_image_to_fits(polimage_corrected,

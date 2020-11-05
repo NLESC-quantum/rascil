@@ -88,7 +88,7 @@ class TestVisibilityOperations(unittest.TestCase):
                                                weight=1.0, polarisation_frame=PolarisationFrame("stokesI"))
         self.othervis['vis'][..., :] = [1.0 + 0.0j]
         self.ratiovis = divide_visibility(self.vis, self.othervis)
-        assert self.ratiovis.nvis == self.vis.nvis
+        assert self.ratiovis.blockvisibility_acc.nvis == self.vis.blockvisibility_acc.nvis
         assert numpy.max(numpy.abs(self.ratiovis.vis)) == 2.0, numpy.max(numpy.abs(self.ratiovis.vis))
     
     def test_divide_visibility_pol(self):
@@ -103,7 +103,7 @@ class TestVisibilityOperations(unittest.TestCase):
                                                weight=1.0, polarisation_frame=PolarisationFrame("linear"))
         self.othervis['vis'][..., :] = [1.0 + 0.0j, 0.0j, 0.0j, 1.0 + 0.0j]
         self.ratiovis = divide_visibility(self.vis, self.othervis)
-        assert self.ratiovis.nvis == self.vis.nvis
+        assert self.ratiovis.blockvisibility_acc.nvis == self.vis.blockvisibility_acc.nvis
         assert numpy.max(numpy.abs(self.ratiovis.vis)) == 2.0, numpy.max(numpy.abs(self.ratiovis.vis))
     
     def test_divide_visibility_singular(self):
@@ -118,7 +118,7 @@ class TestVisibilityOperations(unittest.TestCase):
                                                weight=1.0, polarisation_frame=PolarisationFrame("linear"))
         self.othervis['vis'][..., :] = [1.0 + 0.0j, 1.0 + 0.0j, 1.0 + 0.0j, 1.0 + 0.0j]
         self.ratiovis = divide_visibility(self.vis, self.othervis)
-        assert self.ratiovis.nvis == self.vis.nvis
+        assert self.ratiovis.blockvisibility_acc.nvis == self.vis.blockvisibility_acc.nvis
         assert numpy.max(numpy.abs(self.ratiovis.vis)) == 2.0, numpy.max(numpy.abs(self.ratiovis.vis))
     
     def test_copy_visibility(self):

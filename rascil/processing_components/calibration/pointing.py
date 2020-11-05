@@ -41,7 +41,7 @@ def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_fra
     """
     assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
     
-    nants = vis.nants
+    nants = vis.blockvisibility_acc.nants
     
     if timeslice is None or timeslice == 'auto':
         utimes = numpy.unique(vis.time)

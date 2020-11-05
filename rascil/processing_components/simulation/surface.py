@@ -37,9 +37,9 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
 
-    nant = gaintables[0].nants
-    gnchan = gaintables[0].nchan
-    frequency = gaintables[0].frequency
+    nant = gaintables[0].gaintable_acc.nants
+    gnchan = gaintables[0].gaintable_acc.nchan
+    frequency = gaintables[0].gaintable_acc.frequency
     
     if not isinstance(vp, collections.abc.Iterable):
         vp = [vp]
@@ -173,7 +173,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
     ntimes = vis.vis.shape[0]
     vp_coeffs = numpy.array(vp_coeffs)
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
-    nant = gaintables[0].nants
+    nant = gaintables[0].gaintable_acc.nants
     
     assert isinstance(vis, BlockVisibility)
     assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]

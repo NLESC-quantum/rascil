@@ -282,7 +282,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         ys = u.Quantity(list(map(u.Quantity,
                                  comp_prop(segment, "ycentroid"))))
 
-        sc = pixel_to_skycoord(xs, ys, im.image_acc.wcs, 0)
+        sc = pixel_to_skycoord(xs, ys, im.attrs["wcs"], 0)
         ras = sc.ra
         decs = sc.dec
 
@@ -308,7 +308,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
             name="Segment %d" % segment,
             flux=point_flux,
             shape='Point',
-            polarisation_frame=im.image_acc.polarisation_frame,
+            polarisation_frame=im.attrs["polarisation_frame"],
             params={}))
 
     return comps
@@ -404,7 +404,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     if single:
         sc = [sc]
 
-    nchan, npol, ny, nx = vp.shape
+    nchan, npol, ny, nx = vp["pixels"].data.shape
 
     log.debug('apply_vp_to_skycomponent: Processing %d components' % (len(sc)))
 

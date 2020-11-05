@@ -459,10 +459,10 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
     assert ny == mny
     assert nx == mnx
     
-    assert moment_image.image_acc.wcs.wcs.ctype[3] == 'MOMENT', "Second image should be a moment image"
+    assert moment_image.attrs["wcs"].wcs.ctype[3] == 'MOMENT', "Second image should be a moment image"
     
     channels = numpy.arange(nchan)
-    freq = im.image_acc.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
+    freq = im.attrs["wcs"].sub(['spectral']).wcs_pix2world(channels, 0)[0]
     
     if reference_frequency is None:
         reference_frequency = numpy.average(freq)
@@ -1135,7 +1135,7 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
                 newim["pixels"].data[chan, 0, ...][mask] /= pb[mask]
     else:
         log.debug('apply_voltage_pattern_to_image: Full Jones voltage pattern')
-        polim = convert_stokes_to_polimage(im, vp.image_acc.polarisation_frame)
+        polim = convert_stokes_to_polimage(im, vp.attrs["polarisation_frame"])
         assert npol == 4
         im_t = numpy.transpose(polim["pixels"].data, (0, 2, 3, 1)).reshape([nchan, ny, nx, 2, 2])
         vp_t = numpy.transpose(vp["pixels"].data, (0, 2, 3, 1)).reshape([nchan, ny, nx, 2, 2])
@@ -1146,8 +1146,8 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
                     newim_t[chan, y, x] = apply_jones(vp_t[chan, y, x], im_t[chan, y, x], inverse, min_det=min_det)
         
         newim = create_image_from_array(newim_t.reshape([nchan, ny, nx, 4]).transpose((0, 3, 1, 2)),
-                                        wcs=im.image_acc.wcs,
-                                        polarisation_frame=vp.image_acc.polarisation_frame)
+                                        wcs=im.attrs["wcs"],
+                                        polarisation_frame=vp.attrs["polarisation_frame"])
         newim = convert_polimage_to_stokes(newim)
         
         return newim

@@ -166,8 +166,8 @@ class TestPipelineMPC(unittest.TestCase):
                                              nchan=nfreqwin, cellsize=cellsize, phasecentre=phasecentre)
 
         # Use the gaintable for the brightest component as the starting gaintable
-        all_gaintables[0].gain[...] = numpy.conjugate(all_gaintables[0].gain[...])
-        all_gaintables[0].gain[...] = 1.0 + 0.0j
+        all_gaintables[0].gaintable_acc.gain[...] = numpy.conjugate(all_gaintables[0].gaintable_acc.gain[...])
+        all_gaintables[0].gaintable_acc.gain[...] = 1.0 + 0.0j
         self.theta_list = initialize_skymodel_voronoi(model, voronoi_components, all_gaintables[0])
 
     # End of setup, start of processing]

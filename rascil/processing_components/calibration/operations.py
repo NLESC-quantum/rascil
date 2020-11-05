@@ -216,7 +216,7 @@ def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
     """
     assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
     
-    nants = vis.nants
+    nants = vis.blockvisibility_acc.nants
     
     if timeslice is None or timeslice == 'auto':
         utimes = numpy.unique(vis.time)

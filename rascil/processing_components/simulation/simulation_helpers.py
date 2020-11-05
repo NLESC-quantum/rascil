@@ -100,13 +100,13 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
     for ivis, vis in enumerate(vis_list):
         pols = vis.attrs["polarisation_frame"].names
         colors = ["red", "blue", "green", "purple"]
-        for pol in range(vis.blockvisibility_acc.vis.shape[-1]):
+        for pol in range(vis.blockvisibility_acc.npol):
             if y == 'amp':
                 yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis.values[..., 0, pol]).flat
             else:
                 yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis.values[..., 0, pol]).flat
             if x=="time":
-                xvalue = numpy.repeat(vis.blockvisibility_acc.time.values, len(yvalue))
+                xvalue = numpy.repeat(vis["time"].values, len(yvalue))
             else:
                 xvalue = vis.blockvisibility_acc.uvdist.values.flat
             if ivis == 0:
@@ -137,7 +137,7 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
     for ivis, vis in enumerate(vis_list):
         u = numpy.array(vis.blockvisibility_acc.u.values[...].flat)
         v = numpy.array(vis.blockvisibility_acc.v.values[...].flat)
-        k = (vis.blockvisibility_acc.frequency.values / constants.c).value
+        k = (vis["frequency"].values / constants.c).value
         u = numpy.array(numpy.outer(u, k).flat)
         v = numpy.array(numpy.outer(v, k).flat)
         plt.plot(u, v, '.', color='b', markersize=0.2)
@@ -189,7 +189,7 @@ def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kw
     for ivis, vis in enumerate(vis_list):
         u = numpy.array(vis.blockvisibility_acc.u.values[...].flat)
         w = numpy.array(vis.blockvisibility_acc.w.values[...].flat)
-        k = (vis.blockvisibility_acc.frequency.values / constants.c).value
+        k = (vis["frequency"].values / constants.c).value
         u = numpy.array(numpy.outer(u, k).flat)
         w = numpy.array(numpy.outer(w, k).flat)
         plt.plot(u, w, '.', color='b', markersize=0.2)
@@ -214,7 +214,7 @@ def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kw
     for ivis, vis in enumerate(vis_list):
         v = numpy.array(vis.blockvisibility_acc.v.values[...].flat)
         w = numpy.array(vis.blockvisibility_acc.w.values[...].flat)
-        k = (vis.blockvisibility_acc.frequency.values / constants.c).value
+        k = (vis["frequency"].values / constants.c).value
         v = numpy.array(numpy.outer(v, k).flat)
         w = numpy.array(numpy.outer(w, k).flat)
         plt.plot(v, w, '.', color='b', markersize=0.2)

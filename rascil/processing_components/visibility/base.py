@@ -345,29 +345,29 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         # Check polarisation
         npol = vis.blockvisibility_acc.npol
         nchan = vis.blockvisibility_acc.nchan
-        if vis.blockvisibility_acc.polarisation_frame.type == 'linear':
+        if vis.attrs["polarisation_frame"].type == 'linear':
             polarization = ['XX', 'XY', 'YX', 'YY']
-        elif vis.blockvisibility_acc.polarisation_frame.type == 'linearnp':
+        elif vis.attrs["polarisation_frame"].type == 'linearnp':
             polarization = ['XX', 'YY']
-        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesI':
+        elif vis.attrs["polarisation_frame"].type == 'stokesI':
             polarization = ['XX']
-        elif vis.blockvisibility_acc.polarisation_frame.type == 'circular':
+        elif vis.attrs["polarisation_frame"].type == 'circular':
             polarization = ['RR', 'RL', 'LR', 'LL']
-        elif vis.blockvisibility_acc.polarisation_frame.type == 'circularnp':
+        elif vis.attrs["polarisation_frame"].type == 'circularnp':
             polarization = ['RR', 'LL']
-        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIQUV':
+        elif vis.attrs["polarisation_frame"].type == 'stokesIQUV':
             polarization = ['I', 'Q', 'U', 'V']
-        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIQ':
+        elif vis.attrs["polarisation_frame"].type == 'stokesIQ':
             polarization = ['I', 'Q']
-        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIV':
+        elif vis.attrs["polarisation_frame"].type == 'stokesIV':
             polarization = ['I', 'V']
         else:
             raise ValueError(
                 "Unknown visibility polarisation %s" % (vis.polarisation_frame.type))
         
         tbl.set_stokes(polarization)
-        tbl.set_frequency(vis.blockvisibility_acc.frequency.values, vis.blockvisibility_acc.channel_bandwidth.values)
-        n_ant = len(vis.blockvisibility_acc.configuration.xyz)
+        tbl.set_frequency(vis["frequency"].values, vis["channel_bandwidth"].values)
+        n_ant = len(vis.attrs["configuration"].xyz)
         
         antennas = []
         names = vis.blockvisibility_acc.configuration.configuration_acc.names.values

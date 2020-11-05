@@ -91,7 +91,6 @@ class Configuration(xarray.Dataset):
         datavars["stations"] = xarray.DataArray(stations, coords={"id": list(range(nants))}, dims=["id"])
 
         attrs = dict()
-
         attrs["name"] = name  # Name of configuration
         attrs["location"] = location  # EarthLocation
         attrs["receptor_frame"] = receptor_frame
@@ -122,80 +121,9 @@ class ConfigurationAccessor():
         return s
     
     @property
-    def names(self):
-        """ Names of the dishes/stations"""
-        return self._obj['names']
-    
-    @property
     def nants(self):
         """ Names of the dishes/stations"""
         return len(self._obj['names'])
-    
-    @property
-    def vp_type(self):
-        """ Names of the voltage pattern type"""
-        return self._obj['vp_type']
-    
-    @property
-    def diameter(self):
-        """ Diameter of dishes/stations (m)
-        """
-        return self._obj['diameter']
-    
-    @property
-    def xyz(self):
-        """ XYZ locations of dishes/stations [:,3] (m)
-        """
-        return self._obj['xyz']
-    
-    @property
-    def mount(self):
-        """ Mount types of dishes/stations ('azel' | 'equatorial'
-        """
-        return self._obj['mount']
-    
-    @property
-    def offset(self):
-        """ Axis offset [:, 3] (m)
-        """
-        return self._obj['offset']
-    
-    @property
-    def stations(self):
-        """ Station/dish identifier (may be the same as names)"""
-        return self._obj['stations']
-
-    @property
-    def name(self):
-        """Name of configuration
-
-        :return:
-        """
-        return self._obj.attrs["name"]
-
-    @property
-    def location(self):
-        """Location of configuration
-
-        :return:
-        """
-        return self._obj.attrs["location"]
-
-    @property
-    def receptor_frame(self):
-        """Receptor Frame
-
-        :return:
-        """
-        return self._obj.attrs["receptor_frame"]
-
-    @property
-    def frame(self):
-        """Name of frame e.g. WGS84
-
-        :return:
-        """
-        return self._obj.attrs["frame"]
 
 
 class GainTable(xarray.Dataset):
@@ -271,56 +199,7 @@ class GainTableAccessor():
         for var in self._obj.data_vars:
             s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
         return s
-    
-    @property
-    def time(self):
-        """ Centroid of solution [ntimes]
-        """
-        return self._obj['time']
-    
-    @property
-    def interval(self):
-        """ Interval of validity [ntimes]
-        """
-        return self._obj['interval']
-    
-    @property
-    def gain(self):
-        """ Complex gain [ntimes, nants, nchan, nrec, nrec]
-        """
-        return self._obj['gain']
-    
-    @property
-    def frequency(self):
-        """ Frequency [nchan]
-        """
-        return self._obj['frequency']
-    
-    @property
-    def receptor1(self):
-        """ Receptor name
-        """
-        return self._obj['receptor1']
-    
-    @property
-    def receptor2(self):
-        """ Receptor name
-        """
-        return self._obj['receptor2']
-    
-    @property
-    def weight(self):
-        """ Weight of gain [ntimes, nants, nchan, nrec, nrec]
-
-        """
-        return self._obj['weight']
-    
-    @property
-    def residual(self):
-        """ Residual of fit [nchan, nrec, nrec]
-        """
-        return self._obj['residual']
-    
+        
     @property
     def ntimes(self):
         """ Number of times (i.e. rows) in this table
@@ -353,44 +232,6 @@ class GainTableAccessor():
         """
         return self._obj['receptor1']
     
-    @property
-    def receptor_frame(self):
-        """Receptor Frame
-
-        :return:
-        """
-        return self._obj.attrs["receptor_frame"]
-
-    @property
-    def configuration(self):
-        """Configuration
-
-        :return:
-        """
-        return self._obj.attrs["configuration"]
-    
-    @property
-    def phasecentre(self):
-        """Phase centre
-
-        :return:
-        """
-        return self._obj.attrs["phasecentre"]
-
-    
-    # def __str__(self):
-    #     """Default printer for GainTable
-    # 
-    #     """
-    #     s = "GainTable:\n"
-    #     s += "Dataset: {}".format(self.data)
-    #     s += "\tTimes: %s\n" % str(self.ntimes)
-    #     s += "\tData shape: %s\n" % str(self["pixels"].data.shape)
-    #     s += "\tReceptor frames: %s\n" % str(self.receptors)
-    #     s += "\tPhasecentre: %s\n" % str(self.phasecentre)
-    #     
-    #     return s
-
 
 class PointingTable(xarray.Dataset):
     """ Pointing table with data_models: time, antenna, offset[:, chan, rec, 2], weight columns
@@ -469,47 +310,6 @@ class PointingTableAccessor():
         return s
     
     @property
-    def time(self):
-        """ Time (s UTC) [:]
-        """
-        return self._obj['time']
-    
-    @property
-    def interval(self):
-        """ Interval of validity (s) [:]
-        """
-        return self._obj['interval']
-    
-    @property
-    def nominal(self):
-        """ Nominal pointing (rad) [:, nants, nchan, nrec, 2]
-        """
-        return self._obj['nominal']
-    
-    @property
-    def pointing(self):
-        """ Pointing (rad) [:, nants, nchan, nrec, 2]
-        """
-        return self._obj['pointing']
-    
-    @property
-    def weight(self):
-        """ Weight [: nants, nchan, nrec]
-        """
-        return self._obj['weight']
-    
-    @property
-    def residual(self):
-        """ Residual [: nants, nchan, nrec, 2]
-        """
-        return self._obj['residual']
-    
-    @property
-    def ntimes(self):
-        """ Number of time (i.e. rows in table)"""
-        return self._obj['pointing'].shape[0]
-    
-    @property
     def nants(self):
         """ Number of dishes/stations
         """
@@ -527,60 +327,6 @@ class PointingTableAccessor():
         """
         return self.receptor_frame.nrec
 
-    @property
-    def receptor_frame(self):
-        """Receptor Frame
-
-        :return:
-        """
-        return self._obj.attrs["receptor_frame"]
-
-    @property
-    def polarisation_frame(self):
-        """Polarisation Frame
-
-        :return:
-        """
-        return self._obj.attrs["polarisation_frame"]
-
-    @property
-    def frequency(self):
-        """Frequency
-
-        :return:
-        """
-        return self._obj.attrs["frequency"]
-
-    @property
-    def configuration(self):
-        """Configuration
-
-        :return:
-        """
-        return self._obj.attrs["configuration"]
-
-    @property
-    def phasecentre(self):
-        """Phase centre
-
-        :return:
-        """
-        return self._obj.attrs["phasecentre"]
-
-    # def __str__(self):
-    #     """Default printer for PointingTable
-    #
-    #     """
-    #     s = "PointingTable:\n"
-    #     s += "Dataset: {}".format(self.data)
-    #     s += "\tTimes: %s\n" % str(self.ntimes)
-    #     s += "\tData shape: %s\n" % str(self["pixels"].data.shape)
-    #     s += "\tReceptor frame: %s\n" % str(self.receptor_frame.type)
-    #     s += "\tPointing centre: %s\n" % str(self.pointingcentre)
-    #     s += "\tConfiguration: %s\n" % str(self.configuration)
-    #     s += "Data: {}".format(self.data)
-    #     return s
-    #
 
 class Image(xarray.Dataset):
     """Image class with Image data (as an xarray.DataArray) and the AstroPy `implementation of
@@ -706,22 +452,6 @@ class ImageAccessor():
         nx = self.shape[-1]
         ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
         return self._obj.attrs["wcs"].sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
-
-    @property
-    def wcs(self):
-        """
-
-        :return:
-        """
-        return self._obj.attrs["wcs"]
-
-    @property
-    def polarisation_frame(self):
-        """
-
-        :return:
-        """
-        return self._obj.attrs["polarisation_frame"]
 
 
 class GridData(xarray.Dataset):
@@ -854,20 +584,6 @@ class GridDataAccessor():
         ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
         return self.projection_wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
     
-    # def __str__(self):
-    #     """Default printer for GridData
-    # 
-    #     """
-    #     s = "GridData:\n"
-    #     s += "{}\n".format(str(self.data))
-    #     s += "\tShape: %s\n" % str(self["pixels"].data.shape)
-    #     s += "\tData type: %s\n" % str(self.data.dtype)
-    #     s += "\tGrid WCS: %s\n" % self.grid_wcs.__repr__()
-    #     s += "\tProjection WCS: %s\n" % self.projection_wcs.__repr__()
-    #     s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
-    #     return s
-    # 
-
 class ConvolutionFunction(xarray.Dataset):
     """Class to hold Convolution function for Fourier processing
     - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
@@ -1006,19 +722,7 @@ class ConvolutionFunctionAccessor():
         """
         return SkyCoord(self.projection_wcs.wcs.crval[0] * u.deg, self.projection_wcs.wcs.crval[1] * u.deg)
     
-    # def __str__(self):
-    #     """Default printer for ConvolutionFunction
-    #
-    #     """
-    #     s = "Convolution function:\n"
-    #     s += "{}\n".format(str(self.data))
-    #     s += "\tShape: %s\n" % str(self.data.shape)
-    #     s += "\tGrid WCS: %s\n" % self.grid_wcs
-    #     s += "\tProjection WCS: %s\n" % self.projection_wcs
-    #     s += "\tPolarisation frame: %s\n" % str(self.polarisation_frame.type)
-    #     return s
-
-
+    
 class Skycomponent:
     """Skycomponents are used to represent compact sources on the sky. They possess direction,
     flux as a function of frequency and polarisation, shape (with params), and polarisation frame.
@@ -1286,19 +990,7 @@ class BlockVisibilityAccessor():
         """ Number of channels
         """
         return len(self._obj['frequency'])
-    
-    @property
-    def frequency(self):
-        """ Number of channels
-        """
-        return self._obj['frequency']
-    
-    @property
-    def channel_bandwidth(self):
-        """ Number of channels
-        """
-        return self._obj['channel_bandwidth']
-    
+        
     @property
     def npol(self):
         """ Number of polarisations
@@ -1309,31 +1001,13 @@ class BlockVisibilityAccessor():
     def nants(self):
         """ Number of antennas
         """
-        return self._obj.configuration.configuration.nants
-    
-    @property
-    def baselines(self):
-        """ Baselines
-        """
-        return self._obj["baseline"]
+        return self._obj.configuration.configuration_acc.nants
     
     @property
     def nbaselines(self):
         """ Number of Baselines
         """
         return len(self._obj["baseline"])
-    
-    @property
-    def uvw(self):
-        """ UVW coordinates (metres) [nrows, nbaseline, 3]
-        """
-        return self._obj['uvw']
-    
-    @property
-    def uvw_lambda(self):
-        """ UVW coordinates (wavelengths) [nrows, nbaseline, nchan, 3]
-        """
-        return self._obj['uvw_lambda']
     
     @property
     def u(self):
@@ -1390,40 +1064,16 @@ class BlockVisibilityAccessor():
         return numpy.hypot(self.u, self.v, self.w)
     
     @property
-    def vis(self):
-        """ Complex visibility [nrows, nbaseline, ncha, npol]
-        """
-        return self._obj['vis']
-    
-    @property
     def flagged_vis(self):
         """Flagged complex visibility [nrows, nbaseline, ncha, npol]
         """
         return self._obj['vis'] * (1 - self._obj['flags'])
-    
-    @property
-    def flags(self):
-        """ Flags [nrows, nbaseline, nchan]
-        """
-        return self._obj['flags']
-    
-    @property
-    def weight(self):
-        """ Weight[nrows, nbaseline, nchan, npol]
-        """
-        return self._obj['weight']
-    
+        
     @property
     def flagged_weight(self):
         """Weight [: npol]
         """
         return self._obj['weight'] * (1 - self._obj['flags'])
-    
-    @property
-    def imaging_weight(self):
-        """ Imaging_weight[nrows, nbaseline, nchan, npol]
-        """
-        return self._obj['imaging_weight']
     
     @property
     def flagged_imaging_weight(self):
@@ -1432,69 +1082,10 @@ class BlockVisibilityAccessor():
         return self._obj['imaging_weight'] * (1 - self._obj['flags'])
     
     @property
-    def time(self):
-        """ Time (UTC) [nrows]
-        """
-        return self._obj['time']
-    
-    @property
-    def datetime(self):
-        """ Time (UTC) [nrows]
-        """
-        return self._obj['datetime']
-    
-    @property
-    def integration_time(self):
-        """ Integration time [nrows]
-        """
-        return self._obj['integration_time']
-    
-    @property
     def nvis(self):
         """ Number of visibilities (in total)
         """
         return numpy.product(self._obj.vis.shape)
-
-    @property
-    def configuration(self):
-        """Configuration
-
-        :return:
-        """
-        return self._obj.attrs["configuration"]
-
-    @property
-    def phasecentre(self):
-        """Phase centre
-
-        :return:
-        """
-        return self._obj.attrs["phasecentre"]
-
-    @property
-    def polarisation_frame(self):
-        """Polarisation frame
-
-        :return:
-        """
-        return self._obj.attrs["polarisation_frame"]
-
-    @property
-    def source(self):
-        """Source name
-
-        :return:
-        """
-        return self._obj.attrs["source"]
-
-    @property
-    def meta(self):
-        """Meta info
-
-        :return:
-        """
-        return self._obj.attrs["meta"]
-
 
 class FlagTable(xarray.Dataset):
     """ Flag table class
@@ -1579,46 +1170,10 @@ class FlagTableAccessor():
         return s
     
     @property
-    def time(self):
-        """ Time
-        """
-        return self._obj['time']
-    
-    @property
-    def baseline(self):
-        """ Baselines
-        """
-        return self._obj['baseline']
-    
-    @property
-    def datetime(self):
-        """ DateTime
-        """
-        return self._obj['datetime']
-    
-    @property
-    def flags(self):
-        """ Flags [nrows, nbaseline, ncha, npol]
-        """
-        return self._obj['flags']
-    
-    @property
     def nchan(self):
         """ Number of channels
         """
         return len(self._obj['frequency'])
-    
-    @property
-    def frequency(self):
-        """ Number of channels
-        """
-        return self._obj['frequency']
-    
-    @property
-    def channel_bandwidth(self):
-        """ Number of channels
-        """
-        return self._obj['channel_bandwidth']
     
     @property
     def npol(self):
@@ -1630,37 +1185,13 @@ class FlagTableAccessor():
     def nants(self):
         """ Number of antennas
         """
-        return self.configuration.configuration.nants
-    
-    @property
-    def baselines(self):
-        """ Baselines
-        """
-        return self._obj["baseline"]
+        return self.attrs["configuration"].configuration_acc.nants
     
     @property
     def nbaselines(self):
         """ Number of Baselines
         """
         return len(self["baseline"])
-
-
-    @property
-    def configuration(self):
-        """Configuration
-
-        :return:
-        """
-        return self._obj.attrs["configuration"]
-
-    @property
-    def polarisation_frame(self):
-        """Polarisation frame
-
-        :return:
-        """
-        return self._obj.attrs["polarisation_frame"]
-
 
 class QA:
     """ Quality assessment

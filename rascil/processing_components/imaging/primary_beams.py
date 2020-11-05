@@ -284,7 +284,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     padded_shape = [nchan, npol, padding * ny, padding * nx]
     padded_beam = pad_image(beam, padded_shape)
     padded_beam["pixels"].data = numpy.zeros(padded_beam["pixels"].data.shape, dtype='complex')
-    _, _, pny, pnx = padded_beam.shape
+    _, _, pny, pnx = padded_beam["pixels"].data.shape
     
     xfr = fft_image(padded_beam)
     cx, cy = xfr.wcs.sub(2).wcs.crpix[0] - 1, xfr.wcs.sub(2).wcs.crpix[1] - 1

@@ -50,16 +50,16 @@ class TestConfigurations(unittest.TestCase):
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
             self.createVis(config, +35.0)
             assert self.config.configuration_acc.size() > 0.0
-            assert len(self.config.configuration_acc.vp_type) == len(self.config.configuration_acc.names)
+            assert len(self.config["vp_type"]) == len(self.config["names"])
 
     
     def test_SKA_MID_configurations(self):
         for config in ['MID', 'MIDR5']:
             self.config = create_named_configuration(config)
             assert self.config.configuration_acc.size() > 0.0
-            assert len(self.config.configuration_acc.vp_type) == len(self.config.configuration_acc.names)
-            assert "MEERKAT" in numpy.unique(self.config.configuration_acc.vp_type)
-            assert "MID" in numpy.unique(self.config.configuration_acc.vp_type)
+            assert len(self.config["vp_type"]) == len(self.config["names"])
+            assert "MEERKAT" in numpy.unique(self.config["vp_type"])
+            assert "MID" in numpy.unique(self.config["vp_type"])
 
     def test_SKA_LOW_configurations(self):
         for config in ['LOW', 'LOWR3', 'LOWBD2-CORE']:

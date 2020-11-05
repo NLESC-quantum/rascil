@@ -32,7 +32,7 @@ log.addHandler(logging.StreamHandler(sys.stderr))
 
 class TestTesting_Support(unittest.TestCase):
     def setUp(self):
-        from rascil.data_models.parameters import rascil_path, rascil_data_path
+        from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         self.persist = os.getenv("RASCIL_PERSIST", False)
         
@@ -180,16 +180,17 @@ class TestTesting_Support(unittest.TestCase):
         bm = create_low_test_beam(model=im)
         if self.persist: export_image_to_fits(bm, '%s/test_test_support_low_beam.fits' % (self.dir))
         
-        assert bm.data.shape[0] == 3
-        assert bm.data.shape[1] == 4
-        assert bm.data.shape[2] == im["pixels"].data.shape[2]
-        assert bm.data.shape[3] == im["pixels"].data.shape[3]
+        bmshape = bm["pixels"].data.shape
+        assert bmshape[0] == 3
+        assert bmshape[1] == 4
+        assert bmshape[2] == im["pixels"].data.shape[2]
+        assert bmshape[3] == im["pixels"].data.shape[3]
         # Check to see if the beam scales as expected
         for i in [30, 40]:
-            assert numpy.max(numpy.abs(bm.data[0, 0, 128, 128 - 2 * i] - bm.data[1, 0, 128, 128 - i])) < 0.02
-            assert numpy.max(numpy.abs(bm.data[0, 0, 128, 128 - 3 * i] - bm.data[2, 0, 128, 128 - i])) < 0.02
-            assert numpy.max(numpy.abs(bm.data[0, 0, 128 - 2 * i, 128] - bm.data[1, 0, 128 - i, 128])) < 0.02
-            assert numpy.max(numpy.abs(bm.data[0, 0, 128 - 3 * i, 128] - bm.data[2, 0, 128 - i, 128])) < 0.02
+            assert numpy.max(numpy.abs(bm["pixels"].data[0, 0, 128, 128 - 2 * i] - bm["pixels"].data[1, 0, 128, 128 - i])) < 0.02
+            assert numpy.max(numpy.abs(bm["pixels"].data[0, 0, 128, 128 - 3 * i] - bm["pixels"].data[2, 0, 128, 128 - i])) < 0.02
+            assert numpy.max(numpy.abs(bm["pixels"].data[0, 0, 128 - 2 * i, 128] - bm["pixels"].data[1, 0, 128 - i, 128])) < 0.02
+            assert numpy.max(numpy.abs(bm["pixels"].data[0, 0, 128 - 3 * i, 128] - bm["pixels"].data[2, 0, 128 - i, 128])) < 0.02
     
     def test_create_vis_iter(self):
         vis_iter = create_blockvisibility_iterator(self.config, self.times, self.frequency,
@@ -201,15 +202,15 @@ class TestTesting_Support(unittest.TestCase):
         fullvis = None
         totalnvis = 0
         for i, vis in enumerate(vis_iter):
-            assert vis.nvis
+            assert vis.blockvisibility_acc.nvis
             if i == 0:
                 fullvis = copy_visibility(vis)
-                totalnvis = vis.ntimes
+                totalnvis = vis.blockvisibility_acc.ntimes
             else:
                 fullvis = concatenate_visibility([fullvis, vis])
-                totalnvis += vis.ntimes
+                totalnvis += vis.blockvisibility_acc.ntimes
         
-        assert fullvis.ntimes == totalnvis
+        assert fullvis.blockvisibility_acc.ntimes == totalnvis
     
     def test_create_vis_iter_with_model(self):
         model = create_test_image(cellsize=0.001, frequency=self.frequency, phasecentre=self.phasecentre)
@@ -226,15 +227,15 @@ class TestTesting_Support(unittest.TestCase):
         totalnvis = 0
         for i, bvis in enumerate(vis_iter):
             assert bvis.phasecentre.separation(self.phasecentre).value < 1e-15
-            assert bvis.nvis
+            assert bvis.blockvisibility_acc.nvis
             if i == 0:
                 fullvis = bvis
-                totalnvis = bvis.ntimes
+                totalnvis = bvis.blockvisibility_acc.ntimes
             else:
                 fullvis = concatenate_visibility([fullvis, bvis])
-                totalnvis += bvis.ntimes
+                totalnvis += bvis.blockvisibility_acc.ntimes
         
-        assert fullvis.ntimes == totalnvis
+        assert fullvis.blockvisibility_acc.ntimes == totalnvis
     
 
 if __name__ == '__main__':

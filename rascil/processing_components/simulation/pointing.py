@@ -35,11 +35,10 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     :return:
     """
     
-    nant = vis.nants
+    nant = vis.blockvisibility_acc.nants
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
     
-    nrec = gaintables[0].nrec
-    gnchan = gaintables[0].nchan
+    gnchan = gaintables[0].gaintable_acc.nchan
     frequency = gaintables[0].frequency
     
     nchan, npol, ny, nx = vp["pixels"].data.shape
@@ -48,7 +47,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp["pixels"].data[chan, pol, ...].imag, kx=order, ky=order)
                      for chan in range(nchan)] for pol in range(npol)]
 
-    assert npol == vis.npol, "Voltage pattern and visibility have incompatible polarisations"
+    assert npol == vis.blockvisibility_acc.npol, "Voltage pattern and visibility have incompatible polarisations"
     
     assert isinstance(vis, BlockVisibility)
     assert vp.wcs.wcs.ctype[0] == 'AZELGEO long', vp.wcs.wcs.ctype[0]
@@ -65,29 +64,28 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     # in AZELGEO. With that we can then look up the relevant gain from the
     # voltage pattern
 
-    for row in range(pt.ntimes):
-        time_slice = {"time": slice(pt.time[row] - pt.interval[row] / 2, pt.time[row] + pt.interval[row] / 2)}
+    location = vis.attrs["configuration"].attrs["location"]
+    for row, time in enumerate(pt["time"]):
+        time_slice = {"time": slice(time - pt["interval"][row] / 2,
+                                    time + pt.interval[row] / 2)}
         pt_sel = pt.sel(time_slice)
-        if pt_sel.ntimes > 0:
-            pointing_ha = pt_sel.pointing.values[0, ...]
-            utc_time = Time([numpy.average(pt_sel.time)/86400.0], format='mjd', scale='utc')
-            azimuth_centre, elevation_centre = calculate_azel(pt_sel.configuration.location, utc_time,
-                                                              vis.phasecentre)
+        if len(pt_sel["time"]) > 0:
+            pointing_ha = pt_sel["pointing"].data[0, ...]
+            utc_time = Time([numpy.average(pt_sel["time"])/86400.0], format='mjd', scale='utc')
+            azimuth_centre, elevation_centre = calculate_azel(location, utc_time, vis.attrs["phasecentre"])
             azimuth_centre = azimuth_centre[0].to('rad').value
             elevation_centre = elevation_centre[0].to('rad').value
             
             # Calculate the az el for this hourangle and the phasecentre declination
             for icomp, comp in enumerate(sc):
                 gt_sel = gaintables[icomp].sel(time_slice)
-                nrec = gt_sel.nrec
+                nrec = gt_sel.gaintable_acc.nrec
                 if elevation_centre >= elevation_limit:
                     
                     antgain = numpy.zeros([nant, gnchan, npol], dtype='complex')
                     
                     # Calculate the azel of this component
-                    utc_time = Time([numpy.average(pt_sel.time) / 86400.0], format='mjd', scale='utc')
-                    azimuth_comp, elevation_comp = calculate_azel(pt_sel.configuration.location, utc_time,
-                                                                  comp.direction)
+                    azimuth_comp, elevation_comp = calculate_azel(location, utc_time, comp.direction)
                     azimuth_comp = azimuth_comp[0].to('rad').value
                     elevation_comp = elevation_comp[0].to('rad').value
                     for ant in range(nant):
@@ -130,11 +128,11 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                             number_bad += 1
                             antgain[ant, :, :] = 1.0
                            
-                        gt_sel.gain[:, :, :, :] = antgain[:, :, :].reshape([nant, gnchan, nrec, nrec])
-                        gt_sel.phasecentre = comp.direction
+                        gt_sel["gain"].data[:, :, :, :] = antgain[:, :, :].reshape([nant, gnchan, nrec, nrec])
+                        gt_sel.attrs["phasecentre"] = comp.direction
                 else:
-                    gt_sel.gain[...] = 1.0 + 0.0j
-                    gt_sel.phasecentre = comp.direction
+                    gt_sel["gain"].data[...] = 1.0 + 0.0j
+                    gt_sel.attrs["phasecentre"] = comp.direction
                     number_bad += nant
 
     assert number_good > 0, "simulate_gaintable_from_pointingtable: No points inside the voltage pattern image"

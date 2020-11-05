@@ -151,10 +151,10 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
     x[mask] = vis.blockvisibility_acc.flagged_vis.values[mask] / modelvis.blockvisibility_acc.flagged_vis.values[mask]
     
     pointsource_vis = BlockVisibility(flags=vis.flags.values,
-                                      baselines=vis.baselines,
+                                      baselines=vis.baseline,
                                       frequency=vis.frequency.values,
                                       channel_bandwidth=vis.channel_bandwidth.values,
-                                      phasecentre=vis.attrs["phasecentre"],
+                                      phasecentre=vis.phasecentre,
                                       configuration=vis.configuration,
                                       uvw=vis.uvw.values,
                                       time=vis.time.values,
@@ -193,8 +193,8 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
     
     return BlockVisibility(frequency=numpy.ones([1]) * numpy.average(vis.frequency.values),
                            channel_bandwidth=numpy.ones([1]) * numpy.sum(vis.channel_bandwidth.values),
-                           baselines=vis.baselines.values,
-                           phasecentre=vis.attrs["phasecentre"],
+                           baselines=vis.baseline.values,
+                           phasecentre=vis.phasecentre,
                            configuration=vis.configuration,
                            uvw=vis.uvw.values,
                            time=vis.time.values,
@@ -276,7 +276,7 @@ def convert_blockvisibility_to_stokes(vis):
     :param vis: blockvisibility
     :return: Converted visibility data.
     """
-    poldef = vis.blockvisibility_acc.polarisation_frame
+    poldef = vis.attrs["polarisation_frame"]
     if poldef == PolarisationFrame('linear'):
         vis['vis'].values[...] = convert_linear_to_stokes(vis['vis'].values, polaxis=3)
         vis['flags'].values[...] = \
@@ -341,18 +341,18 @@ def convert_blockvisibility_to_stokesI(vis):
     else:
         raise NameError("Polarisation frame %s unknown" % poldef)
     
-    return BlockVisibility(frequency=vis.blockvisibility_acc.frequency.values,
-                           channel_bandwidth=vis.blockvisibility_acc.channel_bandwidth.values,
+    return BlockVisibility(frequency=vis.frequency.values,
+                           channel_bandwidth=vis.channel_bandwidth.values,
                            phasecentre=vis.attrs["phasecentre"],
-                           baselines=vis.blockvisibility_acc.baselines,
-                           configuration=vis.blockvisibility_acc.configuration,
-                           uvw=vis.blockvisibility_acc.uvw.values,
-                           time=vis.blockvisibility_acc.time.values,
+                           baselines=vis["baseline"],
+                           configuration=vis.attrs["configuration"],
+                           uvw=vis["uvw"].values,
+                           time=vis["time"].values,
                            vis=vis_data,
                            flags=vis_flags,
                            weight=vis_weight,
                            imaging_weight=vis_imaging_weight,
-                           integration_time=vis.blockvisibility_acc.integration_time.values,
+                           integration_time=vis["integration_time"].values,
                            polarisation_frame=polarisation_frame,
-                           source=vis.blockvisibility_acc.source,
-                           meta=vis.blockvisibility_acc.meta)
+                           source=vis.attrs["source"],
+                           meta=vis.attrs["meta"])

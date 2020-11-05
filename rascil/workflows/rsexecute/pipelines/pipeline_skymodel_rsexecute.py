@@ -41,13 +41,13 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
     # Check if SkyModel list is given
     assert len(skymodel_list) is not None, skymodel_list
     # Note that the following test will fail if skymodel_list is a Future or Delayed
-    #assert isinstance(skymodel_list[0], SkyModel), skymodel_list[0]
+    ##assert isinstance(skymodel_list[0], SkyModel), skymodel_list[0]
     
     gt_list = list()
     
     # Function to copy image into a SkyModel
     def set_image(sm, dcm):
-        sm.image = dcm.copy()
+        sm.image = dcm.copy(deep=True)
         return sm
     
     # Make wkernels

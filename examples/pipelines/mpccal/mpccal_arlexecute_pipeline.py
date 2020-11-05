@@ -127,7 +127,7 @@ if __name__ == '__main__':
         cellsize=cellsize,
         phasecentre=phasecentre)
 
-    block_vis.data['imaging_weight'][...] = block_vis.data['weight'][...]
+    block_vis['imaging_weight'].data[...] = block_vis['weight'].data[...]
     block_vis = weight_list_serial_workflow([block_vis], [small_model])[0]
     block_vis = taper_list_serial_workflow([block_vis], 3 * cellsize)[0]
 
@@ -176,7 +176,7 @@ if __name__ == '__main__':
                                                           docal=True)
         work_vis = rsexecute.compute(result, sync=True)
         for w in work_vis:
-            all_skymodel_blockvis['vis'].data += w.data['vis']
+            all_skymodel_blockvis['vis'].data += w['vis'].data
         assert numpy.max(numpy.abs(all_skymodel_blockvis['vis'].data)) > 0.0
 
 
@@ -354,7 +354,7 @@ if __name__ == '__main__':
     plt.legend()
     plt.show(block=block_plots)
 
-    difference_image = mpccal_restored.copy()
+    difference_image = mpccal_restored.copy(deep=True)
     difference_image.data -= ical_restored.data
 
     print(qa_image(difference_image, context='MPCCAL - ICAL image'))

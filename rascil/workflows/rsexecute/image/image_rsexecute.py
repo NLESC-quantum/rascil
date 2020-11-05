@@ -57,7 +57,7 @@ def sum_images_rsexecute(image_list, split=2):
 
     """
     def sum_images(imagelist):
-        out = imagelist[0].copy()
+        out = imagelist[0].copy(deep=True)
         out["pixels"].data += imagelist[1]["pixels"].data
         return out
     

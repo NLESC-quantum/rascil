@@ -185,7 +185,7 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
             
             for ipol, pol in enumerate(["I", "Q", "U", "V"]):
                 result["model_{}".format(pol)] = flux[0][ipol]
-                polimage = dirty_list[0].copy()
+                polimage = dirty_list[0].copy(deep=True)
                 polimage.data = polimage.data[:, ipol, ...][:, numpy.newaxis, ...]
                 qa = qa_image(polimage, context="Stokes " + pol)
                 result["peak_{}_{}".format(method, pol)] = max(qa.data['min'], qa.data['max'], key=abs)

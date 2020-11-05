@@ -78,18 +78,19 @@ def taper_visibility_gaussian(vis, beam=None):
     :param beam: desired resolution (Full width half maximum, radians)
     :return: visibility with imaging_weight column modified
     """
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     
     if beam is None:
         raise ValueError("Beam size not specified for Gaussian taper")
     
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     # See http://mathworld.wolfram.com/FourierTransformGaussian.html
     scale_factor = numpy.pi ** 2 * beam ** 2 / (4.0 * numpy.log(2.0))
 
     for chan, freq in enumerate(vis.frequency.values):
         wave = constants.c.to('m s^-1').value / freq
-        uvdistsq = (vis.u.values ** 2 + vis.v.values ** 2) / wave**2
+        uvdistsq = (vis.blockvisibility_acc.u.values ** 2 +
+                    vis.blockvisibility_acc.v.values ** 2) / wave**2
         wt = numpy.exp(-scale_factor * uvdistsq)
         vis['imaging_weight'].data[..., chan, :] = vis.blockvisibility_acc.flagged_imaging_weight.data[..., chan, :] * \
                                                    wt[..., numpy.newaxis]
@@ -115,12 +116,13 @@ def taper_visibility_tukey(vis, tukey=0.1):
     :return: visibility with imaging_weight column modified
     """
 
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
 
     oshape = vis['imaging_weight'].data[..., 0, 0].shape
     for chan, freq in enumerate(vis.frequency.values):
         wave = constants.c.to('m s^-1').value / freq
-        uvdist = numpy.sqrt(vis.u.data ** 2 + vis.v.data ** 2)
+        uvdist = numpy.sqrt(vis.blockvisibility_acc.u.data ** 2 +
+                            vis.blockvisibility_acc.v.data ** 2)
         uvdist = uvdist.flatten() / wave
         uvdistmax = numpy.max(uvdist)
         uvdist /= uvdistmax

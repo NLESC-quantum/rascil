@@ -27,11 +27,11 @@ def image_gradients(im: Image):
     :param im: Image
     :return: Gradient images
     """
-    #assert isinstance(im, Image)
+    ##assert isinstance(im, Image)
 
     nchan, npol, ny, nx = im["pixels"].data.shape
     
-    gradientx = create_empty_image_like(im["pixels"].data)
+    gradientx = create_empty_image_like(im)
     gradientx["pixels"].data[..., :, 1:nx] = im["pixels"].data[..., :, 1:nx] - im["pixels"].data[..., :, 0:(nx - 1)]
     gradienty = create_empty_image_like(im)
     gradienty["pixels"].data[..., 1:ny, :] = im["pixels"].data[..., 1:ny, :] - im["pixels"].data[..., 0:(ny - 1), :]

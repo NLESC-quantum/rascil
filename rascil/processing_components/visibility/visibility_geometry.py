@@ -27,7 +27,7 @@ def get_direction_time_location(bvis):
 
     utc_time = Time(bvis.time / 86400.0, format='mjd', scale='utc')
     direction = bvis.attrs["phasecentre"]
-    assert isinstance(bvis, BlockVisibility), bvis
+    #assert isinstance(bvis, BlockVisibility), bvis
     assert isinstance(location, EarthLocation), location
     assert isinstance(utc_time, Time), utc_time
     assert isinstance(direction, SkyCoord), direction

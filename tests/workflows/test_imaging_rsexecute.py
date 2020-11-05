@@ -203,7 +203,7 @@ class TestImaging(unittest.TestCase):
                 export_image_to_fits(dirty[0], '%s/test_imaging_invert_%s%s_%s_dirty.fits' %
                                      (self.dir, context, extra, rsexecute.type()))
         
-        assert numpy.max(numpy.abs(dirty[0].data)), "Image is empty"
+        assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Image is empty"
         
         if check_components:
             self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)

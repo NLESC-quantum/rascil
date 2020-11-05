@@ -62,6 +62,6 @@ class TestImageGraph(unittest.TestCase):
         beam = image_rsexecute_map_workflow(model, create_pb, facets=4, pointingcentre=self.phasecentre,
                                              telescope='MID')
         beam = rsexecute.compute(beam, sync=True)
-        assert numpy.max(beam.data) > 0.0
+        assert numpy.max(beam["pixels"].data) > 0.0
         if self.persist: export_image_to_fits(beam, "%s/test_image_rsexecute_scatter_gather.fits" % (self.dir))
             

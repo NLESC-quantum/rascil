@@ -92,12 +92,12 @@ class TestMPC(unittest.TestCase):
                                flux_max=5.0) for f, freq in enumerate(self.frequency)]
         
         self.skymodel_list = rsexecute.compute(self.skymodel_list, sync=True)
-        assert isinstance(self.skymodel_list[0].image, Image), self.skymodel_list[0].image
-        assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
+        #assert isinstance(self.skymodel_list[0].image, Image), self.skymodel_list[0].image
+        #assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
         assert len(self.skymodel_list[0].components) == 16, len(self.skymodel_list[0].components)
         self.skymodel_list = expand_skymodel_by_skycomponents(self.skymodel_list[0])
         assert len(self.skymodel_list) == 17, len(self.skymodel_list)
-        assert numpy.max(numpy.abs(self.skymodel_list[-1].image.data)) > 0.0, "Image is empty"
+        assert numpy.max(numpy.abs(self.skymodel_list[-1].image["pixels"])) > 0.0, "Image is empty"
         #self.vis_list = [copy_visibility(self.vis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
     
     def test_predictcal(self):

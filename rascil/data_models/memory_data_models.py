@@ -172,7 +172,6 @@ class GainTable(xarray.Dataset):
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims="time")
         attrs = dict()
-        
         attrs["receptor_frame"] = receptor_frame
         attrs["phasecentre"] = phasecentre
         attrs["configuration"] = configuration
@@ -393,7 +392,11 @@ class Image(xarray.Dataset):
 
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
-        attrs = {"phasecentre": phasecentre, "wcs":wcs, "polarisation_frame":polarisation_frame}
+        
+        attrs = {"shape":data.shape,
+                 "phasecentre": phasecentre,
+                 "wcs":wcs,
+                 "polarisation_frame":polarisation_frame}
         
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
@@ -506,6 +509,7 @@ class GridData(xarray.Dataset):
         assert coords["v"][0] != coords["v"][-1]
         
         attrs = dict()
+        attrs["shape"] = data.shape
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
@@ -644,6 +648,7 @@ class ConvolutionFunction(xarray.Dataset):
         assert coords["v"][0] != coords["v"][-1]
         
         attrs = dict()
+        attrs["shape"] = data.shape
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
@@ -820,21 +825,14 @@ class SkyModel:
             components = []
         
         #if image is not None:
-            #assert isinstance(image, Image), image
+            ##assert isinstance(image, Image), image
         self.image = image
         
-        if components is not None:
-            assert isinstance(components, list)
-            for comp in components:
-                assert isinstance(comp, Skycomponent), comp
         self.components = [sc for sc in components]
-        
-        if gaintable is not None:
-            assert isinstance(gaintable, GainTable), gaintable
         self.gaintable = gaintable
         
         #if mask is not None:
-        #    assert isinstance(mask, Image), mask
+        #    #assert isinstance(mask, Image), mask
         self.mask = mask
         
         self.fixed = fixed
@@ -913,7 +911,7 @@ class BlockVisibility(xarray.Dataset):
         
         coords = {
             "time": time,
-            "baseline": baselines,
+            "baselines": baselines,
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
             "uvw_index": ["u", "v", "w"]
@@ -924,21 +922,21 @@ class BlockVisibility(xarray.Dataset):
                                                         dims=["time"], attrs={"units": "s"})
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims=["time"], attrs={"units": "s"})
-        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baseline", "frequency", "polarisation"],
+        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baselines", "frequency", "polarisation"],
                                            attrs={"units": "Jy"})
         datavars["weight"] = xarray.DataArray(weight.astype(low_precision),
-                                              dims=["time", "baseline", "frequency", "polarisation"])
+                                              dims=["time", "baselines", "frequency", "polarisation"])
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight.astype(low_precision),
-                                                      dims=["time", "baseline", "frequency", "polarisation"])
+                                                      dims=["time", "baselines", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags.astype(low_precision),
-                                             dims=["time", "baseline", "frequency", "polarisation"])
+                                             dims=["time", "baselines", "frequency", "polarisation"])
         
-        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baseline", "uvw_index"], attrs={"units": "m"})
+        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baselines", "uvw_index"], attrs={"units": "m"})
         
-        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baseline", "frequency", "uvw_index"],
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baselines", "frequency", "uvw_index"],
                                                   attrs={"units": "lambda"})
         datavars["uvdist_lambda"] = xarray.DataArray(numpy.hypot(uvw_lambda[..., 0], uvw_lambda[..., 1]),
-                                                     dims=["time", "baseline", "frequency"], attrs={"units": "lambda"})
+                                                     dims=["time", "baselines", "frequency"], attrs={"units": "lambda"})
         
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"], attrs={"units": "Hz"})
         
@@ -1007,7 +1005,7 @@ class BlockVisibilityAccessor():
     def nbaselines(self):
         """ Number of Baselines
         """
-        return len(self._obj["baseline"])
+        return len(self._obj["baselines"])
     
     @property
     def u(self):
@@ -1113,13 +1111,13 @@ class FlagTable(xarray.Dataset):
         
         coords = {
             "time": time,
-            "baseline": baselines,
+            "baselines": baselines,
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
         }
         
         datavars = dict()
-        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baseline", "frequency", "polarisation"])
+        datavars["flags"] = xarray.DataArray(flags, dims=["time", "baselines", "frequency", "polarisation"])
         datavars["integration_time"] = xarray.DataArray(integration_time, dims=["time"])
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"])
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
@@ -1191,7 +1189,7 @@ class FlagTableAccessor():
     def nbaselines(self):
         """ Number of Baselines
         """
-        return len(self["baseline"])
+        return len(self["baselines"])
 
 class QA:
     """ Quality assessment
@@ -1222,7 +1220,7 @@ class QA:
         s += "\tContext: %s\n" % self.context
         s += "\tData:\n"
         for dataname in self.data.keys():
-            s += "\t\t%s: %r\n" % (dataname, str(self[dataname]))
+            s += "\t\t%s: %r\n" % (dataname, str(self.data[dataname]))
         return s
 
 

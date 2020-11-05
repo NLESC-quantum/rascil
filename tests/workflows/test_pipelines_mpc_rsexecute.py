@@ -98,7 +98,7 @@ class TestPipelineMPC(unittest.TestCase):
             cellsize=cellsize,
             phasecentre=phasecentre)
 
-        blockvis.data['imaging_weight'][...] = blockvis.data['weight'][...]
+        blockvis['imaging_weight'].data[...] = blockvis['weight'].data[...]
         blockvis = weight_list_serial_workflow([blockvis], [small_model])[0]
         #blockvis = taper_list_serial_workflow([blockvis], 3 * cellsize)[0]
 
@@ -154,7 +154,7 @@ class TestPipelineMPC(unittest.TestCase):
             result = predict_skymodel_list_rsexecute_workflow(future_vis, chunk, context='2d', docal=True)
             work_vis = rsexecute.compute(result, sync=True)
             for w in work_vis:
-                self.all_skymodel_noniso_vis['vis'].data += w.data['vis']
+                self.all_skymodel_noniso_vis['vis'].data += w['vis'].data
             assert numpy.max(numpy.abs(self.all_skymodel_noniso_vis['vis'].data)) > 0.0
 
         self.all_skymodel_noniso_blockvis = copy_visibility(self.all_skymodel_noniso_vis)
@@ -166,8 +166,8 @@ class TestPipelineMPC(unittest.TestCase):
                                              nchan=nfreqwin, cellsize=cellsize, phasecentre=phasecentre)
 
         # Use the gaintable for the brightest component as the starting gaintable
-        all_gaintables[0].gaintable_acc.gain[...] = numpy.conjugate(all_gaintables[0].gaintable_acc.gain[...])
-        all_gaintables[0].gaintable_acc.gain[...] = 1.0 + 0.0j
+        all_gaintables[0].gain[...] = numpy.conjugate(all_gaintables[0].gain[...])
+        all_gaintables[0].gain[...] = 1.0 + 0.0j
         self.theta_list = initialize_skymodel_voronoi(model, voronoi_components, all_gaintables[0])
 
     # End of setup, start of processing]
@@ -220,7 +220,7 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 7.285739982375531) < 1e-7, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = self.screen.copy()
+        newscreen = self.screen.copy(deep=True)
         
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
@@ -278,7 +278,7 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 1.100462744176149) < 1e-6, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = self.screen.copy()
+        newscreen = self.screen.copy(deep=True)
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
         if self.persist: export_xarray_to_fits(newscreen,
@@ -333,7 +333,7 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 7.801039951014443) < 1e-7, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = self.screen.copy()
+        newscreen = self.screen.copy(deep=True)
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
         if self.persist: export_xarray_to_fits(newscreen, rascil_path('test_results/test_mpccal_screen.fits'))
@@ -387,7 +387,7 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 7.497780123335668) < 1e-7, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = self.screen.copy()
+        newscreen = self.screen.copy(deep=True)
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
         if self.persist:
@@ -443,7 +443,7 @@ class TestPipelineMPC(unittest.TestCase):
         # assert numpy.abs(recovered_mpccal_components[0].flux[0, 0] - 7.801039951014443) < 1e-7, \
         #     recovered_mpccal_components[0].flux[0, 0]
 
-        newscreen = self.screen.copy()
+        newscreen = self.screen.copy(deep=True)
         gaintables = [th.gaintable for th in self.theta_list]
         newscreen, weights = grid_gaintable_to_screen(self.all_skymodel_noniso_blockvis, gaintables, newscreen)
         if self.persist: export_xarray_to_fits(newscreen, rascil_path('test_results/test_mpccal_no_edge_screen.fits'))

@@ -31,7 +31,7 @@ def gaintable_timeslice_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
     :param gaintable_slices: Number of slices (second in precedence to timeslice)
     :return: Boolean array with selected rows=True
     """
-    assert isinstance(gt, GainTable)
+    ##assert isinstance(gt, GainTable)
     timemin = numpy.min(gt.time)
     timemax = numpy.max(gt.time)
     

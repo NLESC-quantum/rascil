@@ -87,7 +87,7 @@ class TestAtmosphericScreen(unittest.TestCase):
 
         gaintables = create_gaintable_from_screen(self.vis, actual_components, screen, height=3e5)
         assert len(gaintables) == len(actual_components), len(gaintables)
-        assert gaintables[0].gaintable_acc.gain.shape == (3, 94, 1, 1, 1), gaintables[0].gaintable_acc.gain.shape
+        assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 
     def test_create_gaintable_from_screen_troposphere(self):
         self.actualSetup("troposphere")
@@ -113,7 +113,7 @@ class TestAtmosphericScreen(unittest.TestCase):
         gaintables = create_gaintable_from_screen(self.vis, actual_components, screen, height=3e3,
                                                   type_atmosphere="troposphere")
         assert len(gaintables) == len(actual_components), len(gaintables)
-        assert gaintables[0].gaintable_acc.gain.shape == (3, 63, 1, 1, 1), gaintables[0].gaintable_acc.gain.shape
+        assert gaintables[0].gain.shape == (3, 63, 1, 1, 1), gaintables[0].gain.shape
 
     def test_grid_gaintable_to_screen(self):
         self.actualSetup()
@@ -134,7 +134,7 @@ class TestAtmosphericScreen(unittest.TestCase):
                                                   rascil_data_path('models/test_mpc_screen.fits'),
                                                   height=3e5)
         assert len(gaintables) == len(actual_components), len(gaintables)
-        assert gaintables[0].gaintable_acc.gain.shape == (3, 94, 1, 1, 1), gaintables[0].gaintable_acc.gain.shape
+        assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 
         old_screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
         newscreen = old_screen.copy(deep=True)
@@ -164,7 +164,7 @@ class TestAtmosphericScreen(unittest.TestCase):
 
         gaintables = create_gaintable_from_screen(self.vis, actual_components, screen, height=3e5)
         assert len(gaintables) == len(actual_components), len(gaintables)
-        assert gaintables[0].gaintable_acc.gain.shape == (3, 94, 1, 1, 1), gaintables[0].gaintable_acc.gain.shape
+        assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 
         plot_gaintable_on_screen(self.vis, gaintables, plotfile=rascil_path(
             'test_results/test_plot_gaintable_to_screen.png'))

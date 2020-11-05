@@ -62,8 +62,8 @@ class TestPrimaryBeams(unittest.TestCase):
             zernikes = [{'coeff':1.0,'noll':noll}]
             vp = create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockage=0.0, taper='gaussian',
                                         edge=0.03162278, zernikes=zernikes, padding=2, use_local=True)
-            vp_data = vp.data
-            vp.data = numpy.real(vp_data)
+            vp_data = vp["pixels"].data
+            vp["pixels"].data = numpy.real(vp_data)
             if self.persist:
                 export_image_to_fits(vp, "%s/test_voltage_pattern_real_%s_NOLL%d.fits" % (self.dir, 'MID_ZERNIKES', noll))
             # row = (noll-1)//7

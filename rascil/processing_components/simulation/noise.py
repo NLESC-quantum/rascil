@@ -42,7 +42,7 @@ def addnoise_visibility(vis, t_sys=None, eta=None):
     :param eta: Efficiency
     :return: vis with noise added
     """
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     
     if t_sys is None:
         t_sys = 20.0
@@ -57,6 +57,6 @@ def addnoise_visibility(vis, t_sys=None, eta=None):
     shape = (nbaseline, npol)
     for time in range(ntimes):
         for chan in range(nchan):
-            vis.data["vis"].data[time, ..., chan, :].real += numpy.random.normal(0, sigma[time, chan], shape)
-            vis.data["vis"].data[time, ..., chan, :].imag += numpy.random.normal(0, sigma[time, chan], shape)
+            vis["vis"].data[time, ..., chan, :].real += numpy.random.normal(0, sigma[time, chan], shape)
+            vis["vis"].data[time, ..., chan, :].imag += numpy.random.normal(0, sigma[time, chan], shape)
     return vis

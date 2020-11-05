@@ -28,12 +28,12 @@ class TestPrimaryBeams(unittest.TestCase):
         gradxx, gradxy = image_gradients(gradx)
         gradyx, gradyy = image_gradients(grady)
 
-        gradx.data *= real_vp.data
-        grady.data *= real_vp.data
-        gradxx.data *= real_vp.data
-        gradxy.data *= real_vp.data
-        gradyx.data *= real_vp.data
-        gradyy.data *= real_vp.data
+        gradx["pixels"].data *= real_vp["pixels"].data
+        grady["pixels"].data *= real_vp["pixels"].data
+        gradxx["pixels"].data *= real_vp["pixels"].data
+        gradxy["pixels"].data *= real_vp["pixels"].data
+        gradyx["pixels"].data *= real_vp["pixels"].data
+        gradyy["pixels"].data *= real_vp["pixels"].data
 
         if self.show:
             import matplotlib.pyplot as plt

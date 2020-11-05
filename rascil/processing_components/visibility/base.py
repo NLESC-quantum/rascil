@@ -90,7 +90,7 @@ def copy_visibility(vis: BlockVisibility, zero=False) -> BlockVisibility:
     :returns: BlockVisibility
 
     """
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     
     newvis = copy.deepcopy(vis)
     if zero:
@@ -243,7 +243,7 @@ def create_blockvisibility(config: Configuration,
                           phasecentre=phasecentre, configuration=config)
 
     log.debug("create_blockvisibility: %s" % (vis_summary(vis)))
-    assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
+    #assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
     
     return vis
 
@@ -345,21 +345,21 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         # Check polarisation
         npol = vis.blockvisibility_acc.npol
         nchan = vis.blockvisibility_acc.nchan
-        if vis.attrs["polarisation_frame"].type == 'linear':
+        if vis.polarisation_frame.type == 'linear':
             polarization = ['XX', 'XY', 'YX', 'YY']
-        elif vis.attrs["polarisation_frame"].type == 'linearnp':
+        elif vis.polarisation_frame.type == 'linearnp':
             polarization = ['XX', 'YY']
-        elif vis.attrs["polarisation_frame"].type == 'stokesI':
+        elif vis.polarisation_frame.type == 'stokesI':
             polarization = ['XX']
-        elif vis.attrs["polarisation_frame"].type == 'circular':
+        elif vis.polarisation_frame.type == 'circular':
             polarization = ['RR', 'RL', 'LR', 'LL']
-        elif vis.attrs["polarisation_frame"].type == 'circularnp':
+        elif vis.polarisation_frame.type == 'circularnp':
             polarization = ['RR', 'LL']
-        elif vis.attrs["polarisation_frame"].type == 'stokesIQUV':
+        elif vis.polarisation_frame.type == 'stokesIQUV':
             polarization = ['I', 'Q', 'U', 'V']
-        elif vis.attrs["polarisation_frame"].type == 'stokesIQ':
+        elif vis.polarisation_frame.type == 'stokesIQ':
             polarization = ['I', 'Q']
-        elif vis.attrs["polarisation_frame"].type == 'stokesIV':
+        elif vis.polarisation_frame.type == 'stokesIV':
             polarization = ['I', 'V']
         else:
             raise ValueError(
@@ -370,8 +370,8 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         n_ant = len(vis.attrs["configuration"].xyz)
         
         antennas = []
-        names = vis.blockvisibility_acc.configuration.configuration_acc.names.values
-        xyz = vis.blockvisibility_acc.configuration.configuration_acc.xyz.values
+        names = vis.configuration.names.values
+        xyz = vis.configuration.xyz.values
         for i in range(len(names)):
             antennas.append(Antenna(i, Stand(names[i], xyz[i, 0], xyz[i, 1], xyz[i, 2])))
         
@@ -388,7 +388,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
             for a2 in range(a1, n_ant):
                 bl_list.append((antennas[a1], antennas2[a2]))
         
-        tbl.set_geometry(vis.blockvisibility_acc.configuration, antennas)
+        tbl.set_geometry(vis.configuration, antennas)
         
         int_time = vis['integration_time'].values
         # bv_vis = vis['vis']
@@ -972,7 +972,7 @@ def calculate_blockvisibility_phasor(direction, vis):
     :param vis:
     :return:
     """
-    assert isinstance(vis, BlockVisibility)
+    #assert isinstance(vis, BlockVisibility)
     ntimes, nbaseline, nchan, npol = vis["vis"].data.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
     s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])

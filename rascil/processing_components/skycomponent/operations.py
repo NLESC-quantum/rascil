@@ -233,7 +233,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     :return: list of sky components
     """
 
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     log.info("find_skycomponents: Finding components in Image by segmentation")
 
     # We use photutils segmentation - this first segments the image
@@ -308,7 +308,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
             name="Segment %d" % segment,
             flux=point_flux,
             shape='Point',
-            polarisation_frame=im.attrs["polarisation_frame"],
+            polarisation_frame=im.polarisation_frame,
             params={}))
 
     return comps
@@ -324,7 +324,7 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
     :param sc: SkyComponent or list of SkyComponents
     :return: List of skycomponents
     """
-    #assert isinstance(beam, Image)
+    ##assert isinstance(beam, Image)
     single = not isinstance(sc, collections.abc.Iterable)
 
     if single:
@@ -394,7 +394,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     :param sc: SkyComponent or list of SkyComponents
     :return: List of skycomponents
     """
-    assert isinstance(vp, Image)
+    #assert isinstance(vp, Image)
     assert (vp.polarisation_frame == PolarisationFrame("linear")) or \
            (vp.polarisation_frame == PolarisationFrame("circular"))
 
@@ -510,7 +510,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
     :return: Image
     """
 
-    #assert isinstance(im, Image)
+    ##assert isinstance(im, Image)
 
     support = int(support / bandwidth)
 

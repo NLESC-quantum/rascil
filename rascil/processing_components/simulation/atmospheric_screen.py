@@ -63,7 +63,7 @@ def create_gaintable_from_screen(vis, sc, screen, height=None, vis_slices=None, 
     :param reference: Use the first component as a reference
     :return:
     """
-    assert isinstance(vis, BlockVisibility)
+    #assert isinstance(vis, BlockVisibility)
     
     assert height is not None, "Screen height must be specified"
     
@@ -89,11 +89,12 @@ def create_gaintable_from_screen(vis, sc, screen, height=None, vis_slices=None, 
 
     for icomp, comp in enumerate(sc):
         gt = gaintables[icomp]
-        for row in range(gt.ntimes):
-            time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
+        for row, time in enumerate(gt.time):
+            time_slice = {"time": slice(time - gt.interval[row] / 2,
+                                        time + gt.interval[row] / 2)}
             v = vis.sel(time_slice)
             ha = numpy.average(calculate_blockvisibility_hourangles(v).to('rad').value)
-            scr = numpy.zeros([nant, vis.nchan])
+            scr = numpy.zeros([nant, vis.blockvisibility_acc.nchan])
             pp = find_pierce_points(station_locations, (comp.direction.ra.rad + t2r * ha) * units.rad,
                                     comp.direction.dec,
                                     height=height,
@@ -153,7 +154,7 @@ def grid_gaintable_to_screen(vis, gaintables, screen, height=3e5, gaintable_slic
     :param scale: Multiply the screen by this factor
     :return: gridded screen image, weights image
     """
-    assert isinstance(vis, BlockVisibility)
+    #assert isinstance(vis, BlockVisibility)
     
     station_locations = vis.configuration.xyz.values
     
@@ -170,8 +171,9 @@ def grid_gaintable_to_screen(vis, gaintables, screen, height=3e5, gaintable_slic
 
     for gt in gaintables:
         ha_zero = numpy.average(calculate_blockvisibility_hourangles(vis))
-        for row in range(gt.ntimes):
-            time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
+        for row, time in enumerate(gt.time):
+            time_slice = {"time": slice(time - gt.interval[row] / 2,
+                                        time + gt.interval[row] / 2)}
             v = vis.sel(time_slice)
             ha = numpy.average(calculate_blockvisibility_hourangles(v) - ha_zero).to('rad').value
             pp = find_pierce_points(station_locations, (gt.phasecentre.ra.rad + t2r * ha) * units.rad,
@@ -232,8 +234,8 @@ def calculate_sf_from_screen(screen):
         sf[chan, 0, ...] /= numpy.max(sf[chan, 0, ...])
         sf[chan, 0, ...] = 1.0 - sf[chan, 0, ...]
     
-    sf_image = screen.copy()
-    sf_image.data = sf[:, :, (ny - ny // 4):(ny + ny // 4), (nx - nx // 4):(nx + nx // 4)]
+    sf_image = screen.copy(deep=True)
+    sf_image["pixels"].data = sf[:, :, (ny - ny // 4):(ny + ny // 4), (nx - nx // 4):(nx + nx // 4)]
     sf_image.wcs.wcs.crpix[0] = ny // 4 + 1
     sf_image.wcs.wcs.crpix[1] = ny // 4 + 1
     sf_image.wcs.wcs.crpix[2] = 1
@@ -255,7 +257,7 @@ def plot_gaintable_on_screen(vis, gaintables, height=3e5, gaintable_slices=None,
     
     import matplotlib.pyplot as plt
     
-    assert isinstance(vis, BlockVisibility)
+    #assert isinstance(vis, BlockVisibility)
     
     station_locations = vis.configuration.xyz.values
     
@@ -265,8 +267,9 @@ def plot_gaintable_on_screen(vis, gaintables, height=3e5, gaintable_slices=None,
     plt.clf()
     for gt in gaintables:
         time_zero = numpy.average(gt.time)
-        for row in range(gt.ntimes):
-            time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
+        for row, time in enumerate(gt.time):
+            time_slice = {"time": slice(time - gt.interval[row] / 2,
+                                        time + gt.interval[row] / 2)}
             gt_sel = gt.sel(time_slice)
             ha = numpy.average(gt_sel.time-time_zero)
             

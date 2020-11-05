@@ -66,7 +66,7 @@ def shift_vis_to_image(vis: BlockVisibility, im: Image, tangent: bool = True, in
     :return: visibility with phase shift applied and phasecentre updated
 
     """
-    assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
+    #assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
 
     nchan, npol, ny, nx = im["pixels"].data.shape
 
@@ -98,7 +98,7 @@ def normalize_sumwt(im: Image, sumwt) -> Image:
     :param sumwt: Sum of weights [nchan, npol]
     """
     nchan, npol, _, _ = im["pixels"].data.shape
-    #assert isinstance(im, Image), im
+    ##assert isinstance(im, Image), im
     assert sumwt is not None
     assert nchan == sumwt.shape[0]
     assert npol == sumwt.shape[1]
@@ -128,7 +128,7 @@ def predict_2d(vis: BlockVisibility, model: Image, gcfcf=None, **kwargs) -> Bloc
 
     assert not numpy.isnan(numpy.sum(model["pixels"].data)), "NaNs present in input model"
 
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
 
     _, _, ny, nx = model["pixels"].data.shape
 
@@ -136,12 +136,12 @@ def predict_2d(vis: BlockVisibility, model: Image, gcfcf=None, **kwargs) -> Bloc
         gcf, cf = create_pswf_convolutionfunction(model,
                                                   support=get_parameter(kwargs, "support", 8),
                                                   oversampling=get_parameter(kwargs, "oversampling", 127),
-                                                  polarisation_frame=vis.attrs["polarisation_frame"])
+                                                  polarisation_frame=vis.polarisation_frame)
     else:
         gcf, cf = gcfcf
 
-    griddata = create_griddata_from_image(model, polarisation_frame=vis.attrs["polarisation_frame"])
-    polmodel = convert_stokes_to_polimage(model, vis.attrs["polarisation_frame"])
+    griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
+    polmodel = convert_stokes_to_polimage(model, vis.polarisation_frame)
     griddata = fft_image_to_griddata(polmodel, griddata, gcf)
     vis = degrid_blockvisibility_from_griddata(vis, griddata=griddata, cf=cf)
 
@@ -168,7 +168,7 @@ def invert_2d(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: b
     :return: resulting image
 
     """
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
 
     svis = copy_visibility(vis)
 
@@ -181,11 +181,11 @@ def invert_2d(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: b
         gcf, cf = create_pswf_convolutionfunction(im,
                                                   support=get_parameter(kwargs, "support", 8),
                                                   oversampling=get_parameter(kwargs, "oversampling", 127),
-                                                  polarisation_frame=vis.attrs["polarisation_frame"])
+                                                  polarisation_frame=vis.polarisation_frame)
     else:
         gcf, cf = gcfcf
 
-    griddata = create_griddata_from_image(im, polarisation_frame=vis.attrs["polarisation_frame"])
+    griddata = create_griddata_from_image(im, polarisation_frame=vis.polarisation_frame)
     griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
     result = fft_griddata_to_image(griddata, gcf)
 
@@ -237,22 +237,22 @@ def fill_blockvis_for_psf(svis):
     :param svis:
     :return: visibility with unit vis
     """
-    if svis.attrs["polarisation_frame"] == PolarisationFrame("linear"):
+    if svis.polarisation_frame == PolarisationFrame("linear"):
         svis['vis'].data[..., 0] = 1.0 + 0.0j
         svis['vis'].data[..., 1:3] = 0.0 + 0.0j
         svis['vis'].data[..., 3] = 1.0 + 0.0j
-    elif svis.attrs["polarisation_frame"] == PolarisationFrame("circular"):
+    elif svis.polarisation_frame == PolarisationFrame("circular"):
         svis['vis'].data[..., 0] = 1.0 + 0.0j
         svis['vis'].data[..., 1:3] = 0.0 + 0.0j
         svis['vis'].data[..., 3] = 1.0 + 0.0j
-    elif svis.attrs["polarisation_frame"] == PolarisationFrame("linearnp"):
+    elif svis.polarisation_frame == PolarisationFrame("linearnp"):
         svis['vis'].data[...] = 1.0 + 0.0j
-    elif svis.attrs["polarisation_frame"] == PolarisationFrame("circularnp"):
+    elif svis.polarisation_frame == PolarisationFrame("circularnp"):
         svis['vis'].data[...] = 1.0 + 0.0j
-    elif svis.attrs["polarisation_frame"] == PolarisationFrame("stokesI"):
+    elif svis.polarisation_frame == PolarisationFrame("stokesI"):
         svis['vis'].data[...] = 1.0 + 0.0j
     else:
-        raise ValueError("Cannot calculate PSF for {}".format(svis.attrs["polarisation_frame"]))
+        raise ValueError("Cannot calculate PSF for {}".format(svis.polarisation_frame))
     
     return svis
 
@@ -292,9 +292,6 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
     See also
         :py:func:`rascil.processing_components.image.operations.create_image`
     """
-    assert isinstance(vis, BlockVisibility), \
-        "vis is not a BlockVisibility: %r" % (vis)
-    
     log.debug("create_image_from_visibility: Parsing parameters to get definition of WCS")
 
     imagecentre = get_parameter(kwargs, "imagecentre", vis.attrs["phasecentre"])

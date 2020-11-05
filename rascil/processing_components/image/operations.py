@@ -84,7 +84,7 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
         :py:func:`rascil.processing_components.image.operations.import_image_from_array`
 
     """
-    #assert isinstance(im, Image), im
+    ##assert isinstance(im, Image), im
     if im["pixels"].data.dtype == "complex":
         return fits.writeto(filename=fitsfile, data=numpy.real(im["pixels"].data), header=im.wcs.to_header(), overwrite=True)
     else:
@@ -166,7 +166,7 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
     :return: Reprojected Image, Footprint Image
     """
     
-    #assert isinstance(im, Image), im
+    ##assert isinstance(im, Image), im
     
     if len(im["pixels"].shape) == 4:
         nchan, npol, ny, nx = im["pixels"].shape
@@ -220,9 +220,9 @@ def add_image(im1: Image, im2: Image) -> Image:
     :param im2: Image
     :return: Image
     """
-    assert isinstance(im1, Image), im1
+    #assert isinstance(im1, Image), im1
     assert image_is_canonical(im1)
-    assert isinstance(im2, Image), im2
+    #assert isinstance(im2, Image), im2
     assert image_is_canonical(im2)
     
     assert im1.polarisation_frame == im2.polarisation_frame
@@ -238,7 +238,7 @@ def qa_image(im: Image, context="") -> QA:
     :param im:
     :return: QA
     """
-    #assert isinstance(im, Image), im
+    ##assert isinstance(im, Image), im
     im_data = im["pixels"].data
     data = {'shape': str(im["pixels"].data.shape),
             'max': numpy.max(im_data),
@@ -271,7 +271,7 @@ def show_image(im: Image, fig=None, title: str = '', pol=0, chan=0, cm='Greys', 
     """
     import matplotlib.pyplot as plt
     
-    #assert isinstance(im, Image), im
+    ##assert isinstance(im, Image), im
     
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1, projection=im.wcs.sub([1, 2]))
@@ -325,7 +325,7 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, titl
     assert image_is_canonical(im)
     
     for isc, sc in enumerate(comps):
-        newim = im.copy()
+        newim = im.copy(deep=True)
         plt.subplot(111, projection=newim.wcs.sub([1, 2]))
         centre = numpy.round(skycoord_to_pixel(sc.direction, newim.wcs, 1, 'wcs')).astype('int')
         newim["pixels"].data = \
@@ -348,7 +348,7 @@ def smooth_image(model: Image, width=1.0, normalise=True):
     :param normalise: Normalise kernel peak to unity
 
     """
-    #assert isinstance(model, Image), model
+    ##assert isinstance(model, Image), model
     assert image_is_canonical(model)
     
     from astropy.convolution.kernels import Gaussian2DKernel
@@ -394,7 +394,7 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     :param nmoment: Number of moments to calculate
     :return: Moments image
     """
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     assert image_is_canonical(im)
     
     assert nmoment > 0
@@ -450,9 +450,9 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
     :param reference_frequency: Reference frequency (default None uses average)
     :return: reconstructed image
     """
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     nchan, npol, ny, nx = im["pixels"].data.shape
-    nmoment, mnpol, mny, mnx = moment_image.image_acc.shape
+    nmoment, mnpol, mny, mnx = moment_image["pixels"].data.shape
     assert nmoment > 0
     
     assert npol == mnpol
@@ -468,8 +468,7 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
         reference_frequency = numpy.average(freq)
     log.debug("calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)" % (reference_frequency))
     
-    newim = im.copy()
-    
+    newim = im.copy(deep=True)
     newim["pixels"].data[...] = 0.0
     
     for moment in range(nmoment):
@@ -492,7 +491,7 @@ def remove_continuum_image(im: Image, degree=1, mask=None):
     :param mask: Frequency mask
     :return:
     """
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     assert image_is_canonical(im)
     
     if mask is not None:
@@ -532,9 +531,9 @@ def convert_stokes_to_polimage(im: Image, polarisation_frame: PolarisationFrame)
         :py:func:`rascil.data_models.polarisation.convert_linear_to_stokes`
     """
     
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     assert image_is_canonical(im), im
-    assert isinstance(polarisation_frame, PolarisationFrame)
+    #assert isinstance(polarisation_frame, PolarisationFrame)
     
     if polarisation_frame == PolarisationFrame('linear'):
         cimarr = convert_stokes_to_linear(im["pixels"].data)
@@ -570,7 +569,7 @@ def convert_polimage_to_stokes(im: Image, complex_image=False, **kwargs):
         :py:func:`rascil.data_models.polarisation.convert_stokes_to_linear`
 
     """
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     assert im["pixels"].data.dtype == 'complex', im["pixels"].data.dtype
     
     def to_required(cimarr):
@@ -653,7 +652,7 @@ def image_sizeof(im: Image):
     :param im: Image
     :return: Float, size in GB
     """
-    return im.size()
+    return im.image_acc.size()
 
 
 def create_image(npixel=512, cellsize=0.000015, polarisation_frame=PolarisationFrame("stokesI"),
@@ -790,7 +789,7 @@ def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
     if polarisation_frame is None:
         raise ValueError("Cannot determine polarisation code")
     
-    assert isinstance(polarisation_frame, PolarisationFrame)
+    #assert isinstance(polarisation_frame, PolarisationFrame)
     return polarisation_frame
 
 
@@ -802,11 +801,9 @@ def create_empty_image_like(im: Image) -> Image:
     :param im:
     :return: Image
 
-    See also
-        :py:func:`rascil.processing_components.image.base.copy_image`
     """
     
-    #assert isinstance(newim, Image), newim
+    #assert isinstance(im, xarray.Dataset)
     newim = im.copy(deep=True)
     newim["pixels"].data[...] = 0.0
     return newim
@@ -1042,7 +1039,7 @@ def scale_and_rotate_image(im, angle=0.0, scale=None, order=5):
     if scale is None:
         scale = [1.0, 1.0]
     
-    newim = im.copy()
+    newim = im.copy(deep=True)
     inv_scale = numpy.diag(scale)
     inv_transform = numpy.dot(inv_scale, inv_rot)
     offset = c_in - numpy.dot(inv_transform, c_out)
@@ -1081,7 +1078,7 @@ def rotate_image(im, angle=0.0, order=5):
     """
     
     from scipy.ndimage.interpolation import rotate
-    newim = im.copy()
+    newim = im.copy(deep=True)
     if newim["pixels"].data.dtype == "complex":
         newim["pixels"].data = rotate(im["pixels"].data.real, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order) + \
                      1j * rotate(im["pixels"].data.imag, angle=numpy.rad2deg(angle), axes=(-2, -1), order=order)
@@ -1106,8 +1103,8 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
     
     #assert image_is_canonical(im)
     
-    assert isinstance(im, Image)
-    assert isinstance(vp, Image)
+    #assert isinstance(im, Image)
+    #assert isinstance(vp, Image)
     
     newim = create_empty_image_like(im)
     
@@ -1135,7 +1132,7 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
                 newim["pixels"].data[chan, 0, ...][mask] /= pb[mask]
     else:
         log.debug('apply_voltage_pattern_to_image: Full Jones voltage pattern')
-        polim = convert_stokes_to_polimage(im, vp.attrs["polarisation_frame"])
+        polim = convert_stokes_to_polimage(im, vp.polarisation_frame)
         assert npol == 4
         im_t = numpy.transpose(polim["pixels"].data, (0, 2, 3, 1)).reshape([nchan, ny, nx, 2, 2])
         vp_t = numpy.transpose(vp["pixels"].data, (0, 2, 3, 1)).reshape([nchan, ny, nx, 2, 2])
@@ -1147,7 +1144,7 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
         
         newim = create_image_from_array(newim_t.reshape([nchan, ny, nx, 4]).transpose((0, 3, 1, 2)),
                                         wcs=im.attrs["wcs"],
-                                        polarisation_frame=vp.attrs["polarisation_frame"])
+                                        polarisation_frame=vp.polarisation_frame)
         newim = convert_polimage_to_stokes(newim)
         
         return newim

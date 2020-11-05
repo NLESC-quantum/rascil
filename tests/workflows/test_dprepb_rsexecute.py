@@ -18,7 +18,6 @@ from rascil.processing_components import create_blockvisibility_from_ms, \
     concatenate_visibility,deconvolve_cube, restore_cube, image_gather_channels, \
     create_image_from_visibility
 from rascil.processing_components.image.operations import export_image_to_fits, qa_image
-from rascil.processing_components.visibility import blockvisibility_where
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute, \
     get_dask_client
@@ -75,7 +74,7 @@ class TestDPrepB(unittest.TestCase):
             v2 = create_blockvisibility_from_ms(input_vis[1], start_chan=c, end_chan=c)[0]
             vf = concatenate_visibility([v1, v2])
             vf.configuration.diameter[...] = 35.0
-            vf = blockvisibility_where(vf, vf.uvdist_lambda < uvmax)
+            vf = vf.where(vf.uvdist_lambda < uvmax)
             return vf
         
         # Construct the graph to load the data and persist the graph on the Dask cluster.

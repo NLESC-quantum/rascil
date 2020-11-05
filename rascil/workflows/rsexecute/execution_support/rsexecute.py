@@ -203,7 +203,7 @@ class _rsexecutebase():
 
         if use_dask:
             client = client or get_dask_client(**kwargs)
-            assert isinstance(client, Client)
+            #assert isinstance(client, Client)
             self._set_state(True, False, client, verbose, optim)
             self._client.profile()
             self._client.get_task_stream()

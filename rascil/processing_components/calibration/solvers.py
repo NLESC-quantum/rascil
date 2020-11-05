@@ -41,9 +41,9 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
     :return: GainTable containing solution
 
     """
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     if modelvis is not None:
-        assert isinstance(modelvis, BlockVisibility), modelvis
+        #assert isinstance(modelvis, BlockVisibility), modelvis
         assert numpy.max(numpy.abs(modelvis.vis)) > 0.0, "Model visibility is zero"
     
     if phase_only:
@@ -61,17 +61,18 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
         pointvis = divide_visibility(vis, modelvis)
     else:
         pointvis = vis
-    
-    for row in range(gt.ntimes):
-        time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
+
+    nants = gt.gaintable_acc.nants
+    nchan = gt.gaintable_acc.nchan
+    for row, time in enumerate(gt.time):
+        time_slice = {"time": slice(time - gt.interval[row] / 2,
+                                    time + gt.interval[row] / 2)}
         pointvis_sel = pointvis.sel(time_slice)
-        if pointvis.ntimes > 0:
+        if pointvis.blockvisibility_acc.ntimes > 0:
             x_b = numpy.sum((pointvis_sel.vis.values * pointvis_sel.weight.values)
                           * (1 - pointvis_sel.flags.values), axis=0)
             xwt_b = numpy.sum(pointvis_sel.weight.values * (1 - pointvis_sel.flags.values), axis=0)
-            nants = gt.nants
-            nchan = gt.nchan
-            npol = pointvis.npol
+            npol = pointvis.blockvisibility_acc.npol
             x = numpy.zeros([nants, nants, nchan, npol], dtype='complex')
             xwt = numpy.zeros([nants, nants, nchan, npol])
             for ibaseline, (a1, a2) in enumerate(pointvis.baselines.values):
@@ -88,14 +89,14 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
                 xwt[mask] = xwt[mask] / numpy.max(xwt[mask])
                 x = x.reshape(x_shape)
                 
-                if vis.npol == 1:
+                if vis.blockvisibility_acc.npol == 1:
                     gt['gain'].data[row, ...], gt['weight'].data[row, ...], \
                     gt['residual'].data[row, ...] = \
                         solve_antenna_gains_itsubs_scalar(gt['gain'].data[row, ...],
                                                           gt['weight'].data[row, ...],
                                                           x, xwt, phase_only=phase_only, niter=niter,
                                                           tol=tol)
-                elif vis.npol == 2:
+                elif vis.blockvisibility_acc.npol == 2:
                     gt['gain'].data[row, ...], \
                     gt['weight'].data[row, ...], \
                     gt['residual'].data[row, ...] = \
@@ -103,7 +104,7 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
                                                                gt['weight'].data[row, ...],
                                                                x, xwt, phase_only=phase_only, niter=niter,
                                                                tol=tol)
-                elif vis.npol == 4:
+                elif vis.blockvisibility_acc.npol == 4:
                     if crosspol:
                         gt['gain'].data[row, ...], \
                         gt['weight'].data[row, ...], \
@@ -139,7 +140,7 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
         else:
             log.warning("Gaintable {0}, vis time mismatch {1}".format(gt.time, vis.time))
     
-    assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
+    #assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
     
     assert_vis_gt_compatible(vis, gt)
     

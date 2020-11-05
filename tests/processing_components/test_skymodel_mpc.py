@@ -93,7 +93,7 @@ class TestSkymodelMPC(unittest.TestCase):
         
         for imask, mask in enumerate(image_voronoi_iter(self.model, actual_components)):
             mask["pixels"].data *= beam["pixels"].data
-            assert isinstance(mask, Image)
+            #assert isinstance(mask, Image)
             assert mask["pixels"].data.dtype == "float"
             assert numpy.sum(mask["pixels"].data) > 1
             # import matplotlib.pyplot as plt

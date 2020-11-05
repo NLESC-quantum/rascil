@@ -65,8 +65,8 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=
     
     def predict_ignore_none(vis, model, g):
         if vis is not None:
-            assert isinstance(vis, BlockVisibility), vis
-            assert isinstance(model, Image), model
+            #assert isinstance(vis, BlockVisibility), vis
+            #assert isinstance(model, Image), model
             return predict(vis, model, context=context, gcfcf=g, **kwargs)
         else:
             return None
@@ -243,9 +243,9 @@ def deconvolve_list_serial_workflow(dirty_list, psf_list, model_imagelist, prefi
     nchan = len(dirty_list)
     nmoment = get_parameter(kwargs, "nmoment", 0)
     
-    assert isinstance(dirty_list, list), dirty_list
-    assert isinstance(psf_list, list), psf_list
-    assert isinstance(model_imagelist, list), model_imagelist
+    #assert isinstance(dirty_list, list), dirty_list
+    #assert isinstance(psf_list, list), psf_list
+    #assert isinstance(model_imagelist, list), model_imagelist
     
     def deconvolve(dirty, psf, model, facet, gthreshold, msk=None):
         if prefix == '':
@@ -269,7 +269,7 @@ def deconvolve_list_serial_workflow(dirty_list, psf_list, model_imagelist, prefi
             return result
         else:
             
-            return model.copy()
+            return model.copy(deep=True)
     
     deconvolve_facets = get_parameter(kwargs, 'deconvolve_facets', 1)
     deconvolve_overlap = get_parameter(kwargs, 'deconvolve_overlap', 0)
@@ -352,14 +352,14 @@ def deconvolve_channel_list_serial_workflow(dirty_list, psf_list, model_imagelis
     """
     
     def deconvolve_subimage(dirty, psf):
-        assert isinstance(dirty, Image)
-        assert isinstance(psf, Image)
+        #assert isinstance(dirty, Image)
+        #assert isinstance(psf, Image)
         comp = deconvolve_cube(dirty, psf, **kwargs)
         return comp[0]
     
     def add_model(sum_model, model):
-        assert isinstance(output, Image)
-        assert isinstance(model, Image)
+        #assert isinstance(output, Image)
+        #assert isinstance(model, Image)
         sum_model.data += model.data
         return sum_model
     

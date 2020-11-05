@@ -38,8 +38,8 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     :return: input vis with gains applied
 
     """
-    assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
-    assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
+    #assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
+    #assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
     
     ntimes, nants, nchan, nrec, _ = gt.gain.shape
     
@@ -51,7 +51,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
         log.debug('apply_gaintable: Apply gaintable')
     
     is_scalar = gt.gain.shape[-2:] == (1, 1)
-    if vis.npol == 1:
+    if vis.blockvisibility_acc.npol == 1:
         log.debug('apply_gaintable: scalar gains')
     
     # row_numbers = numpy.array(list(range(len(vis.time))), dtype='int')
@@ -75,7 +75,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             original = vis.blockvisibility_acc.flagged_vis.data[vis_rows]
             applied = copy.copy(vis.blockvisibility_acc.flagged_vis.data[vis_rows])
             appliedwt = copy.copy(vis.blockvisibility_acc.flagged_weight.data[vis_rows])
-            if vis.npol == 1:
+            if vis.blockvisibility_acc.npol == 1:
                 if inverse:
                     # lgain = numpy.ones_like(gain)
                     # lgain[numpy.abs(gain) > 0.0] = 1.0 / gain[numpy.abs(gain) > 0.0]
@@ -123,7 +123,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                 #     appliedwt[sub_vis_row, :, :, :, 0] = antantwt
                 #     numpy.putmask(applied[sub_vis_row, :, :, :, 0], antantwt[:,:,:] == 0.0, 0.0)
             
-            elif vis.npol == 2:
+            elif vis.blockvisibility_acc.npol == 2:
                 has_inverse_ant = numpy.zeros([nant, nchan], dtype='bool')
                 if inverse:
                     igain = gain.copy()
@@ -153,7 +153,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                     applied[sub_vis_row, ibaseline, chan, ...] = \
                                         numpy.diag(gain[a1, chan, :, :] @ cfs @ cgain[a2, chan, :, :]).reshape([2])
             
-            elif vis.npol == 4:
+            elif vis.blockvisibility_acc.npol == 4:
                 has_inverse_ant = numpy.zeros([nant, nchan], dtype='bool')
                 if inverse:
                     igain = gain.copy()
@@ -199,7 +199,7 @@ def gaintable_summary(gt: GainTable):
     :returns: string
 
     """
-    return "%.3f GB" % (gt.size())
+    return "%.3f GB" % (gt.gaintable_acc.size())
 
 
 def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
@@ -214,7 +214,7 @@ def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
     :return: GainTable
     
     """
-    assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
+    #assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
     
     nants = vis.blockvisibility_acc.nants
     
@@ -252,7 +252,7 @@ def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
                    frequency=gain_frequency, receptor_frame=receptor_frame, phasecentre=vis.phasecentre,
                    configuration=vis.configuration)
     
-    assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
+    #assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
     assert_vis_gt_compatible(vis, gt)
     
     return gt
@@ -279,7 +279,7 @@ def copy_gaintable(gt: GainTable, zero=False):
     if gt is None:
         return gt
     
-    #assert isinstance(gt, GainTable), gt
+    ##assert isinstance(gt, GainTable), gt
     
     newgt = copy.copy(gt)
     if zero:
@@ -302,7 +302,7 @@ def create_gaintable_from_rows(gt: GainTable, rows: numpy.ndarray, makecopy=True
     
     assert len(rows) == gt.ntimes, "Length of rows does not agree with length of GainTable"
     
-    assert isinstance(gt, GainTable), gt
+    #assert isinstance(gt, GainTable), gt
     
     if makecopy:
         newgt = copy_gaintable(gt)
@@ -445,8 +445,8 @@ def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
     :param dgt:
     :return:
     """
-    assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
-    assert isinstance(dgt, GainTable), "gtdgt is not a GainTable: %r" % dgt
+    #assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
+    #assert isinstance(dgt, GainTable), "gtdgt is not a GainTable: %r" % dgt
 
     if dgt.nrec == gt.nrec:
         if dgt.nrec == 2:

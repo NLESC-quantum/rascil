@@ -44,12 +44,12 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
    """
     
     def ft_cal_sm(ov, sm, g):
-        assert isinstance(ov, BlockVisibility), ov
-        assert isinstance(sm, SkyModel), sm
+        #assert isinstance(ov, BlockVisibility), ov
+        #assert isinstance(sm, SkyModel), sm
         if g is not None:
             assert len(g) == 2, g
-            assert isinstance(g[0], Image), g[0]
-            assert isinstance(g[1], ConvolutionFunction), g[1]
+            #assert isinstance(g[0], Image), g[0]
+            #assert isinstance(g[1], ConvolutionFunction), g[1]
         
         v = copy_visibility(ov, zero=True)
 
@@ -61,13 +61,13 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
                 dftv = dft_skycomponent_visibility(dftv, comps)
             else:
                 dftv = dft_skycomponent_visibility(dftv, sm.components)
-            v.data['vis'] += dftv.vis
+            v['vis'].data += dftv.vis
         
         if isinstance(sm.image, Image):
-            if numpy.max(numpy.abs(sm.image.data)) > 0.0:
+            if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
                 imgv = copy_visibility(ov, zero=True)
                 if isinstance(sm.mask, Image):
-                    model = sm.image.copy()
+                    model = sm.image.copy(deep=True)
                     model.data *= sm.mask.data
                     imgv = predict_list_serial_workflow([imgv], [model], context=context,
                                                      vis_slices=vis_slices, facets=facets, gcfcf=[g],
@@ -76,7 +76,7 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
                     imgv = predict_list_serial_workflow([imgv], [sm.image], context=context,
                                                      vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                      **kwargs)[0]
-                v.data['vis'] += imgv.vis
+                v['vis'].data += imgv.vis
         
         if docal and isinstance(sm.gaintable, GainTable):
             v = apply_gaintable(v, sm.gaintable, inverse=True)
@@ -113,10 +113,10 @@ def predict_skymodel_list_compsonly_rsexecute_workflow(obsvis, skymodel_list, do
    """
     
     def ft_cal_sm(obv, sm):
-        assert isinstance(obv, BlockVisibility), obv
+        #assert isinstance(obv, BlockVisibility), obv
         bv = copy_visibility(obv)
         
-        bv.data['vis'][...] = 0.0 + 0.0j
+        bv['vis'].data[...] = 0.0 + 0.0j
         
         assert len(sm.components) > 0
         
@@ -154,12 +154,12 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vi
    """
     
     def ift_ical_sm(v, sm, g):
-        assert isinstance(v, BlockVisibility), v
-        assert isinstance(sm, SkyModel), sm
+        #assert isinstance(v, BlockVisibility), v
+        #assert isinstance(sm, SkyModel), sm
         if g is not None:
             assert len(g) == 2, g
-            assert isinstance(g[0], Image), g[0]
-            assert isinstance(g[1], ConvolutionFunction), g[1]
+            #assert isinstance(g[0], Image), g[0]
+            #assert isinstance(g[1], ConvolutionFunction), g[1]
         
         if docal and isinstance(sm.gaintable, GainTable):
             v = apply_gaintable(v, sm.gaintable)
@@ -207,7 +207,7 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
     psf_list = rsexecute.execute(remove_sumwt, nout=len(psf_imagelist))(psf_imagelist)
     
     def skymodel_scatter_facets(sm, facets, overlap, taper):
-        im = sm.image.copy()
+        im = sm.image.copy(deep=True)
         im = insert_skycomponent(im, sm.components, **kwargs)
         return image_scatter_facets(im, facets, overlap, taper)
     
@@ -265,12 +265,12 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
         # Observed vis minus the sum of all predictions
         verr = copy_visibility(ov)
         for m in mv:
-            verr.data['vis'] -= m.data['vis']
+            verr['vis'].data -= m['vis'].data
         # Now add back each model in turn
         result = list()
         for m in mv:
             vr = copy_visibility(verr)
-            vr.data['vis'] += m.data['vis']
+            vr['vis'].data += m['vis'].data
             result.append(vr)
         assert len(result) == len(mv)
         return result
@@ -296,16 +296,16 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
    """
     
     def ft_ift_sm(ov, sm, g):
-        assert isinstance(ov, BlockVisibility), ov
-        assert isinstance(sm, SkyModel), sm
+        #assert isinstance(ov, BlockVisibility), ov
+        #assert isinstance(sm, SkyModel), sm
         if g is not None:
             assert len(g) == 2, g
-            assert isinstance(g[0], Image), g[0]
-            assert isinstance(g[1], ConvolutionFunction), g[1]
+            #assert isinstance(g[0], Image), g[0]
+            #assert isinstance(g[1], ConvolutionFunction), g[1]
         
         v = copy_visibility(ov)
         
-        v.data['vis'][...] = 0.0 + 0.0j
+        v['vis'].data[...] = 0.0 + 0.0j
         
         if len(sm.components) > 0:
             
@@ -319,7 +319,7 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
         if isinstance(sm.image, Image):
             if numpy.max(numpy.abs(sm.image.data)) > 0.0:
                 if isinstance(sm.mask, Image):
-                    model = sm.image.copy()
+                    model = sm.image.copy(deep=True)
                     model.data *= sm.mask.data
                 else:
                     model = sm.image
@@ -327,7 +327,7 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
                                                  vis_slices=vis_slices, facets=facets, gcfcf=[g],
                                                  **kwargs)[0]
         
-        assert isinstance(sm.image, Image), sm.image
+        #assert isinstance(sm.image, Image), sm.image
         
         result = invert_list_serial_workflow([v], [sm.image], context=context,
                                              vis_slices=vis_slices, facets=facets, gcfcf=[g],

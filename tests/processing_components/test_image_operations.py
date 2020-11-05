@@ -68,14 +68,14 @@ class TestImage(unittest.TestCase):
         newimage, footprint = reproject_image(self.m31image, newwcs, shape=newshape)
 
     def test_stokes_conversion(self):
-        assert self.m31image.attrs["polarisation_frame"] == PolarisationFrame("stokesI")
+        assert self.m31image.polarisation_frame == PolarisationFrame("stokesI")
         stokes = create_test_image(cellsize=0.0001, polarisation_frame=PolarisationFrame("stokesIQUV"))
-        assert stokes.attrs["polarisation_frame"] == PolarisationFrame("stokesIQUV")
+        assert stokes.polarisation_frame == PolarisationFrame("stokesIQUV")
 
         for pol_name in ['circular', 'linear']:
             polarisation_frame = PolarisationFrame(pol_name)
             polimage = convert_stokes_to_polimage(stokes, polarisation_frame=polarisation_frame)
-            assert polimage.attrs["polarisation_frame"] == polarisation_frame
+            assert polimage.polarisation_frame == polarisation_frame
             polarisation_frame_from_wcs(polimage.attrs["wcs"], polimage.image_acc.shape)
             rstokes = convert_polimage_to_stokes(polimage)
             assert polimage["pixels"].data.dtype == 'complex'
@@ -124,7 +124,7 @@ class TestImage(unittest.TestCase):
             newvp_data[:,p,...] = vp["pixels"].data[:,ip,...]
         vp["pixels"].data = newvp_data
 
-        assert vp.attrs["polarisation_frame"] == PolarisationFrame("linear")
+        assert vp.polarisation_frame == PolarisationFrame("linear")
 
     def test_smooth_image(self):
         assert numpy.max(self.m31image["pixels"].data) > 0.0
@@ -136,7 +136,7 @@ class TestImage(unittest.TestCase):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
         cube = create_low_test_image_from_gleam(npixel=512, cellsize=0.0001, frequency=frequency, flux_limit=1.0)
         if self.persist: export_image_to_fits(cube, fitsfile='%s/test_moments_cube.fits' % (self.dir))
-        original_cube = cube.copy()
+        original_cube = cube.copy(deep=True)
         moment_cube = calculate_image_frequency_moments(cube, nmoment=3)
         if self.persist: export_image_to_fits(moment_cube, fitsfile='%s/test_moments_moment_cube.fits' % (self.dir))
         reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)
@@ -149,7 +149,7 @@ class TestImage(unittest.TestCase):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
         cube = create_low_test_image_from_gleam(npixel=512, cellsize=0.0001, frequency=frequency, flux_limit=1.0)
         if self.persist: export_image_to_fits(cube, fitsfile='%s/test_moments_1_cube.fits' % (self.dir))
-        original_cube = cube.copy()
+        original_cube = cube.copy(deep=True)
         moment_cube = calculate_image_frequency_moments(cube, nmoment=1)
         if self.persist: export_image_to_fits(moment_cube, fitsfile='%s/test_moments_1_moment_cube.fits' % (self.dir))
         reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)

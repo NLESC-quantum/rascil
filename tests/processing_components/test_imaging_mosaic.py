@@ -56,7 +56,7 @@ class TestImaging2D(unittest.TestCase):
         gcfcf = create_awterm_convolutionfunction(model, make_pb=make_pb,
                                                   polarisation_frame=PolarisationFrame('circular'),
                                                   oversampling=17, support=10)
-        mosaic = model.copy()
+        mosaic = model.copy(deep=True)
         
         for vt in vis_list:
             vt = weight_visibility(vt, model)

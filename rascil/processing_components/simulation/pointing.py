@@ -49,7 +49,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
 
     assert npol == vis.blockvisibility_acc.npol, "Voltage pattern and visibility have incompatible polarisations"
     
-    assert isinstance(vis, BlockVisibility)
+    #assert isinstance(vis, BlockVisibility)
     assert vp.wcs.wcs.ctype[0] == 'AZELGEO long', vp.wcs.wcs.ctype[0]
     assert vp.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.wcs.wcs.ctype[1]
     

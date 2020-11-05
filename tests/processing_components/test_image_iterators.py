@@ -42,7 +42,7 @@ class TestImageIterators(unittest.TestCase):
                 patch["pixels"].data *= 2.0
             
             diff = m31model["pixels"].data - 2.0 * m31original["pixels"].data
-            assert numpy.max(numpy.abs(m31model.data)), "Raster is empty for %d" % nraster
+            assert numpy.max(numpy.abs(m31model["pixels"].data)), "Raster is empty for %d" % nraster
             assert numpy.max(numpy.abs(diff)) == 0.0, "Raster set failed for %d" % nraster
 
     def test_raster_exception(self):

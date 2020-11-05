@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     for trial in range(ntrials):
         coeffs = numpy.random.normal(0.0, 0.03, len(key_nolls))
-        vp = default_vp.copy()
+        vp = default_vp.copy(deep=True)
         for i in range(len(key_nolls)):
             vp.data += coeffs[i] * zernikes[i]['vp'].data
 

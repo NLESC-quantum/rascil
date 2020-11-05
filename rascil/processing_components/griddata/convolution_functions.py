@@ -43,7 +43,7 @@ def convolutionfunction_select(cf, selection):
 def convolutionfunction_sizeof(cf: ConvolutionFunction):
     """ Return size in GB
     """
-    return cf.size()
+    return cf.convolutionfunction_acc.size()
 
 
 def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', oversampling=8, support=16,
@@ -194,7 +194,7 @@ def qa_convolutionfunction(cf, context="") -> QA:
     :param cf:
     :return: QA
     """
-    assert isinstance(cf, ConvolutionFunction), cf
+    ##assert isinstance(cf, ConvolutionFunction), cf
     data = {'shape': str(cf["pixels"].data.shape),
             'max': numpy.max(cf.data),
             'min': numpy.min(cf.data),
@@ -213,7 +213,7 @@ def copy_convolutionfunction(cf):
     :param cf:
     :return:
     """
-    assert isinstance(cf, ConvolutionFunction), cf
+    ##assert isinstance(cf, ConvolutionFunction), cf
     return copy.deepcopy(cf)
 
 
@@ -228,6 +228,6 @@ def export_convolutionfunction_to_fits(cf: ConvolutionFunction, fitsfile: str = 
         :py:func:`rascil.processing_components.image.operations.import_image_from_array`
 
     """
-    assert isinstance(cf, ConvolutionFunction), cf
+    ##assert isinstance(cf, ConvolutionFunction), cf
     return fits.writeto(filename=fitsfile, data=numpy.real(cf["pixels"].data), header=cf.grid_wcs.to_header(),
                         overwrite=True)

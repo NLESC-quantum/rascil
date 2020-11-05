@@ -16,7 +16,7 @@ For example to make dirty image and PSF, deconvolve, and then restore::
     dirty, sumwt = invert_2d(vt, model)
     psf, sumwt = invert_2d(vt, model, dopsf=True)
 
-    comp, residual = deconvolve_cube(dirty, psf, niter=1000, threshold=0.001, fracthresh=0.01, window='quarter',
+    comp, residual = deconvolve_cube(dirty, psf, niter=1000, threshold=0.001, fracthresh=0.01, window_shape='quarter',
                                  gain=0.7, algorithm='msclean', scales=[0, 3, 10, 30])
 
     restored = restore_cube(comp, psf, residual)
@@ -90,9 +90,9 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
 
     """
     
-    assert isinstance(dirty, Image), dirty
+    #assert isinstance(dirty, Image), dirty
     assert image_is_canonical(dirty)
-    assert isinstance(psf, Image), psf
+    #assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
     
     window_shape = get_parameter(kwargs, 'window_shape', None)
@@ -120,7 +120,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     if isinstance(mask, Image):
         if window is not None:
             log.warning('deconvolve_cube %s: Overriding window_shape with mask image' % (prefix))
-        window = mask["pixels"]["pixels"].data
+        window = mask["pixels"].data
     
     psf_support = get_parameter(kwargs, 'psf_support', max(dirty.shape[2] // 2, dirty.shape[3] // 2))
     if (psf_support <= psf.shape[2] // 2) and ((psf_support <= psf.shape[3] // 2)):
@@ -331,15 +331,15 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     :return: restored image
 
     """
-    #assert isinstance(model, Image), model
+    ##assert isinstance(model, Image), model
     assert image_is_canonical(model)
-    #assert isinstance(psf, Image), psf
+    ##assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
     
     #assert residual is None or isinstance(residual, Image), residual
     assert image_is_canonical(residual)
     
-    restored = model.copy()
+    restored = model.copy(deep=True)
     
     npixel = psf["pixels"].data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)

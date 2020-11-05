@@ -39,7 +39,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
 
     nant = gaintables[0].gaintable_acc.nants
     gnchan = gaintables[0].gaintable_acc.nchan
-    frequency = gaintables[0].gaintable_acc.frequency
+    frequency = gaintables[0].frequency
     
     if not isinstance(vp, collections.abc.Iterable):
         vp = [vp]
@@ -62,12 +62,12 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     else:
         assert len(vp) == len(vp_types)
 
-    real_spline = [[[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[chan, pol, ...].real, kx=order, ky=order)
+    real_spline = [[[RectBivariateSpline(range(ny), range(nx), vp[ivp]["pixels"].data[chan, pol, ...].real, kx=order, ky=order)
                    for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
-    imag_spline = [[[RectBivariateSpline(range(ny), range(nx), vp[ivp].data[chan, pol, ...].imag, kx=order, ky=order)
+    imag_spline = [[[RectBivariateSpline(range(ny), range(nx), vp[ivp]["pixels"].data[chan, pol, ...].imag, kx=order, ky=order)
                    for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
     
-    assert isinstance(vis, BlockVisibility)
+    #assert isinstance(vis, BlockVisibility)
     assert vp[0].wcs.wcs.ctype[0] == 'AZELGEO long', vp[0].wcs.wcs.ctype[0]
     assert vp[0].wcs.wcs.ctype[1] == 'AZELGEO lati', vp[0].wcs.wcs.ctype[1]
     
@@ -175,7 +175,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
     nant = gaintables[0].gaintable_acc.nants
     
-    assert isinstance(vis, BlockVisibility)
+    #assert isinstance(vis, BlockVisibility)
     assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
     
     # The time in the BlockVisibility is UTC in seconds
@@ -205,8 +205,9 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
     # voltage pattern
     for icomp, comp in enumerate(sc):
         gt = gaintables[icomp]
-        for row in range(gt.ntimes):
-            time_slice = {"time": slice(gt.time[row] - gt.interval[row] / 2, gt.time[row] + gt.interval[row] / 2)}
+        for row, time in enumerate(gt.time):
+            time_slice = {"time": slice(time - gt.interval[row] / 2,
+                                        time + gt.interval[row] / 2)}
             vis_sel = vis.sel(time_slice)
             ha = numpy.average(calculate_blockvisibility_hourangles(vis_sel).to('rad').value)
             

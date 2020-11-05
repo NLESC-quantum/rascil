@@ -174,7 +174,7 @@ def mosaic_pb(model, telescope, pointingcentres, use_local=True):
     :param pointingcentres: list of pointing centres
     :return:
     """
-    assert isinstance(pointingcentres, collections.abc.Iterable), "Need a list of pointing centres"
+    #assert isinstance(pointingcentres, collections.abc.Iterable), "Need a list of pointing centres"
     sumpb = create_empty_image_like(model)
     for pc in pointingcentres:
         pb = create_pb(model, telescope, pointingcentre=pc, use_local=use_local)
@@ -321,7 +321,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
             pxx, pyy = numpy.meshgrid((numpy.arange(pnx) - cx), (numpy.arange(pny) - cy))
             phase = 2 * numpy.pi * ((pcx - cx) * pxx / float(pnx) + (pcy - cy) * pyy / float(pny))
             for pol in range(npol):
-                xfr.data[chan, pol, ...] *= numpy.exp(1j * phase)
+                xfr["pixels"].data[chan, pol, ...] *= numpy.exp(1j * phase)
         
         if isinstance(zernikes, collections.abc.Iterable):
             try:

@@ -62,9 +62,9 @@ def sum_invert_results_local(image_list):
             else:
                 scale = arg[1]
             if first:
-                im = arg[0].copy()
+                im = arg[0].copy(deep=True)
                 im["pixels"].data *= scale
-                sumwt = arg[1].copy()
+                sumwt = arg[1].copy(deep=True)
                 first = False
             else:
                 im["pixels"].data += scale * arg[0].data
@@ -119,8 +119,8 @@ def sum_predict_results(results):
             if sum_results is None:
                 sum_results = copy_visibility(result)
             else:
-                assert sum_results.data['vis'].shape == result.data['vis'].shape
-                sum_results.data['vis'] += result.data['vis']
+                assert sum_results['vis'].data.shape == result['vis'].data.shape
+                sum_results['vis'].data += result['vis'].data
     
     return sum_results
 
@@ -139,12 +139,12 @@ def threshold_list(imagelist, threshold, fractional_threshold, use_moment0=True,
     for i, result in enumerate(imagelist):
         if use_moment0:
             moments = calculate_image_frequency_moments(result)
-            this_peak = numpy.max(numpy.abs(moments.data[0, ...] / result.shape[0]))
+            this_peak = numpy.max(numpy.abs(moments["pixels"].data[0, ...] / result.shape[0]))
             peak = max(peak, this_peak)
             log.info("threshold_list: using moment 0, sub_image %d, peak = %f," % (i, this_peak))
         else:
             ref_chan = result["pixels"].data.shape[0] // 2
-            this_peak = numpy.max(numpy.abs(result.data[ref_chan]))
+            this_peak = numpy.max(numpy.abs(result["pixels"].data[ref_chan]))
             peak = max(peak, this_peak)
             log.info("threshold_list: using refchan %d , sub_image %d, peak = %f," % (ref_chan, i, this_peak))
     

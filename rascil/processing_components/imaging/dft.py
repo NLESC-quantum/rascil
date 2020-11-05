@@ -53,7 +53,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
 
     for comp in sc:
         #assert_same_chan_pol(vis, comp)
-        assert isinstance(comp, Skycomponent), comp
+        #assert isinstance(comp, Skycomponent), comp
         flux = comp.flux
         if comp.polarisation_frame != vis.polarisation_frame:
             flux = convert_pol_frame(flux, comp.polarisation_frame, vis.polarisation_frame)
@@ -100,7 +100,7 @@ def idft_visibility_skycomponent(vis: BlockVisibility,
     weights_list = list()
 
     for comp in sc:
-        assert isinstance(comp, Skycomponent), comp
+        #assert isinstance(comp, Skycomponent), comp
         #assert_same_chan_pol(vis, comp)
         newcomp = copy_skycomponent(comp)
 

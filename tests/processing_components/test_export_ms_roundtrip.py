@@ -99,7 +99,8 @@ class measurementset_tests(unittest.TestCase):
         
         # export_image_to_fits(dirty_after, '%s/imaging_dirty_after.fits' % (results_dir))
         
-        error = numpy.max(numpy.abs(dirty_after.data - dirty_before.data)) / numpy.max(numpy.abs(dirty_before.data))
+        error = numpy.max(numpy.abs(dirty_after["pixels"].data - dirty_before["pixels"].data)) \
+                / numpy.max(numpy.abs(dirty_before["pixels"].data))
         # print("Maximum fractional difference in peak of dirty image before, after writing to MS = {}".format(error))
         
         assert error < 1e-8, "Maximum fractional difference in peak of dirty image before, after writing to MS execeeds tolerance"

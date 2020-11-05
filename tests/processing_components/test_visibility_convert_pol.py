@@ -42,7 +42,7 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokesI(vis)
-            assert visi.attrs["polarisation_frame"].type == 'stokesI'
+            assert visi.polarisation_frame.type == 'stokesI'
             assert visi.blockvisibility_acc.npol == 1
     
     def test_convert_visibility_stokes(self):
@@ -52,7 +52,7 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokes(vis)
-            assert visi.attrs["polarisation_frame"].type == 'stokesIQUV'
+            assert visi.polarisation_frame.type == 'stokesIQUV'
             assert visi.blockvisibility_acc.npol == 4
     
     def test_convert_blockvisibility_I(self):
@@ -62,7 +62,7 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokesI(vis)
-            assert visi.attrs["polarisation_frame"].type == 'stokesI'
+            assert visi.polarisation_frame.type == 'stokesI'
             assert visi.blockvisibility_acc.npol == 1
     
     def test_convert_blockvisibility_stokes(self):
@@ -72,8 +72,8 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokes(vis)
-            print(visi.attrs["polarisation_frame"].type)
-            assert visi.attrs["polarisation_frame"].type == 'stokesIQUV'
+            print(visi.polarisation_frame.type)
+            assert visi.polarisation_frame.type == 'stokesIQUV'
             assert visi.blockvisibility_acc.npol == 4
 
 

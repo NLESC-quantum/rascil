@@ -207,12 +207,12 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     :param f: HDF root
     :return:
     """
-    assert isinstance(vis, BlockVisibility)
+    ##assert isinstance(vis, BlockVisibility)
     
     f.attrs['RASCIL_data_model'] = 'BlockVisibility'
     f.attrs['nants'] = numpy.max([b[1] for b in vis.baselines.values]) + 1
     f.attrs['nvis'] = vis.nvis
-    f.attrs['npol'] = vis.npol
+    f.attrs['npol'] = vis.blockvisibility_acc.npol
     f.attrs['phasecentre_coords'] = vis.phasecentre.to_string()
     f.attrs['phasecentre_frame'] = vis.phasecentre.frame.name
     f.attrs['polarisation_frame'] = vis.polarisation_frame.type
@@ -274,7 +274,7 @@ def convert_flagtable_to_hdf(ft: FlagTable, f):
     :param f: HDF root
     :return:
     """
-    assert isinstance(ft, FlagTable)
+    ##assert isinstance(ft, FlagTable)
     
     f.attrs['RASCIL_data_model'] = 'FlagTable'
     f.attrs['nants'] = numpy.max([b[1] for b in ft.baselines.values]) + 1
@@ -326,7 +326,7 @@ def export_blockvisibility_to_hdf5(vis, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(vis)
         for i, v in enumerate(vis):
-            assert isinstance(v, BlockVisibility)
+            ##assert isinstance(v, BlockVisibility)
             vf = f.create_group('BlockVisibility%d' % i)
             convert_blockvisibility_to_hdf(v, vf)
         f.flush()
@@ -361,7 +361,7 @@ def export_flagtable_to_hdf5(ft, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(ft)
         for i, v in enumerate(ft):
-            assert isinstance(v, FlagTable)
+            ##assert isinstance(v, FlagTable)
             vf = f.create_group('FlagTable%d' % i)
             convert_flagtable_to_hdf(v, vf)
         f.flush()
@@ -390,7 +390,7 @@ def convert_gaintable_to_hdf(gt: GainTable, f):
     :param f: HDF root
     :return:
     """
-    #assert isinstance(gt, GainTable)
+    ##assert isinstance(gt, GainTable)
     
     f.attrs['RASCIL_data_model'] = 'GainTable'
     f.attrs['receptor_frame'] = gt.receptor_frame.type
@@ -439,7 +439,7 @@ def export_gaintable_to_hdf5(gt: GainTable, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(gt)
         for i, g in enumerate(gt):
-            #assert isinstance(g, GainTable)
+            ##assert isinstance(g, GainTable)
             gf = f.create_group('GainTable%d' % i)
             convert_gaintable_to_hdf(g, gf)
         f.flush()
@@ -468,7 +468,7 @@ def convert_pointingtable_to_hdf(pt: PointingTable, f):
     :param f: HDF root
     :return:
     """
-    assert isinstance(pt, PointingTable)
+    ##assert isinstance(pt, PointingTable)
     
     f.attrs['RASCIL_data_model'] = 'PointingTable'
     f.attrs['frequency'] = pt.frequency
@@ -527,7 +527,7 @@ def export_pointingtable_to_hdf5(pt: PointingTable, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(pt)
         for i, g in enumerate(pt):
-            assert isinstance(g, PointingTable)
+            ##assert isinstance(g, PointingTable)
             gf = f.create_group('PointingTable%d' % i)
             convert_pointingtable_to_hdf(g, gf)
         f.flush()
@@ -555,7 +555,7 @@ def convert_skycomponent_to_hdf(sc: Skycomponent, f):
     :param f: HDF root
     :return:
     """
-    assert isinstance(sc, Skycomponent)
+    ##assert isinstance(sc, Skycomponent)
     
     f.attrs['RASCIL_data_model'] = 'Skycomponent'
     f.attrs['direction'] = convert_direction_to_string(sc.direction)
@@ -601,7 +601,7 @@ def export_skycomponent_to_hdf5(sc: Union[Skycomponent, list], filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(sc)
         for i, s in enumerate(sc):
-            assert isinstance(s, Skycomponent)
+            ##assert isinstance(s, Skycomponent)
             sf = f.create_group('Skycomponent%d' % i)
             convert_skycomponent_to_hdf(s, sf)
         f.flush()
@@ -678,7 +678,7 @@ def export_image_to_hdf5(im, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(im)
         for i, m in enumerate(im):
-            assert isinstance(m, Image)
+            #assert isinstance(m, Image)
             mf = f.create_group('Image%d' % i)
             convert_image_to_hdf(m, mf)
         f.flush()
@@ -715,7 +715,7 @@ def export_skymodel_to_hdf5(sm, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(sm)
         for i, s in enumerate(sm):
-            assert isinstance(s, SkyModel)
+            #assert isinstance(s, SkyModel)
             sf = f.create_group('SkyModel%d' % i)
             convert_skymodel_to_hdf(s, sf)
         f.flush()
@@ -807,7 +807,7 @@ def convert_griddata_to_hdf(gd: GridData, f):
     :param f: HDF root
     :return:
     """
-    assert isinstance(gd, GridData)
+    #assert isinstance(gd, GridData)
     
     f.attrs['RASCIL_data_model'] = 'GridData'
     f['data'] = gd.data
@@ -846,7 +846,7 @@ def export_griddata_to_hdf5(gd, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(gd)
         for i, m in enumerate(gd):
-            assert isinstance(m, GridData)
+            #assert isinstance(m, GridData)
             mf = f.create_group('GridData%d' % i)
             convert_griddata_to_hdf(m, mf)
         f.flush()
@@ -876,7 +876,7 @@ def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
     :param f: HDF root
     :return:
     """
-    assert isinstance(cf, ConvolutionFunction)
+    #assert isinstance(cf, ConvolutionFunction)
     
     f.attrs['RASCIL_data_model'] = 'ConvolutionFunction'
     f['data'] = cf.data
@@ -915,7 +915,7 @@ def export_convolutionfunction_to_hdf5(cf, filename):
     with h5py.File(filename, 'w') as f:
         f.attrs['number_data_models'] = len(cf)
         for i, m in enumerate(cf):
-            assert isinstance(m, ConvolutionFunction)
+            #assert isinstance(m, ConvolutionFunction)
             mf = f.create_group('ConvolutionFunction%d' % i)
             convert_convolutionfunction_to_hdf(m, mf)
         f.flush()

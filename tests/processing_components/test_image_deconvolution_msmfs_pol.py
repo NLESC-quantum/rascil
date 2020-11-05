@@ -27,11 +27,11 @@ log.setLevel(logging.WARN)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-class TestImageDeconvolutionMSMFS(unittest.TestCase):
+class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
         self.niter = 1000
         self.lowcore = create_named_configuration('LOWBD2-CORE')
         self.nchan = 5
@@ -58,30 +58,38 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         if self.persist: export_image_to_fits(self.test_model, "%s/test_deconvolve_mmclean_model.fits" % self.dir)
         self.vis = predict_2d(self.vis, self.test_model)
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
-        self.model = create_image_from_visibility(self.vis, npixel=256, cellsize=0.001,
+        self.model = create_image_from_visibility(self.vis, npixel=512, cellsize=0.001,
                                                   polarisation_frame=PolarisationFrame('stokesIQUV'))
         self.dirty, sumwt = invert_2d(self.vis, self.model)
         self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)
         if self.persist: export_image_to_fits(self.dirty, "%s/test_deconvolve_mmclean-dirty.fits" % self.dir)
         if self.persist: export_image_to_fits(self.psf, "%s/test_deconvolve_mmclean-psf.fits" % self.dir)
-        window = numpy.ones(shape=self.model.shape, dtype=numpy.bool)
-        window[..., 65:192, 65:192] = True
-        self.innerquarter = create_image_from_array(window, self.model.wcs,
-                                                    polarisation_frame=PolarisationFrame('stokesIQUV'))
-    
-    def test_deconvolve_mmclean_no_taylor(self):
+
+    def test_deconvolve_mmclean_no_taylor_pol_nowindow(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=1, findpeak='RASCIL',
-                                                   fractional_threshold=0.01, window=self.innerquarter)
+                                                   fractional_threshold=0.01, window_shape=None)
+        if self.persist: export_image_to_fits(self.comp, "%s/test_deconvolve_mmclean_notaylor_nowindow-comp.fits" % self.dir)
+        if self.persist: export_image_to_fits(self.residual,
+                                              "%s/test_deconvolve_mmclean_notaylor_nowindow-residual.fits" % self.dir)
+        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_mmclean_notaylor_nowindow-clean.fits" % self.dir)
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
+
+    def test_deconvolve_mmclean_no_taylor_pol(self):
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+                                                   algorithm='mmclean',
+                                                   scales=[0, 3, 10], threshold=0.01, nmoment=1, findpeak='RASCIL',
+                                                   fractional_threshold=0.01, window_shape="quarter")
         if self.persist: export_image_to_fits(self.comp, "%s/test_deconvolve_mmclean_notaylor-comp.fits" % self.dir)
         if self.persist: export_image_to_fits(self.residual,
                                               "%s/test_deconvolve_mmclean_notaylor-residual.fits" % self.dir)
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_mmclean_notaylor-clean.fits" % self.dir)
-        assert numpy.max(self.residual.data) < 3.0
-    
-    def test_deconvolve_mmclean_no_taylor_edge(self):
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
+
+    def test_deconvolve_mmclean_no_taylor_edge_pol(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=1, findpeak='RASCIL',
@@ -91,13 +99,13 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
                                               "%s/test_deconvolve_mmclean_notaylor-residual.fits" % self.dir)
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_mmclean_notaylor-clean.fits" % self.dir)
-        assert numpy.max(self.residual.data) < 3.0
-    
-    def test_deconvolve_mmclean_no_taylor_noscales(self):
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
+
+    def test_deconvolve_mmclean_no_taylor_noscales_pol(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0], threshold=0.01, nmoment=1, findpeak='RASCIL',
-                                                   fractional_threshold=0.01, window=self.innerquarter)
+                                                   fractional_threshold=0.01, window_shape="quarter")
         if self.persist: export_image_to_fits(self.comp,
                                               "%s/test_deconvolve_mmclean_notaylor_noscales-comp.fits" % self.dir)
         if self.persist: export_image_to_fits(self.residual,
@@ -105,25 +113,39 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel,
                                               "%s/test_deconvolve_mmclean_notaylor_noscales-clean.fits" % self.dir)
-        assert numpy.max(self.residual.data) < 3.0
-    
-    def test_deconvolve_mmclean_linear(self):
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
+
+    def test_deconvolve_mmclean_no_taylor_noscales_nowindow_pol(self):
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+                                                   algorithm='mmclean',
+                                                   scales=[0], threshold=0.01, nmoment=1, findpeak='RASCIL',
+                                                   fractional_threshold=0.01, window_shape=None)
+        if self.persist: export_image_to_fits(self.comp,
+                                              "%s/test_deconvolve_mmclean_notaylor_noscales_nowindow-comp.fits" % self.dir)
+        if self.persist: export_image_to_fits(self.residual,
+                                              "%s/test_deconvolve_mmclean_notaylor_noscales_nowindow-residual.fits" % self.dir)
+        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        if self.persist: export_image_to_fits(self.cmodel,
+                                              "%s/test_deconvolve_mmclean_notaylor_noscales_nowindow-clean.fits" % self.dir)
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
+
+    def test_deconvolve_mmclean_linear_pol(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=2, findpeak='RASCIL',
-                                                   fractional_threshold=0.01, window=self.innerquarter)
+                                                   fractional_threshold=0.01, window_shape="quarter")
         if self.persist: export_image_to_fits(self.comp, "%s/test_deconvolve_mmclean_linear-comp.fits" % self.dir)
         if self.persist: export_image_to_fits(self.residual,
                                               "%s/test_deconvolve_mmclean_linear-residual.fits" % self.dir)
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_mmclean_linear-clean.fits" % self.dir)
-        assert numpy.max(self.residual.data) < 3.0
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
     
-    def test_deconvolve_mmclean_linear_noscales(self):
+    def test_deconvolve_mmclean_linear_noscales_pol(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0], threshold=0.01, nmoment=2, findpeak='RASCIL',
-                                                   fractional_threshold=0.01, window=self.innerquarter)
+                                                   fractional_threshold=0.01, window_shape="quarter")
         if self.persist: export_image_to_fits(self.comp,
                                               "%s/test_deconvolve_mmclean_linear_noscales-comp.fits" % self.dir)
         if self.persist: export_image_to_fits(self.residual,
@@ -131,25 +153,25 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel,
                                               "%s/test_deconvolve_mmclean_linear_noscales-clean.fits" % self.dir)
-        assert numpy.max(self.residual.data) < 3.0
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
     
-    def test_deconvolve_mmclean_quadratic(self):
+    def test_deconvolve_mmclean_quadratic_pol(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=2, findpeak='RASCIL',
-                                                   fractional_threshold=0.01, window=self.innerquarter)
+                                                   fractional_threshold=0.01, window_shape="quarter")
         if self.persist: export_image_to_fits(self.comp, "%s/test_deconvolve_mmclean_quadratic-comp.fits" % self.dir)
         if self.persist: export_image_to_fits(self.residual,
                                               "%s/test_deconvolve_mmclean_quadratic-residual.fits" % self.dir)
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_mmclean_quadratic-clean.fits" % self.dir)
-        assert numpy.max(self.residual.data) < 3.0
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
     
-    def test_deconvolve_mmclean_quadratic_noscales(self):
+    def test_deconvolve_mmclean_quadratic_noscales_pol(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0], threshold=0.01, nmoment=2, findpeak='RASCIL',
-                                                   fractional_threshold=0.01, window=self.innerquarter)
+                                                   fractional_threshold=0.01, window_shape="quarter")
         if self.persist: export_image_to_fits(self.comp,
                                               "%s/test_deconvolve_mmclean_quadratic_noscales-comp.fits" % self.dir)
         if self.persist: export_image_to_fits(self.residual,
@@ -157,13 +179,13 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel,
                                               "%s/test_deconvolve_mmclean_quadratic_noscales-clean.fits" % self.dir)
-        assert numpy.max(self.residual.data) < 3.0
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
     
-    def test_deconvolve_mmclean_quadratic_psf(self):
+    def test_deconvolve_mmclean_quadratic_psf_pol(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=2, findpeak='RASCIL',
-                                                   fractional_threshold=0.01, window=self.innerquarter,
+                                                   fractional_threshold=0.01, window_shape="quarter",
                                                    psf_support=32)
         if self.persist: export_image_to_fits(self.comp,
                                               "%s/test_deconvolve_mmclean_quadratic_psf-comp.fits" % self.dir)
@@ -172,7 +194,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel,
                                               "%s/test_deconvolve_mmclean_quadratic_psf-clean.fits" % self.dir)
-        assert numpy.max(self.residual.data) < 3.0
+        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(self.residual["pixels"].data)
 
 
 if __name__ == '__main__':

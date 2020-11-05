@@ -248,7 +248,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
                 result["pixels"].data = result["pixels"].data + model["pixels"].data
             return result
         else:
-            return model.copy()
+            return model.copy(deep=True)
     
     deconvolve_facets = get_parameter(kwargs, 'deconvolve_facets', 1)
     deconvolve_overlap = get_parameter(kwargs, 'deconvolve_overlap', 0)
@@ -294,7 +294,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         xend = cx + wx // 2
         ybeg = cy - wy // 2
         yend = cy + wy // 2
-        spsf = image_iselect(psf, {"l": slice(xbeg, xend), "m": slice(ybeg, yend)})
+        spsf = psf.isel({"l": slice(xbeg, xend), "m": slice(ybeg, yend)})
         spsf.wcs.wcs.crpix[0] -= xbeg
         spsf.wcs.wcs.crpix[1] -= ybeg
         return spsf
@@ -370,14 +370,14 @@ def deconvolve_list_channel_rsexecute_workflow(dirty_list, psf_list, model_image
     """
     
     def deconvolve_subimage(dirty, psf):
-        assert isinstance(dirty, Image)
-        assert isinstance(psf, Image)
+        #assert isinstance(dirty, Image)
+        #assert isinstance(psf, Image)
         comp = deconvolve_cube(dirty, psf, **kwargs)
         return comp[0]
     
     def add_model(sum_model, model):
-        assert isinstance(output, Image)
-        assert isinstance(model, Image)
+        #assert isinstance(output, Image)
+        #assert isinstance(model, Image)
         sum_model.data += model.data
         return sum_model
     
@@ -439,7 +439,7 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
                 # Ensure that the griddata has the right axes so that the convolution
                 # function mapping works
                 agd = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
-                agd.data = gd[0].data
+                agd["pixels"].data = gd[0]["pixels"].data
                 vis = griddata_blockvisibility_reweight(vis, agd, g[0][1], weighting=weighting,
                                                         robustness=robustness)
                 return vis

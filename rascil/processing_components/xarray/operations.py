@@ -57,7 +57,7 @@ def export_xarray_to_fits(xa: xarray.Dataset, fitsfile: Union[str, List] = 'xarr
         :py:func:`rascil.processing_components.image.operations.import_image_from_fits`
 
     """
-    #assert isinstance(xa, xarray.DataArray), xa
+    ##assert isinstance(xa, xarray.DataArray), xa
     if xa["pixels"].data.dtype == "complex":
         assert len(fitsfile) == 2, "Need file names for real, imaginary parts"
         return fits.writeto(filename=fitsfile[0], data=numpy.real(xa["pixels"].data), header=xarray_to_fits_header(xa),

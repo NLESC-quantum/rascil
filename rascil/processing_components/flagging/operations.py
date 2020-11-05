@@ -30,8 +30,8 @@ def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):
     :return: BlockVisibility
     """
 
-    assert isinstance(bvis, BlockVisibility), bvis
-    assert isinstance(antenna, list)
+    #assert isinstance(bvis, BlockVisibility), bvis
+    #assert isinstance(antenna, list)
     if len(antenna) == 0:
         flagged_baselines = list(range(len(bvis.baselines)))
     else:
@@ -72,8 +72,8 @@ def flagging_blockvisibility_with_bl(bvis, baseline=[]):
     :return: BlockVisibility
     """
 
-    assert isinstance(bvis, BlockVisibility), bvis
-    assert isinstance(baseline, list)
+    #assert isinstance(bvis, BlockVisibility), bvis
+    #assert isinstance(baseline, list)
     if len(baseline) == 0:
         for ant1, ant2 in baseline:
             bvis['flags'].data[:, ant1, ant2, :, :] = 1

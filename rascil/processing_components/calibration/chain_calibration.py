@@ -120,7 +120,7 @@ def apply_calibration_chain(vis, gaintables, calibration_context='T', controls=N
 
     if changes:
 
-        assert isinstance(vis, BlockVisibility), vis
+        ##assert isinstance(vis, BlockVisibility), vis
 
         for c in calibration_context:
             if iteration >= controls[c]['first_selfcal']:
@@ -159,7 +159,7 @@ def calibrate_chain(vis, model_vis, gaintables=None, calibration_context='T', co
         avis = vis
         amvis = model_vis
 
-        assert isinstance(avis, BlockVisibility), avis
+        ##assert isinstance(avis, BlockVisibility), avis
 
         if gaintables is None:
             gaintables = dict()
@@ -210,9 +210,9 @@ def solve_calibrate_chain(vis, model_vis, gaintables=None, calibration_context='
 
     amvis = model_vis
 
-    assert isinstance(avis, BlockVisibility), avis
+    ##assert isinstance(avis, BlockVisibility), avis
 
-    assert amvis.__repr__() != avis.__repr__(), "Vis and model vis are the same object: convert problem"
+    #assert amvis.__repr__() != avis.__repr__(), "Vis and model vis are the same object: convert problem"
 
     # Always return a gain table, even if null
     

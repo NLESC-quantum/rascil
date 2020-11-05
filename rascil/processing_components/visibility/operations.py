@@ -37,7 +37,7 @@ def concatenate_visibility(vis_list, dim='time'):
     :param vis_list: List of vis
     :return: Concatendated visibility
     """
-    assert isinstance(vis_list, collections.abc.Iterable), "vis_list must be iterable"
+    #assert isinstance(vis_list, collections.abc.Iterable), "vis_list must be iterable"
 
     assert len(vis_list) > 0
     
@@ -62,8 +62,8 @@ def subtract_visibility(vis, model_vis, inplace=False):
     :param model_vis:
     :return:
     """
-    assert isinstance(vis, BlockVisibility), vis
-    assert isinstance(model_vis, BlockVisibility), model_vis
+    #assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(model_vis, BlockVisibility), model_vis
     
     assert vis.vis.shape == model_vis.vis.shape, "Observed %s and model visibilities %s have different shapes" \
                                                  % (vis.vis.shape,
@@ -85,7 +85,7 @@ def qa_visibility(vis: BlockVisibility, context=None) -> QA:
     :param vis: blockvisibility to be assessed
     :return: QA
     """
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     
     avis = numpy.abs(vis["vis"].data)
     data = {'maxabs': numpy.max(avis),
@@ -109,7 +109,7 @@ def remove_continuum_blockvisibility(vis: BlockVisibility, degree=1,
     :param mask: Mask of continuum
     :return: BlockVisibility
     """
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     
     if mask is not None:
         assert numpy.sum(mask) > 2 * degree, "Insufficient channels for fit"
@@ -143,7 +143,7 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
     :param modelvis:
     :return:
     """
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     
     x = numpy.zeros_like(vis.blockvisibility_acc.flagged_vis.values)
     xwt = numpy.abs(modelvis.blockvisibility_acc.flagged_vis.values) ** 2 * vis.blockvisibility_acc.flagged_weight.values
@@ -151,7 +151,7 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
     x[mask] = vis.blockvisibility_acc.flagged_vis.values[mask] / modelvis.blockvisibility_acc.flagged_vis.values[mask]
     
     pointsource_vis = BlockVisibility(flags=vis.flags.values,
-                                      baselines=vis.baseline,
+                                      baselines=vis.baselines,
                                       frequency=vis.frequency.values,
                                       channel_bandwidth=vis.channel_bandwidth.values,
                                       phasecentre=vis.phasecentre,
@@ -173,7 +173,7 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
     :return: BlockVisibility
     """
     
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     
     vis_shape = list(vis.vis.shape)
     ntimes, nbaselines, nchan, npol = vis_shape
@@ -193,21 +193,19 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
     
     return BlockVisibility(frequency=numpy.ones([1]) * numpy.average(vis.frequency.values),
                            channel_bandwidth=numpy.ones([1]) * numpy.sum(vis.channel_bandwidth.values),
-                           baselines=vis.baseline.values,
+                           baselines=vis.baselines,
                            phasecentre=vis.phasecentre,
                            configuration=vis.configuration,
-                           uvw=vis.uvw.values,
-                           time=vis.time.values,
+                           uvw=vis.uvw.data[0],
+                           time=vis.time.data,
                            vis=newvis,
                            flags=flags,
                            weight=newweights,
                            imaging_weight=newimaging_weights,
-                           integration_time=vis.integration_time.values,
+                           integration_time=vis.integration_time[0].data,
                            polarisation_frame=vis.polarisation_frame,
                            source=vis.source,
                            meta=vis.meta)
-    
-    return newvis
 
 
 def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=None) \
@@ -219,7 +217,7 @@ def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=Non
     :return: List[BlockVisibility]
     """
     
-    assert isinstance(vis, BlockVisibility), vis
+    #assert isinstance(vis, BlockVisibility), vis
     
     vis_shape = list(vis.vis.shape)
     ntimes, nbaselines, nchan, npol = vis_shape
@@ -276,18 +274,18 @@ def convert_blockvisibility_to_stokes(vis):
     :param vis: blockvisibility
     :return: Converted visibility data.
     """
-    poldef = vis.attrs["polarisation_frame"]
+    poldef = vis.polarisation_frame
     if poldef == PolarisationFrame('linear'):
         vis['vis'].values[...] = convert_linear_to_stokes(vis['vis'].values, polaxis=3)
         vis['flags'].values[...] = \
             numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[..., numpy.newaxis]
-        vis.attrs["polarisation_frame"] = PolarisationFrame('stokesIQUV')
+        vis.polarisation_frame = PolarisationFrame('stokesIQUV')
     elif poldef == PolarisationFrame('circular'):
         vis['vis'].values[...] = convert_circular_to_stokes(vis['vis'].values, polaxis=3)
         vis['flags'].values[...] = \
             numpy.logical_or(vis.flags.values[..., 0], vis.flags.values[..., 3])[
                 ..., numpy.newaxis]
-        vis.attrs["polarisation_frame"] = PolarisationFrame('stokesIQUV')
+        vis.polarisation_frame = PolarisationFrame('stokesIQUV')
     return vis
 
 
@@ -344,7 +342,7 @@ def convert_blockvisibility_to_stokesI(vis):
     return BlockVisibility(frequency=vis.frequency.values,
                            channel_bandwidth=vis.channel_bandwidth.values,
                            phasecentre=vis.attrs["phasecentre"],
-                           baselines=vis["baseline"],
+                           baselines=vis["baselines"],
                            configuration=vis.attrs["configuration"],
                            uvw=vis["uvw"].values,
                            time=vis["time"].values,

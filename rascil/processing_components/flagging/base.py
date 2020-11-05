@@ -35,7 +35,7 @@ def copy_flagtable(ft: FlagTable, zero=False) -> FlagTable:
     :returns: FlagTable
 
     """
-    assert isinstance(ft, FlagTable), ft
+    ##assert isinstance(ft, FlagTable), ft
 
     newft = copy.copy(ft)
     newft.data = numpy.copy(ft.data)
@@ -64,7 +64,7 @@ def qa_flagtable(ft: FlagTable, context=None) -> QA:
     :param ft: FlagTable to be assessed
     :return: QA
     """
-    assert isinstance(ft, FlagTable), ft
+    ##assert isinstance(ft, FlagTable), ft
 
     aflags = numpy.abs(ft.flags)
     data = {'maxabs': numpy.max(aflags),

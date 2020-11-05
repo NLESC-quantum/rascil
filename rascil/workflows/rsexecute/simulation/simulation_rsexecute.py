@@ -209,7 +209,7 @@ def calculate_residual_from_gaintables_rsexecute_workflow(bvis_list, components,
         calculate_residual_dft_rsexecute_workflow(bvis_list, components, model_list, no_error_gtl)
     
     def subtract(im1, im2):
-        im = im1[0].copy()
+        im = im1[0].copy(deep=True)
         im["pixels"].data -= im2[0].data
         return im, im1[1]
     
@@ -398,7 +398,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
     def sum_vis(bvis_list):
         bv_sum = copy_visibility(bvis_list[0], zero=True)
         for ibv, bv in enumerate(bvis_list):
-            bv_sum.data['vis'] += bv.data['vis']
+            bv_sum['vis'].data += bv['vis'].data
         return bv_sum
     
     error_bvis_list = [rsexecute.execute(sum_vis)(error_bvis_list[ibvis])
@@ -676,10 +676,10 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
      """
     
     def find_vp_actual(bvis, band) -> List[Image]:
-        vp_types = numpy.unique(bvis.configuration.configuration.vp_type)
+        vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
-            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy()
+            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy(deep=True)
             vp = normalise_vp(vp)
             vp_list.append(vp)
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
@@ -689,7 +689,7 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
-            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy()
+            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy(deep=True)
             vpsym = 0.5 * (vp["pixels"].data[:, 0, ...] + vp["pixels"].data[:, 3, ...])
             if normalise:
                 vpsym /= numpy.max(numpy.abs(vpsym))
@@ -741,7 +741,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
-            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy()
+            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy(deep=True)
             vp = normalise_vp(vp)
             vp_list.append(vp)
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
@@ -749,7 +749,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
     
     def find_vp_nominal(bvis, band):
         vp_types = numpy.unique(bvis.configuration.vp_type)
-        vp = get_vp("{vp}_{band}".format(vp=default_vp, band=band)).copy()
+        vp = get_vp("{vp}_{band}".format(vp=default_vp, band=band)).copy(deep=True)
         vp = normalise_vp(vp)
         vp_list = len(vp_types) * [vp]
         assert len(vp_list) == len(vp_types)

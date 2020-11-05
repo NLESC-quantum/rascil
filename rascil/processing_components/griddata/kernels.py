@@ -30,7 +30,7 @@ def create_box_convolutionfunction(im, oversampling=1, support=1, polarisation_f
     :param oversampling: Oversampling of the convolution function in uv space
     :return: griddata correction Image, griddata kernel as ConvolutionFunction
     """
-    assert isinstance(im, Image)
+    ##assert isinstance(im, Image)
     cf = create_convolutionfunction_from_image(im, oversampling=1, support=4, polarisation_frame=polarisation_frame)
     
     nchan, npol, _, _ = im["pixels"].data.shape
@@ -68,7 +68,7 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8, polarisatio
     :param oversampling: Oversampling of the convolution function in uv space
     :return: griddata correction Image, griddata kernel as ConvolutionFunction
     """
-    #assert isinstance(im, Image), im
+    ##assert isinstance(im, Image), im
     if oversampling % 2 == 0:
         oversampling += 1
         log.info("Setting oversampling to next greatest odd number {}".format(oversampling))
@@ -136,7 +136,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     # it for the shape of the image
     nchan, npol, ony, onx = im["pixels"].data.shape
     
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     # Calculate the template convolution kernel.
     cf = create_convolutionfunction_from_image(im, nw=nw, wstep=wstep, oversampling=oversampling, support=support,
                                                polarisation_frame=polarisation_frame)
@@ -146,7 +146,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     else:
         w_list = [0.0]
     
-    assert isinstance(oversampling, int)
+    #assert isinstance(oversampling, int)
     assert oversampling > 0
     
     nx = max(maxsupport, 2 * oversampling * support)
@@ -185,7 +185,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     
     # We might need to work with a larger image
     padded_shape = [nchan, npol, ny, nx]
-    thisplane = subim.copy()
+    thisplane = subim.copy(deep=True)
     thisplane["pixels"].data = numpy.zeros(thisplane["pixels"].data.shape, dtype='complex')
     scf = cf["pixels"].data[...]
     for z, w in enumerate(w_list):
@@ -235,7 +235,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
         pswf_gcf["pixels"].data[...] = 1.0
     
     assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
-    assert pswf_gcf['pixels'].data.dtype == "float64", pswf_gcf['pixels'].data.dtype
+    assert pswf_gcf['pixels'].data.dtype == "float", pswf_gcf['pixels'].data.dtype
     return pswf_gcf, cf
 
 
@@ -261,15 +261,15 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     # it for the shape of the image
     nchan, npol, ony, onx = im["pixels"].data.shape
     
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     # Calculate the template convolution kernel.
     cf = create_convolutionfunction_from_image(im, oversampling=oversampling, support=support,
                                                polarisation_frame=polarisation_frame)
     
     cf_shape = list(cf["pixels"].data.shape)
-    cf.data = numpy.zeros(cf_shape).astype('complex')
+    cf["pixels"].data = numpy.zeros(cf_shape).astype('complex')
     
-    assert isinstance(oversampling, int)
+    #assert isinstance(oversampling, int)
     assert oversampling > 0
     
     nx = max(maxsupport, 2 * oversampling * support)
@@ -278,7 +278,7 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     qnx = nx // oversampling
     qny = ny // oversampling
     
-    cf.data[...] = 0.0
+    cf["pixels"].data[...] = 0.0
     
     ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
     
@@ -318,7 +318,7 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
             xend = x + xcen - (support * oversampling) // 2 - oversampling // 2
             
             # uu = range(xbeg, xend, -oversampling)
-            cf.data[..., 0, y, x, :, :] = \
+            cf["pixels"].data[..., 0, y, x, :, :] = \
                 paddedplane["pixels"].data[..., ybeg:yend:-oversampling, xbeg:xend:-oversampling]
     
     if normalise:
@@ -333,5 +333,5 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
         pswf_gcf["pixels"].data[...] = 1.0
     
     assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
-    assert pswf_gcf['pixels'].data.dtype == "complex", pswf_gcf['pixels'].data.dtype
+    assert pswf_gcf['pixels'].data.dtype == "float", pswf_gcf['pixels'].data.dtype
     return pswf_gcf, cf

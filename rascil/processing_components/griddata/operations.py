@@ -34,7 +34,7 @@ def copy_griddata(gd):
     :param gd:
     :return:
     """
-    assert isinstance(gd, GridData), gd
+    #assert isinstance(gd, GridData), gd
     newgd = copy.deepcopy(gd)
     assert type(newgd) == GridData
     return newgd
@@ -147,7 +147,7 @@ def qa_griddata(gd, context="") -> QA:
     :param gd:
     :return: QA
     """
-    assert isinstance(gd, GridData), gd
+    #assert isinstance(gd, GridData), gd
     data = {'shape': str(gd["pixels"].data.shape),
             'max': numpy.max(gd.data),
             'min': numpy.min(gd.data),

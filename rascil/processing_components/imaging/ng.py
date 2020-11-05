@@ -41,7 +41,7 @@ try:
         :return: resulting BlockVisibility (in place works)
         """
         
-        assert isinstance(bvis, BlockVisibility), bvis
+        #assert isinstance(bvis, BlockVisibility), bvis
         assert image_is_canonical(model)
         
         if model is None:
@@ -138,9 +138,9 @@ try:
         """
         assert image_is_canonical(model)
         
-        assert isinstance(bvis, BlockVisibility), bvis
+        #assert isinstance(bvis, BlockVisibility), bvis
         
-        im = model.copy()
+        im = model.copy(deep=True)
         
         nthreads = get_parameter(kwargs, "threads", 4)
         epsilon = get_parameter(kwargs, "epsilon", 1e-12)

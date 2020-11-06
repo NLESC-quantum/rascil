@@ -97,7 +97,6 @@ class BufferImage(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(Image)
 
 
 class BufferGridData(BufferDataModel):
@@ -113,7 +112,6 @@ class BufferGridData(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(GridData)
 
 
 class BufferConvolutionFunction(BufferDataModel):
@@ -129,7 +127,6 @@ class BufferConvolutionFunction(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(ConvolutionFunction)
 
 
 class BufferBlockVisibility(BufferDataModel):
@@ -145,7 +142,6 @@ class BufferBlockVisibility(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(BlockVisibility)
 
 
 class BufferSkyModel(BufferDataModel):
@@ -161,7 +157,6 @@ class BufferSkyModel(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(SkyModel)
 
 
 class BufferGainTable(BufferDataModel):
@@ -177,7 +172,6 @@ class BufferGainTable(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(GainTable)
 
 
 class BufferFlagTable(BufferDataModel):
@@ -193,7 +187,6 @@ class BufferFlagTable(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(FlagTable)
 
 
 class BufferPointingTable(BufferDataModel):
@@ -209,4 +202,3 @@ class BufferPointingTable(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(PointingTable)

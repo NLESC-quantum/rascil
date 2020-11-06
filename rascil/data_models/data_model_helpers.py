@@ -211,7 +211,7 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     
     f.attrs['RASCIL_data_model'] = 'BlockVisibility'
     f.attrs['nants'] = numpy.max([b[1] for b in vis.baselines.values]) + 1
-    f.attrs['nvis'] = vis.nvis
+    f.attrs['nvis'] = vis.blockvisibility_acc.nvis
     f.attrs['npol'] = vis.blockvisibility_acc.npol
     f.attrs['phasecentre_coords'] = vis.phasecentre.to_string()
     f.attrs['phasecentre_frame'] = vis.phasecentre.frame.name
@@ -222,7 +222,7 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
                 "vis", "weight", "imaging_weight", "flags",
                 "uvw", "integration_time"]
     for var in datavars:
-        f["data_{}".format(var)] = vis.data[var].values
+        f["data_{}".format(var)] = vis[var].data
     f = convert_configuration_to_hdf(vis.configuration, f)
     return f
 
@@ -262,8 +262,7 @@ def convert_hdf_to_blockvisibility(f):
                           polarisation_frame=polarisation_frame,
                           phasecentre=phasecentre,
                           channel_bandwidth=channel_bandwidth, source=source,
-                          meta=meta)
-    vis.configuration = convert_configuration_from_hdf(f)
+                          meta=meta, configuration=convert_configuration_from_hdf(f))
     return vis
 
 
@@ -281,7 +280,7 @@ def convert_flagtable_to_hdf(ft: FlagTable, f):
     f.attrs['polarisation_frame'] = ft.polarisation_frame.type
     datavars = ["time", "frequency", "flags", "integration_time", "channel_bandwidth"]
     for var in datavars:
-        f["data_{}".format(var)] = ft.data[var].values
+        f["data_{}".format(var)] = ft[var].data
     f = convert_configuration_to_hdf(ft.configuration, f)
     return f
 
@@ -308,8 +307,8 @@ def convert_hdf_to_flagtable(f):
                    baselines=baselines,
                    integration_time=integration_time,
                    channel_bandwidth=channel_bandwidth,
-                   polarisation_frame=polarisation_frame)
-    ft.configuration = convert_configuration_from_hdf(f)
+                   polarisation_frame=polarisation_frame,
+                   configuration = convert_configuration_from_hdf(f))
     return ft
 
 
@@ -324,11 +323,17 @@ def export_blockvisibility_to_hdf5(vis, filename):
     if not isinstance(vis, collections.abc.Iterable):
         vis = [vis]
     with h5py.File(filename, 'w') as f:
-        f.attrs['number_data_models'] = len(vis)
-        for i, v in enumerate(vis):
-            ##assert isinstance(v, BlockVisibility)
-            vf = f.create_group('BlockVisibility%d' % i)
-            convert_blockvisibility_to_hdf(v, vf)
+        if isinstance(vis, list):
+            f.attrs['number_data_models'] = len(vis)
+            for i, v in enumerate(vis):
+                ##assert isinstance(v, BlockVisibility)
+                vf = f.create_group('BlockVisibility%d' % i)
+                convert_blockvisibility_to_hdf(v, vf)
+        else:
+            f.attrs['number_data_models'] = 1
+            vf = f.create_group('BlockVisibility%d' % 0)
+            convert_blockvisibility_to_hdf(vis, vf)
+
         f.flush()
 
 
@@ -359,11 +364,16 @@ def export_flagtable_to_hdf5(ft, filename):
     if not isinstance(ft, collections.abc.Iterable):
         ft = [ft]
     with h5py.File(filename, 'w') as f:
-        f.attrs['number_data_models'] = len(ft)
-        for i, v in enumerate(ft):
-            ##assert isinstance(v, FlagTable)
-            vf = f.create_group('FlagTable%d' % i)
-            convert_flagtable_to_hdf(v, vf)
+        if isinstance(ft, list):
+            f.attrs['number_data_models'] = len(ft)
+            for i, v in enumerate(ft):
+                ##assert isinstance(v, FlagTable)
+                vf = f.create_group('FlagTable%d' % i)
+                convert_flagtable_to_hdf(v, vf)
+        else:
+            f.attrs['number_data_models'] = 1
+            vf = f.create_group('FlagTable%d' % 0)
+            convert_flagtable_to_hdf(ft, vf)
         f.flush()
 
 
@@ -398,7 +408,7 @@ def convert_gaintable_to_hdf(gt: GainTable, f):
     f.attrs['phasecentre_frame'] = gt.phasecentre.frame.name
     datavars = ["time", "gain", "weight", "residual", "interval", "frequency"]
     for var in datavars:
-        f["data_{}".format(var)] = gt.data[var].values
+        f["data_{}".format(var)] = gt[var].data
     return f
 
 
@@ -437,11 +447,17 @@ def export_gaintable_to_hdf5(gt: GainTable, filename):
     if not isinstance(gt, collections.abc.Iterable):
         gt = [gt]
     with h5py.File(filename, 'w') as f:
-        f.attrs['number_data_models'] = len(gt)
-        for i, g in enumerate(gt):
-            ##assert isinstance(g, GainTable)
-            gf = f.create_group('GainTable%d' % i)
-            convert_gaintable_to_hdf(g, gf)
+        if isinstance(gt, list):
+            f.attrs['number_data_models'] = len(gt)
+            for i, g in enumerate(gt):
+                ##assert isinstance(g, GainTable)
+                gf = f.create_group('GainTable%d' % i)
+                convert_gaintable_to_hdf(g, gf)
+        else:
+            f.attrs['number_data_models'] = 1
+            gf = f.create_group('GainTable%d' % 0)
+            convert_gaintable_to_hdf(gt, gf)
+
         f.flush()
 
 
@@ -479,7 +495,7 @@ def convert_pointingtable_to_hdf(pt: PointingTable, f):
     datavars = ["time", "nominal", "pointing", "weight", "residual", "interval",
                 "frequency"]
     for var in datavars:
-        f["data_{}".format(var)] = pt.data[var].values
+        f["data_{}".format(var)] = pt[var].data
     f = convert_configuration_to_hdf(pt.configuration, f)
     return f
 
@@ -521,15 +537,19 @@ def export_pointingtable_to_hdf5(pt: PointingTable, filename):
     :param filename:
     :return:
     """
-    
+
     if not isinstance(pt, collections.abc.Iterable):
         pt = [pt]
     with h5py.File(filename, 'w') as f:
-        f.attrs['number_data_models'] = len(pt)
-        for i, g in enumerate(pt):
-            ##assert isinstance(g, PointingTable)
-            gf = f.create_group('PointingTable%d' % i)
-            convert_pointingtable_to_hdf(g, gf)
+        if isinstance(pt, list):
+            f.attrs['number_data_models'] = len(pt)
+            for i, v in enumerate(pt):
+                vf = f.create_group('PointingTable%d' % i)
+                convert_pointingtable_to_hdf(v, vf)
+        else:
+            f.attrs['number_data_models'] = 1
+            vf = f.create_group('PointingTable%d' % 0)
+            convert_pointingtable_to_hdf(pt, vf)
         f.flush()
 
 
@@ -676,11 +696,15 @@ def export_image_to_hdf5(im, filename):
     if not isinstance(im, collections.abc.Iterable):
         im = [im]
     with h5py.File(filename, 'w') as f:
-        f.attrs['number_data_models'] = len(im)
-        for i, m in enumerate(im):
-            #assert isinstance(m, Image)
-            mf = f.create_group('Image%d' % i)
-            convert_image_to_hdf(m, mf)
+        if isinstance(im, list):
+            f.attrs['number_data_models'] = len(im)
+            for i, v in enumerate(im):
+                vf = f.create_group('Image%d' % i)
+                convert_image_to_hdf(v, vf)
+        else:
+            f.attrs['number_data_models'] = 1
+            vf = f.create_group('Image%d' % 0)
+            convert_image_to_hdf(im, vf)
         f.flush()
         f.close()
 
@@ -810,7 +834,7 @@ def convert_griddata_to_hdf(gd: GridData, f):
     #assert isinstance(gd, GridData)
     
     f.attrs['RASCIL_data_model'] = 'GridData'
-    f['data'] = gd.data
+    f['data'] = gd["pixels"].data
     f.attrs['grid_wcs'] = numpy.string_(gd.grid_wcs.to_header_string())
     f.attrs['projection_wcs'] = numpy.string_(gd.projection_wcs.to_header_string())
     f.attrs['polarisation_frame'] = gd.polarisation_frame.type
@@ -844,11 +868,15 @@ def export_griddata_to_hdf5(gd, filename):
     if not isinstance(gd, collections.abc.Iterable):
         gd = [gd]
     with h5py.File(filename, 'w') as f:
-        f.attrs['number_data_models'] = len(gd)
-        for i, m in enumerate(gd):
-            #assert isinstance(m, GridData)
-            mf = f.create_group('GridData%d' % i)
-            convert_griddata_to_hdf(m, mf)
+        if isinstance(gd, list):
+            f.attrs['number_data_models'] = len(gd)
+            for i, v in enumerate(gd):
+                vf = f.create_group('GridData%d' % i)
+                convert_image_to_hdf(v, vf)
+        else:
+            f.attrs['number_data_models'] = 1
+            vf = f.create_group('GridData%d' % 0)
+            convert_griddata_to_hdf(gd, vf)
         f.flush()
         f.close()
 
@@ -879,7 +907,7 @@ def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
     #assert isinstance(cf, ConvolutionFunction)
     
     f.attrs['RASCIL_data_model'] = 'ConvolutionFunction'
-    f['data'] = cf.data
+    f['data'] = cf["pixels"].data
     f.attrs['grid_wcs'] = numpy.string_(cf.grid_wcs.to_header_string())
     f.attrs['projection_wcs'] = numpy.string_(cf.projection_wcs.to_header_string())
     f.attrs['polarisation_frame'] = cf.polarisation_frame.type
@@ -892,7 +920,7 @@ def convert_hdf_to_convolutionfunction(f):
     :param f:
     :return:
     """
-    assert f.attrs['RASCIL_data_model'] == "ConvolutionFunction", "Not a ConvolutionFunction"
+    assert f.attrs['RASCIL_data_model'] == "ConvolutionFunction", f.attrs['RASCIL_data_model']
     data = numpy.array(f['data'])
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
     grid_wcs = WCS(f.attrs['grid_wcs'])
@@ -913,14 +941,17 @@ def export_convolutionfunction_to_hdf5(cf, filename):
     if not isinstance(cf, collections.abc.Iterable):
         cf = [cf]
     with h5py.File(filename, 'w') as f:
-        f.attrs['number_data_models'] = len(cf)
-        for i, m in enumerate(cf):
-            #assert isinstance(m, ConvolutionFunction)
-            mf = f.create_group('ConvolutionFunction%d' % i)
-            convert_convolutionfunction_to_hdf(m, mf)
+        if isinstance(cf, list):
+            f.attrs['number_data_models'] = len(cf)
+            for i, v in enumerate(cf):
+                vf = f.create_group('ConvolutionFunction%d' % i)
+                convert_convolutionfunction_to_hdf(v, vf)
+        else:
+            f.attrs['number_data_models'] = 1
+            vf = f.create_group('ConvolutionFunction%d' % 0)
+            convert_convolutionfunction_to_hdf(cf, vf)
         f.flush()
         f.close()
-
 
 def import_convolutionfunction_from_hdf5(filename):
     """Import ConvolutionFunction from HDF5 format

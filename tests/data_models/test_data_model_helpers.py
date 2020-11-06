@@ -84,8 +84,8 @@ class TestDataModelHelpers(unittest.TestCase):
         export_gaintable_to_hdf5(gt, '%s/test_data_model_helpers_gaintable.hdf' % self.dir)
         newgt = import_gaintable_from_hdf5('%s/test_data_model_helpers_gaintable.hdf' % self.dir)
     
-        assert gt.data.gain.shape == newgt.data.gain.shape
-        assert numpy.max(numpy.abs(gt.gain - newgt.gain)) < 1e-15
+        assert gt["gain"].data.shape == newgt["gain"].data.shape
+        assert numpy.max(numpy.abs(gt["gain"] - newgt["gain"])) < 1e-15
 
     def test_readwritepointingtable(self):
         self.vis = create_blockvisibility(self.mid, self.times, self.frequency,
@@ -98,7 +98,7 @@ class TestDataModelHelpers(unittest.TestCase):
         export_pointingtable_to_hdf5(gt, '%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
         newgt = import_pointingtable_from_hdf5('%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
     
-        assert gt.data.pointing.shape == newgt.data.pointing.shape
+        assert gt["pointing"].data.shape == newgt["pointing"].data.shape
         assert numpy.max(numpy.abs(gt.pointing - newgt.pointing)) < 1e-15
 
     def test_readwriteimage(self):
@@ -129,8 +129,8 @@ class TestDataModelHelpers(unittest.TestCase):
         newsm = import_skymodel_from_hdf5('%s/test_data_model_helpers_skymodel.hdf' % self.dir)
     
         assert newsm.components[0].flux.shape == self.comp.flux.shape
-        assert newsm.image.data.shape == im["pixels"].data.shape
-        assert numpy.max(numpy.abs(newsm.image.data - im["pixels"].data)) < 1e-15
+        assert newsm.image["pixels"].data.shape == im["pixels"].data.shape
+        assert numpy.max(numpy.abs(newsm.image["pixels"].data - im["pixels"].data)) < 1e-15
 
     def test_readwritegriddata(self):
         im = create_test_image()
@@ -138,8 +138,8 @@ class TestDataModelHelpers(unittest.TestCase):
         export_griddata_to_hdf5(gd, '%s/test_data_model_helpers_griddata.hdf' % self.dir)
         newgd = import_griddata_from_hdf5('%s/test_data_model_helpers_griddata.hdf' % self.dir)
     
-        assert newgd.data.shape == gd.data.shape
-        assert numpy.max(numpy.abs(gd.data - newgd.data)) < 1e-15
+        assert newgd["pixels"].data.shape == gd["pixels"].data.shape
+        assert numpy.max(numpy.abs(gd["pixels"].data - newgd["pixels"].data)) < 1e-15
 
     def test_readwriteconvolutionfunction(self):
         im = create_test_image()
@@ -147,8 +147,8 @@ class TestDataModelHelpers(unittest.TestCase):
         export_convolutionfunction_to_hdf5(cf, '%s/test_data_model_helpers_convolutionfunction.hdf' % self.dir)
         newcf = import_convolutionfunction_from_hdf5('%s/test_data_model_helpers_convolutionfunction.hdf' % self.dir)
     
-        assert newcf.data.shape == cf.data.shape
-        assert numpy.max(numpy.abs(cf.data - newcf.data)) < 1e-15
+        assert newcf["pixels"].data.shape == cf["pixels"].data.shape
+        assert numpy.max(numpy.abs(cf["pixels"].data - newcf["pixels"].data)) < 1e-15
 
 
 if __name__ == '__main__':

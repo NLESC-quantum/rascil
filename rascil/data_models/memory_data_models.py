@@ -42,6 +42,8 @@ class Configuration(xarray.Dataset):
     """ Describe a XConfiguration as locations in x,y,z, mount type, diameter, names, and
         overall location
     """
+
+    __slots__ = ()
     
     def __init__(self, name='', location=None,
                  names=None, xyz=None, mount="alt-az", frame="",
@@ -91,6 +93,7 @@ class Configuration(xarray.Dataset):
         datavars["stations"] = xarray.DataArray(stations, coords={"id": list(range(nants))}, dims=["id"])
 
         attrs = dict()
+        attrs["RASCIL_data_model"] = "Configuration"
         attrs["name"] = name  # Name of configuration
         attrs["location"] = location  # EarthLocation
         attrs["receptor_frame"] = receptor_frame
@@ -131,7 +134,9 @@ class GainTable(xarray.Dataset):
 
     The weight is usually that output from gain solvers.
     """
-    
+
+    __slots__ = ()
+
     def __init__(self, gain: numpy.array = None, time: numpy.array = None, interval=None,
                  weight: numpy.array = None, residual: numpy.array = None, frequency: numpy.array = None,
                  receptor_frame: ReceptorFrame = ReceptorFrame("linear"), phasecentre=None, configuration=None):
@@ -172,6 +177,7 @@ class GainTable(xarray.Dataset):
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims="time")
         attrs = dict()
+        attrs["RASCIL_data_model"] = "GainTable"
         attrs["receptor_frame"] = receptor_frame
         attrs["phasecentre"] = phasecentre
         attrs["configuration"] = configuration
@@ -237,7 +243,9 @@ class PointingTable(xarray.Dataset):
 
     The weight is usually that output from gain solvers.
     """
-    
+
+    __slots__ = ()
+
     def __init__(self, data=None, pointing: numpy.array = None, nominal: numpy.array = None,
                  time: numpy.array = None, interval=None,
                  weight: numpy.array = None, residual: numpy.array = None, frequency: numpy.array = None,
@@ -279,6 +287,7 @@ class PointingTable(xarray.Dataset):
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64, dims="time")
 
         attrs = dict()
+        attrs["RASCIL_data_model"] = "PointingTable"
         attrs["frequency"] = frequency
         attrs["receptor_frame"] = receptor_frame
         attrs["pointing_frame"] = pointing_frame
@@ -346,7 +355,7 @@ class Image(xarray.Dataset):
 
     """
 
-    __slots__ = ['__dict__']
+    __slots__ = ()
 
     def __init__(self, data, phasecentre, frequency, polarisation_frame=None, wcs=None):
         """ Create an XImage
@@ -396,6 +405,8 @@ class Image(xarray.Dataset):
         attrs = {"phasecentre": phasecentre,
                  "wcs":wcs,
                  "polarisation_frame":polarisation_frame}
+        attrs["RASCIL_data_model"] = "Image"
+
         
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
@@ -469,7 +480,9 @@ class GridData(xarray.Dataset):
         variable. The latter should be considered definitive.
 
     """
-    
+
+    __slots__ = ()
+
     def __init__(self, polarisation_frame=None,
                  dtype=None, data=None, grid_wcs=None, projection_wcs=None):
         """ Create a GridData
@@ -508,6 +521,7 @@ class GridData(xarray.Dataset):
         assert coords["v"][0] != coords["v"][-1]
         
         attrs = dict()
+        attrs["RASCIL_data_model"] = "GridData"
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
@@ -598,7 +612,9 @@ class ConvolutionFunction(xarray.Dataset):
     Convolution function holds the original sky plane projection in the projection_wcs.
 
     """
-    
+
+    __slots__ = ()
+
     def __init__(self, data, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
         """Create ConvolutionFunction
 
@@ -646,6 +662,7 @@ class ConvolutionFunction(xarray.Dataset):
         assert coords["v"][0] != coords["v"][-1]
         
         attrs = dict()
+        attrs["RASCIL_data_model"] = "ConvolutionFunction"
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
@@ -870,7 +887,9 @@ class BlockVisibility(xarray.Dataset):
 
     The configuration is stored as an attribute..
     """
-    
+
+    __slots__ = ()
+
     def __init__(self, frequency=None, channel_bandwidth=None, phasecentre=None, configuration=None, uvw=None,
                  time=None, vis=None, weight=None, integration_time=None, flags=None, baselines=None,
                  polarisation_frame=PolarisationFrame('stokesI'), imaging_weight=None, source='anonymous', meta=None,
@@ -1090,7 +1109,9 @@ class FlagTable(xarray.Dataset):
 
     The configuration is also an attribute
     """
-    
+
+    __slots__ = ()
+
     def __init__(self, baselines=None, flags=None,
                  frequency=None, channel_bandwidth=None,
                  configuration=None, time=None, integration_time=None,

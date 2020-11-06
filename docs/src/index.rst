@@ -10,6 +10,9 @@ imaging algorithms in python and numpy. The interfaces all operate with familiar
 visibility table, gain table, etc. The python source code is directly accessible from these documentation pages:
 see the source link in the top right corner.
 
+As of version 0.2.0, the data classes are built on the `Xarray <https:/xarray.pydata.org>`_ library, offering a
+rich API for applications. For more details, see :ref:`Use of xarray <RASCIL_xarray>`.
+
 To achieve sufficient performance we take a dual pronged approach - using threaded libraries for shared memory
 processing, and the `Dask <https:/www.dask.org>`_ library for distributed processing.
 

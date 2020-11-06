@@ -293,7 +293,7 @@ def plot_gaintable(gt_list, title='', value='amp', plot_file=None, **kwargs):
     """
     plt.clf()
     for igt, gt in enumerate(gt_list):
-        nrec = gt[0].nrec
+        nrec = gt[0].gaintable_acc.nrec
         names = gt[0].receptor1.values
         if nrec > 1:
             recs = [0, 1]

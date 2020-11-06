@@ -914,10 +914,20 @@ class BlockVisibility(xarray.Dataset):
         
         super().__init__()
         
+        if weight is None:
+            weight = numpy.ones(vis.shape)
+        else:
+            assert weight.shape == vis.shape
+            
         if imaging_weight is None:
             imaging_weight = weight
+        else:
+            assert imaging_weight.shape == vis.shape
+            
         if integration_time is None:
             integration_time = numpy.ones_like(time)
+        else:
+            assert len(integration_time) == len(time)
         
         k = (frequency / const.c).value
         if len(frequency) == 1:

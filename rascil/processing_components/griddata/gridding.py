@@ -27,7 +27,6 @@ __all__ = ['convolution_mapping_visibility',
 
 import logging
 
-import astropy.constants as constants
 import numpy
 import numpy.testing
 
@@ -36,6 +35,7 @@ from rascil.processing_components.fourier_transforms import ifft, fft
 from rascil.processing_components.griddata.operations import copy_griddata
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.visibility.base import copy_visibility
+from rascil import phyconst
 
 log = logging.getLogger('logger')
 
@@ -97,7 +97,7 @@ def convolution_mapping_blockvisibility(vis, griddata, frequency, cf,
     assert isinstance(vis, BlockVisibility), vis
     assert vis.polarisation_frame == griddata.polarisation_frame
 
-    k = frequency / constants.c.value
+    k = frequency / phyconst.c_m_s
     u = vis.uvw[..., 0].flat * k
     v = vis.uvw[..., 1].flat * k
     w = vis.uvw[..., 2].flat * k

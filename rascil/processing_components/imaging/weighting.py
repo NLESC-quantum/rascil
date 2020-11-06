@@ -14,8 +14,6 @@ import numpy
 
 import logging
 
-import astropy.constants as constants
-
 from rascil.data_models.memory_data_models import Visibility, BlockVisibility
 from rascil.processing_components.griddata.gridding import grid_visibility_weight_to_griddata, \
     griddata_visibility_reweight, grid_blockvisibility_weight_to_griddata, griddata_blockvisibility_reweight
@@ -23,6 +21,7 @@ from rascil.processing_components.griddata.kernels import create_pswf_convolutio
 from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.image.operations import image_is_canonical
 from rascil.processing_components.util.array_functions import tukey_filter
+from rascil import phyconst
 
 log = logging.getLogger("logger")
 
@@ -99,7 +98,7 @@ def taper_visibility_gaussian(vis, beam=None):
         vis.data['imaging_weight'][:, :] = vis.flagged_imaging_weight[:, :] * wt[:, numpy.newaxis]
     else:
         for chan, freq in enumerate(vis.frequency):
-            wave = constants.c.to('m s^-1').value / freq
+            wave = phyconst.c_m_s / freq
             uvdistsq = (vis.u ** 2 + vis.v ** 2) / wave**2
             wt = numpy.exp(-scale_factor * uvdistsq)
             vis.data['imaging_weight'][..., chan, :] = vis.flagged_imaging_weight[..., chan, :] * \
@@ -137,7 +136,7 @@ def taper_visibility_tukey(vis, tukey=0.1):
     else:
         oshape = vis.data['imaging_weight'][..., 0, 0].shape
         for chan, freq in enumerate(vis.frequency):
-            wave = constants.c.to('m s^-1').value / freq
+            wave = phyconst.c_m_s / freq
             uvdist = numpy.sqrt(vis.u ** 2 + vis.v ** 2)
             uvdist = uvdist.flatten() / wave
             uvdistmax = numpy.max(uvdist)

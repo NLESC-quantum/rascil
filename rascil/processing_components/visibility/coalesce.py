@@ -26,11 +26,11 @@ __all__ = ['convert_visibility_to_blockvisibility',
 import logging
 
 import numpy
-from astropy import constants
 
 from rascil.data_models.memory_data_models import Visibility, BlockVisibility
 from rascil.processing_components.util.array_functions import average_chunks, average_chunks2
 from rascil.processing_components.visibility.base import vis_summary, copy_visibility
+from rascil import phyconst
 
 log = logging.getLogger('logger')
 
@@ -304,7 +304,7 @@ def average_in_blocks(vis, flags, uvw, wts, imaging_wts, times, integration_time
             cfrequency[rows] = average_from_grid(frequency_grid).flatten()
 
             for axis in range(3):
-                uvwgrid = numpy.outer(uvw[:, a2, a1, axis], frequency / constants.c.value)
+                uvwgrid = numpy.outer(uvw[:, a2, a1, axis], frequency / phyconst.c_m_s)
                 cuvw[rows, axis] = average_from_grid(uvwgrid).flatten()
 
             # For some variables, we need the sum not the average
@@ -415,7 +415,7 @@ def convert_blocks(vis, flags, uvw, wts, imaging_wts, times, integration_time, f
     #                 cfrequency[row] = frequency[chan]
     #                 ctime[row] = times[itime]
     #
-    #                 cuvw[row, :] = uvw[itime, a2, a1, :] * frequency[chan] / constants.c.value
+    #                 cuvw[row, :] = uvw[itime, a2, a1, :] * frequency[chan] / phyconst.c_m_s
     #
     #                 cindex.flat[rowgrid[itime, a2, a1, chan]] = row
     #                 cintegration_time[row] = integration_time[itime]
@@ -450,7 +450,7 @@ def convert_blocks(vis, flags, uvw, wts, imaging_wts, times, integration_time, f
 
     cuvw = (numpy.tile(uvw[mask_uvw].reshape(-1, 3), nchan)).reshape(-1, 3)
     freq = numpy.repeat(cfrequency, 3).reshape(-1, 3)
-    cuvw[..., :] *= freq[:] / constants.c.value
+    cuvw[..., :] *= freq[:] / phyconst.c_m_s
 
     cvis = vis[mask_vis].reshape(-1, npol)
     cwts = wts[mask_wts].reshape(-1, npol)

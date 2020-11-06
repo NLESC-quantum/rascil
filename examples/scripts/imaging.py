@@ -52,9 +52,9 @@ dirty, sumwt = invert_2d(vt, model, context='2d')
 psf, sumwt = invert_2d(vt, model, context='2d', dopsf=True)
 
 print("Max, min in dirty image = %.6f, %.6f, sumwt = %f" %
-      (dirty.data.max(), dirty.data.min(), sumwt))
+      (dirty["pixels"].data.max(), dirty["pixels"].data.min(), sumwt))
 print("Max, min in PSF         = %.6f, %.6f, sumwt = %f" %
-      (psf.data.max(), psf.data.min(), sumwt))
+      (psf["pixels"].data.max(), psf["pixels"].data.min(), sumwt))
 
 export_image_to_fits(dirty, '%s/imaging_dirty.fits' % (results_dir))
 export_image_to_fits(psf, '%s/imaging_psf.fits' % (results_dir))
@@ -67,5 +67,5 @@ comp, residual = deconvolve_cube(dirty, psf, niter=10000, threshold=0.001,
 
 restored = restore_cube(comp, psf, residual)
 print("Max, min in restored image = %.6f, %.6f, sumwt = %f" %
-      (restored.data.max(), restored.data.min(), sumwt))
+      (restored["pixels"].data.max(), restored["pixels"].data.min(), sumwt))
 export_image_to_fits(restored, '%s/imaging_restored.fits' % (results_dir))

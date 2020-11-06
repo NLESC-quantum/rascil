@@ -10,6 +10,9 @@ import astropy.units as u
 import numpy
 from astropy.coordinates import SkyCoord
 
+import xarray
+import zarr
+
 from rascil.data_models.data_model_helpers import import_blockvisibility_from_hdf5, export_blockvisibility_to_hdf5, \
     import_gaintable_from_hdf5, export_gaintable_to_hdf5, \
     import_pointingtable_from_hdf5, export_pointingtable_to_hdf5, \
@@ -26,14 +29,13 @@ from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import simulate_gaintable, create_test_image
 from rascil.processing_components.simulation.pointing import simulate_pointingtable
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.griddata import create_convolutionfunction_from_image
 
-
-class TestDataModelHelpers(unittest.TestCase):
+class TestDataModelHelpersZarr(unittest.TestCase):
     def setUp(self):
-        from rascil.data_models.parameters import rascil_path, rascil_data_path
+        from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         
         self.mid = create_named_configuration('MID', rmax=1000.0)
@@ -58,8 +60,8 @@ class TestDataModelHelpers(unittest.TestCase):
                                           polarisation_frame=PolarisationFrame("linear"),
                                           weight=1.0)
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
-        export_blockvisibility_to_hdf5(self.vis, '%s/test_data_model_helpers_blockvisibility.hdf' % self.dir)
-        newvis = import_blockvisibility_from_hdf5('%s/test_data_model_helpers_blockvisibility.hdf' % self.dir)
+        self.vis.to_zarr('%s/test_data_model_helpers_blockvisibility.zarr' % self.dir, mode='w')
+        newvis = xarray.open_zarr('%s/test_data_model_helpers_blockvisibility.zarr' % self.dir)
         newvis.equals(self.vis)
 
     def test_readwritegaintable(self):
@@ -70,8 +72,8 @@ class TestDataModelHelpers(unittest.TestCase):
                                           weight=1.0)
         gt = create_gaintable_from_blockvisibility(self.vis, timeslice='auto')
         gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
-        export_gaintable_to_hdf5(gt, '%s/test_data_model_helpers_gaintable.hdf' % self.dir)
-        newgt = import_gaintable_from_hdf5('%s/test_data_model_helpers_gaintable.hdf' % self.dir)
+        gt.to_zarr('%s/test_data_model_helpers_gaintable.zarr' % self.dir)
+        newgt = xarray.open_zarr('%s/test_data_model_helpers_gaintable.zarr' % self.dir)
         newgt.equals(gt)
 
     def test_readwritepointingtable(self):
@@ -80,21 +82,21 @@ class TestDataModelHelpers(unittest.TestCase):
                                           phasecentre=self.phasecentre,
                                           polarisation_frame=PolarisationFrame("linear"),
                                           weight=1.0)
-        gt = create_pointingtable_from_blockvisibility(self.vis, timeslice='auto')
-        gt = simulate_pointingtable(gt, pointing_error=0.001)
-        export_pointingtable_to_hdf5(gt, '%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
-        newgt = import_pointingtable_from_hdf5('%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
-        newgt.equals(gt)
+        pt = create_pointingtable_from_blockvisibility(self.vis, timeslice='auto')
+        pt = simulate_pointingtable(pt, pointing_error=0.001)
+        pt.to_zarr('%s/test_data_model_helpers_pointingtable.zarr' % self.dir)
+        newpt = xarray.open_zarr('%s/test_data_model_helpers_pointingtable.zarr' % self.dir)
+        newpt.equals(pt)
 
     def test_readwriteimage(self):
         im = create_test_image()
-        export_image_to_hdf5(im, '%s/test_data_model_helpers_image.hdf' % self.dir)
-        newim = import_image_from_hdf5('%s/test_data_model_helpers_image.hdf' % self.dir)
+        im.to_zarr("%s/test_data_model_helpers_image.zarr" % self.dir, mode='w')
+        newim = xarray.open_zarr('%s/test_data_model_helpers_image.zarr' % self.dir)
         newim.equals(im)
 
     def test_readwriteskycomponent(self):
-        export_skycomponent_to_hdf5(self.comp, '%s/test_data_model_helpers_skycomponent.hdf' % self.dir)
-        newsc = import_skycomponent_from_hdf5('%s/test_data_model_helpers_skycomponent.hdf' % self.dir)
+        export_skycomponent_to_hdf5(self.comp, '%s/test_data_model_helpers_skycomponent.zarr' % self.dir)
+        newsc = import_skycomponent_from_hdf5('%s/test_data_model_helpers_skycomponent.zarr' % self.dir)
     
         assert newsc.flux.shape == self.comp.flux.shape
         assert numpy.max(numpy.abs(newsc.flux - self.comp.flux)) < 1e-15
@@ -108,8 +110,8 @@ class TestDataModelHelpers(unittest.TestCase):
         im = create_test_image()
         gt = create_gaintable_from_blockvisibility(self.vis, timeslice='auto')
         sm = SkyModel(components=[self.comp], image=im, gaintable=gt)
-        export_skymodel_to_hdf5(sm, '%s/test_data_model_helpers_skymodel.hdf' % self.dir)
-        newsm = import_skymodel_from_hdf5('%s/test_data_model_helpers_skymodel.hdf' % self.dir)
+        export_skymodel_to_hdf5(sm, '%s/test_data_model_helpers_skymodel.zarr' % self.dir)
+        newsm = import_skymodel_from_hdf5('%s/test_data_model_helpers_skymodel.zarr' % self.dir)
     
         assert newsm.components[0].flux.shape == self.comp.flux.shape
         assert newsm.image.equals(im)
@@ -117,15 +119,15 @@ class TestDataModelHelpers(unittest.TestCase):
     def test_readwritegriddata(self):
         im = create_test_image()
         gd = create_griddata_from_image(im)
-        export_griddata_to_hdf5(gd, '%s/test_data_model_helpers_griddata.hdf' % self.dir)
-        newgd = import_griddata_from_hdf5('%s/test_data_model_helpers_griddata.hdf' % self.dir)
+        gd.to_zarr('%s/test_data_model_helpers_griddata.zarr' % self.dir)
+        newgd = xarray.open_zarr('%s/test_data_model_helpers_griddata.zarr' % self.dir)
         assert newgd.equals(gd)
 
     def test_readwriteconvolutionfunction(self):
         im = create_test_image()
         cf = create_convolutionfunction_from_image(im)
-        export_convolutionfunction_to_hdf5(cf, '%s/test_data_model_helpers_convolutionfunction.hdf' % self.dir)
-        newcf = import_convolutionfunction_from_hdf5('%s/test_data_model_helpers_convolutionfunction.hdf' % self.dir)
+        cf.to_zarr('%s/test_data_model_helpers_convolutionfunction.zarr' % self.dir)
+        newcf = xarray.open_zarr('%s/test_data_model_helpers_convolutionfunction.zarr' % self.dir)
         assert newcf.equals(cf)
 
 

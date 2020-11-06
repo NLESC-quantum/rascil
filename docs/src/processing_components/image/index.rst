@@ -23,6 +23,3 @@ Images
 
 .. automodapi::    rascil.processing_components.image.operations
    :no-inheritance-diagram:
-
-.. automodapi::    rascil.processing_components.image.image_selection
-   :no-inheritance-diagram:

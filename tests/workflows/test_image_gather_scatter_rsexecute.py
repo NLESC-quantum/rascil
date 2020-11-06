@@ -55,7 +55,7 @@ class TestImageGatherScattersGraph(unittest.TestCase):
             image_list = rsexecute.execute(image_scatter_channels)(m31cube, subimages=nchan)
             m31cuberec = rsexecute.execute(image_gather_channels)(image_list, None, subimages=nchan)
             m31cuberec = rsexecute.compute(m31cuberec, sync=True)
-            assert m31cube.shape == m31cuberec.shape
+            assert m31cube["pixels"].shape == m31cuberec["pixels"].shape
             diff = m31cube["pixels"].data - m31cuberec["pixels"].data
             assert numpy.max(numpy.abs(diff)) == 0.0, "Scatter gather failed for %d" % nchan
 

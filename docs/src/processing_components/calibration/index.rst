@@ -36,9 +36,4 @@ late seventies.
 .. automodapi::    rascil.processing_components.calibration.solvers
    :no-inheritance-diagram:
 
-.. automodapi::    rascil.processing_components.calibration.gaintable_selection
-   :no-inheritance-diagram:
-
-.. automodapi::    rascil.processing_components.calibration.pointingtable_selection
-   :no-inheritance-diagram:
 

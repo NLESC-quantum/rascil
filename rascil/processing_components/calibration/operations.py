@@ -359,9 +359,9 @@ def gaintable_plot(
     """
 
     if ants is None:
-        ants = range(gt.nants)
+        ants = range(gt.gaintable_acc.nants)
     if channels is None:
-        channels = range(gt.nchan)
+        channels = range(gt.gaintable_acc.nchan)
 
     if gt.configuration is not None:
         labels = [gt.configuration.names[ant] for ant in ants]
@@ -370,19 +370,22 @@ def gaintable_plot(
 
     # with time_support(format = 'iso', scale = 'utc'):
     # time_axis = Time(gt.time/86400.0, format='mjd', out_subfmt='str')
-    time_axis = gt.time.values / 86400.0
+    time_axis = gt["time"].data / 86400.0
+    ntimes = len(time_axis)
+    nants = gt.gaintable_acc.nants
+    nchan = gt.gaintable_acc.nchan
 
     if cc == "B":
 
         fig, ax = plt.subplots(3, 1, sharex=True)
 
-        residual = gt.residual[:, channels, 0, 0]
+        residual = gt["residual"].data[:, channels, 0, 0]
         ax[0].imshow(residual, cmap=cmap)
         ax[0].set_title("{title} RMS residual {cc}".format(title=title, cc=cc))
         ax[0].set_ylabel("RMS residual (Jy)")
 
         amp = numpy.abs(
-            gt["gain"].data[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
+            gt["gain"].data[:, :, channels, 0, 0].reshape([ntimes * nants, nchan])
         )
         ax[1].imshow(amp, cmap=cmap)
         ax[1].set_ylabel("Amplitude")
@@ -390,7 +393,7 @@ def gaintable_plot(
         ax[1].xaxis.set_tick_params(labelsize="small")
 
         phase = numpy.angle(
-            gt["gain"].data[:, :, channels, 0, 0].reshape([gt.ntimes * gt.nants, gt.nchan])
+            gt["gain"].data[:, :, channels, 0, 0].reshape([ntimes * nants, nchan])
         )
         ax[2].imshow(phase, cmap=cmap)
         ax[2].set_ylabel("Phase (radian)")
@@ -401,13 +404,13 @@ def gaintable_plot(
 
         fig, ax = plt.subplots(3, 1, sharex=True)
 
-        residual = gt.residual[:, channels, 0, 0]
+        residual = gt["residual"].data[:, channels, 0, 0]
         ax[0].plot(time_axis, residual, ".")
         ax[1].set_ylabel("Residual fit (Jy)")
         ax[0].set_title("{title} Residual {cc}".format(title=title, cc=cc))
 
         for ant in ants:
-            amp = numpy.abs(gt.gain.values[:, ant, channels, 0, 0])
+            amp = numpy.abs(gt["gain"].data[:, ant, channels, 0, 0])
             ax[1].plot(
                 time_axis[amp[:, 0] > min_amp],
                 amp[amp[:, 0] > min_amp],

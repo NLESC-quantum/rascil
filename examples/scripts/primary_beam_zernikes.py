@@ -71,11 +71,11 @@ if __name__ == '__main__':
         coeffs = numpy.random.normal(0.0, 0.03, len(key_nolls))
         vp = default_vp.copy(deep=True)
         for i in range(len(key_nolls)):
-            vp.data += coeffs[i] * zernikes[i]['vp'].data
+            vp["pixels"].data += coeffs[i] * zernikes[i]['vp']["pixels"].data
 
-        vp.data = vp.data / numpy.max(numpy.abs(vp.data))
-        vp_data = vp.data / numpy.max(numpy.abs(vp.data))
-        vp.data = numpy.real(vp_data)
+        vp["pixels"].data = vp["pixels"].data / numpy.max(numpy.abs(vp["pixels"].data))
+        vp_data = vp["pixels"].data / numpy.max(numpy.abs(vp["pixels"].data))
+        vp["pixels"].data = numpy.real(vp_data)
         print(trial, qa_image(vp))
 
         export = False

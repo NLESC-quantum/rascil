@@ -1,5 +1,6 @@
 """
 Simple flagging operations (Still in development)
+
 """
 
 __all__ = ['flagtable_summary',
@@ -30,7 +31,6 @@ def copy_flagtable(ft: FlagTable, zero=False) -> FlagTable:
     """Copy a flagtable
 
     :param ft: FlagTable
-    Performs a deepcopy of the data array
     :param zero: Zero the flags
     :returns: FlagTable
 

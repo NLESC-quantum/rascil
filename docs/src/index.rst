@@ -25,8 +25,6 @@ requirement of providing a simple test version where algorithms could be tested 
 For an overview of the SDP see the `SDP CDR
 documentation <http://ska-sdp.org/publications/sdp-cdr-closeout-documentation>`_
 
-The ARL/RASCIL structure maps that used in the SDP processing architecture as can be seen in this :ref:`RASCIL_SDP`.
-
 More details can be found at: `SKA1 SDP Algorithm Reference Library (ARL) Report <http://ska-sdp.org/sites/default/files/attachments/ska-tel-sdp-0000150_02_sdparlreport_part_1_-_signed.pdf>`_
 
 Subsequent to the conclusion of the SDP project, it became clear that ARL could play a larger role than being limited

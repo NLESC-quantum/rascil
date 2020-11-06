@@ -17,8 +17,9 @@ See the jupyter notebooks below:
 
    examples/notebooks/imaging.rst
    examples/notebooks/simple-dask_rsexecute.rst
-   examples/notebooks/imaging-pipelines_rsexecute.rst
    examples/notebooks//bandpass-calibration_serial.rst
+   examples/notebooks/demo_image_xarray.rst
+   examples/notebooks/demo_visibility_xarray.rst
 
 In addition, there are other notebooks in examples/notebooks that are not built as part of this documentation.
 In some cases it may be necessary to add the following to the notebook to locate the RASCIL data

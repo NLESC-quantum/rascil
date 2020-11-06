@@ -390,7 +390,8 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         
         tbl.set_geometry(vis.configuration, antennas)
         
-        int_time = vis['integration_time'].values
+        int_time = vis['integration_time'].data
+        assert vis['integration_time'].data.shape == vis['time'].data.shape
         # bv_vis = vis['vis']
         # bv_uvw = vis['uvw']
         #

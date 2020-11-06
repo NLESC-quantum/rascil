@@ -77,7 +77,7 @@ def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdis
         if y == 'amp':
             yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis.values[..., 0, 0]).flat
         else:
-            yvalue = numpy.angle(vis.blockvisibility_acc.flagged_visvalues[..., 0, 0]).flat
+            yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis.values[..., 0, 0]).flat
         xvalue = vis.blockvisibility_acc.uvdist.values.flat
         plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[ivis], markersize=0.2)
 

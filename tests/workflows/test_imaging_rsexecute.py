@@ -1,8 +1,8 @@
 """ Unit tests for pipelines expressed via rsexecute
 """
 
-import os
 import logging
+import os
 import sys
 import unittest
 
@@ -10,7 +10,6 @@ import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.griddata import apply_bounding_box_convolutionfunction
 from rascil.processing_components.griddata.kernels import create_awterm_convolutionfunction
@@ -138,7 +137,6 @@ class TestImaging(unittest.TestCase):
         
         self.components = self.components_list[centre]
         
-        
         if makegcfcf:
             self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
                                                             oversampling=4,
@@ -146,10 +144,10 @@ class TestImaging(unittest.TestCase):
                                                             use_aaf=True,
                                                             polarisation_frame=self.vis_pol)]
             
-            self.gcfcf_clipped = [(self.gcfcf[0][0], apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
-                                                                                            fractional_level=1e-3))]
-            
-        
+            self.gcfcf_clipped = [(self.gcfcf[0][0],
+                                   apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
+                                                                          fractional_level=1e-3))]
+                
         else:
             self.gcfcf = None
             self.gcfcf_clipped = None
@@ -211,7 +209,7 @@ class TestImaging(unittest.TestCase):
     def test_predict_2d(self):
         self.actualSetUp(zerow=True)
         self._predict_base(context='2d', fluxthreshold=3.0)
-        
+    
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_predict_ng(self):
         self.actualSetUp()
@@ -238,7 +236,7 @@ class TestImaging(unittest.TestCase):
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list,
                                                         weighting='uniform')
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
-        
+    
     def test_invert_2d_robust(self):
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list,
@@ -249,7 +247,6 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list)
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
-        
     
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_invert_ng(self):

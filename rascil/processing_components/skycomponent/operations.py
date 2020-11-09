@@ -304,7 +304,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         # Add component
         comps.append(Skycomponent(
             direction=SkyCoord(ra=ra, dec=dec),
-            frequency=im.image_acc.frequency,
+            frequency=im.frequency,
             name="Segment %d" % segment,
             flux=point_flux,
             shape='Point',

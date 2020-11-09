@@ -127,7 +127,7 @@ def create_propagators(config, interferer, frequency, attenuation=1e-9):
     nants = len(config['names'].data)
     interferer_xyz = [interferer.geocentric[0].value, interferer.geocentric[1].value, interferer.geocentric[2].value]
     propagators = numpy.zeros([nants, nchannels], dtype='complex')
-    for iant, ant_xyz in enumerate(config.xyz.values):
+    for iant, ant_xyz in enumerate(config.xyz.data):
         vec = ant_xyz - interferer_xyz
         # This ignores the Earth!
         r = numpy.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)

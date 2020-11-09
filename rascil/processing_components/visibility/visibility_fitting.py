@@ -33,12 +33,12 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         S = params[0]
         l = params[1]
         m = params[2]
-        u = vis.blockvisibility_acc.u_lambda.values[..., numpy.newaxis]
-        v = vis.blockvisibility_acc.v_lambda.values[..., numpy.newaxis]
-        vobs = vis.blockvisibility_acc.flagged_vis.values
+        u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
+        v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
+        vobs = vis.blockvisibility_acc.flagged_vis.data
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
-        J = numpy.sum(vis.blockvisibility_acc.flagged_weight.values * (vres * numpy.conjugate(vres)).real)
+        J = numpy.sum(vis.blockvisibility_acc.flagged_weight.data * (vres * numpy.conjugate(vres)).real)
         return J
     
     def Jboth(params):
@@ -46,13 +46,13 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         S = params[0]
         l = params[1]
         m = params[2]
-        u = vis.blockvisibility_acc.u_lambda.values[..., numpy.newaxis]
-        v = vis.blockvisibility_acc.v_lambda.values[..., numpy.newaxis]
-        vobs = vis.blockvisibility_acc.flagged_vis.values
+        u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
+        v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
+        vobs = vis.blockvisibility_acc.flagged_vis.data
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
-        Vrp = vres * numpy.conjugate(p) * vis.blockvisibility_acc.flagged_weight.values
-        J = numpy.sum(vis.blockvisibility_acc.flagged_weight.values * (vres * numpy.conjugate(vres)).real)
+        Vrp = vres * numpy.conjugate(p) * vis.blockvisibility_acc.flagged_weight.data
+        J = numpy.sum(vis.blockvisibility_acc.flagged_weight.data * (vres * numpy.conjugate(vres)).real)
         gradJ = numpy.array([- 2.0 * numpy.sum(Vrp.real),
                              + 4.0 * numpy.pi * S * numpy.sum(u * Vrp.imag),
                              + 4.0 * numpy.pi * S * numpy.sum(v * Vrp.imag)])
@@ -63,11 +63,11 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         l = params[1]
         m = params[2]
         
-        u = vis.blockvisibility_acc.u_lambda.values[..., numpy.newaxis]
-        v = vis.blockvisibility_acc.v_lambda.values[..., numpy.newaxis]
-        wt = vis.blockvisibility_acc.flagged_weight.values
+        u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
+        v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
+        wt = vis.blockvisibility_acc.flagged_weight.data
         
-        vobs = vis.blockvisibility_acc.flagged_vis.values
+        vobs = vis.blockvisibility_acc.flagged_vis.data
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
         Vrp = vres * numpy.conjugate(p)

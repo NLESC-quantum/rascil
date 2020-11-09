@@ -59,7 +59,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
             flux = convert_pol_frame(flux, comp.polarisation_frame, vis.polarisation_frame)
 
         if len(comp.frequency) == len(vis.frequency) and \
-                numpy.allclose(comp.frequency,vis.frequency.values, rtol=1e-15):
+                numpy.allclose(comp.frequency,vis.frequency.data, rtol=1e-15):
             vflux = flux
         else:
             nchan, npol = flux.shape
@@ -68,7 +68,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
             if nchan > 1:
                 for pol in range(flux.shape[1]):
                     fint = interpolate.interp1d(comp.frequency, comp.flux[:, pol], kind="cubic")
-                    vflux[:, pol] = fint(vis.frequency.values)
+                    vflux[:, pol] = fint(vis.frequency.data)
             else:
                 # Just take the value since we cannot interpolate. Might want to put some
                 # test here

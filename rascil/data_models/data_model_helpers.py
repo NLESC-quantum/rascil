@@ -210,7 +210,7 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     ##assert isinstance(vis, BlockVisibility)
     
     f.attrs['RASCIL_data_model'] = 'BlockVisibility'
-    f.attrs['nants'] = numpy.max([b[1] for b in vis.baselines.values]) + 1
+    f.attrs['nants'] = numpy.max([b[1] for b in vis.baselines.data]) + 1
     f.attrs['nvis'] = vis.blockvisibility_acc.nvis
     f.attrs['npol'] = vis.blockvisibility_acc.npol
     f.attrs['phasecentre_coords'] = vis.phasecentre.to_string()
@@ -276,7 +276,7 @@ def convert_flagtable_to_hdf(ft: FlagTable, f):
     ##assert isinstance(ft, FlagTable)
     
     f.attrs['RASCIL_data_model'] = 'FlagTable'
-    f.attrs['nants'] = numpy.max([b[1] for b in ft.baselines.values]) + 1
+    f.attrs['nants'] = numpy.max([b[1] for b in ft.baselines.data]) + 1
     f.attrs['polarisation_frame'] = ft.polarisation_frame.type
     datavars = ["time", "frequency", "flags", "integration_time", "channel_bandwidth"]
     for var in datavars:

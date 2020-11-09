@@ -83,7 +83,7 @@ class measurementset_tests(unittest.TestCase):
         vt_after = create_blockvisibility_from_ms(msname)[0]
         
         # Temporarily flag autocorrelations until MS writer is fixed
-        for ibaseline, (a1, a2) in enumerate(vt_after.baselines.values):
+        for ibaseline, (a1, a2) in enumerate(vt_after.baselines.data):
             if a1 == a2:
                 vt_after.weight.data[:, ibaseline, ...] = 0.0
                 vt_after.imaging_weight.data[:, ibaseline, ...] = 0.0

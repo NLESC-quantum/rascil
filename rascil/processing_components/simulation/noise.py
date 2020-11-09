@@ -50,7 +50,7 @@ def addnoise_visibility(vis, t_sys=None, eta=None):
     if eta is None:
         eta = 0.78
     
-    sigma = calculate_noise_blockvisibility(vis.channel_bandwidth.values, vis['integration_time'].data,
+    sigma = calculate_noise_blockvisibility(vis.channel_bandwidth.data, vis['integration_time'].data,
                                             vis.configuration.diameter.data[0], t_sys=t_sys, eta=eta)
     log.debug('addnoise_visibility: RMS noise value (first integration, first channel): %g' % sigma[0, 0])
     ntimes, nbaseline, nchan, npol = vis.vis.shape

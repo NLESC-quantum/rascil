@@ -87,7 +87,7 @@ try:
             else:
                 arrayX, arrayY, arrayZ = 0, 0, 0
 
-            xyz = site_config.xyz.values[:]
+            xyz = site_config.xyz.data[:]
 
             # Create the stand mapper
             # No use if don't need to consider antenna name

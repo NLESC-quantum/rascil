@@ -298,14 +298,14 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
     phasecentre = get_parameter(kwargs, "phasecentre", vis.attrs["phasecentre"])
 
     # Spectral processing options
-    ufrequency = numpy.unique(vis["frequency"].values)
-    frequency = get_parameter(kwargs, "frequency", vis["frequency"].values)
+    ufrequency = numpy.unique(vis["frequency"].data)
+    frequency = get_parameter(kwargs, "frequency", vis["frequency"].data)
 
     vnchan = len(ufrequency)
 
     inchan = get_parameter(kwargs, "nchan", vnchan)
     reffrequency = frequency[0] * units.Hz
-    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", vis["channel_bandwidth"].values.flat[0]) * units.Hz
+    channel_bandwidth = get_parameter(kwargs, "channel_bandwidth", vis["channel_bandwidth"].data.flat[0]) * units.Hz
 
 
     if (inchan == vnchan) and vnchan > 1:
@@ -334,7 +334,7 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
     # Image sampling options
     npixel = get_parameter(kwargs, "npixel", 512)
     if isinstance(vis, BlockVisibility):
-        uvmax = numpy.max((numpy.abs(vis["uvw_lambda"].values[..., 0:1])))
+        uvmax = numpy.max((numpy.abs(vis["uvw_lambda"].data[..., 0:1])))
     else:
         uvmax = numpy.max((numpy.abs(vis["uvw"][..., 0:1])))
 
@@ -398,16 +398,16 @@ def advise_wide_field(vis: BlockVisibility, delA=0.02,
     :return: dict of advice
     """
 
-    max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis["frequency"].values)
+    max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis["frequency"].data)
     if verbose:
         log.info("advise_wide_field: (max_wavelength) Maximum wavelength %.3f (meters)" % (max_wavelength))
 
-    min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis["frequency"].values)
+    min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis["frequency"].data)
     if verbose:
         log.info("advise_wide_field: (min_wavelength) Minimum wavelength %.3f (meters)" % (min_wavelength))
 
-    maximum_baseline = numpy.max(numpy.abs(vis["uvw"].values)) / min_wavelength  # Wavelengths
-    maximum_w = numpy.max(numpy.abs(vis.blockvisibility_acc.w.values)) / min_wavelength  # Wavelengths
+    maximum_baseline = numpy.max(numpy.abs(vis["uvw"].data)) / min_wavelength  # Wavelengths
+    maximum_w = numpy.max(numpy.abs(vis.blockvisibility_acc.w.data)) / min_wavelength  # Wavelengths
 
     if verbose:
         log.info("advise_wide_field: (maximum_baseline) Maximum baseline %.1f (wavelengths)" % (maximum_baseline))
@@ -416,7 +416,7 @@ def advise_wide_field(vis: BlockVisibility, delA=0.02,
     if verbose:
         log.info("advise_wide_field: (maximum_w) Maximum w %.1f (wavelengths)" % (maximum_w))
 
-    diameter = numpy.min(vis.attrs["configuration"].diameter.values)
+    diameter = numpy.min(vis.attrs["configuration"].diameter.data)
     if verbose:
         log.info("advise_wide_field: (diameter) Station/dish diameter %.1f (meters)" % (diameter))
     assert diameter > 0.0, "Station/dish diameter must be greater than zero"
@@ -514,7 +514,7 @@ def advise_wide_field(vis: BlockVisibility, delA=0.02,
     if verbose:
         log.info("advice_wide_field: (time_sampling_primary_beam) Time sampling for primary beam = %.1f (s)" % (time_sampling_primary_beam))
 
-    max_freq = numpy.max(vis["frequency"].values)
+    max_freq = numpy.max(vis["frequency"].data)
     
     freq_sampling_image = max_freq * (synthesized_beam / image_fov)
     if verbose:

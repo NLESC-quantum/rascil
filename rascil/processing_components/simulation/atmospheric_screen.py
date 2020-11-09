@@ -67,7 +67,7 @@ def create_gaintable_from_screen(vis, sc, screen, height=None, vis_slices=None, 
     
     assert height is not None, "Screen height must be specified"
     
-    station_locations = vis.configuration.xyz.values
+    station_locations = vis.configuration.xyz.data
     
     scale = numpy.power(r0/5000.0, -5.0/3.0)
 
@@ -117,10 +117,10 @@ def create_gaintable_from_screen(vis, sc, screen, height=None, vis_slices=None, 
                     number_bad += 1
                     scr[ant, ...] = 0.0
             # axes of gaintable.gain are time, ant, nchan, nrec
-            gt.gain.values[row, :, :, :] = numpy.exp(1j * scr[...])[..., numpy.newaxis, numpy.newaxis]
-            if gt.gain.values.shape[-1] == 2:
-                gt.gain.values[..., 0, 1] *= 0.0
-                gt.gain.values[..., 1, 0] *= 0.0
+            gt.gain.data[row, :, :, :] = numpy.exp(1j * scr[...])[..., numpy.newaxis, numpy.newaxis]
+            if gt.gain.data.shape[-1] == 2:
+                gt.gain.data[..., 0, 1] *= 0.0
+                gt.gain.data[..., 1, 0] *= 0.0
             gt.attrs["phasecentre"] = comp.direction
 
         # if reference_component is not None:
@@ -156,7 +156,7 @@ def grid_gaintable_to_screen(vis, gaintables, screen, height=3e5, gaintable_slic
     """
     #assert isinstance(vis, BlockVisibility)
     
-    station_locations = vis.configuration.xyz.values
+    station_locations = vis.configuration.xyz.data
     
     nant = station_locations.shape[0]
     t2r = numpy.pi / 43200.0
@@ -259,7 +259,7 @@ def plot_gaintable_on_screen(vis, gaintables, height=3e5, gaintable_slices=None,
     
     #assert isinstance(vis, BlockVisibility)
     
-    station_locations = vis.configuration.xyz.values
+    station_locations = vis.configuration.xyz.data
     
     t2r = numpy.pi / 43200.0
     

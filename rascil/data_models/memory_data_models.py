@@ -442,12 +442,6 @@ class ImageAccessor():
         """
         return self.shape[1]
     
-    @property
-    def frequency(self):
-        """ Frequency values
-        """
-        w = self._obj.attrs["wcs"].sub(['spectral'])
-        return w.wcs_pix2world(range(self.nchan), 0)[0]
     
     @property
     def phasecentre(self):
@@ -714,12 +708,6 @@ class ConvolutionFunctionAccessor():
         """ Number of polarisations
         """
         return self._obj["pixels"].data.shape[1]
-    
-    @property
-    def ndepth(self):
-        """ Number of pixels deep i.e. z
-        """
-        return self.data.shape[4]
     
     @property
     def frequency(self):

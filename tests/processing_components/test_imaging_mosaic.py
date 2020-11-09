@@ -46,8 +46,8 @@ class TestImaging2D(unittest.TestCase):
         
         cellsize = 0.00001
         
-        mid_frequency = [0.5 * (vis_list[0].frequency.values[0] + vis_list[1].frequency.values[0])]
-        total_bandwidth = [vis_list[0].channel_bandwidth.values[0] + vis_list[1].channel_bandwidth.values[0]]
+        mid_frequency = [0.5 * (vis_list[0].frequency.data[0] + vis_list[1].frequency.data[0])]
+        total_bandwidth = [vis_list[0].channel_bandwidth.data[0] + vis_list[1].channel_bandwidth.data[0]]
         model = create_image_from_visibility(vis_list[0], cellsize=cellsize, npixel=512, nchan=1,
                                              frequency=mid_frequency, channel_bandwidth=total_bandwidth,
                                              imagecentre=vis_list[0].phasecentre,

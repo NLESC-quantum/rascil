@@ -45,7 +45,7 @@ class TestVPGridDataKernels(unittest.TestCase):
 
         # Tests for the VP convolution function are different because it does not peak
         # at the centre of the uv plane
-        peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf["pixels"].data)), cf.shape)
+        peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf["pixels"].data)), cf["pixels"].shape)
         assert numpy.abs(cf["pixels"].data[peak_location] - (0.005285675638650622+0.000494340010248879j)) < 1e-7, cf.data[
             peak_location]
         assert peak_location == (0, 3, 0, 11, 8, 11, 16), peak_location

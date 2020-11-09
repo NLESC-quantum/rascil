@@ -36,7 +36,7 @@ def flagging_blockvisibility(bvis, antenna=[], channel=[], polarization=[]):
         flagged_baselines = list(range(len(bvis.baselines)))
     else:
         flagged_baselines = []
-        for ibaseline, (a1, a2) in enumerate(bvis.baselines.values):
+        for ibaseline, (a1, a2) in enumerate(bvis.baselines.data):
             if a1 in antenna: flagged_baselines.append(ibaseline)
             if a2 in antenna: flagged_baselines.append(ibaseline)
         

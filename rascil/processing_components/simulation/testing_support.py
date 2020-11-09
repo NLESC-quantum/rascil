@@ -761,7 +761,7 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
             gt['gain'].data[..., 0, 1] = gt['gain'].data[..., 0, 0] * leak
             leak = numpy.random.normal(0, leakage, gt['gain'].data[..., 1, 1].shape) + 1j * \
                    numpy.random.normal(0, leakage, gt['gain'].data[..., 1, 1].shape)
-            gt['gain'].data[..., 1, 0] = gt['gain'].data[..., 1, 1].values * leak
+            gt['gain'].data[..., 1, 0] = gt['gain'].data[..., 1, 1].data * leak
         else:
             gt['gain'].data[..., 0, 1] = 0.0
             gt['gain'].data[..., 1, 0] = 0.0

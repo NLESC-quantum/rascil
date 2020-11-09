@@ -34,9 +34,9 @@ def xarray_to_fits_header(xa: xarray.DataArray):
         for icoord, coord in enumerate(xa.coords):
             fcoord = wcs.naxis - icoord - 1
             wcs.wcs.crpix[fcoord]  = 0.0
-            wcs.wcs.crval[fcoord]  = xa.coords[coord].values[0]
+            wcs.wcs.crval[fcoord]  = xa.coords[coord].data[0]
             if xa.shape[icoord] > 1:
-                wcs.wcs.cdelt[icoord] = xa.coords[coord].values[1] - xa.coords[coord].values[0]
+                wcs.wcs.cdelt[icoord] = xa.coords[coord].data[1] - xa.coords[coord].data[0]
             else:
                 wcs.wcs.cdelt[fcoord] = 0.0
             wcs.wcs.ctype[fcoord] = coord

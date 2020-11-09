@@ -273,11 +273,11 @@ def phaserotate_visibility(vis: BlockVisibility,
     newvis = copy_visibility(vis)
     
     phasor = calculate_blockvisibility_phasor(newphasecentre, newvis)
-    assert vis['vis'].values.shape == phasor.shape
+    assert vis['vis'].data.shape == phasor.shape
     if inverse:
-        newvis['vis'].values *= phasor
+        newvis['vis'].data *= phasor
     else:
-        newvis['vis'].values *= numpy.conj(phasor)
+        newvis['vis'].data *= numpy.conj(phasor)
     # To rotate UVW, rotate into the global XYZ coordinate system and back. We have the option of
     # staying on the tangent plane or not. If we stay on the tangent then the raster will
     # join smoothly at the edges. If we change the tangent then we will have to reproject to get
@@ -287,16 +287,16 @@ def phaserotate_visibility(vis: BlockVisibility,
         # The wavelength dependent values
         nrows, nbl, _ = vis.uvw.shape
         if inverse:
-            uvw_linear = vis.uvw.values.reshape([nrows * nbl, 3])
+            uvw_linear = vis.uvw.data.reshape([nrows * nbl, 3])
             xyz = uvw_to_xyz(uvw_linear, ha=-newvis.attrs["phasecentre"].ra.rad, dec=newvis.attrs["phasecentre"].dec.rad)
             uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
         else:
             # This is the original (non-inverse) code
-            uvw_linear = newvis.uvw.values.reshape([nrows * nbl, 3])
+            uvw_linear = newvis.uvw.data.reshape([nrows * nbl, 3])
             xyz = uvw_to_xyz(uvw_linear, ha=-newvis.attrs["phasecentre"].ra.rad, dec=newvis.attrs["phasecentre"].dec.rad)
             uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
         newvis.attrs["phasecentre"] = newphasecentre
-        newvis['uvw'].values[...] = uvw_linear.reshape([nrows, nbl, 3])
+        newvis['uvw'].data[...] = uvw_linear.reshape([nrows, nbl, 3])
         newvis = calculate_blockvisibility_uvw_lambda(newvis)
     return newvis
 
@@ -366,12 +366,12 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
                 "Unknown visibility polarisation %s" % (vis.polarisation_frame.type))
         
         tbl.set_stokes(polarization)
-        tbl.set_frequency(vis["frequency"].values, vis["channel_bandwidth"].values)
+        tbl.set_frequency(vis["frequency"].data, vis["channel_bandwidth"].data)
         n_ant = len(vis.attrs["configuration"].xyz)
         
         antennas = []
-        names = vis.configuration.names.values
-        xyz = vis.configuration.xyz.values
+        names = vis.configuration.names.data
+        xyz = vis.configuration.xyz.data
         for i in range(len(names)):
             antennas.append(Antenna(i, Stand(names[i], xyz[i, 0], xyz[i, 1], xyz[i, 2])))
         
@@ -400,19 +400,19 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         for ntime, time in enumerate(vis['time']):
             for ipol, pol in enumerate(polarization):
                 if int_time[ntime] is not None:
-                    tbl.add_data_set(time.values, int_time[ntime], bl_list,
-                                     vis['vis'].values[ntime, ..., ipol],
+                    tbl.add_data_set(time.data, int_time[ntime], bl_list,
+                                     vis['vis'].data[ntime, ..., ipol],
                                      pol=pol,
                                      source=source_name,
                                      phasecentre=vis.attrs["phasecentre"],
-                                     uvw=vis['uvw'].values[ntime, :, :])
+                                     uvw=vis['uvw'].data[ntime, :, :])
                 else:
-                    tbl.add_data_set(time.values, 0, bl_list,
-                                     vis['vis'].values[ntime, ..., ipol],
+                    tbl.add_data_set(time.data, 0, bl_list,
+                                     vis['vis'].data[ntime, ..., ipol],
                                      pol=pol,
                                      source=source_name,
                                      phasecentre=vis.attrs["phasecentre"],
-                                     uvw=vis['uvw'].values[ntime, :, :])
+                                     uvw=vis['uvw'].data[ntime, :, :])
     tbl.write()
 
 
@@ -980,7 +980,7 @@ def calculate_blockvisibility_phasor(direction, vis):
     
     phasor = numpy.ones([ntimes, nbaseline, nchan, npol], dtype='complex')
     phasor[...] = \
-        numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,s->tbf", vis.uvw_lambda.values, s))[..., numpy.newaxis]
+        numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,s->tbf", vis.uvw_lambda.data, s))[..., numpy.newaxis]
     return phasor
 
 
@@ -990,6 +990,6 @@ def calculate_blockvisibility_uvw_lambda(vis):
     :param vis:
     :return:
     """
-    k = (vis.frequency.values / const.c).value
-    vis.uvw_lambda.values = numpy.einsum("tbs,k->tbks", vis.uvw.values, k)
+    k = (vis.frequency.data / const.c).value
+    vis.uvw_lambda.data = numpy.einsum("tbs,k->tbks", vis.uvw.data, k)
     return vis

@@ -86,7 +86,7 @@ try:
         if mfs:
             for vpol in range(vnpol):
                 vist[vpol, : , :] = ng.dirty2ms(fuvw.astype(numpy.float64),
-                                               bvis.frequency.values.astype(numpy.float64),
+                                               bvis.frequency.data.astype(numpy.float64),
                                                model["pixels"].data[0, vpol, :, :].T.astype(numpy.float64),
                                                pixsize_x=pixsize,
                                                pixsize_y=pixsize,
@@ -203,7 +203,7 @@ try:
 
             if mfs:
                 dirty = ng.ms2dirty(fuvw.astype(numpy.float64),
-                                    bvis.frequency.values.astype(numpy.float64),
+                                    bvis.frequency.data.astype(numpy.float64),
                                     numpy.ascontiguousarray(mst[0, :, :].T),
                                     numpy.ascontiguousarray(wgtt[0, :, :].T),
                                     npixdirty, npixdirty, pixsize, pixsize, epsilon,

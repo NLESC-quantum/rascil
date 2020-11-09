@@ -51,9 +51,9 @@ def convolution_mapping_blockvisibility(vis, griddata, chan, cf, channel_toleran
     ##assert isinstance(cf, ConvolutionFunction)
     assert vis.polarisation_frame == griddata.polarisation_frame
 
-    u = vis.uvw_lambda.values[..., chan, 0].flat
-    v = vis.uvw_lambda.values[..., chan, 1].flat
-    w = vis.uvw_lambda.values[..., chan, 2].flat
+    u = vis.uvw_lambda.data[..., chan, 0].flat
+    v = vis.uvw_lambda.data[..., chan, 1].flat
+    w = vis.uvw_lambda.data[..., chan, 2].flat
 
     u = numpy.nan_to_num(u)
     v = numpy.nan_to_num(v)
@@ -140,13 +140,13 @@ def grid_blockvisibility_to_griddata(vis, griddata, cf):
     griddata["pixels"].data[...] = 0.0
 
     vis_to_im = numpy.round(
-        griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.values, 0)[0]).astype('int')
+        griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.data, 0)[0]).astype('int')
 
     nrows, nbaselines, nvchan, nvpol = vis["vis"].data.shape
     nichan, nipol, _, _, _ = griddata["pixels"].data.shape
 
-    fvist = numpy.nan_to_num(vis.blockvisibility_acc.flagged_vis.values.reshape([nrows * nbaselines, nvchan, nvpol]).T)
-    fwtt = numpy.nan_to_num(vis.blockvisibility_acc.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T)
+    fvist = numpy.nan_to_num(vis.blockvisibility_acc.flagged_vis.data.reshape([nrows * nbaselines, nvchan, nvpol]).T)
+    fwtt = numpy.nan_to_num(vis.blockvisibility_acc.flagged_imaging_weight.data.reshape([nrows * nbaselines, nvchan, nvpol]).T)
     # Do this in place to avoid creating a new copy. Doing the conjugation outside the loop
     # reduces run time immensely
     ccf = numpy.conjugate(cf["pixels"].data)
@@ -203,7 +203,7 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
 
     _, _, _, _, _, gv, gu = cf["pixels"].data.shape
     vis_to_im = numpy.round(
-        griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.values, 0)[0]).astype('int')
+        griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.data, 0)[0]).astype('int')
 
     griddata["pixels"].data[...] = 0.0
     real_gd = numpy.real(griddata["pixels"].data)
@@ -212,7 +212,7 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData, cf):
 
 
     # Transpose to get row varying fastest
-    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T
+    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.data.reshape([nrows * nbaselines, nvchan, nvpol]).T
 
     for vchan in range(nvchan):
         imchan = vis_to_im[vchan]
@@ -279,7 +279,7 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
         griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency, 0)[0]).astype('int')
     
     nrows, nbaselines,nvchan, nvpol = vis.vis.shape
-    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.values.reshape([nrows * nbaselines, nvchan, nvpol]).T
+    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.data.reshape([nrows * nbaselines, nvchan, nvpol]).T
 
     if weighting == "uniform":
         for pol in range(nvpol):
@@ -335,7 +335,7 @@ def degrid_blockvisibility_from_griddata(vis, griddata, cf, **kwargs):
 
     nchan, npol, nz, oversampling, _, support, _ = cf["pixels"].data.shape
     vis_to_im = numpy.round(
-        griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.values, 0)[0]).astype('int')
+        griddata.grid_wcs.sub([5]).wcs_world2pix(vis.frequency.data, 0)[0]).astype('int')
 
     nrows, nbaselines, nvchan, nvpol = vis.vis.shape
     fvist = numpy.zeros([nvpol, nvchan, nrows * nbaselines], dtype='complex')

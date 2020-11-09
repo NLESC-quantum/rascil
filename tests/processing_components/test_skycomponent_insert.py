@@ -76,7 +76,7 @@ class TestSkycomponentInsert(unittest.TestCase):
                                       polarisation_frame=self.image_pol)
     
         insert_skycomponent(self.model, self.sc)
-        npixel = self.model.shape[3]
+        npixel = self.model["pixels"].shape[3]
         # WCS is 1-relative
         rpix = numpy.round(self.model.wcs.wcs.crpix).astype('int') - 1
         assert rpix[0] == npixel // 2
@@ -99,7 +99,7 @@ class TestSkycomponentInsert(unittest.TestCase):
                                       polarisation_frame=self.image_pol)
     
         insert_skycomponent(self.model, self.sc)
-        npixel = self.model.shape[3]
+        npixel = self.model["pixels"].shape[3]
         # WCS is 1-relative
         rpix = numpy.round(self.model.wcs.wcs.crpix).astype('int') - 1
         assert rpix[0] == npixel // 2

@@ -87,10 +87,10 @@ def taper_visibility_gaussian(vis, beam=None):
     # See http://mathworld.wolfram.com/FourierTransformGaussian.html
     scale_factor = numpy.pi ** 2 * beam ** 2 / (4.0 * numpy.log(2.0))
 
-    for chan, freq in enumerate(vis.frequency.values):
+    for chan, freq in enumerate(vis.frequency.data):
         wave = constants.c.to('m s^-1').value / freq
-        uvdistsq = (vis.blockvisibility_acc.u.values ** 2 +
-                    vis.blockvisibility_acc.v.values ** 2) / wave**2
+        uvdistsq = (vis.blockvisibility_acc.u.data ** 2 +
+                    vis.blockvisibility_acc.v.data ** 2) / wave**2
         wt = numpy.exp(-scale_factor * uvdistsq)
         vis['imaging_weight'].data[..., chan, :] = vis.blockvisibility_acc.flagged_imaging_weight.data[..., chan, :] * \
                                                    wt[..., numpy.newaxis]
@@ -119,7 +119,7 @@ def taper_visibility_tukey(vis, tukey=0.1):
     #assert isinstance(vis, BlockVisibility), vis
 
     oshape = vis['imaging_weight'].data[..., 0, 0].shape
-    for chan, freq in enumerate(vis.frequency.values):
+    for chan, freq in enumerate(vis.frequency.data):
         wave = constants.c.to('m s^-1').value / freq
         uvdist = numpy.sqrt(vis.blockvisibility_acc.u.data ** 2 +
                             vis.blockvisibility_acc.v.data ** 2)

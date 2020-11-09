@@ -69,13 +69,13 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
                                     time + gt.interval[row] / 2)}
         pointvis_sel = pointvis.sel(time_slice)
         if pointvis.blockvisibility_acc.ntimes > 0:
-            x_b = numpy.sum((pointvis_sel.vis.values * pointvis_sel.weight.values)
-                          * (1 - pointvis_sel.flags.values), axis=0)
-            xwt_b = numpy.sum(pointvis_sel.weight.values * (1 - pointvis_sel.flags.values), axis=0)
+            x_b = numpy.sum((pointvis_sel.vis.data * pointvis_sel.weight.data)
+                          * (1 - pointvis_sel.flags.data), axis=0)
+            xwt_b = numpy.sum(pointvis_sel.weight.data * (1 - pointvis_sel.flags.data), axis=0)
             npol = pointvis.blockvisibility_acc.npol
             x = numpy.zeros([nants, nants, nchan, npol], dtype='complex')
             xwt = numpy.zeros([nants, nants, nchan, npol])
-            for ibaseline, (a1, a2) in enumerate(pointvis.baselines.values):
+            for ibaseline, (a1, a2) in enumerate(pointvis.baselines.data):
                 x[a1, a2, ...] = x_b[ibaseline, ...]
                 xwt[a1, a2, ...] = xwt_b[ibaseline, ...]
                 x[a2, a1, ...] = numpy.conjugate(x_b[ibaseline, ...])

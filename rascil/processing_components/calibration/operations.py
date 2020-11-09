@@ -59,7 +59,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     done = numpy.zeros(len(row_numbers), dtype='int')
 
     for row in range(ntimes):
-        vis_rows = numpy.abs(vis.time.values - gt.time.values[row]) < gt.interval.values[row] / 2.0
+        vis_rows = numpy.abs(vis.time.data - gt.time.data[row]) < gt.interval.data[row] / 2.0
         vis_rows = row_numbers[vis_rows]
         if len(vis_rows) > 0:
             
@@ -70,7 +70,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             
             # The shape of the mueller matrix is
             nant, nchan, nrec, _ = gain.shape
-            baselines = vis.baselines.values
+            baselines = vis.baselines.data
             
             original = vis.blockvisibility_acc.flagged_vis.data[vis_rows]
             applied = copy.copy(vis.blockvisibility_acc.flagged_vis.data[vis_rows])
@@ -222,7 +222,7 @@ def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
         utimes = numpy.unique(vis.time)
         gain_interval = vis.integration_time
     else:
-        utimes = vis.time.values[0] + timeslice * numpy.unique(numpy.round((vis.time.values - vis.time.values[0]) / timeslice))
+        utimes = vis.time.data[0] + timeslice * numpy.unique(numpy.round((vis.time.data - vis.time.data[0]) / timeslice))
         gain_interval = timeslice * numpy.ones_like(utimes)
     
     ntimes = len(utimes)
@@ -453,11 +453,11 @@ def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
 
     if dgt.nrec == gt.nrec:
         if dgt.nrec == 2:
-            gt.data["gain"].values = numpy.einsum("...ik,...ij->...kj", gt.gain.values, dgt.gain.values)
-            gt.data["weight"].values *= dgt.weight.values
+            gt.data["gain"].data = numpy.einsum("...ik,...ij->...kj", gt.gain.data, dgt.gain.data)
+            gt.data["weight"].data *= dgt.weight.data
         elif dgt.nrec == 1:
-            gt.data["gain"].values *= dgt.gain.values
-            gt.data["weight"].values *= dgt.weight.values
+            gt.data["gain"].data *= dgt.gain.data
+            gt.data["weight"].data *= dgt.weight.data
         else:
             raise ValueError(
                 "Gain tables have illegal structures {} {}".format(str(gt), str(dgt))

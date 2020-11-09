@@ -146,8 +146,8 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
             k = vis.frequency / phyconst.c_m_s
             u = u * k
             v = v * k
-            plt.plot(u.value, v.value, '.', color='b', markersize=0.4)
-            plt.plot(-u.value, -v.value, '.', color='b', markersize=0.4)
+            plt.plot(u, v, '.', color='b', markersize=0.4)
+            plt.plot(-u, -v, '.', color='b', markersize=0.4)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
     plt.title(title)
@@ -177,8 +177,8 @@ def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kw
             k = vis.frequency / phyconst.c_m_s
             u = u * k
             w = w * k
-            plt.plot(u.value, w.value, '.', color='b', markersize=0.2)
-            plt.plot(-u.value, -w.value, '.', color='b', markersize=0.2)
+            plt.plot(u, w, '.', color='b', markersize=0.2)
+            plt.plot(-u, -w, '.', color='b', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('W (wavelengths)')
     plt.title(title)
@@ -208,8 +208,8 @@ def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kw
             k = vis.frequency / phyconst.c_m_s
             v = v * k
             w = w * k
-            plt.plot(v.value, w.value, '.', color='b', markersize=0.2)
-            plt.plot(-v.value, -w.value, '.', color='b', markersize=0.2)
+            plt.plot(v, w, '.', color='b', markersize=0.2)
+            plt.plot(-v, -w, '.', color='b', markersize=0.2)
     plt.xlabel('V (wavelengths)')
     plt.ylabel('W (wavelengths)')
     plt.title(title)

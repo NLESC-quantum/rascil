@@ -48,3 +48,19 @@ For examples of the capabilities afforded by xarray see the jupyter notebooks be
 
    examples/notebooks/demo_image_xarray.rst
    examples/notebooks/demo_visibility_xarray.rst
+
+Here is a simple example of how the capabilities of xarray can be used:
+
+.. code:: ipython3
+
+    vis = create_blockvisibility_from_ms(ms)[0]
+
+    # Don't squeeze out the unit dimensions because we will want
+    # them for the concat
+    chan_vis = [v[1] for v in vis.groupby_bins(dim, bins=2)]
+
+    # Predict visibility from a model.
+    chan_vis = [predict_ng(vis, model) in chan_vis]
+
+    # Now concatenate
+    newvis = xarray.concat(chan_vis, dim=dim, data_vars="minimal")

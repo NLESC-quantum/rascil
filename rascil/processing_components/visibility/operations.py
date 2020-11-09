@@ -41,7 +41,7 @@ def concatenate_visibility(vis_list, dim='time'):
 
     assert len(vis_list) > 0
     
-    return xarray.concat(vis_list, dim=dim)
+    return xarray.concat(vis_list, dim=dim, data_vars="minimal")
 
 
 def concatenate_blockvisibility_frequency(bvis_list):

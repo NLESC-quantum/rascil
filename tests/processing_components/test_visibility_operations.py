@@ -43,7 +43,6 @@ class TestVisibilityOperations(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre,
                                           weight=1.0)
-        print(vis)
         assert vis.vis.shape == (10, 13861, 3, 4), vis.vis.shape
         
     def test_create_blockvisibility_polarisation(self):
@@ -51,7 +50,6 @@ class TestVisibilityOperations(unittest.TestCase):
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame("linear"))
-        print(self.vis)
         assert self.vis.vis.shape[0] == len(self.vis.time)
     
 

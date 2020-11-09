@@ -451,13 +451,13 @@ def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
     #assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
     #assert isinstance(dgt, GainTable), "gtdgt is not a GainTable: %r" % dgt
 
-    if dgt.nrec == gt.nrec:
-        if dgt.nrec == 2:
-            gt.data["gain"].data = numpy.einsum("...ik,...ij->...kj", gt.gain.data, dgt.gain.data)
-            gt.data["weight"].data *= dgt.weight.data
-        elif dgt.nrec == 1:
-            gt.data["gain"].data *= dgt.gain.data
-            gt.data["weight"].data *= dgt.weight.data
+    if dgt.gaintable_acc.nrec == gt.gaintable_acc.nrec:
+        if dgt.gaintable_acc.nrec == 2:
+            gt["gain"].data = numpy.einsum("...ik,...ij->...kj", gt["gain"].data, dgt["gain"].data)
+            gt["weight"].data *= dgt["weight"].data
+        elif dgt.gaintable_acc.nrec == 1:
+            gt["gain"].data *= dgt["gain"].data
+            gt["weight"].data *= dgt["weight"].data
         else:
             raise ValueError(
                 "Gain tables have illegal structures {} {}".format(str(gt), str(dgt))

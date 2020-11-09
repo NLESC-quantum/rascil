@@ -398,7 +398,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     assert (vp.polarisation_frame == PolarisationFrame("linear")) or \
            (vp.polarisation_frame == PolarisationFrame("circular"))
 
-    #assert vp.data.dtype == "complex128"
+    #assert vp["pixels"].data.dtype == "complex128"
     single = not isinstance(sc, collections.abc.Iterable)
 
     if single:

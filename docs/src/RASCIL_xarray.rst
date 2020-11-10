@@ -64,3 +64,48 @@ Here is a simple example of how the capabilities of xarray can be used:
 
     # Now concatenate
     newvis = xarray.concat(chan_vis, dim=dim, data_vars="minimal")
+
+Conversion from previous data classes
+*************************************
+
+The steps required are:
+
+ - For Image, GridData, and ConvolutionFunction, the name of the data variable is pixels so for example::
+
+    # The previous numpy format
+    im.data
+    # as an Xarray becomes
+    im["pixels"]
+    # as an numpy array or Dask array becomes
+    im["pixels"].data
+    # as an numpy array becomes
+    im["pixels"].values
+    # The properties now require using the accessor class. For example:
+    im.nchan
+    # becomes
+    im.image_acc.nchan
+    # or directly to the attributes of the xarray.Dataset
+    im.attrs["nchan"]
+
+
+ - For BlockVisibility, the various columns become data variables::
+
+    # The numpy format
+    bvis.data["vis"]
+    # becomes
+    bvis["vis"]
+    # as an numpy array or Dask array becomes
+    bvis["vis"].data
+    # as an numpy array becomes
+    bvis["vis"].values
+    # The properties now require using the accessor class. For example:
+    bvis.nchan
+    # becomes
+    bvis.blockvisibility_acc.nchan
+    # or directly to the attributes of the xarray.Dataset
+    bvis.attrs["nchan"]
+    # The convenience methods for handling flags also require the accessor:
+    bvis.flagged_vis
+    # becomes
+    bvis.blockvisibility_acc.flagged_vis
+

@@ -17,7 +17,7 @@ import numpy.linalg
 # from astropy.visualization import time_support
 from astropy.time import Time
 
-from rascil.data_models.memory_data_models import GainTable, BlockVisibility, QA, assert_vis_gt_compatible
+from rascil.data_models.memory_data_models import GainTable, BlockVisibility, QA
 from rascil.data_models.polarisation import ReceptorFrame
 log = logging.getLogger('rascil-logger')
 
@@ -42,8 +42,6 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     #assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
     
     ntimes, nants, nchan, nrec, _ = gt.gain.shape
-    
-    assert_vis_gt_compatible(vis, gt)
     
     if inverse:
         log.debug('apply_gaintable: Apply inverse gaintable')
@@ -253,7 +251,6 @@ def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
                    configuration=vis.configuration)
     
     #assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
-    assert_vis_gt_compatible(vis, gt)
     
     return gt
 

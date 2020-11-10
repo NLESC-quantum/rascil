@@ -40,12 +40,13 @@ def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, 
     :param times: sample times (s)
     :param power: DTV emitted power W
     :param freq_cen: central frequency of DTV
-    :parm bw: bandwidth of DTV
-    :param timevariable
-    :param frequency_variable
+    :param bw: bandwidth of DTV
+    :param timevariable:
+    :param frequency_variable:
     :return: Complex array [ntimes, nchan]
     
     """
+    
     # find frequency range for DTV
     DTVrange = numpy.where((frequency <= freq_cen + (bw / 2.)) & (frequency >= freq_cen - (bw / 2.)))
     # idx = (np.abs(frequency - freq_cen)).argmin()

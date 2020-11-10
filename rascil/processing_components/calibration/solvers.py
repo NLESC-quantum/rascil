@@ -18,7 +18,7 @@ import logging
 
 import numpy
 
-from rascil.data_models.memory_data_models import BlockVisibility, GainTable, assert_vis_gt_compatible
+from rascil.data_models.memory_data_models import BlockVisibility, GainTable
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
 from rascil.processing_components.visibility.operations import divide_visibility
 
@@ -141,8 +141,6 @@ def solve_gaintable(vis: BlockVisibility, modelvis: BlockVisibility = None, gt=N
             log.warning("Gaintable {0}, vis time mismatch {1}".format(gt.time, vis.time))
     
     #assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
-    
-    assert_vis_gt_compatible(vis, gt)
     
     return gt
 

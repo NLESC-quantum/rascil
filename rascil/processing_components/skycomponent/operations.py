@@ -26,7 +26,7 @@ from photutils import segmentation
 from scipy import interpolate
 from scipy.spatial.qhull import Voronoi
 
-from rascil.data_models.memory_data_models import Image, Skycomponent, assert_same_chan_pol
+from rascil.data_models.memory_data_models import Image, Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
 from rascil.processing_components.calibration.jones import apply_jones
 from rascil.processing_components.image.operations import create_image_from_array
@@ -353,8 +353,6 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
 
-        #assert_same_chan_pol(beam, comp)
-
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         if not numpy.isnan(pixloc).any():
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
@@ -428,7 +426,6 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     for icomp, comp in enumerate(sc):
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
-        #assert_same_chan_pol(vp, comp)
 
         # Convert to linear (xx, xy, yx, yy) or circular (rr, rl, lr, ll)
         nchan, npol = comp.flux.shape
@@ -532,7 +529,6 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
 
-        #assert_same_chan_pol(im, comp)
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         flux = numpy.zeros([nchan, npol])
 

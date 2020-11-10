@@ -13,9 +13,7 @@ __all__ = ['Configuration',
            'BlockVisibility',
            'FlagTable',
            'QA',
-           'ScienceDataModel',
-           'assert_same_chan_pol',
-           'assert_vis_gt_compatible'
+           'ScienceDataModel'
            ]
 
 import logging
@@ -39,8 +37,30 @@ log = logging.getLogger('rascil-logger')
 
 
 class Configuration(xarray.Dataset):
-    """ Describe a XConfiguration as locations in x,y,z, mount type, diameter, names, and
-        overall location
+    """ A Configuration describes an array configuration.
+    
+    Here is an example::
+    
+        <xarray.Configuration>
+        Dimensions:   (id: 115, spatial: 3)
+        Coordinates:
+          * id        (id) int64 0 1 2 3 4 5 6 7 8 ... 107 108 109 110 111 112 113 114
+          * spatial   (spatial) <U1 'X' 'Y' 'Z'
+        Data variables:
+            names     (id) <U6 'M000' 'M001' 'M002' ... 'SKA102' 'SKA103' 'SKA104'
+            xyz       (id, spatial) float64 -0.0 9e-05 1.053e+03 ... -810.3 1.053e+03
+            diameter  (id) float64 13.5 13.5 13.5 13.5 13.5 ... 15.0 15.0 15.0 15.0 15.0
+            mount     (id) <U4 'azel' 'azel' 'azel' 'azel' ... 'azel' 'azel' 'azel'
+            vp_type   (id) <U7 'MEERKAT' 'MEERKAT' 'MEERKAT' ... 'MID' 'MID' 'MID'
+            offset    (id, spatial) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+            stations  (id) <U3 '0' '1' '2' '3' '4' '5' ... '110' '111' '112' '113' '114'
+        Attributes:
+            RASCIL_data_model:  Configuration
+            name:               MID
+            location:           (5109237.71471275, 2006795.66194638, -3239109.1838011...
+            receptor_frame:     <rascil.data_models.polarisation.ReceptorFrame object...
+            frame:
+
     """
 
     __slots__ = ()
@@ -103,6 +123,9 @@ class Configuration(xarray.Dataset):
     
 @xarray.register_dataset_accessor("configuration_acc")
 class ConfigurationAccessor():
+    """ Convenience methods to access the fields of the Configuration
+    
+    """
     
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
@@ -114,9 +137,8 @@ class ConfigurationAccessor():
         return size / 1024.0 / 1024.0 / 1024.0
     
     def datasizes(self):
-        """
-        Return sizes of data variables
-        :return:
+        """ Return string describing sizes of data variables
+        :return: string
         """
         s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
         for var in self._obj.data.data_vars:
@@ -130,9 +152,32 @@ class ConfigurationAccessor():
 
 
 class GainTable(xarray.Dataset):
-    """ Gain table with data_models: time, antenna, gain[:, chan, rec, rec], weight columns
+    """ Gain table with: time, antenna,  weight columns
 
     The weight is usually that output from gain solvers.
+    
+    Here is an example::
+    
+        <xarray.GainTable>
+        Dimensions:    (antenna: 115, frequency: 3, receptor1: 2, receptor2: 2, time: 3)
+        Coordinates:
+          * time       (time) float64 5.085e+09 5.085e+09 5.085e+09
+          * antenna    (antenna) int64 0 1 2 3 4 5 6 7 ... 108 109 110 111 112 113 114
+          * frequency  (frequency) float64 1e+08 1.05e+08 1.1e+08
+          * receptor1  (receptor1) <U1 'X' 'Y'
+          * receptor2  (receptor2) <U1 'X' 'Y'
+        Data variables:
+            gain       (time, antenna, frequency, receptor1, receptor2) complex128 (0...
+            weight     (time, antenna, frequency, receptor1, receptor2) float64 1.0 ....
+            residual   (time, frequency, receptor1, receptor2) float64 0.0 0.0 ... 0.0
+            interval   (time) float32 99.72697 99.72697 99.72697
+            datetime   (time) datetime64[ns] 2020-01-01T03:54:07.843184299 ... 2020-0...
+        Attributes:
+            RASCIL_data_model:  GainTable
+            receptor_frame:     <rascil.data_models.polarisation.ReceptorFrame object...
+            phasecentre:        <SkyCoord (ICRS): (ra, dec) in deg    (180., -35.)>
+            configuration:      <xarray.Configuration> Dimensions:   (id: 115, spati...
+
     """
 
     __slots__ = ()
@@ -193,18 +238,18 @@ class GainTableAccessor():
     def size(self):
         """ Return size in GB
         """
-        return self._obj.nbytes / 1024.0 / 1024.0 / 1024.0
-    
+        size = self._obj.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+
     def datasizes(self):
-        """
-        Return sizes of data variables
-        :return:
+        """ Return string describing sizes of data variables
+        :return: string
         """
         s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data_vars:
+        for var in self._obj.data.data_vars:
             s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
         return s
-        
+
     @property
     def ntimes(self):
         """ Number of times (i.e. rows) in this table
@@ -241,7 +286,30 @@ class GainTableAccessor():
 class PointingTable(xarray.Dataset):
     """ Pointing table with data_models: time, antenna, offset[:, chan, rec, 2], weight columns
 
-    The weight is usually that output from gain solvers.
+    Here is an example::
+    
+        <xarray.PointingTable>
+        Dimensions:    (angle: 2, antenna: 115, frequency: 3, receptor: 2, time: 3)
+        Coordinates:
+          * time       (time) float64 5.085e+09 5.085e+09 5.085e+09
+          * antenna    (antenna) int64 0 1 2 3 4 5 6 7 ... 108 109 110 111 112 113 114
+          * frequency  (frequency) float64 1e+08 1.05e+08 1.1e+08
+          * receptor   (receptor) <U1 'X' 'Y'
+          * angle      (angle) <U2 'az' 'el'
+        Data variables:
+            pointing   (time, antenna, frequency, receptor, angle) float64 -0.0002627...
+            nominal    (time, antenna, frequency, receptor, angle) float64 -3.142 ......
+            weight     (time, antenna, frequency, receptor, angle) float64 1.0 ... 1.0
+            residual   (time, frequency, receptor, angle) float64 0.0 0.0 ... 0.0 0.0
+            interval   (time) float64 99.73 99.73 99.73
+            datetime   (time) datetime64[ns] 2020-01-01T03:54:07.843184299 ... 2020-0...
+        Attributes:
+            RASCIL_data_model:  PointingTable
+            receptor_frame:     <rascil.data_models.polarisation.ReceptorFrame object...
+            pointing_frame:     azel
+            pointingcentre:     <SkyCoord (ICRS): (ra, dec) in deg    (180., -35.)>
+            configuration:      <xarray.Configuration> Dimensions:   (id: 115, spati...
+
     """
 
     __slots__ = ()
@@ -288,7 +356,6 @@ class PointingTable(xarray.Dataset):
 
         attrs = dict()
         attrs["RASCIL_data_model"] = "PointingTable"
-        attrs["frequency"] = frequency
         attrs["receptor_frame"] = receptor_frame
         attrs["pointing_frame"] = pointing_frame
         attrs["pointingcentre"] = pointingcentre
@@ -305,18 +372,18 @@ class PointingTableAccessor():
     def size(self):
         """ Return size in GB
         """
-        return self.data.nbytes / 1024.0 / 1024.0 / 1024.0
-    
+        size = self._obj.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+
     def datasizes(self):
+        """ Return string describing sizes of data variables
+        :return: string
         """
-        Return sizes of data variables
-        :return:
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
-        for var in self.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self[var].nbytes / 1024 / 1024 / 1024)
+        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
+        for var in self._obj.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
         return s
-    
+
     @property
     def nants(self):
         """ Number of dishes/stations
@@ -327,7 +394,7 @@ class PointingTableAccessor():
     def nchan(self):
         """ Number of channels
         """
-        return self._obj['pointing'].shape[2]
+        return len(self._obj['pointing'].frequency)
     
     @property
     def nrec(self):
@@ -337,10 +404,14 @@ class PointingTableAccessor():
 
 
 class Image(xarray.Dataset):
-    """Image class with Image data (as an xarray.DataArray) and the AstroPy `implementation of
+    """Image class with pixels as an xarray.DataArray and the AstroPy`implementation of
     a World Coodinate System <http://docs.astropy.org/en/stable/wcs>`_
+    
+    The actual image values are kept in a data_var of the Dataset called "pixels"
 
-    Many operations can be done conveniently using numpy processing_components on Image.data.
+    Many operations can be done conveniently using numpy processing_components on Image or on
+    Image["pixels"].data. If the "pixels" data variable is chunk then Dask is automatically
+    used whereever possible to distribute processing.
 
     Most of the imaging processing_components require an image in canonical format:
     - 4 axes: RA, DEC, POL, FREQ
@@ -352,6 +423,24 @@ class Image(xarray.Dataset):
     .. warning::
         The polarisation_frame is kept in two places, the WCS and the polarisation_frame
         variable. The latter should be considered definitive.
+        
+    Here is an example::
+    
+        <xarray.Image>
+        Dimensions:       (frequency: 1, l: 256, m: 256, polarisation: 1)
+        Coordinates:
+          * frequency     (frequency) float64 1e+08
+          * polarisation  (polarisation) <U1 'I'
+          * m             (m) float64 34.96 34.96 34.97 34.97 ... 35.03 35.04 35.04
+          * l             (l) float64 -0.03556 -0.03528 -0.035 ... 0.035 0.03528 0.03556
+        Data variables:
+            pixels        (frequency, polarisation, m, l) float64 0.0 0.0 ... 0.0 0.0
+        Attributes:
+            phasecentre:         <SkyCoord (ICRS): (ra, dec) in deg     (0., 35.)>
+            wcs:                 WCS Keywords Number of WCS axes: 4 CTYPE : 'RA--...
+            polarisation_frame:  stokesI
+            RASCIL_data_model:   Image
+
 
     """
 
@@ -416,6 +505,21 @@ class ImageAccessor():
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
 
+    def size(self):
+        """ Return size in GB
+        """
+        size = self._obj.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+
+    def datasizes(self):
+        """ Return string describing sizes of data variables
+        :return: string
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
+        for var in self._obj.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
+        return s
+
     @property
     def shape(self):
         """ Shape of array
@@ -423,18 +527,6 @@ class ImageAccessor():
         :return:
         """
         return self._obj["pixels"].data.shape
-        
-    def size(self):
-        """ Return size in GB
-        """
-        size = self.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-    
-    @property
-    def nchan(self):
-        """ Number of channels
-        """
-        return self.shape[0]
     
     @property
     def npol(self):
@@ -449,7 +541,6 @@ class ImageAccessor():
         """
         return SkyCoord(self._obj.attrs["wcs"].wcs.crval[0] * u.deg, self._obj.attrs["wcs"].wcs.crval[1] * u.deg)
     
-    @property
     def ra_dec_mesh(self):
         """ RA, Dec mesh
 
@@ -472,6 +563,25 @@ class GridData(xarray.Dataset):
     .. warning::
         The polarisation_frame is kept in two places, the WCS and the polarisation_frame
         variable. The latter should be considered definitive.
+        
+    Here is an example::
+    
+        <xarray.GridData>
+        Dimensions:       (frequency: 1, polarisation: 1, u: 256, v: 256, w: 1)
+        Coordinates:
+          * frequency     (frequency) float64 1e+08
+          * polarisation  (polarisation) <U1 'I'
+          * w             (w) float64 0.0
+          * v             (v) float64 -2.64e+07 -2.619e+07 ... 2.619e+07 2.64e+07
+          * u             (u) float64 -2.64e+07 -2.619e+07 ... 2.619e+07 2.64e+07
+        Data variables:
+            pixels        (frequency, polarisation, w, v, u) complex128 0j 0j ... 0j 0j
+        Attributes:
+            RASCIL_data_model:   GridData
+            grid_wcs:            WCS Keywords nNumber of WCS axes: 5 CTYPE : 'UU' ...
+            projection_wcs:      WCS Keywords Number of WCS axes: 4 CTYPE : 'RA--...
+            polarisation_frame:  stokesI
+        
 
     """
 
@@ -544,14 +654,21 @@ class GridDataAccessor():
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
 
-
-    
     def size(self):
         """ Return size in GB
         """
-        size = self.data.nbytes
+        size = self._obj.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-    
+
+    def datasizes(self):
+        """ Return string describing sizes of data variables
+        :return: string
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
+        for var in self._obj.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
+        return s
+
     @property
     def nchan(self):
         """ Number of channels
@@ -583,7 +700,6 @@ class GridDataAccessor():
         """
         return SkyCoord(self.grid_wcs.wcs.crval[0] * u.deg, self.grid_wcs.wcs.crval[1] * u.deg)
     
-    @property
     def ra_dec_mesh(self):
         """ RA, Dec mesh
 
@@ -604,6 +720,27 @@ class ConvolutionFunction(xarray.Dataset):
     The axes UU,VV have the same physical stride as the image, The axes DUU, DVV are subsampled.
 
     Convolution function holds the original sky plane projection in the projection_wcs.
+    
+    Here is an example::
+    
+        <xarray.ConvolutionFunction>
+        Dimensions:       (du: 8, dv: 8, frequency: 1, polarisation: 1, u: 16, v: 16, w: 1)
+        Coordinates:
+          * frequency     (frequency) float64 1e+08
+          * polarisation  (polarisation) <U1 'I'
+          * w             (w) float64 0.0
+          * dv            (dv) float64 -1.031e+05 -7.735e+04 ... 5.157e+04 7.735e+04
+          * du            (du) float64 -1.031e+05 -7.735e+04 ... 5.157e+04 7.735e+04
+          * v             (v) float64 -1.65e+06 -1.444e+06 ... 1.238e+06 1.444e+06
+          * u             (u) float64 -1.65e+06 -1.444e+06 ... 1.238e+06 1.444e+06
+        Data variables:
+            pixels        (frequency, polarisation, w, dv, du, v, u) complex128 0j .....
+        Attributes:
+            RASCIL_data_model:   ConvolutionFunction
+            grid_wcs:            WCS Keywords Number of WCS axes: 7 CTYPE : 'UU' ...
+            projection_wcs:      WCS Keywords Number of WCS axes: 4 CTYPE : 'RA--...
+            polarisation_frame:  stokesI
+
 
     """
 
@@ -679,24 +816,21 @@ class ConvolutionFunctionAccessor():
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
 
-   
     def size(self):
         """ Return size in GB
         """
-        size = 0
-        size += self.data.nbytes
+        size = self._obj.nbytes
         return size / 1024.0 / 1024.0 / 1024.0
-    
+
     def datasizes(self):
+        """ Return string describing sizes of data variables
+        :return: string
         """
-        Return sizes of data variables
-        :return:
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self.data.nbytes / 1024 / 1024 / 1024)
-        for var in self.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self[var].nbytes / 1024 / 1024 / 1024)
+        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
+        for var in self._obj.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
         return s
-    
+
     @property
     def nchan(self):
         """ Number of channels
@@ -860,20 +994,48 @@ class SkyModel:
 
 
 class BlockVisibility(xarray.Dataset):
-    """ BlockVisibility table class
-
-    BlockVisibility with uvw, time, integration_time, frequency, channel_bandwidth, pol,
-    a1, a2, vis, weight Columns in an xarray DataSet which is available as .data
+    """ BlockVisibility xarray Dataset class
 
     BlockVisibility is defined to hold an observation with one direction.
 
     The phasecentre is the direct of delay tracking i.e. n=0. If uvw are rotated then this
-    should be updated with the new delay tracking centre. This is important for wstack and wproject
-    algorithms.
+    should be updated with the new delay tracking centre.
 
-    Polarisation frame is the same for the entire data set and can be stokesI, circular, circularpnp, linear, linearnp
+    Polarisation frame is the same for the entire data set and can be stokesI, circular, circularnp, linear, linearnp
 
-    The configuration is stored as an attribute..
+    The configuration is stored as an attribute.
+    
+    Here is an example::
+    
+        <xarray.BlockVisibility>
+        Dimensions:            (baselines: 6670, frequency: 3, polarisation: 4, time: 3, uvw_index: 3)
+        Coordinates:
+          * time               (time) float64 5.085e+09 5.085e+09 5.085e+09
+          * baselines          (baselines) MultiIndex
+          - antenna1           (baselines) int64 0 0 0 0 0 0 ... 112 112 112 113 113 114
+          - antenna2           (baselines) int64 0 1 2 3 4 5 ... 112 113 114 113 114 114
+          * frequency          (frequency) float64 1e+08 1.05e+08 1.1e+08
+          * polarisation       (polarisation) <U2 'XX' 'XY' 'YX' 'YY'
+          * uvw_index          (uvw_index) <U1 'u' 'v' 'w'
+        Data variables:
+            integration_time   (time) float32 99.72697 99.72697 99.72697
+            datetime           (time) datetime64[ns] 2020-01-01T03:54:07.843184299 .....
+            vis                (time, baselines, frequency, polarisation) complex128 ...
+            weight             (time, baselines, frequency, polarisation) float32 0.0...
+            imaging_weight     (time, baselines, frequency, polarisation) float32 0.0...
+            flags              (time, baselines, frequency, polarisation) float32 0.0...
+            uvw                (time, baselines, uvw_index) float64 0.0 0.0 ... 0.0 0.0
+            uvw_lambda         (time, baselines, frequency, uvw_index) float64 0.0 .....
+            uvdist_lambda      (time, baselines, frequency) float64 0.0 0.0 ... 0.0 0.0
+            channel_bandwidth  (frequency) float64 1e+07 1e+07 1e+07
+        Attributes:
+            phasecentre:         <SkyCoord (ICRS): (ra, dec) in deg    (180., -35.)>
+            configuration:       <xarray.Configuration>Dimensions:   (id: 115, spat...
+            polarisation_frame:  linear
+            source:              unknown
+            meta:                None
+        
+
     """
 
     __slots__ = ()
@@ -969,22 +1131,21 @@ class BlockVisibilityAccessor():
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
 
-    
     def size(self):
         """ Return size in GB
         """
-        return self._obj.nbytes / 1024.0 / 1024.0 / 1024.0
-    
+        size = self._obj.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+
     def datasizes(self):
-        """
-        Return sizes of data variables
-        :return:
+        """ Return string describing sizes of data variables
+        :return: string
         """
         s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data_vars:
+        for var in self._obj.data.data_vars:
             s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
         return s
-    
+
     @property
     def rows(self):
         """ Rows
@@ -1145,22 +1306,6 @@ class FlagTable(xarray.Dataset):
         
         super().__init__(datavars, coords=coords, attrs=attrs)
     
-    # def __str__(self):
-    #     """Default printer for FlagTable
-    #
-    #     """
-    #     s = "FlagTable:\n"
-    #     s += "{}\n".format(str(self.data))
-    #     s += "\tNumber of integrations: %s\n" % len(self.time)
-    #     s += "\tFlags shape: %s\n" % str(self.flags.shape)
-    #     s += "\tNumber of channels: %d\n" % len(self.frequency)
-    #     s += "\tFrequency: %s\n" % self.frequency
-    #     s += "\tChannel bandwidth: %s\n" % self.channel_bandwidth
-    #     s += "\tNumber of polarisations: %s\n" % self.npol
-    #     s += "\tPolarisation Frame: %s\n" % self.polarisation_frame.type
-    #     s += "\tConfiguration: %s\n" % self.configuration.name
-    #
-    #     return s
     
 @xarray.register_dataset_accessor("flagtable_acc")
 class FlagTableAccessor():
@@ -1171,18 +1316,18 @@ class FlagTableAccessor():
     def size(self):
         """ Return size in GB
         """
-        return self._obj.nbytes / 1024.0 / 1024.0 / 1024.0
-    
+        size = self._obj.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+
     def datasizes(self):
-        """
-        Return sizes of data variables
-        :return:
+        """ Return string describing sizes of data variables
+        :return: string
         """
         s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data_vars():
+        for var in self._obj.data.data_vars:
             s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
         return s
-    
+
     @property
     def nchan(self):
         """ Number of channels
@@ -1251,30 +1396,3 @@ class ScienceDataModel:
         """
         return ""
 
-
-def assert_same_chan_pol(o1, o2):
-    """
-    Assert that two entities indexed over channels and polarisations
-    have the same number of them.
-
-    :param o1: Object 1 e.g. BlockVisibility
-    :param o2: Object 1 e.g. BlockVisibility
-    :return: Bool
-    """
-    assert o1.image_acc.npol == o2.image_acc.npol, \
-        "%s and %s have different number of polarisations: %d != %d" % \
-        (type(o1).__name__, type(o2).__name__, o1.npol, o2.npol)
-    if isinstance(o1, BlockVisibility) and isinstance(o2, BlockVisibility):
-        assert o1.blockvisibility_acc.nchan == o2.blockvisibility_acc.nchan, \
-            "%s and %s have different number of channels: %d != %d" % \
-            (type(o1).__name__, type(o2).__name__, o1.nchan, o2.nchan)
-
-
-def assert_vis_gt_compatible(vis: BlockVisibility, gt: GainTable):
-    """ Check if visibility and gaintable are compatible
-
-    :param vis:
-    :param gt:
-    :return: Bool
-    """
-    pass

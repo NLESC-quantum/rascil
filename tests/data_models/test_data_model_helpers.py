@@ -49,8 +49,9 @@ class TestDataModelHelpers(unittest.TestCase):
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
         self.compabsdirection = SkyCoord(ra=+181.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
         self.comp = Skycomponent(direction=self.compabsdirection, frequency=self.frequency, flux=self.flux)
+        
+        self.verbose = False
     
-    #@unittest.skip("HDF4 export of blockvisibility not supported")
     def test_readwriteblockvisibility(self):
         self.vis = create_blockvisibility(self.mid, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
@@ -58,6 +59,9 @@ class TestDataModelHelpers(unittest.TestCase):
                                           polarisation_frame=PolarisationFrame("linear"),
                                           weight=1.0)
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
+        if self.verbose:
+            print(self.vis)
+            print(self.vis.configuration)
         export_blockvisibility_to_hdf5(self.vis, '%s/test_data_model_helpers_blockvisibility.hdf' % self.dir)
         newvis = import_blockvisibility_from_hdf5('%s/test_data_model_helpers_blockvisibility.hdf' % self.dir)
         newvis.equals(self.vis)
@@ -70,6 +74,8 @@ class TestDataModelHelpers(unittest.TestCase):
                                           weight=1.0)
         gt = create_gaintable_from_blockvisibility(self.vis, timeslice='auto')
         gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
+        if self.verbose:
+            print(gt)
         export_gaintable_to_hdf5(gt, '%s/test_data_model_helpers_gaintable.hdf' % self.dir)
         newgt = import_gaintable_from_hdf5('%s/test_data_model_helpers_gaintable.hdf' % self.dir)
         newgt.equals(gt)
@@ -82,12 +88,16 @@ class TestDataModelHelpers(unittest.TestCase):
                                           weight=1.0)
         gt = create_pointingtable_from_blockvisibility(self.vis, timeslice='auto')
         gt = simulate_pointingtable(gt, pointing_error=0.001)
+        if self.verbose:
+            print(gt)
         export_pointingtable_to_hdf5(gt, '%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
         newgt = import_pointingtable_from_hdf5('%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
         newgt.equals(gt)
 
     def test_readwriteimage(self):
         im = create_test_image()
+        if self.verbose:
+            print(im)
         export_image_to_hdf5(im, '%s/test_data_model_helpers_image.hdf' % self.dir)
         newim = import_image_from_hdf5('%s/test_data_model_helpers_image.hdf' % self.dir)
         newim.equals(im)
@@ -117,6 +127,8 @@ class TestDataModelHelpers(unittest.TestCase):
     def test_readwritegriddata(self):
         im = create_test_image()
         gd = create_griddata_from_image(im)
+        if self.verbose:
+            print(gd)
         export_griddata_to_hdf5(gd, '%s/test_data_model_helpers_griddata.hdf' % self.dir)
         newgd = import_griddata_from_hdf5('%s/test_data_model_helpers_griddata.hdf' % self.dir)
         assert newgd.equals(gd)
@@ -124,6 +136,8 @@ class TestDataModelHelpers(unittest.TestCase):
     def test_readwriteconvolutionfunction(self):
         im = create_test_image()
         cf = create_convolutionfunction_from_image(im)
+        if self.verbose:
+            print(cf)
         export_convolutionfunction_to_hdf5(cf, '%s/test_data_model_helpers_convolutionfunction.hdf' % self.dir)
         newcf = import_convolutionfunction_from_hdf5('%s/test_data_model_helpers_convolutionfunction.hdf' % self.dir)
         assert newcf.equals(cf)

@@ -28,7 +28,7 @@ from typing import List, Union
 import numpy
 from scipy import interpolate
 
-from rascil.data_models.memory_data_models import BlockVisibility, Skycomponent, assert_same_chan_pol
+from rascil.data_models.memory_data_models import BlockVisibility, Skycomponent
 from rascil.data_models.polarisation import convert_pol_frame
 from rascil.processing_components.imaging.imaging_params import get_frequency_map
 from rascil.processing_components.skycomponent import copy_skycomponent
@@ -52,7 +52,6 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         sc = [sc]
 
     for comp in sc:
-        #assert_same_chan_pol(vis, comp)
         #assert isinstance(comp, Skycomponent), comp
         flux = comp.flux
         if comp.polarisation_frame != vis.polarisation_frame:
@@ -101,7 +100,6 @@ def idft_visibility_skycomponent(vis: BlockVisibility,
 
     for comp in sc:
         #assert isinstance(comp, Skycomponent), comp
-        #assert_same_chan_pol(vis, comp)
         newcomp = copy_skycomponent(comp)
 
         phasor = numpy.conjugate(calculate_blockvisibility_phasor(comp.direction, vis))

@@ -9,7 +9,6 @@ __all__ = ['plot_visibility', 'plot_visibility_pol', 'find_times_above_elevation
 
 import logging
 
-import astropy.constants as constants
 import astropy.units as units
 import matplotlib.pyplot as plt
 import numpy
@@ -26,6 +25,7 @@ from rascil.processing_components.skycomponent.operations import apply_beam_to_s
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles, \
     calculate_blockvisibility_azel, calculate_blockvisibility_parallactic_angles
+from rascil import phyconst
 
 log = logging.getLogger('logger')
 
@@ -137,17 +137,17 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
         u = numpy.array(vis.u[...].flat)
         v = numpy.array(vis.v[...].flat)
         if isinstance(vis, BlockVisibility):
-            k = (vis.frequency / constants.c).value
+            k = vis.frequency / phyconst.c_m_s
             u = numpy.array(numpy.outer(u, k).flat)
             v = numpy.array(numpy.outer(v, k).flat)
             plt.plot(u, v, '.', color='b', markersize=0.4)
             plt.plot(-u, -v, '.', color='b', markersize=0.4)
         else:
-            k = vis.frequency / constants.c
+            k = vis.frequency / phyconst.c_m_s
             u = u * k
             v = v * k
-            plt.plot(u.value, v.value, '.', color='b', markersize=0.4)
-            plt.plot(-u.value, -v.value, '.', color='b', markersize=0.4)
+            plt.plot(u, v, '.', color='b', markersize=0.4)
+            plt.plot(-u, -v, '.', color='b', markersize=0.4)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
     plt.title(title)
@@ -169,16 +169,16 @@ def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kw
         u = numpy.array(vis.u[...].flat)
         w = numpy.array(vis.w[...].flat)
         if isinstance(vis, BlockVisibility):
-            k = (vis.frequency / constants.c).value
+            k = (vis.frequency / phyconst.c_m_s)
             u = numpy.array(numpy.outer(u, k).flat)
             w = numpy.array(numpy.outer(w, k).flat)
             plt.plot(u, w, '.', color='b', markersize=0.2)
         else:
-            k = vis.frequency / constants.c
+            k = vis.frequency / phyconst.c_m_s
             u = u * k
             w = w * k
-            plt.plot(u.value, w.value, '.', color='b', markersize=0.2)
-            plt.plot(-u.value, -w.value, '.', color='b', markersize=0.2)
+            plt.plot(u, w, '.', color='b', markersize=0.2)
+            plt.plot(-u, -w, '.', color='b', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('W (wavelengths)')
     plt.title(title)
@@ -200,16 +200,16 @@ def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kw
         v = numpy.array(vis.v[...].flat)
         w = numpy.array(vis.w[...].flat)
         if isinstance(vis, BlockVisibility):
-            k = (vis.frequency / constants.c).value
+            k = vis.frequency / phyconst.c_m_s
             v = numpy.array(numpy.outer(v, k).flat)
             w = numpy.array(numpy.outer(w, k).flat)
             plt.plot(v, w, '.', color='b', markersize=0.2)
         else:
-            k = vis.frequency / constants.c
+            k = vis.frequency / phyconst.c_m_s
             v = v * k
             w = w * k
-            plt.plot(v.value, w.value, '.', color='b', markersize=0.2)
-            plt.plot(-v.value, -w.value, '.', color='b', markersize=0.2)
+            plt.plot(v, w, '.', color='b', markersize=0.2)
+            plt.plot(-v, -w, '.', color='b', markersize=0.2)
     plt.xlabel('V (wavelengths)')
     plt.ylabel('W (wavelengths)')
     plt.title(title)

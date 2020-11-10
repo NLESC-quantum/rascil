@@ -130,9 +130,9 @@ create ci metrics:
   when: always
   before_script:
     - mkdir -p build/reports
-    - mv coverage.xml ./build/reports/code-coverage.xml
-    - mv linting.xml ./build/reports/linting.xml
-    - mv unit-tests.xml ./build/reports/unit-tests.xml
+    - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
+    - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
+    - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
   script:
     # Gitlab CI badges creation: START
     # The following reads::

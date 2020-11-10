@@ -505,7 +505,7 @@ class ImageAccessor(XarrayAccessorMixin):
     def npol(self):
         """ Number of polarisations
         """
-        return self._obj["pixels"].polarisation_frame.npol
+        return self._obj.polarisation_frame.npol
 
     @property
     def phasecentre(self):
@@ -637,7 +637,7 @@ class GridDataAccessor(XarrayAccessorMixin):
     def npol(self):
         """ Number of polarisations
         """
-        return self._obj["pixels"].polarisation_frame.npol
+        return self._obj.polarisation_frame.npol
 
     @property
     def shape(self):
@@ -778,7 +778,7 @@ class ConvolutionFunctionAccessor(XarrayAccessorMixin):
     def npol(self):
         """ Number of polarisations
         """
-        return self._obj["pixels"].polarisation_frame.npol
+        return self._obj.polarisation_frame.npol
 
     @property
     def shape(self):

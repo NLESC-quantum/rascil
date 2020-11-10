@@ -79,7 +79,7 @@ class Configuration(xarray.Dataset):
             offset    (id, spatial) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
             stations  (id) <U3 '0' '1' '2' '3' '4' '5' ... '110' '111' '112' '113' '114'
         Attributes:
-            RASCIL_data_model:  Configuration
+            rascil_data_model:  Configuration
             name:               MID
             location:           (5109237.71471275, 2006795.66194638, -3239109.1838011...
             receptor_frame:     <rascil.data_models.polarisation.ReceptorFrame object...
@@ -137,7 +137,7 @@ class Configuration(xarray.Dataset):
         datavars["stations"] = xarray.DataArray(stations, coords={"id": list(range(nants))}, dims=["id"])
 
         attrs = dict()
-        attrs["RASCIL_data_model"] = "Configuration"
+        attrs["rascil_data_model"] = "Configuration"
         attrs["name"] = name  # Name of configuration
         attrs["location"] = location  # EarthLocation
         attrs["receptor_frame"] = receptor_frame
@@ -183,7 +183,7 @@ class GainTable(xarray.Dataset):
             interval   (time) float32 99.72697 99.72697 99.72697
             datetime   (time) datetime64[ns] 2020-01-01T03:54:07.843184299 ... 2020-0...
         Attributes:
-            RASCIL_data_model:  GainTable
+            rascil_data_model:  GainTable
             receptor_frame:     <rascil.data_models.polarisation.ReceptorFrame object...
             phasecentre:        <SkyCoord (ICRS): (ra, dec) in deg    (180., -35.)>
             configuration:      <xarray.Configuration> Dimensions:   (id: 115, spati...
@@ -232,7 +232,7 @@ class GainTable(xarray.Dataset):
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
                                                 dims="time")
         attrs = dict()
-        attrs["RASCIL_data_model"] = "GainTable"
+        attrs["rascil_data_model"] = "GainTable"
         attrs["receptor_frame"] = receptor_frame
         attrs["phasecentre"] = phasecentre
         attrs["configuration"] = configuration
@@ -300,7 +300,7 @@ class PointingTable(xarray.Dataset):
             interval   (time) float64 99.73 99.73 99.73
             datetime   (time) datetime64[ns] 2020-01-01T03:54:07.843184299 ... 2020-0...
         Attributes:
-            RASCIL_data_model:  PointingTable
+            rascil_data_model:  PointingTable
             receptor_frame:     <rascil.data_models.polarisation.ReceptorFrame object...
             pointing_frame:     azel
             pointingcentre:     <SkyCoord (ICRS): (ra, dec) in deg    (180., -35.)>
@@ -351,7 +351,7 @@ class PointingTable(xarray.Dataset):
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64, dims="time")
 
         attrs = dict()
-        attrs["RASCIL_data_model"] = "PointingTable"
+        attrs["rascil_data_model"] = "PointingTable"
         attrs["receptor_frame"] = receptor_frame
         attrs["pointing_frame"] = pointing_frame
         attrs["pointingcentre"] = pointingcentre
@@ -420,7 +420,7 @@ class Image(xarray.Dataset):
             phasecentre:         <SkyCoord (ICRS): (ra, dec) in deg     (0., 35.)>
             wcs:                 WCS Keywords Number of WCS axes: 4 CTYPE : 'RA--...
             polarisation_frame:  stokesI
-            RASCIL_data_model:   Image
+            rascil_data_model:   Image
 
 
     """
@@ -448,8 +448,8 @@ class Image(xarray.Dataset):
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
-            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny),
-            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx)
+            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny, endpoint=False),
+            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx, endpoint=False)
         }
         
         anchan = len(frequency)
@@ -475,7 +475,7 @@ class Image(xarray.Dataset):
         attrs = {"phasecentre": phasecentre,
                  "wcs":wcs,
                  "polarisation_frame":polarisation_frame}
-        attrs["RASCIL_data_model"] = "Image"
+        attrs["rascil_data_model"] = "Image"
 
         
         super().__init__(data_vars, coords=coords, attrs=attrs)
@@ -494,14 +494,19 @@ class ImageAccessor(XarrayAccessorMixin):
         :return:
         """
         return self._obj["pixels"].data.shape
-    
+
+    @property
+    def nchan(self):
+        """ Number of channels
+        """
+        return len(self._obj.frequency)
+
     @property
     def npol(self):
         """ Number of polarisations
         """
-        return self.shape[1]
-    
-    
+        return self._obj["pixels"].polarisation_frame.npol
+
     @property
     def phasecentre(self):
         """ Phasecentre (from WCS)
@@ -544,7 +549,7 @@ class GridData(xarray.Dataset):
         Data variables:
             pixels        (frequency, polarisation, w, v, u) complex128 0j 0j ... 0j 0j
         Attributes:
-            RASCIL_data_model:   GridData
+            rascil_data_model:   GridData
             grid_wcs:            WCS Keywords nNumber of WCS axes: 5 CTYPE : 'UU' ...
             projection_wcs:      WCS Keywords Number of WCS axes: 4 CTYPE : 'RA--...
             polarisation_frame:  stokesI
@@ -592,7 +597,7 @@ class GridData(xarray.Dataset):
         assert coords["v"][0] != coords["v"][-1]
         
         attrs = dict()
-        attrs["RASCIL_data_model"] = "GridData"
+        attrs["rascil_data_model"] = "GridData"
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
@@ -626,21 +631,14 @@ class GridDataAccessor(XarrayAccessorMixin):
     def nchan(self):
         """ Number of channels
         """
-        return self._obj["pixels"].data.shape[0]
-    
+        return len(self._obj.frequency)
+
     @property
     def npol(self):
         """ Number of polarisations
         """
-        return self._obj["pixels"].data.shape[1]
-    
-    @property
-    def frequency(self):
-        """ Frequency values
-        """
-        w = self.grid_wcs.sub(['spectral'])
-        return w.wcs_pix2world(range(self.nchan), 0)[0]
-    
+        return self._obj["pixels"].polarisation_frame.npol
+
     @property
     def shape(self):
         """ Shape of data array
@@ -689,7 +687,7 @@ class ConvolutionFunction(xarray.Dataset):
         Data variables:
             pixels        (frequency, polarisation, w, dv, du, v, u) complex128 0j .....
         Attributes:
-            RASCIL_data_model:   ConvolutionFunction
+            rascil_data_model:   ConvolutionFunction
             grid_wcs:            WCS Keywords Number of WCS axes: 7 CTYPE : 'UU' ...
             projection_wcs:      WCS Keywords Number of WCS axes: 4 CTYPE : 'RA--...
             polarisation_frame:  stokesI
@@ -746,7 +744,7 @@ class ConvolutionFunction(xarray.Dataset):
         assert coords["v"][0] != coords["v"][-1]
         
         attrs = dict()
-        attrs["RASCIL_data_model"] = "ConvolutionFunction"
+        attrs["rascil_data_model"] = "ConvolutionFunction"
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
@@ -774,21 +772,14 @@ class ConvolutionFunctionAccessor(XarrayAccessorMixin):
     def nchan(self):
         """ Number of channels
         """
-        return self._obj["pixels"].data.shape[0]
-    
+        return len(self._obj.frequency)
+
     @property
     def npol(self):
         """ Number of polarisations
         """
-        return self._obj["pixels"].data.shape[1]
-    
-    @property
-    def frequency(self):
-        """ Frequency values
-        """
-        w = self.grid_wcs.sub(['spectral'])
-        return w.wcs_pix2world(range(self.nchan), 0)[0]
-    
+        return self._obj["pixels"].polarisation_frame.npol
+
     @property
     def shape(self):
         """ Shape of data array

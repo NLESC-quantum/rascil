@@ -36,6 +36,30 @@ warnings.simplefilter('ignore', AstropyDeprecationWarning)
 log = logging.getLogger('rascil-logger')
 
 
+class XarrayAccessorMixin():
+    """ Convenience methods to access the fields of the xarray
+
+    """
+    
+    def __init__(self, xarray_obj):
+        self._obj = xarray_obj
+    
+    def size(self):
+        """ Return size in GB
+        """
+        size = self._obj.nbytes
+        return size / 1024.0 / 1024.0 / 1024.0
+    
+    def datasizes(self):
+        """ Return string describing sizes of data variables
+        :return: string
+        """
+        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
+        for var in self._obj.data.data_vars:
+            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
+        return s
+
+
 class Configuration(xarray.Dataset):
     """ A Configuration describes an array configuration.
     
@@ -122,28 +146,14 @@ class Configuration(xarray.Dataset):
         super().__init__(datavars, coords=coords, attrs=attrs)
     
 @xarray.register_dataset_accessor("configuration_acc")
-class ConfigurationAccessor():
+class ConfigurationAccessor(XarrayAccessorMixin):
     """ Convenience methods to access the fields of the Configuration
     
     """
     
     def __init__(self, xarray_obj):
-        self._obj = xarray_obj
+        super().__init__(xarray_obj)
 
-    def size(self):
-        """ Return size in GB
-        """
-        size = self._obj.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-    
-    def datasizes(self):
-        """ Return string describing sizes of data variables
-        :return: string
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
-        return s
     
     @property
     def nants(self):
@@ -230,25 +240,11 @@ class GainTable(xarray.Dataset):
         super().__init__(datavars, coords=coords, attrs=attrs)
 
 @xarray.register_dataset_accessor("gaintable_acc")
-class GainTableAccessor():
+class GainTableAccessor(XarrayAccessorMixin):
 
     def __init__(self, xarray_obj):
-        self._obj = xarray_obj
+        super().__init__(xarray_obj)
 
-    def size(self):
-        """ Return size in GB
-        """
-        size = self._obj.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-
-    def datasizes(self):
-        """ Return string describing sizes of data variables
-        :return: string
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
-        return s
 
     @property
     def ntimes(self):
@@ -364,25 +360,10 @@ class PointingTable(xarray.Dataset):
         super().__init__(datavars, coords=coords, attrs=attrs)
 
 @xarray.register_dataset_accessor("pointingtable_acc")
-class PointingTableAccessor():
+class PointingTableAccessor(XarrayAccessorMixin):
 
     def __init__(self, xarray_obj):
-        self._obj = xarray_obj
-
-    def size(self):
-        """ Return size in GB
-        """
-        size = self._obj.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-
-    def datasizes(self):
-        """ Return string describing sizes of data variables
-        :return: string
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
-        return s
+        super().__init__(xarray_obj)
 
     @property
     def nants(self):
@@ -500,25 +481,11 @@ class Image(xarray.Dataset):
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
 @xarray.register_dataset_accessor("image_acc")
-class ImageAccessor():
+class ImageAccessor(XarrayAccessorMixin):
 
     def __init__(self, xarray_obj):
-        self._obj = xarray_obj
+        super().__init__(xarray_obj)
 
-    def size(self):
-        """ Return size in GB
-        """
-        size = self._obj.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-
-    def datasizes(self):
-        """ Return string describing sizes of data variables
-        :return: string
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
-        return s
 
     @property
     def shape(self):
@@ -649,25 +616,11 @@ class GridData(xarray.Dataset):
         super().__init__(data_vars, coords=coords, attrs=attrs)
         
 @xarray.register_dataset_accessor("griddata_acc")
-class GridDataAccessor():
+class GridDataAccessor(XarrayAccessorMixin):
 
     def __init__(self, xarray_obj):
-        self._obj = xarray_obj
+        super().__init__(xarray_obj)
 
-    def size(self):
-        """ Return size in GB
-        """
-        size = self._obj.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-
-    def datasizes(self):
-        """ Return string describing sizes of data variables
-        :return: string
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
-        return s
 
     @property
     def nchan(self):
@@ -811,25 +764,11 @@ class ConvolutionFunction(xarray.Dataset):
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
 @xarray.register_dataset_accessor("convolutionfunction_acc")
-class ConvolutionFunctionAccessor():
+class ConvolutionFunctionAccessor(XarrayAccessorMixin):
 
     def __init__(self, xarray_obj):
-        self._obj = xarray_obj
+        super().__init__(xarray_obj)
 
-    def size(self):
-        """ Return size in GB
-        """
-        size = self._obj.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-
-    def datasizes(self):
-        """ Return string describing sizes of data variables
-        :return: string
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
-        return s
 
     @property
     def nchan(self):
@@ -1126,25 +1065,11 @@ class BlockVisibility(xarray.Dataset):
         super().__init__(datavars, coords=coords, attrs=attrs)
 
 @xarray.register_dataset_accessor("blockvisibility_acc")
-class BlockVisibilityAccessor():
+class BlockVisibilityAccessor(XarrayAccessorMixin):
 
     def __init__(self, xarray_obj):
-        self._obj = xarray_obj
+        super().__init__(xarray_obj)
 
-    def size(self):
-        """ Return size in GB
-        """
-        size = self._obj.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-
-    def datasizes(self):
-        """ Return string describing sizes of data variables
-        :return: string
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
-        return s
 
     @property
     def rows(self):
@@ -1308,25 +1233,11 @@ class FlagTable(xarray.Dataset):
     
     
 @xarray.register_dataset_accessor("flagtable_acc")
-class FlagTableAccessor():
+class FlagTableAccessor(XarrayAccessorMixin):
 
     def __init__(self, xarray_obj):
-        self._obj = xarray_obj
+        super().__init__(xarray_obj)
 
-    def size(self):
-        """ Return size in GB
-        """
-        size = self._obj.nbytes
-        return size / 1024.0 / 1024.0 / 1024.0
-
-    def datasizes(self):
-        """ Return string describing sizes of data variables
-        :return: string
-        """
-        s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
-            s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
-        return s
 
     @property
     def nchan(self):

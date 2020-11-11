@@ -28,7 +28,7 @@ from astropy.time import Time
 from astropy.utils.exceptions import AstropyDeprecationWarning
 from astropy.wcs import FITSFixedWarning
 
-from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
+from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame, polarisation_frame_from_names
 
 warnings.simplefilter('ignore', FITSFixedWarning)
 warnings.simplefilter('ignore', AstropyDeprecationWarning)
@@ -86,7 +86,7 @@ class Configuration(xarray.Dataset):
             frame:
 
     """
-
+    
     __slots__ = ()
     
     def __init__(self, name='', location=None,
@@ -135,7 +135,7 @@ class Configuration(xarray.Dataset):
         datavars["vp_type"] = xarray.DataArray(vp_type, coords={"id": list(range(nants))}, dims=["id"])
         datavars["offset"] = xarray.DataArray(offset, coords=coords, dims=["id", "spatial"])
         datavars["stations"] = xarray.DataArray(stations, coords={"id": list(range(nants))}, dims=["id"])
-
+        
         attrs = dict()
         attrs["rascil_data_model"] = "Configuration"
         attrs["name"] = name  # Name of configuration
@@ -144,7 +144,8 @@ class Configuration(xarray.Dataset):
         attrs["frame"] = frame
         
         super().__init__(datavars, coords=coords, attrs=attrs)
-    
+
+
 @xarray.register_dataset_accessor("configuration_acc")
 class ConfigurationAccessor(XarrayAccessorMixin):
     """ Convenience methods to access the fields of the Configuration
@@ -153,7 +154,6 @@ class ConfigurationAccessor(XarrayAccessorMixin):
     
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
-
     
     @property
     def nants(self):
@@ -189,9 +189,9 @@ class GainTable(xarray.Dataset):
             configuration:      <xarray.Configuration> Dimensions:   (id: 115, spati...
 
     """
-
+    
     __slots__ = ()
-
+    
     def __init__(self, gain: numpy.array = None, time: numpy.array = None, interval=None,
                  weight: numpy.array = None, residual: numpy.array = None, frequency: numpy.array = None,
                  receptor_frame: ReceptorFrame = ReceptorFrame("linear"), phasecentre=None, configuration=None):
@@ -236,16 +236,16 @@ class GainTable(xarray.Dataset):
         attrs["receptor_frame"] = receptor_frame
         attrs["phasecentre"] = phasecentre
         attrs["configuration"] = configuration
-
+        
         super().__init__(datavars, coords=coords, attrs=attrs)
+
 
 @xarray.register_dataset_accessor("gaintable_acc")
 class GainTableAccessor(XarrayAccessorMixin):
-
+    
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
-
-
+    
     @property
     def ntimes(self):
         """ Number of times (i.e. rows) in this table
@@ -277,7 +277,7 @@ class GainTableAccessor(XarrayAccessorMixin):
 
         """
         return self._obj['receptor1']
-    
+
 
 class PointingTable(xarray.Dataset):
     """ Pointing table with data_models: time, antenna, offset[:, chan, rec, 2], weight columns
@@ -307,9 +307,9 @@ class PointingTable(xarray.Dataset):
             configuration:      <xarray.Configuration> Dimensions:   (id: 115, spati...
 
     """
-
+    
     __slots__ = ()
-
+    
     def __init__(self, data=None, pointing: numpy.array = None, nominal: numpy.array = None,
                  time: numpy.array = None, interval=None,
                  weight: numpy.array = None, residual: numpy.array = None, frequency: numpy.array = None,
@@ -331,7 +331,7 @@ class PointingTable(xarray.Dataset):
         :param configuration: Configuration
         """
         super().__init__()
-
+        
         ntimes, nants, nchan, nrec, _ = pointing.shape
         antennas = range(nants)
         coords = {
@@ -349,22 +349,23 @@ class PointingTable(xarray.Dataset):
         datavars["residual"] = xarray.DataArray(residual, dims=["time", "frequency", "receptor", "angle"])
         datavars["interval"] = xarray.DataArray(interval, dims=["time"])
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64, dims="time")
-
+        
         attrs = dict()
         attrs["rascil_data_model"] = "PointingTable"
         attrs["receptor_frame"] = receptor_frame
         attrs["pointing_frame"] = pointing_frame
         attrs["pointingcentre"] = pointingcentre
         attrs["configuration"] = configuration
-
+        
         super().__init__(datavars, coords=coords, attrs=attrs)
+
 
 @xarray.register_dataset_accessor("pointingtable_acc")
 class PointingTableAccessor(XarrayAccessorMixin):
-
+    
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
-
+    
     @property
     def nants(self):
         """ Number of dishes/stations
@@ -424,9 +425,9 @@ class Image(xarray.Dataset):
 
 
     """
-
+    
     __slots__ = ()
-
+    
     def __init__(self, data, phasecentre, frequency, polarisation_frame=None, wcs=None):
         """ Create an XImage
 
@@ -436,57 +437,65 @@ class Image(xarray.Dataset):
         :return: Image
         """
         super().__init__()
-
+        
         nx, ny = data.shape[-2], data.shape[-1]
+        nchan = len(frequency)
+        npol = polarisation_frame.npol
         cellsize = numpy.abs(wcs.wcs.cdelt[1])
         cx = phasecentre.ra.to("deg").value
         cy = phasecentre.dec.to("deg").value
         
-        assert cellsize > 0.0, "Cellsize must be positive"
         
-        dims = ["frequency", "polarisation", "m", "l"]
-        coords = {
-            "frequency": frequency,
-            "polarisation": polarisation_frame.names,
-            "m": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny, endpoint=False),
-            "l": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx, endpoint=False)
+        lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+        ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
+        
+        # Define the names of the dimensions
+        dims = {
+            "chan": nchan,
+            "pol": npol,
+            "y": ny,
+            "x": nx
         }
         
-        anchan = len(frequency)
-        anpol = polarisation_frame.npol
+        # Define the coordinates on these dimensions
+        coords = {
+            "frequency": ("chan", frequency),
+            "polarisation": ("pol", polarisation_frame.names),
+            "y": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny, endpoint=False),
+            "x": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx, endpoint=False),
+            "ra": (("x", "y"), ra),
+            "dec": (("x", "y"), dec)
+        }
         
         if len(data.shape) == 2:
-            data = data.reshape([anchan, anpol, ny, nx])
+            data = data.reshape([nchan, npol, ny, nx])
         
-        assert data.shape[0] == anchan, \
+        assert data.shape[0] == nchan, \
             "Number of frequency channels {} and data shape {} are incompatible" \
                 .format(len(frequency), data.shape)
-        assert data.shape[1] == anpol, \
+        assert data.shape[1] == npol, \
             "Polarisation frame {} and data shape {} are incompatible".format(polarisation_frame.type, data.shape)
-        assert coords["l"][0] != coords["l"][-1]
-        assert coords["m"][0] != coords["m"][-1]
+        assert coords["x"][0] != coords["x"][-1]
+        assert coords["y"][0] != coords["y"][-1]
         
-        assert len(coords["m"]) == ny
-        assert len(coords["l"]) == nx
-
+        assert len(coords["y"]) == ny
+        assert len(coords["x"]) == nx
+        
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         
-        attrs = {"phasecentre": phasecentre,
-                 "wcs":wcs,
-                 "polarisation_frame":polarisation_frame}
-        attrs["rascil_data_model"] = "Image"
-
+        attrs = {"rascil_data_model": "Image",
+                 "frame": phasecentre.frame.name}
         
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
+
 @xarray.register_dataset_accessor("image_acc")
 class ImageAccessor(XarrayAccessorMixin):
-
+    
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
-
-
+    
     @property
     def shape(self):
         """ Shape of array
@@ -494,35 +503,48 @@ class ImageAccessor(XarrayAccessorMixin):
         :return:
         """
         return self._obj["pixels"].data.shape
-
+    
     @property
     def nchan(self):
         """ Number of channels
+        
+        :return: Number of channels
         """
         return len(self._obj.frequency)
-
+    
     @property
     def npol(self):
         """ Number of polarisations
+        
+        :return: Number of polarisations
         """
-        return self._obj.polarisation_frame.npol
-
+        return len(self._obj.polarisation)
+    
     @property
     def phasecentre(self):
-        """ Phasecentre (from WCS)
+        """ Phasecentre (from coords)
         """
-        return SkyCoord(self._obj.attrs["wcs"].wcs.crval[0] * u.deg, self._obj.attrs["wcs"].wcs.crval[1] * u.deg)
+        cx = len(self._obj["x"]) // 2
+        cy = len(self._obj["y"]) // 2
+        return SkyCoord(self._obj["x"].data[cx] * u.deg, self._obj["y"].data[cy] * u.deg, frame=self._obj.frame)
     
-    def ra_dec_mesh(self):
-        """ RA, Dec mesh
-
+    @property
+    def polarisation_frame(self):
+        """Polarisation frame (from coords)
+        
         :return:
         """
-        ny = self.shape[-2]
-        nx = self.shape[-1]
-        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
-        return self._obj.attrs["wcs"].sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
-
+        return PolarisationFrame(polarisation_frame_from_names(self._obj.polarisation))
+    
+    @property
+    def wcs(self):
+        """ WCS (from coords)
+        
+        :return:
+        """
+        from rascil.data_models.xarray_coordinate_support import image_wcs
+        return image_wcs(self._obj)
+    
 
 class GridData(xarray.Dataset):
     """Class to hold Gridded data for Fourier processing
@@ -538,29 +560,28 @@ class GridData(xarray.Dataset):
         
     Here is an example::
     
-        <xarray.GridData>
-        Dimensions:       (frequency: 1, polarisation: 1, u: 256, v: 256, w: 1)
+        <xarray.Image>
+        Dimensions:       (chan: 3, l: 256, m: 256, pol: 4)
         Coordinates:
-          * frequency     (frequency) float64 1e+08
-          * polarisation  (polarisation) <U1 'I'
-          * w             (w) float64 0.0
-          * v             (v) float64 -2.64e+07 -2.619e+07 ... 2.619e+07 2.64e+07
-          * u             (u) float64 -2.64e+07 -2.619e+07 ... 2.619e+07 2.64e+07
+            frequency     (chan) float64 1e+08 1.01e+08 1.02e+08
+            polarisation  (pol) <U1 'I' 'Q' 'U' 'V'
+          * m             (m) float64 -35.11 -35.11 -35.11 ... -34.89 -34.89 -34.89
+          * l             (l) float64 179.9 179.9 179.9 179.9 ... 180.1 180.1 180.1
+            ra            (l, m) float64 180.1 180.1 180.1 180.1 ... 179.9 179.9 179.9
+            dec           (l, m) float64 -35.11 -35.11 -35.11 ... -34.89 -34.89 -34.89
+        Dimensions without coordinates: chan, pol
         Data variables:
-            pixels        (frequency, polarisation, w, v, u) complex128 0j 0j ... 0j 0j
+            pixels        (chan, pol, m, l) float64 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0
         Attributes:
-            rascil_data_model:   GridData
-            grid_wcs:            WCS Keywords nNumber of WCS axes: 5 CTYPE : 'UU' ...
-            projection_wcs:      WCS Keywords Number of WCS axes: 4 CTYPE : 'RA--...
-            polarisation_frame:  stokesI
+            rascil_data_model:  Image
         
 
     """
-
+    
     __slots__ = ()
-
-    def __init__(self, polarisation_frame=None,
-                 dtype=None, data=None, grid_wcs=None, projection_wcs=None):
+    
+    def __init__(self, data, phasecentre, frequency, polarisation_frame=None,
+                 dtype=None, grid_wcs=None, projection_wcs=None):
         """ Create a GridData
 
         :param polarisation_frame:
@@ -568,7 +589,6 @@ class GridData(xarray.Dataset):
         """
         
         super().__init__()
-
         
         nchan, npol, nw, ny, nx = data.shape
         frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
@@ -584,28 +604,28 @@ class GridData(xarray.Dataset):
         
         assert cellsize > 0.0, "Cellsize must be positive"
         
-        dims = ["frequency", "polarisation", "w", "v", "u"]
-        coords = {
-            "frequency": frequency,
-            "polarisation": polarisation_frame.names,
-            "w": wrange,
-            "v": numpy.linspace(cv - dv * ny / 2, cv + dv * ny / 2, ny),
-            "u": numpy.linspace(cu - du * nx / 2, cu + du * nx / 2, nx)
+        dims = {
+            "chan": nchan,
+            "pol": npol,
+            "w": nw,
+            "v": ny,
+            "u": nx
         }
         
-        assert coords["u"][0] != coords["u"][-1]
-        assert coords["v"][0] != coords["v"][-1]
+        # Define the coordinates on these dimensions
+        coords = {
+            "frequency": ("chan", frequency),
+            "polarisation": ("pol", polarisation_frame.names),
+            "w": numpy.linspace(cw - wstep * ny / 2, cw + wstep * ny / 2, ny, endpoint=False),
+            "v": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * nw / 2, nx, endpoint=False),
+            "u": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * ny / 2, ny, endpoint=False),
+        }
         
         attrs = dict()
         attrs["rascil_data_model"] = "GridData"
-        attrs["grid_wcs"] = grid_wcs
-        attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
         
-        nchan = len(frequency)
-        npol = polarisation_frame.npol
-        if dtype is None:
-            dtype = "float"
+        
         
         if data is None:
             data = numpy.zeros([nchan, npol, nw, ny, nx], dtype=dtype)
@@ -619,26 +639,26 @@ class GridData(xarray.Dataset):
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         super().__init__(data_vars, coords=coords, attrs=attrs)
-        
+
+
 @xarray.register_dataset_accessor("griddata_acc")
 class GridDataAccessor(XarrayAccessorMixin):
-
+    
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
-
-
+    
     @property
     def nchan(self):
         """ Number of channels
         """
         return len(self._obj.frequency)
-
+    
     @property
     def npol(self):
         """ Number of polarisations
         """
         return self._obj.polarisation_frame.npol
-
+    
     @property
     def shape(self):
         """ Shape of data array
@@ -646,21 +666,31 @@ class GridDataAccessor(XarrayAccessorMixin):
         return self._obj["pixels"].data.shape
     
     @property
-    def phasecentre(self):
-        """ Phasecentre (from WCS)
-        """
-        return SkyCoord(self.grid_wcs.wcs.crval[0] * u.deg, self.grid_wcs.wcs.crval[1] * u.deg)
-    
-    def ra_dec_mesh(self):
-        """ RA, Dec mesh
+    def polarisation_frame(self):
+        """Polarisation frame (from coords)
 
         :return:
         """
-        ny = self["pixels"].data.shape[-2]
-        nx = self["pixels"].data.shape[-1]
-        ramesh, decmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
-        return self.projection_wcs.sub([1, 2]).wcs_pix2world(ramesh, decmesh, 0)
+        return polarisation_frame_from_names(self._obj.polarisation)
     
+    @property
+    def phasecentre(self):
+        """ Phasecentre (from coords)
+        """
+        cx = len(self._obj["x"]) // 2
+        cy = len(self._obj["y"]) // 2
+        return SkyCoord(self._obj["x"].data[cx] * u.deg, self._obj["y"].data[cy] * u.deg, frame="icrs")
+    
+    @property
+    def grid_wcs(self):
+        """ WCS (from coords)
+
+        :return:
+        """
+        from rascil.data_models.xarray_coordinate_support import griddata_wcs
+        return griddata_wcs(self._obj)
+
+
 class ConvolutionFunction(xarray.Dataset):
     """Class to hold Convolution function for Fourier processing
     - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
@@ -694,9 +724,9 @@ class ConvolutionFunction(xarray.Dataset):
 
 
     """
-
+    
     __slots__ = ()
-
+    
     def __init__(self, data, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
         """Create ConvolutionFunction
 
@@ -707,7 +737,7 @@ class ConvolutionFunction(xarray.Dataset):
         """
         
         super().__init__()
-
+        
         nchan, npol, nw, oversampling, _, support, _ = data.shape
         frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
         
@@ -761,25 +791,25 @@ class ConvolutionFunction(xarray.Dataset):
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
+
 @xarray.register_dataset_accessor("convolutionfunction_acc")
 class ConvolutionFunctionAccessor(XarrayAccessorMixin):
-
+    
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
-
-
+    
     @property
     def nchan(self):
         """ Number of channels
         """
         return len(self._obj.frequency)
-
+    
     @property
     def npol(self):
         """ Number of polarisations
         """
         return self._obj.polarisation_frame.npol
-
+    
     @property
     def shape(self):
         """ Shape of data array
@@ -788,12 +818,31 @@ class ConvolutionFunctionAccessor(XarrayAccessorMixin):
         return self.data.shape
     
     @property
-    def phasecentre(self):
-        """ Phasecentre (from projection WCS)
+    def polarisation_frame(self):
+        """Polarisation frame (from coords)
+
+        :return:
         """
-        return SkyCoord(self.projection_wcs.wcs.crval[0] * u.deg, self.projection_wcs.wcs.crval[1] * u.deg)
+        return polarisation_frame_from_names(self._obj.polarisation)
     
+    @property
+    def phasecentre(self):
+        """ Phasecentre (from coords)
+        """
+        cx = len(self._obj["x"]) // 2
+        cy = len(self._obj["y"]) // 2
+        return SkyCoord(self._obj["x"].data[cx] * u.deg, self._obj["y"].data[cy] * u.deg, frame="icrs")
     
+    @property
+    def grid_wcs(self):
+        """ WCS (from coords)
+
+        :return:
+        """
+        from rascil.data_models.xarray_coordinate_support import griddata_wcs
+        return griddata_wcs(self._obj)
+
+
 class Skycomponent:
     """Skycomponents are used to represent compact sources on the sky. They possess direction,
     flux as a function of frequency and polarisation, shape (with params), and polarisation frame.
@@ -890,14 +939,14 @@ class SkyModel:
         if components is None:
             components = []
         
-        #if image is not None:
-            ##assert isinstance(image, Image), image
+        # if image is not None:
+        ##assert isinstance(image, Image), image
         self.image = image
         
         self.components = [sc for sc in components]
         self.gaintable = gaintable
         
-        #if mask is not None:
+        # if mask is not None:
         #    #assert isinstance(mask, Image), mask
         self.mask = mask
         
@@ -967,9 +1016,9 @@ class BlockVisibility(xarray.Dataset):
         
 
     """
-
+    
     __slots__ = ()
-
+    
     def __init__(self, frequency=None, channel_bandwidth=None, phasecentre=None, configuration=None, uvw=None,
                  time=None, vis=None, weight=None, integration_time=None, flags=None, baselines=None,
                  polarisation_frame=PolarisationFrame('stokesI'), imaging_weight=None, source='anonymous', meta=None,
@@ -998,12 +1047,12 @@ class BlockVisibility(xarray.Dataset):
             weight = numpy.ones(vis.shape)
         else:
             assert weight.shape == vis.shape
-            
+        
         if imaging_weight is None:
             imaging_weight = weight
         else:
             assert imaging_weight.shape == vis.shape
-            
+        
         if integration_time is None:
             integration_time = numpy.ones_like(time)
         else:
@@ -1047,21 +1096,19 @@ class BlockVisibility(xarray.Dataset):
         datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"], attrs={"units": "Hz"})
         
         attrs = dict()
-        attrs["phasecentre"] = phasecentre  # Phase centre of observation
         attrs["configuration"] = configuration  # Antenna/station configuration
-        attrs["polarisation_frame"] = polarisation_frame
         attrs["source"] = source
         attrs["meta"] = meta
         
         super().__init__(datavars, coords=coords, attrs=attrs)
 
+
 @xarray.register_dataset_accessor("blockvisibility_acc")
 class BlockVisibilityAccessor(XarrayAccessorMixin):
-
+    
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
-
-
+    
     @property
     def rows(self):
         """ Rows
@@ -1079,7 +1126,7 @@ class BlockVisibilityAccessor(XarrayAccessorMixin):
         """ Number of channels
         """
         return len(self._obj['frequency'])
-        
+    
     @property
     def npol(self):
         """ Number of polarisations
@@ -1157,7 +1204,7 @@ class BlockVisibilityAccessor(XarrayAccessorMixin):
         """Flagged complex visibility [nrows, nbaseline, ncha, npol]
         """
         return self._obj['vis'] * (1 - self._obj['flags'])
-        
+    
     @property
     def flagged_weight(self):
         """Weight [: npol]
@@ -1176,6 +1223,7 @@ class BlockVisibilityAccessor(XarrayAccessorMixin):
         """
         return numpy.product(self._obj.vis.shape)
 
+
 class FlagTable(xarray.Dataset):
     """ Flag table class
 
@@ -1184,9 +1232,9 @@ class FlagTable(xarray.Dataset):
 
     The configuration is also an attribute
     """
-
+    
     __slots__ = ()
-
+    
     def __init__(self, baselines=None, flags=None,
                  frequency=None, channel_bandwidth=None,
                  configuration=None, time=None, integration_time=None,
@@ -1221,15 +1269,14 @@ class FlagTable(xarray.Dataset):
         attrs["configuration"] = configuration  # Antenna/station configuration
         
         super().__init__(datavars, coords=coords, attrs=attrs)
-    
-    
+
+
 @xarray.register_dataset_accessor("flagtable_acc")
 class FlagTableAccessor(XarrayAccessorMixin):
-
+    
     def __init__(self, xarray_obj):
         super().__init__(xarray_obj)
-
-
+    
     @property
     def nchan(self):
         """ Number of channels
@@ -1253,6 +1300,7 @@ class FlagTableAccessor(XarrayAccessorMixin):
         """ Number of Baselines
         """
         return len(self["baselines"])
+
 
 class QA:
     """ Quality assessment
@@ -1297,4 +1345,3 @@ class ScienceDataModel:
         """ Default printer for Science Data Model
         """
         return ""
-

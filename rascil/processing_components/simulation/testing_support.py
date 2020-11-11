@@ -101,26 +101,26 @@ def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, pha
 
     im = replicate_image(im, frequency=frequency, polarisation_frame=im.polarisation_frame)
     if cellsize is not None:
-        im.attrs["wcs"].wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
-        im.attrs["wcs"].wcs.cdelt[1] = +180.0 * cellsize / numpy.pi
+        im.image_acc.wcs.wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
+        im.image_acc.wcs.wcs.cdelt[1] = +180.0 * cellsize / numpy.pi
     if frequency is not None:
-        im.attrs["wcs"].wcs.crval[3] = frequency[0]
+        im.image_acc.wcs.wcs.crval[3] = frequency[0]
     if channel_bandwidth is not None:
-        im.attrs["wcs"].wcs.cdelt[3] = channel_bandwidth[0]
+        im.image_acc.wcs.wcs.cdelt[3] = channel_bandwidth[0]
     else:
         if len(frequency) > 1:
-            im.attrs["wcs"].wcs.cdelt[3] = frequency[1] - frequency[0]
+            im.image_acc.wcs.wcs.cdelt[3] = frequency[1] - frequency[0]
         else:
-            im.attrs["wcs"].wcs.cdelt[3] = 0.001 * frequency[0]
-    im.attrs["wcs"].wcs.radesys = 'ICRS'
-    im.attrs["wcs"].wcs.equinox = 2000.00
+            im.image_acc.wcs.wcs.cdelt[3] = 0.001 * frequency[0]
+    im.image_acc.wcs.wcs.radesys = 'ICRS'
+    im.image_acc.wcs.wcs.equinox = 2000.00
 
     if phasecentre is not None:
-        im.attrs["wcs"].wcs.crval[0] = phasecentre.ra.deg
-        im.attrs["wcs"].wcs.crval[1] = phasecentre.dec.deg
+        im.image_acc.wcs.wcs.crval[0] = phasecentre.ra.deg
+        im.image_acc.wcs.wcs.crval[1] = phasecentre.dec.deg
         # WCS is 1 relative
-        im.attrs["wcs"].wcs.crpix[0] = im["pixels"].data.shape[3] // 2 + 1
-        im.attrs["wcs"].wcs.crpix[1] = im["pixels"].data.shape[2] // 2 + 1
+        im.image_acc.wcs.wcs.crpix[0] = im["pixels"].data.shape[3] // 2 + 1
+        im.image_acc.wcs.wcs.crpix[1] = im["pixels"].data.shape[2] // 2 + 1
 
     return im
 
@@ -631,10 +631,10 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
 
     newwcs = WCS(naxis=4)
 
-    newwcs.wcs.crpix = [im.attrs["wcs"].wcs.crpix[0] + 1.0, im.attrs["wcs"].wcs.crpix[1] + 1.0, 1.0, 1.0]
-    newwcs.wcs.cdelt = [im.attrs["wcs"].wcs.cdelt[0], im.attrs["wcs"].wcs.cdelt[1], 1.0, 1.0]
-    newwcs.wcs.crval = [im.attrs["wcs"].wcs.crval[0], im.attrs["wcs"].wcs.crval[1], 1.0, frequency[0]]
-    newwcs.wcs.ctype = [im.attrs["wcs"].wcs.ctype[0], im.attrs["wcs"].wcs.ctype[1], 'STOKES', 'FREQ']
+    newwcs.wcs.crpix = [im.image_acc.wcs.wcs.crpix[0] + 1.0, im.image_acc.wcs.wcs.crpix[1] + 1.0, 1.0, 1.0]
+    newwcs.wcs.cdelt = [im.image_acc.wcs.wcs.cdelt[0], im.image_acc.wcs.wcs.cdelt[1], 1.0, 1.0]
+    newwcs.wcs.crval = [im.image_acc.wcs.wcs.crval[0], im.image_acc.wcs.wcs.crval[1], 1.0, frequency[0]]
+    newwcs.wcs.ctype = [im.image_acc.wcs.wcs.ctype[0], im.image_acc.wcs.wcs.ctype[1], 'STOKES', 'FREQ']
 
     phasecentre = SkyCoord(newwcs.wcs.crval[0] * u.deg, newwcs.wcs.crval[1] * u.deg)
 

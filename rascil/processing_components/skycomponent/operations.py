@@ -523,7 +523,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    pixlocs = skycoord_to_pixel(skycoords, im.wcs, origin=0, mode='wcs')
+    pixlocs = skycoord_to_pixel(skycoords, im.image_acc.wcs, origin=0, mode='wcs')
 
     for icomp, comp in enumerate(sc):
 

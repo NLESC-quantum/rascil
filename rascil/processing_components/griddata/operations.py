@@ -17,6 +17,7 @@ __all__ = ['griddata_sizeof', 'create_griddata_from_image', 'create_griddata_fro
 import copy
 import logging
 
+import xarray
 import numpy
 from astropy.wcs import WCS
 
@@ -78,58 +79,28 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     :param wstep: Increment in w
     :return: GridData
     """
-    assert len(im["pixels"].data.shape) == 4
-    assert im.wcs.wcs.ctype[0] == 'RA---SIN'
-    assert im.wcs.wcs.ctype[1] == 'DEC--SIN'
+    
+    if polarisation_frame is None:
+        polarisation_frame = im.image_acc.polarisation_frame
+    
+    attrs = dict()
+    attrs["projection_coords"] = im.coords
+    
+    nchan, npol, nv, nu = im["pixels"].data.shape
+    pixels = numpy.zeros([nchan, npol, nw, nv, nu])
+    
+    cell_u = 1.0
+    cell_v = 1.0
+    cell_w = wstep
+    
+    coords = {
+        "u": numpy.linspace(-nu // 2 * cell_u, +nu // 2 * cell_u, endpoint=False),
+        "v": numpy.linspace(-nv // 2 * cell_v, +nv // 2 * cell_v, endpoint=False),
+        "w": numpy.linspace(-nw // 2 * cell_w, +nw // 2 * cell_w, endpoint=False)
+    }
 
-    d2r = numpy.pi / 180.0
-    projection_wcs = copy.deepcopy(im.wcs)
-
-    # WCS Coords are [x, y, z, pol, chan] where x, y, z are spatial axes in real space or Fourier space
-    # Array Coords are [chan, pol, z, y, x] where x, y, z are spatial axes in real space or Fourier space
-    grid_wcs = WCS(naxis=5)
-
-    grid_wcs.wcs.axis_types[0] = 0
-    grid_wcs.wcs.axis_types[1] = 0
-    grid_wcs.wcs.axis_types[2] = 0
-    grid_wcs.wcs.axis_types[3] = im.wcs.wcs.axis_types[2]
-    grid_wcs.wcs.axis_types[4] = im.wcs.wcs.axis_types[3]
-
-    grid_wcs.wcs.ctype[0] = 'UU'
-    grid_wcs.wcs.ctype[1] = 'VV'
-    grid_wcs.wcs.ctype[2] = 'WW'
-    grid_wcs.wcs.ctype[3] = im.wcs.wcs.ctype[2]
-    grid_wcs.wcs.ctype[4] = im.wcs.wcs.ctype[3]
-
-    grid_wcs.wcs.crval[0] = 0.0
-    grid_wcs.wcs.crval[1] = 0.0
-    grid_wcs.wcs.crval[2] = 0.0
-    grid_wcs.wcs.crval[3] = im.wcs.wcs.crval[2]
-    grid_wcs.wcs.crval[4] = im.wcs.wcs.crval[3]
-
-    grid_wcs.wcs.crpix[0] = im["pixels"].data.shape[3] // 2 + 1
-    grid_wcs.wcs.crpix[1] = im["pixels"].data.shape[2] // 2 + 1
-    grid_wcs.wcs.crpix[2] = nw // 2 + 1
-    grid_wcs.wcs.crpix[3] = im.wcs.wcs.crpix[2]
-    grid_wcs.wcs.crpix[4] = im.wcs.wcs.crpix[3]
-
-    grid_wcs.wcs.cdelt[0] = 1.0 / (im["pixels"].data.shape[3] * d2r * im.wcs.wcs.cdelt[0])
-    grid_wcs.wcs.cdelt[1] = 1.0 / (im["pixels"].data.shape[2] * d2r * im.wcs.wcs.cdelt[1])
-    grid_wcs.wcs.cdelt[2] = wstep
-    grid_wcs.wcs.cdelt[3] = im.wcs.wcs.cdelt[2]
-    grid_wcs.wcs.cdelt[4] = im.wcs.wcs.cdelt[3]
-
-    nchan, npol, ny, nx = im["pixels"].data.shape
-    grid_data = numpy.zeros([nchan, npol, nw, ny, nx], dtype='complex')
-
-    if polarisation_frame is not None:
-        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs.deepcopy(),
-                                          projection_wcs=projection_wcs.deepcopy(),
-                                          polarisation_frame=polarisation_frame)
-    else:
-        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs.deepcopy(),
-                                          projection_wcs=projection_wcs.deepcopy(),
-                                          polarisation_frame=im.polarisation_frame)
+    data_vars = dict()
+    data_vars["pixels"] = xarray.DataArray(pixels, coords=coords, attrs=attrs)
 
 
 def convert_griddata_to_image(gd):

@@ -653,11 +653,10 @@ def convert_image_to_hdf(im: Image, f):
     if isinstance(im, Image):
         f.attrs['rascil_data_model'] = 'Image'
         f['data'] = im["pixels"].data
-        f.attrs['wcs'] = numpy.string_(im.wcs.to_header_string())
-        f.attrs['polarisation_frame'] = im.polarisation_frame.type
-        f.attrs['phasecentre_coords'] = im.phasecentre.to_string()
-        f.attrs['phasecentre_frame'] = im.phasecentre.frame.name
-        f.attrs['polarisation_frame'] = im.polarisation_frame.type
+        f.attrs['wcs'] = numpy.string_(im.image_acc.wcs.to_header_string())
+        f.attrs['phasecentre_coords'] = im.image_acc.phasecentre.to_string()
+        f.attrs['phasecentre_frame'] = im.image_acc.phasecentre.frame.name
+        f.attrs['polarisation_frame'] = im.image_acc.polarisation_frame
         f.attrs['frequency'] = im.frequency
     
     return f

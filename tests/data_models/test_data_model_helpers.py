@@ -8,6 +8,7 @@ import unittest
 
 import astropy.units as u
 import numpy
+import xarray
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.data_model_helpers import import_blockvisibility_from_hdf5, export_blockvisibility_to_hdf5, \
@@ -20,10 +21,11 @@ from rascil.data_models.data_model_helpers import import_blockvisibility_from_hd
     import_convolutionfunction_from_hdf5, export_convolutionfunction_to_hdf5
 from rascil.data_models.memory_data_models import Skycomponent, SkyModel
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.processing_components.image import create_image
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
 from rascil.processing_components.calibration.pointing import create_pointingtable_from_blockvisibility
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.simulation import simulate_gaintable, create_test_image
+from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.simulation.pointing import simulate_pointingtable
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility
@@ -50,7 +52,7 @@ class TestDataModelHelpers(unittest.TestCase):
         self.compabsdirection = SkyCoord(ra=+181.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
         self.comp = Skycomponent(direction=self.compabsdirection, frequency=self.frequency, flux=self.flux)
         
-        self.verbose = False
+        self.verbose = True
     
     def test_readwriteblockvisibility(self):
         self.vis = create_blockvisibility(self.mid, self.times, self.frequency,
@@ -95,11 +97,25 @@ class TestDataModelHelpers(unittest.TestCase):
         newgt.equals(gt)
 
     def test_readwriteimage(self):
-        im = create_test_image()
+        im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
+                          polarisation_frame=PolarisationFrame("stokesIQUV"))
         if self.verbose:
             print(im)
         export_image_to_hdf5(im, '%s/test_data_model_helpers_image.hdf' % self.dir)
         newim = import_image_from_hdf5('%s/test_data_model_helpers_image.hdf' % self.dir)
+        newim.equals(im)
+
+    @unittest.skip("Zarr io not yet working")
+    def test_readwriteimage_zarr(self):
+        im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
+                          polarisation_frame=PolarisationFrame("stokesIQUV"))
+        if self.verbose:
+            print(im)
+        im.to_zarr('%s/test_data_model_helpers_image.zarr' % self.dir)
+        import os
+        infile = os.path.expanduser('%s/test_data_model_helpers_image.zarr' % self.dir)
+        print(infile)
+        newim = xarray.open_zarr()
         newim.equals(im)
 
     def test_readwriteskycomponent(self):
@@ -115,7 +131,8 @@ class TestDataModelHelpers(unittest.TestCase):
                                           phasecentre=self.phasecentre,
                                           polarisation_frame=PolarisationFrame("linear"),
                                           weight=1.0)
-        im = create_test_image()
+        im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
+                          polarisation_frame=PolarisationFrame("stokesIQUV"))
         gt = create_gaintable_from_blockvisibility(self.vis, timeslice='auto')
         sm = SkyModel(components=[self.comp], image=im, gaintable=gt)
         export_skymodel_to_hdf5(sm, '%s/test_data_model_helpers_skymodel.hdf' % self.dir)
@@ -125,7 +142,8 @@ class TestDataModelHelpers(unittest.TestCase):
         assert newsm.image.equals(im)
 
     def test_readwritegriddata(self):
-        im = create_test_image()
+        im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
+                          polarisation_frame=PolarisationFrame("stokesIQUV"))
         gd = create_griddata_from_image(im)
         if self.verbose:
             print(gd)
@@ -134,7 +152,8 @@ class TestDataModelHelpers(unittest.TestCase):
         assert newgd.equals(gd)
 
     def test_readwriteconvolutionfunction(self):
-        im = create_test_image()
+        im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
+                          polarisation_frame=PolarisationFrame("stokesIQUV"))
         cf = create_convolutionfunction_from_image(im)
         if self.verbose:
             print(cf)

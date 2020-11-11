@@ -26,7 +26,7 @@ def get_direction_time_location(bvis):
                                  z=Quantity(bvis.configuration.antxyz[2]))
 
     utc_time = Time(bvis.time / 86400.0, format='mjd', scale='utc')
-    direction = bvis.attrs["phasecentre"]
+    direction = bvis.phasecentre
     #assert isinstance(bvis, BlockVisibility), bvis
     assert isinstance(location, EarthLocation), location
     assert isinstance(utc_time, Time), utc_time

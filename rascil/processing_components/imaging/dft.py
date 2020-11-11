@@ -54,8 +54,8 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
     for comp in sc:
         #assert isinstance(comp, Skycomponent), comp
         flux = comp.flux
-        if comp.polarisation_frame != vis.polarisation_frame:
-            flux = convert_pol_frame(flux, comp.polarisation_frame, vis.polarisation_frame)
+        if comp.polarisation_frame != vis.blockvisibility_acc.polarisation_frame:
+            flux = convert_pol_frame(flux, comp.polarisation_frame, vis.blockvisibility_acc.polarisation_frame)
 
         if len(comp.frequency) == len(vis.frequency) and \
                 numpy.allclose(comp.frequency,vis.frequency.data, rtol=1e-15):
@@ -108,8 +108,8 @@ def idft_visibility_skycomponent(vis: BlockVisibility,
 
         flux[weight > 0.0] = flux[weight > 0.0] / weight[weight > 0.0]
         flux[weight <= 0.0] = 0.0
-        if comp.polarisation_frame != vis.polarisation_frame:
-            flux = convert_pol_frame(flux, vis.polarisation_frame, comp.polarisation_frame)
+        if comp.polarisation_frame != vis.blockvisibility_acc.polarisation_frame:
+            flux = convert_pol_frame(flux, vis.blockvisibility_acc.polarisation_frame, comp.polarisation_frame)
 
         newcomp.flux = flux
 

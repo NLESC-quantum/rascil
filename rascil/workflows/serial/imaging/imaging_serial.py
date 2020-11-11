@@ -393,7 +393,7 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
     def grid_wt(vis, model, g):
         if vis is not None:
             if model is not None:
-                griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
+                griddata = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
                 griddata = grid_blockvisibility_weight_to_griddata(vis, griddata, g[0][1])
                 return griddata
             else:
@@ -410,7 +410,7 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
             if vis is not None:
                 # Ensure that the griddata has the right axes so that the convolution
                 # function mapping works
-                agd = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
+                agd = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
                 agd['pixels'].data = gd[0]['pixels'].data
                 vis = griddata_blockvisibility_reweight(vis, agd, g[0][1])
                 return vis

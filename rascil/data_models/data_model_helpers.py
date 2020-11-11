@@ -215,7 +215,7 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     f.attrs['npol'] = vis.blockvisibility_acc.npol
     f.attrs['phasecentre_coords'] = vis.phasecentre.to_string()
     f.attrs['phasecentre_frame'] = vis.phasecentre.frame.name
-    f.attrs['polarisation_frame'] = vis.polarisation_frame.type
+    f.attrs['polarisation_frame'] = vis.blockvisibility_acc.polarisation_frame.type
     f.attrs['source'] = vis.source
     f.attrs['meta'] = str(vis.meta)
     datavars = ["time", "frequency", "channel_bandwidth",
@@ -656,7 +656,7 @@ def convert_image_to_hdf(im: Image, f):
         f.attrs['wcs'] = numpy.string_(im.image_acc.wcs.to_header_string())
         f.attrs['phasecentre_coords'] = im.image_acc.phasecentre.to_string()
         f.attrs['phasecentre_frame'] = im.image_acc.phasecentre.frame.name
-        f.attrs['polarisation_frame'] = im.image_acc.polarisation_frame
+        f.attrs['polarisation_frame'] = im.image_acc.polarisation_frame.type
         f.attrs['frequency'] = im.frequency
     
     return f

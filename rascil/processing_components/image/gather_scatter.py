@@ -126,7 +126,7 @@ def image_scatter_channels(im: Image, subimages=None) -> List[Image]:
     See also
         :py:func:`rascil.processing_components.image.iterators.image_channel_iter`
     """
-    return image_scatter(im, "frequency")
+    return image_scatter(im, "channel")
 
 
 def image_gather_channels(image_list: List[Image], im: Image = None, subimages=0) -> Image:
@@ -140,7 +140,7 @@ def image_gather_channels(image_list: List[Image], im: Image = None, subimages=0
     :param subimages: Number of image partitions on each axis (2)
     :return: list of subimages
     """
-    return xarray.concat(image_list, dim="frequency")
+    return xarray.concat(image_list, dim="channel")
     
     # if im is None:
     #     nchan = len(image_list)

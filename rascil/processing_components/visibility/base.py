@@ -263,7 +263,7 @@ def phaserotate_visibility(vis: BlockVisibility,
     :param inverse: Actually do the opposite
     :return: BlockVisibility or BlockVisibility
     """
-    l, m, n = skycoord_to_lmn(newphasecentre, vis.attrs["phasecentre"])
+    l, m, n = skycoord_to_lmn(newphasecentre, vis.phasecentre)
     
     # No significant change?
     if numpy.abs(n) < 1e-15:
@@ -288,12 +288,12 @@ def phaserotate_visibility(vis: BlockVisibility,
         nrows, nbl, _ = vis.uvw.shape
         if inverse:
             uvw_linear = vis.uvw.data.reshape([nrows * nbl, 3])
-            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.attrs["phasecentre"].ra.rad, dec=newvis.attrs["phasecentre"].dec.rad)
+            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
             uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
         else:
             # This is the original (non-inverse) code
             uvw_linear = newvis.uvw.data.reshape([nrows * nbl, 3])
-            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.attrs["phasecentre"].ra.rad, dec=newvis.attrs["phasecentre"].dec.rad)
+            xyz = uvw_to_xyz(uvw_linear, ha=-newvis.phasecentre.ra.rad, dec=newvis.phasecentre.dec.rad)
             uvw_linear = xyz_to_uvw(xyz, ha=-newphasecentre.ra.rad, dec=newphasecentre.dec.rad)[...]
         newvis.attrs["phasecentre"] = newphasecentre
         newvis['uvw'].data[...] = uvw_linear.reshape([nrows, nbl, 3])
@@ -345,25 +345,25 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         # Check polarisation
         npol = vis.blockvisibility_acc.npol
         nchan = vis.blockvisibility_acc.nchan
-        if vis.polarisation_frame.type == 'linear':
+        if vis.blockvisibility_acc.polarisation_frame.type == 'linear':
             polarization = ['XX', 'XY', 'YX', 'YY']
-        elif vis.polarisation_frame.type == 'linearnp':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'linearnp':
             polarization = ['XX', 'YY']
-        elif vis.polarisation_frame.type == 'stokesI':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesI':
             polarization = ['XX']
-        elif vis.polarisation_frame.type == 'circular':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'circular':
             polarization = ['RR', 'RL', 'LR', 'LL']
-        elif vis.polarisation_frame.type == 'circularnp':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'circularnp':
             polarization = ['RR', 'LL']
-        elif vis.polarisation_frame.type == 'stokesIQUV':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIQUV':
             polarization = ['I', 'Q', 'U', 'V']
-        elif vis.polarisation_frame.type == 'stokesIQ':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIQ':
             polarization = ['I', 'Q']
-        elif vis.polarisation_frame.type == 'stokesIV':
+        elif vis.blockvisibility_acc.polarisation_frame.type == 'stokesIV':
             polarization = ['I', 'V']
         else:
             raise ValueError(
-                "Unknown visibility polarisation %s" % (vis.polarisation_frame.type))
+                "Unknown visibility polarisation %s" % (vis.blockvisibility_acc.polarisation_frame.type))
         
         tbl.set_stokes(polarization)
         tbl.set_frequency(vis["frequency"].data, vis["channel_bandwidth"].data)
@@ -404,14 +404,14 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
                                      vis['vis'].data[ntime, ..., ipol],
                                      pol=pol,
                                      source=source_name,
-                                     phasecentre=vis.attrs["phasecentre"],
+                                     phasecentre=vis.phasecentre,
                                      uvw=vis['uvw'].data[ntime, :, :])
                 else:
                     tbl.add_data_set(time.data, 0, bl_list,
                                      vis['vis'].data[ntime, ..., ipol],
                                      pol=pol,
                                      source=source_name,
-                                     phasecentre=vis.attrs["phasecentre"],
+                                     phasecentre=vis.phasecentre,
                                      uvw=vis['uvw'].data[ntime, :, :])
     tbl.write()
 

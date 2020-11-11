@@ -72,7 +72,7 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=No
         assert len(model_imagelist) > 0
         
         def make_gcfcf(m, v):
-            return create_pswf_convolutionfunction(m, polarisation_frame=v.polarisation_frame)
+            return create_pswf_convolutionfunction(m, polarisation_frame=v.blockvisibility_acc.polarisation_frame)
         
         gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(model_imagelist)]
     
@@ -128,7 +128,7 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
         assert len(template_model_imagelist) > 0
         
         def make_gcfcf(m, v):
-            return create_pswf_convolutionfunction(m, polarisation_frame=v.polarisation_frame)
+            return create_pswf_convolutionfunction(m, polarisation_frame=v.blockvisibility_acc.polarisation_frame)
         
         gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(template_model_imagelist)]
     
@@ -416,7 +416,7 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
     def grid_wt(vis, model, g):
         if vis is not None:
             if model is not None:
-                griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
+                griddata = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
                 griddata = grid_blockvisibility_weight_to_griddata(vis, griddata, g[0][1])
                 
                 return griddata
@@ -437,7 +437,7 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
             if vis is not None:
                 # Ensure that the griddata has the right axes so that the convolution
                 # function mapping works
-                agd = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
+                agd = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
                 agd["pixels"].data = gd[0]["pixels"].data
                 vis = griddata_blockvisibility_reweight(vis, agd, g[0][1], weighting=weighting,
                                                         robustness=robustness)

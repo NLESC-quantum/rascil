@@ -39,7 +39,7 @@ class TestCreateMS(unittest.TestCase):
         
         for v in self.vis:
             assert v.vis.data.shape[-1] == 4
-            assert v.polarisation_frame.type == "circular"
+            assert v.blockvisibility_acc.polarisation_frame.type == "circular"
 
     def test_create_list_spectral(self):
         if not self.casacore_available:
@@ -58,7 +58,7 @@ class TestCreateMS(unittest.TestCase):
         assert len(vis_by_channel) == 12
         for v in vis_by_channel:
             assert v.vis.data.shape[-1] == 4
-            assert v.polarisation_frame.type == "linear"
+            assert v.blockvisibility_acc.polarisation_frame.type == "linear"
 
     def test_create_list_slice(self):
         if not self.casacore_available:
@@ -78,7 +78,7 @@ class TestCreateMS(unittest.TestCase):
         assert len(vis_by_channel) == 12
         for v in vis_by_channel:
             assert v.vis.data.shape[-1] == 4
-            assert v.polarisation_frame.type == "linear"
+            assert v.blockvisibility_acc.polarisation_frame.type == "linear"
 
     def test_create_list_slice_visibility(self):
         if not self.casacore_available:
@@ -99,7 +99,7 @@ class TestCreateMS(unittest.TestCase):
         assert len(vis_by_channel) == 12
         for v in vis_by_channel:
             assert v.vis.data.shape[-1] == 4
-            assert v.polarisation_frame.type == "linear"
+            assert v.blockvisibility_acc.polarisation_frame.type == "linear"
             assert numpy.max(numpy.abs(v.vis)) > 0.0
             assert numpy.max(numpy.abs(v.blockvisibility_acc.flagged_vis)) > 0.0
             assert numpy.sum(v.weight) > 0.0
@@ -124,7 +124,7 @@ class TestCreateMS(unittest.TestCase):
         assert len(vis_by_channel) == 12
         for ivis, v in enumerate(vis_by_channel):
             assert v.vis.data.shape[-1] == 4
-            assert v.polarisation_frame.type == "linear"
+            assert v.blockvisibility_acc.polarisation_frame.type == "linear"
             assert numpy.max(numpy.abs(v.vis)) > 0.0, ivis
             assert numpy.max(numpy.abs(v.blockvisibility_acc.flagged_vis)) > 0.0, ivis
             assert numpy.sum(v.weight) > 0.0, ivis
@@ -147,7 +147,7 @@ class TestCreateMS(unittest.TestCase):
         assert len(vis_by_channel) == 8, len(vis_by_channel)
         for v in vis_by_channel:
             assert v.vis.data.shape[-1] == 4
-            assert v.polarisation_frame.type == "linear"
+            assert v.blockvisibility_acc.polarisation_frame.type == "linear"
 
     def test_create_list_spectral_average(self):
         if not self.casacore_available:
@@ -167,7 +167,7 @@ class TestCreateMS(unittest.TestCase):
         for v in vis_by_channel:
             assert v.vis.data.shape[-1] == 4
             assert v.vis.data.shape[-2] == 1
-            assert v.polarisation_frame.type == "linear"
+            assert v.blockvisibility_acc.polarisation_frame.type == "linear"
             assert numpy.max(numpy.abs(v.vis)) > 0.0
             assert numpy.max(numpy.abs(v.blockvisibility_acc.flagged_vis)) > 0.0
             

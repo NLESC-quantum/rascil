@@ -130,7 +130,7 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
     """
     if gcfcf is None:
         def make_gcfcf(m, v):
-            return create_pswf_convolutionfunction(m, polarisation_frame=v.polarisation_frame)
+            return create_pswf_convolutionfunction(m, polarisation_frame=v.blockvisibility_acc.polarisation_frame)
         gcfcf = [rsexecute.execute(make_gcfcf)(model_imagelist[0], vis_list[0])]
     
     psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True, gcfcf=gcfcf,

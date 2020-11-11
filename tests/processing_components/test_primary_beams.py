@@ -100,8 +100,8 @@ class TestPrimaryBeams(unittest.TestCase):
             beam = create_vp(model, telescope=telescope, padding=4)
             beam_data = beam["pixels"].data
             beam["pixels"].data = numpy.real(beam_data)
-            beam.wcs.wcs.crval[0] = 0.0
-            beam.wcs.wcs.crval[1] = 90.0
+            beam.image_acc.wcs.wcs.crval[0] = 0.0
+            beam.image_acc.wcs.wcs.crval[1] = 90.0
             if self.persist: export_image_to_fits(beam,
                                                   "%s/test_voltage_pattern_real_zenith_%s.fits" % (self.dir, telescope))
 

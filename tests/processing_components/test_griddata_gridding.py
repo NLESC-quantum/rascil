@@ -245,7 +245,7 @@ class TestGridDataGridding(unittest.TestCase):
     def test_griddata_predict_aterm(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
-        modelIQUV = convert_stokes_to_polimage(self.model, self.vis.polarisation_frame)
+        modelIQUV = convert_stokes_to_polimage(self.model, self.vis.blockvisibility_acc.polarisation_frame)
         griddata = create_griddata_from_image(modelIQUV, polarisation_frame=self.vis_pol)
         gcf, cf = create_awterm_convolutionfunction(modelIQUV, make_pb=make_pb, nw=1,
                                                     oversampling=16, support=32,
@@ -259,7 +259,7 @@ class TestGridDataGridding(unittest.TestCase):
         self.actualSetUp(zerow=False, image_pol=PolarisationFrame("stokesIQUV"))
         gcf, cf = create_awterm_convolutionfunction(self.model, nw=11, wstep=80.0, oversampling=4, support=32,
                                                     use_aaf=True, polarisation_frame=self.vis_pol)
-        modelIQUV = convert_stokes_to_polimage(self.model, self.vis.polarisation_frame)
+        modelIQUV = convert_stokes_to_polimage(self.model, self.vis.blockvisibility_acc.polarisation_frame)
         griddata = create_griddata_from_image(modelIQUV, polarisation_frame=self.vis_pol)
         griddata = fft_image_to_griddata(modelIQUV, griddata, gcf)
         newvis = degrid_blockvisibility_from_griddata(self.vis, griddata=griddata, cf=cf)
@@ -270,7 +270,7 @@ class TestGridDataGridding(unittest.TestCase):
     
     def test_griddata_predict_awterm(self):
         self.actualSetUp(zerow=False, image_pol=PolarisationFrame("stokesIQUV"))
-        modelIQUV = convert_stokes_to_polimage(self.model, self.vis.polarisation_frame)
+        modelIQUV = convert_stokes_to_polimage(self.model, self.vis.blockvisibility_acc.polarisation_frame)
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)
         pb = make_pb(modelIQUV)
         if self.persist:

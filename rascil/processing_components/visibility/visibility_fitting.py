@@ -25,7 +25,7 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
     :return: Skycomponent, convergence info as a dictionary
     """
     
-    assert vis.polarisation_frame.type == 'stokesI', "Currently restricted to stokesI"
+    assert vis.blockvisibility_acc.polarisation_frame.type == 'stokesI', "Currently restricted to stokesI"
     
     # These derivative have been calculated using sympy. See visibility_fitting_sympy.py
     def J(params):
@@ -90,7 +90,7 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
     
     # Initialize l,m,n to be in the direction of the component as defined in the frame of
     # visibility phasecentre
-    l, m, n = skycoord_to_lmn(sc.direction, vis.attrs["phasecentre"])
+    l, m, n = skycoord_to_lmn(sc.direction, vis.phasecentre)
     
     x0 = numpy.array([sc.flux[0, 0], l, m])
     
@@ -115,6 +115,6 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
     
     sc.flux[...] = res.x[0]
     lmn = (res.x[1], res.x[2], 0.0)
-    sc.direction = lmn_to_skycoord(lmn, vis.attrs["phasecentre"])
+    sc.direction = lmn_to_skycoord(lmn, vis.phasecentre)
     
     return sc, res

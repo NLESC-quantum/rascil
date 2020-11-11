@@ -41,7 +41,7 @@ class TestCreateMS(unittest.TestCase):
     
     #     for v in self.vis:
     #         assert v.vis.data.shape[-1] == 4
-    #         assert v.polarisation_frame.type == "circular"
+    #         assert v.blockvisibility_acc.polarisation_frame.type == "circular"
     
     @unittest.skip("Visibility with xarray not yet implemented")
     def test_create_list_spectral(self):
@@ -59,7 +59,7 @@ class TestCreateMS(unittest.TestCase):
         assert len(vis_by_channel) == 12
         for v in vis_by_channel:
             assert v.vis.data.shape[-1] == 4
-            assert v.polarisation_frame.type == "linear"
+            assert v.blockvisibility_acc.polarisation_frame.type == "linear"
 
     def test_create_list_spectral_average(self):
         
@@ -77,7 +77,7 @@ class TestCreateMS(unittest.TestCase):
         for v in vis_by_channel:
             assert v.vis.data.shape[-1] == 4
             assert v.vis.data.shape[-2] == 1
-            assert v.polarisation_frame.type == "linear"
+            assert v.blockvisibility_acc.polarisation_frame.type == "linear"
 
     @unittest.skip("Visibility with xarray not yet implemented")
     def test_invert(self):

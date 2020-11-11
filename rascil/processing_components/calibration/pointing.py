@@ -65,7 +65,7 @@ def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_fra
     ufrequency = numpy.unique(vis.frequency)
     nfrequency = len(ufrequency)
     
-    receptor_frame = ReceptorFrame(vis.polarisation_frame.type)
+    receptor_frame = ReceptorFrame(vis.blockvisibility_acc.polarisation_frame.type)
     nrec = receptor_frame.nrec
     
     pointingshape = [ntimes, nants, nfrequency, nrec, 2]

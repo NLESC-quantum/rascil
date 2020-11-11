@@ -67,8 +67,8 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
 
     """
     assert len(im["pixels"].data.shape) == 4
-    assert im.wcs.wcs.ctype[0] == 'RA---SIN', im.wcs.wcs.ctype[0]
-    assert im.wcs.wcs.ctype[1] == 'DEC--SIN', im.wcs.wcs.ctype[1]
+    assert im.image_acc.wcs.wcs.ctype[0] == 'RA---SIN', im.image_acc.wcs.wcs.ctype[0]
+    assert im.image_acc.wcs.wcs.ctype[1] == 'DEC--SIN', im.image_acc.wcs.wcs.ctype[1]
     
     d2r = numpy.pi / 180.0
     
@@ -81,42 +81,42 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     cf_wcs.wcs.axis_types[2] = 0
     cf_wcs.wcs.axis_types[3] = 0
     cf_wcs.wcs.axis_types[4] = 0
-    cf_wcs.wcs.axis_types[5] = im.wcs.wcs.axis_types[2]
-    cf_wcs.wcs.axis_types[6] = im.wcs.wcs.axis_types[3]
+    cf_wcs.wcs.axis_types[5] = im.image_acc.wcs.wcs.axis_types[2]
+    cf_wcs.wcs.axis_types[6] = im.image_acc.wcs.wcs.axis_types[3]
     
     cf_wcs.wcs.ctype[0] = 'UU'
     cf_wcs.wcs.ctype[1] = 'VV'
     cf_wcs.wcs.ctype[2] = 'DUU'
     cf_wcs.wcs.ctype[3] = 'DVV'
     cf_wcs.wcs.ctype[4] = wtype
-    cf_wcs.wcs.ctype[5] = im.wcs.wcs.ctype[2]
-    cf_wcs.wcs.ctype[6] = im.wcs.wcs.ctype[3]
+    cf_wcs.wcs.ctype[5] = im.image_acc.wcs.wcs.ctype[2]
+    cf_wcs.wcs.ctype[6] = im.image_acc.wcs.wcs.ctype[3]
     
     cf_wcs.wcs.crval[0] = 0.0
     cf_wcs.wcs.crval[1] = 0.0
     cf_wcs.wcs.crval[2] = 0.0
     cf_wcs.wcs.crval[3] = 0.0
     cf_wcs.wcs.crval[4] = 0.0
-    cf_wcs.wcs.crval[5] = im.wcs.wcs.crval[2]
-    cf_wcs.wcs.crval[6] = im.wcs.wcs.crval[3]
+    cf_wcs.wcs.crval[5] = im.image_acc.wcs.wcs.crval[2]
+    cf_wcs.wcs.crval[6] = im.image_acc.wcs.wcs.crval[3]
     
     cf_wcs.wcs.crpix[0] = float(support // 2) + 1.0
     cf_wcs.wcs.crpix[1] = float(support // 2) + 1.0
     cf_wcs.wcs.crpix[2] = float(oversampling // 2) + 1.0
     cf_wcs.wcs.crpix[3] = float(oversampling // 2) + 1.0
     cf_wcs.wcs.crpix[4] = float(nw // 2 + 1)
-    cf_wcs.wcs.crpix[5] = im.wcs.wcs.crpix[2]
-    cf_wcs.wcs.crpix[6] = im.wcs.wcs.crpix[3]
+    cf_wcs.wcs.crpix[5] = im.image_acc.wcs.wcs.crpix[2]
+    cf_wcs.wcs.crpix[6] = im.image_acc.wcs.wcs.crpix[3]
     
     # The sampling on the UU and VV axes should be the same as for the image.
     # The sampling on the DUU and DVV axes should be oversampling times finer.
-    cf_wcs.wcs.cdelt[0] = 1.0 / (im["pixels"].data.shape[3] * d2r * im.wcs.wcs.cdelt[0])
-    cf_wcs.wcs.cdelt[1] = 1.0 / (im["pixels"].data.shape[2] * d2r * im.wcs.wcs.cdelt[1])
+    cf_wcs.wcs.cdelt[0] = 1.0 / (im["pixels"].data.shape[3] * d2r * im.image_acc.wcs.wcs.cdelt[0])
+    cf_wcs.wcs.cdelt[1] = 1.0 / (im["pixels"].data.shape[2] * d2r * im.image_acc.wcs.wcs.cdelt[1])
     cf_wcs.wcs.cdelt[2] = cf_wcs.wcs.cdelt[0] / oversampling
     cf_wcs.wcs.cdelt[3] = cf_wcs.wcs.cdelt[1] / oversampling
     cf_wcs.wcs.cdelt[4] = wstep
-    cf_wcs.wcs.cdelt[5] = im.wcs.wcs.cdelt[2]
-    cf_wcs.wcs.cdelt[6] = im.wcs.wcs.cdelt[3]
+    cf_wcs.wcs.cdelt[5] = im.image_acc.wcs.wcs.cdelt[2]
+    cf_wcs.wcs.cdelt[6] = im.image_acc.wcs.wcs.cdelt[3]
     
     nchan, npol, ny, nx = im["pixels"].data.shape
     
@@ -125,13 +125,13 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     if polarisation_frame is not None:
         return ConvolutionFunction(data=cf_data,
                                    grid_wcs=cf_wcs.deepcopy(),
-                                   projection_wcs=im.wcs.deepcopy(),
+                                   projection_wcs=im.image_acc.wcs.deepcopy(),
                                    polarisation_frame=polarisation_frame)
     else:
         return ConvolutionFunction(data=cf_data,
                                    grid_wcs=cf_wcs.deepcopy(),
-                                   projection_wcs=im.wcs.deepcopy(),
-                                   polarisation_frame=im.polarisation_frame)
+                                   projection_wcs=im.image_acc.wcs.deepcopy(),
+                                   polarisation_frame=im.image_acc.polarisation_frame)
 
 
 def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):

@@ -389,39 +389,29 @@ class Image(xarray.Dataset):
     """Image class with pixels as an xarray.DataArray and the AstroPy`implementation of
     a World Coodinate System <http://docs.astropy.org/en/stable/wcs>`_
     
-    The actual image values are kept in a data_var of the Dataset called "pixels"
+    The actual image values are kept in a data_var of the xarray.Dataset called "pixels"
 
-    Many operations can be done conveniently using numpy processing_components on Image or on
-    Image["pixels"].data. If the "pixels" data variable is chunk then Dask is automatically
-    used whereever possible to distribute processing.
+    Many operations can be done conveniently using xarray processing_components on Image or on
+    numpy operations on Image["pixels"].data. If the "pixels" data variable is chunked then
+    Dask is automatically used whereever possible to distribute processing.
 
-    Most of the imaging processing_components require an image in canonical format:
-    - 4 axes: RA, DEC, POL, FREQ
-
-    The conventions for indexing in WCS and numpy are opposite.
-    - In astropy.wcs, the order is (longitude, latitude, polarisation, frequency)
-    - in numpy, the order is (frequency, polarisation, latitude, longitude)
-
-    .. warning::
-        The polarisation_frame is kept in two places, the WCS and the polarisation_frame
-        variable. The latter should be considered definitive.
-        
     Here is an example::
     
         <xarray.Image>
-        Dimensions:       (frequency: 1, l: 256, m: 256, polarisation: 1)
+        Dimensions:       (chan: 3, pol: 4, x: 256, y: 256)
         Coordinates:
-          * frequency     (frequency) float64 1e+08
-          * polarisation  (polarisation) <U1 'I'
-          * m             (m) float64 34.96 34.96 34.97 34.97 ... 35.03 35.04 35.04
-          * l             (l) float64 -0.03556 -0.03528 -0.035 ... 0.035 0.03528 0.03556
+            frequency     (chan) float64 1e+08 1.01e+08 1.02e+08
+            polarisation  (pol) <U1 'I' 'Q' 'U' 'V'
+          * y             (y) float64 -35.11 -35.11 -35.11 ... -34.89 -34.89 -34.89
+          * x             (x) float64 179.9 179.9 179.9 179.9 ... 180.1 180.1 180.1
+            ra            (x, y) float64 180.1 180.1 180.1 180.1 ... 179.9 179.9 179.9
+            dec           (x, y) float64 -35.11 -35.11 -35.11 ... -34.89 -34.89 -34.89
+        Dimensions without coordinates: chan, pol
         Data variables:
-            pixels        (frequency, polarisation, m, l) float64 0.0 0.0 ... 0.0 0.0
+            pixels        (chan, pol, y, x) float64 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0
         Attributes:
-            phasecentre:         <SkyCoord (ICRS): (ra, dec) in deg     (0., 35.)>
-            wcs:                 WCS Keywords Number of WCS axes: 4 CTYPE : 'RA--...
-            polarisation_frame:  stokesI
-            rascil_data_model:   Image
+            rascil_data_model:  Image
+            frame:              icrs
 
 
     """
@@ -429,12 +419,13 @@ class Image(xarray.Dataset):
     __slots__ = ()
     
     def __init__(self, data, phasecentre, frequency, polarisation_frame=None, wcs=None):
-        """ Create an XImage
+        """ Create an Image
 
-        :param frequency:
-        :param phasecentre:
-        :param polarisation_frame:
-        :return: Image
+        :param data: pixel values
+        :param frequency: Frequency as an numpy array (Hz)
+        :param phasecentre: As a SkyCoord
+        :param polarisation_frame: as a PolarisationFrame object
+        :return: Image (i.e. xarray.Dataset)
         """
         super().__init__()
         
@@ -445,10 +436,9 @@ class Image(xarray.Dataset):
         cx = phasecentre.ra.to("deg").value
         cy = phasecentre.dec.to("deg").value
         
-        
         lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
         ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
-        
+
         # Define the names of the dimensions
         dims = {
             "chan": nchan,
@@ -485,7 +475,9 @@ class Image(xarray.Dataset):
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         
         attrs = {"rascil_data_model": "Image",
-                 "frame": phasecentre.frame.name}
+                 "frame": phasecentre.frame.name,
+                 "ctypes": [str(c) for c in wcs.wcs.ctype]
+        }
         
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
@@ -1098,6 +1090,7 @@ class BlockVisibility(xarray.Dataset):
         attrs = dict()
         attrs["configuration"] = configuration  # Antenna/station configuration
         attrs["source"] = source
+        attrs["phasecentre"] = phasecentre
         attrs["meta"] = meta
         
         super().__init__(datavars, coords=coords, attrs=attrs)
@@ -1131,8 +1124,16 @@ class BlockVisibilityAccessor(XarrayAccessorMixin):
     def npol(self):
         """ Number of polarisations
         """
-        return self._obj.polarisation_frame.npol
-    
+        return len(self._obj.polarisation)
+
+    @property
+    def polarisation_frame(self):
+        """Polarisation frame (from coords)
+
+        :return:
+        """
+        return PolarisationFrame(polarisation_frame_from_names(self._obj.polarisation))
+
     @property
     def nants(self):
         """ Number of antennas

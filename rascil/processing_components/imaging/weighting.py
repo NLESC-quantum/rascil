@@ -43,9 +43,9 @@ def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.
 
     assert image_is_canonical(model)
     if gcfcf is None:
-        gcfcf = create_pswf_convolutionfunction(model, polarisation_frame=vis.polarisation_frame)
+        gcfcf = create_pswf_convolutionfunction(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
 
-    griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
+    griddata = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
     griddata, sumwt = grid_blockvisibility_weight_to_griddata(vis, griddata, gcfcf[1])
     vis = griddata_blockvisibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
 

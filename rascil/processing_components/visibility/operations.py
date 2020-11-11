@@ -120,7 +120,7 @@ def remove_continuum_blockvisibility(vis: BlockVisibility, degree=1,
             vis.frequency[0] - vis.frequency[nchan // 2])
     for row in range(vis.nvis):
         for ibaseline, baseline in enumerate(vis.baselines):
-            for pol in range(vis.polarisation_frame.npol):
+            for pol in range(vis.blockvisibility_acc.polarisation_frame.npol):
                 wt = numpy.sqrt(vis.blockvisibility_acc.flagged_weight[row, ibaseline, :, pol])
                 if mask is not None:
                     wt[mask] = 0.0
@@ -162,7 +162,7 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
                                       vis=x,
                                       weight=xwt, source=vis.source,
                                       meta=vis.meta,
-                                      polarisation_frame=vis.polarisation_frame)
+                                      polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
     return pointsource_vis
 
 
@@ -203,7 +203,7 @@ def integrate_visibility_by_channel(vis: BlockVisibility) -> BlockVisibility:
                            weight=newweights,
                            imaging_weight=newimaging_weights,
                            integration_time=vis.integration_time.data,
-                           polarisation_frame=vis.polarisation_frame,
+                           polarisation_frame=vis.blockvisibility_acc.polarisation_frame,
                            source=vis.source,
                            meta=vis.meta)
 
@@ -236,7 +236,7 @@ def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=Non
             BlockVisibility(frequency=freq,
                             channel_bandwidth=cb,
                             baselines=vis.baselines,
-                            phasecentre=vis.attrs["phasecentre"],
+                            phasecentre=vis.phasecentre,
                             configuration=vis.configuration,
                             uvw=vis.uvw,
                             time=vis.time,
@@ -245,7 +245,7 @@ def average_blockvisibility_by_channel(vis: BlockVisibility, channel_average=Non
                             weight=numpy.zeros(vis_shape, dtype='float'),
                             imaging_weight=numpy.zeros(vis_shape, dtype='float'),
                             integration_time=vis.integration_time,
-                            polarisation_frame=vis.polarisation_frame,
+                            polarisation_frame=vis.blockvisibility_acc.polarisation_frame,
                             source=vis.source,
                             meta=vis.meta)
         vf = vis.flags[..., group[0]:group[1], :]
@@ -274,7 +274,7 @@ def convert_blockvisibility_to_stokes(vis):
     :param vis: blockvisibility
     :return: Converted visibility data.
     """
-    poldef = vis.polarisation_frame
+    poldef = vis.blockvisibility_acc.polarisation_frame
     if poldef == PolarisationFrame('linear'):
         vis['vis'].data[...] = convert_linear_to_stokes(vis['vis'].data, polaxis=3)
         vis['flags'].data[...] = \
@@ -295,11 +295,11 @@ def convert_blockvisibility_to_stokesI(vis):
     :param vis: blockvisibility
     :return: Converted visibility data.
    """
-    if vis.polarisation_frame == PolarisationFrame('stokesI'):
+    if vis.blockvisibility_acc.polarisation_frame == PolarisationFrame('stokesI'):
         return vis
     
     polarisation_frame = PolarisationFrame('stokesI')
-    poldef = vis.polarisation_frame
+    poldef = vis.blockvisibility_acc.polarisation_frame
     if poldef == PolarisationFrame('linear'):
         vis_data = convert_linear_to_stokesI(vis.blockvisibility_acc.flagged_vis.data)
         vis_flags = numpy.logical_or(vis.flags.data[..., 0], vis.flags.data[..., 3])[
@@ -341,7 +341,7 @@ def convert_blockvisibility_to_stokesI(vis):
     
     return BlockVisibility(frequency=vis.frequency.data,
                            channel_bandwidth=vis.channel_bandwidth.data,
-                           phasecentre=vis.attrs["phasecentre"],
+                           phasecentre=vis.phasecentre,
                            baselines=vis["baselines"],
                            configuration=vis.attrs["configuration"],
                            uvw=vis["uvw"].data,

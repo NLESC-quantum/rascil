@@ -232,7 +232,7 @@ def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
     ufrequency = numpy.unique(vis.frequency)
     nfrequency = len(ufrequency)
     
-    receptor_frame = ReceptorFrame(vis.polarisation_frame.type)
+    receptor_frame = ReceptorFrame(vis.blockvisibility_acc.polarisation_frame.type)
     nrec = receptor_frame.nrec
     
     gainshape = [ntimes, nants, nfrequency, nrec, nrec]

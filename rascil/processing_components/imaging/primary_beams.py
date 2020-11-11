@@ -29,13 +29,21 @@ def set_pb_header(pb, use_local=True):
     :return:
     """
     if use_local:
-        nchan, npol, ny, nx = pb["pixels"].data.shape
-        pb.wcs.wcs.ctype[0] = 'AZELGEO long'
-        pb.wcs.wcs.ctype[1] = 'AZELGEO lati'
-        pb.wcs.wcs.crval[0] = 0.0
-        pb.wcs.wcs.crval[1] = 0.0
-        pb.wcs.wcs.crpix[0] = nx // 2
-        pb.wcs.wcs.crpix[1] = ny // 2
+        ctypes = pb.attrs["ctypes"]
+        ctypes[0] = 'AZELGEO long'
+        ctypes[1] = 'AZELGEO lati'
+
+        nchan, npol, ny, nx = pb["pixels"].shape
+        wcs = pb.image_acc.wcs.copy()
+        wcs.wcs.ctype[0] = 'AZELGEO long'
+        wcs.wcs.ctype[1] = 'AZELGEO lati'
+        wcs.wcs.crval[0] = 0.0
+        wcs.wcs.crval[1] = 0.0
+        wcs.wcs.crpix[0] = nx // 2
+        wcs.wcs.crpix[1] = ny // 2
+        pb = create_image_from_array(pb["pixels"].data,
+                                     wcs=wcs,
+                                     polarisation_frame=pb.image_acc.polarisation_frame)
     
     return pb
 
@@ -212,31 +220,31 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
 
     beam = create_empty_image_like(model)
     beam["pixels"].data = numpy.zeros(beam["pixels"].data.shape, dtype='complex')
-    
+
     nchan, npol, ny, nx = model["pixels"].shape
     
     if pointingcentre is not None:
-        cx, cy = pointingcentre.to_pixel(model.wcs, origin=0)
+        cx, cy = pointingcentre.to_pixel(model.image_acc.wcs, origin=0)
     else:
-        cx, cy = beam.wcs.sub(2).wcs.crpix[0] - 1, beam.wcs.sub(2).wcs.crpix[1] - 1
+        cx, cy = beam.image_acc.wcs.sub(2).wcs.crpix[0] - 1, beam.image_acc.wcs.sub(2).wcs.crpix[1] - 1
     
     for chan in range(nchan):
         
         # The frequency axis is the second to last in the beam
-        frequency = model.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
+        frequency = model.image_acc.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
         wavelength = const.c.to('m s^-1').value / frequency
         
         d2r = numpy.pi / 180.0
-        scale = d2r * numpy.abs(beam.wcs.sub(2).wcs.cdelt[0])
+        scale = d2r * numpy.abs(beam.image_acc.wcs.sub(2).wcs.cdelt[0])
         xx, yy = numpy.meshgrid(scale * (numpy.arange(nx) - cx), scale * (numpy.arange(ny) - cy))
         # Radius of each cell in radians
         rr = numpy.sqrt(xx ** 2 + yy ** 2)
         
         blockage_factor = (blockage / diameter) ** 2
         
-        if beam.polarisation_frame == PolarisationFrame("linear"):
+        if beam.image_acc.polarisation_frame == PolarisationFrame("linear"):
             pols = [0, 3]
-        elif beam.polarisation_frame == PolarisationFrame("circular"):
+        elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
             pols = [0, 3]
         else:
             pols = range(npol)
@@ -287,24 +295,24 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     _, _, pny, pnx = padded_beam["pixels"].data.shape
     
     xfr = fft_image(padded_beam)
-    cx, cy = xfr.wcs.sub(2).wcs.crpix[0] - 1, xfr.wcs.sub(2).wcs.crpix[1] - 1
+    cx, cy = xfr.image_acc.wcs.sub(2).wcs.crpix[0] - 1, xfr.image_acc.wcs.sub(2).wcs.crpix[1] - 1
     
     for chan in range(nchan):
         
         # The frequency axis is the second to last in the beam
-        frequency = xfr.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
+        frequency = xfr.image_acc.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
         wavelength = const.c.to('m s^-1').value / frequency
         
-        scalex = xfr.wcs.sub(2).wcs.cdelt[0] * wavelength
-        scaley = xfr.wcs.sub(2).wcs.cdelt[1] * wavelength
+        scalex = xfr.image_acc.wcs.sub(2).wcs.cdelt[0] * wavelength
+        scaley = xfr.image_acc.wcs.sub(2).wcs.cdelt[1] * wavelength
         # xx, yy in metres
         xx, yy = numpy.meshgrid(scalex * (numpy.arange(pnx) - cx), scaley * (numpy.arange(pny) - cy))
         
         # rr in metres
         rr = numpy.sqrt(xx**2 + yy**2)
-        if beam.polarisation_frame == PolarisationFrame("linear"):
+        if beam.image_acc.polarisation_frame == PolarisationFrame("linear"):
             pols = [0, 3]
-        elif beam.polarisation_frame == PolarisationFrame("circular"):
+        elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
             pols = [0, 3]
         else:
             pols = range(npol)
@@ -317,7 +325,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
         
         if pointingcentre is not None:
             # Correct for pointing centre
-            pcx, pcy = pointingcentre.to_pixel(padded_beam.wcs, origin=0)
+            pcx, pcy = pointingcentre.to_pixel(padded_beam.image_acc.wcs, origin=0)
             pxx, pyy = numpy.meshgrid((numpy.arange(pnx) - cx), (numpy.arange(pny) - cy))
             phase = 2 * numpy.pi * ((pcx - cx) * pxx / float(pnx) + (pcy - cy) * pyy / float(pny))
             for pol in range(npol):
@@ -393,12 +401,12 @@ def convert_azelvp_to_radec(vp, im, pa):
     :return:
     """
     vp = scale_and_rotate_image(vp, angle=pa)
-    vp.wcs.wcs.crval[0] = im.wcs.wcs.crval[0]
-    vp.wcs.wcs.crval[1] = im.wcs.wcs.crval[1]
-    vp.wcs.wcs.ctype[0] = im.wcs.wcs.ctype[0]
-    vp.wcs.wcs.ctype[1] = im.wcs.wcs.ctype[1]
+    vp.image_acc.wcs.wcs.crval[0] = im.image_acc.wcs.wcs.crval[0]
+    vp.image_acc.wcs.wcs.crval[1] = im.image_acc.wcs.wcs.crval[1]
+    vp.image_acc.wcs.wcs.ctype[0] = im.image_acc.wcs.wcs.ctype[0]
+    vp.image_acc.wcs.wcs.ctype[1] = im.image_acc.wcs.wcs.ctype[1]
 
-    rvp, footprint = reproject_image(vp, im.wcs, shape=im["pixels"].data.shape)
+    rvp, footprint = reproject_image(vp, im.image_acc.wcs, shape=im["pixels"].data.shape)
     rvp["pixels"].data[footprint["pixels"].data < 1e-6] = 0.0
 
     return rvp

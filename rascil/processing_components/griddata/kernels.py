@@ -49,7 +49,7 @@ def create_box_convolutionfunction(im, oversampling=1, support=1, polarisation_f
     
     gcf_data = numpy.zeros_like(im["pixels"].data)
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
-    gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
+    gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.image_acc.polarisation_frame)
 
     assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
     assert gcf_image['pixels'].data.dtype == "float", gcf_image['pixels'].data.dtype
@@ -108,7 +108,7 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8, polarisatio
     
     gcf_data = numpy.zeros_like(im["pixels"].data)
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
-    gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
+    gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.image_acc.polarisation_frame)
     
     assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
     assert gcf_image['pixels'].data.dtype == "float", gcf['pixels'].data.dtype
@@ -157,9 +157,9 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     
     cf["pixels"].data[...] = 0.0
     
-    ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
+    ccell = onx * numpy.abs(d2r * im.image_acc.wcs.wcs.cdelt[0]) / qnx
     
-    subim_wcs = im.wcs.deepcopy()
+    subim_wcs = im.image_acc.wcs.deepcopy()
     subim_wcs.wcs.cdelt[0] = -ccell / d2r
     subim_wcs.wcs.cdelt[1] = +ccell / d2r
     subim_wcs.wcs.crpix[0] = qnx // 2 + 1.0
@@ -280,16 +280,16 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     
     cf["pixels"].data[...] = 0.0
     
-    ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
+    ccell = onx * numpy.abs(d2r * im.image_acc.wcs.wcs.cdelt[0]) / qnx
     
-    wcs = im.wcs
+    wcs = im.image_acc.wcs
     wcs.wcs.cdelt[0] = -ccell / d2r
     wcs.wcs.cdelt[1] = +ccell / d2r
     wcs.wcs.crpix[0] = qnx // 2 + 1.0
     wcs.wcs.crpix[1] = qny // 2 + 1.0
     
     subim = create_image_from_array(numpy.zeros([nchan, npol, qny, qnx]), wcs=wcs,
-                                    polarisation_frame=im.polarisation_frame)
+                                    polarisation_frame=im.image_acc.polarisation_frame)
     
     vp = make_vp(subim)
     

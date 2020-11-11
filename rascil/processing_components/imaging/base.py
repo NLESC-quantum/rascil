@@ -74,14 +74,14 @@ def shift_vis_to_image(vis: BlockVisibility, im: Image, tangent: bool = True, in
     # This is the only place in RASCIL where the relationship between the image and visibility
     # frames is defined.
 
-    image_phasecentre = pixel_to_skycoord(nx // 2 + 1, ny // 2 + 1, im.wcs, origin=1)
-    if vis.attrs["phasecentre"].separation(image_phasecentre).rad > 1e-15:
+    image_phasecentre = pixel_to_skycoord(nx // 2 + 1, ny // 2 + 1, im.image_acc.wcs, origin=1)
+    if vis.phasecentre.separation(image_phasecentre).rad > 1e-15:
         if inverse:
             log.debug("shift_vis_from_image: shifting phasecentre from image phase centre %s to visibility phasecentre "
-                      "%s" % (image_phasecentre, vis.attrs["phasecentre"]))
+                      "%s" % (image_phasecentre, vis.phasecentre))
         else:
             log.debug("shift_vis_from_image: shifting phasecentre from vis phasecentre %s to image phasecentre %s" %
-                      (vis.attrs["phasecentre"], image_phasecentre))
+                      (vis.phasecentre, image_phasecentre))
         vis = phaserotate_visibility(vis, image_phasecentre, tangent=tangent, inverse=inverse)
         vis.attrs["phasecentre"] = im.phasecentre
 
@@ -136,12 +136,12 @@ def predict_2d(vis: BlockVisibility, model: Image, gcfcf=None, **kwargs) -> Bloc
         gcf, cf = create_pswf_convolutionfunction(model,
                                                   support=get_parameter(kwargs, "support", 8),
                                                   oversampling=get_parameter(kwargs, "oversampling", 127),
-                                                  polarisation_frame=vis.polarisation_frame)
+                                                  polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
     else:
         gcf, cf = gcfcf
 
-    griddata = create_griddata_from_image(model, polarisation_frame=vis.polarisation_frame)
-    polmodel = convert_stokes_to_polimage(model, vis.polarisation_frame)
+    griddata = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
+    polmodel = convert_stokes_to_polimage(model, vis.blockvisibility_acc.polarisation_frame)
     griddata = fft_image_to_griddata(polmodel, griddata, gcf)
     vis = degrid_blockvisibility_from_griddata(vis, griddata=griddata, cf=cf)
 
@@ -181,11 +181,11 @@ def invert_2d(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: b
         gcf, cf = create_pswf_convolutionfunction(im,
                                                   support=get_parameter(kwargs, "support", 8),
                                                   oversampling=get_parameter(kwargs, "oversampling", 127),
-                                                  polarisation_frame=vis.polarisation_frame)
+                                                  polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
     else:
         gcf, cf = gcfcf
 
-    griddata = create_griddata_from_image(im, polarisation_frame=vis.polarisation_frame)
+    griddata = create_griddata_from_image(im, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
     griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
     result = fft_griddata_to_image(griddata, gcf)
 
@@ -237,22 +237,22 @@ def fill_blockvis_for_psf(svis):
     :param svis:
     :return: visibility with unit vis
     """
-    if svis.polarisation_frame == PolarisationFrame("linear"):
+    if svis.blockvisibility_acc.polarisation_frame == PolarisationFrame("linear"):
         svis['vis'].data[..., 0] = 1.0 + 0.0j
         svis['vis'].data[..., 1:3] = 0.0 + 0.0j
         svis['vis'].data[..., 3] = 1.0 + 0.0j
-    elif svis.polarisation_frame == PolarisationFrame("circular"):
+    elif svis.blockvisibility_acc.polarisation_frame == PolarisationFrame("circular"):
         svis['vis'].data[..., 0] = 1.0 + 0.0j
         svis['vis'].data[..., 1:3] = 0.0 + 0.0j
         svis['vis'].data[..., 3] = 1.0 + 0.0j
-    elif svis.polarisation_frame == PolarisationFrame("linearnp"):
+    elif svis.blockvisibility_acc.polarisation_frame == PolarisationFrame("linearnp"):
         svis['vis'].data[...] = 1.0 + 0.0j
-    elif svis.polarisation_frame == PolarisationFrame("circularnp"):
+    elif svis.blockvisibility_acc.polarisation_frame == PolarisationFrame("circularnp"):
         svis['vis'].data[...] = 1.0 + 0.0j
-    elif svis.polarisation_frame == PolarisationFrame("stokesI"):
+    elif svis.blockvisibility_acc.polarisation_frame == PolarisationFrame("stokesI"):
         svis['vis'].data[...] = 1.0 + 0.0j
     else:
-        raise ValueError("Cannot calculate PSF for {}".format(svis.polarisation_frame))
+        raise ValueError("Cannot calculate PSF for {}".format(svis.blockvisibility_acc.polarisation_frame))
     
     return svis
 
@@ -294,8 +294,8 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
     """
     log.debug("create_image_from_visibility: Parsing parameters to get definition of WCS")
 
-    imagecentre = get_parameter(kwargs, "imagecentre", vis.attrs["phasecentre"])
-    phasecentre = get_parameter(kwargs, "phasecentre", vis.attrs["phasecentre"])
+    imagecentre = get_parameter(kwargs, "imagecentre", vis.phasecentre)
+    phasecentre = get_parameter(kwargs, "phasecentre", vis.phasecentre)
 
     # Spectral processing options
     ufrequency = numpy.unique(vis["frequency"].data)

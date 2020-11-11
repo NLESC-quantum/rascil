@@ -179,10 +179,10 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             for chan in range(nchan):
                 for pol in range(npol):
                     rep_real[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data.real[chan, pol],
-                                                                             im.wcs.sub(2)),
+                                                                             im.image_acc.wcs.sub(2)),
                                                                             newwcs.sub(2), shape[2:], order='bicubic')
                     rep_imag[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data.imag[chan, pol],
-                                                                             im.wcs.sub(2)),
+                                                                             im.image_acc.wcs.sub(2)),
                                                                             newwcs.sub(2), shape[2:], order='bicubic')
             rep = rep_real + 1j * rep_imag
         else:
@@ -202,7 +202,7 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             rep_imag, foot = reproject_interp((im["pixels"].data.imag, im.image_acc.wcs), newwcs, shape, order='bicubic')
             rep = rep_real + 1j * rep_imag
         else:
-            rep, foot = reproject_interp((im["pixels"].data, im.wcs), newwcs, shape, order='bicubic')
+            rep, foot = reproject_interp((im["pixels"].data, im.image_acc.wcs), newwcs, shape, order='bicubic')
         
         if numpy.sum(foot.data) < 1e-12:
             log.warning("reproject_image: no valid points in reprojection")
@@ -271,7 +271,7 @@ def show_image(im: Image, fig=None, title: str = '', pol=0, chan=0, cm='Greys', 
     ##assert isinstance(im, Image), im
     
     fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1, projection=im.wcs.sub([1, 2]))
+    ax = fig.add_subplot(1, 1, 1, projection=im.image_acc.wcs.sub([1, 2]))
     
     if len(im["pixels"].data.shape) == 4:
         data_array = numpy.real(im["pixels"].data[chan, pol, :, :])
@@ -293,7 +293,7 @@ def show_image(im: Image, fig=None, title: str = '', pol=0, chan=0, cm='Greys', 
     
     if components is not None:
         for sc in components:
-            x, y = skycoord_to_pixel(sc.direction, im.wcs, 0, 'wcs')
+            x, y = skycoord_to_pixel(sc.direction, im.image_acc.wcs, 0, 'wcs')
             ax.plot(x, y, marker='+', color='red')
     
     return fig
@@ -323,15 +323,15 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, titl
     
     for isc, sc in enumerate(comps):
         newim = im.copy(deep=True)
-        plt.subplot(111, projection=newim.wcs.sub([1, 2]))
-        centre = numpy.round(skycoord_to_pixel(sc.direction, newim.wcs, 1, 'wcs')).astype('int')
+        plt.subplot(111, projection=newim.image_acc.wcs.sub([1, 2]))
+        centre = numpy.round(skycoord_to_pixel(sc.direction, newim.image_acc.wcs, 1, 'wcs')).astype('int')
         newim["pixels"].data = \
             newim["pixels"].data[:, :, (centre[1] - npixels // 2):(centre[1] + npixels // 2),
             (centre[0] - npixels // 2):(centre[0] + npixels // 2)]
         newim.image_acc.wcs.wcs.crpix[0] -= centre[0] - npixels // 2
         newim.image_acc.wcs.wcs.crpix[1] -= centre[1] - npixels // 2
         plt.imshow(newim["pixels"].data[0, 0, ...], origin='lower', cmap='Greys', vmax=vmax, vmin=vmin)
-        x, y = skycoord_to_pixel(sc.direction, newim.wcs, 0, 'wcs')
+        x, y = skycoord_to_pixel(sc.direction, newim.image_acc.wcs, 0, 'wcs')
         plt.plot(x, y, marker='+', color='red')
         plt.title('Name = %s, flux = %s' % (sc.name, sc.flux))
         plt.show()
@@ -463,8 +463,7 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
         reference_frequency = numpy.average(im.frequency.data)
     log.debug("calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)" % (reference_frequency))
     
-    newim = im.copy(deep=True)
-    newim["pixels"].data[...] = 0.0
+    newim = create_empty_image_like(im)
     
     for moment in range(nmoment):
         for chan in range(nchan):
@@ -494,7 +493,7 @@ def remove_continuum_image(im: Image, degree=1, mask=None):
     
     nchan, npol, ny, nx = im["pixels"].data.shape
     channels = numpy.arange(nchan)
-    frequency = im.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
+    frequency = im.image_acc.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
     frequency -= frequency[nchan // 2]
     frequency /= numpy.max(frequency)
     wt = numpy.ones_like(frequency)
@@ -539,7 +538,7 @@ def convert_stokes_to_polimage(im: Image, polarisation_frame: PolarisationFrame)
         cimarr = convert_stokes_to_circular(im["pixels"].data)
         return create_image_from_array(cimarr, im.image_acc.wcs, polarisation_frame)
     elif polarisation_frame == PolarisationFrame('stokesI'):
-        return create_image_from_array(im["pixels"].data.astype("complex"), im.wcs, PolarisationFrame('stokesI'))
+        return create_image_from_array(im["pixels"].data.astype("complex"), im.image_acc.wcs, PolarisationFrame('stokesI'))
     else:
         raise ValueError("Cannot convert stokes to %s" % (polarisation_frame.type))
 
@@ -584,7 +583,7 @@ def convert_polimage_to_stokes(im: Image, complex_image=False, **kwargs):
     elif im.image_acc.polarisation_frame == PolarisationFrame('stokesI'):
         return create_image_from_array(to_required(im["pixels"].data), im.image_acc.wcs, PolarisationFrame('stokesI'))
     else:
-        raise ValueError("Cannot convert %s to stokes" % (im.polarisation_frame.type))
+        raise ValueError("Cannot convert %s to stokes" % (im.image_acc.polarisation_frame.type))
 
 
 def create_window(template, window_type, **kwargs):
@@ -760,7 +759,7 @@ def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
         linear [-5,-6,-7,-8]
 
     For example::
-        pol_frame = polarisation_frame_from_wcs(im.wcs, im["pixels"].data.shape)
+        pol_frame = polarisation_frame_from_wcs(im.image_acc.wcs, im["pixels"].data.shape)
 
 
     :param wcs: World Coordinate System
@@ -799,9 +798,9 @@ def create_empty_image_like(im: Image) -> Image:
 
     """
     
-    newim = im.copy(deep=True)
-    newim["pixels"].data[...] = 0.0
-    return newim
+    return create_image_from_array(numpy.zeros_like(im["pixels"].data),
+                                   wcs=im.image_acc.wcs,
+                                   polarisation_frame=im.image_acc.polarisation_frame)
 
 
 def fft_image(im, template_image=None):
@@ -1034,7 +1033,7 @@ def scale_and_rotate_image(im, angle=0.0, scale=None, order=5):
     if scale is None:
         scale = [1.0, 1.0]
     
-    newim = im.copy(deep=True)
+    newim = create_empty_image_like(im)
     inv_scale = numpy.diag(scale)
     inv_transform = numpy.dot(inv_scale, inv_rot)
     offset = c_in - numpy.dot(inv_transform, c_out)

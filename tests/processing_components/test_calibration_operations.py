@@ -91,7 +91,7 @@ class TestCalibrationOperations(unittest.TestCase):
             original = copy_visibility(self.vis)
             vis = apply_gaintable(self.vis, gt)
             error = numpy.max(numpy.abs(vis.vis - original.vis))
-            assert 73 > error > 10.0, "Error = %f" % (error)
+            assert 74 > error > 10.0, "Error = %f" % (error)
 
     def test_apply_gaintable_and_inverse_phase_only(self):
         for spf, dpf in[('stokesI', 'stokesI'), ('stokesIQUV', 'linear'), ('stokesIQUV', 'circular')]:

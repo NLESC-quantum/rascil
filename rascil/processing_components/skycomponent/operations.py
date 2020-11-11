@@ -257,7 +257,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     # Now compute source properties for all polarisations and frequencies
     comp_tbl = [[segmentation.source_properties(im["pixels"].data[chan, pol], segments,
                                                 filter_kernel=kernel,
-                                                wcs=im.wcs.sub([1, 2])).to_table()
+                                                wcs=im.image_acc.wcs.sub([1, 2])).to_table()
                  for pol in [0]]
                 for chan in range(im.image_acc.nchan)]
 
@@ -308,7 +308,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
             name="Segment %d" % segment,
             flux=point_flux,
             shape='Point',
-            polarisation_frame=im.polarisation_frame,
+            polarisation_frame=im.image_acc.polarisation_frame,
             params={}))
 
     return comps
@@ -337,10 +337,10 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    if beam.wcs.wcs.ctype[0] == 'RA---SIN':
-        pixlocs = skycoord_to_pixel(skycoords, beam.wcs, origin=1, mode='wcs')
+    if beam.image_acc.wcs.wcs.ctype[0] == 'RA---SIN':
+        pixlocs = skycoord_to_pixel(skycoords, beam.image_acc.wcs, origin=1, mode='wcs')
     else:
-        wcs = copy.deepcopy(beam.wcs)
+        wcs = copy.deepcopy(beam.image_acc.wcs)
         wcs.wcs.ctype[0] = 'RA---SIN'
         wcs.wcs.ctype[1] = 'DEC--SIN'
         wcs.wcs.crval[0] =  phasecentre.ra.deg
@@ -393,8 +393,8 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     :return: List of skycomponents
     """
     #assert isinstance(vp, Image)
-    assert (vp.polarisation_frame == PolarisationFrame("linear")) or \
-           (vp.polarisation_frame == PolarisationFrame("circular"))
+    assert (vp.image_acc.polarisation_frame == PolarisationFrame("linear")) or \
+           (vp.image_acc.polarisation_frame == PolarisationFrame("circular"))
 
     #assert vp["pixels"].data.dtype == "complex128"
     single = not isinstance(sc, collections.abc.Iterable)
@@ -409,11 +409,11 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    if vp.wcs.wcs.ctype[0] == 'RA---SIN':
-        pixlocs = skycoord_to_pixel(skycoords, vp.wcs, origin=1, mode='wcs')
+    if vp.image_acc.wcs.wcs.ctype[0] == 'RA---SIN':
+        pixlocs = skycoord_to_pixel(skycoords, vp.image_acc.wcs, origin=1, mode='wcs')
     else:
         assert phasecentre is not None, "Need to know the phasecentre"
-        wcs = copy.deepcopy(vp.wcs)
+        wcs = copy.deepcopy(vp.image_acc.wcs)
         wcs.wcs.ctype[0] = 'RA---SIN'
         wcs.wcs.ctype[1] = 'DEC--SIN'
         wcs.wcs.crval[0] =  phasecentre.ra.deg
@@ -580,7 +580,7 @@ def voronoi_decomposition(im, comps):
 
     directions = SkyCoord([u.rad * c.direction.ra.rad for c in comps],
                           [u.rad * c.direction.dec.rad for c in comps])
-    x, y = skycoord_to_pixel(directions, im.wcs, 0, 'wcs')
+    x, y = skycoord_to_pixel(directions, im.image_acc.wcs, 0, 'wcs')
     points = [(x[i], y[i]) for i, _ in enumerate(x)]
     vor = Voronoi(points)
 
@@ -602,8 +602,8 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
     """
     if len(components) == 1:
         mask = numpy.ones(im["pixels"].data.shape)
-        yield create_image_from_array(mask, wcs=im.wcs,
-                                      polarisation_frame=im.polarisation_frame)
+        yield create_image_from_array(mask, wcs=im.image_acc.wcs,
+                                      polarisation_frame=im.image_acc.polarisation_frame)
     else:
         vor, vertex_array = voronoi_decomposition(im, components)
 
@@ -611,8 +611,8 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
         for region in range(nregions):
             mask = numpy.zeros(im["pixels"].data.shape)
             mask[(vertex_array == region)[numpy.newaxis, numpy.newaxis, ...]] = 1.0
-            yield create_image_from_array(mask, wcs=im.wcs,
-                                          polarisation_frame=im.polarisation_frame)
+            yield create_image_from_array(mask, wcs=im.image_acc.wcs,
+                                          polarisation_frame=im.image_acc.polarisation_frame)
 
 
 def partition_skycomponent_neighbours(comps, targets):

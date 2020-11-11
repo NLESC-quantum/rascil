@@ -98,7 +98,7 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
     """
     plt.clf()
     for ivis, vis in enumerate(vis_list):
-        pols = vis.polarisation_frame.names
+        pols = vis.blockvisibility_acc.polarisation_frame.names
         colors = ["red", "blue", "green", "purple"]
         for pol in range(vis.blockvisibility_acc.npol):
             if y == 'amp':

@@ -76,10 +76,10 @@ try:
         fuvw[:, 2] *= -1.0
         
         # Find out the image size/resolution
-        pixsize = numpy.abs(numpy.radians(model.wcs.wcs.cdelt[0]))
+        pixsize = numpy.abs(numpy.radians(model.image_acc.wcs.wcs.cdelt[0]))
         
         # Make de-gridding over a frequency range and pol fields
-        vis_to_im = numpy.round(model.wcs.sub([4]).wcs_world2pix(freq, 0)[0]).astype('int')
+        vis_to_im = numpy.round(model.image_acc.wcs.sub([4]).wcs_world2pix(freq, 0)[0]).astype('int')
         
         mfs = m_nchan == 1
 
@@ -109,7 +109,7 @@ try:
                                                        nthreads=nthreads,
                                                        verbosity=verbosity)[:, 0]
         
-        vis = convert_pol_frame(vist.T, model.polarisation_frame, bvis.polarisation_frame, polaxis=2)
+        vis = convert_pol_frame(vist.T, model.image_acc.polarisation_frame, bvis.blockvisibility_acc.polarisation_frame, polaxis=2)
 
         vis = vis.reshape([nrows, nbaselines, vnchan, vnpol])
         newbvis["vis"].data = vis
@@ -158,7 +158,7 @@ try:
 
         ms = sbvis.blockvisibility_acc.flagged_vis.data
         ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
-        ms = convert_pol_frame(ms, bvis.polarisation_frame, im.polarisation_frame, polaxis=2)
+        ms = convert_pol_frame(ms, bvis.blockvisibility_acc.polarisation_frame, im.image_acc.polarisation_frame, polaxis=2)
 
         uvw = sbvis.uvw.data
         uvw = uvw.reshape([nrows * nbaselines, 3])
@@ -173,7 +173,7 @@ try:
         
         # Find out the image size/resolution
         npixdirty = im["pixels"].data.shape[-1]
-        pixsize = numpy.abs(numpy.radians(im.wcs.wcs.cdelt[0]))
+        pixsize = numpy.abs(numpy.radians(im.image_acc.wcs.wcs.cdelt[0]))
         
         fuvw = uvw.copy()
         # We need to flip the u and w axes.
@@ -185,10 +185,10 @@ try:
         sumwt = numpy.zeros([nchan, npol])
         
         # There's a latent problem here with the weights.
-        # wgt = numpy.real(convert_pol_frame(wgt, bvis.polarisation_frame, im.polarisation_frame, polaxis=2))
+        # wgt = numpy.real(convert_pol_frame(wgt, bvis.blockvisibility_acc.polarisation_frame, im.image_acc.polarisation_frame, polaxis=2))
         
         # Set up the conversion from visibility channels to image channels
-        vis_to_im = numpy.round(model.wcs.sub([4]).wcs_world2pix(freq, 0)[0]).astype('int')
+        vis_to_im = numpy.round(model.image_acc.wcs.sub([4]).wcs_world2pix(freq, 0)[0]).astype('int')
         
        # Nifty gridder likes to receive contiguous arrays so we transpose
         # at the beginning

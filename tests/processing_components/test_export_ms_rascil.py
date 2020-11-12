@@ -10,6 +10,7 @@ import numpy
 
 from rascil.data_models.parameters import rascil_path, rascil_data_path
 
+from rascil.processing_components import create_image_from_array
 log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
@@ -76,10 +77,7 @@ class export_ms_RASCIL_test(unittest.TestCase):
         
         m31image = create_test_image(cellsize=cellsize, frequency=frequency)
         nchan, npol, ny, nx = m31image["pixels"].data.shape
-        m31image.wcs.wcs.crval[0] = bvis.phasecentre.ra.deg
-        m31image.wcs.wcs.crval[1] = bvis.phasecentre.dec.deg
-        m31image.wcs.wcs.crpix[0] = float(nx // 2)
-        m31image.wcs.wcs.crpix[1] = float(ny // 2)
+        m31image = create_image_from_visibility(bvis, cellsize=cellsize, npixel=nx)
         bvis = predict_2d(bvis, m31image)
         export_blockvisibility_to_ms(msoutfile, [bvis], source_name='M31')
 

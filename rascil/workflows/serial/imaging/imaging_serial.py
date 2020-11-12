@@ -72,7 +72,7 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=
             return None
     
     if gcfcf is None:
-        gcfcf = [create_pswf_convolutionfunction(m, polarisation_frame=vis_list[i].polarisation_frame)
+        gcfcf = [create_pswf_convolutionfunction(m, polarisation_frame=vis_list[i].blockvisibility_acc.polarisation_frame)
                  for i, m in enumerate(model_imagelist)]
     
     # Loop over all windows

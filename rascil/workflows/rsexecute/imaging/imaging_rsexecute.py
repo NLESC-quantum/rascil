@@ -410,7 +410,7 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
    """
     if gcfcf is None:
         gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)
-                 (m, polarisation_frame=vis_list[i].polarisation_frame)
+                 (m, polarisation_frame=vis_list[i].blockvisibility_acc.polarisation_frame)
                  for i, m in enumerate(model_imagelist)]
     
     def grid_wt(vis, model, g):

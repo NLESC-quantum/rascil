@@ -23,7 +23,7 @@ For example to make dirty image and PSF, deconvolve, and then restore::
 
 """
 
-__all__ = ['deconvolve_cube', 'restore_cube']
+__all__ = ['deconvolve_cube', 'restore_cube', 'fit_psf']
 
 import logging
 import warnings
@@ -316,6 +316,58 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     return comp_image, residual_image
 
 
+def fit_psf(psf: Image, **kwargs) -> Image:
+    """ Fit PSF using astropy.modeling
+
+    :params psf: Input PSF
+    :return: fitted PSF, Gaussian2D, size
+
+    """
+    assert isinstance(psf, Image), psf
+    assert image_is_canonical(psf)
+
+    fitted_PSF = copy_image(psf)
+
+    npixel = psf.data.shape[3]
+    sl = slice(npixel // 2 - 7, npixel // 2 + 8)
+    y,x = numpy.mgrid[sl, sl]
+    z = psf.data[0, 0, sl, sl]
+   
+    size = get_parameter(kwargs, "psfwidth", None)
+    if size is None:
+        # isotropic at the moment!
+        from scipy.optimize import minpack
+        try:
+            p_init = models.Gaussian2D(amplitude=numpy.max(z), x_mean=numpy.mean(x), y_mean=numpy.mean(y))
+            fit_p = fitting.LevMarLSQFitter()
+            with warnings.catch_warnings():
+                 # Ignore model linearity warning from the fitter
+                 warnings.simplefilter('ignore')
+                 fit = fit_p(p_init, x, y, z)
+            if fit.x_stddev <= 0.0 or fit.y_stddev <= 0.0:
+                log.debug('restore_cube: error in fitting to psf, using 1 pixel stddev')
+                size = 1.0
+            else:
+                size = max(fit.x_stddev, fit.y_stddev).value
+                log.debug('restore_cube: psfwidth = %s' % (size))
+                y1, x1 = numpy.mgrid[:npixel, :npixel]
+                for freq in range(psf.data.shape[0]):
+                    for pol in range(psf.data.shape[1]):
+                        fitted_PSF.data[freq,pol] = fit(x1,y1)
+        except minpack.error as err:
+            log.debug('restore_cube: minpack error, using 1 pixel stddev')
+            size = 1.0
+            fit = None
+        except ValueError as err:
+            log.debug('restore_cube: warning in fit to psf, using 1 pixel stddev')
+            size = 1.0
+            fit = None
+    else:
+        log.debug('restore_cube: Using specified psfwidth = %s' % (size))
+        fit = None
+
+    return fitted_PSF, fit, size    
+
 def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     """ Restore the model image to the residuals
 
@@ -344,7 +396,7 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
         # isotropic at the moment!
         from scipy.optimize import minpack
         try:
-            p_init = models.Gaussian2D()
+            p_init = models.Gaussian2D(amplitude=numpy.max(z), x_mean=numpy.mean(x), y_mean=numpy.mean(y))
             fit_p = fitting.LevMarLSQFitter()
             with warnings.catch_warnings():
                  # Ignore model linearity warning from the fitter

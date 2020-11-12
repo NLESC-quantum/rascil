@@ -39,7 +39,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       phasecentre=self.phasecentre, weight=1.0)
         times = numpy.array([result[0] for result in bvis.groupby("time")])
         assert times.all() == bvis.time.all()
-
+    
     def test_blockvisibility_groupby_bins_time(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
@@ -47,7 +47,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       phasecentre=self.phasecentre, weight=1.0)
         for result in bvis.groupby_bins("time", 3):
             print(result[0])
-
+    
     def test_blockvisibility_where(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
@@ -56,7 +56,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         selected_vis = bvis.where(bvis["flags"] == 0)
         print(selected_vis)
         print(bvis.blockvisibility_acc.size(), selected_vis.blockvisibility_acc.size())
-
+    
     def test_blockvisibility_where_absu(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
@@ -66,7 +66,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         selected_vis = bvis.where(numpy.abs(bvis.blockvisibility_acc.u_lambda) < 30.0)
         print(selected_vis)
         print(bvis.blockvisibility_acc.size(), selected_vis.blockvisibility_acc.size())
-
+    
     def test_blockvisibility_select_time(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
@@ -85,6 +85,14 @@ class TestVisibilitySelectors(unittest.TestCase):
         selected_bvis = bvis.sel({"frequency": slice(frequency[1], frequency[2])})
         assert len(selected_bvis.frequency) == 2
     
+    def test_blockvisibility_iselect_channel(self):
+        bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+                                      channel_bandwidth=self.channel_bandwidth,
+                                      polarisation_frame=self.polarisation_frame,
+                                      phasecentre=self.phasecentre, weight=1.0)
+        selected_bvis = bvis.sel({"chan": slice(1, 3)})
+        assert len(selected_bvis.frequency) == 2
+    
     def test_blockvisibility_select_multiple(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
@@ -92,7 +100,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       phasecentre=self.phasecentre, weight=1.0)
         frequency = bvis.frequency
         selected_bvis = bvis.sel({"frequency": slice(frequency[1], frequency[2]),
-                                                      "polarisation": ["XX", "YY"],
-                                                      "uvw_index": ["u", "v"]})
+                                  "polarisation": ["XX", "YY"],
+                                  "uvw_index": ["u", "v"]})
         print(selected_bvis)
         assert len(selected_bvis.frequency) == 2

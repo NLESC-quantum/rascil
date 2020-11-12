@@ -31,7 +31,7 @@ from rascil.processing_components.visibility import copy_visibility
 log = logging.getLogger('rascil-logger')
 
 
-def concatenate_visibility(vis_list, dim='time'):
+def concatenate_visibility(vis_list, dim='timeinx'):
     """Concatenate a list of visibilities
 
     :param vis_list: List of vis
@@ -41,7 +41,8 @@ def concatenate_visibility(vis_list, dim='time'):
 
     assert len(vis_list) > 0
     
-    return xarray.concat(vis_list, dim=dim, data_vars="minimal")
+    return xarray.concat(vis_list, dim=dim, data_vars="minimal",
+                         coords="minimal", compat="override")
 
 
 def concatenate_blockvisibility_frequency(bvis_list):

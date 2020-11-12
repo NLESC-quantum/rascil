@@ -73,6 +73,8 @@ class TestVisibilityOperations(unittest.TestCase):
         reverse_vis = concatenate_visibility([othervis, vis])
         assert reverse_vis.time.all() == newvis.time.all()
         assert combined_shape[0] == this_shape[0] + other_shape[0]
+        newvis = newvis.dropna(dim="timeinx", how='all')
+        print(newvis)
 
     def test_divide_visibility(self):
         self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,

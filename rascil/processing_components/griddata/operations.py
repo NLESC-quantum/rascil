@@ -80,27 +80,33 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     :return: GridData
     """
     
+    nchan, npol, ny, nx = im["pixels"].shape
+    gridshape = (nchan, npol, nw, ny, nx)
+    data = numpy.zeros(gridshape, dtype='complex')
+    
+    crval = im.image_acc.wcs.wcs.crval
+    crpix = im.image_acc.wcs.wcs.crpix
+    cdelt = im.image_acc.wcs.wcs.cdelt
+    ctype = im.image_acc.wcs.wcs.ctype
+    d2r = numpy.pi / 180.0
+    cdelt[0] = - 1.0 / (nx * cdelt[0] * d2r)
+    cdelt[1] = - 1.0 / (ny * cdelt[1] * d2r)
+
+    # The negation in the longitude is needed by definition of RA, DEC
+    grid_wcs = WCS(naxis=5)
+    grid_wcs.wcs.crpix = [nx // 2 + 1, ny // 2 + 1, nw // 2 + 1.0, crpix[2], crpix[3]]
+    grid_wcs.wcs.ctype = ["UU", "VV", 'WW', ctype[2], ctype[3]]
+    grid_wcs.wcs.crval = [0.0, 0.0, 0.0, crval[2], crval[3]]
+    grid_wcs.wcs.cdelt = [cdelt[0], cdelt[1], wstep, cdelt[2], cdelt[3]]
+    grid_wcs.wcs.radesys = 'ICRS'
+    grid_wcs.wcs.equinox = 2000.0
+
     if polarisation_frame is None:
         polarisation_frame = im.image_acc.polarisation_frame
     
-    attrs = dict()
-    attrs["projection_coords"] = im.coords
-    
-    nchan, npol, nv, nu = im["pixels"].data.shape
-    pixels = numpy.zeros([nchan, npol, nw, nv, nu])
-    
-    cell_u = 1.0
-    cell_v = 1.0
-    cell_w = wstep
-    
-    coords = {
-        "u": numpy.linspace(-nu // 2 * cell_u, +nu // 2 * cell_u, endpoint=False),
-        "v": numpy.linspace(-nv // 2 * cell_v, +nv // 2 * cell_v, endpoint=False),
-        "w": numpy.linspace(-nw // 2 * cell_w, +nw // 2 * cell_w, endpoint=False)
-    }
-
-    data_vars = dict()
-    data_vars["pixels"] = xarray.DataArray(pixels, coords=coords, attrs=attrs)
+    return GridData(data, grid_wcs=grid_wcs, phasecentre=im.image_acc.phasecentre,
+                    frequency=im.frequency,
+                    polarisation_frame=polarisation_frame)
 
 
 def convert_griddata_to_image(gd):

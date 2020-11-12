@@ -38,15 +38,29 @@ class TestImageSelection(unittest.TestCase):
         self.persist = os.getenv("RASCIL_PERSIST", False)
         self.plot = False
         
-    def test_image_select_chan(self):
-        subim = self.image.sel({"chan": slice(0, 2)}, drop=False)
+    def test_image_iselect_channel(self):
+        subim = self.image.isel({"freqinx": slice(0, 2)}, drop=False)
         assert subim["pixels"].shape == (2, 4, 256, 256), subim["pixels"].shape
 
-    def test_image_select_chan_pol(self):
-        subim = self.image.sel({"chan": 0, "pol": [0, 3]}, drop=False)
+    def test_image_iselect_channel_pol(self):
+        subim = self.image.isel({"freqinx": 0, "polinx": [0, 3]}, drop=False)
         assert subim["pixels"].shape == (2, 256, 256)
-        assert subim.dims == {'pol': 2, 'y': 256, 'x': 256}
+        assert subim.dims == {"polinx": 2, 'y': 256, 'x': 256}
         numpy.testing.assert_array_equal(subim.coords["polarisation"] ,["I", "V"])
+
+    def test_image_where_frequency(self):
+        subim = self.image.where(self.image["frequency"]>8.3e8, drop=False)
+        subim = subim.dropna(dim="freqinx", how="all")
+        assert subim["pixels"].shape == (1, 4, 256, 256)
+        assert subim.dims == {"freqinx": 1, "polinx": 4, 'y': 256, 'x': 256}, subim.dims
+        numpy.testing.assert_array_equal(subim.coords["frequency"] ,[8.4e8])
+
+    def test_image_where_polarisation(self):
+        subim = self.image.where(self.image["polarisation"] == "I", drop=False)
+        subim = subim.dropna(dim="polinx", how="all")
+        assert subim["pixels"].shape == (5, 1, 256, 256)
+        assert subim.dims == {"freqinx": 5, "polinx": 1, 'y': 256, 'x': 256}
+        numpy.testing.assert_array_equal(subim.coords["polarisation"] ,["I"])
 
     def test_image_where_radius_radec(self):
         nchan, npol, ny, nx = self.image["pixels"].shape

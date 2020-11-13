@@ -407,21 +407,34 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
             if fit.x_stddev <= 0.0 or fit.y_stddev <= 0.0:
                 log.debug('restore_cube: error in fitting to psf, using 1 pixel stddev')
                 size = 1.0
+                norm = 2.0 * numpy.pi * size ** 2
+                gk = Gaussian2DKernel(size)
             else:
-                size = max(fit.x_stddev, fit.y_stddev).value
-                log.debug('restore_cube: psfwidth = %s' % (size))
+                #size = max(fit.x_stddev, fit.y_stddev).value
+                size_x = fit.x_stddev.value
+                size_y = fit.y_stddev.value
+                log.debug('restore_cube: psf = %s x %s' % (size_x, size_y))
+                # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
+                norm = 2.0 * numpy.pi * size_x * size_y
+                gk = Gaussian2DKernel(size_x, y_stddev=size_y, theta=fit.theta.value)
         except minpack.error as err:
             log.debug('restore_cube: minpack error, using 1 pixel stddev')
             size = 1.0
+            norm = 2.0 * numpy.pi * size ** 2
+            gk = Gaussian2DKernel(size)
         except ValueError as err:
             log.debug('restore_cube: warning in fit to psf, using 1 pixel stddev')
             size = 1.0
+            norm = 2.0 * numpy.pi * size ** 2
+            gk = Gaussian2DKernel(size)
     else:
         log.debug('restore_cube: Using specified psfwidth = %s' % (size))
+        norm = 2.0 * numpy.pi * size ** 2
+        gk = Gaussian2DKernel(size)
 
     # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
-    norm = 2.0 * numpy.pi * size ** 2
-    gk = Gaussian2DKernel(size)
+    #norm = 2.0 * numpy.pi * size ** 2
+    #gk = Gaussian2DKernel(size)
     for chan in range(model.shape[0]):
         for pol in range(model.shape[1]):
             restored.data[chan, pol, :, :] = norm * convolve_fft(model.data[chan, pol, :, :], gk,

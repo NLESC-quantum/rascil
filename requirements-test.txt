@@ -6,7 +6,7 @@ pylint-junit
 pylint2junit
 pytest
 pytest-cov
-pytest-pylint
+pytest-pylint==0.17.0
 pytest-json-report
 pytest-xdist
 python-dotenv>=0.5.1

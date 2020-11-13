@@ -188,8 +188,8 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
     real_splines = list()
     imag_splines = list()
     for ivp, vp in enumerate(vp_list):
-        assert vp.image_acc.wcs.wcs.ctype[0] == 'AZELGEO long', vp.image_acc.wcs.wcs.ctype[0]
-        assert vp.image_acc.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.image_acc.wcs.wcs.ctype[1]
+        assert vp.wcs.wcs.ctype[0] == 'AZELGEO long', vp.wcs.wcs.ctype[0]
+        assert vp.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.wcs.wcs.ctype[1]
         
         nchan, npol, ny, nx = vp["pixels"].data.shape
         real_splines.append(RectBivariateSpline(range(ny), range(nx), vp["pixels"].data[0, 0, ...].real,
@@ -232,7 +232,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
                 for ant in range(nant):
                     for ivp, vp in enumerate(vp_list):
                         nchan, npol, ny, nx = vp["pixels"].data.shape
-                        wcs_azel = vp.image_acc.wcs.deepcopy()
+                        wcs_azel = vp.wcs.deepcopy()
                         
                         # We use WCS sensible coordinate handling by labelling the axes misleadingly
                         wcs_azel.wcs.crval[0] = azimuth_centre
@@ -241,7 +241,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
                         wcs_azel.wcs.ctype[1] = 'DEC--SIN'
                         
                         worldloc = [azimuth_comp * r2d, elevation_comp * r2d,
-                                    vp.image_acc.wcs.wcs.crval[2], vp.image_acc.wcs.wcs.crval[3]]
+                                    vp.wcs.wcs.crval[2], vp.wcs.wcs.crval[3]]
                         try:
                             pixloc = wcs_azel.sub(2).wcs_world2pix([worldloc[:2]], 1)[0]
                             assert pixloc[0] > 2

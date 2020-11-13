@@ -45,13 +45,13 @@ class TestImage(unittest.TestCase):
                                 channel_bandwidth=1e7 * numpy.ones([5]))
         assert newimage.image_acc.shape == (5, 4, 1024, 1024)
         print(newimage)
-        print(newimage.image_acc.wcs)
-        assert newimage.image_acc.phasecentre.separation(phasecentre).value < 1e-15
+        print(newimage.wcs)
+        assert newimage.phasecentre.separation(phasecentre).value < 1e-15
         assert newimage.image_acc.polarisation_frame.type == "stokesIQUV"
     
     def test_create_image_from_array(self):
         m31model_by_array = create_image_from_array(self.m31image["pixels"],
-                                                    self.m31image.image_acc.wcs,
+                                                    self.m31image.wcs,
                                                     self.m31image.image_acc.polarisation_frame)
         add_image(self.m31image, m31model_by_array)
         assert m31model_by_array.image_acc.shape == self.m31image.image_acc.shape
@@ -66,7 +66,7 @@ class TestImage(unittest.TestCase):
     def test_reproject(self):
         # Reproject an image
         cellsize = 1.5 * self.cellsize
-        newwcs = self.m31image.image_acc.wcs.deepcopy()
+        newwcs = self.m31image.wcs.deepcopy()
         newwcs.wcs.cdelt[0] = -cellsize
         newwcs.wcs.cdelt[1] = +cellsize
         
@@ -84,7 +84,7 @@ class TestImage(unittest.TestCase):
             polarisation_frame = PolarisationFrame(pol_name)
             polimage = convert_stokes_to_polimage(stokes, polarisation_frame=polarisation_frame)
             assert polimage.image_acc.polarisation_frame == polarisation_frame
-            polarisation_frame_from_wcs(polimage.image_acc.wcs, polimage.image_acc.shape)
+            polarisation_frame_from_wcs(polimage.wcs, polimage.image_acc.shape)
             rstokes = convert_polimage_to_stokes(polimage)
             assert polimage["pixels"].data.dtype == 'complex'
             assert rstokes["pixels"].data.dtype == 'float'
@@ -93,11 +93,11 @@ class TestImage(unittest.TestCase):
     def test_polarisation_frame_from_wcs(self):
         assert self.m31image.image_acc.polarisation_frame == PolarisationFrame("stokesI")
         stokes = create_test_image(cellsize=0.0001, polarisation_frame=PolarisationFrame("stokesIQUV"))
-        wcs = stokes.image_acc.wcs.deepcopy()
+        wcs = stokes.wcs.deepcopy()
         shape = stokes.image_acc.shape
         assert polarisation_frame_from_wcs(wcs, shape) == PolarisationFrame("stokesIQUV")
         
-        wcs = stokes.image_acc.wcs.deepcopy().sub(['stokes'])
+        wcs = stokes.wcs.deepcopy().sub(['stokes'])
         wcs.wcs.crpix[0] = 1.0
         wcs.wcs.crval[0] = -1.0
         wcs.wcs.cdelt[0] = -1.0
@@ -124,7 +124,7 @@ class TestImage(unittest.TestCase):
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'), fixpol=False)
         vp["pixels"].data = vp["pixels"].data + 1j * imag_vp["pixels"].data
         
-        polframe = polarisation_frame_from_wcs(vp.image_acc.wcs, vp.image_acc.shape)
+        polframe = polarisation_frame_from_wcs(vp.wcs, vp.image_acc.shape)
         permute = polframe.fits_to_rascil[polframe.type]
         
         newvp_data = vp["pixels"].data.copy()
@@ -230,7 +230,7 @@ class TestImage(unittest.TestCase):
     def test_apply_voltage_pattern(self):
         
         vp = create_vp(telescope='MID_FEKO_B2')
-        cellsize = vp.image_acc.wcs.wcs.cdelt[1] * numpy.pi / 180.0
+        cellsize = vp.wcs.wcs.cdelt[1] * numpy.pi / 180.0
         m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9],
                                      polarisation_frame=PolarisationFrame("stokesIQUV"))
         padded = pad_image(m31image, vp["pixels"].shape)

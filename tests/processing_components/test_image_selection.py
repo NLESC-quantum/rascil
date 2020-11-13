@@ -36,7 +36,6 @@ class TestImageSelection(unittest.TestCase):
         # assert numpy.max(self.image["pixels"]) > 0.0, "Test image is empty"
         self.cellsize = 180.0 * 0.0001 / numpy.pi
         self.persist = os.getenv("RASCIL_PERSIST", False)
-        self.plot = False
         
     def test_image_iselect_channel(self):
         subim = self.image.isel({"freqinx": slice(0, 2)}, drop=False)
@@ -67,17 +66,15 @@ class TestImageSelection(unittest.TestCase):
         secd = 1.0 / numpy.cos(numpy.deg2rad(self.image.dec))
         r = numpy.hypot((self.image.ra - self.image.ra[ny // 2, nx // 2]) * secd,
                         self.image.dec - self.image.dec[ny // 2, nx // 2])
-        if self.plot:
-            show_image(self.image.where(r < 0.3, 0.0))
-            plt.show()
+        show_image(self.image.where(r < 0.3, 0.0))
+        plt.show()
 
     def test_image_where_radius_xy(self):
         nchan, npol, ny, nx = self.image["pixels"].shape
         r = numpy.hypot(self.image.x - self.image.x[nx // 2],
                         self.image.y - self.image.y[ny // 2])
-        if self.plot:
-            show_image(self.image.where(r < 0.3, 0.0))
-            plt.show()
+        show_image(self.image.where(r < 0.3, 0.0))
+        plt.show()
 
 if __name__ == '__main__':
     unittest.main()

@@ -77,8 +77,8 @@ def spatial_mapping(cf, griddata, u, v, w):
     ##assert isinstance(cf, ConvolutionFunction)
     assert cf.polarisation_frame == griddata.polarisation_frame
 
-    numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[0], cf.grid_wcs.wcs.cdelt[0], 7)
-    numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[1], cf.grid_wcs.wcs.cdelt[1], 7)
+    numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[0], cf.cf_wcs.wcs.cdelt[0], 7)
+    numpy.testing.assert_almost_equal(griddata.grid_wcs.wcs.cdelt[1], cf.cf_wcs.wcs.cdelt[1], 7)
     ####### UV mapping
     # We use the grid_wcs's to do the coordinate conversion
     # Find the nearest grid points
@@ -94,7 +94,7 @@ def spatial_mapping(cf, griddata, u, v, w):
     wu_grid, wv_grid = griddata.grid_wcs.sub([1, 2]).wcs_pix2world(pu_grid, pv_grid, 0)
     wu_subsample, wv_subsample = u - wu_grid, v - wv_grid
     pu_offset, pv_offset = \
-        numpy.round(cf.grid_wcs.sub([3, 4]).wcs_world2pix(wu_subsample, wv_subsample, 0)).astype('int')
+        numpy.round(cf.cf_wcs.sub([3, 4]).wcs_world2pix(wu_subsample, wv_subsample, 0)).astype('int')
     assert numpy.min(pu_offset) >= 0, "image sampling wrong: DU axis underflows: %f" % numpy.min(pu_offset)
     assert numpy.max(pu_offset) < cf["pixels"].data.shape[3], "DU axis overflows: %f" % numpy.max(pu_offset)
     assert numpy.min(pv_offset) >= 0, "image sampling wrong: DV axis underflows: %f" % numpy.min(pv_offset)
@@ -106,17 +106,17 @@ def spatial_mapping(cf, griddata, u, v, w):
     pwg_grid = numpy.round(pwg_pixel).astype('int')
     if numpy.min(pwg_grid) < 0:
         print(w[0:10])
-        print(cf.grid_wcs.sub([5]).__repr__())
+        print(cf.cf_wcs.sub([5]).__repr__())
     assert numpy.min(pwg_grid) >= 0, "W axis underflows: %f" % numpy.min(pwg_grid)
     assert numpy.max(pwg_grid) < cf["pixels"].data.shape[2], "W axis overflows: %f" % numpy.max(pwg_grid)
     pwg_fraction = pwg_pixel - pwg_grid
     ###### W mapping for CF
     # nchan, npol, w, dv, du, v, u
-    pwc_pixel = cf.grid_wcs.sub([5]).wcs_world2pix(w, 0)[0]
+    pwc_pixel = cf.cf_wcs.sub([5]).wcs_world2pix(w, 0)[0]
     pwc_grid = numpy.round(pwc_pixel).astype('int')
     if numpy.min(pwc_grid) < 0:
         print(w[0:10])
-        print(cf.grid_wcs.sub([5]).__repr__())
+        print(cf.cf_wcs.sub([5]).__repr__())
     assert numpy.min(pwc_grid) >= 0, "W axis underflows: %f" % numpy.min(pwc_grid)
     assert numpy.max(pwc_grid) < cf["pixels"].data.shape[2], "W axis overflows: %f" % numpy.max(pwc_grid)
     pwc_fraction = pwc_pixel - pwc_grid

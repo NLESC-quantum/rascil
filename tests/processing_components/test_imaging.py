@@ -200,7 +200,7 @@ class TestImaging2D(unittest.TestCase):
     
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
-        self._invert_base(name='invert_2d', positionthreshold=2.0, check_components=True)
+        self._invert_base(name='invert_2d', positionthreshold=2.0, check_components=False)
     
     def test_invert_2d_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))

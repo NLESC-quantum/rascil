@@ -106,7 +106,7 @@ class TestWeighting(unittest.TestCase):
             scale_factor = numpy.sqrt(8 * numpy.log(2.0))
             size = numpy.sqrt(fit.x_stddev * fit.y_stddev) * scale_factor
             # Now we need to convert to radians
-            size *= numpy.pi * self.model.image_acc.wcs.wcs.cdelt[1] / 180.0
+            size *= numpy.pi * self.model.wcs.wcs.cdelt[1] / 180.0
             # Very impressive! Desired 0.01 Acheived 0.0100006250829
             assert numpy.abs(size - size_required) < 0.03 * size_required, \
                 "Fit should be %f, actually is %f" % (size_required, size)

@@ -85,3 +85,48 @@ def griddata_wcs(ds):
     wcs.wcs.equinox = 2000.0
     
     return wcs
+
+
+def cf_wcs(ds):
+    """
+
+    :param ds:
+    :return:
+    """
+    assert ds.rascil_data_model == "ConvolutionFunction", ds.rascil_data_model
+    
+    # "frequency", "polarisation", "w", "v", "u"
+    nchan, npol, ndv, ndu, nz, ny, nx = ds["pixels"].shape
+    u = ds["u"].data[nx // 2]
+    v = ds["v"].data[ny // 2]
+    w = ds["w"].data[nz // 2]
+    cellsize_u = (ds["u"].data[-1] - ds["u"].data[0]) / (nx - 1)
+    cellsize_v = (ds["v"].data[-1] - ds["v"].data[0]) / (ny - 1)
+    cellsize_du = (ds["du"].data[-1] - ds["du"].data[0]) / (ndu - 1)
+    cellsize_dv = (ds["dv"].data[-1] - ds["dv"].data[0]) / (ndv - 1)
+    if nz > 1:
+        cellsize_w = (ds["w"].data[-1] - ds["w"].data[0]) / (nz - 1)
+    else:
+        cellsize_w = 1e15
+    freq = ds["frequency"].data[0]
+    pol = PolarisationFrame.fits_codes[ds.image_acc.polarisation_frame.type]
+    if npol > 1:
+        dpol = pol[1] - pol[0]
+    else:
+        dpol = 1.0
+    if nchan > 1:
+        channel_bandwidth = (ds["frequency"].data[-1] - ds["frequency"].data[0]) / (nchan - 1)
+    else:
+        channel_bandwidth = freq
+    
+    # The negation in the longitude is needed by definition of RA, DEC
+    wcs = WCS(naxis=7)
+    wcs.wcs.crpix = [nx // 2 + 1, ny // 2 + 1, ndu // 2 + 1, ndv // 2 + 1,
+                     nz // 2 + 1.0, 1.0, 1.0]
+    wcs.wcs.ctype = ["UU", "VV", "DUU", "DVV", "WW", "STOKES", "FREQ"]
+    wcs.wcs.crval = [u, v, 0.0, 0.0, w, pol[0], freq]
+    wcs.wcs.cdelt = [-cellsize_u, cellsize_v, cellsize_du, cellsize_dv, cellsize_w, dpol, channel_bandwidth]
+    wcs.wcs.radesys = 'ICRS'
+    wcs.wcs.equinox = 2000.0
+    
+    return wcs

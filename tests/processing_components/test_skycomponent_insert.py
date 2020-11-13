@@ -78,7 +78,7 @@ class TestSkycomponentInsert(unittest.TestCase):
         insert_skycomponent(self.model, self.sc)
         npixel = self.model["pixels"].shape[3]
         # WCS is 1-relative
-        rpix = numpy.round(self.model.image_acc.wcs.wcs.crpix).astype('int') - 1
+        rpix = numpy.round(self.model.wcs.wcs.crpix).astype('int') - 1
         assert rpix[0] == npixel // 2
         assert rpix[1] == npixel // 2
         # The phase centre is at rpix[0], rpix[1] in 0-relative pixels
@@ -101,7 +101,7 @@ class TestSkycomponentInsert(unittest.TestCase):
         insert_skycomponent(self.model, self.sc)
         npixel = self.model["pixels"].shape[3]
         # WCS is 1-relative
-        rpix = numpy.round(self.model.image_acc.wcs.wcs.crpix).astype('int') - 1
+        rpix = numpy.round(self.model.wcs.wcs.crpix).astype('int') - 1
         assert rpix[0] == npixel // 2
         assert rpix[1] == npixel // 2
         # The phase centre is at rpix[0], rpix[1] in 0-relative pixels

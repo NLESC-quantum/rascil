@@ -68,7 +68,7 @@ class TestGridDataKernels(unittest.TestCase):
             cf["pixels"].data[peak_location]
         
         assert peak_location == (0, 0, 0, 63, 63, 4, 4), peak_location
-        u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
     
@@ -87,7 +87,7 @@ class TestGridDataKernels(unittest.TestCase):
         peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf["pixels"].data)), cf["pixels"].data.shape)
         assert numpy.abs(cf["pixels"].data[peak_location] - 0.18712109669890536 + 0j) < 1e-7, cf["pixels"].data[peak_location]
         assert peak_location == (0, 0, 0, 0, 0, 4, 4), peak_location
-        u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
     
@@ -104,7 +104,7 @@ class TestGridDataKernels(unittest.TestCase):
         assert peak_location == (0, 0, 100, 4, 4, 30, 30), peak_location
         assert numpy.abs(cf["pixels"].data[peak_location] - (0.1870600903328245-0j)) < 1e-7, \
             cf.data[peak_location]
-        u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
         
@@ -115,7 +115,7 @@ class TestGridDataKernels(unittest.TestCase):
 
         assert numpy.abs(cf_clipped["pixels"].data[peak_location] - (0.1870600903328245-0j)) < 1e-7, \
             cf_clipped["pixels"].data[peak_location]
-        u_peak, v_peak = cf_clipped.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf_clipped.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
 
@@ -137,7 +137,7 @@ class TestGridDataKernels(unittest.TestCase):
         assert peak_location == (0, 0, 100, 4, 4, 30, 30), peak_location
         assert numpy.abs(cf["pixels"].data[peak_location] - (0.07761529943522588-0j)) < 1e-7, \
             cf["pixels"].data[peak_location]
-        u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
         
@@ -173,7 +173,7 @@ class TestGridDataKernels(unittest.TestCase):
         peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf["pixels"].data)), cf["pixels"].data.shape)
         assert numpy.abs(cf["pixels"].data[peak_location] - 0.07761522554113436 - 0j) < 1e-7, cf.data[peak_location]
         assert peak_location == (0, 0, 0, 8, 8, 16, 16), peak_location
-        u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
         
@@ -242,7 +242,7 @@ class TestGridDataKernels(unittest.TestCase):
         assert numpy.abs(cf["pixels"].data[peak_location] - 0.0776153022780847 + 0j) < 1e-7, \
             cf["pixels"].data[peak_location]
         assert peak_location == (0, 0, 0, 0, 0, 16, 16), peak_location
-        u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
         

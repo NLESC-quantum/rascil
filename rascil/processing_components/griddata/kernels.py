@@ -142,7 +142,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
                                                polarisation_frame=polarisation_frame)
     
     if numpy.abs(wstep) > 0.0:
-        w_list = cf.grid_wcs.sub([5]).wcs_pix2world(range(nw), 0)[0]
+        w_list = cf.cf_wcs.sub([5]).wcs_pix2world(range(nw), 0)[0]
     else:
         w_list = [0.0]
     
@@ -157,9 +157,9 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     
     cf["pixels"].data[...] = 0.0
     
-    ccell = onx * numpy.abs(d2r * im.image_acc.wcs.wcs.cdelt[0]) / qnx
+    ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
     
-    subim_wcs = im.image_acc.wcs.deepcopy()
+    subim_wcs = im.wcs.deepcopy()
     subim_wcs.wcs.cdelt[0] = -ccell / d2r
     subim_wcs.wcs.cdelt[1] = +ccell / d2r
     subim_wcs.wcs.crpix[0] = qnx // 2 + 1.0
@@ -280,9 +280,9 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     
     cf["pixels"].data[...] = 0.0
     
-    ccell = onx * numpy.abs(d2r * im.image_acc.wcs.wcs.cdelt[0]) / qnx
+    ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
     
-    wcs = im.image_acc.wcs
+    wcs = im.wcs
     wcs.wcs.cdelt[0] = -ccell / d2r
     wcs.wcs.cdelt[1] = +ccell / d2r
     wcs.wcs.crpix[0] = qnx // 2 + 1.0

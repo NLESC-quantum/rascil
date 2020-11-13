@@ -63,7 +63,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         if self.persist: export_image_to_fits(self.psf, "%s/test_deconvolve_mmclean-psf.fits" % self.dir)
         window = numpy.ones(shape=self.model["pixels"].shape, dtype=numpy.bool)
         window[..., 65:192, 65:192] = True
-        self.innerquarter = create_image_from_array(window, self.model.image_acc.wcs,
+        self.innerquarter = create_image_from_array(window, self.model.wcs,
                                                     polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_deconvolve_mmclean_no_taylor(self):

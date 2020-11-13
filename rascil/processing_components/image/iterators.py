@@ -139,7 +139,7 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
                 x = nx // 2 + sx * (fx - facets // 2) - overlap // 2
                 if (x >= 0) and (x + dx) <= nx and (y >= 0) and (y + dy) <= ny:
                     # Adjust WCS
-                    wcs = im.image_acc.wcs.deepcopy()
+                    wcs = im.wcs.deepcopy()
                     wcs.wcs.crpix[0] -= x
                     wcs.wcs.crpix[1] -= y
                     # yield image from slice (reference!)
@@ -198,7 +198,7 @@ def image_channel_iter(im: Image, subimages=1) -> collections.abc.Iterable:
             channel_max = nchan
         
         # Adjust WCS
-        wcs = im.image_acc.wcs.deepcopy()
+        wcs = im.wcs.deepcopy()
         wcs.wcs.crpix[3] -= channel
         
         # Yield image from slice (reference!)

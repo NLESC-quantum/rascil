@@ -49,7 +49,7 @@ class TestVPGridDataKernels(unittest.TestCase):
         assert numpy.abs(cf["pixels"].data[peak_location] - (0.005285675638650622+0.000494340010248879j)) < 1e-7, cf.data[
             peak_location]
         assert peak_location == (0, 3, 0, 11, 8, 11, 16), peak_location
-        u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak - 19.53125) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
 

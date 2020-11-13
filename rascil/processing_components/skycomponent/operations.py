@@ -257,7 +257,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     # Now compute source properties for all polarisations and frequencies
     comp_tbl = [[segmentation.source_properties(im["pixels"].data[chan, pol], segments,
                                                 filter_kernel=kernel,
-                                                wcs=im.image_acc.wcs.sub([1, 2])).to_table()
+                                                wcs=im.wcs.sub([1, 2])).to_table()
                  for pol in [0]]
                 for chan in range(im.image_acc.nchan)]
 
@@ -337,10 +337,10 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    if beam.image_acc.wcs.wcs.ctype[0] == 'RA---SIN':
-        pixlocs = skycoord_to_pixel(skycoords, beam.image_acc.wcs, origin=1, mode='wcs')
+    if beam.wcs.wcs.ctype[0] == 'RA---SIN':
+        pixlocs = skycoord_to_pixel(skycoords, beam.wcs, origin=1, mode='wcs')
     else:
-        wcs = copy.deepcopy(beam.image_acc.wcs)
+        wcs = copy.deepcopy(beam.wcs)
         wcs.wcs.ctype[0] = 'RA---SIN'
         wcs.wcs.ctype[1] = 'DEC--SIN'
         wcs.wcs.crval[0] =  phasecentre.ra.deg
@@ -409,11 +409,11 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    if vp.image_acc.wcs.wcs.ctype[0] == 'RA---SIN':
-        pixlocs = skycoord_to_pixel(skycoords, vp.image_acc.wcs, origin=1, mode='wcs')
+    if vp.wcs.wcs.ctype[0] == 'RA---SIN':
+        pixlocs = skycoord_to_pixel(skycoords, vp.wcs, origin=1, mode='wcs')
     else:
         assert phasecentre is not None, "Need to know the phasecentre"
-        wcs = copy.deepcopy(vp.image_acc.wcs)
+        wcs = copy.deepcopy(vp.wcs)
         wcs.wcs.ctype[0] = 'RA---SIN'
         wcs.wcs.ctype[1] = 'DEC--SIN'
         wcs.wcs.crval[0] =  phasecentre.ra.deg
@@ -523,7 +523,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    pixlocs = skycoord_to_pixel(skycoords, im.image_acc.wcs, origin=0, mode='wcs')
+    pixlocs = skycoord_to_pixel(skycoords, im.wcs, origin=0, mode='wcs')
 
     for icomp, comp in enumerate(sc):
 
@@ -580,7 +580,7 @@ def voronoi_decomposition(im, comps):
 
     directions = SkyCoord([u.rad * c.direction.ra.rad for c in comps],
                           [u.rad * c.direction.dec.rad for c in comps])
-    x, y = skycoord_to_pixel(directions, im.image_acc.wcs, 0, 'wcs')
+    x, y = skycoord_to_pixel(directions, im.wcs, 0, 'wcs')
     points = [(x[i], y[i]) for i, _ in enumerate(x)]
     vor = Voronoi(points)
 
@@ -602,7 +602,7 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
     """
     if len(components) == 1:
         mask = numpy.ones(im["pixels"].data.shape)
-        yield create_image_from_array(mask, wcs=im.image_acc.wcs,
+        yield create_image_from_array(mask, wcs=im.wcs,
                                       polarisation_frame=im.image_acc.polarisation_frame)
     else:
         vor, vertex_array = voronoi_decomposition(im, components)
@@ -611,7 +611,7 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
         for region in range(nregions):
             mask = numpy.zeros(im["pixels"].data.shape)
             mask[(vertex_array == region)[numpy.newaxis, numpy.newaxis, ...]] = 1.0
-            yield create_image_from_array(mask, wcs=im.image_acc.wcs,
+            yield create_image_from_array(mask, wcs=im.wcs,
                                           polarisation_frame=im.image_acc.polarisation_frame)
 
 

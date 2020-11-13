@@ -67,8 +67,8 @@ def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs:
     log.debug("create_griddata_from_array: created %s image of shape %s" %
               (data.dtype, str(data.shape)))
 
-    return GridData(data=data, grid_wcs=grid_wcs.deepcopy(), projection_wcs=projection_wcs.deepcopy(),
-                    polarisation_frame=polarisation_frame)
+    return GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs.deepcopy(),
+                    projection_wcs=projection_wcs)
 
 
 def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
@@ -84,13 +84,14 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     gridshape = (nchan, npol, nw, ny, nx)
     data = numpy.zeros(gridshape, dtype='complex')
     
-    crval = im.image_acc.wcs.wcs.crval
-    crpix = im.image_acc.wcs.wcs.crpix
-    cdelt = im.image_acc.wcs.wcs.cdelt
-    ctype = im.image_acc.wcs.wcs.ctype
+    wcs = copy.deepcopy(im.wcs.wcs)
+    crval = wcs.crval
+    crpix = wcs.crpix
+    cdelt = wcs.cdelt
+    ctype = wcs.ctype
     d2r = numpy.pi / 180.0
-    cdelt[0] = - 1.0 / (nx * cdelt[0] * d2r)
-    cdelt[1] = - 1.0 / (ny * cdelt[1] * d2r)
+    cdelt[0] = 1.0 / (nx * cdelt[0] * d2r)
+    cdelt[1] = 1.0 / (ny * cdelt[1] * d2r)
 
     # The negation in the longitude is needed by definition of RA, DEC
     grid_wcs = WCS(naxis=5)
@@ -104,9 +105,9 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     if polarisation_frame is None:
         polarisation_frame = im.image_acc.polarisation_frame
     
-    return GridData(data, grid_wcs=grid_wcs, phasecentre=im.image_acc.phasecentre,
-                    frequency=im.frequency,
-                    polarisation_frame=polarisation_frame)
+    return GridData(data, phasecentre=im.phasecentre, frequency=im.frequency,
+                    polarisation_frame=polarisation_frame, grid_wcs=grid_wcs,
+                    projection_wcs=im.wcs)
 
 
 def convert_griddata_to_image(gd):

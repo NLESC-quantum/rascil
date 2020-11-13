@@ -73,10 +73,10 @@ class VoltagePatternsPolGraph(unittest.TestCase):
                                                override_cellsize=False,
                                                polarisation_frame=PolarisationFrame("stokesIQUV"))
         vpbeam = create_vp(pbmodel, telescope=telescope, use_local=False)
-        vpbeam.image_acc.wcs.wcs.ctype[0] = 'RA---SIN'
-        vpbeam.image_acc.wcs.wcs.ctype[1] = 'DEC--SIN'
-        vpbeam.image_acc.wcs.wcs.crval[0] = pbmodel.image_acc.wcs.wcs.crval[0]
-        vpbeam.image_acc.wcs.wcs.crval[1] = pbmodel.image_acc.wcs.wcs.crval[1]
+        vpbeam.wcs.wcs.ctype[0] = 'RA---SIN'
+        vpbeam.wcs.wcs.ctype[1] = 'DEC--SIN'
+        vpbeam.wcs.wcs.crval[0] = pbmodel.wcs.wcs.crval[0]
+        vpbeam.wcs.wcs.crval[1] = pbmodel.wcs.wcs.crval[1]
 
         s3_components = create_test_skycomponents_from_s3(flux_limit=0.1,
                                                           phasecentre=self.phasecentre,

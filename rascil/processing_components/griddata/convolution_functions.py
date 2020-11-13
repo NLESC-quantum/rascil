@@ -67,8 +67,8 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
 
     """
     assert len(im["pixels"].data.shape) == 4
-    assert im.image_acc.wcs.wcs.ctype[0] == 'RA---SIN', im.image_acc.wcs.wcs.ctype[0]
-    assert im.image_acc.wcs.wcs.ctype[1] == 'DEC--SIN', im.image_acc.wcs.wcs.ctype[1]
+    assert im.wcs.wcs.ctype[0] == 'RA---SIN', im.wcs.wcs.ctype[0]
+    assert im.wcs.wcs.ctype[1] == 'DEC--SIN', im.wcs.wcs.ctype[1]
     
     d2r = numpy.pi / 180.0
     
@@ -81,42 +81,42 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     cf_wcs.wcs.axis_types[2] = 0
     cf_wcs.wcs.axis_types[3] = 0
     cf_wcs.wcs.axis_types[4] = 0
-    cf_wcs.wcs.axis_types[5] = im.image_acc.wcs.wcs.axis_types[2]
-    cf_wcs.wcs.axis_types[6] = im.image_acc.wcs.wcs.axis_types[3]
+    cf_wcs.wcs.axis_types[5] = im.wcs.wcs.axis_types[2]
+    cf_wcs.wcs.axis_types[6] = im.wcs.wcs.axis_types[3]
     
     cf_wcs.wcs.ctype[0] = 'UU'
     cf_wcs.wcs.ctype[1] = 'VV'
     cf_wcs.wcs.ctype[2] = 'DUU'
     cf_wcs.wcs.ctype[3] = 'DVV'
     cf_wcs.wcs.ctype[4] = wtype
-    cf_wcs.wcs.ctype[5] = im.image_acc.wcs.wcs.ctype[2]
-    cf_wcs.wcs.ctype[6] = im.image_acc.wcs.wcs.ctype[3]
+    cf_wcs.wcs.ctype[5] = im.wcs.wcs.ctype[2]
+    cf_wcs.wcs.ctype[6] = im.wcs.wcs.ctype[3]
     
     cf_wcs.wcs.crval[0] = 0.0
     cf_wcs.wcs.crval[1] = 0.0
     cf_wcs.wcs.crval[2] = 0.0
     cf_wcs.wcs.crval[3] = 0.0
     cf_wcs.wcs.crval[4] = 0.0
-    cf_wcs.wcs.crval[5] = im.image_acc.wcs.wcs.crval[2]
-    cf_wcs.wcs.crval[6] = im.image_acc.wcs.wcs.crval[3]
+    cf_wcs.wcs.crval[5] = im.wcs.wcs.crval[2]
+    cf_wcs.wcs.crval[6] = im.wcs.wcs.crval[3]
     
     cf_wcs.wcs.crpix[0] = float(support // 2) + 1.0
     cf_wcs.wcs.crpix[1] = float(support // 2) + 1.0
     cf_wcs.wcs.crpix[2] = float(oversampling // 2) + 1.0
     cf_wcs.wcs.crpix[3] = float(oversampling // 2) + 1.0
     cf_wcs.wcs.crpix[4] = float(nw // 2 + 1)
-    cf_wcs.wcs.crpix[5] = im.image_acc.wcs.wcs.crpix[2]
-    cf_wcs.wcs.crpix[6] = im.image_acc.wcs.wcs.crpix[3]
+    cf_wcs.wcs.crpix[5] = im.wcs.wcs.crpix[2]
+    cf_wcs.wcs.crpix[6] = im.wcs.wcs.crpix[3]
     
     # The sampling on the UU and VV axes should be the same as for the image.
     # The sampling on the DUU and DVV axes should be oversampling times finer.
-    cf_wcs.wcs.cdelt[0] = 1.0 / (im["pixels"].data.shape[3] * d2r * im.image_acc.wcs.wcs.cdelt[0])
-    cf_wcs.wcs.cdelt[1] = 1.0 / (im["pixels"].data.shape[2] * d2r * im.image_acc.wcs.wcs.cdelt[1])
+    cf_wcs.wcs.cdelt[0] = 1.0 / (im["pixels"].data.shape[3] * d2r * im.wcs.wcs.cdelt[0])
+    cf_wcs.wcs.cdelt[1] = 1.0 / (im["pixels"].data.shape[2] * d2r * im.wcs.wcs.cdelt[1])
     cf_wcs.wcs.cdelt[2] = cf_wcs.wcs.cdelt[0] / oversampling
     cf_wcs.wcs.cdelt[3] = cf_wcs.wcs.cdelt[1] / oversampling
     cf_wcs.wcs.cdelt[4] = wstep
-    cf_wcs.wcs.cdelt[5] = im.image_acc.wcs.wcs.cdelt[2]
-    cf_wcs.wcs.cdelt[6] = im.image_acc.wcs.wcs.cdelt[3]
+    cf_wcs.wcs.cdelt[5] = im.wcs.wcs.cdelt[2]
+    cf_wcs.wcs.cdelt[6] = im.wcs.wcs.cdelt[3]
     
     nchan, npol, ny, nx = im["pixels"].data.shape
     
@@ -124,13 +124,13 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     
     if polarisation_frame is not None:
         return ConvolutionFunction(data=cf_data,
-                                   grid_wcs=cf_wcs.deepcopy(),
-                                   projection_wcs=im.image_acc.wcs.deepcopy(),
+                                   cf_wcs=cf_wcs.deepcopy(),
+                                   projection_wcs=im.wcs.deepcopy(),
                                    polarisation_frame=polarisation_frame)
     else:
         return ConvolutionFunction(data=cf_data,
-                                   grid_wcs=cf_wcs.deepcopy(),
-                                   projection_wcs=im.image_acc.wcs.deepcopy(),
+                                   cf_wcs=cf_wcs.deepcopy(),
+                                   projection_wcs=im.wcs.deepcopy(),
                                    polarisation_frame=im.image_acc.polarisation_frame)
 
 
@@ -147,8 +147,8 @@ def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     mask = numpy.max(numpy.abs(newcf["pixels"].data), axis=(0, 1, 2, 3, 4))
     mask /= numpy.max(mask)
     coords = numpy.argwhere(mask > fractional_level)
-    crpx = int(numpy.round(cf.grid_wcs.wcs.crpix[0]))
-    crpy = int(numpy.round(cf.grid_wcs.wcs.crpix[1]))
+    crpx = int(numpy.round(cf.cf_wcs.wcs.crpix[0]))
+    crpy = int(numpy.round(cf.cf_wcs.wcs.crpix[1]))
     x0, y0 = coords.min(axis=0, initial=cf["pixels"].data.shape[-1])
     dx = crpx - x0
     dy = crpy - y0
@@ -156,12 +156,13 @@ def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     y0 -= 1
     x1 = crpx + dx - 1
     y1 = crpy + dy - 1
-    newcf = ConvolutionFunction(data=newcf["pixels"].data[..., y0:y1, x0:x1], grid_wcs=newcf.grid_wcs,
+    nny, nnx = newcf["pixels"].data.shape[-2], newcf["pixels"].data.shape[-1]
+    newcf.cf_wcs.wcs.crpix[0] += nnx / 2 - nx / 2
+    newcf.cf_wcs.wcs.crpix[1] += nny / 2 - ny / 2
+
+    newcf = ConvolutionFunction(data=newcf["pixels"].data[..., y0:y1, x0:x1], cf_wcs=newcf.cf_wcs,
                                 projection_wcs=newcf.projection_wcs,
                                 polarisation_frame=newcf.polarisation_frame)
-    nny, nnx = newcf["pixels"].data.shape[-2], newcf["pixels"].data.shape[-1]
-    newcf.grid_wcs.wcs.crpix[0] += nnx / 2 - nx / 2
-    newcf.grid_wcs.wcs.crpix[1] += nny / 2 - ny / 2
     return newcf
 
 
@@ -229,5 +230,6 @@ def export_convolutionfunction_to_fits(cf: ConvolutionFunction, fitsfile: str = 
 
     """
     ##assert isinstance(cf, ConvolutionFunction), cf
-    return fits.writeto(filename=fitsfile, data=numpy.real(cf["pixels"].data), header=cf.grid_wcs.to_header(),
+    return fits.writeto(filename=fitsfile, data=numpy.real(cf["pixels"].data),
+                        header=cf.cf_wcs.to_header(),
                         overwrite=True)

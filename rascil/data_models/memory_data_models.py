@@ -432,20 +432,17 @@ class Image(xarray.Dataset):
         nx, ny = data.shape[-2], data.shape[-1]
         nchan = len(frequency)
         npol = polarisation_frame.npol
-        cellsize = numpy.abs(wcs.wcs.cdelt[1])
-        cx = phasecentre.ra.to("deg").value
-        cy = phasecentre.dec.to("deg").value
+        cellsize = numpy.deg2rad(numpy.abs(wcs.wcs.cdelt[1]))
+        cx = phasecentre.ra.to("rad").value
+        cy = phasecentre.dec.to("rad").value
         
         lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
         ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
+        ra = numpy.deg2rad(ra)
+        dec = numpy.deg2rad(dec)
 
-        # Define the names of the dimensions
-        dims = {
-            "freqinx": nchan,
-            "polinx": npol,
-            "y": ny,
-            "x": nx
-        }
+        # Define the dimensions
+        dims = ["freqinx", "polinx", "y", "x"]
         
         # Define the coordinates on these dimensions
         coords = {
@@ -453,8 +450,8 @@ class Image(xarray.Dataset):
             "polarisation": ("polinx", polarisation_frame.names),
             "y": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny, endpoint=False),
             "x": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx, endpoint=False),
-            "ra": (("x", "y"), ra),
-            "dec": (("x", "y"), dec)
+            "ra": (("x", "y"), ra, {"units": "rad"}),
+            "dec": (("x", "y"), dec, {"units": "rad"})
         }
         
         assert data.shape[0] == nchan, \
@@ -472,6 +469,8 @@ class Image(xarray.Dataset):
         
         attrs = {"rascil_data_model": "Image",
                  "frame": phasecentre.frame.name,
+                 "wcs": wcs,
+                 "phasecentre": phasecentre,
                  "ctypes": [str(c) for c in wcs.wcs.ctype]
         }
         
@@ -509,30 +508,13 @@ class ImageAccessor(XarrayAccessorMixin):
         return len(self._obj.polarisation)
     
     @property
-    def phasecentre(self):
-        """ Phasecentre (from coords)
-        """
-        cx = len(self._obj["x"]) // 2
-        cy = len(self._obj["y"]) // 2
-        return SkyCoord(self._obj["x"].data[cx] * u.deg, self._obj["y"].data[cy] * u.deg, frame=self._obj.frame)
-    
-    @property
     def polarisation_frame(self):
         """Polarisation frame (from coords)
         
         :return:
         """
         return PolarisationFrame(polarisation_frame_from_names(self._obj.polarisation))
-    
-    @property
-    def wcs(self):
-        """ WCS (from coords)
         
-        :return:
-        """
-        from rascil.data_models.xarray_coordinate_support import image_wcs
-        return image_wcs(self._obj)
-    
 
 class GridData(xarray.Dataset):
     """Class to hold Gridded data for Fourier processing
@@ -569,9 +551,10 @@ class GridData(xarray.Dataset):
     __slots__ = ()
     
     def __init__(self, data, phasecentre, frequency, polarisation_frame=None,
-                 grid_wcs=None):
+                 grid_wcs=None, projection_wcs=None):
         """ Create a GridData
 
+        :param projection_wcs:
         :param polarisation_frame:
         :return: GridData
         """
@@ -600,8 +583,8 @@ class GridData(xarray.Dataset):
         coords = {
             "frequency": ("freqinx", frequency),
             "polarisation": ("polinx", polarisation_frame.names),
-            "w": numpy.linspace(cw - dw * nw / 2,    cw + dw * nw / 2,    nw, endpoint=False),
-            "v": numpy.linspace(cv - dv* nv / 2, cv + dv * nv / 2, nv, endpoint=False),
+            "w": numpy.linspace(cw - dw * nw / 2, cw + dw * nw / 2, nw, endpoint=False),
+            "v": numpy.linspace(cv - dv * nv / 2, cv + dv * nv / 2, nv, endpoint=False),
             "u": numpy.linspace(cu - du * nu / 2, cu + du * nu / 2, nu, endpoint=False),
         }
         if nw == 1:
@@ -610,14 +593,11 @@ class GridData(xarray.Dataset):
         attrs = dict()
         attrs["rascil_data_model"] = "GridData"
         attrs["polarisation_frame"] = polarisation_frame
+        attrs["frame"] = phasecentre.frame.name
+        attrs["grid_wcs"] = grid_wcs
+        attrs["projection_wcs"] = projection_wcs
         attrs["phasecentre"] = phasecentre
         
-        attrs = {"rascil_data_model": "GridData",
-                 "frame": phasecentre.frame.name,
-                 "polarisation_frame": polarisation_frame,
-                 "ctypes": [str(c) for c in grid_wcs.wcs.ctype]
-        }
-
         
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
@@ -656,16 +636,6 @@ class GridDataAccessor(XarrayAccessorMixin):
         """
         return polarisation_frame_from_names(self._obj.polarisation)
         
-    @property
-    def grid_wcs(self):
-        """ WCS (from coords)
-
-        :return:
-        """
-        from rascil.data_models.xarray_coordinate_support import griddata_wcs
-        return griddata_wcs(self._obj)
-
-
 class ConvolutionFunction(xarray.Dataset):
     """Class to hold Convolution function for Fourier processing
     - Has four or more coordinates: [chan, pol, z, y, x] where x can be u, l; y can be v, m; z can be w, n
@@ -702,11 +672,11 @@ class ConvolutionFunction(xarray.Dataset):
     
     __slots__ = ()
     
-    def __init__(self, data, grid_wcs=None, projection_wcs=None, polarisation_frame=None):
+    def __init__(self, data, cf_wcs=None, projection_wcs=None, polarisation_frame=None):
         """Create ConvolutionFunction
 
         :param data: Data for cf
-        :param grid_wcs: Astropy WCS object for the grid
+        :param cf_wcs: Astropy WCS object for the grid
         :param projection_wcs: Astropy WCS object for the projection
         :param polarisation_frame: Polarisation_frame e.g. PolarisationFrame('linear')
         """
@@ -714,7 +684,7 @@ class ConvolutionFunction(xarray.Dataset):
         super().__init__()
         
         nchan, npol, nw, oversampling, _, support, _ = data.shape
-        frequency = grid_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
+        frequency = cf_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
         
         assert npol == polarisation_frame.npol
         cellsize = numpy.abs(projection_wcs.wcs.cdelt[1])
@@ -723,8 +693,8 @@ class ConvolutionFunction(xarray.Dataset):
         dv = 1.0 / cellsize_rad
         ddu = 1.0 / cellsize_rad / oversampling
         ddv = 1.0 / cellsize_rad / oversampling
-        cu = grid_wcs.wcs.crval[0]
-        cv = grid_wcs.wcs.crval[1]
+        cu = cf_wcs.wcs.crval[0]
+        cv = cf_wcs.wcs.crval[1]
         cdu = oversampling // 2
         cdv = oversampling // 2
         
@@ -750,7 +720,7 @@ class ConvolutionFunction(xarray.Dataset):
         
         attrs = dict()
         attrs["rascil_data_model"] = "ConvolutionFunction"
-        attrs["grid_wcs"] = grid_wcs
+        attrs["cf_wcs"] = cf_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
         
@@ -799,23 +769,6 @@ class ConvolutionFunctionAccessor(XarrayAccessorMixin):
         :return:
         """
         return polarisation_frame_from_names(self._obj.polarisation)
-    
-    @property
-    def phasecentre(self):
-        """ Phasecentre (from coords)
-        """
-        cx = len(self._obj["x"]) // 2
-        cy = len(self._obj["y"]) // 2
-        return SkyCoord(self._obj["x"].data[cx] * u.deg, self._obj["y"].data[cy] * u.deg, frame="icrs")
-    
-    @property
-    def grid_wcs(self):
-        """ WCS (from coords)
-
-        :return:
-        """
-        from rascil.data_models.xarray_coordinate_support import griddata_wcs
-        return griddata_wcs(self._obj)
 
 
 class Skycomponent:
@@ -1042,13 +995,13 @@ class BlockVisibility(xarray.Dataset):
         nchan = len(frequency)
         npol = polarisation_frame.npol
         # Define the names of the dimensions
-        dims = {
-            "timeinx": len(time),
-            "blinx": len(baselines),
-            "freqinx": nchan,
-            "polinx": npol,
-            "spatial": 3
-        }
+        dims = [
+            "timeinx",
+            "blinx",
+            "freqinx",
+            "polinx",
+            "spatial"
+        ]
 
         coords = {
             "time": ("timeinx", time),

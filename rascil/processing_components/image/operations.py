@@ -62,13 +62,13 @@ def image_is_canonical(im: Image):
     
     canonical = True
     canonical = canonical and len(im["pixels"].data.shape) == 4
-    canonical = canonical and im.image_acc.wcs.wcs.ctype[0] == 'RA---SIN' and im.image_acc.wcs.wcs.ctype[1] == 'DEC--SIN'
-    canonical = canonical and im.image_acc.wcs.wcs.ctype[2] == 'STOKES'
-    canonical = canonical and (im.image_acc.wcs.wcs.ctype[3] == 'FREQ' or im.image_acc.wcs.wcs.ctype[3] == "MOMENT")
+    canonical = canonical and im.wcs.wcs.ctype[0] == 'RA---SIN' and im.wcs.wcs.ctype[1] == 'DEC--SIN'
+    canonical = canonical and im.wcs.wcs.ctype[2] == 'STOKES'
+    canonical = canonical and (im.wcs.wcs.ctype[3] == 'FREQ' or im.wcs.wcs.ctype[3] == "MOMENT")
     
     if not canonical:
         log.debug("image_is_canonical: Image is not canonical 4D image with axes RA---SIN, DEC--SIN, STOKES, FREQ")
-        log.debug("image_is_canonical: axes are: {}".format(im.image_acc.wcs.wcs.ctype))
+        log.debug("image_is_canonical: axes are: {}".format(im.wcs.wcs.ctype))
 
     return canonical
 
@@ -87,10 +87,10 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
     ##assert isinstance(im, Image), im
     if im["pixels"].data.dtype == "complex":
         return fits.writeto(filename=fitsfile, data=numpy.real(im["pixels"].data),
-                            header=im.image_acc.wcs.to_header(), overwrite=True)
+                            header=im.wcs.to_header(), overwrite=True)
     else:
         return fits.writeto(filename=fitsfile, data=im["pixels"].data,
-                            header=im.image_acc.wcs.to_header(), overwrite=True)
+                            header=im.wcs.to_header(), overwrite=True)
 
 
 
@@ -179,10 +179,10 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             for chan in range(nchan):
                 for pol in range(npol):
                     rep_real[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data.real[chan, pol],
-                                                                             im.image_acc.wcs.sub(2)),
+                                                                             im.wcs.sub(2)),
                                                                             newwcs.sub(2), shape[2:], order='bicubic')
                     rep_imag[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data.imag[chan, pol],
-                                                                             im.image_acc.wcs.sub(2)),
+                                                                             im.wcs.sub(2)),
                                                                             newwcs.sub(2), shape[2:], order='bicubic')
             rep = rep_real + 1j * rep_imag
         else:
@@ -191,18 +191,18 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
             for chan in range(nchan):
                 for pol in range(npol):
                     rep[chan, pol], foot[chan, pol] = reproject_interp((im["pixels"].data[chan, pol],
-                                                                        im.image_acc.wcs.sub(2)),
+                                                                        im.wcs.sub(2)),
                                                                        newwcs.sub(2), shape[2:], order='bicubic')
         
         if numpy.sum(foot.data) < 1e-12:
             log.warning("reproject_image: no valid points in reprojection")
     elif len(im["pixels"].data.shape) == 2:
         if im["pixels"].data.dtype == 'complex':
-            rep_real, foot = reproject_interp((im["pixels"].data.real, im.image_acc.wcs), newwcs, shape, order='bicubic')
-            rep_imag, foot = reproject_interp((im["pixels"].data.imag, im.image_acc.wcs), newwcs, shape, order='bicubic')
+            rep_real, foot = reproject_interp((im["pixels"].data.real, im.wcs), newwcs, shape, order='bicubic')
+            rep_imag, foot = reproject_interp((im["pixels"].data.imag, im.wcs), newwcs, shape, order='bicubic')
             rep = rep_real + 1j * rep_imag
         else:
-            rep, foot = reproject_interp((im["pixels"].data, im.image_acc.wcs), newwcs, shape, order='bicubic')
+            rep, foot = reproject_interp((im["pixels"].data, im.wcs), newwcs, shape, order='bicubic')
         
         if numpy.sum(foot.data) < 1e-12:
             log.warning("reproject_image: no valid points in reprojection")
@@ -223,7 +223,7 @@ def add_image(im1: Image, im2: Image) -> Image:
     :return: Image
     """
     return create_image_from_array(im1["pixels"].data+ im2["pixels"].data,
-                                   im1.image_acc.wcs,
+                                   im1.wcs,
                                    im1.image_acc.polarisation_frame)
 
 
@@ -271,7 +271,7 @@ def show_image(im: Image, fig=None, title: str = '', pol=0, chan=0, cm='Greys', 
     ##assert isinstance(im, Image), im
     
     fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1, projection=im.image_acc.wcs.sub([1, 2]))
+    ax = fig.add_subplot(1, 1, 1, projection=im.wcs.sub([1, 2]))
     
     if len(im["pixels"].data.shape) == 4:
         data_array = numpy.real(im["pixels"].data[chan, pol, :, :])
@@ -285,15 +285,15 @@ def show_image(im: Image, fig=None, title: str = '', pol=0, chan=0, cm='Greys', 
     
     cm = ax.imshow(data_array, origin='lower', cmap=cm, vmax=vmax, vmin=vmin)
     
-    ax.set_xlabel(im.image_acc.wcs.wcs.ctype[0])
-    ax.set_ylabel(im.image_acc.wcs.wcs.ctype[1])
+    ax.set_xlabel(im.wcs.wcs.ctype[0])
+    ax.set_ylabel(im.wcs.wcs.ctype[1])
     ax.set_title(title)
     
     fig.colorbar(cm, orientation='vertical', shrink=0.7)
     
     if components is not None:
         for sc in components:
-            x, y = skycoord_to_pixel(sc.direction, im.image_acc.wcs, 0, 'wcs')
+            x, y = skycoord_to_pixel(sc.direction, im.wcs, 0, 'wcs')
             ax.plot(x, y, marker='+', color='red')
     
     return fig
@@ -323,15 +323,15 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, titl
     
     for isc, sc in enumerate(comps):
         newim = im.copy(deep=True)
-        plt.subplot(111, projection=newim.image_acc.wcs.sub([1, 2]))
-        centre = numpy.round(skycoord_to_pixel(sc.direction, newim.image_acc.wcs, 1, 'wcs')).astype('int')
+        plt.subplot(111, projection=newim.wcs.sub([1, 2]))
+        centre = numpy.round(skycoord_to_pixel(sc.direction, newim.wcs, 1, 'wcs')).astype('int')
         newim["pixels"].data = \
             newim["pixels"].data[:, :, (centre[1] - npixels // 2):(centre[1] + npixels // 2),
             (centre[0] - npixels // 2):(centre[0] + npixels // 2)]
-        newim.image_acc.wcs.wcs.crpix[0] -= centre[0] - npixels // 2
-        newim.image_acc.wcs.wcs.crpix[1] -= centre[1] - npixels // 2
+        newim.wcs.wcs.crpix[0] -= centre[0] - npixels // 2
+        newim.wcs.wcs.crpix[1] -= centre[1] - npixels // 2
         plt.imshow(newim["pixels"].data[0, 0, ...], origin='lower', cmap='Greys', vmax=vmax, vmin=vmin)
-        x, y = skycoord_to_pixel(sc.direction, newim.image_acc.wcs, 0, 'wcs')
+        x, y = skycoord_to_pixel(sc.direction, newim.wcs, 0, 'wcs')
         plt.plot(x, y, marker='+', color='red')
         plt.title('Name = %s, flux = %s' % (sc.name, sc.flux))
         plt.show()
@@ -397,7 +397,7 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     assert nmoment > 0
     nchan, npol, ny, nx = im["pixels"].data.shape
     channels = numpy.arange(nchan)
-    freq = im.image_acc.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
+    freq = im.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
     
     assert nmoment <= nchan, "Number of moments %d cannot exceed the number of channels %d" % (nmoment, nchan)
     
@@ -416,7 +416,7 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     
     assert not numpy.isnan(numpy.sum(moment_data)), "NaNs present in moment data"
 
-    moment_wcs = copy.deepcopy(im.image_acc.wcs)
+    moment_wcs = copy.deepcopy(im.wcs)
     moment_wcs.wcs.ctype[3] = 'MOMENT'
     moment_wcs.wcs.crval[3] = 0.0
     moment_wcs.wcs.crpix[3] = 1.0
@@ -456,7 +456,7 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
     assert ny == mny
     assert nx == mnx
     
-    #assert moment_image.image_acc.wcs.wcs.ctype[3] == 'MOMENT', "Second image should be a moment image"
+    #assert moment_image.wcs.wcs.ctype[3] == 'MOMENT', "Second image should be a moment image"
     
     
     if reference_frequency is None:
@@ -493,7 +493,7 @@ def remove_continuum_image(im: Image, degree=1, mask=None):
     
     nchan, npol, ny, nx = im["pixels"].data.shape
     channels = numpy.arange(nchan)
-    frequency = im.image_acc.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
+    frequency = im.wcs.sub(['spectral']).wcs_pix2world(channels, 0)[0]
     frequency -= frequency[nchan // 2]
     frequency /= numpy.max(frequency)
     wt = numpy.ones_like(frequency)
@@ -527,18 +527,18 @@ def convert_stokes_to_polimage(im: Image, polarisation_frame: PolarisationFrame)
     
     if polarisation_frame == PolarisationFrame('linear'):
         cimarr = convert_stokes_to_linear(im["pixels"].data)
-        return create_image_from_array(cimarr, im.image_acc.wcs, polarisation_frame)
+        return create_image_from_array(cimarr, im.wcs, polarisation_frame)
     elif polarisation_frame == PolarisationFrame('linearnp'):
         cimarr = convert_stokes_to_linear(im["pixels"].data)
-        return create_image_from_array(cimarr, im.image_acc.wcs, polarisation_frame)
+        return create_image_from_array(cimarr, im.wcs, polarisation_frame)
     elif polarisation_frame == PolarisationFrame('circular'):
         cimarr = convert_stokes_to_circular(im["pixels"].data)
-        return create_image_from_array(cimarr, im.image_acc.wcs, polarisation_frame)
+        return create_image_from_array(cimarr, im.wcs, polarisation_frame)
     elif polarisation_frame == PolarisationFrame('circularnp'):
         cimarr = convert_stokes_to_circular(im["pixels"].data)
-        return create_image_from_array(cimarr, im.image_acc.wcs, polarisation_frame)
+        return create_image_from_array(cimarr, im.wcs, polarisation_frame)
     elif polarisation_frame == PolarisationFrame('stokesI'):
-        return create_image_from_array(im["pixels"].data.astype("complex"), im.image_acc.wcs, PolarisationFrame('stokesI'))
+        return create_image_from_array(im["pixels"].data.astype("complex"), im.wcs, PolarisationFrame('stokesI'))
     else:
         raise ValueError("Cannot convert stokes to %s" % (polarisation_frame.type))
 
@@ -570,18 +570,18 @@ def convert_polimage_to_stokes(im: Image, complex_image=False, **kwargs):
     
     if im.image_acc.polarisation_frame == PolarisationFrame('linear'):
         cimarr = convert_linear_to_stokes(im["pixels"].data)
-        return create_image_from_array(to_required(cimarr), im.image_acc.wcs, PolarisationFrame('stokesIQUV'))
+        return create_image_from_array(to_required(cimarr), im.wcs, PolarisationFrame('stokesIQUV'))
     elif im.image_acc.polarisation_frame == PolarisationFrame('linearnp'):
         cimarr = convert_linear_to_stokes(im["pixels"].data)
-        return create_image_from_array(to_required(cimarr), im.image_acc.wcs, PolarisationFrame('stokesIQ'))
+        return create_image_from_array(to_required(cimarr), im.wcs, PolarisationFrame('stokesIQ'))
     elif im.image_acc.polarisation_frame == PolarisationFrame('circular'):
         cimarr = convert_circular_to_stokes(im["pixels"].data)
-        return create_image_from_array(to_required(cimarr), im.image_acc.wcs, PolarisationFrame('stokesIQUV'))
+        return create_image_from_array(to_required(cimarr), im.wcs, PolarisationFrame('stokesIQUV'))
     elif im.image_acc.polarisation_frame == PolarisationFrame('circularnp'):
         cimarr = convert_circular_to_stokes(im["pixels"].data)
-        return create_image_from_array(to_required(cimarr), im.image_acc.wcs, PolarisationFrame('stokesIV'))
+        return create_image_from_array(to_required(cimarr), im.wcs, PolarisationFrame('stokesIV'))
     elif im.image_acc.polarisation_frame == PolarisationFrame('stokesI'):
-        return create_image_from_array(to_required(im["pixels"].data), im.image_acc.wcs, PolarisationFrame('stokesI'))
+        return create_image_from_array(to_required(im["pixels"].data), im.wcs, PolarisationFrame('stokesI'))
     else:
         raise ValueError("Cannot convert %s to stokes" % (im.image_acc.polarisation_frame.type))
 
@@ -694,6 +694,8 @@ def create_image(npixel=512,
     w.wcs.radesys = 'ICRS'
     w.wcs.equinox = 2000.0
     
+    print(w)
+    
     return create_image_from_array(numpy.zeros(shape, dtype=dtype), w, polarisation_frame=polarisation_frame)
 
 
@@ -759,7 +761,7 @@ def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
         linear [-5,-6,-7,-8]
 
     For example::
-        pol_frame = polarisation_frame_from_wcs(im.image_acc.wcs, im["pixels"].data.shape)
+        pol_frame = polarisation_frame_from_wcs(im.wcs, im["pixels"].data.shape)
 
 
     :param wcs: World Coordinate System
@@ -799,7 +801,7 @@ def create_empty_image_like(im: Image) -> Image:
     """
     
     return create_image_from_array(numpy.zeros_like(im["pixels"].data),
-                                   wcs=im.image_acc.wcs,
+                                   wcs=im.wcs,
                                    polarisation_frame=im.image_acc.polarisation_frame)
 
 
@@ -855,9 +857,9 @@ def fft_image(im, template_image=None):
     """
     assert len(im["pixels"].data.shape) == 4
     d2r = numpy.pi / 180.0
-    ft_wcs = copy.deepcopy(im.image_acc.wcs)
+    ft_wcs = copy.deepcopy(im.wcs)
     ft_shape = im["pixels"].data.shape
-    if im.image_acc.wcs.wcs.ctype[0] == 'RA---SIN' and im.image_acc.wcs.wcs.ctype[1] == 'DEC--SIN':
+    if im.wcs.wcs.ctype[0] == 'RA---SIN' and im.wcs.wcs.ctype[1] == 'DEC--SIN':
         assert image_is_canonical(im)
         ft_wcs.wcs.axis_types[0] = 0
         ft_wcs.wcs.axis_types[1] = 0
@@ -867,22 +869,22 @@ def fft_image(im, template_image=None):
         ft_wcs.wcs.crpix[1] = ft_shape[2] // 2 + 1
         ft_wcs.wcs.ctype[0] = 'UU'
         ft_wcs.wcs.ctype[1] = 'VV'
-        ft_wcs.wcs.cdelt[0] = 1.0 / (ft_shape[3] * d2r * im.image_acc.wcs.wcs.cdelt[0])
-        ft_wcs.wcs.cdelt[1] = 1.0 / (ft_shape[2] * d2r * im.image_acc.wcs.wcs.cdelt[1])
+        ft_wcs.wcs.cdelt[0] = 1.0 / (ft_shape[3] * d2r * im.wcs.wcs.cdelt[0])
+        ft_wcs.wcs.cdelt[1] = 1.0 / (ft_shape[2] * d2r * im.wcs.wcs.cdelt[1])
         ft_data = ifft(im["pixels"].data.astype('complex'))
         return create_image_from_array(ft_data, wcs=ft_wcs, polarisation_frame=im.image_acc.polarisation_frame)
-    elif im.image_acc.wcs.wcs.ctype[0] == 'UU' and im.image_acc.wcs.wcs.ctype[1] == 'VV':
-        ft_wcs.wcs.crval[0] = template_image.image_acc.wcs.wcs.crval[0]
-        ft_wcs.wcs.crval[1] = template_image.image_acc.wcs.wcs.crval[1]
-        ft_wcs.wcs.crpix[0] = template_image.image_acc.wcs.wcs.crpix[0]
-        ft_wcs.wcs.crpix[0] = template_image.image_acc.wcs.wcs.crpix[1]
-        ft_wcs.wcs.ctype[0] = template_image.image_acc.wcs.wcs.ctype[0]
-        ft_wcs.wcs.ctype[1] = template_image.image_acc.wcs.wcs.ctype[1]
-        ft_wcs.wcs.cdelt[0] = template_image.image_acc.wcs.wcs.cdelt[0]
-        ft_wcs.wcs.cdelt[1] = template_image.image_acc.wcs.wcs.cdelt[1]
+    elif im.wcs.wcs.ctype[0] == 'UU' and im.wcs.wcs.ctype[1] == 'VV':
+        ft_wcs.wcs.crval[0] = template_image.wcs.wcs.crval[0]
+        ft_wcs.wcs.crval[1] = template_image.wcs.wcs.crval[1]
+        ft_wcs.wcs.crpix[0] = template_image.wcs.wcs.crpix[0]
+        ft_wcs.wcs.crpix[0] = template_image.wcs.wcs.crpix[1]
+        ft_wcs.wcs.ctype[0] = template_image.wcs.wcs.ctype[0]
+        ft_wcs.wcs.ctype[1] = template_image.wcs.wcs.ctype[1]
+        ft_wcs.wcs.cdelt[0] = template_image.wcs.wcs.cdelt[0]
+        ft_wcs.wcs.cdelt[1] = template_image.wcs.wcs.cdelt[1]
         ft_data = fft(im["pixels"].data.astype('complex'))
         return create_image_from_array(ft_data, wcs=ft_wcs, polarisation_frame=im.image_acc.polarisation_frame)
-    elif im.image_acc.wcs.wcs.ctype[0] == 'XX' and im.image_acc.wcs.wcs.ctype[1] == 'YY':
+    elif im.wcs.wcs.ctype[0] == 'XX' and im.wcs.wcs.ctype[1] == 'YY':
         ft_wcs.wcs.axis_types[0] = 0
         ft_wcs.wcs.axis_types[1] = 0
         ft_wcs.wcs.crval[0] = 0.0
@@ -891,22 +893,22 @@ def fft_image(im, template_image=None):
         ft_wcs.wcs.crpix[1] = ft_shape[2] // 2 + 1
         ft_wcs.wcs.ctype[0] = 'KX'
         ft_wcs.wcs.ctype[1] = 'KY'
-        ft_wcs.wcs.cdelt[0] = 1.0 / (ft_shape[3] * im.image_acc.wcs.wcs.cdelt[0])
-        ft_wcs.wcs.cdelt[1] = 1.0 / (ft_shape[2] * im.image_acc.wcs.wcs.cdelt[1])
+        ft_wcs.wcs.cdelt[0] = 1.0 / (ft_shape[3] * im.wcs.wcs.cdelt[0])
+        ft_wcs.wcs.cdelt[1] = 1.0 / (ft_shape[2] * im.wcs.wcs.cdelt[1])
         ft_data = ifft(im["pixels"].data.astype('complex'))
         return create_image_from_array(ft_data, wcs=ft_wcs, polarisation_frame=im.image_acc.polarisation_frame)
-    elif im.image_acc.wcs.wcs.ctype[0] == 'KX' and im.image_acc.wcs.wcs.ctype[1] == 'KY':
-        ft_wcs.wcs.crval[0] = template_image.image_acc.wcs.wcs.crval[0]
-        ft_wcs.wcs.crval[1] = template_image.image_acc.wcs.wcs.crval[1]
-        ft_wcs.wcs.crpix[0] = template_image.image_acc.wcs.wcs.crpix[0]
-        ft_wcs.wcs.crpix[0] = template_image.image_acc.wcs.wcs.crpix[1]
-        ft_wcs.wcs.ctype[0] = template_image.image_acc.wcs.wcs.ctype[0]
-        ft_wcs.wcs.ctype[1] = template_image.image_acc.wcs.wcs.ctype[1]
-        ft_wcs.wcs.cdelt[0] = template_image.image_acc.wcs.wcs.cdelt[0]
-        ft_wcs.wcs.cdelt[1] = template_image.image_acc.wcs.wcs.cdelt[1]
+    elif im.wcs.wcs.ctype[0] == 'KX' and im.wcs.wcs.ctype[1] == 'KY':
+        ft_wcs.wcs.crval[0] = template_image.wcs.wcs.crval[0]
+        ft_wcs.wcs.crval[1] = template_image.wcs.wcs.crval[1]
+        ft_wcs.wcs.crpix[0] = template_image.wcs.wcs.crpix[0]
+        ft_wcs.wcs.crpix[0] = template_image.wcs.wcs.crpix[1]
+        ft_wcs.wcs.ctype[0] = template_image.wcs.wcs.ctype[0]
+        ft_wcs.wcs.ctype[1] = template_image.wcs.wcs.ctype[1]
+        ft_wcs.wcs.cdelt[0] = template_image.wcs.wcs.cdelt[0]
+        ft_wcs.wcs.cdelt[1] = template_image.wcs.wcs.cdelt[1]
         ft_data = fft(im["pixels"].data.astype('complex'))
         return create_image_from_array(ft_data, wcs=ft_wcs, polarisation_frame=im.image_acc.polarisation_frame)
-    elif im.image_acc.wcs.wcs.ctype[0] == 'AZELGEO long' and im.image_acc.image_acc.wcs.wcs.ctype[1] == 'AZELGEO lati':
+    elif im.wcs.wcs.ctype[0] == 'AZELGEO long' and im.wcs.wcs.ctype[1] == 'AZELGEO lati':
         ft_wcs.wcs.axis_types[0] = 0
         ft_wcs.wcs.axis_types[1] = 0
         ft_wcs.wcs.crval[0] = 0.0
@@ -915,25 +917,25 @@ def fft_image(im, template_image=None):
         ft_wcs.wcs.crpix[1] = ft_shape[2] // 2 + 1
         ft_wcs.wcs.ctype[0] = 'UU_AZELGEO'
         ft_wcs.wcs.ctype[1] = 'VV_AZELGEO'
-        ft_wcs.wcs.cdelt[0] = 1.0 / (ft_shape[3] * im.image_acc.wcs.wcs.cdelt[0])
-        ft_wcs.wcs.cdelt[1] = 1.0 / (ft_shape[2] * im.image_acc.wcs.wcs.cdelt[1])
+        ft_wcs.wcs.cdelt[0] = 1.0 / (ft_shape[3] * im.wcs.wcs.cdelt[0])
+        ft_wcs.wcs.cdelt[1] = 1.0 / (ft_shape[2] * im.wcs.wcs.cdelt[1])
         ft_data = ifft(im["pixels"].data.astype('complex'))
         return create_image_from_array(ft_data, wcs=ft_wcs, polarisation_frame=im.image_acc.polarisation_frame)
-    elif im.image_acc.wcs.wcs.ctype[0] == 'UU_AZELGEO' and im.image_acc.wcs.wcs.ctype[1] == 'VV_AZELGEO':
-        ft_wcs.wcs.crval[0] = template_image.image_acc.wcs.wcs.crval[0]
-        ft_wcs.wcs.crval[1] = template_image.image_acc.wcs.wcs.crval[1]
-        ft_wcs.wcs.crpix[0] = template_image.image_acc.wcs.wcs.crpix[0]
-        ft_wcs.wcs.crpix[0] = template_image.image_acc.wcs.wcs.crpix[1]
-        ft_wcs.wcs.ctype[0] = template_image.image_acc.wcs.wcs.ctype[0]
-        ft_wcs.wcs.ctype[1] = template_image.image_acc.wcs.wcs.ctype[1]
-        ft_wcs.wcs.cdelt[0] = template_image.image_acc.wcs.wcs.cdelt[0]
-        ft_wcs.wcs.cdelt[1] = template_image.image_acc.wcs.wcs.cdelt[1]
+    elif im.wcs.wcs.ctype[0] == 'UU_AZELGEO' and im.wcs.wcs.ctype[1] == 'VV_AZELGEO':
+        ft_wcs.wcs.crval[0] = template_image.wcs.wcs.crval[0]
+        ft_wcs.wcs.crval[1] = template_image.wcs.wcs.crval[1]
+        ft_wcs.wcs.crpix[0] = template_image.wcs.wcs.crpix[0]
+        ft_wcs.wcs.crpix[0] = template_image.wcs.wcs.crpix[1]
+        ft_wcs.wcs.ctype[0] = template_image.wcs.wcs.ctype[0]
+        ft_wcs.wcs.ctype[1] = template_image.wcs.wcs.ctype[1]
+        ft_wcs.wcs.cdelt[0] = template_image.wcs.wcs.cdelt[0]
+        ft_wcs.wcs.cdelt[1] = template_image.wcs.wcs.cdelt[1]
         ft_data = fft(im["pixels"].data.astype('complex'))
         return create_image_from_array(ft_data, wcs=ft_wcs, polarisation_frame=im.image_acc.polarisation_frame)
     
     
     else:
-        raise NotImplementedError("Cannot FFT specified axes {0}, {1}".format(im.image_acc.wcs.wcs.ctype[0], im.image_acc.wcs.wcs.ctype[1]))
+        raise NotImplementedError("Cannot FFT specified axes {0}, {1}".format(im.wcs.wcs.ctype[0], im.wcs.wcs.ctype[1]))
 
 
 def pad_image(im: Image, shape):
@@ -951,9 +953,9 @@ def pad_image(im: Image, shape):
     if im["pixels"].data.shape == shape:
         return im
     else:
-        newwcs = copy.deepcopy(im.image_acc.wcs)
-        newwcs.wcs.crpix[0] = im.image_acc.wcs.wcs.crpix[0] + shape[3] // 2 - im["pixels"].data.shape[3] // 2
-        newwcs.wcs.crpix[1] = im.image_acc.wcs.wcs.crpix[1] + shape[2] // 2 - im["pixels"].data.shape[2] // 2
+        newwcs = copy.deepcopy(im.wcs)
+        newwcs.wcs.crpix[0] = im.wcs.wcs.crpix[0] + shape[3] // 2 - im["pixels"].data.shape[3] // 2
+        newwcs.wcs.crpix[1] = im.wcs.wcs.crpix[1] + shape[2] // 2 - im["pixels"].data.shape[2] // 2
         
         for axis, _ in enumerate(im["pixels"].data.shape):
             if shape[axis] < im["pixels"].data.shape[axis]:
@@ -992,17 +994,17 @@ def create_w_term_like(im: Image, w, phasecentre=None, remove_shift=False, dopol
         fim_shape[1] = 1
     
     fim_array = numpy.zeros(fim_shape, dtype='complex')
-    cellsize = abs(im.image_acc.wcs.wcs.cdelt[0]) * numpy.pi / 180.0
+    cellsize = abs(im.wcs.wcs.cdelt[0]) * numpy.pi / 180.0
     nchan, npol, _, npixel = fim_shape
     if phasecentre is SkyCoord:
-        wcentre = phasecentre.to_pixel(im.image_acc.wcs, origin=0)
+        wcentre = phasecentre.to_pixel(im.wcs, origin=0)
     else:
-        wcentre = [im.image_acc.wcs.wcs.crpix[0] - 1.0, im.image_acc.wcs.wcs.crpix[1] - 1.0]
+        wcentre = [im.wcs.wcs.crpix[0] - 1.0, im.wcs.wcs.crpix[1] - 1.0]
     
     fim_array[...]= w_beam(npixel, npixel * cellsize, w=w, cx=wcentre[0], cy=wcentre[1],
                                  remove_shift=remove_shift)[numpy.newaxis, numpy.newaxis, ...]
 
-    fim = create_image_from_array(fim_array, wcs=im.image_acc.wcs, polarisation_frame=im.image_acc.polarisation_frame)
+    fim = create_image_from_array(fim_array, wcs=im.wcs, polarisation_frame=im.image_acc.polarisation_frame)
 
     fov = npixel * cellsize
     fresnel = numpy.abs(w) * (0.5 * fov) ** 2
@@ -1137,7 +1139,7 @@ def apply_voltage_pattern_to_image(im: Image, vp: Image, inverse=False, min_det=
                     newim_t[chan, y, x] = apply_jones(vp_t[chan, y, x], im_t[chan, y, x], inverse, min_det=min_det)
         
         newim = create_image_from_array(newim_t.reshape([nchan, ny, nx, 4]).transpose((0, 3, 1, 2)),
-                                        wcs=im.image_acc.wcs,
+                                        wcs=im.wcs,
                                         polarisation_frame=vp.image_acc.polarisation_frame)
         newim = convert_polimage_to_stokes(newim)
         

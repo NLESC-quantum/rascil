@@ -103,11 +103,9 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     grid_wcs.wcs.equinox = 2000.0
 
     if polarisation_frame is None:
-        polarisation_frame = im.image_acc.polarisation_frame
+        polarisation_frame = im.polarisation_frame
     
-    return GridData(data, phasecentre=im.phasecentre, frequency=im.frequency,
-                    polarisation_frame=polarisation_frame, grid_wcs=grid_wcs,
-                    projection_wcs=im.wcs)
+    return GridData(data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs, projection_wcs=im.wcs)
 
 
 def convert_griddata_to_image(gd):

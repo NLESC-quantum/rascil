@@ -143,7 +143,7 @@ def image_raster_iter(im: Image, facets=1, overlap=0, taper='flat', make_flat=Fa
                     wcs.wcs.crpix[0] -= x
                     wcs.wcs.crpix[1] -= y
                     # yield image from slice (reference!)
-                    subim = create_image_from_array(im["pixels"].data[..., y:y + dy, x:x + dx], wcs, im.image_acc.polarisation_frame)
+                    subim = create_image_from_array(im["pixels"].data[..., y:y + dy, x:x + dx], wcs, im.polarisation_frame)
                     if overlap > 0 and make_flat:
                         flat = create_empty_image_like(subim)
                         if taper == 'linear':
@@ -202,4 +202,4 @@ def image_channel_iter(im: Image, subimages=1) -> collections.abc.Iterable:
         wcs.wcs.crpix[3] -= channel
         
         # Yield image from slice (reference!)
-        yield create_image_from_array(im["pixels"].data[channel:channel_max, ...], wcs, im.image_acc.polarisation_frame)
+        yield create_image_from_array(im["pixels"].data[channel:channel_max, ...], wcs, im.polarisation_frame)

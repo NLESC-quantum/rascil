@@ -47,12 +47,12 @@ class TestImage(unittest.TestCase):
         print(newimage)
         print(newimage.wcs)
         assert newimage.phasecentre.separation(phasecentre).value < 1e-15
-        assert newimage.image_acc.polarisation_frame.type == "stokesIQUV"
+        assert newimage.polarisation_frame.type == "stokesIQUV"
     
     def test_create_image_from_array(self):
         m31model_by_array = create_image_from_array(self.m31image["pixels"],
                                                     self.m31image.wcs,
-                                                    self.m31image.image_acc.polarisation_frame)
+                                                    self.m31image.polarisation_frame)
         add_image(self.m31image, m31model_by_array)
         assert m31model_by_array.image_acc.shape == self.m31image.image_acc.shape
         if self.persist: export_image_to_fits(self.m31image, fitsfile='%s/test_model.fits' % (self.dir))
@@ -76,14 +76,14 @@ class TestImage(unittest.TestCase):
         newimage, footprint = reproject_image(self.m31image, newwcs, shape=newshape)
     
     def test_stokes_conversion(self):
-        assert self.m31image.image_acc.polarisation_frame == PolarisationFrame("stokesI")
+        assert self.m31image.polarisation_frame == PolarisationFrame("stokesI")
         stokes = create_test_image(cellsize=0.0001, polarisation_frame=PolarisationFrame("stokesIQUV"))
-        assert stokes.image_acc.polarisation_frame == PolarisationFrame("stokesIQUV")
+        assert stokes.polarisation_frame == PolarisationFrame("stokesIQUV")
         
         for pol_name in ['circular', 'linear']:
             polarisation_frame = PolarisationFrame(pol_name)
             polimage = convert_stokes_to_polimage(stokes, polarisation_frame=polarisation_frame)
-            assert polimage.image_acc.polarisation_frame == polarisation_frame
+            assert polimage.polarisation_frame == polarisation_frame
             polarisation_frame_from_wcs(polimage.wcs, polimage.image_acc.shape)
             rstokes = convert_polimage_to_stokes(polimage)
             assert polimage["pixels"].data.dtype == 'complex'
@@ -91,7 +91,7 @@ class TestImage(unittest.TestCase):
             numpy.testing.assert_array_almost_equal(stokes["pixels"].data, rstokes["pixels"].data.real, 12)
     
     def test_polarisation_frame_from_wcs(self):
-        assert self.m31image.image_acc.polarisation_frame == PolarisationFrame("stokesI")
+        assert self.m31image.polarisation_frame == PolarisationFrame("stokesI")
         stokes = create_test_image(cellsize=0.0001, polarisation_frame=PolarisationFrame("stokesIQUV"))
         wcs = stokes.wcs.deepcopy()
         shape = stokes.image_acc.shape
@@ -132,7 +132,7 @@ class TestImage(unittest.TestCase):
             newvp_data[:, p, ...] = vp["pixels"].data[:, ip, ...]
         vp["pixels"].data = newvp_data
         
-        assert vp.image_acc.polarisation_frame == PolarisationFrame("linear")
+        assert vp.polarisation_frame == PolarisationFrame("linear")
     
     def test_smooth_image(self):
         assert numpy.max(self.m31image["pixels"].data) > 0.0

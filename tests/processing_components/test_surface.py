@@ -56,7 +56,8 @@ class TestSurface(unittest.TestCase):
 
         key_nolls = [3, 5, 6, 7]
         vp_list = list()
-        vp_list.append(create_vp(self.model, 'MID_GAUSS', use_local=True))
+        vp_list.append(create_vp_generic_numeric(self.model, pointingcentre=None, diameter=15.0, blockage=0.0,
+                                                      taper='gaussian', edge=0.03162278, padding=2, use_local=True))
         vp_coeffs = numpy.ones([self.nants, len(key_nolls)+1])
         for inoll, noll in enumerate(key_nolls):
             zernike = {'coeff': 1.0, 'noll': noll}

@@ -293,7 +293,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         xend = cx + wx // 2
         ybeg = cy - wy // 2
         yend = cy + wy // 2
-        spsf = psf.isel({"l": slice(xbeg, xend), "m": slice(ybeg, yend)})
+        spsf = psf.isel({"x": slice(xbeg, xend), "y": slice(ybeg, yend)})
         spsf.wcs.wcs.crpix[0] -= xbeg
         spsf.wcs.wcs.crpix[1] -= ybeg
         return spsf

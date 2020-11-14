@@ -48,26 +48,14 @@ class TestVisibilitySelectors(unittest.TestCase):
         for result in bvis.groupby_bins("time", 3):
             print(result[0])
     
-    def test_blockvisibility_where_noflagged(self):
+    def test_blockvisibility_iselect_time(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        selected_bvis = bvis.where(bvis["flags"] == 0)
+        selected_bvis = bvis.isel({"time": slice(5, 7)})
         print(selected_bvis)
-        print(bvis.blockvisibility_acc.size(), selected_bvis.blockvisibility_acc.size())
-        assert len(selected_bvis.channel_bandwidth.shape) == 1
-        assert len(selected_bvis.integration_time.shape) == 1
-
-    def test_blockvisibility_where_absu(self):
-        bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                      channel_bandwidth=self.channel_bandwidth,
-                                      polarisation_frame=self.polarisation_frame,
-                                      phasecentre=self.phasecentre, weight=1.0)
-        print(bvis)
-        selected_bvis = bvis.where(numpy.abs(bvis.blockvisibility_acc.u_lambda) < 30.0)
-        print(selected_bvis)
-        print(bvis.blockvisibility_acc.size(), selected_bvis.blockvisibility_acc.size())
+        assert len(selected_bvis.time) == 2
         assert len(selected_bvis.channel_bandwidth.shape) == 1
         assert len(selected_bvis.integration_time.shape) == 1
 
@@ -76,43 +64,40 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        selected_bvis = bvis.sel({"timeinx": slice(5, 7)})
+        selected_bvis = bvis.sel({"time": slice(5084631147.057494, 5084631206.893675)})
         print(selected_bvis)
-        assert len(selected_bvis.time) == 2
+        assert len(selected_bvis.time) == 3
         assert len(selected_bvis.channel_bandwidth.shape) == 1
         assert len(selected_bvis.integration_time.shape) == 1
 
-    def test_blockvisibility_where_frequency(self):
+    def test_blockvisibility_select_frequency(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        cond = (bvis["frequency"] > 0.9e8) & (bvis["frequency"] < 1.2e8)
-        selected_bvis = bvis.where(cond).dropna(dim="freqinx", how="all")
+        selected_bvis = bvis.sel({"frequency": slice(0.9e8, 1.2e8)})
         print(selected_bvis)
-        assert len(selected_bvis.frequency) == 2
+        assert len(selected_bvis.frequency) == 4
         assert len(selected_bvis.channel_bandwidth.shape) == 1
         assert len(selected_bvis.integration_time.shape) == 1
 
-    def test_blockvisibility_where_frequency_polarisation(self):
+    def test_blockvisibility_select_frequency_polarisation(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        cond = (bvis["frequency"] > 0.9e8) & (bvis["frequency"] < 1.2e8)
-        selected_bvis = bvis.where(cond, drop=True).dropna(dim="freqinx", how="all")
-        cond = (bvis["polarisation"] == "I") | (bvis["polarisation"] == "V")
-        selected_bvis = selected_bvis.where(cond, drop=True).dropna(dim="polinx", how="all")
+        selected_bvis = bvis.sel({"frequency": slice(0.9e8, 1.2e8), "polarisation": ["XX", "YY"]}).dropna(dim="frequency", how="all")
         print(selected_bvis)
-        assert len(selected_bvis.frequency) == 2
+        assert len(selected_bvis.frequency) == 4
+        assert len(selected_bvis.polarisation) == 2
         assert len(selected_bvis.channel_bandwidth.shape) == 1
         assert len(selected_bvis.integration_time.shape) == 1
 
-    def test_blockvisibility_select_channel(self):
+    def test_blockvisibility_iselect_channel(self):
         bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        selected_bvis = bvis.sel({"freqinx": slice(1, 3)})
+        selected_bvis = bvis.isel({"frequency": slice(1, 3)})
         print(selected_bvis)
         assert len(selected_bvis.frequency) == 2

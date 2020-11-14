@@ -126,8 +126,8 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
                                 max(dirty["pixels"].shape[2] // 2, dirty["pixels"].shape[3] // 2))
     if (psf_support <= psf["pixels"].shape[2] // 2) and ((psf_support <= psf["pixels"].shape[3] // 2)):
         centre = [psf["pixels"].shape[2] // 2, psf["pixels"].shape[3] // 2]
-        psf = psf.isel(l=slice((centre[0] - psf_support), (centre[0] + psf_support)),
-                       m=slice((centre[1] - psf_support), (centre[1] + psf_support)))
+        psf = psf.isel(x=slice((centre[0] - psf_support), (centre[0] + psf_support)),
+                       y=slice((centre[1] - psf_support), (centre[1] + psf_support)))
         log.info('deconvolve_cube %s: PSF support = +/- %d pixels' % (prefix, psf_support))
         log.info('deconvolve_cube %s: PSF shape %s' % (prefix, str(psf["pixels"].data.shape)))
     

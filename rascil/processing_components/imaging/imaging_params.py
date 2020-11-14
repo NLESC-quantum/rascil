@@ -55,7 +55,7 @@ def get_polarisation_map(vis: BlockVisibility, im: Image = None):
     """
     assert image_is_canonical(im)
 
-    if vis.blockvisibility_acc.polarisation_frame == im.image_acc.polarisation_frame:
+    if vis.blockvisibility_acc.polarisation_frame == im.polarisation_frame:
         if vis.blockvisibility_acc.polarisation_frame == PolarisationFrame('stokesI'):
             return "stokesI->stokesI", lambda pol: 0
         elif vis.blockvisibility_acc.polarisation_frame == PolarisationFrame('stokesIQUV'):

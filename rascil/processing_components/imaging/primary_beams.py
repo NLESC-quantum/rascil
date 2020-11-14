@@ -8,6 +8,7 @@ __all__ = ['set_pb_header', 'create_pb', 'create_pb_generic', 'create_vp', 'crea
 
 import collections
 import logging
+import copy
 
 import numpy
 from astropy import constants as const
@@ -34,7 +35,7 @@ def set_pb_header(pb, use_local=True):
         ctypes[1] = 'AZELGEO lati'
 
         nchan, npol, ny, nx = pb["pixels"].shape
-        wcs = pb.wcs.copy()
+        wcs = copy.deepcopy(pb.wcs)
         wcs.wcs.ctype[0] = 'AZELGEO long'
         wcs.wcs.ctype[1] = 'AZELGEO lati'
         wcs.wcs.crval[0] = 0.0
@@ -43,8 +44,9 @@ def set_pb_header(pb, use_local=True):
         wcs.wcs.crpix[1] = ny // 2
         pb = create_image_from_array(pb["pixels"].data,
                                      wcs=wcs,
-                                     polarisation_frame=pb.image_acc.polarisation_frame)
-    
+                                     polarisation_frame=pb.polarisation_frame)
+        print(pb)
+
     return pb
 
 
@@ -242,9 +244,9 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
         
         blockage_factor = (blockage / diameter) ** 2
         
-        if beam.image_acc.polarisation_frame == PolarisationFrame("linear"):
+        if beam.polarisation_frame == PolarisationFrame("linear"):
             pols = [0, 3]
-        elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
+        elif beam.polarisation_frame == PolarisationFrame("circular"):
             pols = [0, 3]
         else:
             pols = range(npol)
@@ -256,7 +258,12 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
         for pol in pols:
             beam["pixels"].data[chan, pol, ...] = combined
     
-    set_pb_header(beam, use_local=use_local)
+    beam = set_pb_header(beam, use_local=use_local)
+    
+    if use_local:
+        assert beam.wcs.wcs.ctype[0] == 'AZELGEO long', beam.wcs.wcs.ctype[0]
+        assert beam.wcs.wcs.ctype[1] == 'AZELGEO lati', beam.wcs.wcs.ctype[1]
+
     return beam
 
 
@@ -310,9 +317,9 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
         
         # rr in metres
         rr = numpy.sqrt(xx**2 + yy**2)
-        if beam.image_acc.polarisation_frame == PolarisationFrame("linear"):
+        if beam.polarisation_frame == PolarisationFrame("linear"):
             pols = [0, 3]
-        elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
+        elif beam.polarisation_frame == PolarisationFrame("circular"):
             pols = [0, 3]
         else:
             pols = range(npol)
@@ -358,12 +365,15 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     padded_beam = fft_image(xfr, padded_beam)
     
     # Undo padding
-    beam = create_empty_image_like(model)
-    beam["pixels"].data = padded_beam["pixels"].data[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),
+    beam_data = padded_beam["pixels"].data[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),
                 (pnx // 2 - nx // 2):(pnx // 2 + nx // 2)]
     for chan in range(nchan):
-        beam["pixels"].data[chan, ...] /= numpy.max(numpy.abs(beam["pixels"].data[chan, ...]))
+        beam_data[chan, ...] /= numpy.max(numpy.abs(beam_data[chan, ...]))
+        
     
+    beam = create_image_from_array(beam_data, wcs=beam.wcs,
+                                   polarisation_frame=beam.polarisation_frame)
+
     set_pb_header(beam, use_local=use_local)
     return beam
 

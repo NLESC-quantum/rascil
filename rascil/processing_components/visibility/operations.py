@@ -31,7 +31,7 @@ from rascil.processing_components.visibility import copy_visibility
 log = logging.getLogger('rascil-logger')
 
 
-def concatenate_visibility(vis_list, dim='timeinx'):
+def concatenate_visibility(vis_list, dim='time'):
     """Concatenate a list of visibilities
 
     :param vis_list: List of vis

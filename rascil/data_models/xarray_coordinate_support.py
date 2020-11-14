@@ -24,7 +24,7 @@ def image_wcs(ds):
     cellsize_l = (ds["x"].data[-1]-ds["x"].data[0])/(nx-1)
     cellsize_m = (ds["y"].data[-1]-ds["y"].data[0])/(ny-1)
     freq = ds["frequency"].data[0]
-    pol = PolarisationFrame.fits_codes[ds.image_acc.polarisation_frame.type]
+    pol = PolarisationFrame.fits_codes[ds.polarisation_frame.type]
     if npol > 1:
         dpol = pol[1] - pol[0]
     else:
@@ -65,7 +65,7 @@ def griddata_wcs(ds):
     else:
         cellsize_w = 1e15
     freq = ds["frequency"].data[0]
-    pol = PolarisationFrame.fits_codes[ds.image_acc.polarisation_frame.type]
+    pol = PolarisationFrame.fits_codes[ds.polarisation_frame.type]
     if npol > 1:
         dpol = pol[1] - pol[0]
     else:
@@ -109,7 +109,7 @@ def cf_wcs(ds):
     else:
         cellsize_w = 1e15
     freq = ds["frequency"].data[0]
-    pol = PolarisationFrame.fits_codes[ds.image_acc.polarisation_frame.type]
+    pol = PolarisationFrame.fits_codes[ds.polarisation_frame.type]
     if npol > 1:
         dpol = pol[1] - pol[0]
     else:

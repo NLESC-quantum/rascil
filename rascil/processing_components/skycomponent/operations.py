@@ -308,7 +308,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
             name="Segment %d" % segment,
             flux=point_flux,
             shape='Point',
-            polarisation_frame=im.image_acc.polarisation_frame,
+            polarisation_frame=im.polarisation_frame,
             params={}))
 
     return comps
@@ -393,8 +393,8 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     :return: List of skycomponents
     """
     #assert isinstance(vp, Image)
-    assert (vp.image_acc.polarisation_frame == PolarisationFrame("linear")) or \
-           (vp.image_acc.polarisation_frame == PolarisationFrame("circular"))
+    assert (vp.polarisation_frame == PolarisationFrame("linear")) or \
+           (vp.polarisation_frame == PolarisationFrame("circular"))
 
     #assert vp["pixels"].data.dtype == "complex128"
     single = not isinstance(sc, collections.abc.Iterable)
@@ -603,7 +603,7 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
     if len(components) == 1:
         mask = numpy.ones(im["pixels"].data.shape)
         yield create_image_from_array(mask, wcs=im.wcs,
-                                      polarisation_frame=im.image_acc.polarisation_frame)
+                                      polarisation_frame=im.polarisation_frame)
     else:
         vor, vertex_array = voronoi_decomposition(im, components)
 
@@ -612,7 +612,7 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
             mask = numpy.zeros(im["pixels"].data.shape)
             mask[(vertex_array == region)[numpy.newaxis, numpy.newaxis, ...]] = 1.0
             yield create_image_from_array(mask, wcs=im.wcs,
-                                          polarisation_frame=im.image_acc.polarisation_frame)
+                                          polarisation_frame=im.polarisation_frame)
 
 
 def partition_skycomponent_neighbours(comps, targets):

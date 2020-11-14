@@ -131,7 +131,7 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
         return ConvolutionFunction(data=cf_data,
                                    cf_wcs=cf_wcs.deepcopy(),
                                    projection_wcs=im.wcs.deepcopy(),
-                                   polarisation_frame=im.image_acc.polarisation_frame)
+                                   polarisation_frame=im.polarisation_frame)
 
 
 def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):

@@ -656,7 +656,7 @@ def convert_image_to_hdf(im: Image, f):
         f.attrs['wcs'] = numpy.string_(im.wcs.to_header_string())
         f.attrs['phasecentre_coords'] = im.phasecentre.to_string()
         f.attrs['phasecentre_frame'] = im.phasecentre.frame.name
-        f.attrs['polarisation_frame'] = im.image_acc.polarisation_frame.type
+        f.attrs['polarisation_frame'] = im.polarisation_frame.type
         f.attrs['frequency'] = im.frequency
     
     return f
@@ -851,7 +851,7 @@ def convert_hdf_to_griddata(f):
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
     grid_wcs = WCS(f.attrs['grid_wcs'])
     projection_wcs = WCS(f.attrs['projection_wcs'])
-    gd = GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs)
+    gd = GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs, projection_wcs=projection_wcs)
     return gd
 
 
@@ -921,9 +921,9 @@ def convert_hdf_to_convolutionfunction(f):
     assert f.attrs['rascil_data_model'] == "ConvolutionFunction", f.attrs['rascil_data_model']
     data = numpy.array(f['data'])
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
-    grid_wcs = WCS(f.attrs['grid_wcs'])
+    cf_wcs = WCS(f.attrs['grid_wcs'])
     projection_wcs = WCS(f.attrs['projection_wcs'])
-    gd = ConvolutionFunction(data, grid_wcs=grid_wcs, projection_wcs=projection_wcs,
+    gd = ConvolutionFunction(data, cf_wcs=cf_wcs, projection_wcs=projection_wcs,
                              polarisation_frame=polarisation_frame)
     return gd
 

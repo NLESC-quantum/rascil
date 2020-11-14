@@ -109,7 +109,7 @@ try:
                                                        nthreads=nthreads,
                                                        verbosity=verbosity)[:, 0]
         
-        vis = convert_pol_frame(vist.T, model.image_acc.polarisation_frame, bvis.blockvisibility_acc.polarisation_frame, polaxis=2)
+        vis = convert_pol_frame(vist.T, model.polarisation_frame, bvis.blockvisibility_acc.polarisation_frame, polaxis=2)
 
         vis = vis.reshape([nrows, nbaselines, vnchan, vnpol])
         newbvis["vis"].data = vis
@@ -158,7 +158,7 @@ try:
 
         ms = sbvis.blockvisibility_acc.flagged_vis.data
         ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
-        ms = convert_pol_frame(ms, bvis.blockvisibility_acc.polarisation_frame, im.image_acc.polarisation_frame, polaxis=2)
+        ms = convert_pol_frame(ms, bvis.blockvisibility_acc.polarisation_frame, im.polarisation_frame, polaxis=2)
 
         uvw = sbvis.uvw.data
         uvw = uvw.reshape([nrows * nbaselines, 3])
@@ -185,7 +185,7 @@ try:
         sumwt = numpy.zeros([nchan, npol])
         
         # There's a latent problem here with the weights.
-        # wgt = numpy.real(convert_pol_frame(wgt, bvis.blockvisibility_acc.polarisation_frame, im.image_acc.polarisation_frame, polaxis=2))
+        # wgt = numpy.real(convert_pol_frame(wgt, bvis.blockvisibility_acc.polarisation_frame, im.polarisation_frame, polaxis=2))
         
         # Set up the conversion from visibility channels to image channels
         vis_to_im = numpy.round(model.wcs.sub([4]).wcs_world2pix(freq, 0)[0]).astype('int')

@@ -127,6 +127,7 @@ class Configuration(xarray.Dataset):
             "id": list(range(nants)),
             "spatial": ["X", "Y", "Z"]
         }
+        
         datavars = dict()
         datavars["names"] = xarray.DataArray(names, coords={"id": list(range(nants))}, dims=["id"])
         datavars["xyz"] = xarray.DataArray(xyz, coords=coords, dims=["id", "spatial"])
@@ -221,7 +222,7 @@ class GainTable(xarray.Dataset):
             "antenna": antennas,
             "frequency": frequency,
             "receptor1": receptor_frame.names,
-            "receptor2": receptor_frame.names,
+            "receptor2": receptor_frame.names
         }
         
         datavars = dict()
@@ -334,10 +335,11 @@ class PointingTable(xarray.Dataset):
         
         ntimes, nants, nchan, nrec, _ = pointing.shape
         antennas = range(nants)
+        
         coords = {
             "time": time,
             "antenna": antennas,
-            "frequency": frequency,
+            "freq": frequency,
             "receptor": receptor_frame.names,
             "angle": ["az", "el"]
         }
@@ -442,12 +444,12 @@ class Image(xarray.Dataset):
         dec = numpy.deg2rad(dec)
 
         # Define the dimensions
-        dims = ["freqinx", "polinx", "y", "x"]
+        dims = ["frequency", "polarisation", "y", "x"]
         
         # Define the coordinates on these dimensions
         coords = {
-            "frequency": ("freqinx", frequency),
-            "polarisation": ("polinx", polarisation_frame.names),
+            "frequency": ("frequency", frequency),
+            "polarisation": ("polarisation", polarisation_frame.names),
             "y": numpy.linspace(cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny, endpoint=False),
             "x": numpy.linspace(cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx, endpoint=False),
             "ra": (("x", "y"), ra, {"units": "rad"}),
@@ -471,6 +473,7 @@ class Image(xarray.Dataset):
                  "frame": phasecentre.frame.name,
                  "wcs": wcs,
                  "phasecentre": phasecentre,
+                 "polarisation_frame": polarisation_frame,
                  "ctypes": [str(c) for c in wcs.wcs.ctype]
         }
         
@@ -550,8 +553,7 @@ class GridData(xarray.Dataset):
     
     __slots__ = ()
     
-    def __init__(self, data, phasecentre, frequency, polarisation_frame=None,
-                 grid_wcs=None, projection_wcs=None):
+    def __init__(self, data, polarisation_frame=None, grid_wcs=None, projection_wcs=None):
         """ Create a GridData
 
         :param projection_wcs:
@@ -562,6 +564,11 @@ class GridData(xarray.Dataset):
         super().__init__()
         
         nchan, npol, nw, nv, nu = data.shape
+
+        frequency = grid_wcs.sub([5]).wcs_pix2world(range(nchan), 0)[0]
+
+        phasecentre = SkyCoord(projection_wcs.wcs.crval[0] * u.deg,
+                               projection_wcs.wcs.crval[1] * u.deg)
         
         assert npol == polarisation_frame.npol
         cu = grid_wcs.wcs.crval[0]
@@ -571,18 +578,12 @@ class GridData(xarray.Dataset):
         dv = grid_wcs.wcs.cdelt[1]
         dw = grid_wcs.wcs.cdelt[2]
 
-        dims = {
-            "freqinx": nchan,
-            "polinx": npol,
-            "w": nw,
-            "v": nv,
-            "u": nu
-        }
-        
+        dims = ["frequency", "polarisation", "w", "u", "v"]
+
         # Define the coordinates on these dimensions
         coords = {
-            "frequency": ("freqinx", frequency),
-            "polarisation": ("polinx", polarisation_frame.names),
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
             "w": numpy.linspace(cw - dw * nw / 2, cw + dw * nw / 2, nw, endpoint=False),
             "v": numpy.linspace(cv - dv * nv / 2, cv + dv * nv / 2, nv, endpoint=False),
             "u": numpy.linspace(cu - du * nu / 2, cu + du * nu / 2, nu, endpoint=False),
@@ -627,14 +628,6 @@ class GridDataAccessor(XarrayAccessorMixin):
         """ Shape of data array
         """
         return self._obj["pixels"].data.shape
-    
-    @property
-    def polarisation_frame(self):
-        """Polarisation frame (from coords)
-
-        :return:
-        """
-        return polarisation_frame_from_names(self._obj.polarisation)
         
 class ConvolutionFunction(xarray.Dataset):
     """Class to hold Convolution function for Fourier processing
@@ -700,7 +693,6 @@ class ConvolutionFunction(xarray.Dataset):
         
         assert cellsize > 0.0, "Cellsize must be positive"
         
-        dims = ["frequency", "polarisation", "w", "dv", "du", "v", "u"]
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
@@ -714,6 +706,8 @@ class ConvolutionFunction(xarray.Dataset):
             "u": numpy.linspace(cu - du * support / 2, cu + du * support / 2, support,
                                 endpoint=False)
         }
+        
+        dims = ["frequency", "polarisation", "w", "dv", "du", "u", "v"]
         
         assert coords["u"][0] != coords["u"][-1]
         assert coords["v"][0] != coords["v"][-1]
@@ -995,48 +989,42 @@ class BlockVisibility(xarray.Dataset):
         nchan = len(frequency)
         npol = polarisation_frame.npol
         # Define the names of the dimensions
-        dims = [
-            "timeinx",
-            "blinx",
-            "freqinx",
-            "polinx",
-            "spatial"
-        ]
-
+ 
         coords = {
-            "time": ("timeinx", time),
-            "baselines": ("blinx", baselines),
-            "frequency": ("freqinx", frequency),
-            "polarisation": ("polinx", polarisation_frame.names),
-            "uvw_index": ("spatial", ["u", "v", "w"])
+            "time": time,
+            "baselines": baselines,
+            "frequency": frequency,
+            "polarisation": polarisation_frame.names,
+            "uvw_index": ["u", "v", "w"]
         }
-        
+
         datavars = dict()
         datavars["integration_time"] = xarray.DataArray(integration_time.astype(low_precision),
-                                                        dims=["timeinx"], attrs={"units": "s"})
+                                                        dims=["time"], attrs={"units": "s"})
         datavars["datetime"] = xarray.DataArray(Time(time / 86400.0, format='mjd', scale='utc').datetime64,
-                                                dims=["timeinx"], attrs={"units": "s"})
-        datavars["vis"] = xarray.DataArray(vis, dims=["timeinx", "blinx", "freqinx", "polinx"],
+                                                dims=["time"], attrs={"units": "s"})
+        datavars["vis"] = xarray.DataArray(vis, dims=["time", "baselines", "frequency", "polarisation"],
                                            attrs={"units": "Jy"})
         datavars["weight"] = xarray.DataArray(weight.astype(low_precision),
-                                              dims=["timeinx", "blinx", "freqinx", "polinx"])
+                                              dims=["time", "baselines", "frequency", "polarisation"])
         datavars["imaging_weight"] = xarray.DataArray(imaging_weight.astype(low_precision),
-                                                      dims=["timeinx", "blinx", "freqinx", "polinx"])
+                                                      dims=["time", "baselines", "frequency", "polarisation"])
         datavars["flags"] = xarray.DataArray(flags.astype(low_precision),
-                                             dims=["timeinx", "blinx", "freqinx", "polinx"])
-        datavars["uvw"] = xarray.DataArray(uvw, dims=["timeinx", "blinx", "spatial"], attrs={"units": "m"})
+                                             dims=["time", "baselines", "frequency", "polarisation"])
+        datavars["uvw"] = xarray.DataArray(uvw, dims=["time", "baselines", "spatial"], attrs={"units": "m"})
         
-        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["timeinx", "blinx", "freqinx", "spatial"],
+        datavars["uvw_lambda"] = xarray.DataArray(uvw_lambda, dims=["time", "baselines", "frequency", "spatial"],
                                                   attrs={"units": "lambda"})
         datavars["uvdist_lambda"] = xarray.DataArray(numpy.hypot(uvw_lambda[..., 0], uvw_lambda[..., 1]),
-                                                     dims=["timeinx", "blinx", "freqinx"], attrs={"units": "lambda"})
+                                                     dims=["time", "baselines", "frequency"], attrs={"units": "lambda"})
         
-        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["freqinx"], attrs={"units": "Hz"})
+        datavars["channel_bandwidth"] = xarray.DataArray(channel_bandwidth, dims=["frequency"], attrs={"units": "Hz"})
         
         attrs = dict()
         attrs["configuration"] = configuration  # Antenna/station configuration
         attrs["source"] = source
         attrs["phasecentre"] = phasecentre
+        attrs["polarisation_frame"] = polarisation_frame
         attrs["meta"] = meta
         
         super().__init__(datavars, coords=coords, attrs=attrs)
@@ -1201,7 +1189,7 @@ class FlagTable(xarray.Dataset):
             "time": time,
             "baselines": baselines,
             "frequency": frequency,
-            "polarisation": polarisation_frame.names,
+            "polarisation": polarisation_frame.names
         }
         
         datavars = dict()

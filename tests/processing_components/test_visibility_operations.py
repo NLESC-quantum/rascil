@@ -65,7 +65,7 @@ class TestVisibilityOperations(unittest.TestCase):
                                                weight=1.0)
         other_shape = list(othervis.vis.shape)
         this_shape = list(vis.vis.shape)
-        newvis = concatenate_visibility([vis, othervis])
+        newvis = concatenate_visibility([vis, othervis], dim="time")
         combined_shape = list(newvis.vis.shape)
         assert combined_shape[0] == this_shape[0] + other_shape[0]
 
@@ -73,7 +73,7 @@ class TestVisibilityOperations(unittest.TestCase):
         reverse_vis = concatenate_visibility([othervis, vis])
         assert reverse_vis.time.all() == newvis.time.all()
         assert combined_shape[0] == this_shape[0] + other_shape[0]
-        newvis = newvis.dropna(dim="timeinx", how='all')
+        newvis = newvis.dropna(dim="time", how='all')
         print(newvis)
 
     def test_divide_visibility(self):

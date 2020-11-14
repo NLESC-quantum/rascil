@@ -10,7 +10,7 @@ import numpy
 
 from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-from rascil.processing_components import create_image_from_array
+from rascil.processing_components import create_image_from_visibility
 log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)

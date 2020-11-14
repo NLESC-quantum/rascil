@@ -592,13 +592,12 @@ class GridData(xarray.Dataset):
             coords["w"] = numpy.zeros([1])
         
         attrs = dict()
+
         attrs["rascil_data_model"] = "GridData"
-        attrs["polarisation_frame"] = polarisation_frame
-        attrs["frame"] = phasecentre.frame.name
         attrs["grid_wcs"] = grid_wcs
         attrs["projection_wcs"] = projection_wcs
+        attrs["polarisation_frame"] = polarisation_frame
         attrs["phasecentre"] = phasecentre
-        
         
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
@@ -676,6 +675,9 @@ class ConvolutionFunction(xarray.Dataset):
         
         super().__init__()
         
+        phasecentre = SkyCoord(projection_wcs.wcs.crval[0] * u.deg,
+                               projection_wcs.wcs.crval[1] * u.deg)
+
         nchan, npol, nw, oversampling, _, support, _ = data.shape
         frequency = cf_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
         
@@ -717,7 +719,8 @@ class ConvolutionFunction(xarray.Dataset):
         attrs["cf_wcs"] = cf_wcs
         attrs["projection_wcs"] = projection_wcs
         attrs["polarisation_frame"] = polarisation_frame
-        
+        attrs["phasecentre"] = phasecentre
+
         nchan = len(frequency)
         npol = polarisation_frame.npol
         if data is None:

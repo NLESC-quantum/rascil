@@ -834,6 +834,7 @@ def convert_griddata_to_hdf(gd: GridData, f):
     
     f.attrs['rascil_data_model'] = 'GridData'
     f['data'] = gd["pixels"].data
+    
     f.attrs['grid_wcs'] = numpy.string_(gd.grid_wcs.to_header_string())
     f.attrs['projection_wcs'] = numpy.string_(gd.projection_wcs.to_header_string())
     f.attrs['polarisation_frame'] = gd.polarisation_frame.type
@@ -848,10 +849,12 @@ def convert_hdf_to_griddata(f):
     """
     assert f.attrs['rascil_data_model'] == "GridData", "Not a GridData"
     data = numpy.array(f['data'])
-    polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
     grid_wcs = WCS(f.attrs['grid_wcs'])
     projection_wcs = WCS(f.attrs['projection_wcs'])
+    polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
+    
     gd = GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs, projection_wcs=projection_wcs)
+    
     return gd
 
 

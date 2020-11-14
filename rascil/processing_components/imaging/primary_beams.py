@@ -45,7 +45,6 @@ def set_pb_header(pb, use_local=True):
         pb = create_image_from_array(pb["pixels"].data,
                                      wcs=wcs,
                                      polarisation_frame=pb.polarisation_frame)
-        print(pb)
 
     return pb
 
@@ -374,7 +373,8 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     beam = create_image_from_array(beam_data, wcs=beam.wcs,
                                    polarisation_frame=beam.polarisation_frame)
 
-    set_pb_header(beam, use_local=use_local)
+    beam = set_pb_header(beam, use_local=use_local)
+
     return beam
 
 

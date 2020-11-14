@@ -64,7 +64,7 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        selected_bvis = bvis.sel({"time": slice(5084631147.057494, 5084631206.893675)})
+        selected_bvis = bvis.sel({"time": slice(5084631147, 5084631207)})
         print(selected_bvis)
         assert len(selected_bvis.time) == 3
         assert len(selected_bvis.channel_bandwidth.shape) == 1

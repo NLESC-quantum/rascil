@@ -7,6 +7,7 @@ __all__ = ['ical_skymodel_list_rsexecute_workflow',
 
 import logging
 
+import copy
 from rascil.data_models.parameters import get_parameter
 from rascil.processing_components.griddata import create_pswf_convolutionfunction
 from rascil.processing_components.visibility import copy_visibility
@@ -47,7 +48,7 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
     
     # Function to copy image into a SkyModel
     def set_image(sm, dcm):
-        sm.image = dcm.copy(deep=True)
+        sm.image = copy.deepcopy(dcm)
         return sm
     
     # Make wkernels

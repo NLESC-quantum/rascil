@@ -230,6 +230,7 @@ class TestPipelineMPC(unittest.TestCase):
 
         rsexecute.close()
 
+    @unittest.skip("Too expensive to run in CI/CD")
     def test_mpccal_ICAL_onesource(self):
 
         self.actualSetup(nsources=1, nvoronoi=1)
@@ -341,6 +342,7 @@ class TestPipelineMPC(unittest.TestCase):
 
         rsexecute.close()
 
+    @unittest.skip("Too expensive to run in CI/CD")
     def test_mpccal_MPCCAL_manysources_no_edge(self):
 
         self.actualSetup()
@@ -397,6 +399,7 @@ class TestPipelineMPC(unittest.TestCase):
 
         rsexecute.close()
 
+    @unittest.skip("Too expensive to run in CI/CD")
     def test_mpccal_MPCCAL_manysources_subimages(self):
 
         self.actualSetup()

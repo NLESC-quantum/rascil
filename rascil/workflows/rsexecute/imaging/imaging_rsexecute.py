@@ -10,6 +10,7 @@ __all__ = ['predict_list_rsexecute_workflow', 'invert_list_rsexecute_workflow', 
 
 import collections
 import logging
+import copy
 
 import numpy
 
@@ -21,7 +22,7 @@ from rascil.processing_components.griddata import \
     grid_blockvisibility_weight_to_griddata, griddata_blockvisibility_reweight, \
     griddata_merge_weights
 from rascil.processing_components.image import calculate_image_frequency_moments
-from rascil.processing_components.image import deconvolve_cube, restore_cube
+from rascil.processing_components.image import deconvolve_cube, restore_cube, create_image_from_array
 from rascil.processing_components.image import image_scatter_facets, image_gather_facets, \
     image_scatter_channels, image_gather_channels
 from rascil.processing_components.image.operations import create_empty_image_like
@@ -293,9 +294,11 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         xend = cx + wx // 2
         ybeg = cy - wy // 2
         yend = cy + wy // 2
-        spsf = psf.isel({"x": slice(xbeg, xend), "y": slice(ybeg, yend)})
-        spsf.wcs.wcs.crpix[0] -= xbeg
-        spsf.wcs.wcs.crpix[1] -= ybeg
+        spsf_data = psf["pixels"].isel({"x": slice(xbeg, xend), "y": slice(ybeg, yend)}).data
+        wcs = copy.deepcopy(psf.wcs)
+        wcs.wcs.crpix[0] -= xbeg
+        wcs.wcs.crpix[1] -= ybeg
+        spsf = create_image_from_array(spsf_data, wcs=wcs, polarisation_frame=psf.polarisation_frame)
         return spsf
     
     psf_list_trimmed = [rsexecute.execute(extract_psf)(p, deconvolve_facets) for p in psf_list_trimmed]

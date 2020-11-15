@@ -16,7 +16,7 @@ import re
 from typing import Union
 
 import numpy
-from astropy import units as u, constants as constants
+from astropy import units as u
 from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.units import Quantity
 from astropy.io import fits
@@ -32,6 +32,7 @@ from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
 from rascil.processing_components.util.geometry import calculate_transit_time, utc_to_ms_epoch
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_transit_time, \
     calculate_blockvisibility_hourangles, calculate_blockvisibility_azel
+from rascil import phyconst
 
 log = logging.getLogger('logger')
 
@@ -170,7 +171,7 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
                     # Loop over all frequencies and polarisations
                     for ch in range(nch):
                         # noinspection PyUnresolvedReferences
-                        k = frequency[ch] / constants.c.value
+                        k = frequency[ch] / phyconst.c_m_s
                         ruvw[row, :] = (ant_pos[a2, :] - ant_pos[a1, :]) * k
                         rfrequency[row] = frequency[ch]
                         rchannel_bandwidth[row] = channel_bandwidth[ch]
@@ -544,9 +545,9 @@ def extend_blockvisibility_ms_row(msname, vis):
     export_blockvisibility_to_ms(ms_temp,[vis],source_name=None)
 
     try:
-        t = table(msname, readonly=False)
+        t = table(msname, readonly=False, ack=False)
         log.debug("Open ms table: %s" % str(t.info()))
-        tmp = table(ms_temp,readonly=True)
+        tmp = table(ms_temp,readonly=True, ack=False)
         log.debug("Open ms table: %s" % str(tmp.info()))
         tmp.copyrows(t)
         log.debug("Merge  data")
@@ -1235,11 +1236,11 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
                                                                                              pol_index,
                                                                                              2]
                         bv_uvw[time_index, antenna2, antenna1, 0] = uu[
-                                                                        row] * constants.c.value
+                                                                        row] * phyconst.c_m_s
                         bv_uvw[time_index, antenna2, antenna1, 1] = vv[
-                                                                        row] * constants.c.value
+                                                                        row] * phyconst.c_m_s
                         bv_uvw[time_index, antenna2, antenna1, 2] = ww[
-                                                                        row] * constants.c.value
+                                                                        row] * phyconst.c_m_s
                         row += 1
             
             # Convert negative weights to flags
@@ -1297,7 +1298,7 @@ def calculate_blockvisibility_phasor(direction, vis):
     :return:
     """
     ntimes, nant, _, nchan, npol = vis.vis.shape
-    k = numpy.array(vis.frequency) / constants.c.to('m s^-1').value
+    k = numpy.array(vis.frequency) / phyconst.c_m_s
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
     uvw = vis.uvw[..., numpy.newaxis] * k
     phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')

@@ -49,7 +49,7 @@ class TestVisibilityGatherScatter(unittest.TestCase):
     def test_vis_scatter_gather_timeslice_ms(self):
         # Reading
         msfile = rascil_data_path("vis/xcasa.ms")
-        msoutfile = rascil_data_path("vis/xcasa_test.ms")
+        msoutfile = rascil_path("test_results/test_extend_xcasa.ms")
         # remove temp file if exists
         import os, shutil
         if os.path.exists(msoutfile):

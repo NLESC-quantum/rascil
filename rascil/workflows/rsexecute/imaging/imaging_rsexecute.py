@@ -245,8 +245,8 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
             kwargs['threshold'] = gthreshold
             result, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
-            if result["pixels"].data.shape[0] == model["pixels"].data.shape[0]:
-                result["pixels"].data = result["pixels"].data + model["pixels"].data
+            assert result["pixels"].data.shape == model["pixels"].data.shape
+            result["pixels"].data = result["pixels"].data + model["pixels"].data
             return result
         else:
             return model.copy(deep=True)

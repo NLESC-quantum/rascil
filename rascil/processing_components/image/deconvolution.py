@@ -130,7 +130,9 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
                        y=slice((centre[1] - psf_support), (centre[1] + psf_support)))
         log.info('deconvolve_cube %s: PSF support = +/- %d pixels' % (prefix, psf_support))
         log.info('deconvolve_cube %s: PSF shape %s' % (prefix, str(psf["pixels"].data.shape)))
-    
+    else:
+        log.info("Using entire psf for dconvolution")
+        
     algorithm = get_parameter(kwargs, 'algorithm', 'msclean')
     
     if algorithm == 'msclean':

@@ -6,6 +6,7 @@ import unittest
 
 import astropy.units as u
 import numpy
+import xarray
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models import PolarisationFrame
@@ -101,3 +102,11 @@ class TestVisibilitySelectors(unittest.TestCase):
         selected_bvis = bvis.isel({"frequency": slice(1, 3)})
         print(selected_bvis)
         assert len(selected_bvis.frequency) == 2
+
+    def test_blockvisibility_flag_auto(self):
+        bvis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+                                      channel_bandwidth=self.channel_bandwidth,
+                                      polarisation_frame=self.polarisation_frame,
+                                      phasecentre=self.phasecentre, weight=1.0)
+        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > 0.0, bvis["flags"], 1.0)
+        print(bvis)

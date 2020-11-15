@@ -55,7 +55,7 @@ class XarrayAccessorMixin():
         :return: string
         """
         s = "Dataset size: {:.3f} GB\n".format(self._obj.nbytes / 1024 / 1024 / 1024)
-        for var in self._obj.data.data_vars:
+        for var in self._obj.data_vars:
             s += "\t[{}]: \t{:.3f} GB\n".format(var, self._obj[var].nbytes / 1024 / 1024 / 1024)
         return s
 
@@ -681,7 +681,8 @@ class ConvolutionFunction(xarray.Dataset):
         nchan, npol, nw, oversampling, _, support, _ = data.shape
         frequency = cf_wcs.sub(['spectral']).wcs_pix2world(range(nchan), 0)[0]
         
-        assert npol == polarisation_frame.npol
+        assert npol == polarisation_frame.npol, \
+            "Mismatch between requested image polarisation and actual visibility poloarisation"
         cellsize = numpy.abs(projection_wcs.wcs.cdelt[1])
         cellsize_rad = numpy.deg2rad(cellsize)
         du = 1.0 / cellsize_rad

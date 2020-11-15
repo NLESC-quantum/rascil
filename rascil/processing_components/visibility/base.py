@@ -6,7 +6,7 @@ __all__ = ['vis_summary', 'copy_visibility', 'create_visibility',
            'create_visibility_from_rows',
            'create_blockvisibility_from_ms', 'create_blockvisibility_from_uvfits',
            'create_blockvisibility', 'phaserotate_visibility',
-           'export_blockvisibility_to_ms',
+           'export_blockvisibility_to_ms', 'extend_blockvisibility_to_ms',
            'create_visibility_from_ms', 'create_visibility_from_uvfits',
            'list_ms']
 
@@ -475,6 +475,89 @@ def phaserotate_visibility(vis: Union[Visibility, BlockVisibility],
         return newvis
     else:
         raise ValueError("vis argument neither Visibility or BlockVisibility")
+
+def extend_blockvisibility_to_ms(msname, bvis):
+    try:
+        import casacore.tables.tableutil as pt
+        from casacore.tables import (makescacoldesc, makearrcoldesc, table, maketabdesc,
+                                     tableexists, tableiswritable,
+                                     tableinfo, tablefromascii, tabledelete, makecoldesc,
+                                     msconcat, removeDerivedMSCal,
+                                     taql, tablerename, tablecopy, tablecolumn,
+                                     addDerivedMSCal, removeImagingColumns,
+                                     addImagingColumns, required_ms_desc,
+                                     tabledefinehypercolumn, default_ms,
+                                     makedminfo,
+                                     default_ms_subtable)
+        from rascil.processing_components.visibility.msv2fund import Antenna, Stand
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("casacore is not installed")
+
+    try:
+        from rascil.processing_components.visibility import msv2
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("cannot import msv2")
+
+    # Determine if file exists
+    import os
+    if not os.path.exists(msname):
+        if bvis is not None:
+            export_blockvisibility_to_ms(msname, [bvis])
+    else:
+        if bvis is not None:
+            extend_blockvisibility_ms_row(msname, bvis)
+
+def extend_blockvisibility_ms_row(msname, vis):
+    """ Minimal BlockVisibility to MS converter
+
+    The MS format is much more general than the RASCIL BlockVisibility so we cut many corners. This requires casacore to be
+    installed. If not an exception ModuleNotFoundError is raised.
+
+    Write a list of BlockVisibility's to a MS file, split by field and spectral window
+
+    :param msname: File name of MS
+    :param vis_list: list of BlockVisibility
+    :return:
+    """
+
+    try:
+        import casacore.tables.tableutil as pt
+        from casacore.tables import (makescacoldesc, makearrcoldesc, table, maketabdesc,
+                                     tableexists, tableiswritable,
+                                     tableinfo, tablefromascii, tabledelete, makecoldesc,
+                                     msconcat, removeDerivedMSCal,
+                                     taql, tablerename, tablecopy, tablecolumn,
+                                     addDerivedMSCal, removeImagingColumns,
+                                     addImagingColumns, required_ms_desc,
+                                     tabledefinehypercolumn, default_ms,
+                                     makedminfo,
+                                     default_ms_subtable)
+        from rascil.processing_components.visibility.msv2fund import Antenna, Stand
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("casacore is not installed")
+
+    try:
+        from rascil.processing_components.visibility import msv2
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("cannot import msv2")
+
+    ms_temp = msname+"____"
+    export_blockvisibility_to_ms(ms_temp,[vis],source_name=None)
+
+    try:
+        t = table(msname, readonly=False, ack=False)
+        log.debug("Open ms table: %s" % str(t.info()))
+        tmp = table(ms_temp,readonly=True, ack=False)
+        log.debug("Open ms table: %s" % str(tmp.info()))
+        tmp.copyrows(t)
+        log.debug("Merge  data")
+        tmp.close()
+        t.flush()
+        t.close()
+    finally:
+        import os, shutil
+        if os.path.exists(ms_temp):
+            shutil.rmtree(ms_temp, ignore_errors=False)
 
 
 def export_blockvisibility_to_ms(msname, vis_list, source_name=None):

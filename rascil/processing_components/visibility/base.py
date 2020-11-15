@@ -6,7 +6,7 @@ __all__ = ['vis_summary', 'copy_visibility', 'create_visibility',
            'create_visibility_from_rows',
            'create_blockvisibility_from_ms', 'create_blockvisibility_from_uvfits',
            'create_blockvisibility', 'phaserotate_visibility',
-           'export_blockvisibility_to_ms',
+           'export_blockvisibility_to_ms', 'extend_blockvisibility_to_ms',
            'create_visibility_from_ms', 'create_visibility_from_uvfits',
            'list_ms']
 
@@ -16,7 +16,7 @@ import re
 from typing import Union
 
 import numpy
-from astropy import units as u
+from astropy import units as u, constants as constants
 from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.units import Quantity
 from astropy.io import fits
@@ -32,7 +32,6 @@ from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
 from rascil.processing_components.util.geometry import calculate_transit_time, utc_to_ms_epoch
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_transit_time, \
     calculate_blockvisibility_hourangles, calculate_blockvisibility_azel
-from rascil import phyconst
 
 log = logging.getLogger('logger')
 
@@ -171,7 +170,7 @@ def create_visibility(config: Configuration, times: numpy.array, frequency: nump
                     # Loop over all frequencies and polarisations
                     for ch in range(nch):
                         # noinspection PyUnresolvedReferences
-                        k = frequency[ch] / phyconst.c_m_s
+                        k = frequency[ch] / constants.c.value
                         ruvw[row, :] = (ant_pos[a2, :] - ant_pos[a1, :]) * k
                         rfrequency[row] = frequency[ch]
                         rchannel_bandwidth[row] = channel_bandwidth[ch]
@@ -475,6 +474,89 @@ def phaserotate_visibility(vis: Union[Visibility, BlockVisibility],
         return newvis
     else:
         raise ValueError("vis argument neither Visibility or BlockVisibility")
+
+def extend_blockvisibility_to_ms(msname, bvis):
+    try:
+        import casacore.tables.tableutil as pt
+        from casacore.tables import (makescacoldesc, makearrcoldesc, table, maketabdesc,
+                                     tableexists, tableiswritable,
+                                     tableinfo, tablefromascii, tabledelete, makecoldesc,
+                                     msconcat, removeDerivedMSCal,
+                                     taql, tablerename, tablecopy, tablecolumn,
+                                     addDerivedMSCal, removeImagingColumns,
+                                     addImagingColumns, required_ms_desc,
+                                     tabledefinehypercolumn, default_ms,
+                                     makedminfo,
+                                     default_ms_subtable)
+        from rascil.processing_components.visibility.msv2fund import Antenna, Stand
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("casacore is not installed")
+
+    try:
+        from rascil.processing_components.visibility import msv2
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("cannot import msv2")
+
+    # Determine if file exists
+    import os
+    if not os.path.exists(msname):
+        if bvis is not None:
+            export_blockvisibility_to_ms(msname, [bvis])
+    else:
+        if bvis is not None:
+            extend_blockvisibility_ms_row(msname, bvis)
+
+def extend_blockvisibility_ms_row(msname, vis):
+    """ Minimal BlockVisibility to MS converter
+
+    The MS format is much more general than the RASCIL BlockVisibility so we cut many corners. This requires casacore to be
+    installed. If not an exception ModuleNotFoundError is raised.
+
+    Write a list of BlockVisibility's to a MS file, split by field and spectral window
+
+    :param msname: File name of MS
+    :param vis_list: list of BlockVisibility
+    :return:
+    """
+
+    try:
+        import casacore.tables.tableutil as pt
+        from casacore.tables import (makescacoldesc, makearrcoldesc, table, maketabdesc,
+                                     tableexists, tableiswritable,
+                                     tableinfo, tablefromascii, tabledelete, makecoldesc,
+                                     msconcat, removeDerivedMSCal,
+                                     taql, tablerename, tablecopy, tablecolumn,
+                                     addDerivedMSCal, removeImagingColumns,
+                                     addImagingColumns, required_ms_desc,
+                                     tabledefinehypercolumn, default_ms,
+                                     makedminfo,
+                                     default_ms_subtable)
+        from rascil.processing_components.visibility.msv2fund import Antenna, Stand
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("casacore is not installed")
+
+    try:
+        from rascil.processing_components.visibility import msv2
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("cannot import msv2")
+
+    ms_temp = msname+"____"
+    export_blockvisibility_to_ms(ms_temp,[vis],source_name=None)
+
+    try:
+        t = table(msname, readonly=False)
+        log.debug("Open ms table: %s" % str(t.info()))
+        tmp = table(ms_temp,readonly=True)
+        log.debug("Open ms table: %s" % str(tmp.info()))
+        tmp.copyrows(t)
+        log.debug("Merge  data")
+        tmp.close()
+        t.flush()
+        t.close()
+    finally:
+        import os, shutil
+        if os.path.exists(ms_temp):
+            shutil.rmtree(ms_temp, ignore_errors=False)
 
 
 def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
@@ -1153,11 +1235,11 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
                                                                                              pol_index,
                                                                                              2]
                         bv_uvw[time_index, antenna2, antenna1, 0] = uu[
-                                                                        row] * phyconst.c_m_s
+                                                                        row] * constants.c.value
                         bv_uvw[time_index, antenna2, antenna1, 1] = vv[
-                                                                        row] * phyconst.c_m_s
+                                                                        row] * constants.c.value
                         bv_uvw[time_index, antenna2, antenna1, 2] = ww[
-                                                                        row] * phyconst.c_m_s
+                                                                        row] * constants.c.value
                         row += 1
             
             # Convert negative weights to flags
@@ -1215,7 +1297,7 @@ def calculate_blockvisibility_phasor(direction, vis):
     :return:
     """
     ntimes, nant, _, nchan, npol = vis.vis.shape
-    k = numpy.array(vis.frequency) / phyconst.c_m_s
+    k = numpy.array(vis.frequency) / constants.c.to('m s^-1').value
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
     uvw = vis.uvw[..., numpy.newaxis] * k
     phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')

@@ -30,8 +30,7 @@ class TestConcat(unittest.TestCase):
             self.casacore_available = False
 
     def test_groupby(self):
-        ms_list = ["vis/3C277.1C.16channels.ms", "vis/ASKAP_example.ms", "vis/sim-1.ms", "vis/sim-2.ms",
-                   "vis/xcasa.ms"]
+        ms_list = ["vis/3C277.1C.16channels.ms", "vis/ASKAP_example.ms", "vis/xcasa.ms"]
     
         for ms in ms_list:
             for dim in ["frequency", "time", "polarisation"]:
@@ -52,8 +51,7 @@ class TestConcat(unittest.TestCase):
                     "{}: {} Original {}\n\nRecovered {}".format(ms, dim, vis, newvis)
 
     def test_groupby_bins(self):
-        ms_list = ["vis/3C277.1C.16channels.ms", "vis/ASKAP_example.ms", "vis/sim-1.ms", "vis/sim-2.ms",
-                   "vis/xcasa.ms"]
+        ms_list = ["vis/3C277.1C.16channels.ms", "vis/ASKAP_example.ms", "vis/xcasa.ms"]
     
         for ms in ms_list:
             for dim in ["frequency", "time"]:

@@ -172,8 +172,7 @@ class TestCreateMS(unittest.TestCase):
             assert numpy.max(numpy.abs(v.blockvisibility_acc.flagged_vis)) > 0.0
             
     def test_read_all(self):
-        ms_list = ["vis/3C277.1C.16channels.ms", "vis/ASKAP_example.ms", "vis/sim-1.ms", "vis/sim-2.ms",
-                   "vis/xcasa.ms"]
+        ms_list = ["vis/3C277.1C.16channels.ms", "vis/ASKAP_example.ms", "vis/xcasa.ms"]
         
         for ms in ms_list:
             vis_list = create_blockvisibility_from_ms(rascil_data_path(ms))

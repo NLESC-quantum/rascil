@@ -155,8 +155,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.02925433354724) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.0714797668770724) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.02882449237104) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.07147976687707382) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, zerow=True, dopol=True)
@@ -184,8 +184,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_pol_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.02925433354756) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976687706536) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.02882449237102) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.0714797668770654) < 1.0e-7, str(qa)
     
     @unittest.skip("Not deterministic")
     def test_ical_pipeline(self):
@@ -473,8 +473,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_empty_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.02925433354758) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.07147976687707393) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.02882449237104) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.07147976687707382) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
@@ -516,8 +516,8 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='restored')
         
-        assert numpy.abs(qa.data['max'] - 100.01311230112263) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.03596228994220364) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01301225959205) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.03596228994220395) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()

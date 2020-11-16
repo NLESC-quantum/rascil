@@ -87,7 +87,8 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        selected_bvis = bvis.sel({"frequency": slice(0.9e8, 1.2e8), "polarisation": ["XX", "YY"]}).dropna(dim="frequency", how="all")
+        selected_bvis = bvis.sel({"frequency": slice(0.9e8, 1.2e8),
+                                  "polarisation": ["XX", "YY"]}).dropna(dim="frequency", how="all")
         print(selected_bvis)
         assert len(selected_bvis.frequency) == 4
         assert len(selected_bvis.polarisation) == 2

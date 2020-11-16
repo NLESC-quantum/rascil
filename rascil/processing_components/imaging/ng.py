@@ -10,6 +10,7 @@ This performs all necessary w term corrections, to high precision.
 __all__ = ['predict_ng', 'invert_ng']
 
 import logging
+import copy
 
 import numpy
 
@@ -55,7 +56,7 @@ try:
         newbvis = copy_visibility(bvis, zero=True)
         
         # Extracting data from BlockVisibility
-        freq = bvis.frequency  # frequency, Hz
+        freq = bvis.frequency.data  # frequency, Hz
         nrows, nbaselines, vnchan, vnpol = bvis.vis.shape
         
         uvw = newbvis.uvw.data
@@ -69,7 +70,7 @@ try:
         #        assert (m_nchan == v_nchan)
         assert (m_npol == vnpol)
         
-        fuvw = uvw.copy()
+        fuvw = copy.deepcopy(uvw)
         # We need to flip the u and w axes. The flip in w is equivalent to the conjugation of the
         # convolution function grid_visibility to griddata
         fuvw[:, 0] *= -1.0
@@ -158,9 +159,9 @@ try:
 
         ms = sbvis.blockvisibility_acc.flagged_vis.data
         ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
-        ms = convert_pol_frame(ms, bvis.blockvisibility_acc.polarisation_frame, im.polarisation_frame, polaxis=2)
+        ms = convert_pol_frame(ms, bvis.polarisation_frame, im.polarisation_frame, polaxis=2)
 
-        uvw = sbvis.uvw.data
+        uvw = copy.deepcopy(sbvis.uvw.data)
         uvw = uvw.reshape([nrows * nbaselines, 3])
         uvw = numpy.nan_to_num(uvw)
         
@@ -175,7 +176,7 @@ try:
         npixdirty = im["pixels"].data.shape[-1]
         pixsize = numpy.abs(numpy.radians(im.wcs.wcs.cdelt[0]))
         
-        fuvw = uvw.copy()
+        fuvw = copy.deepcopy(uvw)
         # We need to flip the u and w axes.
         fuvw[:, 0] *= -1.0
         fuvw[:, 2] *= -1.0

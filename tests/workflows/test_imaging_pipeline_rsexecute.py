@@ -147,13 +147,13 @@ class TestImagingPipeline(unittest.TestCase):
                        cm='Greys', vmax=1.0, vmin=-0.1)
         log.info(qa_image(restored, context='Restored clean image - no selfcal'))
         plt.show()
-        export_image_to_fits(restored, '%s/imaging-dask_continuum_imaging_restored.fits'
+        export_image_to_fits(restored, '%s/test-imaging-pipeline-dask_continuum_imaging_restored.fits'
                              % (self.dir))
         
         f = show_image(residual[0], title='Residual clean image - no selfcal', cm='Greys')
         log.info(qa_image(residual[0], context='Residual clean image - no selfcal'))
         plt.show()
-        export_image_to_fits(residual[0], '%s/imaging-dask_continuum_imaging_residual.fits'
+        export_image_to_fits(residual[0], '%s/test-imaging-pipeline-dask_continuum_imaging_residual.fits'
                              % (self.dir))
 
 if __name__ == '__main__':

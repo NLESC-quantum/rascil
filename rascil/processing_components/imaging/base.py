@@ -401,11 +401,11 @@ def advise_wide_field(vis: BlockVisibility, delA=0.02,
 
     isblock = isinstance(vis, BlockVisibility)
 
-    max_wavelength = phyconst.c_m_s / numpy.min(vis.frequency)
+    max_wavelength = phyconst.c_m_s / numpy.min(vis.frequency.data)
     if verbose:
         log.info("advise_wide_field: (max_wavelength) Maximum wavelength %.3f (meters)" % (max_wavelength))
 
-    min_wavelength = phyconst.c_m_s / numpy.max(vis.frequency)
+    min_wavelength = phyconst.c_m_s / numpy.max(vis.frequency.data)
     if verbose:
         log.info("advise_wide_field: (min_wavelength) Minimum wavelength %.3f (meters)" % (min_wavelength))
 

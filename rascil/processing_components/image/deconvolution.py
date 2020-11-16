@@ -27,6 +27,7 @@ __all__ = ['deconvolve_cube', 'restore_cube', 'fit_psf']
 
 import logging
 import warnings
+import copy
 
 import numpy
 from astropy.convolution import Gaussian2DKernel, convolve_fft
@@ -41,7 +42,7 @@ from rascil.processing_components.image.operations import calculate_image_freque
     calculate_image_from_frequency_moments, image_is_canonical
 from rascil.processing_components.image.operations import create_image_from_array
 
-warnings.simplefilter('ignore', AstropyDeprecationWarning)
+#warnings.simplefilter('ignore', AstropyDeprecationWarning)
 
 log = logging.getLogger('rascil-logger')
 
@@ -326,7 +327,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     return comp_image, residual_image
 
 
-def fit_psf(psf: Image, **kwargs) -> Image:
+def fit_psf(psf: Image, **kwargs):
     """ Fit PSF using astropy.modeling
 
     :params psf: Input PSF
@@ -336,12 +337,12 @@ def fit_psf(psf: Image, **kwargs) -> Image:
     assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
 
-    fitted_PSF = copy_image(psf)
+    fitted_PSF = copy.deepcopy(psf)
 
-    npixel = psf.data.shape[3]
+    npixel = psf["pixels"].data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)
     y,x = numpy.mgrid[sl, sl]
-    z = psf.data[0, 0, sl, sl]
+    z = psf["pixels"].data[0, 0, sl, sl]
    
     size = get_parameter(kwargs, "psfwidth", None)
     if size is None:
@@ -361,9 +362,9 @@ def fit_psf(psf: Image, **kwargs) -> Image:
                 size = max(fit.x_stddev, fit.y_stddev).value
                 log.debug('restore_cube: psfwidth = %s' % (size))
                 y1, x1 = numpy.mgrid[:npixel, :npixel]
-                for freq in range(psf.data.shape[0]):
-                    for pol in range(psf.data.shape[1]):
-                        fitted_PSF.data[freq,pol] = fit(x1,y1)
+                for freq in range(psf["pixels"].data.shape[0]):
+                    for pol in range(psf["pixels"].data.shape[1]):
+                        fitted_PSF["pixels"].data[freq,pol] = fit(x1,y1)
         except minpack.error as err:
             log.debug('restore_cube: minpack error, using 1 pixel stddev')
             size = 1.0
@@ -398,7 +399,7 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     npixel = psf["pixels"].data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)
     y,x = numpy.mgrid[sl, sl]
-    z = psf.data[0, 0, sl, sl]
+    z = psf["pixels"].data[0, 0, sl, sl]
     
     size = get_parameter(kwargs, "psfwidth", None)
     
@@ -445,9 +446,9 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
     #norm = 2.0 * numpy.pi * size ** 2
     #gk = Gaussian2DKernel(size)
-    for chan in range(model.shape[0]):
-        for pol in range(model.shape[1]):
-            restored.data[chan, pol, :, :] = norm * convolve_fft(model.data[chan, pol, :, :], gk,
+    for chan in range(model["pixels"].shape[0]):
+        for pol in range(model["pixels"].shape[1]):
+            restored["pixels"].data[chan, pol, :, :] = norm * convolve_fft(model["pixels"].data[chan, pol, :, :], gk,
                                                                  normalize_kernel=False, allow_huge=True)
     if residual is not None:
         restored["pixels"].data += residual["pixels"].data

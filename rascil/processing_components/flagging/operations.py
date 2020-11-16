@@ -15,7 +15,7 @@ import numpy
 from astropy.wcs import WCS
 
 from rascil.data_models.memory_data_models import BlockVisibility,  FlagTable
-from rascil.processing_components.visibility import get_baseline
+from rascil.processing_components.visibility.base import get_baseline
 
 log = logging.getLogger('rascil-logger')
 

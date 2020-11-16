@@ -5,6 +5,7 @@
 import unittest
 
 import numpy
+import xarray
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -51,8 +52,8 @@ class measurementset_tests(unittest.TestCase):
         # a predict step.
         
         times = numpy.zeros([1])
-        frequency = numpy.array([1e8])
-        channel_bandwidth = numpy.array([1e6])
+        frequency = numpy.array([1e8, 1.1e8, 1.2e8])
+        channel_bandwidth = numpy.array([1e7, 1e7, 1e7])
         phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-45.0 * u.deg, frame='icrs',
                                equinox='J2000')
         vt = create_blockvisibility(lowr3, times, frequency, channel_bandwidth=channel_bandwidth,
@@ -83,11 +84,7 @@ class measurementset_tests(unittest.TestCase):
         vt_after = create_blockvisibility_from_ms(msname)[0]
         
         # Temporarily flag autocorrelations until MS writer is fixed
-        for ibaseline, (a1, a2) in enumerate(vt_after.baselines.data):
-            if a1 == a2:
-                vt_after.weight.data[:, ibaseline, ...] = 0.0
-                vt_after.imaging_weight.data[:, ibaseline, ...] = 0.0
-                vt_after.flags.data[:, ibaseline, ...] = 1
+        vt_after["flags"] = xarray.where(vt_after["uvdist_lambda"] > 0.0, vt_after["flags"], 1.0)
         
         # Make the dirty image and point spread function
         model = create_image_from_visibility(vt_after, cellsize=cellsize, npixel=512)

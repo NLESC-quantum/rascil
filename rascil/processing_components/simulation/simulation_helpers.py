@@ -137,7 +137,7 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
     for ivis, vis in enumerate(vis_list):
         u = numpy.array(vis.blockvisibility_acc.u.data[...].flat)
         v = numpy.array(vis.blockvisibility_acc.v.data[...].flat)
-        k = (vis["frequency"].data / constants.c).value
+        k = (vis["frequency"].data / phyconst.c_m_s)
         u = numpy.array(numpy.outer(u, k).flat)
         v = numpy.array(numpy.outer(v, k).flat)
         plt.plot(u, v, '.', color='b', markersize=0.2)
@@ -189,7 +189,7 @@ def plot_uwcoverage(vis_list, ax=None, plot_file=None, title='UW coverage', **kw
     for ivis, vis in enumerate(vis_list):
         u = numpy.array(vis.blockvisibility_acc.u.data[...].flat)
         w = numpy.array(vis.blockvisibility_acc.w.data[...].flat)
-        k = (vis["frequency"].data / constants.c).value
+        k = (vis["frequency"].data / phyconst.c_m_s)
         u = numpy.array(numpy.outer(u, k).flat)
         w = numpy.array(numpy.outer(w, k).flat)
         plt.plot(u, w, '.', color='b', markersize=0.2)
@@ -214,7 +214,7 @@ def plot_vwcoverage(vis_list, ax=None, plot_file=None, title='VW coverage', **kw
     for ivis, vis in enumerate(vis_list):
         v = numpy.array(vis.blockvisibility_acc.v.data[...].flat)
         w = numpy.array(vis.blockvisibility_acc.w.data[...].flat)
-        k = (vis["frequency"].data / constants.c).value
+        k = vis["frequency"].data / phyconst.c_m_s
         v = numpy.array(numpy.outer(v, k).flat)
         w = numpy.array(numpy.outer(w, k).flat)
         plt.plot(v, w, '.', color='b', markersize=0.2)

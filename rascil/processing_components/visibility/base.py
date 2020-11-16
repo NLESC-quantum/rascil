@@ -2,12 +2,10 @@
 Base simple visibility operations, placed here to avoid circular dependencies
 """
 
-__all__ = ['vis_summary', 'copy_visibility', 'create_visibility',
-           'create_visibility_from_rows',
+__all__ = ['vis_summary', 'copy_visibility',
            'create_blockvisibility_from_ms', 'create_blockvisibility_from_uvfits',
            'create_blockvisibility', 'phaserotate_visibility',
            'export_blockvisibility_to_ms', 'extend_blockvisibility_to_ms',
-           'create_visibility_from_ms', 'create_visibility_from_uvfits',
            'list_ms']
 
 import copy
@@ -645,7 +643,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                         channum = range(channels)
                         ms_vis = ms.getcol(datacolumn)[:, channum, :]
                         ms_weight = ms.getcol('WEIGHT')
-                        ms_flags = ms.getcol('FLAG')
+                        ms_flags = ms.getcol('FLAG')[:, channum, :]
                         channum = range(channels)
                     except IndexError:
                         raise IndexError("channel number exceeds max. within ms")
@@ -1025,9 +1023,9 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
                                                                                     channel_index,
                                                                                     pol_index,
                                                                                     2]
-                        bv_uvw[time_index, ibaseline, 0] = uu[row] * constants.c.value
-                        bv_uvw[time_index, ibaseline, 1] = vv[row] * constants.c.value
-                        bv_uvw[time_index, ibaseline, 2] = ww[row] * constants.c.value
+                        bv_uvw[time_index, ibaseline, 0] = uu[row] * phyconst.c_m_s
+                        bv_uvw[time_index, ibaseline, 1] = vv[row] * phyconst.c_m_s
+                        bv_uvw[time_index, ibaseline, 2] = ww[row] * phyconst.c_m_s
                         row += 1
             
             # Convert negative weights to flags
@@ -1072,11 +1070,6 @@ def calculate_blockvisibility_uvw_lambda(vis):
     :param vis:
     :return:
     """
-    ntimes, nant, _, nchan, npol = vis.vis.shape
-    k = numpy.array(vis.frequency) / phyconst.c_m_s
-    l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
-    uvw = vis.uvw[..., numpy.newaxis] * k
-    phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')
-    for chan in range(nchan):
-        phasor[:, :, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
-    return phasor
+    k = vis.frequency.data / phyconst.c_m_s
+    vis.uvw_lambda.data = numpy.einsum("tbs,k->tbks", vis.uvw.data, k)
+    return vis

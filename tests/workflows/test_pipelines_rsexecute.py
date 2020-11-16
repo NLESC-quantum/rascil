@@ -220,8 +220,8 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre])
         
-        assert numpy.abs(qa.data['max'] - 100.01323241256594) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06553922563010581) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.02916104131138) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.0714797668771464) < 1.0e-7, str(qa)
     
     @unittest.skip("Not deterministic")
     def test_ical_pipeline_pol(self):
@@ -295,8 +295,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
         
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 100.01361400765285) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06579948695723646) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01309591948707) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.03596228994224621) < 1.0e-7, str(qa)
     
     @unittest.skip("Not deterministic")
     def test_ical_skymodel_pipeline_empty(self):

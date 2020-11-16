@@ -15,8 +15,8 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.arrays.cleaners import overlapIndices
 from rascil.processing_components.image.operations import create_image_from_array
 
-from rascil.processing_components.image.deconvolution import deconvolve_cube, restore_cube
-from rascil.processing_components.image.operations import export_image_to_fits
+from rascil.processing_components.image.deconvolution import deconvolve_cube, restore_cube, fit_psf
+from rascil.processing_components.image.operations import export_image_to_fits, qa_image
 from rascil.processing_components.simulation import create_test_image
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
@@ -75,6 +75,12 @@ class TestImageDeconvolution(unittest.TestCase):
     def test_restore(self):
         self.cmodel = restore_cube(self.model, self.psf)
         
+    def test_fit_psf(self):
+        fitted_psf, fit, size = fit_psf(self.psf)
+        qa = qa_image(fitted_psf, context='fitted_psf')
+        assert numpy.abs(qa.data['max'] - 1.034215673203459) < 1.0e-7, str(qa)
+        assert numpy.abs(size - 1.837417138043453) < 1.0e-7, str(size)  
+
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=10000, gain=0.1, algorithm='hogbom',
                                                    threshold=0.01)

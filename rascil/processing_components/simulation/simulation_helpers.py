@@ -9,7 +9,6 @@ __all__ = ['plot_visibility', 'plot_visibility_pol', 'find_times_above_elevation
 
 import logging
 
-import astropy.constants as constants
 import astropy.units as units
 import matplotlib.pyplot as plt
 import numpy
@@ -26,6 +25,7 @@ from rascil.processing_components.skycomponent.operations import apply_beam_to_s
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles, \
     calculate_blockvisibility_azel, calculate_blockvisibility_parallactic_angles
+from rascil import phyconst
 
 log = logging.getLogger('rascil-logger')
 

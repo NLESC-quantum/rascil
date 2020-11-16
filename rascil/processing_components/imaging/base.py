@@ -34,7 +34,6 @@ __all__ = ['shift_vis_to_image',
 import logging
 from typing import List, Union
 
-import astropy.constants as constants
 import astropy.units as units
 import astropy.wcs as wcs
 import numpy
@@ -51,6 +50,7 @@ from rascil.processing_components.griddata.operations import create_griddata_fro
 from rascil.processing_components.image import create_image_from_array, convert_polimage_to_stokes, \
     convert_stokes_to_polimage
 from rascil.processing_components.visibility.base import copy_visibility, phaserotate_visibility
+from rascil import phyconst
 
 log = logging.getLogger('rascil-logger')
 
@@ -338,6 +338,7 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
     else:
         uvmax = numpy.max((numpy.abs(vis["uvw"][..., 0:1])))
 
+        uvmax *= numpy.max(frequency) / phyconst.c_m_s
     log.debug("create_image_from_visibility: uvmax = %f wavelengths" % uvmax)
     criticalcellsize = 1.0 / (uvmax * 2.0)
     log.debug("create_image_from_visibility: Critical cellsize = %f radians, %f degrees" % (
@@ -398,11 +399,13 @@ def advise_wide_field(vis: BlockVisibility, delA=0.02,
     :return: dict of advice
     """
 
-    max_wavelength = constants.c.to('m s^-1').value / numpy.min(vis["frequency"].data)
+    isblock = isinstance(vis, BlockVisibility)
+
+    max_wavelength = phyconst.c_m_s / numpy.min(vis.frequency)
     if verbose:
         log.info("advise_wide_field: (max_wavelength) Maximum wavelength %.3f (meters)" % (max_wavelength))
 
-    min_wavelength = constants.c.to('m s^-1').value / numpy.max(vis["frequency"].data)
+    min_wavelength = phyconst.c_m_s / numpy.max(vis.frequency)
     if verbose:
         log.info("advise_wide_field: (min_wavelength) Minimum wavelength %.3f (meters)" % (min_wavelength))
 

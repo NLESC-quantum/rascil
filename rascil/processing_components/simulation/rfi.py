@@ -23,14 +23,13 @@ __all__ = ['simulate_DTV', 'simulate_DTV_prop', 'create_propagators', 'create_pr
 import astropy.units as u
 import numpy
 import copy
-from astropy import constants
 from astropy.coordinates import SkyCoord, EarthLocation
 
 from rascil.processing_components.util.array_functions import average_chunks2
 from rascil.processing_components.util.compass_bearing import calculate_initial_compass_bearing
 from rascil.processing_components.util.coordinate_support import simulate_point
 from rascil.processing_components.util.coordinate_support import skycoord_to_lmn, azel_to_hadec
-
+from rascil import phyconst
 
 def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, timevariable=False,
                       frequency_variable=False):
@@ -132,7 +131,7 @@ def create_propagators(config, interferer, frequency, attenuation=1e-9):
         vec = ant_xyz - interferer_xyz
         # This ignores the Earth!
         r = numpy.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)
-        k = 2.0 * numpy.pi * frequency / constants.c.value
+        k = 2.0 * numpy.pi * frequency / phyconst.c_m_s
         propagators[iant, :] = numpy.exp(- 1.0j * k * r) / r
     return propagators * attenuation
 
@@ -262,7 +261,7 @@ def simulate_rfi_block(bvis, emitter_location, emitter_power=5e4, attenuation=1.
     ntimes, nant, _, nchan, npol = bvis.vis.shape
 
     s2r = numpy.pi / 43200.0
-    k = numpy.array(bvis.frequency) / constants.c.to('m s^-1').value
+    k = numpy.array(bvis.frequency) / phyconst.c_m_s
     uvw = bvis.uvw[..., numpy.newaxis] * k
 
     pole = SkyCoord(ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame='icrs', equinox='J2000')
@@ -391,7 +390,7 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
         ntimes, nant, _, nchan, npol = bvis.vis.shape
 
         s2r = numpy.pi / 43200.0
-        k = numpy.array(bvis.frequency) / constants.c.to('m s^-1').value
+        k = numpy.array(bvis.frequency) / phyconst.c_m_s
         uvw = bvis.uvw[..., numpy.newaxis] * k
 
         pole = SkyCoord(ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame='icrs', equinox='J2000')

@@ -18,7 +18,7 @@ linting:
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   stage: test
   before_script:
-    - pip3 install -r requirements.txt -r requirements-test.txt
+    - pip3  install -r requirements.txt -r requirements-test.txt
   script:
     - make lint
   when: always
@@ -35,10 +35,7 @@ test:
     - pip3 install -r requirements.txt -r requirements-test.txt
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
-    - git clone https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git
-    - cd nifty_gridder
-    - pip3 install .
-    - cd ..
+    - pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
@@ -60,10 +57,7 @@ docs:
     - mkdir -p test_results
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
-    - git clone https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git
-    - cd nifty_gridder
-    - pip3 install .
-    - cd ..
+    - pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make docs
   artifacts:
@@ -137,9 +131,21 @@ prepare ci metrics:
   when: always
   script:
     - mkdir -p build/reports
-    - mv coverage.xml ./build/reports/code-coverage.xml
-    - mv linting.xml ./build/reports/linting.xml
-    - mv unit-tests.xml ./build/reports/unit-tests.xml
+    - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
+    - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
+    - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
+  script:
+    # Gitlab CI badges creation: START
+    # The following reads::
+    # build/reports/code-coverage.xml
+    # build/reports/unit-tests.xml
+    # build/reports/linting.xml
+    # And writes:
+    # build/reports/ci-metrics.json
+    - apt-get -y update
+    - apt-get install -y curl --no-install-recommends
+    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
+    # Gitlab CI badges creation: END
   artifacts:
     paths:
       - ./build

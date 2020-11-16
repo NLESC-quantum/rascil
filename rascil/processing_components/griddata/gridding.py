@@ -22,7 +22,6 @@ __all__ = ['convolution_mapping_blockvisibility',
 
 import logging
 
-import astropy.constants as constants
 import numpy
 import numpy.testing
 
@@ -32,6 +31,7 @@ from rascil.processing_components.fourier_transforms import ifft, fft
 from rascil.processing_components.griddata.operations import copy_griddata
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.visibility.base import copy_visibility
+from rascil import phyconst
 
 log = logging.getLogger('rascil-logger')
 

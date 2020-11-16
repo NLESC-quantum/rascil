@@ -23,6 +23,7 @@ from rascil.processing_components.griddata.kernels import create_pswf_convolutio
 from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.image.operations import image_is_canonical
 from rascil.processing_components.util.array_functions import tukey_filter
+from rascil import phyconst
 
 log = logging.getLogger('rascil-logger')
 

@@ -251,7 +251,7 @@ def convert_hdf_to_blockvisibility(f):
     imaging_weight = f["data_imaging_weight"][()]
     flags = f["data_flags"][()]
     
-    from rascil.processing_components import generate_baselines
+    from rascil.processing_components.visibility import generate_baselines
     
     baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants),
                                               names=('antenna1', 'antenna2'))

@@ -6,7 +6,7 @@ __all__ = ['vis_summary', 'copy_visibility',
            'create_blockvisibility_from_ms', 'create_blockvisibility_from_uvfits',
            'create_blockvisibility', 'phaserotate_visibility',
            'export_blockvisibility_to_ms', 'extend_blockvisibility_to_ms',
-           'list_ms']
+           'list_ms', 'generate_baselines', 'get_baseline']
 
 import copy
 import logging

@@ -24,7 +24,7 @@ from rascil.processing_components.imaging.base import predict_2d, invert_2d, cre
 
 log = logging.getLogger('rascil-logger')
 
-log.setLevel(logging.WARNING)
+log.setLevel(logging.INFO)
 
 
 class TestImageDeconvolution(unittest.TestCase):
@@ -79,7 +79,8 @@ class TestImageDeconvolution(unittest.TestCase):
         fitted_psf, fit, size = fit_psf(self.psf)
         qa = qa_image(fitted_psf, context='fitted_psf')
         assert numpy.abs(qa.data['max'] - 1.034215673203459) < 1.0e-7, str(qa)
-        assert numpy.abs(size - 1.837417138043453) < 1.0e-7, str(size)  
+        print(size)
+        assert numpy.abs(size[0] - 1.837417138043453) < 1.0e-7, str(size)
 
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=10000, gain=0.1, algorithm='hogbom',

@@ -27,12 +27,10 @@ __all__ = ['deconvolve_cube', 'restore_cube', 'fit_psf']
 
 import logging
 import warnings
-import copy
 
 import numpy
 from astropy.convolution import Gaussian2DKernel, convolve_fft
 from astropy.modeling import models, fitting
-# from photutils import fit_2dgaussian
 
 from rascil.data_models.memory_data_models import Image
 from rascil.data_models.parameters import get_parameter
@@ -42,7 +40,9 @@ from rascil.processing_components.image.operations import calculate_image_freque
     calculate_image_from_frequency_moments, image_is_canonical
 from rascil.processing_components.image.operations import create_image_from_array
 
-#warnings.simplefilter('ignore', AstropyDeprecationWarning)
+# from photutils import fit_2dgaussian
+
+# warnings.simplefilter('ignore', AstropyDeprecationWarning)
 
 log = logging.getLogger('rascil-logger')
 
@@ -133,7 +133,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         log.info('deconvolve_cube %s: PSF shape %s' % (prefix, str(psf["pixels"].data.shape)))
     else:
         log.info("Using entire psf for dconvolution")
-        
+    
     algorithm = get_parameter(kwargs, 'algorithm', 'msclean')
     
     if algorithm == 'msclean':
@@ -336,48 +336,37 @@ def fit_psf(psf: Image, **kwargs):
     """
     assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
-
-    fitted_PSF = copy.deepcopy(psf)
-
+    
     npixel = psf["pixels"].data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)
-    y,x = numpy.mgrid[sl, sl]
+    y, x = numpy.mgrid[sl, sl]
     z = psf["pixels"].data[0, 0, sl, sl]
-   
-    size = get_parameter(kwargs, "psfwidth", None)
-    if size is None:
-        # isotropic at the moment!
-        from scipy.optimize import minpack
-        try:
-            p_init = models.Gaussian2D(amplitude=numpy.max(z), x_mean=numpy.mean(x), y_mean=numpy.mean(y))
-            fit_p = fitting.LevMarLSQFitter()
-            with warnings.catch_warnings():
-                 # Ignore model linearity warning from the fitter
-                 warnings.simplefilter('ignore')
-                 fit = fit_p(p_init, x, y, z)
-            if fit.x_stddev <= 0.0 or fit.y_stddev <= 0.0:
-                log.debug('restore_cube: error in fitting to psf, using 1 pixel stddev')
-                size = 1.0
-            else:
-                size = max(fit.x_stddev, fit.y_stddev).value
-                log.debug('restore_cube: psfwidth = %s' % (size))
-                y1, x1 = numpy.mgrid[:npixel, :npixel]
-                for freq in range(psf["pixels"].data.shape[0]):
-                    for pol in range(psf["pixels"].data.shape[1]):
-                        fitted_PSF["pixels"].data[freq,pol] = fit(x1,y1)
-        except minpack.error as err:
-            log.debug('restore_cube: minpack error, using 1 pixel stddev')
-            size = 1.0
-            fit = None
-        except ValueError as err:
-            log.debug('restore_cube: warning in fit to psf, using 1 pixel stddev')
-            size = 1.0
-            fit = None
-    else:
-        log.debug('restore_cube: Using specified psfwidth = %s' % (size))
-        fit = None
+    
+    # isotropic at the moment!
+    from scipy.optimize import minpack
+    try:
+        p_init = models.Gaussian2D(amplitude=numpy.max(z), x_mean=numpy.mean(x), y_mean=numpy.mean(y))
+        fit_p = fitting.LevMarLSQFitter()
+        with warnings.catch_warnings():
+            # Ignore model linearity warning from the fitter
+            warnings.simplefilter('ignore')
+            fit = fit_p(p_init, x, y, z)
+        if fit.x_stddev <= 0.0 or fit.y_stddev <= 0.0:
+            log.warning('fit_psf: error in fitting to psf, using 1 pixel stddev')
+            beam_pixels = (1.0, 1.0, 0.0)
+        else:
+            # Note that the order here is minor, major, pa
+            beam_pixels = (fit.x_stddev.value, fit.y_stddev.value, fit.theta.value)
+            log.debug('fit_psf: fitted = {} pixels'.format(beam_pixels))
+    except minpack.error as err:
+        log.warning('fit_psf: minpack error, using 1 pixel stddev')
+        beam_pixels = (1.0, 1.0, 0.0)
+    except ValueError as err:
+        log.warning('fit_psf: warning in fit to psf, using 1 pixel stddev')
+        beam_pixels = (1.0, 1.0, 0.0)
+    
+    return beam_pixels
 
-    return fitted_PSF, fit, size    
 
 def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     """ Restore the model image to the residuals
@@ -386,74 +375,34 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     :return: restored image
 
     """
-    ##assert isinstance(model, Image), model
-    assert image_is_canonical(model)
-    ##assert isinstance(psf, Image), psf
-    assert image_is_canonical(psf)
-    
-    # assert residual is None or isinstance(residual, Image), residual
-    assert image_is_canonical(residual)
-    
     restored = model.copy(deep=True)
     
-    npixel = psf["pixels"].data.shape[3]
-    sl = slice(npixel // 2 - 7, npixel // 2 + 8)
-    y,x = numpy.mgrid[sl, sl]
-    z = psf["pixels"].data[0, 0, sl, sl]
+    cellsize = 3600.0 * numpy.abs((psf["x"][0].data - psf["x"][-1].data)) / len(psf["x"])
     
-    size = get_parameter(kwargs, "psfwidth", None)
+    clean_beam = get_parameter(kwargs, "cleanbeam", None)
     
-    if size is None:
-        # isotropic at the moment!
-        from scipy.optimize import minpack
-        try:
-            p_init = models.Gaussian2D(amplitude=numpy.max(z), x_mean=numpy.mean(x), y_mean=numpy.mean(y))
-            fit_p = fitting.LevMarLSQFitter()
-            with warnings.catch_warnings():
-                 # Ignore model linearity warning from the fitter
-                 warnings.simplefilter('ignore')
-                 fit = fit_p(p_init, x, y, z)
-            #fit = fit_2dgaussian(psf.data[0, 0, sl, sl])
-            
-            if fit.x_stddev <= 0.0 or fit.y_stddev <= 0.0:
-                log.debug('restore_cube: error in fitting to psf, using 1 pixel stddev')
-                size = 1.0
-                norm = 2.0 * numpy.pi * size ** 2
-                gk = Gaussian2DKernel(size)
-            else:
-                #size = max(fit.x_stddev, fit.y_stddev).value
-                size_x = fit.x_stddev.value
-                size_y = fit.y_stddev.value
-                log.debug('restore_cube: psf = %s x %s' % (size_x, size_y))
-                # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
-                norm = 2.0 * numpy.pi * size_x * size_y
-                gk = Gaussian2DKernel(size_x, y_stddev=size_y, theta=fit.theta.value)
-        except minpack.error as err:
-            log.debug('restore_cube: minpack error, using 1 pixel stddev')
-            size = 1.0
-            norm = 2.0 * numpy.pi * size ** 2
-            gk = Gaussian2DKernel(size)
-        except ValueError as err:
-            log.debug('restore_cube: warning in fit to psf, using 1 pixel stddev')
-            size = 1.0
-            norm = 2.0 * numpy.pi * size ** 2
-            gk = Gaussian2DKernel(size)
+    if clean_beam is None:
+        beam_pixels = fit_psf(psf)
+        clean_beam = {"bmaj": beam_pixels[1] * cellsize,
+                      "bmin": beam_pixels[0] * cellsize,
+                      "bpa": beam_pixels[2]}
+        log.info('restore_cube: Using fitted clean beam = {}'.format(clean_beam))
     else:
-        log.debug('restore_cube: Using specified psfwidth = %s' % (size))
-        norm = 2.0 * numpy.pi * size ** 2
-        gk = Gaussian2DKernel(size)
-
+        beam_pixels = [clean_beam["bmaj"] / cellsize, clean_beam["bmin"] / cellsize, clean_beam[["bpa"]]]
+        log.info('restore_cube: Using specified clean beam = {}'.format(clean_beam))
+    
+    norm = 2.0 * numpy.pi * beam_pixels[0] * beam_pixels[1]
+    gk = Gaussian2DKernel(x_stddev=beam_pixels[0], y_stddev=beam_pixels[1], theta=beam_pixels[2])
     # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
-    #norm = 2.0 * numpy.pi * size ** 2
-    #gk = Gaussian2DKernel(size)
+    # norm = 2.0 * numpy.pi * size ** 2
+    # gk = Gaussian2DKernel(size)
     for chan in range(model["pixels"].shape[0]):
         for pol in range(model["pixels"].shape[1]):
             restored["pixels"].data[chan, pol, :, :] = norm * convolve_fft(model["pixels"].data[chan, pol, :, :], gk,
-                                                                 normalize_kernel=False, allow_huge=True)
+                                                                           normalize_kernel=False, allow_huge=True)
     if residual is not None:
         restored["pixels"].data += residual["pixels"].data
     
     restored["pixels"].data = restored["pixels"].data.astype("float")
     
-    log.info('Restore done!')
     return restored

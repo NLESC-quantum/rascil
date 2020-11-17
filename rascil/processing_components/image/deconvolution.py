@@ -391,8 +391,9 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
         clean_beam = fit_psf(psf)
         log.info('restore_cube: Using fitted clean beam = {}'.format(clean_beam))
     else:
-        beam_pixels = [clean_beam["bmaj"] / cellsize, clean_beam["bmin"] / cellsize, clean_beam[["bpa"]]]
         log.info('restore_cube: Using specified clean beam = {}'.format(clean_beam))
+        
+    beam_pixels = (clean_beam["bmaj"] / cellsize, clean_beam["bmin"] / cellsize, clean_beam["bpa"])
     
     norm = 2.0 * numpy.pi * beam_pixels[0] * beam_pixels[1]
     gk = Gaussian2DKernel(x_stddev=beam_pixels[0], y_stddev=beam_pixels[1], theta=beam_pixels[2])

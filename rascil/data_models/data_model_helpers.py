@@ -88,9 +88,11 @@ __all__ = ['convert_earthlocation_to_string',
            'export_convolutionfunction_to_hdf5',
            'import_convolutionfunction_from_hdf5',
            'memory_data_model_to_buffer',
-           'buffer_data_model_to_memory']
+           'buffer_data_model_to_memory',
+           'data_model_equals']
 
 import ast
+import logging
 import collections
 from typing import Union
 
@@ -106,6 +108,8 @@ from rascil.data_models.memory_data_models import BlockVisibility, Configuration
     GainTable, SkyModel, Skycomponent, Image, GridData, ConvolutionFunction, PointingTable, FlagTable
 from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame
 
+
+log = logging.getLogger('rascil-logger')
 
 def convert_earthlocation_to_string(el: EarthLocation):
     """Convert Earth Location to string
@@ -486,8 +490,7 @@ def convert_pointingtable_to_hdf(pt: PointingTable, f):
     """
     ##assert isinstance(pt, PointingTable)
     
-    f.attrs['rascil_data_model'] = 'PointingTable'
-    f.attrs['frequency'] = pt.frequency
+    f.attrs['rascil_data_model'] = pt.rascil_data_model
     f.attrs['receptor_frame'] = pt.receptor_frame.type
     f.attrs['pointingcentre_coords'] = pt.pointingcentre.to_string()
     f.attrs['pointingcentre_frame'] = pt.pointingcentre.frame.name
@@ -508,7 +511,6 @@ def convert_hdf_to_pointingtable(f):
     """
     assert f.attrs['rascil_data_model'] == "PointingTable", "Not a PointingTable"
     receptor_frame = ReceptorFrame(f.attrs['receptor_frame'])
-    frequency = numpy.array(f.attrs['frequency'])
     s = f.attrs['pointingcentre_coords'].split()
     ss = [float(s[0]), float(s[1])] * u.deg
     pointingcentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['pointingcentre_frame'])
@@ -669,7 +671,6 @@ def convert_hdf_to_image(f):
     :return:
     """
     if 'rascil_data_model' in f.attrs.keys() and f.attrs['rascil_data_model'] == "Image":
-        data = numpy.array(f['data'])
         polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
         wcs = WCS(f.attrs['wcs'])
         frequency = numpy.array(f.attrs['frequency'])
@@ -1037,3 +1038,40 @@ def buffer_data_model_to_memory(jbuff, dm):
         return import_convolutionfunction_from_hdf5(name)
     else:
         raise ValueError("Data model %s not supported" % dm["data_model"])
+
+def data_model_equals(ds_new, ds_ref, verbose=False):
+    """
+    
+    :param ds_ref:
+    :param ds_new:
+    :return:
+    """
+    equal = True
+    for coord in ds_ref.coords:
+        if not ds_new[coord].equals(ds_ref[coord]):
+            equal = False
+            log.warning("data_model_equals: Coordinate {} differs".format(coord))
+            if verbose:
+                log.warning("data_model_equals: New {}\ndata_model_equals: Reference {}".format(ds_new[coord],
+                                                                         ds_ref[coord]))
+    if equal:
+        for var in ds_ref.data_vars:
+            if not ds_new[var].equals(ds_ref[var]):
+                equal = False
+                log.warning("data_model_equals: Data variable {} differs".format(var))
+                if verbose:
+                    log.warning("data_model_equals: New {}\ndata_model_equals: Reference {}".format(ds_new[var],
+                                                                         ds_ref[var]))
+    if equal:
+        for attr in ds_ref.attrs.keys():
+            if not attr in ds_new.attrs.keys():
+                equal = False
+                log.warning("Attribute {} missing in ds_new".format(attr))
+            # The attribute may not have a comparison operator
+            try:
+                if not ds_ref.attrs[attr] == ds_new.attrs[attr]:
+                    log.warning("data_model_equals: Attribute {} differs".format(attr))
+            except:
+                log.warning("data_model_equals: Attribute {} cannot be compared".format(attr))
+    
+    return equal and ds_ref.equals(ds_new)

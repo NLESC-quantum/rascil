@@ -339,7 +339,7 @@ class PointingTable(xarray.Dataset):
         coords = {
             "time": time,
             "antenna": antennas,
-            "freq": frequency,
+            "frequency": frequency,
             "receptor": receptor_frame.names,
             "angle": ["az", "el"]
         }

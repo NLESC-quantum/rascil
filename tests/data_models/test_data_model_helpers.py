@@ -5,6 +5,7 @@ using HDF5
 """
 
 import unittest
+import logging
 
 import astropy.units as u
 import numpy
@@ -18,7 +19,7 @@ from rascil.data_models.data_model_helpers import import_blockvisibility_from_hd
     import_skycomponent_from_hdf5, export_skycomponent_to_hdf5, \
     import_skymodel_from_hdf5, export_skymodel_to_hdf5, \
     import_griddata_from_hdf5, export_griddata_to_hdf5, \
-    import_convolutionfunction_from_hdf5, export_convolutionfunction_to_hdf5
+    import_convolutionfunction_from_hdf5, export_convolutionfunction_to_hdf5, data_model_equals
 from rascil.data_models.memory_data_models import Skycomponent, SkyModel
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image import create_image
@@ -31,6 +32,10 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility
 from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.griddata import create_convolutionfunction_from_image
+
+log = logging.getLogger('rascil-logger')
+
+log.setLevel(logging.INFO)
 
 
 class TestDataModelHelpers(unittest.TestCase):
@@ -52,7 +57,7 @@ class TestDataModelHelpers(unittest.TestCase):
         self.compabsdirection = SkyCoord(ra=+181.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
         self.comp = Skycomponent(direction=self.compabsdirection, frequency=self.frequency, flux=self.flux)
         
-        self.verbose = True
+        self.verbose = False
     
     def test_readwriteblockvisibility(self):
         self.vis = create_blockvisibility(self.mid, self.times, self.frequency,
@@ -66,7 +71,7 @@ class TestDataModelHelpers(unittest.TestCase):
             print(self.vis.configuration)
         export_blockvisibility_to_hdf5(self.vis, '%s/test_data_model_helpers_blockvisibility.hdf' % self.dir)
         newvis = import_blockvisibility_from_hdf5('%s/test_data_model_helpers_blockvisibility.hdf' % self.dir)
-        newvis.equals(self.vis)
+        assert data_model_equals(newvis, self.vis)
 
     def test_readwritegaintable(self):
         self.vis = create_blockvisibility(self.mid, self.times, self.frequency,
@@ -80,7 +85,7 @@ class TestDataModelHelpers(unittest.TestCase):
             print(gt)
         export_gaintable_to_hdf5(gt, '%s/test_data_model_helpers_gaintable.hdf' % self.dir)
         newgt = import_gaintable_from_hdf5('%s/test_data_model_helpers_gaintable.hdf' % self.dir)
-        newgt.equals(gt)
+        assert data_model_equals(newgt, gt)
 
     def test_readwritepointingtable(self):
         self.vis = create_blockvisibility(self.mid, self.times, self.frequency,
@@ -88,13 +93,13 @@ class TestDataModelHelpers(unittest.TestCase):
                                           phasecentre=self.phasecentre,
                                           polarisation_frame=PolarisationFrame("linear"),
                                           weight=1.0)
-        gt = create_pointingtable_from_blockvisibility(self.vis, timeslice='auto')
-        gt = simulate_pointingtable(gt, pointing_error=0.001)
+        pt = create_pointingtable_from_blockvisibility(self.vis, timeslice='auto')
+        pt = simulate_pointingtable(pt, pointing_error=0.001)
         if self.verbose:
-            print(gt)
-        export_pointingtable_to_hdf5(gt, '%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
-        newgt = import_pointingtable_from_hdf5('%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
-        newgt.equals(gt)
+            print(pt)
+        export_pointingtable_to_hdf5(pt, '%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
+        newpt = import_pointingtable_from_hdf5('%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
+        assert data_model_equals(newpt, pt)
 
     def test_readwriteimage(self):
         im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
@@ -103,7 +108,7 @@ class TestDataModelHelpers(unittest.TestCase):
             print(im)
         export_image_to_hdf5(im, '%s/test_data_model_helpers_image.hdf' % self.dir)
         newim = import_image_from_hdf5('%s/test_data_model_helpers_image.hdf' % self.dir)
-        newim.equals(im)
+        assert data_model_equals(newim, im, verbose=True)
 
     @unittest.skip("Zarr io not yet working")
     def test_readwriteimage_zarr(self):
@@ -115,8 +120,8 @@ class TestDataModelHelpers(unittest.TestCase):
         import os
         infile = os.path.expanduser('%s/test_data_model_helpers_image.zarr' % self.dir)
         print(infile)
-        newim = xarray.open_zarr()
-        newim.equals(im)
+        newim = xarray.open_zarr(infile)
+        assert newim.equals(im)
 
     def test_readwriteskycomponent(self):
         export_skycomponent_to_hdf5(self.comp, '%s/test_data_model_helpers_skycomponent.hdf' % self.dir)
@@ -140,8 +145,6 @@ class TestDataModelHelpers(unittest.TestCase):
     
         assert newsm.components[0].flux.shape == self.comp.flux.shape
 
-    @unittest.skip("Disabled")
-    def test_readwritegriddata(self):
         im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
                           polarisation_frame=PolarisationFrame("stokesIQUV"))
         gd = create_griddata_from_image(im)
@@ -151,9 +154,8 @@ class TestDataModelHelpers(unittest.TestCase):
         newgd = import_griddata_from_hdf5('%s/test_data_model_helpers_griddata.hdf' % self.dir)
         if self.verbose:
             print(newgd)
-        assert newgd.equals(gd)
+        assert data_model_equals(newgd, gd)
 
-    @unittest.skip("Disabled")
     def test_readwriteconvolutionfunction(self):
         im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
                           polarisation_frame=PolarisationFrame("stokesIQUV"))
@@ -163,7 +165,7 @@ class TestDataModelHelpers(unittest.TestCase):
         export_convolutionfunction_to_hdf5(cf, '%s/test_data_model_helpers_convolutionfunction.hdf' % self.dir)
         newcf = import_convolutionfunction_from_hdf5('%s/test_data_model_helpers_convolutionfunction.hdf' % self.dir)
         
-        assert newcf.equals(cf)
+        assert data_model_equals(newcf, cf)
 
 
 if __name__ == '__main__':

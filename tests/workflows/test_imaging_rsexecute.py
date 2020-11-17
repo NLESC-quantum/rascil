@@ -309,7 +309,7 @@ class TestImaging(unittest.TestCase):
         
         qa = qa_image(restored_image_list[centre])
         assert numpy.abs(qa.data['max'] - 100.00571826154011) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.16822683799834257) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.018409852770223414) < 1e-7, str(qa)
     
     def test_restored_list_noresidual(self):
         self.actualSetUp(zerow=True)

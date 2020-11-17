@@ -167,7 +167,7 @@ def plot_configuration(vis_list, ax=None, plot_file=None, title='Configuration',
             for iant, name in enumerate(names):
                 plt.annotate(name, (antxyz[iant, 0], antxyz[iant, 1]))
         else:
-            plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=2.4)
+            plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=10.0)
 
     plt.xlabel('X (m)')
     plt.ylabel('Y (m)')

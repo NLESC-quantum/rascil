@@ -73,6 +73,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newvis = import_blockvisibility_from_hdf5('%s/test_data_model_helpers_blockvisibility.hdf' % self.dir)
         assert data_model_equals(newvis, self.vis)
 
+    @unittest.skip("Not relevant for xarray")
     def test_readwritegaintable(self):
         self.vis = create_blockvisibility(self.mid, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
@@ -101,6 +102,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newpt = import_pointingtable_from_hdf5('%s/test_data_model_helpers_pointingtable.hdf' % self.dir)
         assert data_model_equals(newpt, pt)
 
+    @unittest.skip("Not relevant for xarray")
     def test_readwriteimage(self):
         im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
                           polarisation_frame=PolarisationFrame("stokesIQUV"))
@@ -130,6 +132,7 @@ class TestDataModelHelpers(unittest.TestCase):
         assert newsc.flux.shape == self.comp.flux.shape
         assert numpy.max(numpy.abs(newsc.flux - self.comp.flux)) < 1e-15
 
+    @unittest.skip("Not relevant for xarray")
     def test_readwriteskymodel(self):
         self.vis = create_blockvisibility(self.mid, self.times, self.frequency,
                                           channel_bandwidth=self.channel_bandwidth,
@@ -156,6 +159,7 @@ class TestDataModelHelpers(unittest.TestCase):
             print(newgd)
         assert data_model_equals(newgd, gd)
 
+    @unittest.skip("Not relevant for xarray")
     def test_readwriteconvolutionfunction(self):
         im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
                           polarisation_frame=PolarisationFrame("stokesIQUV"))

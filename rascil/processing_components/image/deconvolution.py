@@ -364,8 +364,14 @@ def fit_psf(psf: Image, **kwargs):
     except ValueError as err:
         log.warning('fit_psf: warning in fit to psf, using 1 pixel stddev')
         beam_pixels = (1.0, 1.0, 0.0)
-    
-    return beam_pixels
+
+    cellsize = 3600.0 * numpy.abs((psf["x"][0].data - psf["x"][-1].data)) / len(psf["x"])
+
+    clean_beam = {"bmaj": beam_pixels[1] * cellsize,
+                  "bmin": beam_pixels[0] * cellsize,
+                  "bpa": beam_pixels[2]}
+
+    return clean_beam
 
 
 def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
@@ -382,10 +388,7 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     clean_beam = get_parameter(kwargs, "cleanbeam", None)
     
     if clean_beam is None:
-        beam_pixels = fit_psf(psf)
-        clean_beam = {"bmaj": beam_pixels[1] * cellsize,
-                      "bmin": beam_pixels[0] * cellsize,
-                      "bpa": beam_pixels[2]}
+        clean_beam = fit_psf(psf)
         log.info('restore_cube: Using fitted clean beam = {}'.format(clean_beam))
     else:
         beam_pixels = [clean_beam["bmaj"] / cellsize, clean_beam["bmin"] / cellsize, clean_beam[["bpa"]]]

@@ -57,6 +57,8 @@ class TestTesting_Support(unittest.TestCase):
     
     def test_create_test_image(self):
         im = create_test_image()
+        print(im)
+        print(im.image_acc.wcs)
         assert len(im["pixels"].data.shape) == 4
         im = create_test_image(frequency=numpy.array([1e8]), polarisation_frame=PolarisationFrame(
             'stokesI'))

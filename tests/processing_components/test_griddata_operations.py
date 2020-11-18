@@ -27,8 +27,8 @@ class TestGridData(unittest.TestCase):
         m31model_by_image = create_griddata_from_image(self.m31image)
         assert m31model_by_image.griddata_acc.shape[0] == self.m31image.image_acc.shape[0]
         assert m31model_by_image.griddata_acc.shape[1] == self.m31image.image_acc.shape[1]
-        assert m31model_by_image.griddata_acc.shape[3] == self.m31image.image_acc.shape[2]
-        assert m31model_by_image.griddata_acc.shape[4] == self.m31image.image_acc.shape[3]
+        assert m31model_by_image.griddata_acc.shape[2] == self.m31image.image_acc.shape[2]
+        assert m31model_by_image.griddata_acc.shape[3] == self.m31image.image_acc.shape[3]
         print(m31model_by_image)
     
 if __name__ == '__main__':

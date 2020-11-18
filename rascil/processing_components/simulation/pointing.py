@@ -50,8 +50,8 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     assert npol == vis.blockvisibility_acc.npol, "Voltage pattern and visibility have incompatible polarisations"
     
     #assert isinstance(vis, BlockVisibility)
-    assert vp.wcs.wcs.ctype[0] == 'AZELGEO long', vp.wcs.wcs.ctype[0]
-    assert vp.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.wcs.wcs.ctype[1]
+    assert vp.image_acc.wcs.wcs.ctype[0] == 'AZELGEO long', vp.image_acc.wcs.wcs.ctype[0]
+    assert vp.image_acc.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.image_acc.wcs.wcs.ctype[1]
     
     assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
     
@@ -89,7 +89,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                     azimuth_comp = azimuth_comp[0].to('rad').value
                     elevation_comp = elevation_comp[0].to('rad').value
                     for ant in range(nant):
-                        wcs_azel = vp.wcs.deepcopy()
+                        wcs_azel = vp.image_acc.wcs.deepcopy()
                         az_comp = (azimuth_centre + pointing_ha[ant, 0, 0, 0] / numpy.cos(elevation_centre)) * r2d
                         el_comp = (elevation_centre + pointing_ha[ant, 0, 0, 1]) * r2d
                         
@@ -103,7 +103,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                             for gchan in range(gnchan):
                                 gain = numpy.zeros([npol], dtype='complex')
                                 worldloc = [azimuth_comp * r2d, elevation_comp * r2d,
-                                        vp.wcs.wcs.crval[2], frequency[gchan]]
+                                        vp.image_acc.wcs.wcs.crval[2], frequency[gchan]]
                                 pixloc = wcs_azel.wcs_world2pix([worldloc], 0)[0]
                                 assert pixloc[0] > 2
                                 assert pixloc[0] < nx - 3

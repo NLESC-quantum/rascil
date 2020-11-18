@@ -12,19 +12,17 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 """
 
 __all__ = ['griddata_sizeof', 'create_griddata_from_image', 'create_griddata_from_array', 'copy_griddata',
-           'convert_griddata_to_image', 'qa_griddata']
+           'qa_griddata']
 
 import copy
 import logging
 
-import xarray
 import numpy
 from astropy.wcs import WCS
 
 from rascil.data_models.memory_data_models import GridData
 from rascil.data_models.memory_data_models import QA
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image.operations import create_image_from_array
 
 log = logging.getLogger('rascil-logger')
 
@@ -35,9 +33,7 @@ def copy_griddata(gd):
     :param gd:
     :return:
     """
-    #assert isinstance(gd, GridData), gd
     newgd = copy.deepcopy(gd)
-    assert type(newgd) == GridData
     return newgd
 
 
@@ -63,15 +59,15 @@ def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs:
     :return: GridData
     
     """
-
+    
     log.debug("create_griddata_from_array: created %s image of shape %s" %
               (data.dtype, str(data.shape)))
-
+    
     return GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs.deepcopy(),
                     projection_wcs=projection_wcs)
 
 
-def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
+def create_griddata_from_image(im, polarisation_frame=None):
     """ Create a GridData from an image
 
     :param im: Template Image
@@ -81,10 +77,10 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     """
     
     nchan, npol, ny, nx = im["pixels"].shape
-    gridshape = (nchan, npol, nw, ny, nx)
+    gridshape = (nchan, npol, ny, nx)
     data = numpy.zeros(gridshape, dtype='complex')
     
-    wcs = copy.deepcopy(im.wcs.wcs)
+    wcs = copy.deepcopy(im.image_acc.wcs.wcs)
     crval = wcs.crval
     crpix = wcs.crpix
     cdelt = wcs.cdelt
@@ -92,29 +88,20 @@ def create_griddata_from_image(im, nw=1, wstep=1e15, polarisation_frame=None):
     d2r = numpy.pi / 180.0
     cdelt[0] = 1.0 / (nx * cdelt[0] * d2r)
     cdelt[1] = 1.0 / (ny * cdelt[1] * d2r)
-
+    
     # The negation in the longitude is needed by definition of RA, DEC
-    grid_wcs = WCS(naxis=5)
-    grid_wcs.wcs.crpix = [nx // 2 + 1, ny // 2 + 1, nw // 2 + 1.0, crpix[2], crpix[3]]
-    grid_wcs.wcs.ctype = ["UU", "VV", 'WW', ctype[2], ctype[3]]
-    grid_wcs.wcs.crval = [0.0, 0.0, 0.0, crval[2], crval[3]]
-    grid_wcs.wcs.cdelt = [cdelt[0], cdelt[1], wstep, cdelt[2], cdelt[3]]
+    grid_wcs = WCS(naxis=4)
+    grid_wcs.wcs.crpix = [nx // 2 + 1, ny // 2 + 1, crpix[2], crpix[3]]
+    grid_wcs.wcs.ctype = ["UU", "VV", ctype[2], ctype[3]]
+    grid_wcs.wcs.crval = [0.0, 0.0, crval[2], crval[3]]
+    grid_wcs.wcs.cdelt = [cdelt[0], cdelt[1], cdelt[2], cdelt[3]]
     grid_wcs.wcs.radesys = 'ICRS'
     grid_wcs.wcs.equinox = 2000.0
-
+    
     if polarisation_frame is None:
-        polarisation_frame = im.polarisation_frame
+        polarisation_frame = im.image_acc.polarisation_frame
     
-    return GridData(data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs, projection_wcs=im.wcs)
-
-
-def convert_griddata_to_image(gd):
-    """ Convert griddata to an image
-    
-    :param gd:
-    :return:
-    """
-    return create_image_from_array(gd.data, gd.grid_wcs, gd.polarisation_frame)
+    return GridData(data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs, projection_wcs=im.image_acc.wcs)
 
 
 def qa_griddata(gd, context="") -> QA:
@@ -123,7 +110,7 @@ def qa_griddata(gd, context="") -> QA:
     :param gd:
     :return: QA
     """
-    #assert isinstance(gd, GridData), gd
+    # assert isinstance(gd, GridData), gd
     data = {'shape': str(gd["pixels"].data.shape),
             'max': numpy.max(gd.data),
             'min': numpy.min(gd.data),
@@ -131,6 +118,6 @@ def qa_griddata(gd, context="") -> QA:
             'sum': numpy.sum(gd.data),
             'medianabs': numpy.median(numpy.abs(gd.data)),
             'median': numpy.median(gd.data)}
-
+    
     qa = QA(origin="qa_image", data=data, context=context)
     return qa

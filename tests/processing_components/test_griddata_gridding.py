@@ -236,10 +236,10 @@ class TestGridDataGridding(unittest.TestCase):
         gcf, cf = create_awterm_convolutionfunction(self.model, nw=11, wstep=80.0, oversampling=4, support=32,
                                                     use_aaf=True, polarisation_frame=self.vis_pol)
         griddata = create_griddata_from_image(self.model, nw=1, polarisation_frame=self.vis_pol)
-        assert cf.cf_wcs.wcs.cdelt[0] == griddata.grid_wcs.wcs.cdelt[0], \
-            str(cf.cf_wcs.wcs.cdelt[:2]) + str(griddata.grid_wcs.wcs.cdelt[:2])
-        assert cf.cf_wcs.wcs.cdelt[1] == griddata.grid_wcs.wcs.cdelt[1], \
-            str(cf.cf_wcs.wcs.cdelt[:2]) + str(griddata.grid_wcs.wcs.cdel[:2])
+        assert cf.convolutionfunction_acc.cf_wcs.wcs.cdelt[0] == griddata.grid_wcs.wcs.cdelt[0], \
+            str(cf.convolutionfunction_acc.cf_wcs.wcs.cdelt[:2]) + str(griddata.grid_wcs.wcs.cdelt[:2])
+        assert cf.convolutionfunction_acc.cf_wcs.wcs.cdelt[1] == griddata.grid_wcs.wcs.cdelt[1], \
+            str(cf.convolutionfunction_acc.cf_wcs.wcs.cdelt[:2]) + str(griddata.grid_wcs.wcs.cdel[:2])
     
     @unittest.skip("Not reliable")
     def test_griddata_predict_aterm(self):

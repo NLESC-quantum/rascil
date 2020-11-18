@@ -15,7 +15,7 @@ from rascil.data_models import Image
 from rascil.processing_components.fourier_transforms.fft_coordinates import coordinates, grdsf
 from rascil.processing_components.griddata.convolution_functions import create_convolutionfunction_from_image
 from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, \
-    fft_image, pad_image, create_w_term_like
+    fft_image_to_griddata, pad_image, create_w_term_like
 from rascil.processing_components.imaging.primary_beams import convert_azelvp_to_radec
 
 log = logging.getLogger('rascil-logger')
@@ -49,7 +49,7 @@ def create_box_convolutionfunction(im, oversampling=1, support=1, polarisation_f
     
     gcf_data = numpy.zeros_like(im["pixels"].data)
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
-    gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
+    gcf_image = create_image_from_array(gcf_data, im.image_acc.wcs, im.image_acc.polarisation_frame)
 
     assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
     assert gcf_image['pixels'].data.dtype == "float", gcf_image['pixels'].data.dtype
@@ -108,7 +108,7 @@ def create_pswf_convolutionfunction(im, oversampling=127, support=8, polarisatio
     
     gcf_data = numpy.zeros_like(im["pixels"].data)
     gcf_data[...] = gcf[numpy.newaxis, numpy.newaxis, ...]
-    gcf_image = create_image_from_array(gcf_data, cf.projection_wcs, im.polarisation_frame)
+    gcf_image = create_image_from_array(gcf_data, im.image_acc.wcs, im.image_acc.polarisation_frame)
     
     assert cf['pixels'].data.dtype == "complex", cf['pixels'].data.dtype
     assert gcf_image['pixels'].data.dtype == "float", gcf['pixels'].data.dtype
@@ -141,8 +141,8 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     cf = create_convolutionfunction_from_image(im, nw=nw, wstep=wstep, oversampling=oversampling, support=support,
                                                polarisation_frame=polarisation_frame)
     
-    if numpy.abs(wstep) > 0.0:
-        w_list = cf.cf_wcs.sub([5]).wcs_pix2world(range(nw), 0)[0]
+    if nw > 1 and numpy.abs(wstep) > 0.0:
+        w_list = cf.convolutionfunction_acc.cf_wcs.sub([5]).wcs_pix2world(range(nw), 0)[0]
     else:
         w_list = [0.0]
     
@@ -157,9 +157,9 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
     
     cf["pixels"].data[...] = 0.0
     
-    ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
+    ccell = onx * numpy.abs(d2r * im.image_acc.wcs.wcs.cdelt[0]) / qnx
     
-    subim_wcs = im.wcs.deepcopy()
+    subim_wcs = im.image_acc.wcs.deepcopy()
     subim_wcs.wcs.cdelt[0] = -ccell / d2r
     subim_wcs.wcs.cdelt[1] = +ccell / d2r
     subim_wcs.wcs.crpix[0] = qnx // 2 + 1.0
@@ -193,7 +193,7 @@ def create_awterm_convolutionfunction(im, make_pb=None, nw=1, wstep=1e15, oversa
         thisplane = create_w_term_like(thisplane, w, dopol=True)
         thisplane["pixels"].data *= norm
         paddedplane = pad_image(thisplane, padded_shape)
-        grid = fft_image(paddedplane)
+        grid = fft_image_to_griddata(paddedplane)
         gd = grid["pixels"].data
 
         ycen, xcen = ny // 2, nx // 2
@@ -280,16 +280,16 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     
     cf["pixels"].data[...] = 0.0
     
-    ccell = onx * numpy.abs(d2r * im.wcs.wcs.cdelt[0]) / qnx
+    ccell = onx * numpy.abs(d2r * im.image_acc.wcs.wcs.cdelt[0]) / qnx
     
-    wcs = im.wcs
+    wcs = im.image_acc.wcs
     wcs.wcs.cdelt[0] = -ccell / d2r
     wcs.wcs.cdelt[1] = +ccell / d2r
     wcs.wcs.crpix[0] = qnx // 2 + 1.0
     wcs.wcs.crpix[1] = qny // 2 + 1.0
     
     subim = create_image_from_array(numpy.zeros([nchan, npol, qny, qnx]), wcs=wcs,
-                                    polarisation_frame=im.polarisation_frame)
+                                    polarisation_frame=im.image_acc.polarisation_frame)
     
     vp = make_vp(subim)
     
@@ -306,7 +306,7 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
     # We might need to work with a larger image
     padded_shape = [nchan, npol, ny, nx]
     paddedplane = pad_image(rvp, padded_shape)
-    paddedplane = fft_image(paddedplane)
+    paddedplane = fft_image_to_griddata(paddedplane)
     
     ycen, xcen = ny // 2, nx // 2
     for y in range(oversampling):

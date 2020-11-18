@@ -94,11 +94,10 @@ def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, pha
     if frequency is None:
         frequency = [1e8]
     if polarisation_frame is None:
-        polarisation_frame = im.polarisation_frame
-    
+        polarisation_frame = im.image_acc.polarisation_frame
     im = replicate_image(im, frequency=frequency, polarisation_frame=polarisation_frame)
     
-    wcs = im.wcs.deepcopy()
+    wcs = im.image_acc.wcs.deepcopy()
     
     if cellsize is not None:
         wcs.wcs.cdelt[0] = -180.0 * cellsize / numpy.pi
@@ -115,13 +114,15 @@ def create_test_image(cellsize=None, frequency=None, channel_bandwidth=None, pha
     wcs.wcs.radesys = 'ICRS'
     wcs.wcs.equinox = 2000.00
     
-    if phasecentre is not None:
+    if phasecentre is None:
+        phasecentre = im.image_acc.phasecentre
+    else:
         wcs.wcs.crval[0] = phasecentre.ra.deg
         wcs.wcs.crval[1] = phasecentre.dec.deg
         # WCS is 1 relative
         wcs.wcs.crpix[0] = im["pixels"].data.shape[3] // 2 + 1
         wcs.wcs.crpix[1] = im["pixels"].data.shape[2] // 2 + 1
-    
+
     return create_image_from_array(im["pixels"].data, wcs=wcs, polarisation_frame=polarisation_frame)
 
 
@@ -631,10 +632,10 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
     
     newwcs = WCS(naxis=4)
     
-    newwcs.wcs.crpix = [im.wcs.wcs.crpix[0] + 1.0, im.wcs.wcs.crpix[1] + 1.0, 1.0, 1.0]
-    newwcs.wcs.cdelt = [im.wcs.wcs.cdelt[0], im.wcs.wcs.cdelt[1], 1.0, 1.0]
-    newwcs.wcs.crval = [im.wcs.wcs.crval[0], im.wcs.wcs.crval[1], 1.0, frequency[0]]
-    newwcs.wcs.ctype = [im.wcs.wcs.ctype[0], im.wcs.wcs.ctype[1], 'STOKES', 'FREQ']
+    newwcs.wcs.crpix = [im.image_acc.wcs.wcs.crpix[0] + 1.0, im.image_acc.wcs.wcs.crpix[1] + 1.0, 1.0, 1.0]
+    newwcs.wcs.cdelt = [im.image_acc.wcs.wcs.cdelt[0], im.image_acc.wcs.wcs.cdelt[1], 1.0, 1.0]
+    newwcs.wcs.crval = [im.image_acc.wcs.wcs.crval[0], im.image_acc.wcs.wcs.crval[1], 1.0, frequency[0]]
+    newwcs.wcs.ctype = [im.image_acc.wcs.wcs.ctype[0], im.image_acc.wcs.wcs.ctype[1], 'STOKES', 'FREQ']
     
     phasecentre = SkyCoord(newwcs.wcs.crval[0] * u.deg, newwcs.wcs.crval[1] * u.deg)
     
@@ -799,15 +800,15 @@ def create_unittest_components(model, flux, applypb=False, telescope='LOW', npix
                 centers.append([x, -x])
     model_pol = model.polarisation_frame
     # Make the list of components
-    rpix = model.wcs.wcs.crpix
+    rpix = model.image_acc.wcs.wcs.crpix
     components = []
     for center in centers:
         ix, iy = center
         # The phase center in 0-relative coordinates is n // 2 so we centre the grid of
         # components on ny // 2, nx // 2. The wcs must be defined consistently.
-        p = int(round(rpix[0] + ix * spacing_pixels * numpy.sign(model.wcs.wcs.cdelt[0]))), \
-            int(round(rpix[1] + iy * spacing_pixels * numpy.sign(model.wcs.wcs.cdelt[1])))
-        sc = pixel_to_skycoord(p[0], p[1], model.wcs, origin=1)
+        p = int(round(rpix[0] + ix * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[0]))), \
+            int(round(rpix[1] + iy * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[1])))
+        sc = pixel_to_skycoord(p[0], p[1], model.image_acc.wcs, origin=1)
         log.info("Component at (%f, %f) [0-rel] %s" % (p[0], p[1], str(sc)))
         
         # Channel images

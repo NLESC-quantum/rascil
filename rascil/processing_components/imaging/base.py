@@ -74,7 +74,7 @@ def shift_vis_to_image(vis: BlockVisibility, im: Image, tangent: bool = True, in
     # This is the only place in RASCIL where the relationship between the image and visibility
     # frames is defined.
 
-    image_phasecentre = pixel_to_skycoord(nx // 2 + 1, ny // 2 + 1, im.wcs, origin=1)
+    image_phasecentre = pixel_to_skycoord(nx // 2 + 1, ny // 2 + 1, im.image_acc.wcs, origin=1)
     if vis.phasecentre.separation(image_phasecentre).rad > 1e-15:
         if inverse:
             log.debug("shift_vis_from_image: shifting phasecentre from image phase centre %s to visibility phasecentre "

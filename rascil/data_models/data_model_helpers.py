@@ -213,6 +213,7 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     """
     ##assert isinstance(vis, BlockVisibility)
     
+    # We only need to keep the things we need to reconstruct the data_model
     f.attrs['rascil_data_model'] = 'BlockVisibility'
     f.attrs['nants'] = numpy.max([b[1] for b in vis.baselines.data]) + 1
     f.attrs['nvis'] = vis.blockvisibility_acc.nvis
@@ -655,10 +656,10 @@ def convert_image_to_hdf(im: Image, f):
     if isinstance(im, Image):
         f.attrs['rascil_data_model'] = 'Image'
         f['data'] = im["pixels"].data
-        f.attrs['wcs'] = numpy.string_(im.wcs.to_header_string())
-        f.attrs['phasecentre_coords'] = im.phasecentre.to_string()
-        f.attrs['phasecentre_frame'] = im.phasecentre.frame.name
-        f.attrs['polarisation_frame'] = im.polarisation_frame.type
+        f.attrs['wcs'] = numpy.string_(im.image_acc.wcs.to_header_string())
+        f.attrs['phasecentre_coords'] = im.image_acc.phasecentre.to_string()
+        f.attrs['phasecentre_frame'] = im.image_acc.phasecentre.frame.name
+        f.attrs['polarisation_frame'] = im.image_acc.polarisation_frame
         f.attrs['frequency'] = im.frequency
     
     return f
@@ -910,9 +911,9 @@ def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
     
     f.attrs['rascil_data_model'] = 'ConvolutionFunction'
     f['data'] = cf["pixels"].data
-    f.attrs['grid_wcs'] = numpy.string_(cf.cf_wcs.to_header_string())
-    f.attrs['projection_wcs'] = numpy.string_(cf.projection_wcs.to_header_string())
-    f.attrs['polarisation_frame'] = cf.polarisation_frame.type
+    f.attrs['grid_wcs'] = numpy.string_(cf.convolutionfunction_acc.cf_wcs.to_header_string())
+    f.attrs['projection_wcs'] = numpy.string_(cf.convolutionfunction_acc.projection_wcs.to_header_string())
+    f.attrs['polarisation_frame'] = cf.convolutionfunction_acc.polarisation_frame.type
     return f
 
 
@@ -927,8 +928,7 @@ def convert_hdf_to_convolutionfunction(f):
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
     cf_wcs = WCS(f.attrs['grid_wcs'])
     projection_wcs = WCS(f.attrs['projection_wcs'])
-    gd = ConvolutionFunction(data, cf_wcs=cf_wcs, projection_wcs=projection_wcs,
-                             polarisation_frame=polarisation_frame)
+    gd = ConvolutionFunction(data, cf_wcs=cf_wcs, polarisation_frame=polarisation_frame)
     return gd
 
 

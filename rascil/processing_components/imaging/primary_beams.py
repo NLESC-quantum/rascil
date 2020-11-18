@@ -15,7 +15,7 @@ import numpy
 from rascil.data_models import Image, PolarisationFrame
 from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.image.operations import import_image_from_fits, reproject_image, scale_and_rotate_image
-from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, fft_image, pad_image
+from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, fft_image_to_griddata, pad_image
 from rascil import phyconst
 
 log = logging.getLogger('rascil-logger')
@@ -225,27 +225,27 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
     nchan, npol, ny, nx = model["pixels"].shape
     
     if pointingcentre is not None:
-        cx, cy = pointingcentre.to_pixel(model.wcs, origin=0)
+        cx, cy = pointingcentre.to_pixel(model.image_acc.wcs, origin=0)
     else:
-        cx, cy = beam.wcs.sub(2).wcs.crpix[0] - 1, beam.wcs.sub(2).wcs.crpix[1] - 1
+        cx, cy = beam.image_acc.wcs.sub(2).wcs.crpix[0] - 1, beam.image_acc.wcs.sub(2).wcs.crpix[1] - 1
     
     for chan in range(nchan):
         
         # The frequency axis is the second to last in the beam
-        frequency = model.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
+        frequency = model.image_acc.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
         wavelength = phyconst.c_m_s / frequency
         
         d2r = numpy.pi / 180.0
-        scale = d2r * numpy.abs(beam.wcs.sub(2).wcs.cdelt[0])
+        scale = d2r * numpy.abs(beam.image_acc.wcs.sub(2).wcs.cdelt[0])
         xx, yy = numpy.meshgrid(scale * (numpy.arange(nx) - cx), scale * (numpy.arange(ny) - cy))
         # Radius of each cell in radians
         rr = numpy.sqrt(xx ** 2 + yy ** 2)
         
         blockage_factor = (blockage / diameter) ** 2
         
-        if beam.polarisation_frame == PolarisationFrame("linear"):
+        if beam.image_acc.polarisation_frame == PolarisationFrame("linear"):
             pols = [0, 3]
-        elif beam.polarisation_frame == PolarisationFrame("circular"):
+        elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
             pols = [0, 3]
         else:
             pols = range(npol)
@@ -260,8 +260,8 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
     beam = set_pb_header(beam, use_local=use_local)
     
     if use_local:
-        assert beam.wcs.wcs.ctype[0] == 'AZELGEO long', beam.wcs.wcs.ctype[0]
-        assert beam.wcs.wcs.ctype[1] == 'AZELGEO lati', beam.wcs.wcs.ctype[1]
+        assert beam.image_acc.wcs.wcs.ctype[0] == 'AZELGEO long', beam.image_acc.wcs.wcs.ctype[0]
+        assert beam.image_acc.wcs.wcs.ctype[1] == 'AZELGEO lati', beam.image_acc.wcs.wcs.ctype[1]
 
     return beam
 
@@ -300,7 +300,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     padded_beam["pixels"].data = numpy.zeros(padded_beam["pixels"].data.shape, dtype='complex')
     _, _, pny, pnx = padded_beam["pixels"].data.shape
     
-    xfr = fft_image(padded_beam)
+    xfr = fft_image_to_griddata(padded_beam)
     cx, cy = xfr.wcs.sub(2).wcs.crpix[0] - 1, xfr.wcs.sub(2).wcs.crpix[1] - 1
     
     for chan in range(nchan):
@@ -316,9 +316,9 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
         
         # rr in metres
         rr = numpy.sqrt(xx**2 + yy**2)
-        if beam.polarisation_frame == PolarisationFrame("linear"):
+        if beam.image_acc.polarisation_frame == PolarisationFrame("linear"):
             pols = [0, 3]
-        elif beam.polarisation_frame == PolarisationFrame("circular"):
+        elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
             pols = [0, 3]
         else:
             pols = range(npol)
@@ -331,7 +331,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
         
         if pointingcentre is not None:
             # Correct for pointing centre
-            pcx, pcy = pointingcentre.to_pixel(padded_beam.wcs, origin=0)
+            pcx, pcy = pointingcentre.to_pixel(padded_beam.image_acc.wcs, origin=0)
             pxx, pyy = numpy.meshgrid((numpy.arange(pnx) - cx), (numpy.arange(pny) - cy))
             phase = 2 * numpy.pi * ((pcx - cx) * pxx / float(pnx) + (pcy - cy) * pyy / float(pny))
             for pol in range(npol):
@@ -361,7 +361,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
                 xfr["pixels"].data[chan, pol, blc:trc, blc:trc] = \
                     xfr["pixels"].data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
     
-    padded_beam = fft_image(xfr, padded_beam)
+    padded_beam = fft_image_to_griddata(xfr, padded_beam)
     
     # Undo padding
     beam_data = padded_beam["pixels"].data[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),
@@ -370,8 +370,8 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
         beam_data[chan, ...] /= numpy.max(numpy.abs(beam_data[chan, ...]))
         
     
-    beam = create_image_from_array(beam_data, wcs=beam.wcs,
-                                   polarisation_frame=beam.polarisation_frame)
+    beam = create_image_from_array(beam_data, wcs=beam.image_acc.wcs,
+                                   polarisation_frame=beam.image_acc.polarisation_frame)
 
     beam = set_pb_header(beam, use_local=use_local)
 
@@ -411,12 +411,12 @@ def convert_azelvp_to_radec(vp, im, pa):
     :return:
     """
     vp = scale_and_rotate_image(vp, angle=pa)
-    vp.wcs.wcs.crval[0] = im.wcs.wcs.crval[0]
-    vp.wcs.wcs.crval[1] = im.wcs.wcs.crval[1]
-    vp.wcs.wcs.ctype[0] = im.wcs.wcs.ctype[0]
-    vp.wcs.wcs.ctype[1] = im.wcs.wcs.ctype[1]
+    vp.image_acc.wcs.wcs.crval[0] = im.image_acc.wcs.wcs.crval[0]
+    vp.image_acc.wcs.wcs.crval[1] = im.image_acc.wcs.wcs.crval[1]
+    vp.image_acc.wcs.wcs.ctype[0] = im.image_acc.wcs.wcs.ctype[0]
+    vp.image_acc.wcs.wcs.ctype[1] = im.image_acc.wcs.wcs.ctype[1]
 
-    rvp, footprint = reproject_image(vp, im.wcs, shape=im["pixels"].data.shape)
+    rvp, footprint = reproject_image(vp, im.image_acc.wcs, shape=im["pixels"].data.shape)
     rvp["pixels"].data[footprint["pixels"].data < 1e-6] = 0.0
 
     return rvp

@@ -77,7 +77,7 @@ Image
 * Export from FITS: :py:func:`rascil.processing_components.image.operations.export_image_to_fits`
 * Re-project coordinate system: :py:func:`rascil.processing_components.image.operations.reproject_image`
 * Smooth image: :py:func:`rascil.processing_components.image.operations.smooth_image`
-* FFT: :py:func:`rascil.processing_components.image.operations.fft_image`
+* FFT: :py:func:`rascil.processing_components.image.operations.fft_image_to_griddata`
 * Remove continuum: :py:func:`rascil.processing_components.image.operations.remove_continuum_image`
 * Convert polarisation:
 

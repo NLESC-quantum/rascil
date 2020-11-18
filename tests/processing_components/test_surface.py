@@ -67,7 +67,7 @@ class TestSurface(unittest.TestCase):
                                                       edge=0.03162278, zernikes=[zernike], padding=2, use_local=True))
 
         for vp in vp_list:
-            assert vp.wcs.wcs.ctype[0] == "AZELGEO long", vp.wcs.wcs.ctype[0]
+            assert vp.image_acc.wcs.wcs.ctype[0] == "AZELGEO long", vp.image_acc.wcs.wcs.ctype[0]
         gt = simulate_gaintable_from_zernikes(self.vis, component, vp_list, vp_coeffs)
 
         import matplotlib.pyplot as plt

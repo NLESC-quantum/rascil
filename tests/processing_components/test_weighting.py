@@ -10,7 +10,7 @@ from astropy.coordinates import SkyCoord
 from photutils import fit_2dgaussian
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components import fft_image
+from rascil.processing_components import fft_image_to_griddata
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.base import create_image_from_visibility
 from rascil.processing_components.imaging.base import invert_2d
@@ -92,7 +92,7 @@ class TestWeighting(unittest.TestCase):
             psf, sumwt = invert_2d(self.componentvis, self.model, dopsf=True)
             if self.persist:
                 export_image_to_fits(psf, '%s/test_weighting_gaussian_taper_psf_block%s.fits' % (self.dir, block))
-            xfr = fft_image(psf)
+            xfr = fft_image_to_griddata(psf)
             xfr["pixels"].data = xfr["pixels"].data.real.astype('float')
             if self.persist:
                 export_image_to_fits(xfr, '%s/test_weighting_gaussian_taper_xfr_block%s.fits' % (self.dir, block))
@@ -106,7 +106,7 @@ class TestWeighting(unittest.TestCase):
             scale_factor = numpy.sqrt(8 * numpy.log(2.0))
             size = numpy.sqrt(fit.x_stddev * fit.y_stddev) * scale_factor
             # Now we need to convert to radians
-            size *= numpy.pi * self.model.wcs.wcs.cdelt[1] / 180.0
+            size *= numpy.pi * self.model.image_acc.wcs.wcs.cdelt[1] / 180.0
             # Very impressive! Desired 0.01 Acheived 0.0100006250829
             assert numpy.abs(size - size_required) < 0.03 * size_required, \
                 "Fit should be %f, actually is %f" % (size_required, size)
@@ -119,7 +119,7 @@ class TestWeighting(unittest.TestCase):
             psf, sumwt = invert_2d(self.componentvis, self.model, dopsf=True)
             if self.persist:
                 export_image_to_fits(psf, '%s/test_weighting_tukey_taper_psf_block%s.fits' % (self.dir, block))
-            xfr = fft_image(psf)
+            xfr = fft_image_to_griddata(psf)
             xfr["pixels"].data = xfr["pixels"].data.real.astype('float')
             if self.persist:
                 export_image_to_fits(xfr, '%s/test_weighting_tukey_taper_xfr_block%s.fits' % (self.dir, block))

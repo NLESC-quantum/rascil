@@ -12,11 +12,11 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models.parameters import rascil_data_path
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_image, create_image_from_array, polarisation_frame_from_wcs, \
-    create_empty_image_like, fft_image, pad_image, create_w_term_like, create_vp, apply_voltage_pattern_to_image
+    create_empty_image_like, fft_image_to_griddata, pad_image, create_w_term_like, create_vp, apply_voltage_pattern_to_image
 from rascil.processing_components.image.operations import export_image_to_fits, \
     calculate_image_frequency_moments, calculate_image_from_frequency_moments, add_image, qa_image, reproject_image, \
     convert_polimage_to_stokes, import_image_from_fits, \
-    convert_stokes_to_polimage, smooth_image, scale_and_rotate_image
+    convert_stokes_to_polimage, smooth_image, scale_and_rotate_image, fft_image_to_griddata, ifft_griddata_to_image
 from rascil.processing_components.simulation import create_test_image, create_low_test_image_from_gleam
 
 log = logging.getLogger('rascil-logger')
@@ -44,15 +44,13 @@ class TestImage(unittest.TestCase):
                                 phasecentre=phasecentre,
                                 channel_bandwidth=1e7 * numpy.ones([5]))
         assert newimage.image_acc.shape == (5, 4, 1024, 1024)
-        print(newimage)
-        print(newimage.wcs)
-        assert newimage.phasecentre.separation(phasecentre).value < 1e-15
-        assert newimage.polarisation_frame.type == "stokesIQUV"
+        assert newimage.image_acc.phasecentre.separation(phasecentre).value < 1e-12
+        assert newimage.polarisation_frame == "stokesIQUV"
     
     def test_create_image_from_array(self):
         m31model_by_array = create_image_from_array(self.m31image["pixels"],
-                                                    self.m31image.wcs,
-                                                    self.m31image.polarisation_frame)
+                                                    self.m31image.image_acc.wcs,
+                                                    self.m31image.image_acc.polarisation_frame)
         add_image(self.m31image, m31model_by_array)
         assert m31model_by_array.image_acc.shape == self.m31image.image_acc.shape
         if self.persist: export_image_to_fits(self.m31image, fitsfile='%s/test_model.fits' % (self.dir))
@@ -66,7 +64,7 @@ class TestImage(unittest.TestCase):
     def test_reproject(self):
         # Reproject an image
         cellsize = 1.5 * self.cellsize
-        newwcs = self.m31image.wcs.deepcopy()
+        newwcs = self.m31image.image_acc.wcs.deepcopy()
         newwcs.wcs.cdelt[0] = -cellsize
         newwcs.wcs.cdelt[1] = +cellsize
         
@@ -76,28 +74,28 @@ class TestImage(unittest.TestCase):
         newimage, footprint = reproject_image(self.m31image, newwcs, shape=newshape)
     
     def test_stokes_conversion(self):
-        assert self.m31image.polarisation_frame == PolarisationFrame("stokesI")
+        assert self.m31image.image_acc.polarisation_frame == PolarisationFrame("stokesI")
         stokes = create_test_image(cellsize=0.0001, polarisation_frame=PolarisationFrame("stokesIQUV"))
-        assert stokes.polarisation_frame == PolarisationFrame("stokesIQUV")
+        assert stokes.image_acc.polarisation_frame == PolarisationFrame("stokesIQUV")
         
         for pol_name in ['circular', 'linear']:
             polarisation_frame = PolarisationFrame(pol_name)
             polimage = convert_stokes_to_polimage(stokes, polarisation_frame=polarisation_frame)
-            assert polimage.polarisation_frame == polarisation_frame
-            polarisation_frame_from_wcs(polimage.wcs, polimage.image_acc.shape)
+            assert polimage.image_acc.polarisation_frame == polarisation_frame
+            polarisation_frame_from_wcs(polimage.image_acc.wcs, polimage.image_acc.shape)
             rstokes = convert_polimage_to_stokes(polimage)
             assert polimage["pixels"].data.dtype == 'complex'
             assert rstokes["pixels"].data.dtype == 'float'
             numpy.testing.assert_array_almost_equal(stokes["pixels"].data, rstokes["pixels"].data.real, 12)
     
     def test_polarisation_frame_from_wcs(self):
-        assert self.m31image.polarisation_frame == PolarisationFrame("stokesI")
+        assert self.m31image.image_acc.polarisation_frame == PolarisationFrame("stokesI")
         stokes = create_test_image(cellsize=0.0001, polarisation_frame=PolarisationFrame("stokesIQUV"))
-        wcs = stokes.wcs.deepcopy()
+        wcs = stokes.image_acc.wcs.deepcopy()
         shape = stokes.image_acc.shape
         assert polarisation_frame_from_wcs(wcs, shape) == PolarisationFrame("stokesIQUV")
         
-        wcs = stokes.wcs.deepcopy().sub(['stokes'])
+        wcs = stokes.image_acc.wcs.deepcopy().sub(['stokes'])
         wcs.wcs.crpix[0] = 1.0
         wcs.wcs.crval[0] = -1.0
         wcs.wcs.cdelt[0] = -1.0
@@ -124,7 +122,7 @@ class TestImage(unittest.TestCase):
         imag_vp = import_image_from_fits(rascil_data_path('models/MID_FEKO_VP_B2_45_1360_imag.fits'), fixpol=False)
         vp["pixels"].data = vp["pixels"].data + 1j * imag_vp["pixels"].data
         
-        polframe = polarisation_frame_from_wcs(vp.wcs, vp.image_acc.shape)
+        polframe = polarisation_frame_from_wcs(vp.image_acc.wcs, vp.image_acc.shape)
         permute = polframe.fits_to_rascil[polframe.type]
         
         newvp_data = vp["pixels"].data.copy()
@@ -132,13 +130,13 @@ class TestImage(unittest.TestCase):
             newvp_data[:, p, ...] = vp["pixels"].data[:, ip, ...]
         vp["pixels"].data = newvp_data
         
-        assert vp.polarisation_frame == PolarisationFrame("linear")
+        assert vp.image_acc.polarisation_frame == PolarisationFrame("linear")
     
     def test_smooth_image(self):
         assert numpy.max(self.m31image["pixels"].data) > 0.0
         smooth = smooth_image(self.m31image)
-        assert numpy.max(smooth["pixels"]) > 0.0
-        assert numpy.max(smooth["pixels"]) > numpy.max(self.m31image["pixels"])
+        assert numpy.max(smooth["pixels"].data) > 0.0
+        assert numpy.max(smooth["pixels"].data) > numpy.max(self.m31image["pixels"].data)
     
     def test_calculate_image_frequency_moments(self):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
@@ -151,8 +149,8 @@ class TestImage(unittest.TestCase):
         reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)
         if self.persist: export_image_to_fits(reconstructed_cube, fitsfile='%s/test_moments_reconstructed_cube.fits' % (
             self.dir))
-        error = numpy.std(reconstructed_cube["pixels"] - original_cube["pixels"])
-        assert error < 0.2
+        error = numpy.std(reconstructed_cube["pixels"].data - original_cube["pixels"].data)
+        assert error < 0.2, error
     
     def test_calculate_image_frequency_moments_1(self):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
@@ -166,7 +164,7 @@ class TestImage(unittest.TestCase):
         if self.persist: export_image_to_fits(reconstructed_cube,
                                               fitsfile='%s/test_moments_1_reconstructed_cube.fits' % (
                                                   self.dir))
-        error = numpy.std(reconstructed_cube["pixels"] - original_cube["pixels"])
+        error = numpy.std(reconstructed_cube["pixels"].data - original_cube["pixels"].data)
         assert error < 0.2
     
     def test_create_w_term_image(self):
@@ -185,11 +183,15 @@ class TestImage(unittest.TestCase):
         self.assertAlmostEqual(numpy.max(im["pixels"].real), 1.0, 7)
     
     def test_fftim(self):
-        m31_fft = fft_image(self.m31image)
-        m31_fft_ifft = fft_image(m31_fft, self.m31image)
-        numpy.testing.assert_array_almost_equal(self.m31image["pixels"].data, m31_fft_ifft["pixels"].data.real, 12)
-        m31_fft["pixels"].data = numpy.abs(m31_fft["pixels"].data)
-        if self.persist: export_image_to_fits(m31_fft, fitsfile='%s/test_m31_fft.fits' % (self.dir))
+        m31_fft = fft_image_to_griddata(self.m31image)
+        m31_fft_ifft = ifft_griddata_to_image(m31_fft, self.m31image)
+        m31_fft_ifft["pixels"] = m31_fft_ifft["pixels"].real
+        self.persist = True
+        if self.persist: export_image_to_fits(m31_fft_ifft, fitsfile='%s/test_m31_fft_fft.fits' % (self.dir))
+        err = numpy.max(numpy.abs(self.m31image["pixels"].data - m31_fft_ifft["pixels"].data))
+        assert err < 1e-7, err
+        m31_fft_ifft["pixels"].data = numpy.abs(m31_fft_ifft["pixels"].data)
+        self.persist = True
     
     def test_fftim_factors(self):
         for i in [3, 5, 7]:
@@ -197,9 +199,10 @@ class TestImage(unittest.TestCase):
             m31image = create_test_image(cellsize=0.001, frequency=[1e8])
             padded = pad_image(m31image, [1, 1, npixel, npixel])
             assert padded.image_acc.shape == (1, 1, npixel, npixel)
-            padded_fft = fft_image(padded)
-            padded_fft_ifft = fft_image(padded_fft, m31image)
-            numpy.testing.assert_array_almost_equal(padded["pixels"].data, padded_fft_ifft["pixels"].data.real, 12)
+            padded_fft = fft_image_to_griddata(padded)
+            padded_fft_ifft = ifft_griddata_to_image(padded_fft, m31image)
+            err = numpy.max(numpy.abs(padded["pixels"].data - padded_fft_ifft["pixels"].data.real))
+            assert err < 1e-7, err
             padded_fft["pixels"].data = numpy.abs(padded_fft["pixels"].data)
             if self.persist: export_image_to_fits(padded_fft, fitsfile='%s/test_m31_fft_%d.fits' % (self.dir, npixel))
     
@@ -230,7 +233,7 @@ class TestImage(unittest.TestCase):
     def test_apply_voltage_pattern(self):
         
         vp = create_vp(telescope='MID_FEKO_B2')
-        cellsize = vp.wcs.wcs.cdelt[1] * numpy.pi / 180.0
+        cellsize = vp.image_acc.wcs.wcs.cdelt[1] * numpy.pi / 180.0
         m31image = create_test_image(cellsize=cellsize, frequency=[1.36e9],
                                      polarisation_frame=PolarisationFrame("stokesIQUV"))
         padded = pad_image(m31image, vp["pixels"].shape)

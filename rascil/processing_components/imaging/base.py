@@ -187,7 +187,7 @@ def invert_2d(vis: BlockVisibility, im: Image, dopsf: bool = False, normalize: b
 
     griddata = create_griddata_from_image(im, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
     griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
-    result = fft_griddata_to_image(griddata, gcf)
+    result = fft_griddata_to_image(griddata, im, gcf)
 
     if normalize:
         result = normalize_sumwt(result, sumwt)

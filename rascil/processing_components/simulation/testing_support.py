@@ -798,7 +798,7 @@ def create_unittest_components(model, flux, applypb=False, telescope='LOW', npix
             if abs(x) > 1e-15:
                 centers.append([x, x])
                 centers.append([x, -x])
-    model_pol = model.polarisation_frame
+    model_pol = model.image_acc.polarisation_frame
     # Make the list of components
     rpix = model.image_acc.wcs.wcs.crpix
     components = []

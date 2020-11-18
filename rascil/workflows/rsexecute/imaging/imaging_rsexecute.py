@@ -295,7 +295,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         ybeg = cy - wy // 2
         yend = cy + wy // 2
         spsf_data = psf["pixels"].isel({"x": slice(xbeg, xend), "y": slice(ybeg, yend)}).data
-        wcs = copy.deepcopy(psf.wcs)
+        wcs = copy.deepcopy(psf.image_acc.wcs)
         wcs.wcs.crpix[0] -= xbeg
         wcs.wcs.crpix[1] -= ybeg
         spsf = create_image_from_array(spsf_data, wcs=wcs, polarisation_frame=psf.polarisation_frame)

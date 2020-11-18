@@ -411,13 +411,19 @@ def convert_azelvp_to_radec(vp, im, pa):
     :return:
     """
     vp = scale_and_rotate_image(vp, angle=pa)
-    vp.image_acc.wcs.wcs.crval[0] = im.image_acc.wcs.wcs.crval[0]
-    vp.image_acc.wcs.wcs.crval[1] = im.image_acc.wcs.wcs.crval[1]
-    vp.image_acc.wcs.wcs.ctype[0] = im.image_acc.wcs.wcs.ctype[0]
-    vp.image_acc.wcs.wcs.ctype[1] = im.image_acc.wcs.wcs.ctype[1]
+    assert numpy.max(numpy.abs(vp["pixels"])), "Scale and rotate failed: empty image {}".format(vp)
+    
+    vp_wcs = vp.image_acc.wcs
+    vp_wcs.wcs.crval[0] = im.image_acc.wcs.wcs.crval[0]
+    vp_wcs.wcs.crval[1] = im.image_acc.wcs.wcs.crval[1]
+    vp_wcs.wcs.ctype[0] = im.image_acc.wcs.wcs.ctype[0]
+    vp_wcs.wcs.ctype[1] = im.image_acc.wcs.wcs.ctype[1]
+    
+    vp = create_image_from_array(vp["pixels"].data, vp_wcs, vp.image_acc.polarisation_frame)
 
     rvp, footprint = reproject_image(vp, im.image_acc.wcs, shape=im["pixels"].data.shape)
     rvp["pixels"].data[footprint["pixels"].data < 1e-6] = 0.0
+    assert numpy.max(numpy.abs(rvp["pixels"])), "Reprojection failed: empty image {}".format(rvp)
 
     return rvp
 

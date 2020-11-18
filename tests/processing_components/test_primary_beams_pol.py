@@ -13,7 +13,8 @@ from astropy.coordinates import SkyCoord
 from numpy.testing import assert_array_almost_equal
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image import export_image_to_fits, reproject_image, apply_voltage_pattern_to_image, qa_image
+from rascil.processing_components.image import export_image_to_fits, reproject_image, apply_voltage_pattern_to_image,\
+    qa_image, create_image_from_array
 from rascil.processing_components.imaging import create_image_from_visibility, invert_2d, \
     advise_wide_field, weight_visibility
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility, idft_visibility_skycomponent
@@ -106,10 +107,13 @@ class TestPrimaryBeamsPol(unittest.TestCase):
                                                      override_cellsize=False,
                                                      polarisation_frame=PolarisationFrame("stokesIQUV"))
                 vpbeam = create_vp(model, telescope=telescope, use_local=False)
-                vpbeam.image_acc.wcs.wcs.ctype[0] = 'RA---SIN'
-                vpbeam.image_acc.wcs.wcs.ctype[1] = 'DEC--SIN'
-                vpbeam.image_acc.wcs.wcs.crval[0] = model.image_acc.wcs.wcs.crval[0]
-                vpbeam.image_acc.wcs.wcs.crval[1] = model.image_acc.wcs.wcs.crval[1]
+                vpbeam_wcs = vpbeam.image_acc.wcs
+                vpbeam_wcs.wcs.ctype[0] = 'RA---SIN'
+                vpbeam_wcs.wcs.ctype[1] = 'DEC--SIN'
+                vpbeam_wcs.wcs.wcs.crval[0] = model.image_acc.wcs.wcs.crval[0]
+                vpbeam_wcs.wcs.wcs.crval[1] = model.image_acc.wcs.wcs.crval[1]
+                vpbeam = create_image_from_array(vpbeam["pixels"], wcs=vpbeam_wcs,
+                                                 polarisation_frame=vpbeam.polarisation_frame)
                 assert component.polarisation_frame == PolarisationFrame("stokesIQUV")
                 vpcomp = apply_voltage_pattern_to_skycomponent(component, vpbeam)
                 assert vpcomp.polarisation_frame == vpbeam.image_acc.polarisation_frame

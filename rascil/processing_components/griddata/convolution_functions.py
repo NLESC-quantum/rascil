@@ -50,6 +50,7 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
 
     """
     assert len(im["pixels"].data.shape) == 4
+
     assert im.image_acc.wcs.wcs.ctype[0] == 'RA---SIN', im.image_acc.wcs.wcs.ctype[0]
     assert im.image_acc.wcs.wcs.ctype[1] == 'DEC--SIN', im.image_acc.wcs.wcs.ctype[1]
     
@@ -57,52 +58,35 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     
     # WCS Coords are [x, y, dy, dx, z, pol, chan] where x, y, z are spatial axes in real space or Fourier space
     # Array Coords are [chan, pol, z, dy, dx, y, x] where x, y, z are spatial axes in real space or Fourier space
-    cf_wcs = WCS(naxis=7)
-    
-    cf_wcs.wcs.axis_types[0] = 0
-    cf_wcs.wcs.axis_types[1] = 0
-    cf_wcs.wcs.axis_types[2] = 0
-    cf_wcs.wcs.axis_types[3] = 0
-    cf_wcs.wcs.axis_types[4] = 0
-    cf_wcs.wcs.axis_types[5] = im.image_acc.wcs.wcs.axis_types[2]
-    cf_wcs.wcs.axis_types[6] = im.image_acc.wcs.wcs.axis_types[3]
-    
-    cf_wcs.wcs.ctype[0] = 'UU'
-    cf_wcs.wcs.ctype[1] = 'VV'
-    cf_wcs.wcs.ctype[2] = 'DUU'
-    cf_wcs.wcs.ctype[3] = 'DVV'
-    cf_wcs.wcs.ctype[4] = wtype
-    cf_wcs.wcs.ctype[5] = im.image_acc.wcs.wcs.ctype[2]
-    cf_wcs.wcs.ctype[6] = im.image_acc.wcs.wcs.ctype[3]
-    
-    cf_wcs.wcs.crval[0] = 0.0
-    cf_wcs.wcs.crval[1] = 0.0
-    cf_wcs.wcs.crval[2] = 0.0
-    cf_wcs.wcs.crval[3] = 0.0
-    cf_wcs.wcs.crval[4] = 0.0
-    cf_wcs.wcs.crval[5] = im.image_acc.wcs.wcs.crval[2]
-    cf_wcs.wcs.crval[6] = im.image_acc.wcs.wcs.crval[3]
-    
-    cf_wcs.wcs.crpix[0] = float(support // 2) + 1.0
-    cf_wcs.wcs.crpix[1] = float(support // 2) + 1.0
-    cf_wcs.wcs.crpix[2] = float(oversampling // 2) + 1.0
-    cf_wcs.wcs.crpix[3] = float(oversampling // 2) + 1.0
-    cf_wcs.wcs.crpix[4] = float(nw // 2 + 1)
-    cf_wcs.wcs.crpix[5] = im.image_acc.wcs.wcs.crpix[2]
-    cf_wcs.wcs.crpix[6] = im.image_acc.wcs.wcs.crpix[3]
-    
-    # The sampling on the UU and VV axes should be the same as for the image.
-    # The sampling on the DUU and DVV axes should be oversampling times finer.
-    cf_wcs.wcs.cdelt[0] = 1.0 / (im["pixels"].data.shape[3] * d2r * im.image_acc.wcs.wcs.cdelt[0])
-    cf_wcs.wcs.cdelt[1] = 1.0 / (im["pixels"].data.shape[2] * d2r * im.image_acc.wcs.wcs.cdelt[1])
-    cf_wcs.wcs.cdelt[2] = cf_wcs.wcs.cdelt[0] / oversampling
-    cf_wcs.wcs.cdelt[3] = cf_wcs.wcs.cdelt[1] / oversampling
-    cf_wcs.wcs.cdelt[4] = wstep
-    cf_wcs.wcs.cdelt[5] = im.image_acc.wcs.wcs.cdelt[2]
-    cf_wcs.wcs.cdelt[6] = im.image_acc.wcs.wcs.cdelt[3]
-    
     nchan, npol, ny, nx = im["pixels"].data.shape
-    
+
+    wcs = copy.deepcopy(im.image_acc.wcs.wcs)
+    crval = wcs.crval
+    crpix = wcs.crpix
+    cdelt = wcs.cdelt
+    ctype = wcs.ctype
+    d2r = numpy.pi / 180.0
+    cdelt[0] = 1.0 / (nx * cdelt[0] * d2r)
+    cdelt[1] = 1.0 / (ny * cdelt[1] * d2r)
+
+    cf_wcs = WCS(naxis=7)
+    cf_wcs.wcs.crpix = [float(support // 2) + 1.0,
+                        float(support // 2) + 1.0,
+                        float(oversampling // 2) + 1.0,
+                        float(oversampling // 2) + 1.0,
+                        float(nw // 2 + 1.0),
+                        crpix[2], crpix[3]]
+    cf_wcs.wcs.ctype = ["UU", "VV", "DUU", "DVV", wtype, ctype[2], ctype[3]]
+    cf_wcs.wcs.crval = [0.0, 0.0, 0.0, 0.0, 0.0, crval[2], crval[3]]
+    cf_wcs.wcs.cdelt = [cdelt[0], cdelt[1],
+                        cdelt[0] / oversampling, cdelt[1] / oversampling,
+                        wstep,
+                        cdelt[2],
+                        cdelt[3]]
+
+    cf_wcs.wcs.radesys = 'ICRS'
+    cf_wcs.wcs.equinox = 2000.0
+
     cf_data = numpy.zeros([nchan, npol, nw, oversampling, oversampling, support, support], dtype='complex')
     
     if polarisation_frame is None:

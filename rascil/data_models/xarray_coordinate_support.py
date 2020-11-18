@@ -25,7 +25,7 @@ def image_wcs(ds):
     cellsize_l = numpy.rad2deg((ds["x"].data[-1]-ds["x"].data[0])/(nx-1))
     cellsize_m = numpy.rad2deg((ds["y"].data[-1]-ds["y"].data[0])/(ny-1))
     freq = ds["frequency"].data[0]
-    pol = PolarisationFrame.fits_codes[ds.attrs["polarisation_frame"]]
+    pol = PolarisationFrame.fits_codes[ds.attrs["_polarisation_frame"]]
     if npol > 1:
         dpol = pol[1] - pol[0]
     else:
@@ -61,7 +61,7 @@ def griddata_wcs(ds):
     cellsize_u = (ds["u"].data[-1] - ds["u"].data[0]) / (nx - 1)
     cellsize_v = (ds["v"].data[-1] - ds["v"].data[0]) / (ny - 1)
     freq = ds["frequency"].data[0]
-    pol = PolarisationFrame.fits_codes[ds.polarisation_frame]
+    pol = PolarisationFrame.fits_codes[ds.attrs["_polarisation_frame"]]
     if npol > 1:
         dpol = pol[1] - pol[0]
     else:
@@ -76,7 +76,7 @@ def griddata_wcs(ds):
     wcs.wcs.crpix = [nx // 2 + 1, ny // 2 + 1, 1.0, 1.0]
     wcs.wcs.ctype = ["UU", "VV", 'STOKES', 'FREQ']
     wcs.wcs.crval = [u, v, pol[0], freq]
-    wcs.wcs.cdelt = [-cellsize_u, cellsize_v, dpol, channel_bandwidth]
+    wcs.wcs.cdelt = [cellsize_u, cellsize_v, dpol, channel_bandwidth]
     wcs.wcs.radesys = 'ICRS'
     wcs.wcs.equinox = 2000.0
     
@@ -95,7 +95,10 @@ def cf_wcs(ds):
     nchan, npol, nz, ndv, ndu, ny, nx = ds["pixels"].shape
     u = ds["u"].data[nx // 2]
     v = ds["v"].data[ny // 2]
-    w = ds["w"].data[nz // 2]
+    if nz > 1:
+        w = ds["w"].data[nz // 2]
+    else:
+        w = 0.0
     cellsize_u = (ds["u"].data[-1] - ds["u"].data[0]) / (nx - 1)
     cellsize_v = (ds["v"].data[-1] - ds["v"].data[0]) / (ny - 1)
     if ndu > 1:
@@ -116,7 +119,7 @@ def cf_wcs(ds):
         cellsize_w = 1e15
 
     freq = ds["frequency"].data[0]
-    pol = PolarisationFrame.fits_codes[ds.polarisation_frame]
+    pol = PolarisationFrame.fits_codes[ds.attrs["_polarisation_frame"]]
     if npol > 1:
         dpol = pol[1] - pol[0]
     else:
@@ -132,7 +135,7 @@ def cf_wcs(ds):
                      nz // 2 + 1.0, 1.0, 1.0]
     wcs.wcs.ctype = ["UU", "VV", "DUU", "DVV", "WW", "STOKES", "FREQ"]
     wcs.wcs.crval = [u, v, 0.0, 0.0, w, pol[0], freq]
-    wcs.wcs.cdelt = [-cellsize_u, cellsize_v, cellsize_du, cellsize_dv, cellsize_w, dpol, channel_bandwidth]
+    wcs.wcs.cdelt = [cellsize_u, cellsize_v, cellsize_du, cellsize_dv, cellsize_w, dpol, channel_bandwidth]
     wcs.wcs.radesys = 'ICRS'
     wcs.wcs.equinox = 2000.0
     

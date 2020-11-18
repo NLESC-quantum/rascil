@@ -105,7 +105,7 @@ class TestGridDataKernels(unittest.TestCase):
         pb = make_pb(self.image)
         if self.persist:
             export_image_to_fits(pb, "%s/test_convolutionfunction_awterm_pb.fits" % self.dir)
-        gcf, cf = create_awterm_convolutionfunction(self.image, make_pb=make_pb, nw=201, wstep=8, oversampling=8,
+        gcf, cf = create_awterm_convolutionfunction(self.image, make_pb=make_pb, nw=200, wstep=8, oversampling=8,
                                                     support=60, use_aaf=True,
                                   polarisation_frame=PolarisationFrame("linear"))
         assert gcf['pixels'].data.dtype == "float", gcf['pixels'].data.dtype
@@ -125,7 +125,7 @@ class TestGridDataKernels(unittest.TestCase):
         bboxes = calculate_bounding_box_convolutionfunction(cf)
         assert len(bboxes) == 200, len(bboxes)
         assert len(bboxes[0]) == 3, len(bboxes[0])
-        assert bboxes[-1][0] == 200, bboxes[-1][0]
+        assert bboxes[-1][0] == 199, bboxes[-1][0]
         
         peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf["pixels"].data)), cf["pixels"].data.shape)
         assert peak_location == (0, 0, 100, 4, 4, 30, 30), peak_location
@@ -134,10 +134,6 @@ class TestGridDataKernels(unittest.TestCase):
         peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf_clipped["pixels"].data)),
                                             cf_clipped["pixels"].data.shape)
         assert peak_location == (0, 0, 100, 4, 4, 21, 21), peak_location
-        # cf_image = convert_convolutionfunction_to_image(cf_clipped)
-        # cf_image.data = numpy.real(cf_image.data)
-        # if self.persist:
-        #     export_image_to_fits(cf_image, "%s/test_convolutionfunction_awterm_clipped_cf.fits" % self.dir)
     
     def test_fill_aterm_to_convolutionfunction(self):
         make_pb = functools.partial(create_pb_generic, diameter=35.0, blockage=0.0, use_local=False)

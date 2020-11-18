@@ -471,7 +471,7 @@ class Image(xarray.Dataset):
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         
         attrs = {"rascil_data_model": "Image",
-                 "polarisation_frame": polarisation_frame.type}
+                 "_polarisation_frame": polarisation_frame.type}
         
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
@@ -504,7 +504,7 @@ class ImageAccessor(XarrayAccessorMixin):
         
         :return: Number of polarisations
         """
-        return PolarisationFrame(self._obj.polarisation_frame).npol
+        return PolarisationFrame(self._obj.attrs["_polarisation_frame"]).npol
     
     @property
     def polarisation_frame(self):
@@ -512,7 +512,7 @@ class ImageAccessor(XarrayAccessorMixin):
 
         :return:
         """
-        return PolarisationFrame(self._obj.attrs["polarisation_frame"])
+        return PolarisationFrame(self._obj.attrs["_polarisation_frame"])
 
     @property
     def phasecentre(self):
@@ -602,7 +602,7 @@ class GridData(xarray.Dataset):
         attrs = dict()
         
         attrs["rascil_data_model"] = "GridData"
-        attrs["polarisation_frame"] = polarisation_frame.type
+        attrs["_polarisation_frame"] = polarisation_frame.type
         
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
@@ -626,7 +626,7 @@ class GridDataAccessor(XarrayAccessorMixin):
 
         :return: Number of polarisations
         """
-        return PolarisationFrame(self._obj.attrs["polarisation_frame"]).npol
+        return PolarisationFrame(self._obj.attrs["_polarisation_frame"]).npol
 
     @property
     def polarisation_frame(self):
@@ -634,7 +634,7 @@ class GridDataAccessor(XarrayAccessorMixin):
 
         :return:
         """
-        return PolarisationFrame(self._obj.attrs["polarisation_frame"])
+        return PolarisationFrame(self._obj.attrs["_polarisation_frame"])
 
     @property
     def shape(self):
@@ -710,11 +710,11 @@ class ConvolutionFunction(xarray.Dataset):
         
         assert npol == polarisation_frame.npol, \
             "Mismatch between requested image polarisation and actual visibility polarisation"
-        cellsize = numpy.abs(cf_wcs.wcs.cdelt[0])
-        du = 1.0 / cellsize
-        dv = 1.0 / cellsize
-        ddu = 1.0 / cellsize / oversampling
-        ddv = 1.0 / cellsize / oversampling
+
+        du = cf_wcs.wcs.cdelt[0]
+        dv = cf_wcs.wcs.cdelt[1]
+        ddu = cf_wcs.wcs.cdelt[0] / oversampling
+        ddv = cf_wcs.wcs.cdelt[1] / oversampling
         cu = cf_wcs.wcs.crval[0]
         cv = cf_wcs.wcs.crval[1]
         cdu = oversampling // 2
@@ -722,8 +722,6 @@ class ConvolutionFunction(xarray.Dataset):
 
         wstep = numpy.abs(cf_wcs.wcs.cdelt[4])
 
-        assert cellsize > 0.0, "Cellsize must be positive"
-        
         coords = {
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
@@ -738,6 +736,9 @@ class ConvolutionFunction(xarray.Dataset):
                                 endpoint=False)
         }
         
+        if nw == 1:
+            coords["w"]: numpy.zeros([1])
+        
         dims = ["frequency", "polarisation", "w", "dv", "du", "u", "v"]
         
         assert coords["u"][0] != coords["u"][-1]
@@ -745,7 +746,7 @@ class ConvolutionFunction(xarray.Dataset):
         
         attrs = dict()
         attrs["rascil_data_model"] = "ConvolutionFunction"
-        attrs["polarisation_frame"] = polarisation_frame.type
+        attrs["_polarisation_frame"] = polarisation_frame.type
         
         nchan = len(frequency)
         npol = polarisation_frame.npol
@@ -776,7 +777,7 @@ class ConvolutionFunctionAccessor(XarrayAccessorMixin):
     def npol(self):
         """ Number of polarisations
         """
-        return self._obj.polarisation_frame.npol
+        return PolarisationFrame(self._obj.attrs["_polarisation_frame"]).npol
     
     @property
     def cf_wcs(self):
@@ -790,8 +791,7 @@ class ConvolutionFunctionAccessor(XarrayAccessorMixin):
     def shape(self):
         """ Shape of data array
         """
-        assert len(self.data.shape) == 7
-        return self.data.shape
+        return self._obj["pixels"].data.shape
     
     @property
     def polarisation_frame(self):
@@ -799,7 +799,7 @@ class ConvolutionFunctionAccessor(XarrayAccessorMixin):
 
         :return:
         """
-        return PolarisationFrame(self._obj.attrs["polarisation_frame"])
+        return PolarisationFrame(self._obj.attrs["_polarisation_frame"])
 
 
 class Skycomponent:
@@ -1061,7 +1061,7 @@ class BlockVisibility(xarray.Dataset):
         attrs["configuration"] = configuration  # Antenna/station configuration
         attrs["source"] = source
         attrs["phasecentre"] = phasecentre
-        attrs["polarisation_frame"] = polarisation_frame
+        attrs["_polarisation_frame"] = polarisation_frame.type
         attrs["meta"] = meta
         
         super().__init__(datavars, coords=coords, attrs=attrs)
@@ -1103,7 +1103,7 @@ class BlockVisibilityAccessor(XarrayAccessorMixin):
 
         :return:
         """
-        return PolarisationFrame(self._obj.attrs["polarisation_frame"])
+        return PolarisationFrame(self._obj.attrs["_polarisation_frame"])
 
     
     @property
@@ -1238,7 +1238,7 @@ class FlagTable(xarray.Dataset):
                                                 dims="time")
         
         attrs = dict()
-        attrs["polarisation_frame"] = polarisation_frame
+        attrs["_polarisation_frame"] = polarisation_frame
         attrs["configuration"] = configuration  # Antenna/station configuration
         
         super().__init__(datavars, coords=coords, attrs=attrs)

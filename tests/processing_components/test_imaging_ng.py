@@ -114,7 +114,7 @@ class TestImagingNG(unittest.TestCase):
         comps = find_skycomponents(dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5)
         assert len(comps) == len(self.components), "Different number of components found: original %d, recovered %d" % \
                                                    (len(self.components), len(comps))
-        cellsize = abs(dirty.attrs["wcs"].wcs.cdelt[0])
+        cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
         
         for comp in comps:
             # Check for agreement in direction

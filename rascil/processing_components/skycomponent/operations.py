@@ -282,7 +282,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         ys = u.Quantity(list(map(u.Quantity,
                                  comp_prop(segment, "ycentroid"))))
 
-        sc = pixel_to_skycoord(xs, ys, im.attrs["wcs"], 0)
+        sc = pixel_to_skycoord(xs, ys, im.image_acc.wcs, 0)
         ras = sc.ra
         decs = sc.dec
 

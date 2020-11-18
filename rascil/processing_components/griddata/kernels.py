@@ -292,12 +292,15 @@ def create_vpterm_convolutionfunction(im, make_vp=None, oversampling=8, support=
                                     polarisation_frame=im.image_acc.polarisation_frame)
     
     vp = make_vp(subim)
-    
+    assert numpy.max(numpy.abs(vp["pixels"])) > 0.0, "Construction of voltage pattern failed: empty image {}".format(vp)
+
     if pa is not None:
         rvp = convert_azelvp_to_radec(vp, subim, pa)
     else:
         rvp = convert_azelvp_to_radec(vp, subim, 0.0)
     
+    assert numpy.max(numpy.abs(rvp["pixels"])) > 0.0, "Projection from azel to radec failed: empty image {}".format(rvp)
+
     if use_aaf:
         this_pswf_gcf, _ = create_pswf_convolutionfunction(subim, oversampling=1, support=6,
                                                            polarisation_frame=polarisation_frame)

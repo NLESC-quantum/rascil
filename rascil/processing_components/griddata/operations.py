@@ -80,11 +80,11 @@ def create_griddata_from_image(im, polarisation_frame=None):
     gridshape = (nchan, npol, ny, nx)
     data = numpy.zeros(gridshape, dtype='complex')
     
-    wcs = copy.deepcopy(im.image_acc.wcs.wcs)
-    crval = wcs.crval
-    crpix = wcs.crpix
-    cdelt = wcs.cdelt
-    ctype = wcs.ctype
+    wcs = copy.deepcopy(im.image_acc.wcs)
+    crval = wcs.wcs.crval
+    crpix = wcs.wcs.crpix
+    cdelt = wcs.wcs.cdelt
+    ctype = wcs.wcs.ctype
     d2r = numpy.pi / 180.0
     cdelt[0] = 1.0 / (nx * cdelt[0] * d2r)
     cdelt[1] = 1.0 / (ny * cdelt[1] * d2r)
@@ -101,7 +101,8 @@ def create_griddata_from_image(im, polarisation_frame=None):
     if polarisation_frame is None:
         polarisation_frame = im.image_acc.polarisation_frame
     
-    return GridData(data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs, projection_wcs=im.image_acc.wcs)
+    return GridData(data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs,
+                    projection_wcs=im.image_acc.wcs)
 
 
 def qa_griddata(gd, context="") -> QA:

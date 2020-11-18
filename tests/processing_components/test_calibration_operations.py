@@ -64,8 +64,8 @@ class TestCalibrationOperations(unittest.TestCase):
             vis = apply_gaintable(self.vis, gt)
             assert numpy.max(numpy.abs(original.vis)) > 0.0
             assert numpy.max(numpy.abs(vis.vis)) > 0.0
-            if numpy.max(numpy.abs(vis.vis - original.vis)) > 0.0:
-                assert numpy.max(numpy.abs(vis.vis - original.vis)) > 0.0
+            if numpy.max(numpy.abs(vis.vis.data - original.vis.data)) > 0.0:
+                assert numpy.max(numpy.abs(vis.vis.data - original.vis.data)) > 0.0
 
 
     def test_create_gaintable_from_visibility_interval(self):
@@ -78,9 +78,9 @@ class TestCalibrationOperations(unittest.TestCase):
                 gt = simulate_gaintable(gt, phase_error=1.0)
                 original = copy_visibility(self.vis)
                 vis = apply_gaintable(self.vis, gt)
-                assert numpy.max(numpy.abs(original.vis)) > 0.0
-                assert numpy.max(numpy.abs(vis.vis)) > 0.0
-                assert numpy.max(numpy.abs(vis.vis - original.vis)) > 0.0
+                assert numpy.max(numpy.abs(original.vis.data)) > 0.0
+                assert numpy.max(numpy.abs(vis.vis.data)) > 0.0
+                assert numpy.max(numpy.abs(vis.vis.data - original.vis.data)) > 0.0
 
     def test_apply_gaintable_only(self):
         for spf, dpf in[('stokesI', 'stokesI'), ('stokesIQUV', 'linear'), ('stokesIQUV', 'circular')]:
@@ -90,7 +90,7 @@ class TestCalibrationOperations(unittest.TestCase):
             gt = simulate_gaintable(gt, phase_error=0.1, amplitude_error=0.01)
             original = copy_visibility(self.vis)
             vis = apply_gaintable(self.vis, gt)
-            error = numpy.max(numpy.abs(vis.vis - original.vis))
+            error = numpy.max(numpy.abs(vis.vis.data - original.vis.data))
             assert 74 > error > 10.0, "Error = %f" % (error)
 
     def test_apply_gaintable_and_inverse_phase_only(self):
@@ -102,7 +102,7 @@ class TestCalibrationOperations(unittest.TestCase):
             original = copy_visibility(self.vis)
             vis = apply_gaintable(self.vis, gt)
             vis = apply_gaintable(self.vis, gt, inverse=True)
-            error = numpy.max(numpy.abs(vis.vis - original.vis))
+            error = numpy.max(numpy.abs(vis.vis.data - original.vis.data))
             assert error < 1e-12, "Error = %s" % (error)
 
     def test_apply_gaintable_and_inverse_both(self):
@@ -114,7 +114,7 @@ class TestCalibrationOperations(unittest.TestCase):
             original = copy_visibility(self.vis)
             vis = apply_gaintable(self.vis, gt)
             vis = apply_gaintable(self.vis, gt, inverse=True)
-            error = numpy.max(numpy.abs(vis.vis - original.vis))
+            error = numpy.max(numpy.abs(vis.vis.data - original.vis.data))
             assert error < 1e-12, "Error = %s" % (error)
 
     def test_apply_gaintable_null(self):

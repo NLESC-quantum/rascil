@@ -155,8 +155,7 @@ def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
               (data.dtype, str(data.shape)))
     log.debug("import_image_from_fits: Max, min in %s = %.6f, %.6f" % (fitsfile, data.max(), data.min()))
 
-    return Image(data=data, phasecentre=phasecentre, frequency=frequency, polarisation_frame=polarisation_frame,
-                 wcs=wcs)
+    return Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs)
 
 
 def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
@@ -734,8 +733,7 @@ def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: Pol
     except ValueError:
         phasecentre = SkyCoord("0.0d", "0.0d")
 
-    return Image(data=data, phasecentre=phasecentre, frequency=frequency, polarisation_frame=polarisation_frame,
-                 wcs=wcs)
+    return Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs)
 
 def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
     """Convert wcs to polarisation_frame

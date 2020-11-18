@@ -223,8 +223,10 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
             else:
                 log.info("deconvolve_cube %s: Skipping pol %d" % (prefix, pol))
         
-        comp_image = create_image_from_array(comp_array, dirty_taylor.wcs, dirty.image_acc.polarisation_frame)
-        residual_image = create_image_from_array(residual_array, dirty_taylor.wcs, dirty.image_acc.polarisation_frame)
+        comp_image = create_image_from_array(comp_array, dirty_taylor.image_acc.wcs,
+                                             dirty.image_acc.polarisation_frame)
+        residual_image = create_image_from_array(residual_array, dirty_taylor.image_acc.wcs,
+                                                 dirty.image_acc.polarisation_frame)
         
         return_moments = get_parameter(kwargs, "return_moments", False)
         if not return_moments:
@@ -316,7 +318,8 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
                 if pol == 2:
                     continue
         
-        comp_image = create_image_from_array(comp_array, dirty.image_acc.wcs, polarisation_frame=PolarisationFrame('stokesIQUV'))
+        comp_image = create_image_from_array(comp_array, dirty.image_acc.wcs,
+                                             polarisation_frame=PolarisationFrame('stokesIQUV'))
         residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs,
                                                  polarisation_frame=PolarisationFrame('stokesIQUV'))
     

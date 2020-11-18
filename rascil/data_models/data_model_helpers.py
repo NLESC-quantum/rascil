@@ -679,8 +679,7 @@ def convert_hdf_to_image(f):
         s = f.attrs['phasecentre_coords'].split()
         ss = [float(s[0]), float(s[1])] * u.deg
         phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs['phasecentre_frame'])
-        im = Image(data=data, phasecentre=phasecentre, frequency=frequency, wcs=wcs,
-                   polarisation_frame=polarisation_frame)
+        im = Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs)
         return im
     else:
         return None

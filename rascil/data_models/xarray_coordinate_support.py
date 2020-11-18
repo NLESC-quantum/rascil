@@ -35,9 +35,10 @@ def image_wcs(ds):
     else:
         channel_bandwidth = freq
 
+    projection = ds._projection
     # The negation in the longitude is needed by definition of RA, DEC
     w.wcs.crpix = [nx // 2 + 1, ny // 2 + 1, 1.0, 1.0]
-    w.wcs.ctype = ['RA---SIN', 'DEC--SIN', 'STOKES', 'FREQ']
+    w.wcs.ctype = [projection[0], projection[1], 'STOKES', 'FREQ']
     w.wcs.crval = [l, m, pol[0], freq]
     w.wcs.cdelt = [-cellsize_l, cellsize_m, dpol, channel_bandwidth]
     w.wcs.radesys = 'ICRS'

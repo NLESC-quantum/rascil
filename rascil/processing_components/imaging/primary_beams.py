@@ -30,12 +30,9 @@ def set_pb_header(pb, use_local=True):
     :return:
     """
     if use_local:
-        ctypes = pb.attrs["ctypes"]
-        ctypes[0] = 'AZELGEO long'
-        ctypes[1] = 'AZELGEO lati'
 
         nchan, npol, ny, nx = pb["pixels"].shape
-        wcs = copy.deepcopy(pb.wcs)
+        wcs = pb.image_acc.wcs
         wcs.wcs.ctype[0] = 'AZELGEO long'
         wcs.wcs.ctype[1] = 'AZELGEO lati'
         wcs.wcs.crval[0] = 0.0
@@ -44,7 +41,7 @@ def set_pb_header(pb, use_local=True):
         wcs.wcs.crpix[1] = ny // 2
         pb = create_image_from_array(pb["pixels"].data,
                                      wcs=wcs,
-                                     polarisation_frame=pb.polarisation_frame)
+                                     polarisation_frame=pb.image_acc.polarisation_frame)
 
     return pb
 

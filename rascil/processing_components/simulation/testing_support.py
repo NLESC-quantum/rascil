@@ -651,8 +651,7 @@ def replicate_image(im: Image, polarisation_frame=PolarisationFrame('stokesI'), 
         for pol in range(npol):
             data[:, pol] = im["pixels"][:, 0]
     
-    return Image(data=data, phasecentre=phasecentre, polarisation_frame=polarisation_frame, wcs=newwcs,
-                 frequency=frequency)
+    return Image(data=data, polarisation_frame=polarisation_frame, wcs=newwcs)
 
 
 def create_blockvisibility_iterator(config: Configuration, times: numpy.array, frequency: numpy.array,

@@ -421,28 +421,31 @@ class Image(xarray.Dataset):
     
     __slots__ = ()
     
-    def __init__(self, data, phasecentre, frequency, polarisation_frame=None, wcs=None):
+    def __init__(self, data, polarisation_frame=None, wcs=None):
         """ Create an Image
 
         :param data: pixel values
-        :param frequency: Frequency as an numpy array (Hz)
-        :param phasecentre: As a SkyCoord
         :param polarisation_frame: as a PolarisationFrame object
         :return: Image (i.e. xarray.Dataset)
         """
         super().__init__()
         
-        nx, ny = data.shape[-2], data.shape[-1]
-        nchan = len(frequency)
-        npol = polarisation_frame.npol
+        nchan, npol, ny, nx = data.shape
+
+        frequency = wcs.sub([4]).wcs_pix2world(range(nchan), 0)[0]
         cellsize = numpy.deg2rad(numpy.abs(wcs.wcs.cdelt[1]))
-        cx = phasecentre.ra.to("rad").value
-        cy = phasecentre.dec.to("rad").value
+        cx = numpy.deg2rad(wcs.wcs.crval[0])
+        cy = numpy.deg2rad(wcs.wcs.crval[1])
         
         lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
-        ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
-        ra = numpy.deg2rad(ra)
-        dec = numpy.deg2rad(dec)
+        try:
+            ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
+            ra = numpy.deg2rad(ra)
+            dec = numpy.deg2rad(dec)
+        except:
+            log.warning("Coordinates not RA, Dec pair: ra, dec coordinates are x, y meshes")
+            ra = lmesh
+            dec = mmesh
         
         # Define the dimensions
         dims = ["frequency", "polarisation", "y", "x"]
@@ -471,8 +474,9 @@ class Image(xarray.Dataset):
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         
         attrs = {"rascil_data_model": "Image",
-                 "_polarisation_frame": polarisation_frame.type}
-        
+                 "_polarisation_frame": polarisation_frame.type,
+                 "_projection": (wcs.wcs.ctype[0], wcs.wcs.ctype[1])}
+                
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
 
@@ -513,6 +517,14 @@ class ImageAccessor(XarrayAccessorMixin):
         :return:
         """
         return PolarisationFrame(self._obj.attrs["_polarisation_frame"])
+
+    @property
+    def projection(self):
+        """Projection (from coords)
+
+        :return:
+        """
+        return self._obj.attrs["_projection"]
 
     @property
     def phasecentre(self):

@@ -15,7 +15,8 @@ import numpy
 from rascil.data_models import Image, PolarisationFrame
 from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.image.operations import import_image_from_fits, reproject_image, scale_and_rotate_image
-from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, fft_image_to_griddata, pad_image
+from rascil.processing_components.image.operations import create_image_from_array, create_empty_image_like, \
+    ifft_griddata_to_image, fft_image_to_griddata, pad_image
 from rascil import phyconst
 
 log = logging.getLogger('rascil-logger')
@@ -298,16 +299,16 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
     _, _, pny, pnx = padded_beam["pixels"].data.shape
     
     xfr = fft_image_to_griddata(padded_beam)
-    cx, cy = xfr.wcs.sub(2).wcs.crpix[0] - 1, xfr.wcs.sub(2).wcs.crpix[1] - 1
+    cx, cy = xfr.griddata_acc.griddata_wcs.sub(2).wcs.crpix[0] - 1, xfr.griddata_acc.griddata_wcs.sub(2).wcs.crpix[1] - 1
     
     for chan in range(nchan):
         
         # The frequency axis is the second to last in the beam
-        frequency = xfr.wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
+        frequency = xfr.griddata_acc.griddata_wcs.sub(['spectral']).wcs_pix2world([chan], 0)[0]
         wavelength = phyconst.c_m_s / frequency
         
-        scalex = xfr.wcs.sub(2).wcs.cdelt[0] * wavelength
-        scaley = xfr.wcs.sub(2).wcs.cdelt[1] * wavelength
+        scalex = xfr.griddata_acc.griddata_wcs.sub(2).wcs.cdelt[0] * wavelength
+        scaley = xfr.griddata_acc.griddata_wcs.sub(2).wcs.cdelt[1] * wavelength
         # xx, yy in metres
         xx, yy = numpy.meshgrid(scalex * (numpy.arange(pnx) - cx), scaley * (numpy.arange(pny) - cy))
         
@@ -358,7 +359,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
                 xfr["pixels"].data[chan, pol, blc:trc, blc:trc] = \
                     xfr["pixels"].data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
     
-    padded_beam = fft_image_to_griddata(xfr)
+    padded_beam = ifft_griddata_to_image(xfr, padded_beam)
     
     # Undo padding
     beam_data = padded_beam["pixels"].data[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),

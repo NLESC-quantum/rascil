@@ -78,16 +78,14 @@ class TestXarrayCoordinateSupport(unittest.TestCase):
     def test_griddata_conversion(self):
         self.actualSetup()
         gd = create_griddata_from_image(self.model)
-        print(self.model.image_acc.wcs)
-        print(gd.grid_wcs)
-        print(griddata_wcs(gd))
+        assert gd.griddata_acc.shape == self.model.image_acc.shape
+        assert gd.griddata_acc.polarisation_frame.type == self.model.image_acc.polarisation_frame.type
 
     def test_griddata_conversion_pol(self):
         self.actualSetup(dopol=True)
         gd = create_griddata_from_image(self.model)
-        print(self.model.image_acc.wcs)
-        print(gd.grid_wcs)
-        print(griddata_wcs(gd))
+        assert gd.griddata_acc.shape == self.model.image_acc.shape
+        assert gd.griddata_acc.polarisation_frame.type == self.model.image_acc.polarisation_frame.type
 
 
 if __name__ == '__main__':

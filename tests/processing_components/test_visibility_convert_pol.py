@@ -42,7 +42,7 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokesI(vis)
-            assert visi.polarisation_frame.type == 'stokesI'
+            assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesI'
             assert visi.blockvisibility_acc.npol == 1
     
     def test_convert_visibility_stokes(self):
@@ -62,7 +62,7 @@ class TestVisibilityConvertPol(unittest.TestCase):
                                          phasecentre=self.phasecentre, weight=1.0,
                                          polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokesI(vis)
-            assert visi.polarisation_frame.type == 'stokesI'
+            assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesI'
             assert visi.blockvisibility_acc.npol == 1
     
     def test_convert_blockvisibility_stokes(self):

@@ -1250,7 +1250,7 @@ class FlagTable(xarray.Dataset):
                                                 dims="time")
         
         attrs = dict()
-        attrs["_polarisation_frame"] = polarisation_frame
+        attrs["_polarisation_frame"] = polarisation_frame.type
         attrs["configuration"] = configuration  # Antenna/station configuration
         
         super().__init__(datavars, coords=coords, attrs=attrs)
@@ -1274,6 +1274,14 @@ class FlagTableAccessor(XarrayAccessorMixin):
         """
         return self.polarisation_frame.npol
     
+    @property
+    def polarisation_frame(self):
+        """Polarisation frame (from coords)
+
+        :return:
+        """
+        return PolarisationFrame(self._obj.attrs["_polarisation_frame"])
+
     @property
     def nants(self):
         """ Number of antennas

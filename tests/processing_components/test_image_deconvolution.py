@@ -77,9 +77,9 @@ class TestImageDeconvolution(unittest.TestCase):
         
     def test_fit_psf(self):
         clean_beam = fit_psf(self.psf)
-        assert numpy.abs(clean_beam["bmaj"] - 6.60178235770457) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 6.315054203432864) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bpa"] + 0.017625911396022924) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmaj"] - 18.304027311653243) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 17.509048064770884) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=10000, gain=0.1, algorithm='hogbom',

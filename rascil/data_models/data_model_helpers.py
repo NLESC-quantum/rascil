@@ -282,7 +282,7 @@ def convert_flagtable_to_hdf(ft: FlagTable, f):
     
     f.attrs['rascil_data_model'] = 'FlagTable'
     f.attrs['nants'] = numpy.max([b[1] for b in ft.baselines.data]) + 1
-    f.attrs['polarisation_frame'] = ft.polarisation_frame.type
+    f.attrs['polarisation_frame'] = ft.flagtable_acc.polarisation_frame.type
     datavars = ["time", "frequency", "flags", "integration_time", "channel_bandwidth"]
     for var in datavars:
         f["data_{}".format(var)] = ft[var].data
@@ -659,7 +659,7 @@ def convert_image_to_hdf(im: Image, f):
         f.attrs['wcs'] = numpy.string_(im.image_acc.wcs.to_header_string())
         f.attrs['phasecentre_coords'] = im.image_acc.phasecentre.to_string()
         f.attrs['phasecentre_frame'] = im.image_acc.phasecentre.frame.name
-        f.attrs['polarisation_frame'] = im.image_acc.polarisation_frame
+        f.attrs['polarisation_frame'] = im.image_acc.polarisation_frame.type
         f.attrs['frequency'] = im.frequency
     
     return f
@@ -836,9 +836,8 @@ def convert_griddata_to_hdf(gd: GridData, f):
     f.attrs['rascil_data_model'] = 'GridData'
     f['data'] = gd["pixels"].data
     
-    f.attrs['grid_wcs'] = numpy.string_(gd.grid_wcs.to_header_string())
-    f.attrs['projection_wcs'] = numpy.string_(gd.projection_wcs.to_header_string())
-    f.attrs['polarisation_frame'] = gd.polarisation_frame.type
+    f.attrs['grid_wcs'] = numpy.string_(gd.griddata_acc.griddata_wcs.to_header_string())
+    f.attrs['polarisation_frame'] = gd.griddata_acc.polarisation_frame.type
     return f
 
 
@@ -851,7 +850,6 @@ def convert_hdf_to_griddata(f):
     assert f.attrs['rascil_data_model'] == "GridData", "Not a GridData"
     data = numpy.array(f['data'])
     grid_wcs = WCS(f.attrs['grid_wcs'])
-    projection_wcs = WCS(f.attrs['projection_wcs'])
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
     
     gd = GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs)
@@ -911,7 +909,6 @@ def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
     f.attrs['rascil_data_model'] = 'ConvolutionFunction'
     f['data'] = cf["pixels"].data
     f.attrs['grid_wcs'] = numpy.string_(cf.convolutionfunction_acc.cf_wcs.to_header_string())
-    f.attrs['projection_wcs'] = numpy.string_(cf.convolutionfunction_acc.projection_wcs.to_header_string())
     f.attrs['polarisation_frame'] = cf.convolutionfunction_acc.polarisation_frame.type
     return f
 
@@ -926,7 +923,6 @@ def convert_hdf_to_convolutionfunction(f):
     data = numpy.array(f['data'])
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
     cf_wcs = WCS(f.attrs['grid_wcs'])
-    projection_wcs = WCS(f.attrs['projection_wcs'])
     gd = ConvolutionFunction(data, cf_wcs=cf_wcs, polarisation_frame=polarisation_frame)
     return gd
 

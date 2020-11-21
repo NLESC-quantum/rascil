@@ -83,7 +83,7 @@ def shift_vis_to_image(vis: BlockVisibility, im: Image, tangent: bool = True, in
             log.debug("shift_vis_from_image: shifting phasecentre from vis phasecentre %s to image phasecentre %s" %
                       (vis.phasecentre, image_phasecentre))
         vis = phaserotate_visibility(vis, image_phasecentre, tangent=tangent, inverse=inverse)
-        vis.attrs["phasecentre"] = im.phasecentre
+        vis.attrs["phasecentre"] = im.image_acc.phasecentre
 
     return vis
 

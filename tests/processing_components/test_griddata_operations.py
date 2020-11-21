@@ -7,7 +7,7 @@ import unittest
 
 import numpy
 
-from rascil.processing_components.griddata.operations import create_griddata_from_image, convert_griddata_to_image
+from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.simulation import create_test_image
 
 log = logging.getLogger('rascil-logger')
@@ -29,7 +29,6 @@ class TestGridData(unittest.TestCase):
         assert m31model_by_image.griddata_acc.shape[1] == self.m31image.image_acc.shape[1]
         assert m31model_by_image.griddata_acc.shape[2] == self.m31image.image_acc.shape[2]
         assert m31model_by_image.griddata_acc.shape[3] == self.m31image.image_acc.shape[3]
-        print(m31model_by_image)
     
 if __name__ == '__main__':
     unittest.main()

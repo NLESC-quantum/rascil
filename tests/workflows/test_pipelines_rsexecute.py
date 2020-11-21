@@ -135,7 +135,7 @@ class TestPipelineGraphs(unittest.TestCase):
         continuum_imaging_list = \
             continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
-                                                      context='ng',
+                                                      context='2d',
                                                       algorithm='mmclean',
                                                       scales=[0],
                                                       niter=100, fractional_threshold=0.1, threshold=0.01,

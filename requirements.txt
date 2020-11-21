@@ -21,3 +21,4 @@ ConfigParser
 tabulate
 xarray
 pandas
+zarr

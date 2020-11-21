@@ -118,10 +118,10 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                     for ivp, _ in enumerate(vp_types):
                         for gchan in range(gnchan):
                             worldloc = [[(azimuth_comp-azimuth_centre)*cosel, elevation_comp-elevation_centre,
-                                        vp[ivp].wcs.wcs.crval[2], frequency[gchan]]]
+                                        vp[ivp].image_acc.wcs.wcs.crval[2], frequency[gchan]]]
                             # radius = numpy.sqrt(((azimuth_comp-azimuth_centre)*cosel)**2 +
                             #                     (elevation_comp-elevation_centre)**2)
-                            pixloc = vp[ivp].wcs.deepcopy().wcs_world2pix(worldloc, 0)[0]
+                            pixloc = vp[ivp].image_acc.wcs.deepcopy().wcs_world2pix(worldloc, 0)[0]
                             assert pixloc[0] > 2
                             assert pixloc[0] < nx - 3
                             assert pixloc[1] > 2

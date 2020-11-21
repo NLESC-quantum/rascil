@@ -24,6 +24,7 @@ pp = pprint.PrettyPrinter()
 import logging
 
 log = logging.getLogger("rascil-logger")
+
 logging.info("Starting imaging-pipeline")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -31,7 +32,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 class TestImagingPipeline(unittest.TestCase):
     def setUp(self):
 
-        rsexecute.set_client(use_dask=True, verbose=True)
+        rsexecute.set_client(use_dask=True)
 
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -42,6 +43,7 @@ class TestImagingPipeline(unittest.TestCase):
         rsexecute.close()
     
     def test_pipeline(self):
+        
         nfreqwin = 5
         ntimes = 5
         rmax = 300.0
@@ -60,7 +62,7 @@ class TestImagingPipeline(unittest.TestCase):
                                                      phasecentre=phasecentre,
                                                      order='frequency',
                                                      rmax=rmax, format='blockvis',
-                                                     zerow=True)
+                                                     zerow=False)
         
         log.info('%d elements in vis_list' % len(bvis_list))
         log.info('About to make visibility')
@@ -88,7 +90,7 @@ class TestImagingPipeline(unittest.TestCase):
         log.info('About to run predict to get predicted visibility')
         future_vis_graph = rsexecute.scatter(bvis_list)
         predicted_vislist = predict_list_rsexecute_workflow(future_vis_graph, gleam_model,
-                                                            context='2d')
+                                                            context='ng')
         predicted_vislist = rsexecute.persist(predicted_vislist)
         
         model_list = [rsexecute.execute(create_image_from_visibility, nout=1)(bvis_list[f],
@@ -103,23 +105,31 @@ class TestImagingPipeline(unittest.TestCase):
         # Works ok if the model_list is precalculated
         model_list = rsexecute.compute(model_list, sync=True)
 
-        dirty_list = invert_list_rsexecute_workflow(predicted_vislist, model_list, context='2d')
-        psf_list = invert_list_rsexecute_workflow(predicted_vislist, model_list, context='2d', dopsf=True)
+        dirty_list = invert_list_rsexecute_workflow(predicted_vislist, model_list, context='ng',
+                                                    do_wstacking=True)
+        psf_list = invert_list_rsexecute_workflow(predicted_vislist, model_list, context='ng', dopsf=True,
+                                                  do_wstacking=True)
         
         dirty_list = rsexecute.compute(dirty_list, sync=True)
         dirty = dirty_list[0][0]
+        print(qa_image(dirty, context='dirty'))
         show_image(dirty, cm='Greys')
         plt.show()
         
         psf_list = rsexecute.compute(psf_list, sync=True)
         psf = psf_list[0][0]
+        qa = qa_image(psf, context='PSF')
+        print(qa)
         show_image(psf, cm='Greys')
         plt.show()
+        
+        assert numpy.abs(qa.data['max'] - 1.0) < 1e-7, str(qa)
+        
 
         continuum_imaging_list = \
             continuum_imaging_list_rsexecute_workflow(predicted_vislist,
                                                       model_imagelist=model_list,
-                                                      context='2d',
+                                                      context='ng',
                                                       algorithm='mmclean',
                                                       scales=[0],
                                                       niter=100, fractional_threshold=0.1,
@@ -129,7 +139,7 @@ class TestImagingPipeline(unittest.TestCase):
                                                       deconvolve_facets=4,
                                                       deconvolve_overlap=32,
                                                       deconvolve_taper='tukey',
-                                                      psf_support=64)
+                                                      psf_support=64, do_wstacking=True)
                 
         centre = nfreqwin // 2
         continuum_imaging_list = rsexecute.compute(continuum_imaging_list, sync=True)
@@ -143,18 +153,23 @@ class TestImagingPipeline(unittest.TestCase):
         
         plt.show()
         
+        f = show_image(residual[0], title='Residual clean image - no selfcal', cm='Greys')
+        log.info(qa_image(residual[0], context='Residual clean image - no selfcal'))
+        plt.show()
+        export_image_to_fits(residual[0], '%s/test-imaging-pipeline-dask_continuum_imaging_residual.fits'
+                             % (self.dir))
+
         f = show_image(restored, title='Restored clean image - no selfcal',
                        cm='Greys', vmax=1.0, vmin=-0.1)
         log.info(qa_image(restored, context='Restored clean image - no selfcal'))
         plt.show()
         export_image_to_fits(restored, '%s/test-imaging-pipeline-dask_continuum_imaging_restored.fits'
                              % (self.dir))
-        
-        f = show_image(residual[0], title='Residual clean image - no selfcal', cm='Greys')
-        log.info(qa_image(residual[0], context='Residual clean image - no selfcal'))
-        plt.show()
-        export_image_to_fits(residual[0], '%s/test-imaging-pipeline-dask_continuum_imaging_residual.fits'
-                             % (self.dir))
+
+        qa = qa_image(restored, context='Restored clean image - no selfcal')
+
+        assert abs(qa.data['max'] - 4.096861515679981) < 1e-7, str(qa)
+        assert abs(qa.data['min'] + 0.00573330686476301) < 1e-7, str(qa)
 
 if __name__ == '__main__':
     unittest.main()

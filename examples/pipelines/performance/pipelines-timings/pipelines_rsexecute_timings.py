@@ -18,7 +18,6 @@ from rascil.processing_components import create_awterm_convolutionfunction, crea
     image_gather_channels, export_image_to_fits, qa_image, advise_wide_field, create_low_test_skymodel_from_gleam
 from rascil.processing_components import create_image
 from rascil.processing_components.calibration.chain_calibration import create_calibration_controls
-from rascil.processing_components.util.sizeof import get_size
 from rascil.workflows import invert_list_rsexecute_workflow, weight_list_rsexecute_workflow, \
     predict_list_rsexecute_workflow, taper_list_rsexecute_workflow, remove_sumwt, \
     ical_list_rsexecute_workflow, simulate_list_rsexecute_workflow, \

@@ -358,7 +358,7 @@ def create_vp_generic_numeric(model, pointingcentre=None, diameter=15.0, blockag
                 xfr["pixels"].data[chan, pol, blc:trc, blc:trc] = \
                     xfr["pixels"].data[chan, pol, blc:trc, blc:trc] * numpy.exp(1j * phase)
     
-    padded_beam = fft_image_to_griddata(xfr, padded_beam)
+    padded_beam = fft_image_to_griddata(xfr)
     
     # Undo padding
     beam_data = padded_beam["pixels"].data[..., (pny // 2 - ny // 2):(pny // 2 + ny // 2),

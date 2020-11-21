@@ -110,7 +110,7 @@ try:
                                                        nthreads=nthreads,
                                                        verbosity=verbosity)[:, 0]
         
-        vis = convert_pol_frame(vist.T, model.polarisation_frame, bvis.blockvisibility_acc.polarisation_frame, polaxis=2)
+        vis = convert_pol_frame(vist.T, model.image_acc.polarisation_frame, bvis.blockvisibility_acc.polarisation_frame, polaxis=2)
 
         vis = vis.reshape([nrows, nbaselines, vnchan, vnpol])
         newbvis["vis"].data = vis
@@ -159,7 +159,7 @@ try:
 
         ms = sbvis.blockvisibility_acc.flagged_vis.data
         ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
-        ms = convert_pol_frame(ms, bvis.polarisation_frame, im.image_acc.polarisation_frame, polaxis=2)
+        ms = convert_pol_frame(ms, bvis.blockvisibility_acc.polarisation_frame, im.image_acc.polarisation_frame, polaxis=2)
 
         uvw = copy.deepcopy(sbvis.uvw.data)
         uvw = uvw.reshape([nrows * nbaselines, 3])
@@ -205,12 +205,12 @@ try:
             if mfs:
                 dirty = ng.ms2dirty(fuvw.astype(numpy.float64),
                                     bvis.frequency.data.astype(numpy.float64),
-                                    numpy.ascontiguousarray(mst[0, :, :].T),
-                                    numpy.ascontiguousarray(wgtt[0, :, :].T),
+                                    numpy.ascontiguousarray(mst[0, :, :].T), # [row, chan]
+                                    numpy.ascontiguousarray(wgtt[0, :, :].T), # [row, chan]
                                     npixdirty, npixdirty, pixsize, pixsize, epsilon,
                                     do_wstacking=do_wstacking,
                                     nthreads=nthreads, verbosity=verbosity)
-                sumwt[0, :] += numpy.sum(wgtt[0, :, :].T)
+                sumwt[0, :] = numpy.sum(wgtt[0, :, :].T)
                 assert numpy.max(sumwt) > 0.0
                 im["pixels"].data[0, :] += dirty.T
             else:
@@ -224,7 +224,7 @@ try:
                                         npixdirty, npixdirty, pixsize, pixsize, epsilon,
                                         do_wstacking=do_wstacking,
                                         nthreads=nthreads, verbosity=verbosity)
-                    sumwt[ichan, :] += numpy.sum(wgtt[0, ichan, :].T, axis=0)
+                    sumwt[ichan, :] += numpy.sum(wgtt[0, vchan, :].T, axis=0)
                     im["pixels"].data[ichan, :] += dirty.T
         else:
             mst = ms.T
@@ -252,7 +252,7 @@ try:
                                             npixdirty, npixdirty, pixsize, pixsize, epsilon,
                                             do_wstacking=do_wstacking,
                                             nthreads=nthreads, verbosity=verbosity)
-                        sumwt[ichan, pol] += numpy.sum(wgtt[pol, ichan, :].T, axis=0)
+                        sumwt[ichan, pol] += numpy.sum(wgtt[pol, vchan, :].T, axis=0)
                         im["pixels"].data[ichan, pol] += dirty.T
 
         

@@ -135,7 +135,8 @@ class TestDataModelHelpers(unittest.TestCase):
     def test_readwriteimage_zarr(self):
         im = create_image(phasecentre=self.phasecentre, frequency=self.frequency, npixel=256,
                           polarisation_frame=PolarisationFrame("stokesIQUV"))
-        im["pixels"][...] = 1.0
+        rand = numpy.random.random(im["pixels"].shape)
+        im["pixels"][...] = rand
         if self.verbose:
             print(im)
         import os
@@ -143,7 +144,7 @@ class TestDataModelHelpers(unittest.TestCase):
         im.to_zarr(store=store, chunk_store=store, mode="w")
         del im
         newim = xarray.open_zarr(store, chunk_store=store)
-        assert newim["pixels"].data.compute().all() == 1.0
+        assert newim["pixels"].data.compute().all() == rand.all()
 
     def test_readwriteskycomponent(self):
         export_skycomponent_to_hdf5(self.comp, '%s/test_data_model_helpers_skycomponent.hdf' % self.dir)

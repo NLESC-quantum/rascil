@@ -43,7 +43,8 @@ class TestImagingNG(unittest.TestCase):
         
         self.persist = os.getenv("RASCIL_PERSIST", True)
         
-        self.verbosity = 0
+        self.verbosity = 2
+        
     
     def actualSetUp(self, freqwin=1, dospectral=True,
                     image_pol=PolarisationFrame('stokesI'), zerow=False, mfs=False):

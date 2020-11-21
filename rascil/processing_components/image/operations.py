@@ -47,7 +47,7 @@ from rascil.data_models.polarisation import PolarisationFrame, convert_stokes_to
     convert_linear_to_stokes, convert_circular_to_stokes
 from rascil.processing_components.calibration import apply_jones
 from rascil.processing_components.fourier_transforms import w_beam, fft, ifft
-from rascil.processing_components.griddata.operations import create_griddata_from_array
+from rascil.processing_components.griddata.operations import create_griddata_from_image
 
 warnings.simplefilter('ignore', FITSFixedWarning)
 log = logging.getLogger('rascil-logger')
@@ -419,6 +419,7 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     assert not numpy.isnan(numpy.sum(moment_data)), "NaNs present in moment data"
 
     moment_wcs = copy.deepcopy(im.image_acc.wcs)
+    
     moment_wcs.wcs.ctype[3] = 'MOMENT'
     moment_wcs.wcs.crval[3] = 0.0
     moment_wcs.wcs.crpix[3] = 1.0
@@ -465,15 +466,20 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
         reference_frequency = numpy.average(im.frequency.data)
     log.debug("calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)" % (reference_frequency))
     
-    newim = create_empty_image_like(im)
-    
+    newim_wcs = im.image_acc.wcs
+    newim_wcs.wcs.ctype[3] = "MOMENT"
+    newim_wcs.wcs.crval[3] = 1
+    newim_wcs.wcs.crpix[3] = 1
+    newim_wcs.wcs.cdelt[3] = 1
+
+    newim_data = numpy.zeros_like(im["pixels"].data[...])
     for moment in range(nmoment):
         for chan in range(nchan):
             weight = numpy.power((im.frequency[chan].data - reference_frequency) / reference_frequency, moment)
-            newim["pixels"].data[chan, ...] += moment_image["pixels"].data[moment, ...] * weight
+            newim_data[chan, ...] += moment_image["pixels"].data[moment, ...] * weight
     
-    assert image_is_canonical(newim)
-    
+    newim = create_image_from_array(newim_data, wcs=newim_wcs,
+                                    polarisation_frame=im.image_acc.polarisation_frame)
     return newim
 
 
@@ -637,16 +643,6 @@ def create_window(template, window_type, **kwargs):
     
     return window
 
-
-def image_sizeof(im: Image):
-    """ Return size of Image in GB
-
-    :param im: Image
-    :return: Float, size in GB
-    """
-    return im.image_acc.size()
-
-
 def create_image(npixel=512,
                  cellsize=0.000015,
                  polarisation_frame=PolarisationFrame("stokesI"),
@@ -687,16 +683,22 @@ def create_image(npixel=512,
     
     shape = [nchan, npol, npixel, npixel]
     w = WCS(naxis=4)
+    pol = PolarisationFrame.fits_codes[polarisation_frame.type]
+    if npol > 1:
+        dpol = pol[1] - pol[0]
+    else:
+        dpol = 1.0
+        
     # The negation in the longitude is needed by definition of RA, DEC
-    w.wcs.cdelt = [-cellsize * 180.0 / numpy.pi, cellsize * 180.0 / numpy.pi, 1.0, channel_bandwidth[0]]
-    w.wcs.crpix = [npixel // 2 + 1, npixel // 2 + 1, 1.0, 1.0]
+    w.wcs.cdelt = [-cellsize * 180.0 / numpy.pi, cellsize * 180.0 / numpy.pi, dpol, channel_bandwidth[0]]
+    w.wcs.crpix = [npixel // 2 + 1, npixel // 2 + 1, pol[0], 1.0]
     w.wcs.ctype = ["RA---SIN", "DEC--SIN", 'STOKES', 'FREQ']
     w.wcs.crval = [phasecentre.ra.deg, phasecentre.dec.deg, 1.0, frequency[0]]
     w.naxis = 4
     w.wcs.radesys = 'ICRS'
     w.wcs.equinox = 2000.0
     
-    return create_image_from_array(numpy.zeros(shape, dtype=dtype), w, polarisation_frame=polarisation_frame)
+    return Image(numpy.zeros(shape, dtype=dtype), wcs=w, polarisation_frame=polarisation_frame)
 
 
 def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: PolarisationFrame,
@@ -716,22 +718,6 @@ def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: Pol
         :py:func:`rascil.processing_components.imaging.base.create_image_from_visibility`
 
     """
-
-    if len(data.shape) == 2:
-        polarisation_frame = PolarisationFrame('stokesI')
-        frequency = numpy.array([1e8])
-    else:
-        try:
-            w = wcs.sub(['spectral'])
-            nchan = data.shape[-4]
-            frequency = w.wcs_pix2world(range(nchan), 0)[0]
-        except ValueError:
-            frequency = numpy.array([1e8])
-
-    try:
-        phasecentre = SkyCoord(wcs.wcs.crval[0] * u.deg, wcs.wcs.crval[1] * u.deg)
-    except ValueError:
-        phasecentre = SkyCoord("0.0d", "0.0d")
 
     return Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs)
 
@@ -803,7 +789,7 @@ def create_empty_image_like(im: Image) -> Image:
                                    polarisation_frame=im.image_acc.polarisation_frame)
 
 
-def fft_image_to_griddata(im, template_image=None):
+def fft_image_to_griddata(im):
     """ WCS-aware FFT of a canonical image
 
     The only transforms supported are:
@@ -846,7 +832,6 @@ def fft_image_to_griddata(im, template_image=None):
                 Polarisation frame: stokesI
 
     :param im:
-    :param template_image:
     :return:
 
     See also
@@ -856,33 +841,20 @@ def fft_image_to_griddata(im, template_image=None):
     assert im.attrs["rascil_data_model"] == "Image"
     
     assert len(im["pixels"].data.shape) == 4
-    d2r = numpy.pi / 180.0
-    ft_wcs = copy.deepcopy(im.image_acc.wcs)
     wcs = im.image_acc.wcs
-    ft_shape = im["pixels"].data.shape
-    ft_wcs.wcs.axis_types[0] = 0
-    ft_wcs.wcs.axis_types[1] = 0
-    ft_wcs.wcs.crval[0] = 0.0
-    ft_wcs.wcs.crval[1] = 0.0
-    ft_wcs.wcs.crpix[0] = ft_shape[3] // 2 + 1
-    ft_wcs.wcs.crpix[1] = ft_shape[2] // 2 + 1
     
     if wcs.wcs.ctype[0] == 'RA---SIN' and wcs.wcs.ctype[1] == 'DEC--SIN':
-        ft_wcs.wcs.ctype[0] = 'UU'
-        ft_wcs.wcs.ctype[1] = 'VV'
+        ft_types = ['UU', 'VV']
     elif wcs.wcs.ctype[0] == 'XX' and wcs.wcs.ctype[1] == 'YY':
-        ft_wcs.wcs.ctype[0] = 'KX'
-        ft_wcs.wcs.ctype[1] = 'KY'
+        ft_types = ['KX', 'KY']
     elif wcs.wcs.ctype[0] == 'AZELGEO long' and wcs.wcs.ctype[1] == 'AZELGEO lati':
-        ft_wcs.wcs.ctype[0] = 'UU_AZELGEO'
-        ft_wcs.wcs.ctype[1] = 'VV_AZELGEO'
+        ft_types = ['KX', 'KY']
     else:
         raise NotImplementedError("Cannot FFT specified axes {0}, {1}".format(wcs.wcs.ctype[0], wcs.wcs.ctype[1]))
 
-    ft_data = ifft(im["pixels"].data.astype('complex'))
-    return create_griddata_from_array(ft_data, grid_wcs=ft_wcs, polarisation_frame=im.image_acc.polarisation_frame,
-                                      projection_wcs=wcs)
-
+    gd = create_griddata_from_image(im, ft_types=ft_types)
+    gd["pixels"].data = ifft(im["pixels"].data.astype('complex'))
+    return gd
 
 def ifft_griddata_to_image(gd, template):
     """ WCS-aware FFT of a canonical image
@@ -926,9 +898,9 @@ def ifft_griddata_to_image(gd, template):
             NAXIS : 0  0
                 Polarisation frame: stokesI
 
-    :param im:
-    :param template_image:
-    :return:
+    :param gd: Input GridData
+    :param template_image: Template output image
+    :return: Image
 
     See also
         :py:func:`rascil.processing_components.fourier_transforms.fft_support.fft`
@@ -938,6 +910,7 @@ def ifft_griddata_to_image(gd, template):
     wcs = gd.griddata_acc.griddata_wcs
     template_wcs = template.image_acc.wcs
     ft_wcs = copy.deepcopy(template_wcs)
+    
     if wcs.wcs.ctype[0] == 'UU' and wcs.wcs.ctype[1] == 'VV':
         ft_wcs.wcs.ctype[0] = template_wcs.wcs.ctype[0]
         ft_wcs.wcs.ctype[1] = template_wcs.wcs.ctype[1]
@@ -952,7 +925,8 @@ def ifft_griddata_to_image(gd, template):
         raise NotImplementedError("Cannot IFFT specified axes {0}, {1}".format(wcs.wcs.ctype[0], wcs.wcs.ctype[1]))
 
     ft_data = fft(gd["pixels"].data.astype('complex'))
-    return create_image_from_array(ft_data, wcs=template_wcs, polarisation_frame=gd.griddata_acc.polarisation_frame)
+    return create_image_from_array(ft_data, wcs=template_wcs,
+                                   polarisation_frame=gd.griddata_acc.polarisation_frame)
 
 
 def pad_image(im: Image, shape):

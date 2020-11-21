@@ -360,7 +360,7 @@ def fit_psf(psf: Image, **kwargs):
         else:
             # Note that the order here is minor, major, pa
             beam_pixels = (fit.x_stddev.value, fit.y_stddev.value, fit.theta.value)
-            log.debug('fit_psf: fitted = {} pixels'.format(beam_pixels))
+            log.debug('fit_psf: fitted (pixels, pixels, rad) = {}'.format(beam_pixels))
     except minpack.error as err:
         log.warning('fit_psf: minpack error, using 1 pixel stddev')
         beam_pixels = (1.0, 1.0, 0.0)
@@ -370,9 +370,11 @@ def fit_psf(psf: Image, **kwargs):
 
     cellsize = 3600.0 * numpy.abs((psf["x"][0].data - psf["x"][-1].data)) / len(psf["x"])
 
-    clean_beam = {"bmaj": beam_pixels[1] * cellsize,
-                  "bmin": beam_pixels[0] * cellsize,
-                  "bpa": beam_pixels[2]}
+    to_mm = 4.0 * numpy.log(2.0)
+    
+    clean_beam = {"bmaj": beam_pixels[1] * cellsize * to_mm,
+                  "bmin": beam_pixels[0] * cellsize * to_mm,
+                  "bpa": numpy.rad2deg(beam_pixels[2])}
 
     return clean_beam
 
@@ -392,11 +394,15 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
     
     if clean_beam is None:
         clean_beam = fit_psf(psf)
-        log.info('restore_cube: Using fitted clean beam = {}'.format(clean_beam))
+        log.info('restore_cube: Using fitted clean beam (asec, asec, deg) = {}'.format(clean_beam))
     else:
-        log.info('restore_cube: Using specified clean beam = {}'.format(clean_beam))
-        
-    beam_pixels = (clean_beam["bmaj"] / cellsize, clean_beam["bmin"] / cellsize, clean_beam["bpa"])
+        log.info('restore_cube: Using specified clean beam  (asec, asec, deg) = {}'.format(clean_beam))
+
+    to_mm = 4.0 * numpy.log(2.0)
+
+    beam_pixels = (clean_beam["bmaj"] / (cellsize * to_mm),
+                   clean_beam["bmin"] / (cellsize * to_mm),
+                   numpy.deg2rad(clean_beam["bpa"]))
     
     norm = 2.0 * numpy.pi * beam_pixels[0] * beam_pixels[1]
     gk = Gaussian2DKernel(x_stddev=beam_pixels[0], y_stddev=beam_pixels[1], theta=beam_pixels[2])

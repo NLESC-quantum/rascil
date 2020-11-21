@@ -135,7 +135,7 @@ class TestPipelineGraphs(unittest.TestCase):
         continuum_imaging_list = \
             continuum_imaging_list_rsexecute_workflow(self.blockvis_list,
                                                       model_imagelist=self.model_imagelist,
-                                                      context='2d',
+                                                      context='ng',
                                                       algorithm='mmclean',
                                                       scales=[0],
                                                       niter=100, fractional_threshold=0.1, threshold=0.01,
@@ -143,7 +143,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                                       nmajor=5, gain=0.7,
                                                       deconvolve_facets=4, deconvolve_overlap=32,
                                                       deconvolve_taper='tukey', psf_support=64,
-                                                      restore_facets=1)
+                                                      restore_facets=1,
+                                                      do_wstacking=True)
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
         if self.persist:

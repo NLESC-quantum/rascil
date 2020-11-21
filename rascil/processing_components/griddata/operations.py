@@ -11,7 +11,7 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 
 """
 
-__all__ = ['griddata_sizeof', 'create_griddata_from_image', 'create_griddata_from_array', 'copy_griddata',
+__all__ = ['create_griddata_from_image', 'create_griddata_from_array', 'copy_griddata',
            'qa_griddata']
 
 import copy
@@ -37,14 +37,7 @@ def copy_griddata(gd):
     return newgd
 
 
-def griddata_sizeof(gd: GridData):
-    """ Return size in GB
-    """
-    return gd.data.nbytes() / 1024 / 1024 / 1024
-
-
-def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs: WCS,
-                               polarisation_frame: PolarisationFrame) -> GridData:
+def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, polarisation_frame: PolarisationFrame) -> GridData:
     """ Create a griddata from an array and wcs's
     
     The griddata has axes [chan, pol, z, y, x] where z, y, x are spatial axes in either sky or Fourier plane. The
@@ -54,7 +47,6 @@ def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs:
 
     :param data: Numpy.array
     :param grid_wcs: Grid world coordinate system
-    :param projection_wcs: Projection world coordinate system
     :param polarisation_frame: Polarisation Frame
     :return: GridData
     
@@ -63,11 +55,10 @@ def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs:
     log.debug("create_griddata_from_array: created %s image of shape %s" %
               (data.dtype, str(data.shape)))
     
-    return GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs.deepcopy(),
-                    projection_wcs=projection_wcs)
+    return GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs.deepcopy())
 
 
-def create_griddata_from_image(im, polarisation_frame=None):
+def create_griddata_from_image(im, polarisation_frame=None, ft_types=None):
     """ Create a GridData from an image
 
     :param im: Template Image
@@ -76,6 +67,8 @@ def create_griddata_from_image(im, polarisation_frame=None):
     :return: GridData
     """
     
+    if ft_types is None:
+        ft_types = ["UU", "VV"]
     nchan, npol, ny, nx = im["pixels"].shape
     gridshape = (nchan, npol, ny, nx)
     data = numpy.zeros(gridshape, dtype='complex')
@@ -92,7 +85,7 @@ def create_griddata_from_image(im, polarisation_frame=None):
     # The negation in the longitude is needed by definition of RA, DEC
     grid_wcs = WCS(naxis=4)
     grid_wcs.wcs.crpix = [nx // 2 + 1, ny // 2 + 1, crpix[2], crpix[3]]
-    grid_wcs.wcs.ctype = ["UU", "VV", ctype[2], ctype[3]]
+    grid_wcs.wcs.ctype = [ft_types[0], ft_types[1], ctype[2], ctype[3]]
     grid_wcs.wcs.crval = [0.0, 0.0, crval[2], crval[3]]
     grid_wcs.wcs.cdelt = [cdelt[0], cdelt[1], cdelt[2], cdelt[3]]
     grid_wcs.wcs.radesys = 'ICRS'
@@ -101,8 +94,7 @@ def create_griddata_from_image(im, polarisation_frame=None):
     if polarisation_frame is None:
         polarisation_frame = im.image_acc.polarisation_frame
     
-    return GridData(data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs,
-                    projection_wcs=im.image_acc.wcs)
+    return GridData(data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs)
 
 
 def qa_griddata(gd, context="") -> QA:

@@ -854,7 +854,7 @@ def convert_hdf_to_griddata(f):
     projection_wcs = WCS(f.attrs['projection_wcs'])
     polarisation_frame = PolarisationFrame(f.attrs['polarisation_frame'])
     
-    gd = GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs, projection_wcs=projection_wcs)
+    gd = GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs)
     
     return gd
 

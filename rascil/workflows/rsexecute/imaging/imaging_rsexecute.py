@@ -298,7 +298,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         wcs = copy.deepcopy(psf.image_acc.wcs)
         wcs.wcs.crpix[0] -= xbeg
         wcs.wcs.crpix[1] -= ybeg
-        spsf = create_image_from_array(spsf_data, wcs=wcs, polarisation_frame=psf.polarisation_frame)
+        spsf = create_image_from_array(spsf_data, wcs=wcs, polarisation_frame=psf.image_acc.polarisation_frame)
         return spsf
     
     psf_list_trimmed = [rsexecute.execute(extract_psf)(p, deconvolve_facets) for p in psf_list_trimmed]

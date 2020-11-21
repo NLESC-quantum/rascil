@@ -475,7 +475,8 @@ class Image(xarray.Dataset):
         
         attrs = {"rascil_data_model": "Image",
                  "_polarisation_frame": polarisation_frame.type,
-                 "_projection": (wcs.wcs.ctype[0], wcs.wcs.ctype[1])}
+                 "_projection": (wcs.wcs.ctype[0], wcs.wcs.ctype[1]),
+                 "spectral_type": wcs.wcs.ctype[3]}
                 
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
@@ -581,10 +582,9 @@ class GridData(xarray.Dataset):
     
     __slots__ = ()
     
-    def __init__(self, data, polarisation_frame=None, grid_wcs=None, projection_wcs=None):
+    def __init__(self, data, polarisation_frame=None, grid_wcs=None):
         """ Create a GridData
 
-        :param projection_wcs:
         :param polarisation_frame:
         :return: GridData
         """

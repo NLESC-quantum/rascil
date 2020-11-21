@@ -36,7 +36,7 @@ class TestImage(unittest.TestCase):
         # assert numpy.max(self.m31image["pixels"]) > 0.0, "Test image is empty"
         self.cellsize = 180.0 * 0.0001 / numpy.pi
         self.persist = os.getenv("RASCIL_PERSIST", False)
-    
+
     def test_create_image(self):
         phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
         newimage = create_image(npixel=1024, cellsize=0.0001, polarisation_frame=PolarisationFrame("stokesIQUV"),
@@ -45,8 +45,18 @@ class TestImage(unittest.TestCase):
                                 channel_bandwidth=1e7 * numpy.ones([5]))
         assert newimage.image_acc.shape == (5, 4, 1024, 1024)
         assert newimage.image_acc.phasecentre.separation(phasecentre).value < 1e-12
-        assert newimage.polarisation_frame == "stokesIQUV"
-    
+        assert newimage.image_acc.polarisation_frame.type == "stokesIQUV"
+
+    def test_create_image_IQ(self):
+        phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
+        newimage = create_image(npixel=1024, cellsize=0.0001, polarisation_frame=PolarisationFrame("stokesIQ"),
+                                frequency=numpy.linspace(0.8e9, 1.2e9, 5),
+                                phasecentre=phasecentre,
+                                channel_bandwidth=1e7 * numpy.ones([5]))
+        assert newimage.image_acc.shape == (5, 2, 1024, 1024)
+        assert newimage.image_acc.phasecentre.separation(phasecentre).value < 1e-12
+        assert newimage.image_acc.polarisation_frame.type == "stokesIQ"
+
     def test_create_image_from_array(self):
         m31model_by_array = create_image_from_array(self.m31image["pixels"],
                                                     self.m31image.image_acc.wcs,
@@ -145,8 +155,10 @@ class TestImage(unittest.TestCase):
         if self.persist: export_image_to_fits(original_cube, fitsfile='%s/test_moments_cube.fits' % (self.dir))
         cube = create_empty_image_like(original_cube)
         moment_cube = calculate_image_frequency_moments(cube, nmoment=3)
+        print(moment_cube.image_acc.wcs)
         if self.persist: export_image_to_fits(moment_cube, fitsfile='%s/test_moments_moment_cube.fits' % (self.dir))
         reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)
+        print(reconstructed_cube.image_acc.wcs)
         if self.persist: export_image_to_fits(reconstructed_cube, fitsfile='%s/test_moments_reconstructed_cube.fits' % (
             self.dir))
         error = numpy.std(reconstructed_cube["pixels"].data - original_cube["pixels"].data)
@@ -210,9 +222,6 @@ class TestImage(unittest.TestCase):
         m31image = create_test_image(cellsize=0.001, frequency=[1e8])
         padded = pad_image(m31image, [1, 1, 1024, 1024])
         assert padded.image_acc.shape == (1, 1, 1024, 1024)
-        
-        with self.assertRaises(AssertionError):
-            padded = pad_image(m31image, [3, 4, 2048, 2048])
         
         with self.assertRaises(ValueError):
             padded = pad_image(m31image, [1, 1, 100, 100])

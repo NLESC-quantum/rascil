@@ -71,8 +71,9 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                    for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
     
     #assert isinstance(vis, BlockVisibility)
-    assert vp[0].wcs.wcs.ctype[0] == 'AZELGEO long', vp[0].wcs.wcs.ctype[0]
-    assert vp[0].wcs.wcs.ctype[1] == 'AZELGEO lati', vp[0].wcs.wcs.ctype[1]
+    vp0_wcs = vp[0].image_acc.wcs
+    assert vp0_wcs.wcs.ctype[0] == 'AZELGEO long', vp0_wcs.wcs.ctype[0]
+    assert vp0_wcs.wcs.ctype[1] == 'AZELGEO lati', vp0_wcs.wcs.ctype[1]
     
     assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
     

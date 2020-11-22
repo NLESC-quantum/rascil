@@ -56,14 +56,12 @@ import logging
 
 import numpy
 
-from rascil.processing_components.visibility import convert_visibility_to_blockvisibility, \
-    convert_blockvisibility_to_visibility
 from rascil.processing_components.calibration.operations import apply_gaintable, \
     create_gaintable_from_blockvisibility, qa_gaintable
-from rascil.data_models.memory_data_models import Visibility, BlockVisibility
+from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.solvers import solve_gaintable
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def create_calibration_controls():
     """Create a dictionary containing default chanin calibration controls
@@ -122,7 +120,7 @@ def apply_calibration_chain(vis, gaintables, calibration_context='T', controls=N
 
     if changes:
 
-        assert isinstance(vis, BlockVisibility), vis
+        ##assert isinstance(vis, BlockVisibility), vis
 
         for c in calibration_context:
             if iteration >= controls[c]['first_selfcal']:
@@ -161,7 +159,7 @@ def calibrate_chain(vis, model_vis, gaintables=None, calibration_context='T', co
         avis = vis
         amvis = model_vis
 
-        assert isinstance(avis, BlockVisibility), avis
+        ##assert isinstance(avis, BlockVisibility), avis
 
         if gaintables is None:
             gaintables = dict()
@@ -212,9 +210,9 @@ def solve_calibrate_chain(vis, model_vis, gaintables=None, calibration_context='
 
     amvis = model_vis
 
-    assert isinstance(avis, BlockVisibility), avis
+    ##assert isinstance(avis, BlockVisibility), avis
 
-    assert amvis.__repr__() != avis.__repr__(), "Vis and model vis are the same object: convert problem"
+    #assert amvis.__repr__() != avis.__repr__(), "Vis and model vis are the same object: convert problem"
 
     # Always return a gain table, even if null
     
@@ -227,7 +225,7 @@ def solve_calibrate_chain(vis, model_vis, gaintables=None, calibration_context='
                 create_gaintable_from_blockvisibility(avis,
                                                       timeslice=controls[c]['timeslice'])
         if iteration >= controls[c]['first_selfcal']:
-            if numpy.max(numpy.abs(vis.flagged_weight)) > 0.0 and (amvis is None or numpy.max(numpy.abs(amvis.vis)) > 0.0):
+            if numpy.max(numpy.abs(vis.blockvisibility_acc.flagged_weight)) > 0.0 and (amvis is None or numpy.max(numpy.abs(amvis.vis)) > 0.0):
                 gaintables[c] = solve_gaintable(avis, amvis,
                                                 gt=gaintables[c],
                                                 timeslice=controls[c]['timeslice'],

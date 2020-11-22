@@ -17,7 +17,7 @@ from rascil.processing_components.simulation.surface import simulate_gaintable_f
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components import create_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -41,7 +41,7 @@ class TestSurface(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame('stokesI'))
-        self.vis.data['vis'] *= 0.0
+        self.vis['vis'].data *= 0.0
         
         # Create model
         self.model = create_image(npixel=512, cellsize=0.001, polarisation_frame=PolarisationFrame("stokesI"),
@@ -56,7 +56,8 @@ class TestSurface(unittest.TestCase):
 
         key_nolls = [3, 5, 6, 7]
         vp_list = list()
-        vp_list.append(create_vp(self.model, 'MID_GAUSS', use_local=True))
+        vp_list.append(create_vp_generic_numeric(self.model, pointingcentre=None, diameter=15.0, blockage=0.0,
+                                                      taper='gaussian', edge=0.03162278, padding=2, use_local=True))
         vp_coeffs = numpy.ones([self.nants, len(key_nolls)+1])
         for inoll, noll in enumerate(key_nolls):
             zernike = {'coeff': 1.0, 'noll': noll}
@@ -65,6 +66,8 @@ class TestSurface(unittest.TestCase):
                                                       taper='gaussian',
                                                       edge=0.03162278, zernikes=[zernike], padding=2, use_local=True))
 
+        for vp in vp_list:
+            assert vp.image_acc.wcs.wcs.ctype[0] == "AZELGEO long", vp.image_acc.wcs.wcs.ctype[0]
         gt = simulate_gaintable_from_zernikes(self.vis, component, vp_list, vp_coeffs)
 
         import matplotlib.pyplot as plt

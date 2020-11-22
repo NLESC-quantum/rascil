@@ -18,7 +18,7 @@ import numpy
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, Angle
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def angle_to_quanta(angle):
@@ -34,9 +34,9 @@ def calculate_parallactic_angles(location, utc_time, direction):
     :return: Angle
     """
     
-    assert isinstance(location, EarthLocation)
-    assert isinstance(utc_time, Time)
-    assert isinstance(direction, SkyCoord)
+    #assert isinstance(location, EarthLocation)
+    #assert isinstance(utc_time, Time)
+    #assert isinstance(direction, SkyCoord)
     
     from casacore.measures import measures
     dm = measures()
@@ -72,9 +72,9 @@ def calculate_hourangles(location, utc_time, direction):
     :return: Angle
     """
     
-    assert isinstance(location, EarthLocation)
-    assert isinstance(utc_time, Time)
-    assert isinstance(direction, SkyCoord)
+    #assert isinstance(location, EarthLocation)
+    #assert isinstance(utc_time, Time)
+    #assert isinstance(direction, SkyCoord)
     
     from casacore.measures import measures
     dm = measures()
@@ -106,16 +106,16 @@ def calculate_transit_time(location, utc_time, direction, fraction_day=1e-7):
     :return: astropy Time
     """
     import scipy.optimize._minimize
-    assert isinstance(location, EarthLocation)
-    assert isinstance(utc_time, Time)
-    assert isinstance(direction, SkyCoord)
-
+    #assert isinstance(location, EarthLocation)
+    #assert isinstance(utc_time, Time)
+    #assert isinstance(direction, SkyCoord)
+    
     def transit(utc):
         return -1 * calculate_azel(location, Time(utc, format='mjd', scale='utc'), direction)[1].value
     
     solution = scipy.optimize.minimize(transit,
                                        x0=numpy.array([utc_time.mjd + 0.5]),
-                                       bounds=[(utc_time.mjd, utc_time.mjd+1.0)],
+                                       bounds=[(utc_time.mjd, utc_time.mjd + 1.0)],
                                        tol=fraction_day)
     time_transit = solution['x']
     if not solution['success']:
@@ -137,9 +137,9 @@ def calculate_azel(location, utc_time, direction):
     :param direction: SkyCoord source
     :return: astropy Angle, Angle
     """
-    assert isinstance(location, EarthLocation)
-    assert isinstance(utc_time, Time)
-    assert isinstance(direction, SkyCoord)
+    #assert isinstance(location, EarthLocation)
+    #assert isinstance(utc_time, Time)
+    #assert isinstance(direction, SkyCoord)
 
     # Use the casa measures
     from casacore.measures import measures

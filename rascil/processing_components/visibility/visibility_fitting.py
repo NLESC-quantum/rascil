@@ -1,11 +1,10 @@
-""" Visibility operations
+""" BlockVisibility fitting
 
 """
 
 __all__ = ['fit_visibility']
 
 import numpy
-
 from scipy.optimize import minimize
 
 from rascil.processing_components.util.coordinate_support import lmn_to_skycoord, skycoord_to_lmn
@@ -16,7 +15,7 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
     
     Uses the scipy.optimize.minimize function.
     
-    :param vis: Visibility
+    :param vis: blockvisibility
     :param sc: Initial component
     :param tol: Tolerance of fit
     :param niter: Number of iterations
@@ -26,80 +25,78 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
     :return: Skycomponent, convergence info as a dictionary
     """
     
-    assert vis.polarisation_frame.type == 'stokesI', "Currently restricted to stokesI"
-
+    assert vis.blockvisibility_acc.polarisation_frame.type == 'stokesI', "Currently restricted to stokesI"
+    
     # These derivative have been calculated using sympy. See visibility_fitting_sympy.py
     def J(params):
         # Params are flux, l, m
         S = params[0]
         l = params[1]
         m = params[2]
-        u = vis.u[:, numpy.newaxis]
-        v = vis.v[:, numpy.newaxis]
-        vobs = vis.vis
-        p = numpy.exp( -2j * numpy.pi * (u * l + v * m))
+        u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
+        v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
+        vobs = vis.blockvisibility_acc.flagged_vis.data
+        p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
-        J = numpy.sum(vis.flagged_weight * (vres * numpy.conjugate(vres)).real)
+        J = numpy.sum(vis.blockvisibility_acc.flagged_weight.data * (vres * numpy.conjugate(vres)).real)
         return J
-
-
+    
     def Jboth(params):
         # Params are flux, l, m
         S = params[0]
         l = params[1]
         m = params[2]
-        u = vis.u[:, numpy.newaxis]
-        v = vis.v[:, numpy.newaxis]
-        vobs = vis.vis
-        p = numpy.exp( -2j * numpy.pi * (u * l + v * m))
+        u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
+        v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
+        vobs = vis.blockvisibility_acc.flagged_vis.data
+        p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
-        Vrp = vres * numpy.conjugate(p) * vis.flagged_weight
-        J = numpy.sum(vis.flagged_weight * (vres * numpy.conjugate(vres)).real)
+        Vrp = vres * numpy.conjugate(p) * vis.blockvisibility_acc.flagged_weight.data
+        J = numpy.sum(vis.blockvisibility_acc.flagged_weight.data * (vres * numpy.conjugate(vres)).real)
         gradJ = numpy.array([- 2.0 * numpy.sum(Vrp.real),
                              + 4.0 * numpy.pi * S * numpy.sum(u * Vrp.imag),
                              + 4.0 * numpy.pi * S * numpy.sum(v * Vrp.imag)])
         return J, gradJ
-
+    
     def hessian(params):
         S = params[0]
         l = params[1]
         m = params[2]
         
-        u = vis.u[:, numpy.newaxis]
-        v = vis.v[:, numpy.newaxis]
-        w = vis.w[:, numpy.newaxis]
-        wt = vis.flagged_weight
-
-        vobs = vis.vis
-        p = numpy.exp( -2j * numpy.pi * (u * l + v * m))
+        u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
+        v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
+        wt = vis.blockvisibility_acc.flagged_weight.data
+        
+        vobs = vis.blockvisibility_acc.flagged_vis.data
+        p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
         Vrp = vres * numpy.conjugate(p)
         
-        hess = numpy.zeros([3,3])
-        hess[0,0] = 2.0 * numpy.sum(wt)
+        hess = numpy.zeros([3, 3])
+        hess[0, 0] = 2.0 * numpy.sum(wt)
         
-        hess[0,1] = 4.0 * numpy.pi * numpy.sum(wt * u * Vrp.imag)
-        hess[0,2] = 4.0 * numpy.pi * numpy.sum(wt * v * Vrp.imag)
+        hess[0, 1] = 4.0 * numpy.pi * numpy.sum(wt * u * Vrp.imag)
+        hess[0, 2] = 4.0 * numpy.pi * numpy.sum(wt * v * Vrp.imag)
         
-        hess[1,1] = 8.0 * numpy.pi**2 * S * numpy.sum(wt * u**2  * (S + Vrp.real))
-        hess[1,2] = 8.0 * numpy.pi**2 * S * numpy.sum(wt * u * v * (S + Vrp.real))
-        hess[2,2] = 8.0 * numpy.pi**2 * S * numpy.sum(wt * v**2  * (S + Vrp.real))
+        hess[1, 1] = 8.0 * numpy.pi ** 2 * S * numpy.sum(wt * u ** 2 * (S + Vrp.real))
+        hess[1, 2] = 8.0 * numpy.pi ** 2 * S * numpy.sum(wt * u * v * (S + Vrp.real))
+        hess[2, 2] = 8.0 * numpy.pi ** 2 * S * numpy.sum(wt * v ** 2 * (S + Vrp.real))
         
-        hess[1,0] = hess[0,1]
-        hess[2,0] = hess[0,2]
-        hess[2,1] = hess[1,2]
-
+        hess[1, 0] = hess[0, 1]
+        hess[2, 0] = hess[0, 2]
+        hess[2, 1] = hess[1, 2]
+        
         return hess
     
     # Initialize l,m,n to be in the direction of the component as defined in the frame of
     # visibility phasecentre
     l, m, n = skycoord_to_lmn(sc.direction, vis.phasecentre)
-
+    
     x0 = numpy.array([sc.flux[0, 0], l, m])
-
+    
     bounds = ((None, None), (-0.1, -0.1), (-0.1, 0.1))
     options = {'maxiter': niter, 'disp': verbose}
-    res={}
+    res = {}
     import time
     start = time.time()
     if method == 'BFGS' or method == 'CG' or method == 'Powell':
@@ -115,9 +112,9 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         print("Solution for %s took %.6f seconds" % (method, time.time() - start))
         print("Solution = %s" % str(res.x))
         print(res)
-        
+    
     sc.flux[...] = res.x[0]
     lmn = (res.x[1], res.x[2], 0.0)
     sc.direction = lmn_to_skycoord(lmn, vis.phasecentre)
-
+    
     return sc, res

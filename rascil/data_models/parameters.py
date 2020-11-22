@@ -24,7 +24,7 @@ Function parameters should obey a consistent naming convention:
 =======  =======
 Name     Meaning
 =======  =======
-vis      Name of Visibility
+vis      Name of BlockVisibility
 sc       Name of Skycomponent
 gt       Name of GainTable
 conf     Name of Configuration
@@ -48,7 +48,7 @@ fractional_threshold    Threshold as fraction of e.g. peak  0.1
 G_solution_interval     Solution interval for G term        100
 phaseonly               Do phase-only solutions             True
 phasecentre             Phase centre (usually as SkyCoord)  SkyCoord("-1.0d", "37.0d", frame='icrs', equinox='J2000')
-spectral_mode           Visibility processing mode          'mfs' or 'channel'
+spectral_mode           BlockVisibility processing mode          'mfs' or 'channel'
 ====================    ==================================  ========================================================
 
 """
@@ -58,7 +58,7 @@ __all__ = ['rascil_path', 'rascil_data_path', 'get_parameter']
 import logging
 import os
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def rascil_path(path):

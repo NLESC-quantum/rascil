@@ -24,8 +24,8 @@ from rascil.processing_components import create_gaintable_from_blockvisibility, 
     export_image_to_fits, \
     remove_neighbouring_components, find_skycomponents, \
     calculate_skymodel_equivalent_image, \
-    initialize_skymodel_voronoi, convert_blockvisibility_to_visibility, \
-    convert_visibility_to_blockvisibility, import_image_from_fits, qa_image, show_image, \
+    initialize_skymodel_voronoi, \
+    import_image_from_fits, qa_image, show_image, \
     advise_wide_field, \
     create_low_test_beam, create_gaintable_from_screen, grid_gaintable_to_screen, \
     plot_gaintable_on_screen, \
@@ -34,8 +34,7 @@ from rascil.processing_components import create_gaintable_from_blockvisibility, 
     insert_skycomponent, filter_skycomponents_by_flux, create_blockvisibility, \
     copy_visibility, \
     create_image_from_visibility
-from rascil.processing_components.image.operations import copy_image, \
-    create_empty_image_like
+from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.workflows import invert_list_rsexecute_workflow, \
     restore_list_rsexecute_workflow, \
     mpccal_skymodel_list_rsexecute_workflow, predict_skymodel_list_rsexecute_workflow, \
@@ -43,7 +42,7 @@ from rascil.workflows import invert_list_rsexecute_workflow, \
 from rascil.workflows.rsexecute.execution_support import rsexecute
 
 if __name__ == '__main__':
-    log = logging.getLogger()
+    log = logging.getLogger('rascil-logger')
     log.setLevel(logging.INFO)
     log.addHandler(logging.StreamHandler(sys.stdout))
 
@@ -114,8 +113,7 @@ if __name__ == '__main__':
         polarisation_frame=PolarisationFrame("stokesI"),
         zerow=True)
 
-    vis = convert_blockvisibility_to_visibility(block_vis)
-    advice = advise_wide_field(vis, guard_band_image=2.0, delA=0.02)
+    advice = advise_wide_field(block_vis, guard_band_image=2.0, delA=0.02)
 
     cellsize = advice['cellsize']
     vis_slices = advice['vis_slices']
@@ -129,11 +127,9 @@ if __name__ == '__main__':
         cellsize=cellsize,
         phasecentre=phasecentre)
 
-    vis.data['imaging_weight'][...] = vis.data['weight'][...]
-    vis = weight_list_serial_workflow([vis], [small_model])[0]
-    vis = taper_list_serial_workflow([vis], 3 * cellsize)[0]
-
-    block_vis = convert_visibility_to_blockvisibility(vis)
+    block_vis['imaging_weight'].data[...] = block_vis['weight'].data[...]
+    block_vis = weight_list_serial_workflow([block_vis], [small_model])[0]
+    block_vis = taper_list_serial_workflow([block_vis], 3 * cellsize)[0]
 
     #######################################################################################################
     ### Generate the component model from the GLEAM catalog, including application of the primary beam. Read the
@@ -180,8 +176,8 @@ if __name__ == '__main__':
                                                           docal=True)
         work_vis = rsexecute.compute(result, sync=True)
         for w in work_vis:
-            all_skymodel_blockvis.data['vis'] += w.data['vis']
-        assert numpy.max(numpy.abs(all_skymodel_blockvis.data['vis'])) > 0.0
+            all_skymodel_blockvis['vis'].data += w['vis'].data
+        assert numpy.max(numpy.abs(all_skymodel_blockvis['vis'].data)) > 0.0
 
 
     #######################################################################################################
@@ -256,8 +252,7 @@ if __name__ == '__main__':
 
     combined_model = calculate_skymodel_equivalent_image(ical_skymodel)
     print(qa_image(combined_model, context='ICAL combined model'))
-    psf_obs = invert_list_rsexecute_workflow([future_vis], [future_model], context='2d',
-                                             dopsf=True)
+    psf_obs = invert_list_rsexecute_workflow([future_vis], [future_model], context='2d', dopsf=True)
     result = restore_list_rsexecute_workflow([combined_model], psf_obs, [(residual, 0.0)])
     result = rsexecute.compute(result, sync=True)
     ical_restored = result[0]
@@ -328,8 +323,7 @@ if __name__ == '__main__':
     mpccal_combined_model = insert_skycomponent(mpccal_combined_model, ical_components)
     print(qa_image(mpccal_combined_model, context='MPCCAL combined model'))
 
-    psf_obs = invert_list_rsexecute_workflow([future_vis], [future_model], context='2d',
-                                             dopsf=True)
+    psf_obs = invert_list_rsexecute_workflow([future_vis], [future_model], context='2d', dopsf=True)
     result = restore_list_rsexecute_workflow([mpccal_combined_model], psf_obs,
                                              [(mpccal_residual, 0.0)])
     result = rsexecute.compute(result, sync=True)
@@ -360,7 +354,7 @@ if __name__ == '__main__':
     plt.legend()
     plt.show(block=block_plots)
 
-    difference_image = copy_image(mpccal_restored)
+    difference_image = mpccal_restored.copy(deep=True)
     difference_image.data -= ical_restored.data
 
     print(qa_image(difference_image, context='MPCCAL - ICAL image'))

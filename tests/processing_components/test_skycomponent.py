@@ -19,7 +19,7 @@ from rascil.processing_components.skycomponent.operations import create_skycompo
 from rascil.processing_components import create_image
 from rascil.processing_components.imaging.primary_beams import create_low_test_beam
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -140,13 +140,13 @@ class TestSkycomponent(unittest.TestCase):
                                                                      radius=0.5)
         model = create_image(npixel=512, cellsize=0.001, phasecentre=self.phasecentre,
                              frequency=self.frequency, polarisation_frame=PolarisationFrame('stokesI'))
-        model.data[...] = 1.0
+        model["pixels"].data[...] = 1.0
         beam = create_low_test_beam(model, use_local=False)
         bright_components = apply_beam_to_skycomponent(bright_components, beam)
         bright_components = filter_skycomponents_by_flux(bright_components, flux_min=2.0)
 
         for im in image_voronoi_iter(model, bright_components):
-            assert numpy.sum(im.data) > 1
+            assert numpy.sum(im["pixels"].data) > 1
 
     def test_partition_skycomponent_neighbours(self):
         all_components = create_low_test_skycomponents_from_gleam(flux_limit=0.1,
@@ -188,8 +188,8 @@ class TestSkycomponent(unittest.TestCase):
         all_components = filter_skycomponents_by_flux(all_components, flux_min=0.1)
 
         idx, comps = remove_neighbouring_components(all_components, 0.1)
-        assert idx == [0, 1, 3, 8, 12, 13, 17, 22, 25, 26, 29, 32, 35, 38, 41, 42, 46, 47, 50, 52, 53, 56, 57, 58, 61, 63, 66, 68, 70], idx
-        assert comps[0].name == 'GLEAM J215739-661155', comps[0].name
+        assert idx == [2, 4, 5, 7], idx
+        assert comps[0].name == 'GLEAM J234118-581606', comps[0].name
 
 
 if __name__ == '__main__':

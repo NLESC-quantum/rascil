@@ -11,10 +11,9 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
-
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.visibility.visibility_fitting import fit_visibility
 
 
@@ -48,14 +47,14 @@ class TestVisibilityFitting(unittest.TestCase):
         methods = ['CG', 'BFGS', 'Powell', 'trust-ncg', 'trust-exact', 'trust-krylov']
         for method in methods:
             self.actualSetup()
-            self.vis = create_visibility(self.lowcore, self.times, self.frequency,
-                                         channel_bandwidth=self.channel_bandwidth,
-                                         phasecentre=self.phasecentre, weight=1.0,
-                                         polarisation_frame=PolarisationFrame("stokesI"))
+            self.vis = create_blockvisibility(config=self.lowcore, times=self.times, frequency=self.frequency,
+                                              channel_bandwidth=self.channel_bandwidth,
+                                              phasecentre=self.phasecentre, weight=1.0,
+                                              polarisation_frame=PolarisationFrame("stokesI"))
             self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
             initial_comp = Skycomponent(direction=self.comp_start_direction, frequency=self.frequency,
                                         flux=2.0 * self.flux, polarisation_frame=PolarisationFrame("stokesI"))
-    
+            
             sc, res = fit_visibility(self.vismodel, initial_comp, niter=200, tol=1e-5, method=method, verbose=False)
             assert sc.direction.separation(self.comp_actual_direction).to('rad').value < 1e-5, \
                 sc.direction.separation(self.comp_actual_direction).to('rad')

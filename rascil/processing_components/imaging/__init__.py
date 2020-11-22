@@ -30,8 +30,6 @@ The convolutional gridding functions are to be found in griddata module
 from .base import *
 from .primary_beams import *
 from .imaging_params import *
-from .timeslice_single import *
 from .weighting import *
-from .wstack_single import *
 from .dft import *
 

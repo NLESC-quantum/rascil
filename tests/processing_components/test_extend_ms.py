@@ -10,14 +10,9 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.gather_scatter import visibility_gather_time, visibility_gather_w, \
-    visibility_scatter_time, visibility_scatter_w, visibility_scatter_channel, \
-    visibility_gather_channel
-from rascil.processing_components.visibility.iterators import vis_wslices, vis_timeslices
-from rascil.processing_components.visibility.base import create_visibility, create_blockvisibility, extend_blockvisibility_to_ms
+from rascil.processing_components.visibility.base import create_blockvisibility, extend_blockvisibility_to_ms
 from rascil.data_models import rascil_path, rascil_data_path, BlockVisibility
-from rascil.processing_components.visibility.base import create_blockvisibility_from_ms, create_visibility_from_ms, \
-    export_blockvisibility_to_ms
+from rascil.processing_components.visibility.base import create_blockvisibility_from_ms, export_blockvisibility_to_ms
 
 import logging
 
@@ -26,7 +21,7 @@ log = logging.getLogger('logger')
 log.setLevel(logging.WARNING)
 
 
-class TestVisibilityGatherScatter(unittest.TestCase):
+class TestExtendMS(unittest.TestCase):
 
     def setUp(self):
         try:
@@ -46,7 +41,7 @@ class TestVisibilityGatherScatter(unittest.TestCase):
         #
         # self.phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
 
-    def test_vis_scatter_gather_timeslice_ms(self):
+    def test_extend_ms(self):
         # Reading
         msfile = rascil_data_path("vis/xcasa.ms")
         msoutfile = rascil_path("test_results/test_extend_xcasa.ms")
@@ -55,13 +50,10 @@ class TestVisibilityGatherScatter(unittest.TestCase):
         if os.path.exists(msoutfile):
             shutil.rmtree(msoutfile, ignore_errors=False)
         # open an existent file
-        bvis_list = create_blockvisibility_from_ms(msfile)
+        bvis = create_blockvisibility_from_ms(msfile)[0]
+        bvis_list = [bv[1] for bv in bvis.groupby("time", squeeze=False)]
         for bvis in bvis_list:
-            if bvis is not None:
-                vis_slices = vis_timeslices(bvis, 'auto')
-                vis_list = visibility_scatter_time(bvis, vis_slices)
-                for vis in vis_list:
-                    extend_blockvisibility_to_ms(msoutfile, vis)
+            extend_blockvisibility_to_ms(msoutfile, bvis)
 
 
 if __name__ == '__main__':

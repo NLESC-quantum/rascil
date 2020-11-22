@@ -39,7 +39,7 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymo
 
 results_dir = rascil_path('test_results')
 
-log = logging.getLogger()
+log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 mpl_logger = logging.getLogger("matplotlib")
@@ -351,8 +351,8 @@ class TestMIDSimulations(unittest.TestCase):
 
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.006260400046320458, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'],-0.00035819885879138, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.006232996309120276, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'],-0.00038496045275951873, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['rms'], 3.728425607449823e-05, 5, err_msg=str(qa))
     
     @unittest.skip("Not deterministic")

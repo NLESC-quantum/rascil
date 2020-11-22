@@ -14,7 +14,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 from rascil.workflows.rsexecute.simulation.simulation_rsexecute import simulate_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -37,6 +37,6 @@ class TestSimulationrsexecuteSupport(unittest.TestCase):
         vis_list = simulate_list_rsexecute_workflow(frequency=self.frequency, channel_bandwidth=self.channel_bandwidth)
         assert len(vis_list) == len(self.frequency)
         vt = rsexecute.compute(vis_list[0], sync=True)
-        assert isinstance(vt, BlockVisibility)
-        assert vt.nvis > 0
+        #assert isinstance(vt, BlockVisibility)
+        assert vt.blockvisibility_acc.nvis > 0
  

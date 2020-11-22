@@ -13,7 +13,8 @@ from astropy.coordinates import SkyCoord
 from numpy.testing import assert_array_almost_equal
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image import export_image_to_fits, reproject_image, apply_voltage_pattern_to_image, qa_image
+from rascil.processing_components.image import export_image_to_fits, reproject_image, apply_voltage_pattern_to_image,\
+    qa_image, create_image_from_array
 from rascil.processing_components.imaging import create_image_from_visibility, invert_2d, \
     advise_wide_field, weight_visibility
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility, idft_visibility_skycomponent
@@ -23,7 +24,7 @@ from rascil.processing_components.skycomponent import create_skycomponent, apply
     copy_skycomponent, apply_voltage_pattern_to_skycomponent, find_skycomponents
 from rascil.processing_components.visibility import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -106,16 +107,19 @@ class TestPrimaryBeamsPol(unittest.TestCase):
                                                      override_cellsize=False,
                                                      polarisation_frame=PolarisationFrame("stokesIQUV"))
                 vpbeam = create_vp(model, telescope=telescope, use_local=False)
-                vpbeam.wcs.wcs.ctype[0] = 'RA---SIN'
-                vpbeam.wcs.wcs.ctype[1] = 'DEC--SIN'
-                vpbeam.wcs.wcs.crval[0] = model.wcs.wcs.crval[0]
-                vpbeam.wcs.wcs.crval[1] = model.wcs.wcs.crval[1]
+                vpbeam_wcs = vpbeam.image_acc.wcs
+                vpbeam_wcs.wcs.ctype[0] = 'RA---SIN'
+                vpbeam_wcs.wcs.ctype[1] = 'DEC--SIN'
+                vpbeam_wcs.wcs.crval[0] = model.image_acc.wcs.wcs.crval[0]
+                vpbeam_wcs.wcs.crval[1] = model.image_acc.wcs.wcs.crval[1]
+                vpbeam = create_image_from_array(vpbeam["pixels"], wcs=vpbeam_wcs,
+                                                 polarisation_frame=vpbeam.image_acc.polarisation_frame)
                 assert component.polarisation_frame == PolarisationFrame("stokesIQUV")
                 vpcomp = apply_voltage_pattern_to_skycomponent(component, vpbeam)
-                assert vpcomp.polarisation_frame == vpbeam.polarisation_frame
+                assert vpcomp.polarisation_frame == vpbeam.image_acc.polarisation_frame
                 bvis = dft_skycomponent_visibility(bvis, vpcomp)
                 vpcomp = idft_visibility_skycomponent(bvis, vpcomp)[0][0]
-                assert vpcomp.polarisation_frame == bvis.polarisation_frame
+                assert vpcomp.polarisation_frame == bvis.blockvisibility_acc.polarisation_frame
                 inv_vpcomp = apply_voltage_pattern_to_skycomponent(vpcomp, vpbeam, inverse=True)
                 assert vpcomp.polarisation_frame == PolarisationFrame("stokesIQUV")
                 # print("After application of primary beam {}".format(str(vpcomp.flux)))
@@ -149,11 +153,14 @@ class TestPrimaryBeamsPol(unittest.TestCase):
                                                override_cellsize=False,
                                                polarisation_frame=PolarisationFrame("stokesIQUV"))
         vpbeam = create_vp(pbmodel, telescope=telescope, use_local=False)
-        vpbeam.wcs.wcs.ctype[0] = 'RA---SIN'
-        vpbeam.wcs.wcs.ctype[1] = 'DEC--SIN'
-        vpbeam.wcs.wcs.crval[0] = pbmodel.wcs.wcs.crval[0]
-        vpbeam.wcs.wcs.crval[1] = pbmodel.wcs.wcs.crval[1]
-        
+        vpbeam_wcs = vpbeam.image_acc.wcs
+        vpbeam_wcs.wcs.ctype[0] = 'RA---SIN'
+        vpbeam_wcs.wcs.ctype[1] = 'DEC--SIN'
+        vpbeam_wcs.wcs.crval[0] = pbmodel.image_acc.wcs.wcs.crval[0]
+        vpbeam_wcs.wcs.crval[1] = pbmodel.image_acc.wcs.wcs.crval[1]
+        vpbeam = create_image_from_array(vpbeam["pixels"], wcs=vpbeam_wcs,
+                                         polarisation_frame=vpbeam.image_acc.polarisation_frame)
+
         for case, flux in enumerate((numpy.array([[100.0, 0.0, 0.0, 0.0]]),
                                      numpy.array([[100.0, 100.0, 0.0, 0.0]]),
                                      numpy.array([[100.0, 0.0, 100.0, 0.0]]),
@@ -162,8 +169,9 @@ class TestPrimaryBeamsPol(unittest.TestCase):
             component = create_skycomponent(direction=component_centre, flux=flux,
                                             frequency=self.frequency,
                                             polarisation_frame=PolarisationFrame("stokesIQUV"))
-            vpcomp = apply_voltage_pattern_to_skycomponent(component, vpbeam)
-            bvis.data['vis'][...] = 0.0 + 0.0j
+            vpcomp = apply_voltage_pattern_to_skycomponent(component, vpbeam,
+                                                           phasecentre=vpbeam.image_acc.phasecentre)
+            bvis['vis'].data[...] = 0.0 + 0.0j
             bvis = dft_skycomponent_visibility(bvis, vpcomp)
             polimage, sumwt = invert_2d(bvis, model, dopsf=False)
             export_image_to_fits(polimage, "{0}/test_primary_beams_pol_case{1}.fits".format(self.dir, case))
@@ -176,12 +184,13 @@ class TestPrimaryBeamsPol(unittest.TestCase):
             assert_array_almost_equal(flux, numpy.real(inv_vpcomp.flux), 1)
             
             # Now check out the path via images
-            vpbeam.wcs.wcs.ctype[0] = polimage.wcs.wcs.ctype[0]
-            vpbeam.wcs.wcs.ctype[1] = polimage.wcs.wcs.ctype[1]
-            vpbeam.wcs.wcs.crval[0] = polimage.wcs.wcs.crval[0]
-            vpbeam.wcs.wcs.crval[1] = polimage.wcs.wcs.crval[1]
+            vpbeam.image_acc.wcs.wcs.ctype[0] = polimage.image_acc.wcs.wcs.ctype[0]
+            vpbeam.image_acc.wcs.wcs.ctype[1] = polimage.image_acc.wcs.wcs.ctype[1]
+            vpbeam.image_acc.wcs.wcs.crval[0] = polimage.image_acc.wcs.wcs.crval[0]
+            vpbeam.image_acc.wcs.wcs.crval[1] = polimage.image_acc.wcs.wcs.crval[1]
 
-            vpbeam_regrid, footprint = reproject_image(vpbeam, polimage.wcs, polimage.shape)
+            vpbeam_regrid, footprint = reproject_image(vpbeam, polimage.image_acc.wcs,
+                                                       polimage['pixels'].shape)
             polimage_corrected = apply_voltage_pattern_to_image(polimage, vpbeam_regrid, inverse=True, min_det=0.3)
 
             export_image_to_fits(polimage_corrected,

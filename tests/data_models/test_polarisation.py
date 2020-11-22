@@ -10,7 +10,7 @@ from numpy.testing import assert_array_almost_equal
 
 from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame, congruent_polarisation, correlate_polarisation, \
     convert_pol_frame, convert_circular_to_stokes, convert_stokes_to_circular, convert_linear_to_stokes, \
-    convert_stokes_to_linear
+    convert_stokes_to_linear, polarisation_frame_from_names
 
 
 class TestPolarisation(unittest.TestCase):
@@ -55,6 +55,19 @@ class TestPolarisation(unittest.TestCase):
         for frame in ["linear", "circular", "stokesI"]:
             assert congruent_polarisation(ReceptorFrame(frame), PolarisationFrame(frame))
             assert not congruent_polarisation(ReceptorFrame(frame), PolarisationFrame("stokesIQUV"))
+            
+    def test_extract_polarisation_frame(self):
+        for frame in ['circular', 'circularnp', 'linear', 'linearnp', 'stokesIQUV', 'stokesIV', 'stokesIQ', 'stokesI']:
+            polarisation_frame = PolarisationFrame(frame)
+            assert polarisation_frame.type == frame
+            names = polarisation_frame.names
+            recovered_pol = polarisation_frame_from_names(names)
+            assert recovered_pol == frame
+
+    def test_extract_polarisation_frame_fail(self):
+        with self.assertRaises(ValueError):
+            fake_name = ["foo", "bar"]
+            recovered_pol = polarisation_frame_from_names(fake_name)
 
     def test_stokes_linear_conversion(self):
         stokes = numpy.array([1.0, 0.0, 0.0, 0.0])

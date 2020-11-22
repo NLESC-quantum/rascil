@@ -9,13 +9,13 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image import export_image_to_fits, qa_image, copy_image
+from rascil.processing_components.image import export_image_to_fits, qa_image
 from rascil.processing_components.imaging import create_image_from_visibility
 from rascil.processing_components.imaging import create_vp_generic_numeric
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility import create_visibility
+from rascil.processing_components.visibility import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 if __name__ == '__main__':
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     assert len(config.names) == nants
     assert len(config.mount) == nants
 
-    vis = create_visibility(config, times, frequency,
+    vis = create_blockvisibility(config, times, frequency,
                             channel_bandwidth=channel_bandwidth,
                             phasecentre=phasecentre, weight=1.0,
                             polarisation_frame=PolarisationFrame('stokesI'))
@@ -69,13 +69,13 @@ if __name__ == '__main__':
 
     for trial in range(ntrials):
         coeffs = numpy.random.normal(0.0, 0.03, len(key_nolls))
-        vp = copy_image(default_vp)
+        vp = default_vp.copy(deep=True)
         for i in range(len(key_nolls)):
-            vp.data += coeffs[i] * zernikes[i]['vp'].data
+            vp["pixels"].data += coeffs[i] * zernikes[i]['vp']["pixels"].data
 
-        vp.data = vp.data / numpy.max(numpy.abs(vp.data))
-        vp_data = vp.data / numpy.max(numpy.abs(vp.data))
-        vp.data = numpy.real(vp_data)
+        vp["pixels"].data = vp["pixels"].data / numpy.max(numpy.abs(vp["pixels"].data))
+        vp_data = vp["pixels"].data / numpy.max(numpy.abs(vp["pixels"].data))
+        vp["pixels"].data = numpy.real(vp_data)
         print(trial, qa_image(vp))
 
         export = False
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         row = (trial - 1) // 4
         col = (trial - 1) - 4 * row
         ax = axs[row, col]
-        ax.imshow(vp.data[0, 0], vmax=0.01, vmin=-0.001)
+        ax.imshow(vp["pixels"].data[0, 0], vmax=0.01, vmin=-0.001)
         # ax.set_title('Noll %d' % noll)
         ax.axis('off')
 

@@ -11,6 +11,7 @@ __all__ = ['create_skycomponent', 'filter_skycomponents_by_flux', 'filter_skycom
 
 import collections
 import logging
+import copy
 from typing import Union, List
 
 import astropy.units as u
@@ -25,14 +26,14 @@ from photutils import segmentation
 from scipy import interpolate
 from scipy.spatial.qhull import Voronoi
 
-from rascil.data_models.memory_data_models import Image, Skycomponent, assert_same_chan_pol
+from rascil.data_models.memory_data_models import Image, Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
 from rascil.processing_components.calibration.jones import apply_jones
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.util.array_functions import insert_function_sinc, insert_function_L, \
     insert_function_pswf, insert_array
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def create_skycomponent(direction: SkyCoord, flux: numpy.array, frequency: numpy.array, shape: str = 'Point',
@@ -232,7 +233,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     :return: list of sky components
     """
 
-    assert isinstance(im, Image)
+    #assert isinstance(im, Image)
     log.info("find_skycomponents: Finding components in Image by segmentation")
 
     # We use photutils segmentation - this first segments the image
@@ -247,23 +248,23 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
     kernel.normalize()
 
     # Segment the average over all channels of Stokes I
-    image_sum = numpy.sum(im.data, axis=0)[0, ...] / float(im.shape[0])
+    image_sum = numpy.sum(im["pixels"].data, axis=0)[0, ...] / float(im["pixels"].data.shape[0])
     segments = segmentation.detect_sources(image_sum, threshold, npixels=npixels, filter_kernel=kernel)
     assert segments is not None, "Failed to find any components"
 
     log.info("find_skycomponents: Identified %d segments" % segments.nlabels)
 
     # Now compute source properties for all polarisations and frequencies
-    comp_tbl = [[segmentation.source_properties(im.data[chan, pol], segments,
+    comp_tbl = [[segmentation.source_properties(im["pixels"].data[chan, pol], segments,
                                                 filter_kernel=kernel,
-                                                wcs=im.wcs.sub([1, 2])).to_table()
+                                                wcs=im.image_acc.wcs.sub([1, 2])).to_table()
                  for pol in [0]]
-                for chan in range(im.nchan)]
+                for chan in range(im.image_acc.nchan)]
 
     def comp_prop(comp, prop_name):
         return [[comp_tbl[chan][pol][comp][prop_name]
                  for pol in [0]]
-                for chan in range(im.nchan)]
+                for chan in range(im.image_acc.nchan)]
 
     # Generate components
     comps = []
@@ -281,7 +282,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         ys = u.Quantity(list(map(u.Quantity,
                                  comp_prop(segment, "ycentroid"))))
 
-        sc = pixel_to_skycoord(xs, ys, im.wcs, 0)
+        sc = pixel_to_skycoord(xs, ys, im.image_acc.wcs, 0)
         ras = sc.ra
         decs = sc.dec
 
@@ -298,7 +299,7 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
         xs = numpy.sum(aflux * xs) / flux_sum
         ys = numpy.sum(aflux * ys) / flux_sum
 
-        point_flux = im.data[:, :, numpy.round(ys.value).astype('int'), numpy.round(xs.value).astype('int')]
+        point_flux = im["pixels"].data[:, :, numpy.round(ys.value).astype('int'), numpy.round(xs.value).astype('int')]
 
         # Add component
         comps.append(Skycomponent(
@@ -307,34 +308,44 @@ def find_skycomponents(im: Image, fwhm=1.0, threshold=1.0, npixels=5) -> List[Sk
             name="Segment %d" % segment,
             flux=point_flux,
             shape='Point',
-            polarisation_frame=im.polarisation_frame,
+            polarisation_frame=im.image_acc.polarisation_frame,
             params={}))
 
     return comps
 
 
-def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam: Image) \
+def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam: Image,
+                               phasecentre=None) \
         -> Union[Skycomponent, List[Skycomponent]]:
     """ Apply a primary beam to a Skycomponent
 
+    :param phasecentre:
     :param beam: primary beam
     :param sc: SkyComponent or list of SkyComponents
     :return: List of skycomponents
     """
-    assert isinstance(beam, Image)
+    ##assert isinstance(beam, Image)
     single = not isinstance(sc, collections.abc.Iterable)
 
     if single:
         sc = [sc]
 
-    nchan, npol, ny, nx = beam.shape
+    nchan, npol, ny, nx = beam["pixels"].data.shape
 
     log.debug('apply_beam_to_skycomponent: Processing %d components' % (len(sc)))
 
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    pixlocs = skycoord_to_pixel(skycoords, beam.wcs, origin=1, mode='wcs')
+    if beam.image_acc.wcs.wcs.ctype[0] == 'RA---SIN':
+        pixlocs = skycoord_to_pixel(skycoords, beam.image_acc.wcs, origin=1, mode='wcs')
+    else:
+        wcs = copy.deepcopy(beam.image_acc.wcs)
+        wcs.wcs.ctype[0] = 'RA---SIN'
+        wcs.wcs.ctype[1] = 'DEC--SIN'
+        wcs.wcs.crval[0] =  phasecentre.ra.deg
+        wcs.wcs.crval[1] =  phasecentre.dec.deg
+        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode='wcs')
 
     newsc = []
     total_flux = numpy.zeros([nchan, npol])
@@ -342,13 +353,11 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
 
-        assert_same_chan_pol(beam, comp)
-
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         if not numpy.isnan(pixloc).any():
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
-                comp_flux = comp.flux * beam.data[:, :, y, x]
+                comp_flux = comp.flux * beam["pixels"].data[:, :, y, x]
                 total_flux += comp_flux
             else:
                 comp_flux = 0.0 * comp.flux
@@ -365,7 +374,7 @@ def apply_beam_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], beam
 
 
 def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycomponent]], vp: Image,
-                                          inverse=False) \
+                                          inverse=False, phasecentre=None) \
         -> Union[Skycomponent, List[Skycomponent]]:
     """ Apply a voltage pattern to a Skycomponent
 
@@ -378,28 +387,38 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     Requires a complex Image with the correct ordering of polarisation axes:
     e.g. RR, LL, RL, LR or XX, YY, XY, YX
 
+    :param inverse:
     :param vp: voltage pattern as complex image
     :param sc: SkyComponent or list of SkyComponents
     :return: List of skycomponents
     """
-    assert isinstance(vp, Image)
-    assert (vp.polarisation_frame == PolarisationFrame("linear")) or \
-           (vp.polarisation_frame == PolarisationFrame("circular"))
+    #assert isinstance(vp, Image)
+    assert (vp.image_acc.polarisation_frame == PolarisationFrame("linear")) or \
+           (vp.image_acc.polarisation_frame == PolarisationFrame("circular"))
 
-    assert vp.data.dtype == "complex128"
+    #assert vp["pixels"].data.dtype == "complex128"
     single = not isinstance(sc, collections.abc.Iterable)
 
     if single:
         sc = [sc]
 
-    nchan, npol, ny, nx = vp.shape
+    nchan, npol, ny, nx = vp["pixels"].data.shape
 
     log.debug('apply_vp_to_skycomponent: Processing %d components' % (len(sc)))
 
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    pixlocs = skycoord_to_pixel(skycoords, vp.wcs, origin=1, mode='wcs')
+    if vp.image_acc.wcs.wcs.ctype[0] == 'RA---SIN':
+        pixlocs = skycoord_to_pixel(skycoords, vp.image_acc.wcs, origin=1, mode='wcs')
+    else:
+        assert phasecentre is not None, "Need to know the phasecentre"
+        wcs = copy.deepcopy(vp.image_acc.wcs)
+        wcs.wcs.ctype[0] = 'RA---SIN'
+        wcs.wcs.ctype[1] = 'DEC--SIN'
+        wcs.wcs.crval[0] =  phasecentre.ra.deg
+        wcs.wcs.crval[1] =  phasecentre.dec.deg
+        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode='wcs')
 
     newsc = []
     total_flux = numpy.zeros([nchan, npol], dtype="complex")
@@ -407,7 +426,6 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
     for icomp, comp in enumerate(sc):
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
-        assert_same_chan_pol(vp, comp)
 
         # Convert to linear (xx, xy, yx, yy) or circular (rr, rl, lr, ll)
         nchan, npol = comp.flux.shape
@@ -416,7 +434,7 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
             assert comp.polarisation_frame == PolarisationFrame("stokesIQUV")
 
         comp_flux_cstokes = \
-            convert_pol_frame(comp.flux, comp.polarisation_frame, vp.polarisation_frame).reshape([nchan, 2, 2])
+            convert_pol_frame(comp.flux, comp.polarisation_frame, vp.image_acc.polarisation_frame).reshape([nchan, 2, 2])
         comp_flux = numpy.zeros([nchan, npol], dtype='complex')
 
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
@@ -424,20 +442,20 @@ def apply_voltage_pattern_to_skycomponent(sc: Union[Skycomponent, List[Skycompon
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
                 # Now we want to left and right multiply by the Jones matrices
-                # comp_flux = vp.data[:, :, y, x] * comp_flux_cstokes * numpy.vp.data[:, :, y, x]
+                # comp_flux = vp["pixels"].data[:, :, y, x] * comp_flux_cstokes * numpy.vp["pixels"].data[:, :, y, x]
                 for chan in range(nchan):
-                    ej = vp.data[chan, :, y, x].reshape([2, 2])
+                    ej = vp["pixels"].data[chan, :, y, x].reshape([2, 2])
                     cfs = comp_flux_cstokes[chan].reshape([2,2])
                     comp_flux[chan, :] = apply_jones(ej, cfs, inverse).reshape([4])
 
                 total_flux += comp_flux
                 if inverse:
-                    comp_flux = convert_pol_frame(comp_flux, vp.polarisation_frame, PolarisationFrame("stokesIQUV"))
+                    comp_flux = convert_pol_frame(comp_flux, vp.image_acc.polarisation_frame, PolarisationFrame("stokesIQUV"))
                     comp.polarisation_frame = PolarisationFrame("stokesIQUV")
 
                 newsc.append(Skycomponent(comp.direction, comp.frequency, comp.name, comp_flux,
                                           shape=comp.shape,
-                                          polarisation_frame=vp.polarisation_frame))
+                                          polarisation_frame=vp.image_acc.polarisation_frame))
 
     log.debug('apply_vp_to_skycomponent: %d components with total flux %s' %
               (len(newsc), total_flux))
@@ -489,11 +507,11 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
     :return: Image
     """
 
-    assert isinstance(im, Image)
+    ##assert isinstance(im, Image)
 
     support = int(support / bandwidth)
 
-    nchan, npol, ny, nx = im.data.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
 
     if not isinstance(sc, collections.abc.Iterable):
         sc = [sc]
@@ -505,13 +523,12 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
-    pixlocs = skycoord_to_pixel(skycoords, im.wcs, origin=0, mode='wcs')
+    pixlocs = skycoord_to_pixel(skycoords, im.image_acc.wcs, origin=0, mode='wcs')
 
     for icomp, comp in enumerate(sc):
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
 
-        assert_same_chan_pol(im, comp)
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         flux = numpy.zeros([nchan, npol])
 
@@ -523,19 +540,19 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
             flux = comp.flux
 
         if insert_method == "Lanczos":
-            insert_array(im.data, pixloc[0], pixloc[1], flux, bandwidth, support,
+            insert_array(im["pixels"].data, pixloc[0], pixloc[1], flux, bandwidth, support,
                          insert_function=insert_function_L)
         elif insert_method == "Sinc":
-            insert_array(im.data, pixloc[0], pixloc[1], flux, bandwidth, support,
+            insert_array(im["pixels"].data, pixloc[0], pixloc[1], flux, bandwidth, support,
                          insert_function=insert_function_sinc)
         elif insert_method == "PSWF":
-            insert_array(im.data, pixloc[0], pixloc[1], flux, bandwidth, support,
+            insert_array(im["pixels"].data, pixloc[0], pixloc[1], flux, bandwidth, support,
                          insert_function=insert_function_pswf)
         else:
             insert_method = 'Nearest'
             y, x = numpy.round(pixloc[1]).astype('int'), numpy.round(pixloc[0]).astype('int')
             if 0 <= x < nx and 0 <= y < ny:
-                im.data[:, :, y, x] += flux[...]
+                im["pixels"].data[:, :, y, x] += flux[...]
 
     return im
 
@@ -563,11 +580,11 @@ def voronoi_decomposition(im, comps):
 
     directions = SkyCoord([u.rad * c.direction.ra.rad for c in comps],
                           [u.rad * c.direction.dec.rad for c in comps])
-    x, y = skycoord_to_pixel(directions, im.wcs, 0, 'wcs')
+    x, y = skycoord_to_pixel(directions, im.image_acc.wcs, 0, 'wcs')
     points = [(x[i], y[i]) for i, _ in enumerate(x)]
     vor = Voronoi(points)
 
-    nchan, npol, ny, nx = im.shape
+    nchan, npol, ny, nx = im["pixels"].data.shape
     vertex_image = numpy.zeros([ny, nx]).astype('int')
     for j in range(ny):
         for i in range(nx):
@@ -584,18 +601,18 @@ def image_voronoi_iter(im: Image, components: list) -> collections.abc.Iterable:
     :returns: generator of Images
     """
     if len(components) == 1:
-        mask = numpy.ones(im.data.shape)
-        yield create_image_from_array(mask, wcs=im.wcs,
-                                      polarisation_frame=im.polarisation_frame)
+        mask = numpy.ones(im["pixels"].data.shape)
+        yield create_image_from_array(mask, wcs=im.image_acc.wcs,
+                                      polarisation_frame=im.image_acc.polarisation_frame)
     else:
         vor, vertex_array = voronoi_decomposition(im, components)
 
         nregions = numpy.max(vertex_array) + 1
         for region in range(nregions):
-            mask = numpy.zeros(im.data.shape)
+            mask = numpy.zeros(im["pixels"].data.shape)
             mask[(vertex_array == region)[numpy.newaxis, numpy.newaxis, ...]] = 1.0
-            yield create_image_from_array(mask, wcs=im.wcs,
-                                          polarisation_frame=im.polarisation_frame)
+            yield create_image_from_array(mask, wcs=im.image_acc.wcs,
+                                          polarisation_frame=im.image_acc.polarisation_frame)
 
 
 def partition_skycomponent_neighbours(comps, targets):

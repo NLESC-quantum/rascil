@@ -289,26 +289,23 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
                 imchan = vis_to_im[vchan]
                 pu_grid, pu_offset, pv_grid, pv_offset, pwc_grid, pwc_fraction = \
                     convolution_mapping_blockvisibility(vis, griddata, vchan, cf)
-                for row in range(nrows * nbaselines):
-                    wt = real_gd[imchan, pol, pv_grid[row], pu_grid[row]]
-                    if wt > 0.0:
-                        fwtt[pol, vchan, row] /= wt
+                wt = real_gd[imchan, pol, pv_grid[...], pu_grid[...]]
+                fwtt[pol, vchan, :][wt > 0.0] /= wt[wt > 0.0]
         
         vis['imaging_weight'].data[...] = fwtt.T.reshape([nrows, nbaselines, nvchan, nvpol])
     
     elif weighting == "robust":
         # Equation 3.15, 3.16 in Briggs thesis
         sumlocwt = numpy.sum(real_gd)
-        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight)
+        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight.data)
         f2 = (5.0 * numpy.power(10.0, -robustness))**2 * sumwt / sumlocwt
         for pol in range(nvpol):
             for vchan in range(nvchan):
                 imchan = vis_to_im[vchan]
                 pu_grid, pu_offset, pv_grid, pv_offset, pwc_grid, pwc_fraction = \
                     convolution_mapping_blockvisibility(vis, griddata, vchan, cf)
-                for row in range(nrows * nbaselines):
-                    wt = real_gd[imchan, pol, pv_grid[row], pu_grid[row]]
-                    fwtt[pol, vchan, row] /= (1 + f2 * wt)
+                wt = real_gd[imchan, pol, pv_grid[...], pu_grid[...]]
+                fwtt[pol, vchan, :] /= (1 + f2 * wt)
         
         vis['imaging_weight'].data[...] = fwtt.T.reshape([nrows, nbaselines, nvchan, nvpol])
         

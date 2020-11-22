@@ -34,7 +34,7 @@ RASCIL_DATA = $(CURRENT_DIR)/data
 
 .DEFAULT_GOAL := help
 
-clean:
+clean: cleantests
 	$(PYTHON) setup.py clean --all
 	rm -rf dist
 
@@ -76,7 +76,7 @@ test:
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
 	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
-	tests/data_models tests/processing_components \
+	tests/data_models tests/processing_components tests/workflows/test*serial.py \
 	--verbose \
 	--junitxml unit-tests-other.xml \
 	--cov rascil \

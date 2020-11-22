@@ -21,9 +21,9 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.processing_components.simulation import ingest_unittest_visibility, \
     create_low_test_skymodel_from_gleam
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components import plot_visibility
+from rascil.processing_components.visibility.base import copy_visibility
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -43,7 +43,7 @@ class TestMPC(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
 
-    def actualSetUp(self, freqwin=1, dopol=False, zerow=False):
+    def actualSetUp(self, freqwin=1, block=True, dopol=False, zerow=False):
         
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=550.0)
@@ -78,7 +78,7 @@ class TestMPC(unittest.TestCase):
                                                                              [self.channelwidth[freqwin]],
                                                                              self.times,
                                                                              self.vis_pol,
-                                                                             self.phasecentre,
+                                                                             self.phasecentre, block=block,
                                                                              zerow=zerow)
                               for freqwin, _ in enumerate(self.frequency)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
@@ -92,12 +92,12 @@ class TestMPC(unittest.TestCase):
                                flux_max=5.0) for f, freq in enumerate(self.frequency)]
         
         self.skymodel_list = rsexecute.compute(self.skymodel_list, sync=True)
-        #assert isinstance(self.skymodel_list[0].image, Image), self.skymodel_list[0].image
-        #assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
-        assert len(self.skymodel_list[0].components) == 16, len(self.skymodel_list[0].components)
+        assert isinstance(self.skymodel_list[0].image, Image), self.skymodel_list[0].image
+        assert isinstance(self.skymodel_list[0].components[0], Skycomponent), self.skymodel_list[0].components[0]
+        assert len(self.skymodel_list[0].components) == 35, len(self.skymodel_list[0].components)
         self.skymodel_list = expand_skymodel_by_skycomponents(self.skymodel_list[0])
-        assert len(self.skymodel_list) == 17, len(self.skymodel_list)
-        assert numpy.max(numpy.abs(self.skymodel_list[-1].image["pixels"])) > 0.0, "Image is empty"
+        assert len(self.skymodel_list) == 36, len(self.skymodel_list)
+        assert numpy.max(numpy.abs(self.skymodel_list[-1].image.data)) > 0.0, "Image is empty"
         #self.vis_list = [copy_visibility(self.vis_list[0], zero=True) for i, _ in enumerate(self.skymodel_list)]
     
     def test_predictcal(self):
@@ -119,9 +119,15 @@ class TestMPC(unittest.TestCase):
         assert numpy.max(numpy.abs(vobs.vis)) > 0.0
 
         if self.plot:
-            import matplotlib.pyplot as plt
-            plot_visibility([vobs])
-            plt.show(block=False)
+            def plotvis(i, v):
+                import matplotlib.pyplot as plt
+                uvr = numpy.hypot(v.u, v.v)
+                amp = numpy.abs(v.vis[:, 0])
+                plt.plot(uvr, amp, '.')
+                plt.title(str(i))
+                plt.show(block=False)
+            
+            plotvis(0, vobs)
     
     def test_invertcal(self):
         self.actualSetUp(zerow=True)
@@ -139,7 +145,7 @@ class TestMPC(unittest.TestCase):
         result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel,
                                                                    context='2d', docal=True)
         results = rsexecute.compute(result_skymodel, sync=True)
-        assert numpy.max(numpy.abs(results[0][0]["pixels"].data)) > 0.0
+        assert numpy.max(numpy.abs(results[0][0].data)) > 0.0
         assert numpy.max(numpy.abs(results[0][1])) > 0.0
         if self.plot:
             import matplotlib.pyplot as plt
@@ -169,7 +175,7 @@ class TestMPC(unittest.TestCase):
         result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel,
                                                                    context='2d', docal=True)
         results = rsexecute.compute(result_skymodel, sync=True)
-        assert numpy.max(numpy.abs(results[0][0]["pixels"].data)) > 0.0
+        assert numpy.max(numpy.abs(results[0][0].data)) > 0.0
         assert numpy.max(numpy.abs(results[0][1])) > 0.0
         if self.plot:
             import matplotlib.pyplot as plt

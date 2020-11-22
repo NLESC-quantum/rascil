@@ -21,7 +21,7 @@ from rascil.processing_components.visibility.base import copy_visibility
 from rascil.workflows.rsexecute.calibration.calibration_rsexecute import calibrate_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -32,7 +32,7 @@ log.setLevel(logging.WARNING)
 class TestCalibrateGraphs(unittest.TestCase):
     
     def setUp(self):
-        rsexecute.set_client(use_dask=False)
+        rsexecute.set_client(use_dask=True)
     
         from rascil.data_models.parameters import rascil_path, rascil_data_path
         self.dir = rascil_path('test_results')
@@ -84,13 +84,13 @@ class TestCalibrateGraphs(unittest.TestCase):
                                                                    [self.channelwidth[i]],
                                                                    self.times,
                                                                    self.vis_pol,
-                                                                   self.phasecentre,
+                                                                   self.phasecentre, block=True,
                                                                    zerow=zerow)
              for i in range(nfreqwin)]
         self.blockvis_list = rsexecute.compute(self.blockvis_list, sync=True)
         
         for v in self.blockvis_list:
-            v['vis'].data[...] = 1.0 + 0.0j
+            v.data['vis'][...] = 1.0 + 0.0j
         
         self.error_blockvis_list = [rsexecute.execute(copy_visibility(v)) for v in self.blockvis_list]
         gt = rsexecute.execute(create_gaintable_from_blockvisibility)(self.blockvis_list[0])
@@ -121,8 +121,7 @@ class TestCalibrateGraphs(unittest.TestCase):
         
         assert len(calibrate_list) == 2
         assert numpy.max(calibrate_list[1][0]['T'].residual) < 7e-6, numpy.max(calibrate_list[1][0]['T'].residual)
-        err = numpy.max(numpy.abs(calibrate_list[0][0].blockvisibility_acc.flagged_vis -
-                                  self.blockvis_list[0].blockvisibility_acc.flagged_vis))
+        err = numpy.max(numpy.abs(calibrate_list[0][0].flagged_vis - self.blockvis_list[0].flagged_vis))
         assert err < 2e-6, err
     
     def test_calibrate_rsexecute_repeat(self):
@@ -142,8 +141,7 @@ class TestCalibrateGraphs(unittest.TestCase):
         
         assert len(calibrate_list) == 2
         assert numpy.max(calibrate_list[1][0]['T'].residual) < 7e-6, numpy.max(calibrate_list[1][0]['T'].residual)
-        err = numpy.max(numpy.abs(calibrate_list[0][0].blockvisibility_acc.flagged_vis -
-                                  self.blockvis_list[0].blockvisibility_acc.flagged_vis))
+        err = numpy.max(numpy.abs(calibrate_list[0][0].flagged_vis - self.blockvis_list[0].flagged_vis))
         assert err < 2e-6, err
         
         calibrate_list = \
@@ -155,8 +153,7 @@ class TestCalibrateGraphs(unittest.TestCase):
         
         assert len(calibrate_list) == 2
         assert numpy.max(calibrate_list[1][0]['T'].residual) < 7e-6, numpy.max(calibrate_list[1][0]['T'].residual)
-        err = numpy.max(numpy.abs(calibrate_list[0][0].blockvisibility_acc.flagged_vis -
-                                  self.blockvis_list[0].blockvisibility_acc.flagged_vis))
+        err = numpy.max(numpy.abs(calibrate_list[0][0].flagged_vis - self.blockvis_list[0].flagged_vis))
         assert err < 2e-6, err
     
     def test_calibrate_rsexecute_empty(self):
@@ -165,7 +162,7 @@ class TestCalibrateGraphs(unittest.TestCase):
         self.actualSetUp(amp_errors=amp_errors, phase_errors=phase_errors)
         
         for v in self.blockvis_list:
-            v['vis'].data[...] = 0.0 + 0.0j
+            v.data['vis'][...] = 0.0 + 0.0j
         
         controls = create_calibration_controls()
         controls['T']['first_selfcal'] = 0
@@ -196,8 +193,7 @@ class TestCalibrateGraphs(unittest.TestCase):
         
         assert len(calibrate_list) == 2
         assert numpy.max(calibrate_list[1][0]['T'].residual) < 7e-6, numpy.max(calibrate_list[1][0]['T'].residual)
-        err = numpy.max(numpy.abs(calibrate_list[0][0].blockvisibility_acc.flagged_vis -
-                                  self.blockvis_list[0].blockvisibility_acc.flagged_vis))
+        err = numpy.max(numpy.abs(calibrate_list[0][0].flagged_vis - self.blockvis_list[0].flagged_vis))
         assert err < 2e-6, err
     
     def test_calibrate_rsexecute_global_empty(self):
@@ -206,7 +202,7 @@ class TestCalibrateGraphs(unittest.TestCase):
         self.actualSetUp(amp_errors=amp_errors, phase_errors=phase_errors)
         
         for v in self.blockvis_list:
-            v['vis'].data[...] = 0.0 + 0.0j
+            v.data['vis'][...] = 0.0 + 0.0j
         
         controls = create_calibration_controls()
         controls['T']['first_selfcal'] = 0

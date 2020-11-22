@@ -18,7 +18,7 @@ from rascil.processing_components.simulation import create_test_image
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 
@@ -35,15 +35,17 @@ class TestSkyModel(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame('stokesI'))
-        self.vis['vis'].data *= 0.0
+        self.vis.data['vis'] *= 0.0
         
         # Create model
-        self.model = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
-        self.model["pixels"].data[self.model["pixels"].data > 1.0] = 1.0
+        self.model = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
+                                       frequency=self.frequency)
+        self.model.data[self.model.data > 1.0] = 1.0
 
-        self.mask = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
-        self.mask["pixels"].data[self.mask["pixels"].data > 0.1] = 1.0
-        self.mask["pixels"].data[self.mask["pixels"].data <= 0.1] = 0.0
+        self.mask = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
+                                   frequency=self.frequency)
+        self.mask.data[self.mask.data > 0.1] = 1.0
+        self.mask.data[self.mask.data <= 0.1] = 0.0
 
 
     def test_create(self):
@@ -65,8 +67,8 @@ class TestSkyModel(unittest.TestCase):
         
         assert numpy.max(numpy.abs(sm_fluxes - sm_copy_fluxes)) < 1e-7
         
-        assert numpy.abs(numpy.max(sm.mask["pixels"].data - 1.0)) < 1e-7
-        assert numpy.abs(numpy.min(sm.mask["pixels"].data - 0.0)) < 1e-7
+        assert numpy.abs(numpy.max(sm.mask.data - 1.0)) < 1e-7
+        assert numpy.abs(numpy.min(sm.mask.data - 0.0)) < 1e-7
 
     def test_filter(self):
         fluxes = numpy.linspace(0, 1.0, 11)

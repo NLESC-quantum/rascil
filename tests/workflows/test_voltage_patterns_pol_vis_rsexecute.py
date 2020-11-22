@@ -21,7 +21,7 @@ from rascil.workflows import create_standard_mid_simulation_rsexecute_workflow, 
     predict_dft_rsexecute_workflow, predict_fft_components_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.DEBUG)
 
@@ -104,17 +104,17 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
             def find_vp_actual(telescope, normalise=True):
                 vp = create_vp(telescope=telescope)
                 if test_vp:
-                    vp["pixels"].data[:, 0, ...] = 1.0
-                    vp["pixels"].data[:, 1, ...] = 0.0
-                    vp["pixels"].data[:, 2, ...] = 0.0
-                    vp["pixels"].data[:, 3, ...] = 1.0
+                    vp.data[:, 0, ...] = 1.0
+                    vp.data[:, 1, ...] = 0.0
+                    vp.data[:, 2, ...] = 0.0
+                    vp.data[:, 3, ...] = 1.0
                 if normalise:
                     g = numpy.zeros([4])
-                    g[0] = numpy.max(numpy.abs(vp["pixels"].data[:, 0, ...]))
-                    g[3] = numpy.max(numpy.abs(vp["pixels"].data[:, 3, ...]))
+                    g[0] = numpy.max(numpy.abs(vp.data[:, 0, ...]))
+                    g[3] = numpy.max(numpy.abs(vp.data[:, 3, ...]))
                     g[1] = g[2] = numpy.sqrt(g[0] * g[3])
                     for chan in range(4):
-                        vp["pixels"].data[:, chan, ...] /= g[chan]
+                        vp.data[:, chan, ...] /= g[chan]
                 return vp
             
             future_model_list = [
@@ -194,6 +194,7 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
     def test_apply_voltage_pattern_image_stokesI(self):
         result = self._test(test_vp=False, name="stokesI")
 
+    @unittest.skip("Too long for CI/CD")
     def test_apply_voltage_pattern_image_stokesI_long(self):
         result = self._test(test_vp=False, name="stokesI", time_range=[-4.0, +4.0])
 

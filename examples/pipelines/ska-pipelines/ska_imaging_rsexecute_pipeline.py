@@ -31,7 +31,7 @@ def init_logging():
 
 if __name__ == '__main__':
     
-    log = logging.getLogger("rascil-logger")
+    log = logging.getLogger()
     logging.info("Starting Imaging pipeline")
     
     rsexecute.set_client(use_dask=True)
@@ -62,7 +62,8 @@ if __name__ == '__main__':
     
     imaging_context = 'ng'
     vis_slices = 1
-    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context=imaging_context)
+    dirty_list = invert_list_rsexecute_workflow(vis_list, template_model_imagelist=model_list, context=imaging_context,
+                                                vis_slices=vis_slices)
     
     log.info('About to run invert_list_rsexecute_workflow')
     result = rsexecute.compute(dirty_list, sync=True)

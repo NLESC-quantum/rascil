@@ -1,4 +1,4 @@
-.. _development:
+.. _other_info:
 
 ******************
 RASCIL development

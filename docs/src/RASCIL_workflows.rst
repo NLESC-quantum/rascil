@@ -35,7 +35,6 @@ Simulation workflows
 --------------------
 
 * Testing and simulation support: :py:func:`rascil.workflows.rsexecute.simulation.simulate_list_rsexecute_workflow`
-
 Execution
 ---------
 

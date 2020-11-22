@@ -12,7 +12,6 @@ stages:
   - test
   - build
   - publish
-  - prepost
 
 linting:
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
@@ -125,11 +124,11 @@ pages:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-prepare ci metrics:
-  stage: prepost
+create ci metrics:
+  stage: .post
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   when: always
-  script:
+  before_script:
     - mkdir -p build/reports
     - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
     - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
@@ -150,8 +149,3 @@ prepare ci metrics:
     paths:
       - ./build
 
-# Create Gitlab CI badges from CI metrics
-# https://developer.skatelescope.org/en/latest/tools/continuousintegration.html#automated-collection-of-ci-health-metrics-as-part-of-the-ci-pipeline
-include:
-  - project: 'ska-telescope/templates-repository'
-    file: 'gitlab-ci/includes/post_step.yml'

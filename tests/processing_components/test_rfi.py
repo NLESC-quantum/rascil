@@ -14,7 +14,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation.rfi import create_propagators, calculate_rfi_at_station, \
     calculate_station_correlation_rfi, simulate_DTV, simulate_DTV_prop, create_propagators_prop
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 
@@ -35,7 +35,9 @@ class TestRFISim(unittest.TestCase):
         perth = EarthLocation(lon=115.8605*u.deg, lat=-31.9505*u.deg, height=0.0)
         
         rmax = 1000.0
-        low = create_named_configuration('LOWR3', rmax=rmax, skip=33)
+        low = create_named_configuration('LOWR3', rmax=rmax)
+        antskip = 33
+        low.data = low.data[::antskip]
         nants = len(low.names)
         
         # Calculate the power spectral density of the DTV station: Watts/Hz
@@ -70,9 +72,10 @@ class TestRFISim(unittest.TestCase):
         times = numpy.arange(ntimes) * integration_time
 
         rmax = 1000.0
-        antskip=33
-        low = create_named_configuration('LOWR3', rmax=rmax, skip=antskip)
+        low = create_named_configuration('LOWR3', rmax=rmax)
         nants_start = len(low.names)
+        antskip = 33
+        low.data = low.data[::antskip]
         nants = len(low.names)
 
         # Perth transmitter

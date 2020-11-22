@@ -3,7 +3,7 @@
 # Disable built in rules
 .SUFFIXES:
 
-SCs = imaging.py primary_beam_zernikes.py
+SCs = dprepb_rsexecute_pipeline.py imaging_sim2.py imaging.py primary_beam_zernikes.py
 
 TXTs=  $(SCs:.py=.txt)
 

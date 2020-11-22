@@ -14,7 +14,7 @@ from rascil.data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import calculate_blockvisibility_parallactic_angles, convert_azelvp_to_radec, \
     simulate_gaintable_from_voltage_pattern
-from rascil.processing_components.image import export_image_to_fits, qa_image
+from rascil.processing_components.image import export_image_to_fits, copy_image, qa_image
 from rascil.processing_components.imaging import create_image_from_visibility
 from rascil.processing_components.imaging.primary_beams import create_vp
 from rascil.processing_components.simulation import create_named_configuration
@@ -23,7 +23,7 @@ from rascil.workflows import create_standard_mid_simulation_rsexecute_workflow, 
     calculate_residual_fft_rsexecute_workflow, calculate_residual_dft_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.DEBUG)
 
@@ -108,17 +108,17 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
             def find_vp_actual(telescope, normalise=True):
                 vp = create_vp(telescope=telescope)
                 if test_vp:
-                    vp["pixels"].data[:, 0, ...] = 1.0
-                    vp["pixels"].data[:, 1, ...] = 0.0
-                    vp["pixels"].data[:, 2, ...] = 0.0
-                    vp["pixels"].data[:, 3, ...] = 1.0
+                    vp.data[:, 0, ...] = 1.0
+                    vp.data[:, 1, ...] = 0.0
+                    vp.data[:, 2, ...] = 0.0
+                    vp.data[:, 3, ...] = 1.0
                 if normalise:
                     g = numpy.zeros([4])
-                    g[0] = numpy.max(numpy.abs(vp["pixels"].data[:, 0, ...]))
-                    g[3] = numpy.max(numpy.abs(vp["pixels"].data[:, 3, ...]))
+                    g[0] = numpy.max(numpy.abs(vp.data[:, 0, ...]))
+                    g[3] = numpy.max(numpy.abs(vp.data[:, 3, ...]))
                     g[1] = g[2] = numpy.sqrt(g[0] * g[3])
                     for chan in range(4):
-                        vp["pixels"].data[:, chan, ...] /= g[chan]
+                        vp.data[:, chan, ...] /= g[chan]
                 return vp
             
             future_model_list = [
@@ -185,7 +185,7 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
             
             for ipol, pol in enumerate(["I", "Q", "U", "V"]):
                 result["model_{}".format(pol)] = flux[0][ipol]
-                polimage = dirty_list[0].copy(deep=True)
+                polimage = copy_image(dirty_list[0])
                 polimage.data = polimage.data[:, ipol, ...][:, numpy.newaxis, ...]
                 qa = qa_image(polimage, context="Stokes " + pol)
                 result["peak_{}_{}".format(method, pol)] = max(qa.data['min'], qa.data['max'], key=abs)

@@ -33,7 +33,7 @@ from rascil.processing_components.calibration import apply_gaintable, \
 from rascil.processing_components.calibration.pointing import \
     create_pointingtable_from_blockvisibility
 from rascil.processing_components.image import import_image_from_fits, apply_voltage_pattern_to_image
-from rascil.processing_components.image.operations import create_empty_image_like
+from rascil.processing_components.image.operations import create_empty_image_like, copy_image
 from rascil.processing_components.imaging import create_vp, normalise_vp, create_vp_generic
 from rascil.processing_components.simulation import create_configuration_from_MIDfile
 from rascil.processing_components.simulation import create_named_configuration
@@ -52,7 +52,8 @@ from rascil.processing_components.skycomponent import insert_skycomponent
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility import calculate_blockvisibility_hourangles
 from rascil.processing_components.visibility import copy_visibility
-from rascil.processing_components.visibility import create_blockvisibility
+from rascil.processing_components.visibility import create_blockvisibility, \
+    create_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import \
     invert_list_rsexecute_workflow, sum_predict_results_rsexecute, predict_list_rsexecute_workflow, \
@@ -60,7 +61,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import \
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import \
     predict_skymodel_list_compsonly_rsexecute_workflow
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 
 def simulate_list_rsexecute_workflow(config='LOWBD2',
@@ -95,7 +96,7 @@ def simulate_list_rsexecute_workflow(config='LOWBD2',
     :return: graph of vis_list with different frequencies in different elements
     """
     if format == 'vis':
-        create_vis = create_blockvisibility
+        create_vis = create_visibility
     else:
         create_vis = create_blockvisibility
     
@@ -209,8 +210,8 @@ def calculate_residual_from_gaintables_rsexecute_workflow(bvis_list, components,
         calculate_residual_dft_rsexecute_workflow(bvis_list, components, model_list, no_error_gtl)
     
     def subtract(im1, im2):
-        im = im1[0].copy(deep=True)
-        im["pixels"].data -= im2[0].data
+        im = copy_image(im1[0])
+        im.data -= im2[0].data
         return im, im1[1]
     
     residual_list = rsexecute.execute(subtract, nout=1)(error_dirty_list, no_error_dirty_list)
@@ -238,7 +239,8 @@ def predict_fft_components_rsexecute_workflow(sub_bvis_list, sub_components, sub
                       for im, m in enumerate(fft_model_list)]
     fft_bvis_list = [rsexecute.execute(copy_visibility, nout=1)(bvis, zero=True) for
                      bvis in sub_bvis_list]
-    fft_bvis_list = predict_list_rsexecute_workflow(fft_bvis_list, fft_model_list, context=context, **kwargs)
+    fft_bvis_list = predict_list_rsexecute_workflow(fft_bvis_list, fft_model_list, context=context,
+                                                    **kwargs)
     return fft_bvis_list
 
 
@@ -255,7 +257,8 @@ def predict_fft_image_rsexecute_workflow(sub_bvis_list, sub_model_list, vp_list,
                       for im, m in enumerate(sub_model_list)]
     fft_bvis_list = [rsexecute.execute(copy_visibility, nout=1)(bvis, zero=True) for
                      bvis in sub_bvis_list]
-    fft_bvis_list = predict_list_rsexecute_workflow(fft_bvis_list, fft_model_list, context=context, **kwargs)
+    fft_bvis_list = predict_list_rsexecute_workflow(fft_bvis_list, fft_model_list, context=context,
+                                                    **kwargs)
     return fft_bvis_list
 
 
@@ -277,8 +280,8 @@ def calculate_residual_fft_rsexecute_workflow(sub_bvis_list, sub_components, sub
     """
     fft_bvis_list = predict_fft_components_rsexecute_workflow(sub_bvis_list, sub_components, sub_model_list, vp_list,
                                                               context=context, **kwargs)
-    return sum_invert_results_rsexecute(
-        invert_list_rsexecute_workflow(fft_bvis_list, sub_model_list, context=context, **kwargs))
+    return sum_invert_results_rsexecute(invert_list_rsexecute_workflow(fft_bvis_list, sub_model_list,
+                                                                       context=context, **kwargs))
 
 
 def predict_dft_rsexecute_workflow(sub_bvis_list, sub_components, gt_list, context='2d', **kwargs):
@@ -336,8 +339,8 @@ def calculate_residual_dft_rsexecute_workflow(sub_bvis_list, sub_components, sub
     """
     
     dft_bvis_list = predict_dft_rsexecute_workflow(sub_bvis_list, sub_components, gt_list, context=context)
-    return sum_invert_results_rsexecute(
-        invert_list_rsexecute_workflow(dft_bvis_list, sub_model_list, context=context, **kwargs))
+    return sum_invert_results_rsexecute(invert_list_rsexecute_workflow(dft_bvis_list, sub_model_list,
+                                                                       context=context, **kwargs))
 
 
 def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
@@ -398,7 +401,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
     def sum_vis(bvis_list):
         bv_sum = copy_visibility(bvis_list[0], zero=True)
         for ibv, bv in enumerate(bvis_list):
-            bv_sum['vis'].data += bv['vis'].data
+            bv_sum.data['vis'] += bv.data['vis']
         return bv_sum
     
     error_bvis_list = [rsexecute.execute(sum_vis)(error_bvis_list[ibvis])
@@ -414,14 +417,15 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
                                  tol=1e-8, crosspol=False, normalise_gains=True, **kwargs)
             error_bvis = apply_gaintable(error_bvis, gt)
         if residual:
-            error_bvis['vis'].data = error_bvis['vis'].data - no_error_bvis['vis'].data
+            error_bvis.data['vis'] = error_bvis.data['vis'] - no_error_bvis.data['vis']
         return error_bvis
     
     error_vis_list = [rsexecute.execute(selfcal_convert)(error_bvis_list[ibv],
                                                          no_error_bvis_list[ibv])
                       for ibv, _ in enumerate(error_bvis_list)]
     
-    dirty_list = invert_list_rsexecute_workflow(error_vis_list, sub_model_list, context=context, **kwargs)
+    dirty_list = invert_list_rsexecute_workflow(error_vis_list, sub_model_list,
+                                                context=context, **kwargs)
     return dirty_list
 
 def create_atmospheric_errors_gaintable_rsexecute_workflow(sub_bvis_list, sub_components,
@@ -679,7 +683,7 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
-            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy(deep=True)
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
             vp = normalise_vp(vp)
             vp_list.append(vp)
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
@@ -689,14 +693,14 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
-            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy(deep=True)
-            vpsym = 0.5 * (vp["pixels"].data[:, 0, ...] + vp["pixels"].data[:, 3, ...])
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
+            vpsym = 0.5 * (vp.data[:, 0, ...] + vp.data[:, 3, ...])
             if normalise:
                 vpsym /= numpy.max(numpy.abs(vpsym))
-            vp["pixels"].data[:, 0, ...] = vpsym
-            vp["pixels"].data[:, 1, ...] = 0.0 + 0.0j
-            vp["pixels"].data[:, 2, ...] = 0.0 + 0.0j
-            vp["pixels"].data[:, 3, ...] = vpsym
+            vp.data[:, 0, ...] = vpsym
+            vp.data[:, 1, ...] = 0.0 + 0.0j
+            vp.data[:, 2, ...] = 0.0 + 0.0j
+            vp.data[:, 3, ...] = vpsym
             vp_list.append(vp)
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list
@@ -712,10 +716,11 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
                      (bvis, sub_components, vp_actual_list[ibv])
                      for ibv, bvis in enumerate(sub_bvis_list)]
     if show:
+        plot_file = 'voltage_pattern_gaintable.png'
         error_gt_list = rsexecute.compute(error_gt_list, sync=True)
-        plot_gaintable(error_gt_list, title=basename + " errors")
+        plot_gaintable(error_gt_list, plot_file=plot_file, title=basename + " errors")
         no_error_gt_list = rsexecute.compute(no_error_gt_list, sync=True)
-        plot_gaintable(no_error_gt_list, title=basename + " nominal")
+        plot_gaintable(no_error_gt_list, plot_file=plot_file, title=basename + " nominal")
     
     return no_error_gt_list, error_gt_list
 
@@ -741,7 +746,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
-            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy(deep=True)
+            vp = copy_image(get_vp("{vp}_{band}".format(vp=vp_type, band=band)))
             vp = normalise_vp(vp)
             vp_list.append(vp)
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
@@ -749,7 +754,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
     
     def find_vp_nominal(bvis, band):
         vp_types = numpy.unique(bvis.configuration.vp_type)
-        vp = get_vp("{vp}_{band}".format(vp=default_vp, band=band)).copy(deep=True)
+        vp = copy_image(get_vp("{vp}_{band}".format(vp=default_vp, band=band)))
         vp = normalise_vp(vp)
         vp_list = len(vp_types) * [vp]
         assert len(vp_list) == len(vp_types)
@@ -766,10 +771,11 @@ def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_c
                      (bvis, sub_components, vp_actual_list[ibv])
                      for ibv, bvis in enumerate(sub_bvis_list)]
     if show:
+        plot_file = 'voltage_pattern_gaintable.png'
         error_gt_list = rsexecute.compute(error_gt_list, sync=True)
-        plot_gaintable(error_gt_list, title=basename + " errors")
+        plot_gaintable(error_gt_list, plot_file=plot_file, title=basename + " errors")
         no_error_gt_list = rsexecute.compute(no_error_gt_list, sync=True)
-        plot_gaintable(no_error_gt_list, title=basename + " nominal")
+        plot_gaintable(no_error_gt_list, plot_file=plot_file, title=basename + " nominal")
     
     return no_error_gt_list, error_gt_list
 

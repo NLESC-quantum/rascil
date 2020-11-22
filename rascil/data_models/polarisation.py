@@ -20,13 +20,11 @@ probably more useful.
 
 """
 
-__all__ = ['PolarisationFrame', 'ReceptorFrame']
-
 import logging
 
 import numpy
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 
 class ReceptorFrame:
@@ -149,18 +147,6 @@ class PolarisationFrame:
         """
         return list(self.translations.keys())
 
-def polarisation_frame_from_names(names):
-    """ Derive polarisation_name from names
-    
-    :param names:
-    :return:
-    """
-    for frame in PolarisationFrame.polarisation_frames.keys():
-        frame_names = PolarisationFrame(frame).names
-        if sorted(names) == sorted(frame_names):
-            return frame
-    raise ValueError("Polarisation {} not supported".format(names))
-    
 
 def polmatrixmultiply(cm, vec, polaxis=0):
     """Matrix multiply of appropriate axis of vec [...,:] by cm

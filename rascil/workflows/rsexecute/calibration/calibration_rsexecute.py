@@ -4,11 +4,13 @@
 
 __all__ = ['calibrate_list_rsexecute_workflow']
 
-from rascil.data_models import get_parameter, BlockVisibility
+from rascil.data_models import get_parameter, Visibility
 
 from rascil.processing_components.calibration import apply_calibration_chain, solve_calibrate_chain
-from rascil.processing_components.visibility import integrate_visibility_by_channel, divide_visibility
-from rascil.processing_components.visibility import concatenate_visibility
+from rascil.processing_components.visibility import  convert_visibility_to_blockvisibility
+from rascil.processing_components.visibility import visibility_gather_channel
+from rascil.processing_components.visibility import integrate_visibility_by_channel, \
+    divide_visibility
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
@@ -38,10 +40,13 @@ def calibrate_list_rsexecute_workflow(vis_list, model_vislist, gt_list=None,
     
     if global_solution and (len(vis_list) > 1):
         # The conversion is a no op if it's actually a blockvis
-        point_vislist = [rsexecute.execute(divide_visibility, nout=1)(vis_list[i], model_vislist[i])
-                         for i, _ in enumerate(vis_list)]
+        point_vislist = [rsexecute.execute(convert_visibility_to_blockvisibility, nout=1)(v) for v in vis_list]
+        point_modelvislist = [rsexecute.execute(convert_visibility_to_blockvisibility, nout=1)(mv)
+                              for mv in model_vislist]
+        point_vislist = [rsexecute.execute(divide_visibility, nout=1)(point_vislist[i], point_modelvislist[i])
+                         for i, _ in enumerate(point_vislist)]
    
-        global_point_vis_list = rsexecute.execute(concatenate_visibility, nout=1)(point_vislist, dim="frequency")
+        global_point_vis_list = rsexecute.execute(visibility_gather_channel, nout=1)(point_vislist)
         global_point_vis_list = rsexecute.execute(integrate_visibility_by_channel, nout=1)(global_point_vis_list)
         # This is a global solution so we only compute one gain table
         if gt_list is None or len(gt_list) < 1:

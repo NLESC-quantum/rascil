@@ -20,7 +20,7 @@ from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import copy_visibility, create_blockvisibility
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 

@@ -14,7 +14,7 @@ from rascil.processing_components import create_named_configuration
 from rascil.processing_components.visibility import create_blockvisibility
 from rascil.processing_components.visibility.base import export_blockvisibility_to_ms
 
-log = logging.getLogger("rascil-logger")
+log = logging.getLogger()
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 

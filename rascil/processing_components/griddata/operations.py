@@ -11,8 +11,8 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 
 """
 
-__all__ = ['create_griddata_from_image', 'create_griddata_from_array', 'copy_griddata',
-           'qa_griddata']
+__all__ = ['griddata_sizeof', 'create_griddata_from_image', 'create_griddata_from_array', 'copy_griddata',
+           'convert_griddata_to_image', 'qa_griddata']
 
 import copy
 import logging
@@ -23,8 +23,9 @@ from astropy.wcs import WCS
 from rascil.data_models.memory_data_models import GridData
 from rascil.data_models.memory_data_models import QA
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.processing_components.image.operations import create_image_from_array
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 
 def copy_griddata(gd):
@@ -33,11 +34,33 @@ def copy_griddata(gd):
     :param gd:
     :return:
     """
-    newgd = copy.deepcopy(gd)
+    assert isinstance(gd, GridData), gd
+    newgd = GridData()
+    newgd.polarisation_frame = gd.polarisation_frame
+    newgd.data = copy.deepcopy(gd.data)
+    if gd.grid_wcs is None:
+        newgd.grid_wcs = None
+    else:
+        newgd.grid_wcs = copy.deepcopy(gd.grid_wcs)
+    if gd.projection_wcs is None:
+        newgd.projection_wcs = None
+    else:
+        newgd.projection_wcs = copy.deepcopy(gd.projection_wcs)
+    if griddata_sizeof(newgd) >= 1.0:
+        log.debug("copy_image: copied %s image of shape %s, size %.3f (GB)" %
+                  (newgd.data.dtype, str(newgd.shape), griddata_sizeof(newgd)))
+    assert type(newgd) == GridData
     return newgd
 
 
-def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, polarisation_frame: PolarisationFrame) -> GridData:
+def griddata_sizeof(gd: GridData):
+    """ Return size in GB
+    """
+    return gd.size()
+
+
+def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, projection_wcs: WCS,
+                               polarisation_frame: PolarisationFrame) -> GridData:
     """ Create a griddata from an array and wcs's
     
     The griddata has axes [chan, pol, z, y, x] where z, y, x are spatial axes in either sky or Fourier plane. The
@@ -47,54 +70,96 @@ def create_griddata_from_array(data: numpy.array, grid_wcs: WCS, polarisation_fr
 
     :param data: Numpy.array
     :param grid_wcs: Grid world coordinate system
+    :param projection_wcs: Projection world coordinate system
     :param polarisation_frame: Polarisation Frame
     :return: GridData
     
     """
-    
-    log.debug("create_griddata_from_array: created %s image of shape %s" %
-              (data.dtype, str(data.shape)))
-    
-    return GridData(data=data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs.deepcopy())
+    fgriddata = GridData()
+    fgriddata.polarisation_frame = polarisation_frame
+
+    fgriddata.data = data
+    fgriddata.grid_wcs = grid_wcs.deepcopy()
+    fgriddata.projection_wcs = projection_wcs.deepcopy()
+
+    if griddata_sizeof(fgriddata) >= 1.0:
+        log.debug("create_griddata_from_array: created %s image of shape %s, size %.3f (GB)" %
+                  (fgriddata.data.dtype, str(fgriddata.shape), griddata_sizeof(fgriddata)))
+
+    assert isinstance(fgriddata, GridData), "Type is %s" % type(fgriddata)
+    return fgriddata
 
 
-def create_griddata_from_image(im, polarisation_frame=None, ft_types=None):
+def create_griddata_from_image(im, vis, nw=1, wstep=1e15):
     """ Create a GridData from an image
 
-    :param im: Template Image
+    :param vis:
+    :param im: Image
     :param nw: Number of w planes
     :param wstep: Increment in w
     :return: GridData
     """
-    
-    if ft_types is None:
-        ft_types = ["UU", "VV"]
-    nchan, npol, ny, nx = im["pixels"].shape
-    gridshape = (nchan, npol, ny, nx)
-    data = numpy.zeros(gridshape, dtype='complex')
-    
-    wcs = copy.deepcopy(im.image_acc.wcs)
-    crval = wcs.wcs.crval
-    crpix = wcs.wcs.crpix
-    cdelt = wcs.wcs.cdelt
-    ctype = wcs.wcs.ctype
+    assert len(im.shape) == 4
+    assert im.wcs.wcs.ctype[0] == 'RA---SIN'
+    assert im.wcs.wcs.ctype[1] == 'DEC--SIN'
+
     d2r = numpy.pi / 180.0
-    cdelt[0] = 1.0 / (nx * cdelt[0] * d2r)
-    cdelt[1] = 1.0 / (ny * cdelt[1] * d2r)
+    projection_wcs = copy.deepcopy(im.wcs)
+
+    # WCS Coords are [x, y, z, pol, chan] where x, y, z are spatial axes in real space or Fourier space
+    # Array Coords are [chan, pol, z, y, x] where x, y, z are spatial axes in real space or Fourier space
+    grid_wcs = WCS(naxis=5)
+
+    grid_wcs.wcs.axis_types[0] = 0
+    grid_wcs.wcs.axis_types[1] = 0
+    grid_wcs.wcs.axis_types[2] = 0
+    grid_wcs.wcs.axis_types[3] = im.wcs.wcs.axis_types[2]
+    grid_wcs.wcs.axis_types[4] = im.wcs.wcs.axis_types[3]
+
+    grid_wcs.wcs.crval[0] = 0.0
+    grid_wcs.wcs.crval[1] = 0.0
+    grid_wcs.wcs.crval[2] = 0.0
+    grid_wcs.wcs.crval[3] = im.wcs.wcs.crval[2]
+    grid_wcs.wcs.crval[4] = im.wcs.wcs.crval[3]
+
+    grid_wcs.wcs.crpix[0] = im.shape[3] // 2 + 1
+    grid_wcs.wcs.crpix[1] = im.shape[2] // 2 + 1
+    grid_wcs.wcs.crpix[2] = nw // 2 + 1
+    grid_wcs.wcs.crpix[3] = im.wcs.wcs.crpix[2]
+    grid_wcs.wcs.crpix[4] = im.wcs.wcs.crpix[3]
+
+    grid_wcs.wcs.ctype[0] = 'UU'
+    grid_wcs.wcs.ctype[1] = 'VV'
+    grid_wcs.wcs.ctype[2] = 'WW'
+    grid_wcs.wcs.ctype[3] = im.wcs.wcs.ctype[2]
+    grid_wcs.wcs.ctype[4] = im.wcs.wcs.ctype[3]
+
+    grid_wcs.wcs.cdelt[0] = 1.0 / (im.shape[3] * d2r * im.wcs.wcs.cdelt[0])
+    grid_wcs.wcs.cdelt[1] = 1.0 / (im.shape[2] * d2r * im.wcs.wcs.cdelt[1])
+    grid_wcs.wcs.cdelt[2] = wstep
+    grid_wcs.wcs.cdelt[3] = im.wcs.wcs.cdelt[2]
+    grid_wcs.wcs.cdelt[4] = im.wcs.wcs.cdelt[3]
+
+    nchan, npol, ny, nx = im.shape
+    grid_data = numpy.zeros([nchan, npol, nw, ny, nx], dtype='complex')
+
+    if vis is not None:
+        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs,
+                                          projection_wcs=projection_wcs,
+                                          polarisation_frame=vis.polarisation_frame)
+    else:
+        return create_griddata_from_array(grid_data, grid_wcs=grid_wcs,
+                                          projection_wcs=projection_wcs,
+                                          polarisation_frame=im.polarisation_frame)
+
+
+def convert_griddata_to_image(gd):
+    """ Convert griddata to an image
     
-    # The negation in the longitude is needed by definition of RA, DEC
-    grid_wcs = WCS(naxis=4)
-    grid_wcs.wcs.crpix = [nx // 2 + 1, ny // 2 + 1, crpix[2], crpix[3]]
-    grid_wcs.wcs.ctype = [ft_types[0], ft_types[1], ctype[2], ctype[3]]
-    grid_wcs.wcs.crval = [0.0, 0.0, crval[2], crval[3]]
-    grid_wcs.wcs.cdelt = [cdelt[0], cdelt[1], cdelt[2], cdelt[3]]
-    grid_wcs.wcs.radesys = 'ICRS'
-    grid_wcs.wcs.equinox = 2000.0
-    
-    if polarisation_frame is None:
-        polarisation_frame = im.image_acc.polarisation_frame
-    
-    return GridData(data, polarisation_frame=polarisation_frame, grid_wcs=grid_wcs)
+    :param gd:
+    :return:
+    """
+    return create_image_from_array(gd.data, gd.grid_wcs, gd.polarisation_frame)
 
 
 def qa_griddata(gd, context="") -> QA:
@@ -103,14 +168,14 @@ def qa_griddata(gd, context="") -> QA:
     :param gd:
     :return: QA
     """
-    # assert isinstance(gd, GridData), gd
-    data = {'shape': str(gd["pixels"].data.shape),
+    assert isinstance(gd, GridData), gd
+    data = {'shape': str(gd.data.shape),
             'max': numpy.max(gd.data),
             'min': numpy.min(gd.data),
             'rms': numpy.std(gd.data),
             'sum': numpy.sum(gd.data),
             'medianabs': numpy.median(numpy.abs(gd.data)),
             'median': numpy.median(gd.data)}
-    
+
     qa = QA(origin="qa_image", data=data, context=context)
     return qa

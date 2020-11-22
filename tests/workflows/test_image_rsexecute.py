@@ -15,13 +15,13 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.imaging.base import create_image_from_visibility
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.visibility.base import create_visibility
 
 from rascil.workflows.rsexecute.image.image_rsexecute import image_rsexecute_map_workflow
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 
@@ -51,7 +51,7 @@ class TestImageGraph(unittest.TestCase):
     def createVis(self, config, dec=-35.0, rmax=None):
         self.config = create_named_configuration(config, rmax=rmax)
         self.phasecentre = SkyCoord(ra=+15 * u.deg, dec=dec * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_blockvisibility(self.config, self.times, self.frequency,
+        self.vis = create_visibility(self.config, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'))
@@ -62,6 +62,6 @@ class TestImageGraph(unittest.TestCase):
         beam = image_rsexecute_map_workflow(model, create_pb, facets=4, pointingcentre=self.phasecentre,
                                              telescope='MID')
         beam = rsexecute.compute(beam, sync=True)
-        assert numpy.max(beam["pixels"].data) > 0.0
+        assert numpy.max(beam.data) > 0.0
         if self.persist: export_image_to_fits(beam, "%s/test_image_rsexecute_scatter_gather.fits" % (self.dir))
             

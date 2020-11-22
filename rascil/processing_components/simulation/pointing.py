@@ -17,9 +17,11 @@ from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.data_models.memory_data_models import PointingTable
 from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
+from rascil.processing_components.visibility import create_visibility_from_rows
 from rascil.processing_components.util.geometry import calculate_azel
+from rascil.processing_components.visibility.iterators import vis_timeslice_iter
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 
 def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scale=1.0, order=3,
@@ -35,105 +37,111 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     :return:
     """
     
-    nant = vis.blockvisibility_acc.nants
+    nant = vis.vis.shape[1]
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
     
-    gnchan = gaintables[0].gaintable_acc.nchan
+    nrec = gaintables[0].nrec
+    gnchan = gaintables[0].nchan
     frequency = gaintables[0].frequency
     
-    nchan, npol, ny, nx = vp["pixels"].data.shape
-    real_spline = [[RectBivariateSpline(range(ny), range(nx), vp["pixels"].data[chan, pol, ...].real, kx=order, ky=order)
+    nchan, npol, ny, nx = vp.data.shape
+    real_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data[chan, pol, ...].real, kx=order, ky=order)
                      for chan in range(nchan)] for pol in range(npol)]
-    imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp["pixels"].data[chan, pol, ...].imag, kx=order, ky=order)
+    imag_spline = [[RectBivariateSpline(range(ny), range(nx), vp.data[chan, pol, ...].imag, kx=order, ky=order)
                      for chan in range(nchan)] for pol in range(npol)]
 
-    assert npol == vis.blockvisibility_acc.npol, "Voltage pattern and visibility have incompatible polarisations"
+    assert npol == vis.npol, "Voltage pattern and visibility have incompatible polarisations"
     
-    #assert isinstance(vis, BlockVisibility)
-    assert vp.image_acc.wcs.wcs.ctype[0] == 'AZELGEO long', vp.image_acc.wcs.wcs.ctype[0]
-    assert vp.image_acc.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.image_acc.wcs.wcs.ctype[1]
+    assert isinstance(vis, BlockVisibility)
+    assert vp.wcs.wcs.ctype[0] == 'AZELGEO long', vp.wcs.wcs.ctype[0]
+    assert vp.wcs.wcs.ctype[1] == 'AZELGEO lati', vp.wcs.wcs.ctype[1]
     
     assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
     
-    # The time in the Visibility is UTC in seconds
+    # The time in the Visibility is hour angle in seconds!
     number_bad = 0
     number_good = 0
     
     r2d = 180.0 / numpy.pi
+    s2r = numpy.pi / 43200.0
     # For each hourangle, we need to calculate the location of a component
     # in AZELGEO. With that we can then look up the relevant gain from the
     # voltage pattern
+    for iha, rows in enumerate(vis_timeslice_iter(vis, vis_slices=vis_slices)):
+        v = create_visibility_from_rows(vis, rows)
+        pt_rows = (pt.time == v.time)
+        assert numpy.sum(pt_rows) > 0
+        pointing_ha = pt.pointing[pt_rows]
+        utc_time = Time([numpy.average(v.time)/86400.0], format='mjd', scale='utc')
+        azimuth_centre, elevation_centre = calculate_azel(v.configuration.location, utc_time,
+                                                          v.phasecentre)
+        azimuth_centre = azimuth_centre[0].to('rad').value
+        elevation_centre = elevation_centre[0].to('rad').value
+        
+        # Calculate the az el for this hourangle and the phasecentre declination
+        for icomp, comp in enumerate(sc):
 
-    location = vis.attrs["configuration"].attrs["location"]
-    for row, time in enumerate(pt["time"]):
-        time_slice = {"time": slice(time - pt["interval"][row] / 2,
-                                    time + pt.interval[row] / 2)}
-        pt_sel = pt.sel(time_slice)
-        if len(pt_sel["time"]) > 0:
-            pointing_ha = pt_sel["pointing"].data[0, ...]
-            utc_time = Time([numpy.average(pt_sel["time"])/86400.0], format='mjd', scale='utc')
-            azimuth_centre, elevation_centre = calculate_azel(location, utc_time, vis.phasecentre)
-            azimuth_centre = azimuth_centre[0].to('rad').value
-            elevation_centre = elevation_centre[0].to('rad').value
-            
-            # Calculate the az el for this hourangle and the phasecentre declination
-            for icomp, comp in enumerate(sc):
-                gt_sel = gaintables[icomp].sel(time_slice)
-                nrec = gt_sel.gaintable_acc.nrec
-                if elevation_centre >= elevation_limit:
+            nrec = gaintables[icomp].nrec
+
+            if elevation_centre >= elevation_limit:
+                
+                antgain = numpy.zeros([nant, gnchan, npol], dtype='complex')
+                
+                # Calculate the azel of this component
+                utc_time = Time([numpy.average(v.time) / 86400.0], format='mjd', scale='utc')
+                azimuth_comp, elevation_comp = calculate_azel(v.configuration.location, utc_time,
+                                                              comp.direction)
+                azimuth_comp = azimuth_comp[0].to('rad').value
+                elevation_comp = elevation_comp[0].to('rad').value
+                
+                for ant in range(nant):
                     
-                    antgain = numpy.zeros([nant, gnchan, npol], dtype='complex')
+                    wcs_azel = vp.wcs.deepcopy()
                     
-                    # Calculate the azel of this component
-                    azimuth_comp, elevation_comp = calculate_azel(location, utc_time, comp.direction)
-                    azimuth_comp = azimuth_comp[0].to('rad').value
-                    elevation_comp = elevation_comp[0].to('rad').value
-                    for ant in range(nant):
-                        wcs_azel = vp.image_acc.wcs.deepcopy()
-                        az_comp = (azimuth_centre + pointing_ha[ant, 0, 0, 0] / numpy.cos(elevation_centre)) * r2d
-                        el_comp = (elevation_centre + pointing_ha[ant, 0, 0, 1]) * r2d
-                        
-                        # We use WCS sensible coordinate handling by labelling the axes misleadingly
-                        wcs_azel.wcs.crval[0] = az_comp
-                        wcs_azel.wcs.crval[1] = el_comp
-                        wcs_azel.wcs.ctype[0] = 'RA---SIN'
-                        wcs_azel.wcs.ctype[1] = 'DEC--SIN'
-                        
-                        try:
-                            for gchan in range(gnchan):
-                                gain = numpy.zeros([npol], dtype='complex')
-                                worldloc = [azimuth_comp * r2d, elevation_comp * r2d,
-                                        vp.image_acc.wcs.wcs.crval[2], frequency[gchan]]
-                                pixloc = wcs_azel.wcs_world2pix([worldloc], 0)[0]
-                                assert pixloc[0] > 2
-                                assert pixloc[0] < nx - 3
-                                assert pixloc[1] > 2
-                                assert pixloc[1] < ny - 3
-                                chan = int(round(pixloc[3]))
-                                if nchan == 1:
-                                    chan = 0
-                                for pol in range(npol):
-                                    gain[pol] = real_spline[pol][chan].ev(pixloc[1], pixloc[0]) + \
-                                           1j * imag_spline[pol][chan].ev(pixloc[1], pixloc[0])
-                                if nrec == 2:
-                                    ag = gain.reshape([2, 2])
-                                    ag = numpy.linalg.inv(ag)
-                                    antgain[ant, gchan, :] = ag.reshape([4])
-                                elif nrec == 1:
-                                    antgain[ant, gchan, 0] = 1.0 / gain
-                                else:
-                                    raise ValueError("Illegal number of receptors: {}".format(nrec))
-                                number_good += 1
-                        except (ValueError, AssertionError, IndexError, numpy.linalg.LinAlgError):
-                            number_bad += 1
-                            antgain[ant, :, :] = 1.0
-                           
-                        gt_sel["gain"].data[:, :, :, :] = antgain[:, :, :].reshape([nant, gnchan, nrec, nrec])
-                        gt_sel.attrs["phasecentre"] = comp.direction
-                else:
-                    gt_sel["gain"].data[...] = 1.0 + 0.0j
-                    gt_sel.attrs["phasecentre"] = comp.direction
-                    number_bad += nant
+                    az_comp = (azimuth_centre + pointing_ha[0, ant, 0, 0, 0] / numpy.cos(elevation_centre)) * r2d
+                    el_comp = (elevation_centre + pointing_ha[0, ant, 0, 0, 1]) * r2d
+                    
+                    # We use WCS sensible coordinate handling by labelling the axes misleadingly
+                    wcs_azel.wcs.crval[0] = az_comp
+                    wcs_azel.wcs.crval[1] = el_comp
+                    wcs_azel.wcs.ctype[0] = 'RA---SIN'
+                    wcs_azel.wcs.ctype[1] = 'DEC--SIN'
+                    
+                    try:
+                        for gchan in range(gnchan):
+                            gain = numpy.zeros([npol], dtype='complex')
+                            worldloc = [azimuth_comp * r2d, elevation_comp * r2d,
+                                        vp.wcs.wcs.crval[2], frequency[gchan]]
+                            pixloc = wcs_azel.wcs_world2pix([worldloc], 0)[0]
+                            assert pixloc[0] > 2
+                            assert pixloc[0] < nx - 3
+                            assert pixloc[1] > 2
+                            assert pixloc[1] < ny - 3
+                            chan = int(round(pixloc[3]))
+                            if nchan == 1:
+                                chan = 0
+                            for pol in range(npol):
+                                gain[pol] = real_spline[pol][chan].ev(pixloc[1], pixloc[0]) + \
+                                       1j * imag_spline[pol][chan].ev(pixloc[1],  pixloc[0])
+                            if nrec == 2:
+                                ag = gain.reshape([2, 2])
+                                ag = numpy.linalg.inv(ag)
+                                antgain[ant, gchan, :] = ag.reshape([4])
+                            elif nrec == 1:
+                                antgain[ant, gchan, 0] = 1.0/gain
+                            else:
+                                raise ValueError("Illegal number of receptors: {}".format(nrec))
+                            number_good += 1
+                    except (ValueError, AssertionError, IndexError):
+                        number_bad += 1
+                        antgain[ant, :, :] = 1.0
+                    
+                    gaintables[icomp].gain[iha, :, :, :] = antgain[:, :, :].reshape([nant, gnchan, nrec, nrec])
+                    gaintables[icomp].phasecentre = comp.direction
+            else:
+                gaintables[icomp].gain[...] = 1.0 + 0.0j
+                gaintables[icomp].phasecentre = comp.direction
+                number_bad += nant
 
     assert number_good > 0, "simulate_gaintable_from_pointingtable: No points inside the voltage pattern image"
     if number_bad > 0:
@@ -165,26 +173,26 @@ def simulate_pointingtable(pt: PointingTable, pointing_error, static_pointing_er
         static_pointing_error = [0.0, 0.0]
     
     r2s = 180.0 * 3600.0 / numpy.pi
-    pt['pointing'].data = numpy.zeros(pt['pointing'].data.shape)
+    pt.data['pointing'] = numpy.zeros(pt.data['pointing'].shape)
     
-    ntimes, nant, nchan, nrec, _ = pt['pointing'].data.shape
+    ntimes, nant, nchan, nrec, _ = pt.data['pointing'].shape
     if pointing_error > 0.0:
         log.debug("simulate_pointingtable: Simulating dynamic pointing error = %g (rad) %g (arcsec)"
                   % (pointing_error, r2s * pointing_error))
         
-        pt["pointing"].data += numpy.random.normal(0.0, pointing_error, pt["pointing"].data.shape)
+        pt.data['pointing'] += numpy.random.normal(0.0, pointing_error, pt.data['pointing'].shape)
     if (abs(static_pointing_error[0]) > 0.0) or (abs(static_pointing_error[1]) > 0.0):
         numpy.random.seed(18051955)
         log.debug("simulate_pointingtable: Simulating static pointing error = (%g, %g) (rad) (%g, %g)(arcsec)"
                   % (static_pointing_error[0], static_pointing_error[1],
                      r2s * static_pointing_error[0], r2s * static_pointing_error[1]))
         
-        static_pe = numpy.zeros(pt["pointing"].data.shape[1:])
+        static_pe = numpy.zeros(pt.data['pointing'].shape[1:])
         static_pe[..., 0] = numpy.random.normal(0.0, static_pointing_error[0],
                                                 static_pe[..., 0].shape)[numpy.newaxis, ...]
         static_pe[..., 1] = numpy.random.normal(0.0, static_pointing_error[1],
                                                 static_pe[..., 1].shape)[numpy.newaxis, ...]
-        pt["pointing"].data += static_pe
+        pt.data['pointing'] += static_pe
     
     if global_pointing_error is not None:
         if seed is not None:
@@ -193,7 +201,7 @@ def simulate_pointingtable(pt: PointingTable, pointing_error, static_pointing_er
         log.debug("simulate_pointingtable: Simulating global pointing error = [%g, %g] (rad) [%g,s %g] (arcsec)"
                   % (global_pointing_error[0], global_pointing_error[1],
                      r2s * global_pointing_error[0], r2s * global_pointing_error[1]))
-        pt["pointing"].data[..., :] += global_pointing_error
+        pt.data['pointing'][..., :] += global_pointing_error
     
     return pt
 
@@ -216,9 +224,9 @@ def simulate_pointingtable_from_timeseries(pt, type='wind', time_series_type='pr
     if pointing_directory is None:
         pointing_directory = rascil_data_path("models/%s" % time_series_type)
     
-    pt['pointing'].data = numpy.zeros(pt["pointing"].data.shape)
+    pt.data['pointing'] = numpy.zeros(pt.data['pointing'].shape)
     
-    ntimes, nant, nchan, nrec, _ = pt["pointing"].data.shape
+    ntimes, nant, nchan, nrec, _ = pt.data['pointing'].shape
     
     # Use az and el at the beginning of this pointingtable
     axis_values = pt.nominal[0, 0, 0, 0, 0]
@@ -387,13 +395,13 @@ def simulate_pointingtable_from_timeseries(pt, type='wind', time_series_type='pr
             
             #            pt.data['time'] = times[:ntimes]
             if axis == 'az':
-                pt['pointing'].data[:, ant, :, :, 0] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
+                pt.data['pointing'][:, ant, :, :, 0] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
             elif axis == 'el':
-                pt['pointing'].data[:, ant, :, :, 1] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
+                pt.data['pointing'][:, ant, :, :, 1] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
             elif axis == 'pxel':
-                pt['pointing'].data[:, ant, :, :, 0] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
+                pt.data['pointing'][:, ant, :, :, 0] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
             elif axis == 'pel':
-                pt['pointing'].data[:, ant, :, :, 1] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
+                pt.data['pointing'][:, ant, :, :, 1] = ts[:ntimes, numpy.newaxis, numpy.newaxis, ...]
             else:
                 raise ValueError("Unknown axis %s" % axis)
     

@@ -11,7 +11,7 @@ import numpy
 from rascil.data_models.memory_data_models import GainTable
 from rascil.data_models.parameters import get_parameter
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 def gaintable_null_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
     """One time iterator returning true for all rows
@@ -31,7 +31,7 @@ def gaintable_timeslice_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
     :param gaintable_slices: Number of slices (second in precedence to timeslice)
     :return: Boolean array with selected rows=True
     """
-    ##assert isinstance(gt, GainTable)
+    assert isinstance(gt, GainTable)
     timemin = numpy.min(gt.time)
     timemax = numpy.max(gt.time)
     

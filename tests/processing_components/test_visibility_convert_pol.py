@@ -12,9 +12,9 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility
-from rascil.processing_components.visibility.operations import convert_blockvisibility_to_stokesI, \
-    convert_blockvisibility_to_stokes
+from rascil.processing_components.visibility.base import create_visibility, create_blockvisibility
+from rascil.processing_components.visibility.operations import convert_visibility_to_stokesI, \
+    convert_visibility_to_stokes, convert_blockvisibility_to_stokesI, convert_blockvisibility_to_stokes
 
 
 class TestVisibilityConvertPol(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestVisibilityConvertPol(unittest.TestCase):
         # Define the component and give it some spectral behaviour
         f = numpy.array([100.0, 20.0, -10.0, 1.0])
         self.flux = numpy.array([f, 0.8 * f, 0.6 * f])
-        
+
         # The phase centre is absolute and the component is specified relative (for now).
         # This means that the component should end up at the position phasecentre+compredirection
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
@@ -34,47 +34,48 @@ class TestVisibilityConvertPol(unittest.TestCase):
         pcof = self.phasecentre.skyoffset_frame()
         self.compreldirection = self.compabsdirection.transform_to(pcof)
         self.comp = Skycomponent(direction=self.compreldirection, frequency=self.frequency, flux=self.flux)
-    
+
     def test_convert_visibility_I(self):
         for pol in ['linear', 'circular']:
-            vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                         channel_bandwidth=self.channel_bandwidth,
-                                         phasecentre=self.phasecentre, weight=1.0,
-                                         polarisation_frame=PolarisationFrame(pol))
-            visi = convert_blockvisibility_to_stokesI(vis)
-            assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesI'
-            assert visi.blockvisibility_acc.npol == 1
-    
+            vis = create_visibility(self.lowcore, self.times, self.frequency,
+                                    channel_bandwidth=self.channel_bandwidth,
+                                    phasecentre=self.phasecentre, weight=1.0,
+                                    polarisation_frame=PolarisationFrame(pol))
+            visi = convert_visibility_to_stokesI(vis)
+            assert visi.polarisation_frame.type == 'stokesI'
+            assert visi.npol == 1
+
     def test_convert_visibility_stokes(self):
         for pol in ['linear', 'circular']:
-            vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                         channel_bandwidth=self.channel_bandwidth,
-                                         phasecentre=self.phasecentre, weight=1.0,
-                                         polarisation_frame=PolarisationFrame(pol))
-            visi = convert_blockvisibility_to_stokes(vis)
+            vis = create_visibility(self.lowcore, self.times, self.frequency,
+                                    channel_bandwidth=self.channel_bandwidth,
+                                    phasecentre=self.phasecentre, weight=1.0,
+                                    polarisation_frame=PolarisationFrame(pol))
+            visi = convert_visibility_to_stokes(vis)
             assert visi.polarisation_frame.type == 'stokesIQUV'
-            assert visi.blockvisibility_acc.npol == 4
-    
+            assert visi.npol == 4
+
     def test_convert_blockvisibility_I(self):
         for pol in ['linear', 'circular']:
             vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                         channel_bandwidth=self.channel_bandwidth,
-                                         phasecentre=self.phasecentre, weight=1.0,
-                                         polarisation_frame=PolarisationFrame(pol))
+                                    channel_bandwidth=self.channel_bandwidth,
+                                    phasecentre=self.phasecentre, weight=1.0,
+                                    polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokesI(vis)
-            assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesI'
-            assert visi.blockvisibility_acc.npol == 1
-    
+            assert visi.polarisation_frame.type == 'stokesI'
+            assert visi.npol == 1
+
     def test_convert_blockvisibility_stokes(self):
         for pol in ['linear', 'circular']:
             vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                         channel_bandwidth=self.channel_bandwidth,
-                                         phasecentre=self.phasecentre, weight=1.0,
-                                         polarisation_frame=PolarisationFrame(pol))
+                                    channel_bandwidth=self.channel_bandwidth,
+                                    phasecentre=self.phasecentre, weight=1.0,
+                                    polarisation_frame=PolarisationFrame(pol))
             visi = convert_blockvisibility_to_stokes(vis)
-            print(visi.polarisation_frame.type)
             assert visi.polarisation_frame.type == 'stokesIQUV'
-            assert visi.blockvisibility_acc.npol == 4
+            assert visi.npol == 4
+
+
 
 
 if __name__ == '__main__':

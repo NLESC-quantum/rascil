@@ -9,7 +9,7 @@ import logging
 
 from rascil.data_models.memory_data_models import Skycomponent
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 
 def copy_skycomponent(sc):

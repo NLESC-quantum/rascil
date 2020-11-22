@@ -18,7 +18,7 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
     create_unittest_model, create_unittest_components
 from rascil.processing_components.skycomponent.operations import find_skycomponents, find_nearest_skycomponent, \
     insert_skycomponent
-from rascil.processing_components.visibility import copy_visibility
+from rascil.processing_components.visibility import copy_visibility, convert_blockvisibility_to_visibility
 
 try:
     import nifty_gridder
@@ -28,7 +28,7 @@ try:
 except ImportError:
     run_ng_tests = False
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -43,10 +43,9 @@ class TestImagingNG(unittest.TestCase):
         
         self.persist = os.getenv("RASCIL_PERSIST", True)
         
-        self.verbosity = 2
-        
+        self.verbosity = 0
     
-    def actualSetUp(self, freqwin=1, dospectral=True,
+    def actualSetUp(self, freqwin=1, block=True, dospectral=True,
                     image_pol=PolarisationFrame('stokesI'), zerow=False, mfs=False):
         
         self.npixel = 256
@@ -92,6 +91,7 @@ class TestImagingNG(unittest.TestCase):
                                                    self.times,
                                                    self.blockvis_pol,
                                                    self.phasecentre,
+                                                   block=block,
                                                    zerow=zerow)
         
         self.model = create_unittest_model(self.blockvis, self.image_pol, npixel=self.npixel, nchan=freqwin)
@@ -115,7 +115,7 @@ class TestImagingNG(unittest.TestCase):
         comps = find_skycomponents(dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5)
         assert len(comps) == len(self.components), "Different number of components found: original %d, recovered %d" % \
                                                    (len(self.components), len(comps))
-        cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
+        cellsize = abs(dirty.wcs.wcs.cdelt[0])
         
         for comp in comps:
             # Check for agreement in direction
@@ -128,7 +128,7 @@ class TestImagingNG(unittest.TestCase):
         from rascil.processing_components.imaging.ng import predict_ng, invert_ng
         original_vis = copy_visibility(self.blockvis)
         vis = predict_ng(self.blockvis, self.model, verbosity=self.verbosity, **kwargs)
-        vis['vis'].data = vis['vis'].data - original_vis['vis'].data
+        vis.data['vis'] = vis.data['vis'] - original_vis.data['vis']
         dirty = invert_ng(vis, self.model, dopsf=False, normalize=True, verbosity=self.verbosity,
                           **kwargs)
         
@@ -145,7 +145,7 @@ class TestImagingNG(unittest.TestCase):
         
         # assert numpy.max(numpy.abs(dirty[0].data)), "Residual image is empty"
         
-        maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
+        maxabs = numpy.max(numpy.abs(dirty[0].data))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (maxabs, fluxthreshold)
     
     def _invert_base(self, fluxthreshold=1.0, positionthreshold=1.0, check_components=True,
@@ -166,7 +166,7 @@ class TestImagingNG(unittest.TestCase):
         #     plt.clf()
         #     show_image(dirty[0], pol=pol)
         #     plt.show(block=False)
-        assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Image is empty"
+        assert numpy.max(numpy.abs(dirty[0].data)), "Image is empty"
         
         if check_components:
             self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)

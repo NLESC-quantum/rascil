@@ -7,7 +7,7 @@ import logging
 
 from rascil.data_models.memory_data_models import QA
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 

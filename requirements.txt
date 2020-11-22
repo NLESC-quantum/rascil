@@ -19,6 +19,3 @@ scipy
 seqfile
 ConfigParser
 tabulate
-xarray
-pandas
-zarr

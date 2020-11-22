@@ -19,12 +19,12 @@ from rascil.processing_components.image.deconvolution import deconvolve_cube, re
 from rascil.processing_components.image.operations import export_image_to_fits, qa_image
 from rascil.processing_components.simulation import create_test_image
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.visibility.base import create_visibility
 from rascil.processing_components.imaging.base import predict_2d, invert_2d, create_image_from_visibility
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
 
 
 class TestImageDeconvolution(unittest.TestCase):
@@ -40,14 +40,15 @@ class TestImageDeconvolution(unittest.TestCase):
         self.frequency = numpy.array([1e8])
         self.channel_bandwidth = numpy.array([1e6])
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+        self.vis = create_visibility(self.lowcore, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'), zerow=True)
-        self.vis['vis'].data *= 0.0
+        self.vis.data['vis'] *= 0.0
         
         # Create model
-        self.test_model = create_test_image(cellsize=0.001, frequency=self.frequency, phasecentre=self.vis.phasecentre)
+        self.test_model = create_test_image(cellsize=0.001, phasecentre=self.vis.phasecentre,
+                                            frequency=self.frequency)
         self.vis = predict_2d(self.vis, self.test_model)
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
         self.model = create_image_from_visibility(self.vis, npixel=512, cellsize=0.001,
@@ -76,10 +77,10 @@ class TestImageDeconvolution(unittest.TestCase):
         self.cmodel = restore_cube(self.model, self.psf)
         
     def test_fit_psf(self):
-        clean_beam = fit_psf(self.psf)
-        assert numpy.abs(clean_beam["bmaj"] - 18.304027311653243) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 17.509048064770884) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
+        fitted_psf, fit, size = fit_psf(self.psf)
+        qa = qa_image(fitted_psf, context='fitted_psf')
+        assert numpy.abs(qa.data['max'] - 1.034215673203459) < 1.0e-7, str(qa)
+        assert numpy.abs(size - 1.837417138043453) < 1.0e-7, str(size)  
 
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=10000, gain=0.1, algorithm='hogbom',
@@ -87,7 +88,7 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist: export_image_to_fits(self.residual, "%s/test_deconvolve_hogbom-residual.fits" % (self.dir))
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_hogbom-clean.fits" % (self.dir))
-        assert numpy.max(self.residual["pixels"].data) < 1.2
+        assert numpy.max(self.residual.data) < 1.2
 
     def test_deconvolve_msclean(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=1000, gain=0.7, algorithm='msclean',
@@ -96,7 +97,7 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist: export_image_to_fits(self.residual, "%s/test_deconvolve_msclean-residual.fits" % (self.dir))
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_msclean-clean.fits" % (self.dir))
-        assert numpy.max(self.residual["pixels"].data) < 1.2
+        assert numpy.max(self.residual.data) < 1.2
 
     def test_deconvolve_msclean_1scale(self):
         
@@ -106,7 +107,7 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist: export_image_to_fits(self.residual, "%s/test_deconvolve_msclean_1scale-residual.fits" % (self.dir))
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_msclean_1scale-clean.fits" % (self.dir))
-        assert numpy.max(self.residual["pixels"].data) < 1.2
+        assert numpy.max(self.residual.data) < 1.2
 
     def test_deconvolve_hogbom_no_edge(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, window_shape='no_edge', niter=10000,
@@ -114,7 +115,7 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist: export_image_to_fits(self.residual, "%s/test_deconvolve_hogbom_noedge-residual.fits" % (self.dir))
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_hogbom_no_edge-clean.fits" % (self.dir))
-        assert numpy.max(self.residual["pixels"].data) < 1.2
+        assert numpy.max(self.residual.data) < 1.2
 
     def test_deconvolve_hogbom_inner_quarter(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, window_shape='quarter', niter=10000,
@@ -122,7 +123,7 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist: export_image_to_fits(self.residual, "%s/test_deconvolve_hogbom_innerquarter-residual.fits" % (self.dir))
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_hogbom_innerquarter-clean.fits" % (self.dir))
-        assert numpy.max(self.residual["pixels"].data) < 1.2
+        assert numpy.max(self.residual.data) < 1.2
 
     def test_deconvolve_msclean_inner_quarter(self):
         
@@ -132,7 +133,7 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist: export_image_to_fits(self.residual, "%s/test_deconvolve_msclean_innerquarter-residual.fits" % (self.dir))
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_msclean_innerquarter-clean.fits" % (self.dir))
-        assert numpy.max(self.residual["pixels"].data) < 1.2
+        assert numpy.max(self.residual.data) < 1.2
     
     def test_deconvolve_hogbom_subpsf(self):
         
@@ -141,7 +142,7 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist: export_image_to_fits(self.residual, "%s/test_deconvolve_hogbom_subpsf-residual.fits" % (self.dir))
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_hogbom_subpsf-clean.fits" % (self.dir))
-        assert numpy.max(self.residual["pixels"].data[..., 56:456, 56:456]) < 1.2
+        assert numpy.max(self.residual.data[..., 56:456, 56:456]) < 1.2
     
     def test_deconvolve_msclean_subpsf(self):
         
@@ -152,4 +153,4 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist: export_image_to_fits(self.residual, "%s/test_deconvolve_msclean_subpsf-residual.fits" % (self.dir))
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_msclean_subpsf-clean.fits" % (self.dir))
-        assert numpy.max(self.residual["pixels"].data[..., 56:456, 56:456]) < 1.0
+        assert numpy.max(self.residual.data[..., 56:456, 56:456]) < 1.0

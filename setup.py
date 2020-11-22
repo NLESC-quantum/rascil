@@ -33,7 +33,7 @@ packages_data = [i for p in packages for i in
                 glob.glob(p + '/*/') + glob.glob(p + '/*/*/') + glob.glob(p + '/*/*/*/') + glob.glob(p + '/*/*/*/*/') + glob.glob(p + '/*/*/*/*/')]
 
 setup(name='rascil',
-      version='0.2.0b0',
+      version='0.1.11',
       python_requires='>=3.7',
       description='Radio Astronomy Simulation, Calibration, and Imaging Library',
       long_description=readme + '\n\n',

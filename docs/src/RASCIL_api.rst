@@ -5,7 +5,7 @@ API
 
 Here is a quick guide to the layout of the package:
 
- - `rascil/data_models`: Data models such as Image, BlockVisibility, GainTable
+ - `rascil/data_models`: Data models such as Image, Visibility, GainTable
  - `rascil/processing_components`: Processing functions used in algorithms
  - `rascil/workflows`: Serial and distributed processing workflows
  - `examples`: Example scripts and notebooks

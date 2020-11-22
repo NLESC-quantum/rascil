@@ -10,6 +10,7 @@ Functions
 Create empty visibility data set for observation
 ------------------------------------------------
 
+* For Visibility: :py:func:`rascil.processing_components.visibility.base.create_visibility`
 * For BlockVisibility: :py:func:`rascil.processing_components.visibility.base.create_blockvisibility`
 
 Read existing Measurement Set
@@ -18,6 +19,7 @@ Read existing Measurement Set
 Casacore must be installed for MS reading and writing:
 
 * List contents of a MeasurementSet: :py:func:`rascil.processing_components.visibility.base.list_ms`
+* Creates a list of Visibilities, one per FIELD_ID and DATA_DESC_ID: :py:func:`rascil.processing_components.visibility.base.create_visibility_from_ms`
 * Creates a list of BlockVisibilities, one per FIELD_ID and DATA_DESC_ID: :py:func:`rascil.processing_components.visibility.base.create_blockvisibility_from_ms`
 
 Visibility gridding and degridding
@@ -36,7 +38,7 @@ Visibility weighting and tapering
 Visibility predict and invert
 -----------------------------
 
-* Predict BlockVisibility for Skycomponent :py:func:`rascil.processing_components.imaging.base.predict_skycomponent_visibility`
+* Predict BlockVisibility or Visibility for Skycomponent :py:func:`rascil.processing_components.imaging.base.predict_skycomponent_visibility`
 * Predict by de-gridding visibilities :py:func:`rascil.processing_components.imaging.base.predict_2d`
 * Invert by gridding visibilities :py:func:`rascil.processing_components.imaging.base.invert_2d`
 * Predict by de-gridding visibilities with Nifty Gridder :py:func:`rascil.processing_components.imaging.ng.predict_ng`
@@ -77,7 +79,7 @@ Image
 * Export from FITS: :py:func:`rascil.processing_components.image.operations.export_image_to_fits`
 * Re-project coordinate system: :py:func:`rascil.processing_components.image.operations.reproject_image`
 * Smooth image: :py:func:`rascil.processing_components.image.operations.smooth_image`
-* FFT: :py:func:`rascil.processing_components.image.operations.fft_image_to_griddata`
+* FFT: :py:func:`rascil.processing_components.image.operations.fft_image`
 * Remove continuum: :py:func:`rascil.processing_components.image.operations.remove_continuum_image`
 * Convert polarisation:
 
@@ -91,5 +93,7 @@ Visibility
 * Append/sum/divide/QA: :py:func:`rascil.processing_components.visibility.operations.divide_visibility`
 * Remove continuum: :py:func:`rascil.processing_components.visibility.operations.remove_continuum_blockvisibility`
 * Integrate across channels: :py:func:`rascil.processing_components.visibility.operations.integrate_visibility_by_channel`
+* Coalesce (i.e. BDA) :py:func:`rascil.processing_components.visibility.coalesce.coalesce_visibility`
+* De-coalesce (i.e. BDA) :py:func:`rascil.processing_components.visibility.coalesce.decoalesce_visibility`
 
 

@@ -1,6 +1,6 @@
 
-NBs = bandpass-calibration_serial.ipynb simple-dask_rsexecute.ipynb imaging.ipynb \
-demo_image_xarray.ipynb demo_visibility_xarray.ipynb
+NBs = bandpass-calibration_serial.ipynb imaging-wterm_rsexecute.ipynb \
+ simple-dask_rsexecute.ipynb imaging-pipelines_rsexecute.ipynb  imaging.ipynb
 
 RSTs=  $(NBs:.ipynb=.rst)
 

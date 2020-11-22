@@ -13,19 +13,20 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
 from rascil.processing_components.image import export_image_to_fits
-from rascil.processing_components.image.operations import qa_image, create_image_from_array
+from rascil.processing_components.image.operations import qa_image
 from rascil.processing_components.imaging import create_image_from_visibility, advise_wide_field
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility, idft_visibility_skycomponent
 from rascil.processing_components.imaging.primary_beams import create_vp
 from rascil.processing_components.simulation import create_named_configuration, create_test_skycomponents_from_s3
 from rascil.processing_components.skycomponent import apply_voltage_pattern_to_skycomponent, \
     filter_skycomponents_by_flux
-from rascil.processing_components.visibility import create_blockvisibility
+from rascil.processing_components.visibility import create_blockvisibility, vis_timeslice_iter, \
+    create_visibility_from_rows
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines import continuum_imaging_list_rsexecute_workflow
 from rascil.workflows.rsexecute.imaging import weight_list_rsexecute_workflow
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.DEBUG)
 
@@ -73,13 +74,10 @@ class VoltagePatternsPolGraph(unittest.TestCase):
                                                override_cellsize=False,
                                                polarisation_frame=PolarisationFrame("stokesIQUV"))
         vpbeam = create_vp(pbmodel, telescope=telescope, use_local=False)
-        vpbeam_wcs = vpbeam.image_acc.wcs
-        vpbeam_wcs.wcs.ctype[0] = 'RA---SIN'
-        vpbeam_wcs.wcs.ctype[1] = 'DEC--SIN'
-        vpbeam_wcs.wcs.crval[0] = pbmodel.image_acc.wcs.wcs.crval[0]
-        vpbeam_wcs.wcs.wcs.crval[1] = pbmodel.image_acc.wcs.wcs.crval[1]
-        vpbeam = create_image_from_array(vpbeam["pixels"].data, wcs=vpbeam_wcs,
-                                         polarisation_frame=vpbeam.polarisation_frame)
+        vpbeam.wcs.wcs.ctype[0] = 'RA---SIN'
+        vpbeam.wcs.wcs.ctype[1] = 'DEC--SIN'
+        vpbeam.wcs.wcs.crval[0] = pbmodel.wcs.wcs.crval[0]
+        vpbeam.wcs.wcs.crval[1] = pbmodel.wcs.wcs.crval[1]
 
         s3_components = create_test_skycomponents_from_s3(flux_limit=0.1,
                                                           phasecentre=self.phasecentre,
@@ -100,7 +98,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.show(block=False)
 
         vpcomp = apply_voltage_pattern_to_skycomponent(s3_components, vpbeam)
-        bvis['vis'].data[...] = 0.0 + 0.0j
+        bvis.data['vis'][...] = 0.0 + 0.0j
         bvis = dft_skycomponent_visibility(bvis, vpcomp)
 
         rec_comp = idft_visibility_skycomponent(bvis, vpcomp)[0]
@@ -124,7 +122,13 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.savefig('%s/test_primary_beams_pol_rsexecute_stokes_errors.png' % self.dir)
         plt.show(block=False)
 
-        bvis_list = [bvis]
+        split_times = False
+        if split_times:
+            bvis_list = list()
+            for rows in vis_timeslice_iter(bvis, vis_slices=8):
+                bvis_list.append(create_visibility_from_rows(bvis, rows))
+        else:
+            bvis_list = [bvis]
 
         bvis_list = rsexecute.scatter(bvis_list)
 

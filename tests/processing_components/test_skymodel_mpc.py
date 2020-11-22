@@ -22,7 +22,7 @@ from rascil.processing_components.skymodel.operations import image_voronoi_iter
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components import create_image
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 
@@ -42,7 +42,7 @@ class TestSkymodelMPC(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame('stokesI'))
-        self.vis['vis'].data *= 0.0
+        self.vis.data['vis'] *= 0.0
         
         # Create model
         self.model = create_image(npixel=512, cellsize=0.000015, polarisation_frame=PolarisationFrame("stokesI"),
@@ -50,7 +50,8 @@ class TestSkymodelMPC(unittest.TestCase):
                                   phasecentre=self.phasecentre)
     
     def test_expand_skymodel_by_skycomponents(self):
-        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
+        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
+                                 frequency=self.frequency)
         
         beam = create_low_test_beam(beam, use_local=False)
         
@@ -65,7 +66,7 @@ class TestSkymodelMPC(unittest.TestCase):
         
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
         
-        assert len(actual_components) == 11, len(actual_components)
+        assert len(actual_components) == 37, len(actual_components)
         sm = SkyModel(image=self.model, components=actual_components)
         assert len(sm.components) == len(actual_components)
         
@@ -92,16 +93,16 @@ class TestSkymodelMPC(unittest.TestCase):
         _, actual_components = remove_neighbouring_components(actual_components, 0.05)
         
         for imask, mask in enumerate(image_voronoi_iter(self.model, actual_components)):
-            mask["pixels"].data *= beam["pixels"].data
-            #assert isinstance(mask, Image)
-            assert mask["pixels"].data.dtype == "float"
-            assert numpy.sum(mask["pixels"].data) > 1
+            mask.data *= beam.data
+            assert isinstance(mask, Image)
+            assert mask.data.dtype == "float"
+            assert numpy.sum(mask.data) > 1
             # import matplotlib.pyplot as plt
             # from rascil.processing_components.image.operations import show_image
             # show_image(mask)
             # plt.show(block=False)
 
-        assert len(actual_components) == 6, len(actual_components)
+        assert len(actual_components) == 9, len(actual_components)
         sm = SkyModel(image=self.model, components=actual_components)
         assert len(sm.components) == len(actual_components)
         

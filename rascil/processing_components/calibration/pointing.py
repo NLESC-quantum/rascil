@@ -18,13 +18,13 @@ from rascil.data_models.polarisation import ReceptorFrame
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 def pointingtable_summary(pt: PointingTable):
     """Return string summarizing the Gaintable
 
     """
-    return "%s rows, %.3f GB" % (pt["pixels"].data.shape, pt.size())
+    return "%s rows, %.3f GB" % (pt.data.shape, pt.size())
 
 
 def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_frame='azel', timeslice=None,
@@ -39,9 +39,9 @@ def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_fra
     :return: PointingTable
     
     """
-    ##assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
+    assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
     
-    nants = vis.blockvisibility_acc.nants
+    nants = vis.nants
     
     if timeslice is None or timeslice == 'auto':
         utimes = numpy.unique(vis.time)
@@ -65,7 +65,7 @@ def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_fra
     ufrequency = numpy.unique(vis.frequency)
     nfrequency = len(ufrequency)
     
-    receptor_frame = ReceptorFrame(vis.blockvisibility_acc.polarisation_frame.type)
+    receptor_frame = ReceptorFrame(vis.polarisation_frame.type)
     nrec = receptor_frame.nrec
     
     pointingshape = [ntimes, nants, nfrequency, nrec, 2]
@@ -95,7 +95,7 @@ def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_fra
                        residual=pointing_residual, frequency=pointing_frequency, receptor_frame=receptor_frame,
                        pointing_frame=pointing_frame, pointingcentre=vis.phasecentre, configuration=vis.configuration)
     
-    ##assert isinstance(pt, PointingTable), "pt is not a PointingTable: %r" % pt
+    assert isinstance(pt, PointingTable), "pt is not a PointingTable: %r" % pt
     
     return pt
 
@@ -109,7 +109,7 @@ def copy_pointingtable(pt: PointingTable, zero=False):
     if pt is None:
         return pt
     
-    ##assert isinstance(pt, PointingTable), pt
+    assert isinstance(pt, PointingTable), pt
     
     newpt = copy.copy(pt)
     newpt.data = copy.deepcopy(pt.data)
@@ -133,7 +133,7 @@ def create_pointingtable_from_rows(pt: PointingTable, rows: numpy.ndarray, makec
     
     assert len(rows) == pt.ntimes, "Lenpth of rows does not agree with lenpth of PointingTable"
     
-    ##assert isinstance(pt, PointingTable), pt
+    assert isinstance(pt, PointingTable), pt
     
     if makecopy:
         newpt = copy_pointingtable(pt)

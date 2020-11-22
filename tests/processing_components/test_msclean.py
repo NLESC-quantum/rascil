@@ -9,7 +9,7 @@ import logging
 from rascil.processing_components.arrays.cleaners import create_scalestack, convolve_scalestack, convolve_convolve_scalestack,\
     argmax
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 

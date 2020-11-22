@@ -8,21 +8,21 @@ __all__ = ['create_configuration_from_file',
            'create_LOFAR_configuration',
            'create_named_configuration',
            'limit_rmax',
-           'find_vptype_from_name',
-           'select_configuration']
+           'find_vptype_from_name']
 
 import numpy
 from typing import Union
 from astropy import units as u
 from astropy.coordinates import EarthLocation
 
+from rascil.processing_components.util.coordinate_support import xyz_at_latitude
 from rascil.data_models.memory_data_models import Configuration
 from rascil.data_models.parameters import rascil_data_path, get_parameter
 from rascil.processing_components.util.installation_checks import check_data_directory
 
 import logging
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 def find_vptype_from_name(names, match: Union[str, dict] = "unknown"):
     """Determine voltage pattern type from name using a dictionary
@@ -57,7 +57,7 @@ def create_configuration_from_file(antfile: str, location: EarthLocation = None,
                                    names: str = "%d",
                                    vp_type: Union[str, dict] = "Unknown",
                                    diameter=35.0,
-                                   rmax=None, name='', skip=1) -> Configuration:
+                                   rmax=None, name='') -> Configuration:
     """ Define configuration from a text file
 
     :param antfile: Antenna file name
@@ -85,12 +85,7 @@ def create_configuration_from_file(antfile: str, location: EarthLocation = None,
     anames = [names % ant for ant in range(nants)]
     mounts = numpy.repeat(mount, nants)
     antxyz, diameters, anames, mounts = limit_rmax(antxyz, diameters, anames, mounts, rmax)
-
-    antxyz = antxyz[::skip]
-    diameters = diameters[::skip]
-    anames = anames[::skip]
-    mounts = mounts[::skip]
-
+    
     fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
                        vp_type=find_vptype_from_name(anames, vp_type),
                        diameter=diameters, name=name)
@@ -101,8 +96,7 @@ def create_configuration_from_SKAfile(antfile: str,
                                       mount: str = 'azel',
                                       names: str = "%d",
                                       vp_type: Union[str, dict] = "Unknown",
-                                      rmax=None, name='', location=None,
-                                      skip=1) -> Configuration:
+                                      rmax=None, name='', location=None) -> Configuration:
     """ Define configuration from a SKA format file
 
     :param antfile: Antenna file name
@@ -139,8 +133,7 @@ def create_configuration_from_SKAfile(antfile: str,
 def create_configuration_from_MIDfile(antfile: str, location=None,
                                       mount: str = 'azel',
                                       vp_type: Union[str, dict] = "Unknown",
-                                      rmax=None, name='',
-                                      skip=1) -> Configuration:
+                                      rmax=None, name='') -> Configuration:
     """ Define configuration from a SKA MID format file
 
     :param antfile: Antenna file name
@@ -151,6 +144,7 @@ def create_configuration_from_MIDfile(antfile: str, location=None,
     """
     check_data_directory()
 
+
     # X Y Z Diam Station
     # 9.36976 35.48262 1052.99987 13.50 M001
     antxyz = numpy.genfromtxt(antfile, skip_header=5, usecols=[0, 1, 2], delimiter=" ")
@@ -160,15 +154,10 @@ def create_configuration_from_MIDfile(antfile: str, location=None,
 
     anames = numpy.genfromtxt(antfile, dtype='str', skip_header=5, usecols=[4], delimiter=" ")
     mounts = numpy.repeat(mount, nants)
-    diameters = numpy.genfromtxt(antfile, dtype='str', skip_header=5, usecols=[3], delimiter=" ").astype('float')
+    diameters = numpy.genfromtxt(antfile, dtype='str', skip_header=5, usecols=[3], delimiter=" ")
 
     antxyz, diameters, anames, mounts = limit_rmax(antxyz, diameters, anames, mounts, rmax)
-    
-    antxyz = antxyz[::skip]
-    diameters = diameters[::skip]
-    anames = anames[::skip]
-    mounts = mounts[::skip]
-    
+
     fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
                        vp_type=find_vptype_from_name(anames, vp_type),
                        diameter=diameters, name=name)
@@ -201,7 +190,7 @@ def limit_rmax(antxyz, diameters, names, mounts, rmax):
 
 
 def create_LOFAR_configuration(antfile: str, location,
-                               rmax=1e6, skip=1) -> Configuration:
+                               rmax=1e6) -> Configuration:
     """ Define configuration from the LOFAR configuration file
 
     :param antfile:
@@ -219,12 +208,7 @@ def create_LOFAR_configuration(antfile: str, location,
     diameters = numpy.repeat(35.0, nants)
     
     antxyz, diameters, mounts, anames = limit_rmax(antxyz, diameters, anames, mounts, rmax)
-
-    antxyz = antxyz[::skip]
-    diameters = diameters[::skip]
-    anames = anames[::skip]
-    mounts = mounts[::skip]
-
+    
     vp_type = {"HBA":"HBA", "LBA":"LBA"}
     fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
                        vp_type=find_vptype_from_name(anames, vp_type),
@@ -329,31 +313,4 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
                                             diameter=25.0, name=name, **kwargs)
     else:
         raise ValueError("No such Configuration %s" % name)
-    return fc
-
-def select_configuration(config, names=None):
-    """ Select a subset of antennas/names
-    
-    :param config:
-    :param names:
-    :return:
-    """
-    
-    if names is None:
-        return config
-    
-    ind = []
-    for iname, name in enumerate(config.names):
-        if name in names:
-            ind.append(iname)
-            
-    assert len(ind) > 0, "No antennas selected using names {}".format(names)
-    
-    fc = Configuration(location=config.location,
-                       names=config.names[ind],
-                       mount=config.mount[ind],
-                       xyz=config.xyz[ind],
-                       vp_type=config.vp_type[ind],
-                       diameter=config.diameter[ind],
-                       name=config.name)
     return fc

@@ -9,7 +9,7 @@ from rascil.data_models.parameters import get_parameter
 
 import logging
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 

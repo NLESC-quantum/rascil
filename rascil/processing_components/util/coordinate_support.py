@@ -129,7 +129,7 @@ def baselines(ants_uvw):
     res = []
     nants = ants_uvw.shape[0]
     for a1 in range(nants):
-        for a2 in range(a1+1, nants):
+        for a2 in range(a1 + 1, nants):
             res.append(ants_uvw[a2] - ants_uvw[a1])
     
     basel_uvw = numpy.array(res)
@@ -214,7 +214,7 @@ def simulate_point(dist_uvw, l, m):
     # vector direction to source
     s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
     # complex valued Visibility data_models
-    return numpy.exp(-2j * numpy.pi * numpy.einsum("...fs,s->...f", dist_uvw, s))
+    return numpy.exp(-2j * numpy.pi * numpy.dot(dist_uvw, s))
 
 
 def visibility_shift(uvw, vis, dl, dm):

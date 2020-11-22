@@ -16,6 +16,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation import ingest_unittest_visibility, \
     create_unittest_model, create_unittest_components
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
+from rascil.processing_components.visibility.coalesce import convert_blockvisibility_to_visibility
 
 try:
     import casacore
@@ -28,7 +29,7 @@ try:
 except:
     run_ms_tests = False
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -41,7 +42,7 @@ class TestMSTests(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
         self.dir = rascil_path('test_results')
     
-    def actualSetUp(self, freqwin=1, dopol=False):
+    def actualSetUp(self, freqwin=1, block=True, dopol=False):
         
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
@@ -74,11 +75,16 @@ class TestMSTests(unittest.TestCase):
                                                self.channelwidth,
                                                self.times,
                                                self.vis_pol,
-                                               self.phasecentre)
+                                               self.phasecentre, block=block)
         
-        self.model = create_unittest_model(self.bvis, self.image_pol, npixel=self.npixel, nchan=freqwin)
+        self.vis = convert_blockvisibility_to_visibility(self.bvis)
+        
+        self.model = create_unittest_model(self.vis, self.image_pol, npixel=self.npixel, nchan=freqwin)
+        
         self.components = create_unittest_components(self.model, flux)
+        
         self.model = insert_skycomponent(self.model, self.components)
+        
         self.bvis = dft_skycomponent_visibility(self.bvis, self.components)
     
     

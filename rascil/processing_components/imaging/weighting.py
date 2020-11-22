@@ -14,18 +14,16 @@ import numpy
 
 import logging
 
-import astropy.constants as constants
-
-from rascil.data_models.memory_data_models import BlockVisibility
-from rascil.processing_components.griddata.gridding import grid_blockvisibility_weight_to_griddata, \
-    griddata_blockvisibility_reweight
+from rascil.data_models.memory_data_models import Visibility, BlockVisibility
+from rascil.processing_components.griddata.gridding import grid_visibility_weight_to_griddata, \
+    griddata_visibility_reweight, grid_blockvisibility_weight_to_griddata, griddata_blockvisibility_reweight
 from rascil.processing_components.griddata.kernels import create_pswf_convolutionfunction
 from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.image.operations import image_is_canonical
 from rascil.processing_components.util.array_functions import tukey_filter
 from rascil import phyconst
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("logger")
 
 
 def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.0, **kwargs):
@@ -44,11 +42,17 @@ def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.
 
     assert image_is_canonical(model)
     if gcfcf is None:
-        gcfcf = create_pswf_convolutionfunction(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
+        gcfcf = create_pswf_convolutionfunction(model)
 
-    griddata = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
-    griddata, sumwt = grid_blockvisibility_weight_to_griddata(vis, griddata, gcfcf[1])
-    vis = griddata_blockvisibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
+    if isinstance(vis, Visibility):
+    
+        griddata = create_griddata_from_image(model, vis)
+        griddata, sumwt = grid_visibility_weight_to_griddata(vis, griddata, gcfcf[1])
+        vis = griddata_visibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
+    else:
+        griddata = create_griddata_from_image(model, vis)
+        griddata, sumwt = grid_blockvisibility_weight_to_griddata(vis, griddata, gcfcf[1])
+        vis = griddata_blockvisibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
 
     return vis
 
@@ -75,26 +79,30 @@ def taper_visibility_gaussian(vis, beam=None):
     These are cumulative. If You can reset the imaging_weights
     using :py:mod:`processing_components.imaging.weighting.weight_visibility`
 
-    :param vis: blockvisibility with imaging_weight's to be tapered
+    :param vis: Visibility with imaging_weight's to be tapered
     :param beam: desired resolution (Full width half maximum, radians)
     :return: visibility with imaging_weight column modified
     """
-    #assert isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
     
     if beam is None:
         raise ValueError("Beam size not specified for Gaussian taper")
     
-    #assert isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
     # See http://mathworld.wolfram.com/FourierTransformGaussian.html
     scale_factor = numpy.pi ** 2 * beam ** 2 / (4.0 * numpy.log(2.0))
 
-    for chan, freq in enumerate(vis.frequency.data):
-        wave = phyconst.c_m_s / freq
-        uvdistsq = (vis.blockvisibility_acc.u.data ** 2 +
-                    vis.blockvisibility_acc.v.data ** 2) / wave**2
+    if isinstance(vis, Visibility):
+        uvdistsq = vis.u ** 2 + vis.v ** 2
         wt = numpy.exp(-scale_factor * uvdistsq)
-        vis['imaging_weight'].data[..., chan, :] = vis.blockvisibility_acc.flagged_imaging_weight.data[..., chan, :] * \
-                                                   wt[..., numpy.newaxis]
+        vis.data['imaging_weight'][:, :] = vis.flagged_imaging_weight[:, :] * wt[:, numpy.newaxis]
+    else:
+        for chan, freq in enumerate(vis.frequency):
+            wave = phyconst.c_m_s / freq
+            uvdistsq = (vis.u ** 2 + vis.v ** 2) / wave**2
+            wt = numpy.exp(-scale_factor * uvdistsq)
+            vis.data['imaging_weight'][..., chan, :] = vis.flagged_imaging_weight[..., chan, :] * \
+                                                       wt[..., numpy.newaxis]
 
     return vis
 
@@ -113,23 +121,28 @@ def taper_visibility_tukey(vis, tukey=0.1):
     These are cumulative. If You can reset the imaging_weights
     using :py:mod:`processing_components.imaging.weighting.weight_visibility`
 
-    :param vis: blockvisibility with imaging_weight's to be tapered
+    :param vis: Visibility with imaging_weight's to be tapered
     :return: visibility with imaging_weight column modified
     """
 
-    #assert isinstance(vis, BlockVisibility), vis
+    assert isinstance(vis, Visibility) or isinstance(vis, BlockVisibility), vis
 
-    oshape = vis['imaging_weight'].data[..., 0, 0].shape
-    for chan, freq in enumerate(vis.frequency.data):
-        wave = phyconst.c_m_s / freq
-        uvdist = numpy.sqrt(vis.blockvisibility_acc.u.data ** 2 +
-                            vis.blockvisibility_acc.v.data ** 2)
-        uvdist = uvdist.flatten() / wave
+    if isinstance(vis, Visibility):
+        uvdist = numpy.sqrt(vis.u ** 2 + vis.v ** 2)
         uvdistmax = numpy.max(uvdist)
         uvdist /= uvdistmax
-        wt = numpy.array([tukey_filter(uv, tukey) for uv in uvdist]).reshape(oshape)
-        vis['imaging_weight'].data[..., chan, :] = vis.blockvisibility_acc.flagged_imaging_weight.data[..., chan, :] \
-                                                        * wt[..., numpy.newaxis]
+        wt = numpy.array([tukey_filter(uv, tukey) for uv in uvdist])
+        vis.data['imaging_weight'][:, :] = vis.flagged_imaging_weight[:, :] * wt[:, numpy.newaxis]
+    else:
+        oshape = vis.data['imaging_weight'][..., 0, 0].shape
+        for chan, freq in enumerate(vis.frequency):
+            wave = phyconst.c_m_s / freq
+            uvdist = numpy.sqrt(vis.u ** 2 + vis.v ** 2)
+            uvdist = uvdist.flatten() / wave
+            uvdistmax = numpy.max(uvdist)
+            uvdist /= uvdistmax
+            wt = numpy.array([tukey_filter(uv, tukey) for uv in uvdist]).reshape(oshape)
+            vis.data['imaging_weight'][..., chan, :] = vis.flagged_imaging_weight[..., chan, :] * wt[..., numpy.newaxis]
 
     return vis
 

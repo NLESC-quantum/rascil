@@ -30,7 +30,7 @@ def init_logging():
                         level=logging.INFO)
 
 if __name__ == '__main__':
-    log = logging.getLogger('rascil-logger')
+    log = logging.getLogger()
     logging.info("Starting ICAL pipeline")
     
     rsexecute.set_client(use_dask=True)

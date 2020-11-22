@@ -1,8 +1,8 @@
 """ Unit tests for pipelines expressed via rsexecute
 """
 
-import logging
 import os
+import logging
 import sys
 import unittest
 
@@ -10,6 +10,7 @@ import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.griddata import apply_bounding_box_convolutionfunction
 from rascil.processing_components.griddata.kernels import create_awterm_convolutionfunction
@@ -27,7 +28,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import zero_list_rsexe
     restore_list_rsexecute_workflow
 from rascil.workflows.shared.imaging.imaging_shared import sum_invert_results
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -54,7 +55,7 @@ class TestImaging(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
     
-    def actualSetUp(self, add_errors=False, freqwin=3, dospectral=True, dopol=False, zerow=False,
+    def actualSetUp(self, add_errors=False, freqwin=3, block=True, dospectral=True, dopol=False, zerow=False,
                     makegcfcf=False):
         
         self.npixel = 256
@@ -96,6 +97,7 @@ class TestImaging(unittest.TestCase):
                                                                         self.times,
                                                                         self.vis_pol,
                                                                         self.phasecentre,
+                                                                        block=block,
                                                                         zerow=zerow)
                           for freqwin, _ in enumerate(self.frequency)]
         
@@ -131,32 +133,35 @@ class TestImaging(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.cmodel, '%s/test_imaging_cmodel.fits' % self.dir)
         
-        if add_errors:
+        if add_errors and block:
             self.bvis_list = [rsexecute.execute(insert_unittest_errors)(self.bvis_list[i])
                               for i, _ in enumerate(self.frequency)]
         
         self.components = self.components_list[centre]
         
         if makegcfcf:
-            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
+            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=101, wstep=8.0,
                                                             oversampling=4,
-                                                            support=100,
-                                                            use_aaf=True,
-                                                            polarisation_frame=self.vis_pol)]
+                                                            support=64,
+                                                            use_aaf=True)]
+            self.gcfcf_clipped = [(self.gcfcf[0][0], apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
+                                                                                            fractional_level=1e-3))]
             
-            self.gcfcf_clipped = [(self.gcfcf[0][0],
-                                   apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
-                                                                          fractional_level=1e-3))]
-                
+            self.gcfcf_joint = [create_awterm_convolutionfunction(self.model, nw=21, wstep=8.0,
+                                                                  oversampling=4,
+                                                                  support=64,
+                                                                  use_aaf=True)]
+        
         else:
             self.gcfcf = None
             self.gcfcf_clipped = None
+            self.gcfcf_joint = None
     
     def _checkcomponents(self, dirty, fluxthreshold=0.6, positionthreshold=1.0):
         comps = find_skycomponents(dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5)
         assert len(comps) == len(self.components), "Different number of components found: original %d, recovered %d" % \
                                                    (len(self.components), len(comps))
-        cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
+        cellsize = abs(dirty.wcs.wcs.cdelt[0])
         
         for comp in comps:
             # Check for agreement in direction
@@ -164,33 +169,37 @@ class TestImaging(unittest.TestCase):
             assert separation / cellsize < positionthreshold, "Component differs in position %.3f pixels" % \
                                                               separation / cellsize
     
-    def _predict_base(self, context='2d', extra='', fluxthreshold=1.0, gcfcf=None, **kwargs):
+    def _predict_base(self, context='2d', extra='', fluxthreshold=1.0, facets=1, vis_slices=1,
+                      gcfcf=None, **kwargs):
         centre = self.freqwin // 2
         
         vis_list = zero_list_rsexecute_workflow(self.bvis_list)
-        vis_list = predict_list_rsexecute_workflow(vis_list, self.model_list, context=context, gcfcf=gcfcf,
-                                                   **kwargs)
+        vis_list = predict_list_rsexecute_workflow(vis_list, self.model_list, context=context,
+                                                   vis_slices=vis_slices, facets=facets,
+                                                   gcfcf=gcfcf, **kwargs)
         vis_list = subtract_list_rsexecute_workflow(self.bvis_list, vis_list)
         vis_list = rsexecute.compute(vis_list, sync=True)
         
-        dirty = invert_list_rsexecute_workflow(vis_list, self.model_list, context=context, dopsf=False, normalize=True,
-                                               gcfcf=gcfcf, **kwargs)
+        dirty = invert_list_rsexecute_workflow(vis_list, self.model_list, context=context, dopsf=False,
+                                               gcfcf=gcfcf, normalize=True, vis_slices=vis_slices, **kwargs)
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
-        assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Residual image is empty"
+        assert numpy.max(numpy.abs(dirty[0].data)), "Residual image is empty"
         if self.persist:
             export_image_to_fits(dirty[0], '%s/test_imaging_predict_%s%s_%s_dirty.fits' %
                                  (self.dir, context, extra, rsexecute.type()))
         
-        maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
+        maxabs = numpy.max(numpy.abs(dirty[0].data))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (maxabs, fluxthreshold)
     
     def _invert_base(self, context, extra='', fluxthreshold=1.0, positionthreshold=1.0, check_components=True,
-                     gcfcf=None, dopsf=False, **kwargs):
+                     facets=1, vis_slices=1, gcfcf=None, dopsf=False, **kwargs):
         
         centre = self.freqwin // 2
-        dirty = invert_list_rsexecute_workflow(self.bvis_list, self.model_list, context=context, dopsf=dopsf,
-                                               normalize=True, gcfcf=gcfcf, **kwargs)
+        dirty = invert_list_rsexecute_workflow(self.bvis_list, self.model_list, context=context,
+                                               dopsf=dopsf, normalize=True, facets=facets,
+                                               vis_slices=vis_slices,
+                                               gcfcf=gcfcf, **kwargs)
         dirty = rsexecute.compute(dirty, sync=True)[centre]
         
         if self.persist:
@@ -201,7 +210,7 @@ class TestImaging(unittest.TestCase):
                 export_image_to_fits(dirty[0], '%s/test_imaging_invert_%s%s_%s_dirty.fits' %
                                      (self.dir, context, extra, rsexecute.type()))
         
-        assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Image is empty"
+        assert numpy.max(numpy.abs(dirty[0].data)), "Image is empty"
         
         if check_components:
             self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)
@@ -210,18 +219,75 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp(zerow=True)
         self._predict_base(context='2d', fluxthreshold=3.0)
     
+    def test_predict_2d_block(self):
+        self.actualSetUp(zerow=True, block=True)
+        self._predict_base(context='2d', extr='_block', fluxthreshold=3.0)
+    
+    @unittest.skip("Facets need overlap")
+    def test_predict_facets(self):
+        self.actualSetUp()
+        self._predict_base(context='facets', fluxthreshold=17.0, facets=8)
+    
+    @unittest.skip("Timeslice predict needs better interpolation and facets need overlap")
+    def test_predict_facets_timeslice(self):
+        self.actualSetUp()
+        self._predict_base(context='facets_timeslice', fluxthreshold=19.0, facets=8,
+                           vis_slices=self.ntimes,
+                           overlap=16, taper="tukey")
+    
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_predict_ng(self):
         self.actualSetUp()
         self._predict_base(context='ng', fluxthreshold=0.62)
     
+    @unittest.skip("Facets need overlap")
+    def test_predict_facets_wprojection(self):
+        self.actualSetUp()
+        self._predict_base(context='facets', extra='_wprojection', facets=8, fluxthreshold=15.0,
+                           gcfcf=self.gcfcf_joint)
+    
+    @unittest.skip("Facets need overlap")
+    def test_predict_facets_wstack(self):
+        self.actualSetUp()
+        self._predict_base(context='facets_wstack', fluxthreshold=15.0, facets=8, vis_slices=101)
+    
+    def test_predict_timeslice(self):
+        self.actualSetUp()
+        self._predict_base(context='timeslice', fluxthreshold=5.5, vis_slices=self.ntimes)
+    
+    def test_predict_wsnapshots(self):
+        self.actualSetUp(makegcfcf=True)
+        self._predict_base(context='wsnapshots', fluxthreshold=6.7,
+                           vis_slices=self.ntimes // 2, gcfcf=self.gcfcf_joint)
+    
     def test_predict_wprojection(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=5.0, gcfcf=self.gcfcf)
+        self._predict_base(context='2d', extra='_wprojection', fluxthreshold=5.0,
+                           gcfcf=self.gcfcf)
     
     def test_predict_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
-        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=5.0, gcfcf=self.gcfcf_clipped)
+        self._predict_base(context='2d', extra='_wprojection_clipped', fluxthreshold=5.0,
+                           gcfcf=self.gcfcf_clipped)
+    
+    def test_predict_wstack(self):
+        self.actualSetUp(block=False)
+        self._predict_base(context='wstack', fluxthreshold=3.3, vis_slices=51)
+    
+    def test_predict_wstack_wprojection(self):
+        self.actualSetUp(makegcfcf=True, block=False)
+        self._predict_base(context='wstack', extra='_wprojection', fluxthreshold=4.1, vis_slices=11,
+                           gcfcf=self.gcfcf_joint)
+    
+    @unittest.skip("Too much for CI/CD")
+    def test_predict_wstack_spectral(self):
+        self.actualSetUp(dospectral=True, block=False)
+        self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
+    
+    @unittest.skip("Too much for CI/CD")
+    def test_predict_wstack_spectral_pol(self):
+        self.actualSetUp(dospectral=True, dopol=True, block=False)
+        self._predict_base(context='wstack', extra='_spectral', fluxthreshold=4.0, vis_slices=51)
     
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
@@ -232,10 +298,17 @@ class TestImaging(unittest.TestCase):
         self._invert_base(context='2d', positionthreshold=2.0, check_components=False, dopsf=True)
     
     def test_invert_2d_uniform(self):
-        self.actualSetUp(zerow=True)
-        self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list,
+        self.actualSetUp(zerow=True, makegcfcf=True)
+        self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
                                                         weighting='uniform')
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
+    
+    def test_invert_2d_uniform_block(self):
+        self.actualSetUp(zerow=True, makegcfcf=True, block=True)
+        self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list, gcfcf=self.gcfcf,
+                                                        weighting='uniform')
+        self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
+        assert isinstance(self.bvis_list[0], BlockVisibility)
     
     def test_invert_2d_robust(self):
         self.actualSetUp(zerow=True)
@@ -243,15 +316,60 @@ class TestImaging(unittest.TestCase):
                                                         weighting="robust", robustness=0.0)
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
     
+    def test_invert_2d_robust_block(self):
+        self.actualSetUp(zerow=True, makegcfcf=True, block=True)
+        self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list,
+                                                        weighting="robust", robustness=0.0)
+        self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
+        assert isinstance(self.bvis_list[0], BlockVisibility)
+    
     def test_invert_2d_uniform_nogcfcf(self):
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list)
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
     
+    @unittest.skip("Facets need overlap")
+    def test_invert_facets(self):
+        self.actualSetUp()
+        self._invert_base(context='facets', positionthreshold=2.0, check_components=True, facets=8)
+    
+    @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
+    def test_invert_facets_ng(self):
+        self.actualSetUp()
+        self._invert_base(context='facets_ng', positionthreshold=2.0, check_components=True, facets=8)
+    
+    @unittest.skip("Facets need overlap")
+    def test_invert_facets_timeslice(self):
+        self.actualSetUp()
+        self._invert_base(context='facets_timeslice', check_components=True, vis_slices=self.ntimes,
+                          positionthreshold=5.0, flux_threshold=1.0, facets=8)
+    
+    @unittest.skip("Facets need overlap, wprojection needs kernel recalc")
+    def test_invert_facets_wprojection(self):
+        self.actualSetUp(makegcfcf=True)
+        self._invert_base(context='facets', extra='_wprojection', check_components=True,
+                          positionthreshold=2.0, facets=4, gcfcf=self.gcfcf)
+    
+    @unittest.skip("Facets need overlap")
+    def test_invert_facets_wstack(self):
+        self.actualSetUp(block=False)
+        self._invert_base(context='facets_wstack', positionthreshold=1.0, check_components=False, facets=4,
+                          vis_slices=51)
+    
     @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_invert_ng(self):
         self.actualSetUp()
         self._invert_base(context='ng', positionthreshold=2.0, check_components=True)
+    
+    def test_invert_timeslice(self):
+        self.actualSetUp()
+        self._invert_base(context='timeslice', positionthreshold=1.0, check_components=True,
+                          vis_slices=self.ntimes)
+    
+    def test_invert_wsnapshots(self):
+        self.actualSetUp(makegcfcf=True)
+        self._invert_base(context='wsnapshots', positionthreshold=1.0,
+                          check_components=True, vis_slices=self.ntimes // 2, gcfcf=self.gcfcf_joint)
     
     def test_invert_wprojection(self):
         self.actualSetUp(makegcfcf=True)
@@ -259,7 +377,27 @@ class TestImaging(unittest.TestCase):
     
     def test_invert_wprojection_clip(self):
         self.actualSetUp(makegcfcf=True)
-        self._invert_base(context='2d', extra='_wprojection_clipped', positionthreshold=2.0, gcfcf=self.gcfcf_clipped)
+        self._invert_base(context='2d', extra='_wprojection_clipped', positionthreshold=2.0,
+                          gcfcf=self.gcfcf_clipped)
+    
+    def test_invert_wprojection_wstack(self):
+        self.actualSetUp(makegcfcf=True, block=False)
+        self._invert_base(context='wstack', extra='_wprojection', positionthreshold=1.0, vis_slices=11,
+                          gcfcf=self.gcfcf_joint)
+    
+    def test_invert_wstack(self):
+        self.actualSetUp(block=False)
+        self._invert_base(context='wstack', positionthreshold=1.0, vis_slices=51)
+    
+    def test_invert_wstack_spectral(self):
+        self.actualSetUp(dospectral=True, block=False)
+        self._invert_base(context='wstack', extra='_spectral', positionthreshold=2.0,
+                          vis_slices=51)
+    
+    def test_invert_wstack_spectral_pol(self):
+        self.actualSetUp(dospectral=True, dopol=True, block=False)
+        self._invert_base(context='wstack', extra='_spectral_pol', positionthreshold=2.0,
+                          vis_slices=51)
     
     def test_zero_list(self):
         self.actualSetUp()
@@ -270,18 +408,17 @@ class TestImaging(unittest.TestCase):
         
         assert numpy.max(numpy.abs(vis_list[centre].vis)) < 1e-15, numpy.max(numpy.abs(vis_list[centre].vis))
         
-        predicted_vis_list = [rsexecute.execute(dft_skycomponent_visibility)
-                              (vis_list[freqwin], self.components_list[freqwin])
+        predicted_vis_list = [rsexecute.execute(dft_skycomponent_visibility)(vis_list[freqwin],
+                                                                             self.components_list[freqwin])
                               for freqwin, _ in enumerate(self.frequency)]
         predicted_vis_list = rsexecute.compute(predicted_vis_list, sync=True)
-        assert numpy.max(numpy.abs(predicted_vis_list[centre].vis.data)) > 0.0, \
-            numpy.max(numpy.abs(predicted_vis_list[centre].vis.data))
+        assert numpy.max(numpy.abs(predicted_vis_list[centre].vis)) > 0.0, \
+            numpy.max(numpy.abs(predicted_vis_list[centre].vis))
         
         diff_vis_list = subtract_list_rsexecute_workflow(self.bvis_list, predicted_vis_list)
         diff_vis_list = rsexecute.compute(diff_vis_list, sync=True)
         
-        assert numpy.max(numpy.abs(diff_vis_list[centre].vis.data)) < 1e-15, \
-            numpy.max(numpy.abs(diff_vis_list[centre].vis.data))
+        assert numpy.max(numpy.abs(diff_vis_list[centre].vis)) < 1e-15, numpy.max(numpy.abs(diff_vis_list[centre].vis))
     
     def test_residual_list(self):
         self.actualSetUp(zerow=True)
@@ -309,7 +446,7 @@ class TestImaging(unittest.TestCase):
         
         qa = qa_image(restored_image_list[centre])
         assert numpy.abs(qa.data['max'] - 100.00571826154011) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.018409852770223414) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.16822683799834257) < 1e-7, str(qa)
     
     def test_restored_list_noresidual(self):
         self.actualSetUp(zerow=True)
@@ -364,8 +501,7 @@ class TestImaging(unittest.TestCase):
     def test_sum_invert_list(self):
         self.actualSetUp(zerow=True)
         
-        residual_image_list = residual_list_rsexecute_workflow(self.bvis_list, self.model_list,
-                                                               context='2d')
+        residual_image_list = residual_list_rsexecute_workflow(self.bvis_list, self.model_list, context='2d')
         residual_image_list = rsexecute.compute(residual_image_list, sync=True)
         route2 = sum_invert_results(residual_image_list)
         route1 = sum_invert_results_rsexecute(residual_image_list)

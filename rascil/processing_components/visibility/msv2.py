@@ -15,7 +15,7 @@ from astropy.time import Time
 from rascil.processing_components.visibility.msv2fund import MS_UVData, BaseData
 from rascil.processing_components.visibility.msv2supp import STOKES_CODES, geo_to_ecef, get_eci_transform
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger('logger')
 
 try:
     from casacore.tables import table, tableutil
@@ -87,7 +87,7 @@ try:
             else:
                 arrayX, arrayY, arrayZ = 0, 0, 0
 
-            xyz = site_config.xyz.data[:]
+            xyz = site_config.xyz[:]
 
             # Create the stand mapper
             # No use if don't need to consider antenna name
@@ -220,17 +220,17 @@ try:
             tb.putcol('STATION', [self.siteName, ] * self.nant, 0, self.nant)
 
             for i, ant in enumerate(self.array[0]['ants']):
-                tb.putcell('OFFSET', i, self.site_config['offset'].data[i])
+                tb.putcell('OFFSET', i, self.site_config.data['offset'][i])
                 # tb.putcell('OFFSET', i, [0.0, 0.0, 0.0])
                 tb.putcell('POSITION', i, [ant.x + self.array[0]['center'][0],
                                            ant.y + self.array[0]['center'][1],
                                            ant.z + self.array[0]['center'][2]])
                 # tb.putcell('TYPE', i, self.site_config.mount[i])
-                tb.putcell('DISH_DIAMETER', i, self.site_config['diameter'].data[i])
+                tb.putcell('DISH_DIAMETER', i, self.site_config.data['diameter'][i])
                 # tb.putcell('FLAG_ROW', i, False)
-                tb.putcell('MOUNT', i, self.site_config['mount'].data[i])
+                tb.putcell('MOUNT', i, self.site_config.data['mount'][i])
                 tb.putcell('NAME', i, ant.getName())
-                tb.putcell('STATION', i, self.site_config['stations'].data[i])
+                tb.putcell('STATION', i, self.site_config.data['stations'][i])
                 # tb.putcell('STATION', i, self.siteName)
 
             tb.flush()
@@ -642,9 +642,9 @@ try:
                 tb.putcell('MEAS_FREQ_REF', i, 5)  # https://github.com/ska-sa/pyxis/issues/27
                 tb.putcell('CHAN_FREQ', i, self.refVal + freq.bandFreq + numpy.arange(self.nchan) * self.channelWidth)
                 tb.putcell('REF_FREQUENCY', i, self.refVal)
-                tb.putcell('CHAN_WIDTH', i, numpy.repeat(freq.chWidth, self.nchan))
-                tb.putcell('EFFECTIVE_BW', i, numpy.repeat(freq.chWidth, self.nchan))
-                tb.putcell('RESOLUTION', i, numpy.repeat(freq.chWidth, self.nchan))
+                tb.putcell('CHAN_WIDTH', i, [freq.chWidth for j in range(self.nchan)])
+                tb.putcell('EFFECTIVE_BW', i, [freq.chWidth for j in range(self.nchan)])
+                tb.putcell('RESOLUTION', i, [freq.chWidth for j in range(self.nchan)])
                 tb.putcell('FLAG_ROW', i, False)
                 tb.putcell('FREQ_GROUP', i, i + 1)
                 tb.putcell('FREQ_GROUP_NAME', i, 'group%i' % (i + 1))
@@ -773,7 +773,7 @@ try:
                 # Sort the data by packed baseline
                 try:
                     order
-                except (NameError, UnboundLocalError):
+                except NameError:
                     order = dataSet.argsort(mapper=mapper, shift=16)
 
                 # Deal with defininig the values of the new data set

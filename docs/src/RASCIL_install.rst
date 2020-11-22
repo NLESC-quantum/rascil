@@ -123,6 +123,7 @@ Trouble-shooting
 
 Testing
 ^^^^^^^
+
 Check your installation by running a subset of the tests::
 
    pip install pytest pytest-xdist

@@ -7,9 +7,9 @@ __all__ = ['ical_skymodel_list_rsexecute_workflow',
 
 import logging
 
+import copy
 from rascil.data_models.parameters import get_parameter
 from rascil.processing_components.griddata import create_pswf_convolutionfunction
-from rascil.processing_components.image.operations import copy_image
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.calibration.calibration_rsexecute import calibrate_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
@@ -20,7 +20,7 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymo
     invert_skymodel_list_rsexecute_workflow, residual_skymodel_list_rsexecute_workflow, \
     restore_skymodel_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, skymodel_list, vis_slices=1, facets=1,
@@ -42,13 +42,13 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
     # Check if SkyModel list is given
     assert len(skymodel_list) is not None, skymodel_list
     # Note that the following test will fail if skymodel_list is a Future or Delayed
-    #assert isinstance(skymodel_list[0], SkyModel), skymodel_list[0]
+    ##assert isinstance(skymodel_list[0], SkyModel), skymodel_list[0]
     
     gt_list = list()
     
     # Function to copy image into a SkyModel
     def set_image(sm, dcm):
-        sm.image = copy_image(dcm)
+        sm.image = copy.deepcopy(dcm)
         return sm
     
     # Make wkernels
@@ -56,8 +56,8 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
         gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(m) for m in model_imagelist]
     
     # Create PSFs
-    psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, dopsf=True, context=context,
-                                                   vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
+    psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True, gcfcf=gcfcf,
+                                                   **kwargs)
     
     # Create a list of copied input visibilities
     model_vislist = [rsexecute.execute(copy_visibility, nout=1)(v, zero=True) for v in vis_list]
@@ -85,7 +85,7 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
         
         def zero_model_image(im):
             log.info("ical_list_rsexecute_workflow: setting initial model to zero after initial selfcal")
-            im.data[...] = 0.0
+            im["pixels"].data[...] = 0.0
             return im
         
         # Erase data in the input model_imagelist
@@ -213,7 +213,7 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(vis_list, model_image
     """
     if continuum_model_imagelist is not None:
         vis_list = predict_list_rsexecute_workflow(vis_list, continuum_model_imagelist, context=context, gcfcf=gcfcf,
-                                                   vis_slices=vis_slices, facets=facets, **kwargs)
+                                                   vis_slices=vis_slices, **kwargs)
     
     return continuum_imaging_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context=context, gcfcf=gcfcf,
                                                               vis_slices=vis_slices, facets=facets, **kwargs)

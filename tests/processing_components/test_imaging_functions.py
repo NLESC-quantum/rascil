@@ -16,7 +16,7 @@ from rascil.processing_components.imaging.base import create_image_from_visibili
 from rascil.processing_components.simulation import ingest_unittest_visibility, create_unittest_model
 from rascil.processing_components.simulation import create_named_configuration
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -28,7 +28,7 @@ class TestImagingFunctions(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
         self.dir = rascil_path('test_results')
     
-    def actualSetUp(self, add_errors=False, freqwin=1, block=False, dospectral=True, dopol=False):
+    def actualSetUp(self, add_errors=False, freqwin=1, dospectral=True, dopol=False):
         
         self.npixel = 256
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
@@ -57,20 +57,21 @@ class TestImagingFunctions(unittest.TestCase):
             flux = numpy.array([f])
         
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
-        self.vis = ingest_unittest_visibility(self.low, self.frequency, self.channelwidth, self.times,
-                                              self.vis_pol, self.phasecentre, block=block)
+        self.vis = ingest_unittest_visibility(config=self.low, frequency=self.frequency,
+                                              channel_bandwidth=self.channelwidth, times=self.times,
+                                              phasecentre=self.phasecentre, vis_pol=self.vis_pol)
         
         self.model = create_unittest_model(self.vis, self.image_pol, npixel=self.npixel)
     
     def test_create_image_from_visibility(self):
         self.actualSetUp()
         im = create_image_from_visibility(self.vis, nchan=1, npixel=128)
-        assert im.data.shape == (1, 1, 128, 128)
+        assert im["pixels"].data.shape == (1, 1, 128, 128)
         im = create_image_from_visibility(self.vis, frequency=self.frequency, npixel=128)
-        assert im.data.shape == (len(self.frequency), 1, 128, 128)
+        assert im["pixels"].data.shape == (len(self.frequency), 1, 128, 128)
         im = create_image_from_visibility(self.vis, frequency=self.frequency, npixel=128,
                                           nchan=1)
-        assert im.data.shape == (1, 1, 128, 128)
+        assert im["pixels"].data.shape == (1, 1, 128, 128)
 
 
 if __name__ == '__main__':

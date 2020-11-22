@@ -13,6 +13,7 @@ from rascil.data_models.parameters import rascil_path, rascil_data_path
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_image, create_empty_image_like
 from rascil.processing_components.image.operations import import_image_from_fits, export_image_to_fits
+from rascil.processing_components.xarray.operations import import_xarray_from_fits, export_xarray_to_fits
 from rascil.processing_components.imaging.primary_beams import create_low_test_beam
 from rascil.processing_components.simulation import create_low_test_skycomponents_from_gleam, \
     create_test_skycomponents_from_s3
@@ -24,7 +25,7 @@ from rascil.processing_components.skycomponent.operations import apply_beam_to_s
 from rascil.processing_components.skycomponent.operations import filter_skycomponents_by_flux
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -55,7 +56,7 @@ class TestAtmosphericScreen(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame('stokesI'))
-        self.vis.data['vis'] *= 0.0
+        self.vis['vis'].data *= 0.0
 
         # Create model
         self.model = create_image(npixel=512, cellsize=0.000015, polarisation_frame=PolarisationFrame("stokesI"),
@@ -63,14 +64,13 @@ class TestAtmosphericScreen(unittest.TestCase):
                                   phasecentre=self.phasecentre)
 
     def test_read_screen(self):
-        screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-        assert screen.data.shape == (1, 3, 2000, 2000), screen.data.shape
+        screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        assert screen["pixels"].data.shape == (1, 3, 2000, 2000), screen["pixels"].data.shape
 
     def test_create_gaintable_from_screen_ionosphere(self):
         self.actualSetup("ionosphere")
         screen = rascil_data_path('models/test_mpc_screen.fits')
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
 
@@ -92,8 +92,7 @@ class TestAtmosphericScreen(unittest.TestCase):
     def test_create_gaintable_from_screen_troposphere(self):
         self.actualSetup("troposphere")
         screen = rascil_data_path('models/test_mpc_screen.fits')
-        beam = create_test_image(cellsize=0.00015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.00015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
 
@@ -118,9 +117,8 @@ class TestAtmosphericScreen(unittest.TestCase):
 
     def test_grid_gaintable_to_screen(self):
         self.actualSetup()
-        screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
 
@@ -131,28 +129,25 @@ class TestAtmosphericScreen(unittest.TestCase):
                                                                     radius=0.2)
 
         pb_gleam_components = apply_beam_to_skycomponent(gleam_components, beam)
-
         actual_components = filter_skycomponents_by_flux(pb_gleam_components, flux_min=1.0)
-
         gaintables = create_gaintable_from_screen(self.vis, actual_components,
                                                   rascil_data_path('models/test_mpc_screen.fits'),
                                                   height=3e5)
         assert len(gaintables) == len(actual_components), len(gaintables)
         assert gaintables[0].gain.shape == (3, 94, 1, 1, 1), gaintables[0].gain.shape
 
-        old_screen = import_image_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
-        newscreen = create_empty_image_like(old_screen)
+        old_screen = import_xarray_from_fits(rascil_data_path('models/test_mpc_screen.fits'))
+        newscreen = old_screen.copy(deep=True)
 
         newscreen, weights = grid_gaintable_to_screen(self.vis, gaintables, newscreen)
-        assert numpy.max(numpy.abs(screen.data)) > 0.0
+        assert numpy.max(numpy.abs(screen["pixels"].data)) > 0.0
         if self.persist: export_image_to_fits(newscreen, rascil_path('test_results/test_mpc_screen_gridded.fits'))
         if self.persist: export_image_to_fits(weights, rascil_path('test_results/test_mpc_screen_gridded_weights.fits'))
 
     def test_plot_gaintable_to_screen(self):
         self.actualSetup()
         screen = rascil_data_path('models/test_mpc_screen.fits')
-        beam = create_test_image(cellsize=0.0015, phasecentre=self.vis.phasecentre,
-                                 frequency=self.frequency)
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         beam = create_low_test_beam(beam, use_local=False)
 

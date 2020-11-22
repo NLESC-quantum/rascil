@@ -13,17 +13,16 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_image
-from rascil.processing_components.griddata import convert_convolutionfunction_to_image
 from rascil.processing_components.griddata.kernels import create_vpterm_convolutionfunction
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.primary_beams import create_vp
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
 
-class TestGridDataKernels(unittest.TestCase):
+class TestVPGridDataKernels(unittest.TestCase):
 
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
@@ -41,19 +40,16 @@ class TestGridDataKernels(unittest.TestCase):
                                   polarisation_frame=PolarisationFrame("stokesIQUV"))
         make_vp = functools.partial(create_vp, telescope="MID_FEKO_B2")
         gcf, cf = create_vpterm_convolutionfunction(self.image, make_vp=make_vp, oversampling=16,
-                                                    support=32, use_aaf=True)
-        cf_image = convert_convolutionfunction_to_image(cf)
-        cf_image.data = numpy.real(cf_image.data)
-        if self.persist:
-            export_image_to_fits(cf_image, "%s/test_convolutionfunction_aterm_vp_cf.fits" % self.dir)
+                                                    support=32, use_aaf=True,
+                                  polarisation_frame=PolarisationFrame("linear"))
 
         # Tests for the VP convolution function are different because it does not peak
         # at the centre of the uv plane
-        peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf.data)), cf.shape)
-        assert numpy.abs(cf.data[peak_location] - (0.005285675638650622+0.000494340010248879j)) < 1e-7, cf.data[
-            peak_location]
+        peak_location = numpy.unravel_index(numpy.argmax(numpy.abs(cf["pixels"].data)), cf["pixels"].shape)
+        assert numpy.abs(cf["pixels"].data[peak_location] - (0.005279450610479056+0.0005861954642299995j)) < 1e-7, \
+            cf["pixels"].data[peak_location]
         assert peak_location == (0, 3, 0, 11, 8, 11, 16), peak_location
-        u_peak, v_peak = cf.grid_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
+        u_peak, v_peak = cf.convolutionfunction_acc.cf_wcs.sub([1, 2]).wcs_pix2world(peak_location[-2], peak_location[-1], 0)
         assert numpy.abs(u_peak - 19.53125) < 1e-7, u_peak
         assert numpy.abs(v_peak) < 1e-7, u_peak
 

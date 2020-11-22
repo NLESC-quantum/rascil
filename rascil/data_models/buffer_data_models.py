@@ -33,7 +33,7 @@ from rascil.data_models.data_model_helpers import buffer_data_model_to_memory, m
 from rascil.data_models.memory_data_models import Image, BlockVisibility, SkyModel, GainTable, GridData, \
     ConvolutionFunction, PointingTable, FlagTable
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 class BufferDataModel():
@@ -76,15 +76,6 @@ An explicit sync is required in both cases.
     def type(self):
         return type(self._memory_data_model)
     
-    def assert_type(self, memory_data_model_type):
-        if isinstance(self._memory_data_model, collections.abc.Iterable):
-            for m in self._memory_data_model:
-                assert isinstance(m, memory_data_model_type), "Expected %s, actual %s" % (memory_data_model_type,
-                                                                                          type(m))
-        else:
-            assert isinstance(self._memory_data_model, memory_data_model_type), \
-                "Expected %s, actual %s" % (memory_data_model_type, type(self._memory_data_model))
-    
     def sync(self):
         """ Save to buffer
         
@@ -106,7 +97,6 @@ class BufferImage(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(Image)
 
 
 class BufferGridData(BufferDataModel):
@@ -122,7 +112,6 @@ class BufferGridData(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(GridData)
 
 
 class BufferConvolutionFunction(BufferDataModel):
@@ -138,7 +127,6 @@ class BufferConvolutionFunction(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(ConvolutionFunction)
 
 
 class BufferBlockVisibility(BufferDataModel):
@@ -154,7 +142,6 @@ class BufferBlockVisibility(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(BlockVisibility)
 
 
 class BufferSkyModel(BufferDataModel):
@@ -170,7 +157,6 @@ class BufferSkyModel(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(SkyModel)
 
 
 class BufferGainTable(BufferDataModel):
@@ -186,7 +172,6 @@ class BufferGainTable(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(GainTable)
 
 
 class BufferFlagTable(BufferDataModel):
@@ -202,7 +187,6 @@ class BufferFlagTable(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(FlagTable)
 
 
 class BufferPointingTable(BufferDataModel):
@@ -218,4 +202,3 @@ class BufferPointingTable(BufferDataModel):
         :return: Image
         """
         BufferDataModel.__init__(self, json_buffer, json_model, mdm)
-        self.assert_type(PointingTable)

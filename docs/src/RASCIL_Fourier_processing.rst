@@ -4,11 +4,11 @@ Fourier processing
 ******************
 
 For wide field imaging with w term correction, the Nifty Gridder is supported and has the best performance.
-We do not distribute NG as part of RASCIL. However, installation is quite straightforward. See the directions at:
+It is installed via pip as part of the RASCIL install process.See more information on nifty-gridder at:
 
     https://gitlab.mpcdf.mpg.de/ift/nifty_gridder
 
-This is supported at the processing component level via:
+Nifty Gridder is supported at the processing component level via:
 
  * :py:func:`rascil.processing_components.imaging.ng.invert_ng`
  * :py:func:`rascil.processing_components.imaging.ng.predict_ng`
@@ -22,12 +22,7 @@ If only wterm needs to be corrected, the Nifty Gridder is the best option. Howev
 There are many algorithms for imaging, using different approaches to correct for various effects:
 
 + Simple 2D transforms
-+ Partitioned image (i.e. faceted) and uv transforms
-+ W projection
-+ W snapshots
-+ W slices
-+ A projection variants
-+ Visibility coalescence and de-coalescence
++ AW projection
 + MFS variants
 
 Since the scale of SKA is so much larger than previous telescopes, it is not clear which scaling strategies and
@@ -40,8 +35,9 @@ framework decomposes the overall transform into suitable linear combinations of 
 
 The full layering is:
 
-+ The core 2d imaging functions are defined in :py:mod:`processing_components.imaging.base`. W projection is included at this level by setting wstep to the desired non-zero value.
-
++ The core imaging functions are defined in :py:mod:`processing_components.imaging.base`.
++ Nifty Gridder provides optimised wstack/wprojection imaging and should be the default.
++ AW projection is also possible using the 2d gridder and a suitable gridding convolution function.
 + Other algorithms (e.g. timeslice and wstack) are implemented as workflows using the core 2d imaging functions. These are defined in :py:mod:`workflows.serial.imaging.imaging_serial` and :py:mod:`workflows.rsexecute.imaging.imaging_rsexecute`
 
 The style of first approach is::

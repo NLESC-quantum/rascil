@@ -22,7 +22,7 @@ from rascil.processing_components.skycomponent.operations import create_skycompo
     filter_skycomponents_by_flux
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -45,7 +45,7 @@ class TestPointing(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame('linear'))
-        self.vis.data['vis'] *= 0.0
+        self.vis['vis'].data *= 0.0
 
         # Create model
         self.model = create_image(npixel=512, cellsize=0.00015, polarisation_frame=PolarisationFrame("linear"),
@@ -56,6 +56,7 @@ class TestPointing(unittest.TestCase):
                                  polarisation_frame=PolarisationFrame("linear"))
 
     def test_create_pointingtable(self):
+        beam = create_test_image(cellsize=0.0015, frequency=self.frequency, phasecentre=self.vis.phasecentre)
 
         for telescope in ['MID_B2', 'LOW', 'ASKAP']:
             vp = create_vp(self.beam, telescope)

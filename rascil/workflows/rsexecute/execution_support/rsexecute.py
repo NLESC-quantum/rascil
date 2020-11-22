@@ -10,11 +10,12 @@ import time
 
 from tabulate import tabulate
 
-from dask import delayed, optimize
-from dask.distributed import wait
-from distributed import Client, LocalCluster
+from dask import delayed, optimize, config
 
-log = logging.getLogger("logger")
+
+from dask.distributed import wait, Client, LocalCluster
+
+log = logging.getLogger('rascil-logger')
 
 # Support daliuge's delayed function, make it fail if not available but used
 try:
@@ -26,11 +27,10 @@ except ImportError:
     def dlg_compute(*args, **kwargs):
         pass
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
-
-def get_dask_client(timeout=30, n_workers=None, threads_per_worker=1,
-                    processes=True, create_cluster=True,
+def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
+                    processes=True, create_cluster=False,
                     memory_limit=None, local_dir='.', with_file=False,
                     scheduler_file='./scheduler.json',
                     dashboard_address=':8787'):
@@ -61,6 +61,7 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=1,
         c = Client(scheduler_file=scheduler_file, timeout=timeout)
 
     elif create_cluster:
+        print("Creating Dask Localcluster - xarray feaures may not work correctly")
         if n_workers is not None:
             if memory_limit is not None:
                 cluster = LocalCluster(n_workers=n_workers, threads_per_worker=threads_per_worker, processes=processes,
@@ -81,8 +82,9 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=1,
         print("Creating LocalCluster and Dask Client")
         c = Client(cluster)
     else:
+        print("Creating Dask.distributed Client")
         c = Client(threads_per_worker=threads_per_worker, processes=processes,
-                   memory_limit=memory_limit, local_dir=local_dir)
+                   memory_limit=memory_limit, local_directory=local_dir)
 
     addr = c.scheduler_info()['address']
     services = c.scheduler_info()['services']
@@ -93,34 +95,6 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=1,
         db_addr = 'http:%s:%s' % (addr.split(':')[1], services['dashboard'])
         print('Diagnostic pages available on port %s' % db_addr)
     return c
-
-
-def get_nodes():
-    """ Get the nodes being used
-
-    The environment variable RASCIL_HOSTFILE is interpreted as file containing the nodes
-
-    :return: List of strings
-    """
-    hostfile = os.getenv('RASCIL_HOSTFILE', None)
-    if hostfile is None:
-        print("No hostfile specified")
-        return None
-
-    import socket
-    with open(hostfile, 'r') as file:
-        nodes = [line.replace('\n', '') for line in file.readlines()]
-        print("Nodes being used are %s" % nodes)
-        nodes = [socket.gethostbyname(node) for node in nodes]
-        print("Nodes IPs are %s" % nodes)
-        return nodes
-
-
-def findNodes(c):
-    """ Find Nodes being used for this Client
-
-    """
-    return [c.scheduler_info()['workers'][name]['host'] for name in c.scheduler_info()['workers'].keys()]
 
 
 class _rsexecutebase():
@@ -215,6 +189,10 @@ class _rsexecutebase():
         :param optim: Use dask.optimize via rsexecute.optimize function.
         :return:
         """
+        # We need this so that xarray knows which scheduler to use
+        if use_dask:
+            config.set(scheduler='distributed')
+
         if bool(use_dask) and bool(use_dlg):
             raise ValueError('use_dask and use_dlg cannot be specified together')
 
@@ -224,19 +202,19 @@ class _rsexecutebase():
             self.client.close()
 
         if use_dask:
-            client = client or Client(**kwargs)
-            assert isinstance(client, Client)
+            client = client or get_dask_client(**kwargs)
+            #assert isinstance(client, Client)
             self._set_state(True, False, client, verbose, optim)
             self._client.profile()
             self._client.get_task_stream()
             self.start_time = time.time()
-
         elif use_dlg:
             self._set_state(False, True, client, verbose, optim)
         else:
             self._set_state(False, False, None, verbose, optim)
+
         if self._verbose:
-            print('rsexecute.set_client: defined Dask Client')
+            print('rsexecute.set_client: defined Dask distributed client')
 
     def compute(self, value, sync=False):
         """Get the actual value
@@ -254,6 +232,12 @@ class _rsexecutebase():
             if self.client is None:
                 return value.compute()
             else:
+                import dask
+                try:
+                    scheduler = dask.config.get("scheduler")
+                    assert scheduler == "distributed" or scheduler == "dask.distributed", scheduler
+                except:
+                    pass
                 future = self.client.compute(value, sync=sync)
                 wait(future)
                 if self._verbose:
@@ -318,9 +302,12 @@ class _rsexecutebase():
         :return:
         """
         if self.using_dask:
-            return self.client.run(func, *args, **kwargs)
+            if self.client is not None:
+                return self.client.run(func, *args, **kwargs)
+            else:
+                return func(*args, **kwargs)
         else:
-            return func
+            return func(*args, **kwargs)
 
     def optimize(self, *args, **kwargs):
         """ Run Dask optimisation of graphs

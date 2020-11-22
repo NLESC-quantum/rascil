@@ -23,7 +23,7 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
     create_unittest_model, create_unittest_components, insert_unittest_errors
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -43,7 +43,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
 
-    def actualSetUp(self, add_errors=False, freqwin=3, block=False, dospectral=True, dopol=False,
+    def actualSetUp(self, add_errors=False, freqwin=3, dospectral=True, dopol=False,
                     zerow=True):
         
         self.npixel = 256
@@ -80,7 +80,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                                                                         [self.channelwidth[freqwin]],
                                                                         self.times,
                                                                         self.vis_pol,
-                                                                        self.phasecentre, block=block,
+                                                                        self.phasecentre,
                                                                         zerow=zerow)
                          for freqwin, _ in enumerate(self.frequency)]
         
@@ -111,7 +111,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         if self.persist: export_image_to_fits(model, '%s/test_imaging_rsexecute_deconvolved_model.fits' % self.dir)
         if self.persist: export_image_to_fits(self.cmodel, '%s/test_imaging_rsexecute_deconvolved_cmodel.fits' % self.dir)
         
-        if add_errors and block:
+        if add_errors:
             self.vis_list = [rsexecute.execute(insert_unittest_errors)(self.vis_list[i])
                              for i, _ in enumerate(self.frequency)]
         
@@ -121,11 +121,10 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     
     def test_deconvolve_spectral(self):
         self.actualSetUp(add_errors=True)
-        dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',
-                                                          dopsf=False, normalize=True)
-        psf_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist,
-                                                        context='2d',
-                                                        dopsf=True, normalize=True)
+        dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d', dopsf=False,
+                                                         normalize=True)
+        psf_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d', dopsf=True,
+                                                       normalize=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
         deconvolved = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
@@ -140,10 +139,10 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     
     def test_deconvolve_and_restore_cube_mmclean(self):
         self.actualSetUp(add_errors=True)
-        dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',
-                                                          dopsf=False, normalize=True)
-        psf_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',
-                                                        dopsf=True, normalize=True)
+        dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d', dopsf=False,
+                                                         normalize=True)
+        psf_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d', dopsf=True,
+                                                       normalize=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
         dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
@@ -165,10 +164,10 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     
     def test_deconvolve_and_restore_cube_mmclean_facets(self):
         self.actualSetUp(add_errors=True)
-        dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',
-                                                          dopsf=False, normalize=True)
-        psf_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d',
-                                                        dopsf=True, normalize=True)
+        dirty_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d', dopsf=False,
+                                                         normalize=True)
+        psf_imagelist = invert_list_rsexecute_workflow(self.vis_list, self.model_imagelist, context='2d', dopsf=True,
+                                                       normalize=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
         dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,

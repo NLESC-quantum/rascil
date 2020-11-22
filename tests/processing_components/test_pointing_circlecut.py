@@ -22,7 +22,7 @@ from rascil.processing_components.simulation import create_test_skycomponents_fr
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components import create_image
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -44,7 +44,7 @@ class TestPointing(unittest.TestCase):
                                           channel_bandwidth=self.channel_bandwidth,
                                           phasecentre=self.phasecentre, weight=1.0,
                                           polarisation_frame=PolarisationFrame('stokesI'))
-        self.vis.data['vis'] *= 0.0
+        self.vis['vis'].data *= 0.0
         
         # Create model
         self.model = create_image(npixel=2048, cellsize=0.0003, polarisation_frame=PolarisationFrame("stokesI"),

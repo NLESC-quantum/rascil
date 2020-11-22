@@ -13,13 +13,12 @@ import numpy
 from astropy.wcs.utils import skycoord_to_pixel
 
 from rascil.data_models.memory_data_models import SkyModel, GainTable
-from rascil.processing_components.image import copy_image
 from rascil.processing_components.calibration.operations import copy_gaintable
 from rascil.processing_components.image.operations import smooth_image
 from rascil.processing_components.skycomponent.base import copy_skycomponent
 from rascil.processing_components.skycomponent.operations import filter_skycomponents_by_flux, insert_skycomponent, image_voronoi_iter
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def copy_skymodel(sm):
@@ -34,12 +33,12 @@ def copy_skymodel(sm):
         newcomps = None
     
     if sm.image is not None:
-        newimage = copy_image(sm.image)
+        newimage = sm.image.copy(deep=True)
     else:
         newimage = None
     
     if sm.mask is not None:
-        newmask = copy_image(sm.mask)
+        newmask = sm.mask.copy(deep=True)
     else:
         newmask = None
     
@@ -77,10 +76,10 @@ def partition_skymodel_by_flux(sc, model, flux_threshold=-numpy.inf):
     weaksc = filter_skycomponents_by_flux(sc, flux_max=flux_threshold)
     log.info('Converted %d components into %d bright components and one image containing %d components'
              % (len(sc), len(brightsc), len(weaksc)))
-    im = copy_image(model)
+    im = model.copy(deep=True)
     im = insert_skycomponent(im, weaksc)
     return SkyModel(components=[copy_skycomponent(comp) for comp in brightsc],
-                    image=copy_image(im), mask=None,
+                    image=im.copy(deep=True), mask=None,
                     fixed=False)
 
 
@@ -101,7 +100,7 @@ def show_skymodel(sms, psf_width=1.75, cm='Greys', vmax=None, vmin=None):
         plt.subplot(121, projection=sms[ism].image.wcs.sub([1, 2]))
         sp += 1
         
-        smodel = copy_image(sms[ism].image)
+        smodel = sms[ism].image.copy(deep=True)
         smodel = insert_skycomponent(smodel, sms[ism].components)
         smodel = smooth_image(smodel, psf_width)
         
@@ -150,11 +149,11 @@ def initialize_skymodel_voronoi(model, comps, gt=None):
     """
     skymodel_images = list()
     for i, mask in enumerate(image_voronoi_iter(model, comps)):
-        im = copy_image(model)
-        im.data *= mask.data
+        im = model.copy(deep=True)
+        im["pixels"].data *= mask["pixels"].data
         if gt is not None:
             newgt = copy_gaintable(gt)
-            newgt.phasecentre = comps[i].direction
+            newgt.attrs["phasecentre"] = comps[i].direction
         else:
             newgt=None
             
@@ -171,14 +170,14 @@ def calculate_skymodel_equivalent_image(sm):
     :param sm: List of skymodels
     :return: Image
     """
-    combined_model = copy_image(sm[0].image)
-    combined_model.data[...] = 0.0
+    combined_model = sm[0].image.copy(deep=True)
+    combined_model["pixels"].data[...] = 0.0
     for th in sm:
         if th.image is not None:
             if th.mask is not None:
-                combined_model.data += th.mask.data * th.image.data
+                combined_model["pixels"].data += th.mask["pixels"].data * th.image["pixels"].data
             else:
-                combined_model.data += th.image.data
+                combined_model["pixels"].data += th.image["pixels"].data
     
     return combined_model
 
@@ -191,10 +190,10 @@ def update_skymodel_from_image(sm, im, damping=0.5):
     :return: List of SkyModels
     """
     for i, th in enumerate(sm):
-        newim = copy_image(im)
+        newim = im.copy(deep=True)
         if th.mask is not None:
-            newim.data *= th.mask.data
-        th.image.data += damping * newim.data
+            newim["pixels"].data *= th.mask["pixels"].data
+        th.image["pixels"].data += damping * newim["pixels"].data
     
     return sm
 
@@ -210,9 +209,8 @@ def update_skymodel_from_gaintables(sm, gt_list, calibration_context='T', dampin
     assert len(sm) == len(gt_list)
     
     for i, th in enumerate(sm):
-        assert isinstance(th.gaintable, GainTable), th.gaintable
-        delta = numpy.exp(damping*1j*gt_list[i][calibration_context].gain)
-        th.gaintable.data['gain'] *= numpy.exp(damping*1j*numpy.angle(gt_list[i][calibration_context].gain))
+        #assert isinstance(th.gaintable, GainTable), th.gaintable
+        th.gaintable['gain'].data *= numpy.exp(damping*1j*numpy.angle(gt_list[i][calibration_context].gain))
     
     return sm
 
@@ -225,6 +223,17 @@ def expand_skymodel_by_skycomponents(sm, **kwargs):
     :param sm: SkyModel
     :return: List of SkyModels
     """
+    def copy_image(im):
+        """ Copy an image
+        
+        :param im:
+        :return:
+        """
+        if im is None:
+            return None
+        else:
+            return im.copy(deep=True)
+            
     result = [SkyModel(components=[comp],
                        image=None,
                        gaintable=copy_gaintable(sm.gaintable),

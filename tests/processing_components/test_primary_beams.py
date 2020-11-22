@@ -16,9 +16,9 @@ from rascil.processing_components.image.operations import export_image_to_fits, 
 from rascil.processing_components.imaging.base import create_image_from_visibility
 from rascil.processing_components.imaging.primary_beams import create_pb, create_vp, convert_azelvp_to_radec
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_visibility
+from rascil.processing_components.visibility.base import create_blockvisibility
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
@@ -47,7 +47,7 @@ class TestPrimaryBeams(unittest.TestCase):
 
         self.config = create_named_configuration(config, rmax=rmax)
         self.phasecentre = SkyCoord(ra=+15 * u.deg, dec=dec * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_visibility(self.config, self.times, self.frequency,
+        self.vis = create_blockvisibility(self.config, self.times, self.frequency,
                                      channel_bandwidth=self.channel_bandwidth,
                                      phasecentre=self.phasecentre, weight=1.0,
                                      polarisation_frame=PolarisationFrame('stokesI'))
@@ -58,7 +58,7 @@ class TestPrimaryBeams(unittest.TestCase):
             model = create_image_from_visibility(self.vis, cellsize=self.cellsize, npixel=self.npixel,
                                                  override_cellsize=False)
             beam = create_pb(model, telescope=telescope, use_local=False)
-            assert numpy.max(beam.data) > 0.0
+            assert numpy.max(beam["pixels"].data) > 0.0, telescope
             if self.persist: export_image_to_fits(beam, "%s/test_primary_beam_RADEC_%s.fits" % (self.dir, telescope))
 
     def test_create_primary_beams_AZELGEO(self):
@@ -68,7 +68,7 @@ class TestPrimaryBeams(unittest.TestCase):
             model = create_image_from_visibility(self.vis, cellsize=self.cellsize, npixel=self.npixel,
                                                  override_cellsize=False)
             beam = create_pb(model, telescope=telescope, use_local=True)
-            assert numpy.max(beam.data) > 0.0
+            assert numpy.max(beam["pixels"].data) > 0.0, telescope
             if self.persist: export_image_to_fits(beam, "%s/test_primary_beam_AZELGEO_%s.fits" % (self.dir, telescope))
 
     def test_create_voltage_patterns(self):
@@ -77,8 +77,8 @@ class TestPrimaryBeams(unittest.TestCase):
             model = create_image_from_visibility(self.vis, cellsize=self.cellsize, npixel=self.npixel,
                                                  override_cellsize=False)
             beam = create_vp(model, telescope=telescope)
-            assert numpy.max(numpy.abs(beam.data.real)) > 0.0
-            assert numpy.max(numpy.abs(beam.data.imag)) < 1e-15, numpy.max(numpy.abs(beam.data.imag))
+            assert numpy.max(numpy.abs(beam["pixels"].data.real)) > 0.0, telescope
+            assert numpy.max(numpy.abs(beam["pixels"].data.imag)) < 1e-15, numpy.max(numpy.abs(beam["pixels"].data.imag))
 
     def test_create_voltage_patterns_MID_GAUSS(self):
         self.createVis()
@@ -86,10 +86,10 @@ class TestPrimaryBeams(unittest.TestCase):
                                              override_cellsize=False)
         for telescope in ['MID_GAUSS']:
             beam = create_vp(model, telescope=telescope, padding=4)
-            beam_data = beam.data
-            beam.data = numpy.real(beam_data)
+            beam_data = beam["pixels"].data
+            beam["pixels"].data = numpy.real(beam_data)
             if self.persist: export_image_to_fits(beam, "%s/test_voltage_pattern_real_%s.fits" % (self.dir, telescope))
-            beam.data = numpy.imag(beam_data)
+            beam["pixels"].data = numpy.imag(beam_data)
             if self.persist: export_image_to_fits(beam, "%s/test_voltage_pattern_imag_%s.fits" % (self.dir, telescope))
 
     def test_create_voltage_patterns_MID(self):
@@ -98,10 +98,10 @@ class TestPrimaryBeams(unittest.TestCase):
                                              override_cellsize=False)
         for telescope in ['MID', 'MID_FEKO_B1', 'MID_FEKO_B2', 'MID_FEKO_Ku', 'MEERKAT_B2']:
             beam = create_vp(model, telescope=telescope, padding=4)
-            beam_data = beam.data
-            beam.data = numpy.real(beam_data)
-            beam.wcs.wcs.crval[0] = 0.0
-            beam.wcs.wcs.crval[1] = 90.0
+            beam_data = beam["pixels"].data
+            beam["pixels"].data = numpy.real(beam_data)
+            beam.image_acc.wcs.wcs.crval[0] = 0.0
+            beam.image_acc.wcs.wcs.crval[1] = 90.0
             if self.persist: export_image_to_fits(beam,
                                                   "%s/test_voltage_pattern_real_zenith_%s.fits" % (self.dir, telescope))
 
@@ -118,8 +118,8 @@ class TestPrimaryBeams(unittest.TestCase):
                                                   "%s/test_voltage_pattern_real_prerotate_%s.fits" % (self.dir, telescope))
             beam_radec = convert_azelvp_to_radec(beam, model, numpy.pi/4.0)
             
-            beam_data = beam_radec.data
-            beam_radec.data = numpy.real(beam_data)
+            beam_data = beam_radec["pixels"].data
+            beam_radec["pixels"].data = numpy.real(beam_data)
             if self.persist: export_image_to_fits(beam_radec,
                                                   "%s/test_voltage_pattern_real_rotate_%s.fits" % (self.dir, telescope))
 

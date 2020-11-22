@@ -10,6 +10,10 @@ imaging algorithms in python and numpy. The interfaces all operate with familiar
 visibility table, gain table, etc. The python source code is directly accessible from these documentation pages:
 see the source link in the top right corner.
 
+As of version 0.2.0, the data classes are built on the `Xarray <https:/xarray.pydata.org>`_ library, offering a
+rich API for applications. For more details including how to update existing scripts, see
+:ref:`Use of xarray <RASCIL_xarray>`.
+
 To achieve sufficient performance we take a dual pronged approach - using threaded libraries for shared memory
 processing, and the `Dask <https:/www.dask.org>`_ library for distributed processing.
 
@@ -24,8 +28,6 @@ requirement of providing a simple test version where algorithms could be tested 
 
 For an overview of the SDP see the `SDP CDR
 documentation <http://ska-sdp.org/publications/sdp-cdr-closeout-documentation>`_
-
-The ARL/RASCIL structure maps that used in the SDP processing architecture as can be seen in this :ref:`RASCIL_SDP`.
 
 More details can be found at: `SKA1 SDP Algorithm Reference Library (ARL) Report <http://ska-sdp.org/sites/default/files/attachments/ska-tel-sdp-0000150_02_sdparlreport_part_1_-_signed.pdf>`_
 

@@ -3,11 +3,10 @@ __all__ = ['image_rsexecute_map_workflow', 'sum_images_rsexecute']
 
 import logging
 
-from rascil.processing_components.image import copy_image
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.processing_components.image import image_scatter_facets, image_gather_facets
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 def image_rsexecute_map_workflow(im, imfunction, facets=1, overlap=0, taper=None, **kwargs):
     """Apply a function across an image: scattering to subimages, applying the function, and then gathering
@@ -26,7 +25,7 @@ def image_rsexecute_map_workflow(im, imfunction, facets=1, overlap=0, taper=None
         model = create_test_image(frequency=frequency, phasecentre=phasecentre, cellsize=0.001,
                                          polarisation_frame=PolarisationFrame('stokesI'))
         def imagerooter(im, **kwargs):
-            im.data = numpy.sqrt(numpy.abs(im.data))
+            im["pixels"].data = numpy.sqrt(numpy.abs(im["pixels"].data))
             return im
         root_graph = image_rsexecute_map_workflow(model, imagerooter, facets=16)
         root_image = rsexecute.compute(root_graph, sync=True)
@@ -58,8 +57,8 @@ def sum_images_rsexecute(image_list, split=2):
 
     """
     def sum_images(imagelist):
-        out = copy_image(imagelist[0])
-        out.data += imagelist[1].data
+        out = imagelist[0].copy(deep=True)
+        out["pixels"].data += imagelist[1]["pixels"].data
         return out
     
     if len(image_list) > split:

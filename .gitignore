@@ -80,3 +80,13 @@ examples/scripts/imaging.txt
 examples/scripts/imaging_sim2.txt
 
 examples/scripts/primary_beam_zernikes.txt
+
+test_results_master/
+
+.run/
+
+*.html
+
+tests/workflows/gaintable.png
+
+examples/mcve/xarray/mydask.png

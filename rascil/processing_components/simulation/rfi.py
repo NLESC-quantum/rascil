@@ -39,11 +39,13 @@ def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, 
     :param times: sample times (s)
     :param power: DTV emitted power W
     :param freq_cen: central frequency of DTV
-    :parm bw: bandwidth of DTV
-    :param timevariable
-    :param frequency_variable
+    :param bw: bandwidth of DTV
+    :param timevariable:
+    :param frequency_variable:
     :return: Complex array [ntimes, nchan]
+    
     """
+    
     # find frequency range for DTV
     DTVrange = numpy.where((frequency <= freq_cen + (bw / 2.)) & (frequency >= freq_cen - (bw / 2.)))
     # idx = (np.abs(frequency - freq_cen)).argmin()
@@ -122,10 +124,10 @@ def create_propagators(config, interferer, frequency, attenuation=1e-9):
     :return: Complex array [nants, ntimes]
     """
     nchannels = len(frequency)
-    nants = len(config.data['names'])
+    nants = len(config['names'].data)
     interferer_xyz = [interferer.geocentric[0].value, interferer.geocentric[1].value, interferer.geocentric[2].value]
     propagators = numpy.zeros([nants, nchannels], dtype='complex')
-    for iant, ant_xyz in enumerate(config.xyz):
+    for iant, ant_xyz in enumerate(config.xyz.data):
         vec = ant_xyz - interferer_xyz
         # This ignores the Earth!
         r = numpy.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)
@@ -148,7 +150,7 @@ def create_propagators_prop(config, frequency, nants_start, station_skip=1, atte
     """
 
     nchannels = len(frequency)
-    nants = len(config.data['names'])
+    nants = len(config['names'])
     propagation = numpy.ones([nants, nchannels], dtype='complex')
     if isinstance(attenuation, str):
         propagation_trans = numpy.power(10, -1 * numpy.load(attenuation) / 10.)
@@ -179,7 +181,7 @@ def create_propagators_prop(config, frequency, nants_start, station_skip=1, atte
         propagation = propagation[:nants_start]
         propagation = propagation[::station_skip]
     else:
-        nants = len(config.data['names'])
+        nants = len(config['names'])
         propagation = numpy.ones([nants, nchannels], dtype='complex')
         propagation[:, :] = attenuation
     '''
@@ -254,7 +256,7 @@ def simulate_rfi_block(bvis, emitter_location, emitter_power=5e4, attenuation=1.
 
     # Calculate the rfi correlation using the fringe rotation and the rfi at the station
     # [ntimes, nants, nants, nchan, npol]
-    bvis.data['vis'][...] = calculate_station_correlation_rfi(rfi_at_station)
+    bvis['vis'].data[...] = calculate_station_correlation_rfi(rfi_at_station)
 
     ntimes, nant, _, nchan, npol = bvis.vis.shape
 
@@ -272,7 +274,7 @@ def simulate_rfi_block(bvis, emitter_location, emitter_power=5e4, attenuation=1.
             phasor[:, :, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
 
         # Now fill this into the BlockVisibility
-        bvis.data['vis'] = bvis.data['vis'] * phasor
+        bvis['vis'].data = bvis['vis'].data * phasor
     else:
         # We know where the emitter is. Calculate the bearing to the emitter from
         # the site, generate az, el, and convert to ha, dec. ha, dec is static.
@@ -297,7 +299,7 @@ def simulate_rfi_block(bvis, emitter_location, emitter_power=5e4, attenuation=1.
                 phasor[:, :, chan, :] = simulate_point(uvw[itime, ..., chan], l, m)[..., numpy.newaxis]
 
             # Now fill this into the BlockVisibility
-            bvis.data['vis'][itime, ...] = bvis.data['vis'][itime, ...] * phasor
+            bvis['vis'].data[itime, ...] = bvis['vis'].data[itime, ...] * phasor
 
     return bvis
 
@@ -382,7 +384,7 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
         # Calculate the rfi correlation using the fringe rotation and the rfi at the station
         # [ntimes, nants, nants, nchan, npol]
 
-        # bvis.data['vis'][...] += calculate_station_correlation_rfi(rfi_at_station)
+        # bvis['vis'].data[...] += calculate_station_correlation_rfi(rfi_at_station)
         bvis_data_copy['vis'][...] = calculate_station_correlation_rfi(rfi_at_station)
 
         ntimes, nant, _, nchan, npol = bvis.vis.shape
@@ -401,8 +403,8 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
                 phasor[:, :, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
 
             # Now fill this into the BlockVisibility
-            # bvis.data['vis'] = bvis.data['vis'] * phasor
-            bvis.data['vis'] += bvis_data_copy['vis'] * phasor
+            # bvis['vis'].data = bvis['vis'].data * phasor
+            bvis['vis'].data += bvis_data_copy['vis'] * phasor
         else:
             # We know where the emitter is. Calculate the bearing to the emitter from
             # the site, generate az, el, and convert to ha, dec. ha, dec is static.
@@ -413,7 +415,7 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
             el = 0.0
             hadec = azel_to_hadec(az, el, site.lat.rad)
 
-            # print(trans, 'bvis_data', bvis.data['vis'][0][0][0])
+            # print(trans, 'bvis_data', bvis['vis'].data[0][0][0])
             # print(trans, 'bvis_copy_data', bvis_data_copy['vis'][0][0][0])
 
             # Now step through the time stamps, calculating the effective
@@ -430,9 +432,9 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
                     phasor[:, :, chan, :] = simulate_point(uvw[itime, ..., chan], l, m)[..., numpy.newaxis]
 
                 # Now fill this into the BlockVisibility
-                # bvis.data['vis'][itime, ...] = bvis.data['vis'][itime, ...] * phasor
-                bvis.data['vis'][itime, ...] += bvis_data_copy['vis'][itime, ...] * phasor
+                # bvis['vis'].data[itime, ...] = bvis['vis'].data[itime, ...] * phasor
+                bvis['vis'].data[itime, ...] += bvis_data_copy['vis'][itime, ...] * phasor
 
-            # print(trans, 'bvis_data_new', bvis.data['vis'][0][0][0])
+            # print(trans, 'bvis_data_new', bvis['vis'].data[0][0][0])
 
     return bvis

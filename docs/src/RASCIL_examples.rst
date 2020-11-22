@@ -16,10 +16,10 @@ See the jupyter notebooks below:
    :maxdepth: 3
 
    examples/notebooks/imaging.rst
-   examples/notebooks/imaging-wterm_rsexecute.rst
    examples/notebooks/simple-dask_rsexecute.rst
-   examples/notebooks/imaging-pipelines_rsexecute.rst
    examples/notebooks//bandpass-calibration_serial.rst
+   examples/notebooks/demo_image_xarray.rst
+   examples/notebooks/demo_visibility_xarray.rst
 
 In addition, there are other notebooks in examples/notebooks that are not built as part of this documentation.
 In some cases it may be necessary to add the following to the notebook to locate the RASCIL data
@@ -34,8 +34,6 @@ Some example scripts are found in the directory examples/scripts.
    :maxdepth: 3
 
    examples/scripts/imaging.rst
-   examples/scripts/dprepb_rsexecute_pipeline.rst
-   examples/scripts/imaging_sim2.rst
    examples/scripts/primary_beam_zernikes.rst
 
 SKA simulations

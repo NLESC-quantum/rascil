@@ -16,7 +16,7 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import convolve_skym
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymodel_list_rsexecute_workflow, \
     invert_skymodel_list_rsexecute_workflow, crosssubtract_datamodels_skymodel_list_rsexecute_workflow
 
-log = logging.getLogger('logger')
+log = logging.getLogger('rascil-logger')
 
 
 def mpccal_skymodel_list_rsexecute_workflow(visobs, model, theta_list, nmajor=10,
@@ -53,9 +53,9 @@ def mpccal_skymodel_list_rsexecute_workflow(visobs, model, theta_list, nmajor=10
                                                                 docal=True, **kwargs)
 
         def diff_dirty(dcal, dconv):
-            assert numpy.max(numpy.abs(dcal[0].data)) > 0.0, "before: dcal subimage is zero"
-            dcal[0].data -= dconv[0].data
-            assert numpy.max(numpy.abs(dcal[0].data)) > 0.0, "after: dcal subimage is zero"
+            assert numpy.max(numpy.abs(dcal[0]["pixels"].data)) > 0.0, "before: dcal subimage is zero"
+            dcal[0]["pixels"].data -= dconv[0]["pixels"].data
+            assert numpy.max(numpy.abs(dcal[0]["pixels"].data)) > 0.0, "after: dcal subimage is zero"
             return dcal
 
         dirty_all_cal = [rsexecute.execute(diff_dirty, nout=1)(dirty_all_cal[i], dirty_all_conv[i])
@@ -64,14 +64,14 @@ def mpccal_skymodel_list_rsexecute_workflow(visobs, model, theta_list, nmajor=10
         def make_residual(dcal, tl, it):
             res = create_empty_image_like(dcal[0][0])
             for i, d in enumerate(dcal):
-                assert numpy.max(numpy.abs(d[0].data)) > 0.0, "Residual subimage is zero"
+                assert numpy.max(numpy.abs(d[0]["pixels"].data)) > 0.0, "Residual subimage is zero"
                 if tl[i].mask is None:
-                    res.data += d[0].data
+                    res["pixels"].data += d[0]["pixels"].data
                 else:
-                    assert numpy.max(numpy.abs(tl[i].mask.data)) > 0.0, "Mask image is zero"
-                    res.data += d[0].data * tl[i].mask.data
+                    assert numpy.max(numpy.abs(tl[i].mask["pixels"].data)) > 0.0, "Mask image is zero"
+                    res["pixels"].data += d[0]["pixels"].data * tl[i].mask["pixels"].data
 
-            assert numpy.max(numpy.abs(res.data)) > 0.0, "Residual image is zero"
+            assert numpy.max(numpy.abs(res["pixels"].data)) > 0.0, "Residual image is zero"
             # import matplotlib.pyplot as plt
             # from rascil.processing_components.image import show_image
             # show_image(res, title='MPCCAL residual image, iteration %d' % it)

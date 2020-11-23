@@ -136,6 +136,8 @@ Or the full set::
 - Ensure that pip is up-to-date. If not, some strange install errors may occur.
 - Check that the contents of the data directories have plausible contents. If gif-lfs has not been run successfully then the data files will just contain meta data, leading to strange run-time errors.
 - There may be some dependencies that require either conda (or brew install on a mac).
+- Ensure that you have made the directory test_results to store the test results. Or add the below in the test script::
+  if not os.path.isdir(test_results):os.makedirs(test_results)
 
 Casacore installation
 ^^^^^^^^^^^^^^^^^^^^^

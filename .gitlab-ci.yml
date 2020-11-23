@@ -129,7 +129,7 @@ prepare ci metrics:
   stage: prepost
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   when: always
-  script:
+  before_script:
     - mkdir -p build/reports
     - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
     - test -a linting.xml && mv linting.xml ./build/reports/linting.xml

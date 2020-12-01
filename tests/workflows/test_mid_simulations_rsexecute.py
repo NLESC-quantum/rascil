@@ -10,12 +10,12 @@ This measures the change in a dirty imagethe induced by various errors:
 
 """
 import logging
-import numpy
 import os
 import sys
 import unittest
-
 from functools import partial
+
+import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -53,8 +53,8 @@ class TestMIDSimulations(unittest.TestCase):
         self.persist = os.getenv("RASCIL_PERSIST", False)
     
     def simulation(self, args, mode='wind_pointing', band='B2',
-                   image_polarisation_frame=PolarisationFrame("stokesI"),
-                   vis_polarisation_frame=PolarisationFrame("stokesI")):
+                   image_polarisation_frame=PolarisationFrame("stokesIQUV"),
+                   vis_polarisation_frame=PolarisationFrame("linear")):
         
         context = args.context
         ra = args.ra
@@ -123,17 +123,17 @@ class TestMIDSimulations(unittest.TestCase):
         vp_list = [rsexecute.execute(create_image_from_visibility)(bv, npixel=pb_npixel, frequency=frequency,
                                                                    nchan=nfreqwin, cellsize=pb_cellsize,
                                                                    phasecentre=phasecentre,
-                                                                   polarisation_frame=image_polarisation_frame,
+                                                                   polarisation_frame=vis_polarisation_frame,
                                                                    override_cellsize=False) for bv in bvis_list]
         vp_list = [rsexecute.execute(create_vp)(vp, pbtype, pointingcentre=phasecentre)
                    for vp in vp_list]
         future_vp_list = rsexecute.persist(vp_list)
         
         a2r = numpy.pi / (3600.0 * 1800)
-
+        
         def get_vp(telescope, vp_directory):
             return create_vp(telescope=telescope)
-
+        
         if mode == 'random_pointing':
             # Random pointing errors
             global_pointing_error = global_pe
@@ -252,8 +252,7 @@ class TestMIDSimulations(unittest.TestCase):
             export_image_to_fits(error_dirty,
                                  "{}/test_mid_simulations_{}_dirty.fits".format(rascil_path("test_results"), mode))
             export_blockvisibility_to_ms("{}/test_mid_simulations_{}_difference.ms".format(rascil_path("test_results"),
-                                                                                           mode),
-                                         bvis_list)
+                                                                                           mode), bvis_list)
         return error_dirty, sumwt
     
     def get_args(self):
@@ -326,19 +325,30 @@ class TestMIDSimulations(unittest.TestCase):
         args = parser.parse_args([])
         return args
     
-    #@unittest.skip("Pointing calculation in error")
     def test_wind(self):
         
         args = self.get_args()
         args.fluxlimit = 0.1
         
-        error_dirty, sumwt = self.simulation(args, 'wind_pointing')
+        error_dirty, sumwt = self.simulation(args, 'wind_pointing',
+                                             image_polarisation_frame=PolarisationFrame("stokesIQUV"),
+                                             vis_polarisation_frame=PolarisationFrame("linear"))
         
         qa = qa_image(error_dirty)
 
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.00011024929534694913, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.00011024929534694913, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 8.356611096276117e-06, 5, err_msg=str(qa))
+        # shape: '(1, 4, 1024, 1024)'
+        # max: '4.706122122337443e-06'
+        # min: '-4.206237563416747e-06'
+        # maxabs: '4.706122122337443e-06'
+        # rms: '3.1718001852407876e-07'
+        # sum: '0.0002053825257679064'
+        # medianabs: '0.0'
+        # medianabsdevmedian: '0.0'
+        # median: '0.0'
+
+        numpy.testing.assert_almost_equal(qa.data['max'], 4.706122122337443e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -4.206237563416747e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 3.1718001852407876e-07, 5, err_msg=str(qa))
     
     def test_heterogeneous(self):
         
@@ -348,14 +358,13 @@ class TestMIDSimulations(unittest.TestCase):
         error_dirty, sumwt = self.simulation(args, 'heterogeneous',
                                              image_polarisation_frame=PolarisationFrame("stokesIQUV"),
                                              vis_polarisation_frame=PolarisationFrame("linear"))
-
+        
         qa = qa_image(error_dirty)
         
         numpy.testing.assert_almost_equal(qa.data['max'], 0.006232996309120276, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'],-0.00038496045275951873, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.00038496045275951873, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['rms'], 3.728425607449823e-05, 5, err_msg=str(qa))
     
-    @unittest.skip("Pointing calculation in error")
     def test_random(self):
         
         args = self.get_args()
@@ -364,12 +373,22 @@ class TestMIDSimulations(unittest.TestCase):
         error_dirty, sumwt = self.simulation(args, 'random_pointing',
                                              image_polarisation_frame=PolarisationFrame("stokesIQUV"),
                                              vis_polarisation_frame=PolarisationFrame("linear"))
-
+        
         qa = qa_image(error_dirty)
 
-        numpy.testing.assert_almost_equal(qa.data['max'], 3.5821163782097796e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -6.485629243186776e-05, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 3.7233114793261304e-06, 5, err_msg=str(qa))
+        # shape: '(1, 4, 1024, 1024)'
+        # max: '2.472368365158522e-06'
+        # min: '-9.762213174928972e-07'
+        # maxabs: '2.472368365158522e-06'
+        # rms: '7.831098142486326e-08'
+        # sum: '1.373421891787825e-05'
+        # medianabs: '0.0'
+        # medianabsdevmedian: '0.0'
+        # median: '0.0'
+
+        numpy.testing.assert_almost_equal(qa.data['max'], 2.472368365158522e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -9.762213174928972e-07, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 7.831098142486326e-08, 5, err_msg=str(qa))
     
     def test_surface(self):
         
@@ -380,7 +399,7 @@ class TestMIDSimulations(unittest.TestCase):
             error_dirty, sumwt = self.simulation(args, 'surface',
                                                  image_polarisation_frame=PolarisationFrame("stokesIQUV"),
                                                  vis_polarisation_frame=PolarisationFrame("linear"))
-    
+            
             qa = qa_image(error_dirty)
             
             numpy.testing.assert_almost_equal(qa.data['max'], 2.2055849698035616e-06, 5, err_msg=str(qa))

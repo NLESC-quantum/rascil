@@ -26,7 +26,7 @@ log.setLevel(logging.WARNING)
 
 class TestCalibrationChain(unittest.TestCase):
     def setUp(self):
-        numpy.random.seed(180555)
+        numpy.random.seed(1805550721)
     
     def actualSetup(self, sky_pol_frame='stokesIQUV', data_pol_frame='linear', f=None, vnchan=1):
         self.lowcore = create_named_configuration('LOWBD2-CORE')
@@ -94,11 +94,11 @@ class TestCalibrationChain(unittest.TestCase):
 
     @unittest.skip("G converges slowly")
     def test_calibrate_G_function(self):
-        self.actualSetup('stokesIQUV', 'linear', f=[100.0, 0.0, 0.0, 50.0])
+        self.actualSetup('stokesIQUV', 'linear', f=[100.0, 50.0, 0.0, 0.0])
         # Prepare the corrupted visibility data_models
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
-        gt = simulate_gaintable(gt, phase_error=0.0, amplitude_error=0.1)
+        gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
         original = copy_visibility(self.vis)
         self.vis = apply_gaintable(self.vis, gt)
         # Now get the control dictionary and calibrate
@@ -107,7 +107,7 @@ class TestCalibrationChain(unittest.TestCase):
         calibrated_vis, gaintables = calibrate_chain(self.vis, original, calibration_context='G',
                                                      controls=controls)
         residual = numpy.max(gaintables['G'].residual)
-        assert residual < 1e-8, "Max T residual = %s" % residual
+        assert residual < 1e-8, "Max G residual = %s" % residual
 
     @unittest.skip("G converges slowly")
     def test_calibrate_TG_function(self):

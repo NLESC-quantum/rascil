@@ -73,13 +73,21 @@ class TestImageDeconvolution(unittest.TestCase):
         assert s2 == (0, 63, 0, 100)
     
     def test_restore(self):
+        self.model["pixels"].data[0,0,256,256] = 1.0
         self.cmodel = restore_cube(self.model, self.psf)
-        
+        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 1.0) < 1e-7, \
+            numpy.max(self.cmodel["pixels"].data)
+        self.persist = True
+        if self.persist: export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
+
     def test_fit_psf(self):
         clean_beam = fit_psf(self.psf)
-        assert numpy.abs(clean_beam["bmaj"] - 18.304027311653243) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 17.509048064770884) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
+        self.persist = True
+        if self.persist: export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.dir))
+
+        assert numpy.abs(clean_beam["bmaj"] - 1048.7435130499214) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 1003.1945574030732) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bpa"] +  1.0098903330636544) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=10000, gain=0.1, algorithm='hogbom',
@@ -153,3 +161,7 @@ class TestImageDeconvolution(unittest.TestCase):
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_deconvolve_msclean_subpsf-clean.fits" % (self.dir))
         assert numpy.max(self.residual["pixels"].data[..., 56:456, 56:456]) < 1.0
+
+
+if __name__ == '__main__':
+    unittest.main()

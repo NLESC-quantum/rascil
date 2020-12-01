@@ -390,7 +390,7 @@ class _rsexecutebase():
 
             try:
                 print_ts(task_stream)
-            except  ValueError:
+            except  (ValueError, KeyError):
                 log.warning("Dask task stream is unintelligible")
 
     @property

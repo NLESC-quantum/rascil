@@ -13,7 +13,7 @@ from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.calibration.calibration_rsexecute import calibrate_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rsexecute_workflow, \
-    residual_list_rsexecute_workflow, \
+    residual_list_rsexecute_workflow, restore_rsexecute_workflow, \
     predict_list_rsexecute_workflow, subtract_list_rsexecute_workflow, \
     restore_list_rsexecute_workflow, deconvolve_list_rsexecute_workflow
 
@@ -23,7 +23,7 @@ log = logging.getLogger('rascil-logger')
 def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=1, facets=1,
                                  gcfcf=None, calibration_context='TG', do_selfcal=True, **kwargs):
     """Create graph for ICAL pipeline
-
+    
     :param vis_list: List of vis (or graph)
     :param model_imagelist:  list of models (or graph)
     :param context: imaging context e.g. '2d'
@@ -76,7 +76,7 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
         residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, model_imagelist, context=context,
                                                               vis_slices=vis_slices, facets=facets, gcfcf=gcfcf,
                                                               **kwargs)
-    
+
     deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
                                                                     model_imagelist,
                                                                     prefix='ical cycle 0',
@@ -103,7 +103,7 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
                                                                       vis_slices=vis_slices, facets=facets,
                                                                       gcfcf=gcfcf,
                                                                       **kwargs)
-            
+
             prefix = "ical cycle %d" % (cycle + 1)
             deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
                                                                             deconvolve_model_imagelist,
@@ -133,12 +133,13 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
             return create_pswf_convolutionfunction(m, polarisation_frame=v.blockvisibility_acc.polarisation_frame)
         gcfcf = [rsexecute.execute(make_gcfcf)(model_imagelist[0], vis_list[0])]
     
-    psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True, gcfcf=gcfcf,
+    psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True,
+                                                   gcfcf=gcfcf,
                                                    **kwargs)
     
     residual_imagelist = residual_list_rsexecute_workflow(vis_list, model_imagelist, context=context, gcfcf=gcfcf,
                                                           vis_slices=vis_slices, facets=facets, **kwargs)
-    
+
     deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
                                                                     model_imagelist,
                                                                     prefix='cip cycle 0',
@@ -158,9 +159,16 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
 
     residual_imagelist = residual_list_rsexecute_workflow(vis_list, deconvolve_model_imagelist, context=context,
                                                           vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
-    restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist,
-                                                        **kwargs)
-    return (deconvolve_model_imagelist, residual_imagelist, restore_imagelist)
+    output = get_parameter(kwargs, "cube_output", "cubes")
+    if output == "integrated":
+        restored_imagelist = \
+            restore_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs)
+    else:
+        restored_imagelist = \
+            restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist,
+                                            residual_imagelist, **kwargs)
+
+    return deconvolve_model_imagelist, residual_imagelist, restored_imagelist
 
 
 def spectral_line_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context, continuum_model_imagelist=None,

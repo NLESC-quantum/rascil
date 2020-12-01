@@ -166,7 +166,7 @@ def simulate_list_rsexecute_workflow(config='LOWBD2',
     return vis_list
 
 
-def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, seed=None, **kwargs):
+def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, **kwargs):
     """ Create a graph to apply gain errors to a vis_list
 
     :param vis_list: List of vis (or graph)

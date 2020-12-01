@@ -161,7 +161,9 @@ def divide_visibility(vis: BlockVisibility, modelvis: BlockVisibility):
                                       time=vis.time.data,
                                       integration_time=vis.integration_time.data,
                                       vis=x,
-                                      weight=xwt, source=vis.source,
+                                      weight=xwt,
+                                      imaging_weight=vis.imaging_weight,
+                                      source=vis.source,
                                       meta=vis.meta,
                                       polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
     return pointsource_vis

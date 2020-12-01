@@ -29,6 +29,7 @@ from rascil.processing_components.image import calculate_image_frequency_moments
 from rascil.processing_components.imaging import normalize_sumwt
 from rascil.processing_components.imaging import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
+from rascil.processing_components import fit_psf
 
 log = logging.getLogger('rascil-logger')
 
@@ -58,38 +59,23 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=
     c = imaging_context(context)
     predict = c['predict']
     
-    if facets % 2 == 0 or facets == 1:
-        actual_number_facets = facets
-    else:
-        actual_number_facets = facets - 1
-    
-    def predict_ignore_none(vis, model, g):
-        if vis is not None:
-            #assert isinstance(vis, BlockVisibility), vis
-            #assert isinstance(model, Image), model
-            return predict(vis, model, context=context, gcfcf=g, **kwargs)
-        else:
-            return None
-    
     if gcfcf is None:
         gcfcf = [create_pswf_convolutionfunction(m, polarisation_frame=vis_list[i].blockvisibility_acc.polarisation_frame)
                  for i, m in enumerate(model_imagelist)]
     
     # Loop over all windows
-    predict_results = []
-    for ivis, subvis in enumerate(vis_list):
-        # Create the graph to divide an image into facets. This is by reference.
-        facet_lists = image_scatter_facets(
-            model_imagelist[ivis], facets=facets)
-        # Loop over facets
-        facet_vis_results = [predict_ignore_none \
-                                 (subvis, facet_list, gcfcf[ifacet]) for ifacet, facet_list in enumerate(facet_lists)]
-        predict_results.append(sum_predict_results(facet_vis_results))
+    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
+        predict_results = [predict(vis, model_imagelist[ivis], gcfcf=gcfcf[ivis], **kwargs)
+                           for ivis, vis in enumerate(vis_list)]
+    else:
+        predict_results = [predict(vis, model_imagelist[ivis], gcfcf=gcfcf[0], **kwargs)
+                           for ivis, vis in enumerate(vis_list)]
+
     return predict_results
 
 
 def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False, normalize=True,
-                                facets=1, overlap=0, taper="tukey", vis_slices=1, context='2d', gcfcf=None, **kwargs):
+                                context='2d', gcfcf=None, **kwargs):
     """ Sum results from invert, iterating over the scattered image and vis_list
 
     :param vis_list: list of vis
@@ -121,51 +107,21 @@ def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False,
     c = imaging_context(context)
     invert = c['invert']
     
-    if facets % 2 == 0 or facets == 1:
-        actual_number_facets = facets
-    else:
-        actual_number_facets = max(1, (facets - 1))
-    
-    def gather_image_iteration_results(results, template_model):
-        result = create_empty_image_like(template_model)
-        flat = create_empty_image_like(template_model)
-        i = 0
-        sumwt = numpy.zeros([template_model.image_acc.nchan, template_model.image_acc.npol])
-        for dpatch in image_scatter_facets(result, facets=facets, overlap=overlap, taper=taper):
-            assert i < len(results), "Too few results in gather_image_iteration_results"
-            if results[i] is not None:
-                assert len(results[i]) == 2, results[i]
-                dpatch["pixels"].data[...] += results[i][0]["pixels"].data[...]
-                sumwt += results[i][1]
-                i += 1
-        flat = image_gather_facets(results, flat, facets=facets, overlap=overlap, taper=taper, return_flat=True)
-        result["pixels"].data[flat["pixels"].data > 0.5] /= flat["pixels"].data[flat["pixels"].data > 0.5]
-        result["pixels"].data[flat["pixels"].data <= 0.5] = 0.0
-        return result, sumwt
-    
-    def invert_ignore_none(vis, model, gg):
-        if vis is not None:
-            
-            return invert(vis, model, context=context, dopsf=dopsf, normalize=normalize,
-                          gcfcf=gg, **kwargs)
-        else:
-            return create_empty_image_like(model), numpy.zeros([model.nchan, model.npol])
-    
-    # If we are doing facets, we need to create the gcf for each image
-    if gcfcf is None and facets == 1:
+    if gcfcf is None:
         assert len(template_model_imagelist) > 0
         gcfcf = [create_pswf_convolutionfunction(template_model_imagelist[0],
                                                  polarisation_frame=vis_list[0].polarisation_frame)]
-    
-    invert_results = list()
-    for ivis, sub_vis_list in enumerate(vis_list):
-        # Create the graph to divide an image into facets. This is by reference.
-        facet_list = image_scatter_facets(
-            template_model_imagelist[ivis], facets=facets, overlap=overlap, taper=taper)
-        facet_results = [invert_ignore_none
-                         (sub_vis_list, facet_list, None) for facet_list in facet_list]
-        invert_results.append(gather_image_iteration_results
-                              (facet_results, template_model_imagelist[ivis]))
+
+    assert len(template_model_imagelist) == len(vis_list)
+    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
+        assert len(gcfcf) == len(vis_list)
+        invert_results = [invert(vis, template_model_imagelist[ivis], dopsf=dopsf,
+                                                            normalise=normalize, gcfcf=gcfcf[ivis], **kwargs)
+                          for ivis, vis in enumerate(vis_list)]
+    else:
+        invert_results = [invert(vis, template_model_imagelist[ivis], dopsf=dopsf,
+                                                            normalise=normalize, gcfcf=gcfcf[0], **kwargs)
+                          for ivis, vis in enumerate(vis_list)]
     
     return invert_results
 
@@ -203,18 +159,24 @@ def restore_list_serial_workflow(model_imagelist, psf_imagelist, residual_imagel
     :param restore_taper: Type of taper between facets
     :return: list of restored images
     """
-    restore_facets = 1
+    assert len(model_imagelist) == len(psf_imagelist)
+    if residual_imagelist is not None:
+        assert len(model_imagelist) == len(residual_imagelist)
 
-    if residual_imagelist is None:
-        residual_imagelist = []
-    
-    if len(residual_imagelist) > 0:
-        return [restore_cube(model_imagelist[i], psf_imagelist[i][0],
-                             residual_imagelist[i][0], **kwargs)
-                for i, _ in enumerate(model_imagelist)]
+    psf_list = sum_invert_results(psf_imagelist)
+    psf = normalize_sumwt(psf_list[0], psf_list[1])
+    cleanbeam = fit_psf(psf)
+
+    if residual_imagelist is not None:
+        residual_list = remove_sumwt(residual_imagelist)
+        restored_list = [restore_cube(model_imagelist[i], cleanbeam=cleanbeam,
+                                                                 residual=residual_list[i], **kwargs)
+                         for i, _ in enumerate(model_imagelist)]
     else:
-        return [restore_cube(model_imagelist[i], psf_imagelist[i][0], **kwargs)
-                for i, _ in enumerate(model_imagelist)]
+        restored_list = [restore_cube(model_imagelist[i], cleanbeam=cleanbeam,
+                                                                 residual=None, **kwargs)
+                         for i, _ in enumerate(model_imagelist)]
+    return restored_list
 
 
 def deconvolve_list_serial_workflow(dirty_list, psf_list, model_imagelist, prefix='', mask=None, **kwargs):

@@ -109,5 +109,8 @@ class TestVisibilitySelectors(unittest.TestCase):
                                       channel_bandwidth=self.channel_bandwidth,
                                       polarisation_frame=self.polarisation_frame,
                                       phasecentre=self.phasecentre, weight=1.0)
-        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > 0.0, bvis["flags"], 1.0)
+        before = bvis["flags"].sum()
+        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > 20000.0, bvis["flags"], 1.0)
+        after = bvis["flags"].sum()
+        assert after > before
         print(bvis)

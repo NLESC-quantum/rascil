@@ -32,7 +32,7 @@ def calculate_noise_blockvisibility(bandwidth, int_time, diameter, t_sys, eta):
     return sigma
 
 
-def addnoise_visibility(vis, t_sys=None, eta=None):
+def addnoise_visibility(vis, t_sys=None, eta=None, seed=None):
     """ Add noise to a visibility
     
     TODO: Obtain sensitivity values from vis as a function of frequency
@@ -44,6 +44,12 @@ def addnoise_visibility(vis, t_sys=None, eta=None):
     """
     #assert isinstance(vis, BlockVisibility), vis
     
+    from numpy.random import default_rng
+    if seed is None:
+        rng = default_rng(1805550721)
+    else:
+        rng = default_rng(seed)
+
     if t_sys is None:
         t_sys = 20.0
     
@@ -57,6 +63,6 @@ def addnoise_visibility(vis, t_sys=None, eta=None):
     shape = (nbaseline, npol)
     for time in range(ntimes):
         for chan in range(nchan):
-            vis["vis"].data[time, ..., chan, :].real += numpy.random.normal(0, sigma[time, chan], shape)
-            vis["vis"].data[time, ..., chan, :].imag += numpy.random.normal(0, sigma[time, chan], shape)
+            vis["vis"].data[time, ..., chan, :].real += rng.normal(0, sigma[time, chan], shape)
+            vis["vis"].data[time, ..., chan, :].imag += rng.normal(0, sigma[time, chan], shape)
     return vis

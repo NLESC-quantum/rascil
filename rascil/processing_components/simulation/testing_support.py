@@ -658,7 +658,8 @@ def create_blockvisibility_iterator(config: Configuration, times: numpy.array, f
                                     channel_bandwidth, phasecentre: SkyCoord, weight: float = 1,
                                     polarisation_frame=PolarisationFrame('stokesI'), integration_time=1.0,
                                     number_integrations=1, predict=predict_2d, model=None, components=None,
-                                    phase_error=0.0, amplitude_error=0.0, sleep=0.0, **kwargs):
+                                    phase_error=0.0, amplitude_error=0.0, sleep=0.0, seed=None,
+                                    **kwargs):
     """ Create a sequence of Visibilities and optionally predicting and coalescing
 
     This is useful mainly for performing large simulations. Do something like::
@@ -702,7 +703,8 @@ def create_blockvisibility_iterator(config: Configuration, times: numpy.array, f
         # Add phase errors
         if phase_error > 0.0 or amplitude_error > 0.0:
             gt = create_gaintable_from_blockvisibility(bvis)
-            gt = simulate_gaintable(gt=gt, phase_error=phase_error, amplitude_error=amplitude_error)
+            gt = simulate_gaintable(gt=gt, phase_error=phase_error, amplitude_error=amplitude_error,
+                                    seed=seed)
             bvis = apply_gaintable(bvis, gt)
         
         import time
@@ -712,7 +714,7 @@ def create_blockvisibility_iterator(config: Configuration, times: numpy.array, f
 
 
 def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smooth_channels=1, leakage=0.0,
-                       **kwargs) -> GainTable:
+                       seed=180550721, **kwargs) -> GainTable:
     """ Simulate a gain table
 
     :type gt: GainTable
@@ -724,9 +726,15 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
     :return: Gaintable
 
     """
-    
-    def moving_average(a, n=3):
-        return numpy.convolve(a, numpy.ones((n,)) / n, mode='valid')
+    from numpy.random import default_rng
+    if seed is None:
+        rng = default_rng(1805550721)
+    else:
+        rng = default_rng(seed)
+
+    from scipy.ndimage import convolve1d
+    def moving_average(a, n=3, axis=0):
+        return convolve1d(a, numpy.ones((n,)) / n, mode='wrap', axis=axis)
     
     log.debug("simulate_gaintable: Simulating amplitude error = %.4f, phase error = %.4f"
               % (amplitude_error, phase_error))
@@ -734,33 +742,25 @@ def simulate_gaintable(gt: GainTable, phase_error=0.1, amplitude_error=0.0, smoo
     phases = 1.0
     ntimes, nant, nchan, nrec, _ = gt['gain'].data.shape
     if phase_error > 0.0:
-        phases = numpy.zeros(gt['gain'].data.shape)
-        for time in range(ntimes):
-            for ant in range(nant):
-                phase = numpy.random.normal(0, phase_error, nchan + int(smooth_channels) - 1)
-                if smooth_channels > 1:
-                    phase = moving_average(phase, smooth_channels)
-                phases[time, ant, ...] = phase[..., numpy.newaxis, numpy.newaxis]
+        phases = rng.normal(0, phase_error, gt['gain'].data.shape)
+        if smooth_channels > 1:
+            phases = moving_average(phases, smooth_channels, axis=2)
     
     if amplitude_error > 0.0:
-        amps = numpy.ones(gt['gain'].data.shape, dtype='complex')
-        for time in range(ntimes):
-            for ant in range(nant):
-                amp = numpy.random.lognormal(mean=0.0, sigma=amplitude_error, size=nchan + int(smooth_channels) - 1)
-                if smooth_channels > 1:
-                    amp = moving_average(amp, smooth_channels)
-                    amp = amp / numpy.average(amp)
-                amps[time, ant, ...] = amp[..., numpy.newaxis, numpy.newaxis]
-    
+        amps = rng.lognormal(0.0, amplitude_error, gt['gain'].data.shape)
+        if smooth_channels > 1:
+            amps = moving_average(amps, smooth_channels, axis=2)
+            amps = amps / numpy.average(amps)
+
     gt['gain'].data = amps * numpy.exp(0 + 1j * phases)
     nrec = gt['gain'].data.shape[-1]
     if nrec > 1:
         if leakage > 0.0:
-            leak = numpy.random.normal(0, leakage, gt['gain'].data[..., 0, 0].shape) + 1j * \
-                   numpy.random.normal(0, leakage, gt['gain'].data[..., 0, 0].shape)
+            leak = rng.normal(0, leakage, gt['gain'].data[..., 0, 0].shape) + 1j * \
+                   rng.normal(0, leakage, gt['gain'].data[..., 0, 0].shape)
             gt['gain'].data[..., 0, 1] = gt['gain'].data[..., 0, 0] * leak
-            leak = numpy.random.normal(0, leakage, gt['gain'].data[..., 1, 1].shape) + 1j * \
-                   numpy.random.normal(0, leakage, gt['gain'].data[..., 1, 1].shape)
+            leak = rng.normal(0, leakage, gt['gain'].data[..., 1, 1].shape) + 1j * \
+                   rng.normal(0, leakage, gt['gain'].data[..., 1, 1].shape)
             gt['gain'].data[..., 1, 0] = gt['gain'].data[..., 1, 1].data * leak
         else:
             gt['gain'].data[..., 0, 1] = 0.0
@@ -833,7 +833,7 @@ def create_unittest_model(vis, model_pol, npixel=None, cellsize=None, nchan=1):
     return model
 
 
-def insert_unittest_errors(vt, seed=180555, calibration_context="TG", amp_errors=None, phase_errors=None):
+def insert_unittest_errors(vt, seed=1805550721, calibration_context="TG", amp_errors=None, phase_errors=None):
     """Simulate gain errors and apply
     
     :param vt:
@@ -854,7 +854,7 @@ def insert_unittest_errors(vt, seed=180555, calibration_context="TG", amp_errors
         gaintable = create_gaintable_from_blockvisibility(vt, timeslice=controls[c]['timeslice'])
         gaintable = simulate_gaintable(gaintable, phase_error=phase_errors[c], amplitude_error=amp_errors[c],
                                        timeslice=controls[c]['timeslice'], phase_only=controls[c]['phase_only'],
-                                       crosspol=controls[c]['shape'] == 'matrix')
+                                       crosspol=controls[c]['shape'] == 'matrix', seed=seed)
         
         vt = apply_gaintable(vt, gaintable, inverse=True, timeslice=controls[c]['timeslice'])
     

@@ -43,27 +43,23 @@ def image_rsexecute_map_workflow(im, imfunction, facets=1, overlap=0, taper=None
 def sum_images_rsexecute(image_list, split=2):
     """ Sum a set of images, using a tree reduction
 
-    :param image_list: List of (image, sum weights) tuples
+    :param image_list: List of images
     :param split: Order of split i.e. 2 is binary
-    :return: graph for summed (image, sumwt)
-
-    For example, to create a list of (dirty image, sumwt) tuples and then sum all::
-
-        rsexecute.set_client(use_dask=True)
-        dirty_list = invert_list_rsexecute_workflow(vis_list,
-            template_model_imagelist=model_list, context='wstack', vis_slices=51)
-        dirty_list = sum_image_rsexecute(dirty_list)
-        dirty, sumwt = rsexecute.compute(dirty_list, sync=True)
+    :return: graph for summed image
 
     """
     def sum_images(imagelist):
-        out = imagelist[0].copy(deep=True)
-        out["pixels"].data += imagelist[1]["pixels"].data
-        return out
-    
+        if len(image_list) == 1:
+            return image_list[0]
+        else:
+            assert len(image_list) > 1, image_list
+            out = imagelist[0].copy(deep=True)
+            out["pixels"].data += imagelist[1]["pixels"].data
+            return out
     if len(image_list) > split:
         centre = len(image_list) // split
-        result = [sum_images_rsexecute(image_list[:centre]), sum_images_rsexecute(image_list[centre:])]
+        result = [sum_images_rsexecute(image_list[:centre]),
+                  sum_images_rsexecute(image_list[centre:])]
         return rsexecute.execute(sum_images, nout=2)(result)
     else:
         return rsexecute.execute(sum_images, nout=2)(image_list)

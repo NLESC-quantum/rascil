@@ -168,7 +168,8 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
                     log.info("deconvolve_cube %s: Skipping pol %d, channel %d" % (prefix, pol, channel))
         
         comp_image = create_image_from_array(comp_array, dirty.image_acc.wcs, dirty.image_acc.polarisation_frame)
-        residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs, dirty.image_acc.polarisation_frame)
+        residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs,
+                                                 dirty.image_acc.polarisation_frame)
     
     elif algorithm == 'msmfsclean' or algorithm == 'mfsmsclean' or algorithm == 'mmclean':
         findpeak = get_parameter(kwargs, "findpeak", 'RASCIL')
@@ -266,7 +267,8 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
                     log.info("deconvolve_cube %s: Skipping pol %d, channel %d" % (prefix, pol, channel))
         
         comp_image = create_image_from_array(comp_array, dirty.image_acc.wcs, dirty.image_acc.polarisation_frame)
-        residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs, dirty.image_acc.polarisation_frame)
+        residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs,
+                                                 dirty.image_acc.polarisation_frame)
     elif algorithm == 'hogbom-complex':
         log.info("deconvolve_cube_complex: Hogbom-complex clean of each channel separately")
         gain = get_parameter(kwargs, 'gain', 0.1)
@@ -337,7 +339,6 @@ def fit_psf(psf: Image, **kwargs):
     :return: fitted PSF, Gaussian2D, size
 
     """
-    assert isinstance(psf, Image), psf
     assert image_is_canonical(psf)
     
     npixel = psf["pixels"].data.shape[3]
@@ -360,26 +361,33 @@ def fit_psf(psf: Image, **kwargs):
         else:
             # Note that the order here is minor, major, pa
             beam_pixels = (fit.x_stddev.value, fit.y_stddev.value, fit.theta.value)
-            log.debug('fit_psf: fitted (pixels, pixels, rad) = {}'.format(beam_pixels))
+            # log.debug('fit_psf: fitted (pixels, pixels, rad) = {}'.format(beam_pixels))
     except minpack.error as err:
         log.warning('fit_psf: minpack error, using 1 pixel stddev')
         beam_pixels = (1.0, 1.0, 0.0)
     except ValueError as err:
         log.warning('fit_psf: warning in fit to psf, using 1 pixel stddev')
         beam_pixels = (1.0, 1.0, 0.0)
-
-    cellsize = 3600.0 * numpy.abs((psf["x"][0].data - psf["x"][-1].data)) / len(psf["x"])
-
-    to_mm = 4.0 * numpy.log(2.0)
     
-    clean_beam = {"bmaj": beam_pixels[1] * cellsize * to_mm,
-                  "bmin": beam_pixels[0] * cellsize * to_mm,
-                  "bpa": numpy.rad2deg(beam_pixels[2])}
-
+    # cellsize in radians
+    cellsize = numpy.abs((psf["x"][0].data - psf["x"][-1].data)) / len(psf["x"])
+    
+    to_mm = 4.0 * numpy.log(2.0)
+    r2a = 180.0 * 3600.0 / numpy.pi
+    
+    if beam_pixels[1] > beam_pixels[0]:
+        clean_beam = {"bmaj": beam_pixels[1] * cellsize * to_mm * r2a,
+                      "bmin": beam_pixels[0] * cellsize * to_mm * r2a,
+                      "bpa": numpy.rad2deg(beam_pixels[2])}
+    else:
+        clean_beam = {"bmaj": beam_pixels[0] * cellsize * to_mm * r2a,
+                      "bmin": beam_pixels[1] * cellsize * to_mm * r2a,
+                      "bpa": numpy.rad2deg(beam_pixels[2]) + 90.0}
+    
     return clean_beam
 
 
-def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
+def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
     """ Restore the model image to the residuals
 
     :params psf: Input PSF
@@ -387,32 +395,35 @@ def restore_cube(model: Image, psf: Image, residual=None, **kwargs) -> Image:
 
     """
     restored = model.copy(deep=True)
-    
-    cellsize = 3600.0 * numpy.abs((psf["x"][0].data - psf["x"][-1].data)) / len(psf["x"])
-    
     clean_beam = get_parameter(kwargs, "cleanbeam", None)
     
     if clean_beam is None:
-        clean_beam = fit_psf(psf)
-        log.info('restore_cube: Using fitted clean beam (asec, asec, deg) = {}'.format(clean_beam))
+        if psf is not None:
+            clean_beam = fit_psf(psf)
+            log.info('restore_cube: Using fitted clean beam (asec, asec, deg) = {}'.format(clean_beam))
+        else:
+            log.error("restore_cube: Either the psf or the cleanbeam must be specified")
     else:
-        log.info('restore_cube: Using specified clean beam  (asec, asec, deg) = {}'.format(clean_beam))
-
+        log.info('restore_cube: Using clean beam  (asec, asec, deg) = {}'.format(clean_beam))
+    
     to_mm = 4.0 * numpy.log(2.0)
-
-    beam_pixels = (clean_beam["bmaj"] / (cellsize * to_mm),
-                   clean_beam["bmin"] / (cellsize * to_mm),
+    r2a = 180.0 * 3600.0 / numpy.pi
+    
+    cellsize = numpy.abs((model["x"][0].data - model["x"][-1].data)) / len(model["x"])
+    
+    beam_pixels = (clean_beam["bmaj"] / (cellsize * to_mm * r2a),
+                   clean_beam["bmin"] / (cellsize * to_mm * r2a),
                    numpy.deg2rad(clean_beam["bpa"]))
     
-    norm = 2.0 * numpy.pi * beam_pixels[0] * beam_pixels[1]
     gk = Gaussian2DKernel(x_stddev=beam_pixels[0], y_stddev=beam_pixels[1], theta=beam_pixels[2])
     # By convention, we normalise the peak not the integral so this is the volume of the Gaussian
-    # norm = 2.0 * numpy.pi * size ** 2
+    norm = 2.0 * numpy.pi * beam_pixels[0] * beam_pixels[1]
     # gk = Gaussian2DKernel(size)
     for chan in range(model["pixels"].shape[0]):
         for pol in range(model["pixels"].shape[1]):
-            restored["pixels"].data[chan, pol, :, :] = norm * convolve_fft(model["pixels"].data[chan, pol, :, :], gk,
-                                                                           normalize_kernel=False, allow_huge=True)
+            restored["pixels"].data[chan, pol, :, :] = \
+                norm * convolve_fft(model["pixels"].data[chan, pol, :, :], gk,
+                             normalize_kernel=False, allow_huge=True)
     if residual is not None:
         restored["pixels"].data += residual["pixels"].data
     

@@ -1044,7 +1044,7 @@ class BlockVisibility(xarray.Dataset):
             "baselines": baselines,
             "frequency": frequency,
             "polarisation": polarisation_frame.names,
-            "uvw_index": ["u", "v", "w"]
+            "spatial": ["u", "v", "w"]
         }
         
         datavars = dict()

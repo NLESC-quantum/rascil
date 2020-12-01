@@ -296,8 +296,9 @@ def griddata_blockvisibility_reweight(vis, griddata, cf, weighting="uniform", ro
     
     elif weighting == "robust":
         # Equation 3.15, 3.16 in Briggs thesis
-        sumlocwt = numpy.sum(real_gd)
+        sumlocwt = numpy.sum(real_gd**2)
         sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight.data)
+        # Larger +ve robustness tends to natural weighting
         f2 = (5.0 * numpy.power(10.0, -robustness))**2 * sumwt / sumlocwt
         for pol in range(nvpol):
             for vchan in range(nvchan):

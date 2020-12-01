@@ -6,7 +6,8 @@ __all__ = ['predict_list_rsexecute_workflow', 'invert_list_rsexecute_workflow', 
            'restore_list_rsexecute_workflow', 'deconvolve_list_rsexecute_workflow',
            'deconvolve_list_channel_rsexecute_workflow', 'weight_list_rsexecute_workflow',
            'taper_list_rsexecute_workflow', 'zero_list_rsexecute_workflow', 'subtract_list_rsexecute_workflow',
-           'sum_invert_results_rsexecute', 'sum_predict_results_rsexecute']
+           'sum_invert_results_rsexecute', 'sum_predict_results_rsexecute',
+           'restore_rsexecute_workflow']
 
 import collections
 import logging
@@ -16,21 +17,22 @@ import numpy
 
 from rascil.data_models.memory_data_models import Image
 from rascil.data_models.parameters import get_parameter
-from rascil.processing_components.griddata import create_griddata_from_image
-from rascil.processing_components.griddata import create_pswf_convolutionfunction
-from rascil.processing_components.griddata import \
+from rascil.processing_components import create_griddata_from_image
+from rascil.processing_components import create_pswf_convolutionfunction
+from rascil.processing_components import \
     grid_blockvisibility_weight_to_griddata, griddata_blockvisibility_reweight, \
-    griddata_merge_weights
-from rascil.processing_components.image import calculate_image_frequency_moments
-from rascil.processing_components.image import deconvolve_cube, restore_cube, create_image_from_array
-from rascil.processing_components.image import image_scatter_facets, image_gather_facets, \
+    griddata_merge_weights, fit_psf, normalize_sumwt
+from rascil.processing_components import calculate_image_frequency_moments
+from rascil.processing_components import deconvolve_cube, restore_cube, create_image_from_array
+from rascil.processing_components import image_scatter_facets, image_gather_facets, \
     image_scatter_channels, image_gather_channels
-from rascil.processing_components.image.operations import create_empty_image_like
-from rascil.processing_components.imaging import taper_visibility_gaussian
+from rascil.processing_components import create_empty_image_like
+from rascil.processing_components import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.workflows.shared.imaging import imaging_context, remove_sumwt, sum_predict_results, \
+from rascil.workflows.shared import imaging_context, remove_sumwt, sum_predict_results, \
     threshold_list, sum_invert_results
+from rascil.workflows.rsexecute.image import sum_images_rsexecute
 
 log = logging.getLogger('rascil-logger')
 
@@ -176,25 +178,64 @@ def restore_list_rsexecute_workflow(model_imagelist, psf_imagelist, residual_ima
     :param kwargs: Parameters for functions in components
     :return: list of restored images (or graph)
     """
-    restore_facets = 1
-
     assert len(model_imagelist) == len(psf_imagelist)
     if residual_imagelist is not None:
         assert len(model_imagelist) == len(residual_imagelist)
     
-    psf_list = rsexecute.execute(remove_sumwt, nout=len(psf_imagelist))(psf_imagelist)
+    psf_list = sum_invert_results_rsexecute(psf_imagelist)
+    psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
+    cleanbeam = rsexecute.execute(fit_psf)(psf)
     
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(residual_imagelist)
-        restored_list = [rsexecute.execute(restore_cube, nout=1)(model_imagelist[i], psf=psf_list[i],
+        restored_list = [rsexecute.execute(restore_cube, nout=1)(model_imagelist[i], cleanbeam=cleanbeam,
                                                                  residual=residual_list[i], **kwargs)
                          for i, _ in enumerate(model_imagelist)]
     else:
-        restored_list = [rsexecute.execute(restore_cube, nout=1)(model_imagelist[i], psf=psf_list[i],
+        restored_list = [rsexecute.execute(restore_cube, nout=1)(model_imagelist[i], cleanbeam=cleanbeam,
                                                                  residual=None, **kwargs)
                          for i, _ in enumerate(model_imagelist)]
     
     return rsexecute.optimize(restored_list)
+
+
+def restore_rsexecute_workflow(model_imagelist, psf_imagelist, residual_imagelist=None, restore_facets=1,
+                                    restore_overlap=0, restore_taper='tukey', **kwargs):
+    """ Create a graph to calculate the restored image
+    
+    This does the following:
+    - Takes the centre frequency slice of the model
+    - Integrates the residual across the band
+    - Fits to the band-integrated PSF
+    - Restores the model, cleanbeam, and residual
+
+    :param model_imagelist: Model list (or graph)
+    :param psf_imagelist: PSF list (or graph)
+    :param residual_imagelist: Residual list (or graph)
+    :param kwargs: Parameters for functions in components
+    :return: list of restored images (or graph)
+    """
+    assert len(model_imagelist) == len(psf_imagelist)
+    if residual_imagelist is not None:
+        assert len(model_imagelist) == len(residual_imagelist)
+    
+    # Find the PSF by summing over all channels, fit to this psf
+    psf = sum_invert_results_rsexecute(psf_imagelist)[0]
+    cleanbeam = rsexecute.execute(fit_psf, nout=1)(psf)
+    
+    # Add the model over all channels
+    centre = len(model_imagelist) // 2
+    model = model_imagelist[centre]
+    
+    if residual_imagelist is not None:
+        residual = sum_invert_results_rsexecute(residual_imagelist)[0]
+        restored = rsexecute.execute(restore_cube, nout=1)(model, residual=residual, cleanbeam=cleanbeam,
+                                                           **kwargs)
+    else:
+        residual = None
+        restored = rsexecute.execute(restore_cube, nout=1)(model, cleanbeam=cleanbeam, **kwargs)
+    
+    return restored
 
 
 def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, prefix='', mask=None, **kwargs):

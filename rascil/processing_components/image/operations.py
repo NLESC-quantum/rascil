@@ -404,7 +404,7 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     assert nmoment <= nchan, "Number of moments %d cannot exceed the number of channels %d" % (nmoment, nchan)
     
     if reference_frequency is None:
-        reference_frequency = numpy.average(freq)
+        reference_frequency = numpy.average(freq.data)
     log.debug("calculate_image_frequency_moments: Reference frequency = %.3f (MHz)" % (reference_frequency / 1e6))
     
     moment_data = numpy.zeros([nmoment, npol, ny, nx])

@@ -244,7 +244,7 @@ class TestCalibrationSolvers(unittest.TestCase):
                         leakage=0.0, residual_tol=1e-8, crosspol=True,
                         phase_only=False, f=[100.0, 50.0])
 
-    @unittest.skip("Cross hands not working")
+    @unittest.skip("Cross hands with polarised source not working")
     def test_solve_gaintable_stokesIQUV_crosspol_both_linear_cross(self):
         self.core_solve('stokesIQUV', 'linear', phase_error=0.1, amplitude_error=0.01,
                         leakage=0.1, residual_tol=1e-6, crosspol=True,
@@ -255,7 +255,7 @@ class TestCalibrationSolvers(unittest.TestCase):
                         leakage=0.0, residual_tol=1e-8, crosspol=True,
                         phase_only=False, f=[100.0, 0.0, 0.0, 50.0])
 
-    @unittest.skip("Cross hands not working")
+    @unittest.skip("Cross hands with polarised source not working")
     def test_solve_gaintable_stokesIQUV_crosspol_both_circular_cross(self):
         self.core_solve('stokesIQUV', 'circular', phase_error=0.1, amplitude_error=0.01,
                         leakage=0.1, residual_tol=1e-6, crosspol=True,

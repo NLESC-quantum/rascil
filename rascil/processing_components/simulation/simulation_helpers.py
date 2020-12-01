@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 import numpy
 from astropy.coordinates import SkyCoord
 
-from rascil.data_models.memory_data_models import Skycomponent, BlockVisibility
+from rascil import phyconst
+from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image import create_image
 from rascil.processing_components.image.operations import show_image
@@ -25,7 +26,6 @@ from rascil.processing_components.skycomponent.operations import apply_beam_to_s
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles, \
     calculate_blockvisibility_azel, calculate_blockvisibility_parallactic_angles
-from rascil import phyconst
 
 log = logging.getLogger('rascil-logger')
 
@@ -72,7 +72,7 @@ def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdis
     plt.clf()
     if colors is None:
         colors = numpy.repeat(['b'], len(vis_list))
-        
+    
     for ivis, vis in enumerate(vis_list):
         if y == 'amp':
             yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis.data[..., 0, 0]).flat
@@ -80,13 +80,14 @@ def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdis
             yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis.data[..., 0, 0]).flat
         xvalue = vis.blockvisibility_acc.uvdist.data.flat
         plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[ivis], markersize=0.2)
-
+    
     plt.xlabel(x)
     plt.ylabel(y)
     plt.title(title)
     if plot_file is not None:
         plt.savefig(plot_file)
     plt.show(block=False)
+
 
 def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', plot_file=None, **kwargs):
     """ Standard plot of visibility
@@ -105,7 +106,7 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
                 yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis.data[..., 0, pol]).flat
             else:
                 yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis.data[..., 0, pol]).flat
-            if x=="time":
+            if x == "time":
                 xvalue = numpy.repeat(vis["time"].data, len(yvalue))
             else:
                 xvalue = vis.blockvisibility_acc.uvdist.data.flat
@@ -114,7 +115,7 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
                          label=pols[pol])
             else:
                 plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[pol])
-
+    
     plt.xlabel(x)
     plt.ylabel(y)
     plt.title(title)
@@ -122,7 +123,6 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
     if plot_file is not None:
         plt.savefig(plot_file)
     plt.show(block=False)
-
 
 
 def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kwargs):
@@ -134,16 +134,20 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
     :return:
     """
     
-    for ivis, vis in enumerate(vis_list):
-        u = numpy.array(vis.blockvisibility_acc.u.data[...].flat)
-        v = numpy.array(vis.blockvisibility_acc.v.data[...].flat)
-        k = (vis["frequency"].data / phyconst.c_m_s)
-        u = numpy.array(numpy.outer(u, k).flat)
-        v = numpy.array(numpy.outer(v, k).flat)
-        plt.plot(u, v, '.', color='b', markersize=0.2)
+    for ivis, ovis in enumerate(vis_list):
+        gvis = ovis.where(ovis["flags"] == 0)
+        bvis = ovis.where(ovis["flags"] > 0)
+        u = numpy.array(gvis.uvw_lambda.sel(spatial='u').data.flat)
+        v = numpy.array(gvis.uvw_lambda.sel(spatial='v').data.flat)
+        plt.plot(u, v, '.', color='b', markersize=0.2, label="Unflagged")
         plt.plot(-u, -v, '.', color='b', markersize=0.2)
+        u = numpy.array(bvis.uvw_lambda.sel(spatial='u').data.flat)
+        v = numpy.array(bvis.uvw_lambda.sel(spatial='v').data.flat)
+        plt.plot(u, v, '.', color='r', markersize=0.2, label="Flagged")
+        plt.plot(-u, -v, '.', color='r', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')
+    plt.legend()
     plt.title(title)
     if plot_file is not None:
         plt.savefig(plot_file)
@@ -168,7 +172,7 @@ def plot_configuration(vis_list, ax=None, plot_file=None, title='Configuration',
                 plt.annotate(name, (antxyz[iant, 0], antxyz[iant, 1]))
         else:
             plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=10.0)
-
+    
     plt.xlabel('X (m)')
     plt.ylabel('Y (m)')
     plt.title(title)
@@ -265,7 +269,7 @@ def plot_pa(bvis_list, plot_file=None, **kwargs):
     :return:
     """
     plt.clf()
-
+    
     for ibvis, bvis in enumerate(bvis_list):
         ha = calculate_blockvisibility_hourangles(bvis).value
         pa = calculate_blockvisibility_parallactic_angles(bvis)
@@ -299,7 +303,7 @@ def plot_gaintable(gt_list, title='', value='amp', plot_file=None, **kwargs):
             recs = [0, 1]
         else:
             recs = [1]
-            
+        
         colors = ['r', 'b']
         for irec, rec in enumerate(recs):
             amp = numpy.abs(gt[0].gain[:, 0, 0, rec, rec])
@@ -501,16 +505,14 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
         from rascil.processing_components.simulation import create_test_skycomponents_from_s3
         
         all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 100.0,
-                                                                phasecentre=phasecentre,
-                                                                polarisation_frame=polarisation_frame,
-                                                                frequency=numpy.array(frequency),
-                                                                radius=pbradius,
-                                                                fov=fov)
+                                                           phasecentre=phasecentre,
+                                                           polarisation_frame=polarisation_frame,
+                                                           frequency=numpy.array(frequency),
+                                                           radius=pbradius,
+                                                           fov=fov)
         original_components = filter_skycomponents_by_flux(all_components, flux_max=flux_max)
         log.info("create_simulation_components: %d components before filtering with primary beam" %
                  (len(original_components)))
-        
-
         
         if filter_by_primary_beam:
             pbmodel = create_image(npixel=pb_npixel,
@@ -588,7 +590,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     original_components = filter_skycomponents_by_flux(all_components, flux_max=flux_max)
     log.info("create_simulation_components: %d components before filtering with primary beam" %
              (len(original_components)))
-
+    
     pbmodel = create_image(npixel=pb_npixel,
                            cellsize=pb_cellsize,
                            phasecentre=phasecentre,
@@ -597,7 +599,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     
     pb = create_pb(pbmodel, pb_type, pointingcentre=phasecentre, use_local=False)
     pb_applied_components = apply_beam_to_skycomponent(original_components, pb)
-
+    
     filtered_components = []
     reference_component = -1
     reference_flux = 0.0
@@ -612,9 +614,9 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
             scomp.flux = iflux
             scomp.polarisation_frame = polarisation_frame
             filtered_components.append(scomp)
-            if scomp.flux[0,0] > reference_flux:
+            if scomp.flux[0, 0] > reference_flux:
                 reference_component = len(filtered_components) - 1
-            
+    
     log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
              (len(filtered_components), flux_limit))
     log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)
@@ -626,4 +628,3 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     log.info("create_simulation_components: Created %d components" % len(filtered_components))
     
     return filtered_components, reference_component
-

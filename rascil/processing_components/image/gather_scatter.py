@@ -141,21 +141,3 @@ def image_gather_channels(image_list: List[Image], im: Image = None, subimages=0
     :return: list of subimages
     """
     return xarray.concat(image_list, dim="frequency")
-    
-    # if im is None:
-    #     nchan = len(image_list)
-    #     _, npol, ny, nx = image_list[0][1]["pixels"].data.shape
-    #     im_shape = nchan, npol, ny, ny
-    #     im = create_image_from_array(numpy.zeros(im_shape,
-    #                                              dtype=image_list[0][1]["pixels"].data.dtype),
-    #                                  image_list[0][1].wcs, image_list[0][1].polarisation_frame)
-    #
-    # assert image_is_canonical(im)
-    #
-    # if subimages == 0:
-    #     subimages = len(image_list)
-    #
-    # for i, slab in enumerate(image_channel_iter(im, subimages=subimages)):
-    #     slab["pixels"].data[...] = image_list[i]["pixels"].data[...]
-    
-    return im

@@ -23,6 +23,10 @@ log.setLevel(logging.WARNING)
 
 class TestSurface(unittest.TestCase):
     def setUp(self):
+    
+        from numpy.random import default_rng
+        self.rng = default_rng(1805550721)
+    
         from rascil.data_models.parameters import rascil_path, rascil_data_path
         self.doplot = True
         
@@ -61,7 +65,7 @@ class TestSurface(unittest.TestCase):
         vp_coeffs = numpy.ones([self.nants, len(key_nolls)+1])
         for inoll, noll in enumerate(key_nolls):
             zernike = {'coeff': 1.0, 'noll': noll}
-            vp_coeffs[:, inoll+1] = numpy.random.normal(0.0, 0.03, self.nants)
+            vp_coeffs[:, inoll+1] = self.rng.normal(0.0, 0.03, self.nants)
             vp_list.append(create_vp_generic_numeric(self.model, pointingcentre=None, diameter=15.0, blockage=0.0,
                                                       taper='gaussian',
                                                       edge=0.03162278, zernikes=[zernike], padding=2, use_local=True))

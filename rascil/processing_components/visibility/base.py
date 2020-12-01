@@ -787,7 +787,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             
             bv_times = numpy.zeros([ntimes])
             bv_vis = numpy.zeros([ntimes, nbaselines, nchan, npol]).astype('complex')
-            bv_flags = numpy.ones([ntimes, nbaselines, nchan, npol]).astype('int')
+            bv_flags = numpy.zeros([ntimes, nbaselines, nchan, npol]).astype('int')
             bv_weight = numpy.zeros([ntimes, nbaselines, nchan, npol])
             bv_imaging_weight = numpy.zeros([ntimes, nbaselines, nchan, npol])
             bv_uvw = numpy.zeros([ntimes, nbaselines, 3])
@@ -798,11 +798,9 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
                 time_index = time_index_row[row]
                 bv_times[time_index] = time[row]
                 bv_vis[time_index, ibaseline, ...] = ms_vis[row, ...]
-                bv_flags[time_index, ibaseline, ...] = ms_flags[row, ...]
-                bv_weight[time_index, ibaseline, :, ...] = ms_weight[
-                    row, numpy.newaxis, ...]
-                bv_imaging_weight[time_index, ibaseline, :, ...] = \
-                    ms_weight[row, numpy.newaxis, ...]
+                bv_flags[time_index, ibaseline, ...][ms_flags[row, ...].astype('bool')] = 1
+                bv_weight[time_index, ibaseline, :, ...] = ms_weight[row, numpy.newaxis, ...]
+                bv_imaging_weight[time_index, ibaseline, :, ...] = ms_weight[row, numpy.newaxis, ...]
                 bv_uvw[time_index, ibaseline, :] = uvw[row, :]
                 bv_integration_time[time_index] = integration_time[row]
             

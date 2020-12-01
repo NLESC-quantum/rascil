@@ -497,6 +497,16 @@ def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list,
     :param basename: Base name for the plots
     :return: (list of error-free gaintables, list of error gaintables) or graph
     """
+
+    from numpy.random import default_rng
+    if seed is None:
+        rng = default_rng(1805550721)
+    else:
+        rng = default_rng(seed)
+
+    # Need one seed per bvis
+    seeds = [rng.integers(low=1, high=2 ** 32 - 1) for bvis in sub_bvis_list]
+
     if global_pointing_error is None:
         global_pointing_error = [0.0, 0.0]
     
@@ -512,14 +522,14 @@ def create_pointing_errors_gaintable_rsexecute_workflow(sub_bvis_list,
             rsexecute.execute(simulate_pointingtable)(pt, pointing_error=pointing_error,
                                                       static_pointing_error=static_pointing_error,
                                                       global_pointing_error=global_pointing_error,
-                                                      seed=seed)
+                                                      seed=seeds[ipt])
             for ipt, pt in enumerate(error_pt_list)]
     else:
         error_pt_list = [rsexecute.execute(simulate_pointingtable_from_timeseries)(pt,
                                                                                    type=time_series,
                                                                                    time_series_type=time_series_type,
                                                                                    pointing_directory=pointing_directory,
-                                                                                   seed=seed)
+                                                                                   seed=seeds[ipt])
                          for ipt, pt in enumerate(error_pt_list)]
     
     if show:

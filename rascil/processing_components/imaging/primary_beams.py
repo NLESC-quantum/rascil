@@ -246,7 +246,8 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
         elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
             pols = [0, 3]
         else:
-            pols = range(npol)
+            raise ValueError("Polarisation frame {}, cannot set all voltage pattern polarisations"
+                             .format(beam.image_acc.polarisation_frame))
   
         reflector = ft_disk(rr * numpy.pi * diameter / wavelength)
         blockage = ft_disk(rr * numpy.pi * blockage / wavelength)

@@ -326,7 +326,7 @@ class TestMIDSimulations(unittest.TestCase):
         args = parser.parse_args([])
         return args
     
-    @unittest.skip("Not deterministic")
+    #@unittest.skip("Pointing calculation in error")
     def test_wind(self):
         
         args = self.get_args()
@@ -335,7 +335,7 @@ class TestMIDSimulations(unittest.TestCase):
         error_dirty, sumwt = self.simulation(args, 'wind_pointing')
         
         qa = qa_image(error_dirty)
-        
+
         numpy.testing.assert_almost_equal(qa.data['max'], 0.00011024929534694913, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['min'], -0.00011024929534694913, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['rms'], 8.356611096276117e-06, 5, err_msg=str(qa))
@@ -355,7 +355,7 @@ class TestMIDSimulations(unittest.TestCase):
         numpy.testing.assert_almost_equal(qa.data['min'],-0.00038496045275951873, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['rms'], 3.728425607449823e-05, 5, err_msg=str(qa))
     
-    @unittest.skip("Not deterministic")
+    @unittest.skip("Pointing calculation in error")
     def test_random(self):
         
         args = self.get_args()
@@ -366,7 +366,7 @@ class TestMIDSimulations(unittest.TestCase):
                                              vis_polarisation_frame=PolarisationFrame("linear"))
 
         qa = qa_image(error_dirty)
-        
+
         numpy.testing.assert_almost_equal(qa.data['max'], 3.5821163782097796e-05, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['min'], -6.485629243186776e-05, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['rms'], 3.7233114793261304e-06, 5, err_msg=str(qa))

@@ -245,6 +245,12 @@ def create_vp_generic(model, pointingcentre=None, diameter=25.0, blockage=1.8, u
             pols = [0, 3]
         elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
             pols = [0, 3]
+        elif beam.image_acc.polarisation_frame == PolarisationFrame("linearnp"):
+            pols = [0, 1]
+        elif beam.image_acc.polarisation_frame == PolarisationFrame("circularnp"):
+            pols = [0, 1]
+        elif beam.image_acc.polarisation_frame == PolarisationFrame("stokesI"):
+            pols = [0]
         else:
             raise ValueError("Polarisation frame {}, cannot set all voltage pattern polarisations"
                              .format(beam.image_acc.polarisation_frame))

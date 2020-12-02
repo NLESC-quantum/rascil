@@ -58,6 +58,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
     # The time in the Visibility is UTC in seconds
     number_bad = 0
     number_good = 0
+    number_singular = 0
     
     r2d = 180.0 / numpy.pi
     # For each hourangle, we need to calculate the location of a component
@@ -66,8 +67,7 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
 
     location = vis.attrs["configuration"].attrs["location"]
     for row, time in enumerate(pt["time"]):
-        time_slice = {"time": slice(time - pt["interval"][row] / 2,
-                                    time + pt.interval[row] / 2)}
+        time_slice = {"time": slice(time - pt["interval"][row] / 2, time + pt.interval[row] / 2)}
         pt_sel = pt.sel(time_slice)
         if len(pt_sel["time"]) > 0:
             pointing_ha = pt_sel["pointing"].data[0, ...]
@@ -90,12 +90,17 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                     elevation_comp = elevation_comp[0].to('rad').value
                     for ant in range(nant):
                         wcs_azel = vp.image_acc.wcs.deepcopy()
-                        az_comp = (azimuth_centre + pointing_ha[ant, 0, 0, 0] / numpy.cos(elevation_centre)) * r2d
-                        el_comp = (elevation_centre + pointing_ha[ant, 0, 0, 1]) * r2d
+                        az_comp = (azimuth_centre + pointing_ha[ant, 0, 0, 0] / numpy.cos(elevation_centre))
+                        el_comp = (elevation_centre + pointing_ha[ant, 0, 0, 1])
+                        if az_comp - azimuth_comp > numpy.pi:
+                            azimuth_comp += 2.0 * numpy.pi
+                        if az_comp - azimuth_comp < -numpy.pi:
+                            azimuth_comp -= 2.0 * numpy.pi
+
                         
                         # We use WCS sensible coordinate handling by labelling the axes misleadingly
-                        wcs_azel.wcs.crval[0] = az_comp
-                        wcs_azel.wcs.crval[1] = el_comp
+                        wcs_azel.wcs.crval[0] = az_comp * r2d
+                        wcs_azel.wcs.crval[1] = el_comp * r2d
                         wcs_azel.wcs.ctype[0] = 'RA---SIN'
                         wcs_azel.wcs.ctype[1] = 'DEC--SIN'
                         
@@ -124,24 +129,31 @@ def simulate_gaintable_from_pointingtable(vis, sc, pt, vp, vis_slices=None, scal
                                 else:
                                     raise ValueError("Illegal number of receptors: {}".format(nrec))
                                 number_good += 1
-                        except (ValueError, AssertionError, IndexError, numpy.linalg.LinAlgError):
+                        except (ValueError, AssertionError, IndexError):
                             number_bad += 1
-                            antgain[ant, :, :] = 1.0
-                           
+                            antgain[ant, :, :] = 0.0
+                        except (numpy.linalg.LinAlgError):
+                            number_singular += 1
+                            antgain[ant, :, :] = 0.0
+
                         gt_sel["gain"].data[:, :, :, :] = antgain[:, :, :].reshape([nant, gnchan, nrec, nrec])
                         gt_sel.attrs["phasecentre"] = comp.direction
                 else:
                     gt_sel["gain"].data[...] = 1.0 + 0.0j
                     gt_sel.attrs["phasecentre"] = comp.direction
                     number_bad += nant
-
-    assert number_good > 0, "simulate_gaintable_from_pointingtable: No points inside the voltage pattern image"
+        else:
+            log.warning("Zero length pointing interval")
+            
     if number_bad > 0:
         log.warning(
-            "simulate_gaintable_from_pointingtable: %d points are inside the voltage pattern image" % (number_good))
+            "simulate_gaintable_from_pointingtable: %d points inside the voltage pattern image" % (number_good))
         log.warning(
-            "simulate_gaintable_from_pointingtable: %d points are outside the voltage pattern image" % (number_bad))
-    
+            "simulate_gaintable_from_pointingtable: %d points outside the voltage pattern image will be ignored"
+            % (number_bad))
+    if number_singular > 0:
+        log.warning("simulate_gaintable_from_pointingtable: %d points have singular gain" % (number_singular))
+
     return gaintables
 
 
@@ -163,7 +175,7 @@ def simulate_pointingtable(pt: PointingTable, pointing_error, static_pointing_er
         rng = default_rng(1805550721)
     else:
         rng = default_rng(seed)
-
+        
     if static_pointing_error is None:
         static_pointing_error = [0.0, 0.0]
     

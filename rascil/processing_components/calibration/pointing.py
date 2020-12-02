@@ -39,24 +39,15 @@ def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_fra
     :return: PointingTable
     
     """
-    ##assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
-    
     nants = vis.blockvisibility_acc.nants
     
     if timeslice is None or timeslice == 'auto':
         utimes = numpy.unique(vis.time)
-        ntimes = len(utimes)
-        pointing_interval = numpy.zeros([ntimes])
-        if ntimes > 1:
-            pointing_interval[:-1] = utimes[1:] - utimes[0:-1]
-            pointing_interval[-1] = utimes[-1] - utimes[-2]
-        else:
-            pointing_interval[...] = 1.0
-    
+        pointing_interval = vis.integration_time
     else:
-        ntimes = numpy.ceil((numpy.max(vis.time) - numpy.min(vis.time)) / timeslice).astype('int')
-        utimes = numpy.linspace(numpy.min(vis.time), numpy.max(vis.time), ntimes)
-        pointing_interval = timeslice * numpy.ones([ntimes])
+        utimes = vis.time.data[0] + timeslice * numpy.unique(numpy.round((vis.time.data - vis.time.data[0]) / timeslice))
+        pointing_interval = timeslice * numpy.ones_like(utimes)
+    
     
     #    log.debug('create_pointingtable_from_blockvisibility: times are %s' % str(utimes))
     #    log.debug('create_pointingtable_from_blockvisibility: intervals are %s' % str(pointing_interval))
@@ -94,8 +85,6 @@ def create_pointingtable_from_blockvisibility(vis: BlockVisibility, pointing_fra
                        time=pointing_time, interval=pointing_interval, weight=pointing_weight,
                        residual=pointing_residual, frequency=pointing_frequency, receptor_frame=receptor_frame,
                        pointing_frame=pointing_frame, pointingcentre=vis.phasecentre, configuration=vis.configuration)
-    
-    ##assert isinstance(pt, PointingTable), "pt is not a PointingTable: %r" % pt
     
     return pt
 

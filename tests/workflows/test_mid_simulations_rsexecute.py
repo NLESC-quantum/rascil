@@ -337,18 +337,18 @@ class TestMIDSimulations(unittest.TestCase):
         qa = qa_image(error_dirty)
 
         # shape: '(1, 4, 1024, 1024)'
-        # max: '4.706122122337443e-06'
-        # min: '-4.206237563416747e-06'
-        # maxabs: '4.706122122337443e-06'
-        # rms: '3.1718001852407876e-07'
-        # sum: '0.0002053825257679064'
+        # max: '0.0002463188957351486'
+        # min: '-0.00044142488572784577'
+        # maxabs: '0.00044142488572784577'
+        # rms: '1.8021367426909772e-05'
+        # sum: '0.01721111235515721'
         # medianabs: '0.0'
         # medianabsdevmedian: '0.0'
         # median: '0.0'
 
-        numpy.testing.assert_almost_equal(qa.data['max'], 4.706122122337443e-06, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -4.206237563416747e-06, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 3.1718001852407876e-07, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.0002463188957351486, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.00044142488572784577, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 1.8021367426909772e-05, 5, err_msg=str(qa))
     
     def test_heterogeneous(self):
         

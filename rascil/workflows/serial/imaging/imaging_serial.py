@@ -34,8 +34,7 @@ from rascil.processing_components import fit_psf
 log = logging.getLogger('rascil-logger')
 
 
-def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=1, facets=1,
-                                 gcfcf=None, **kwargs):
+def predict_list_serial_workflow(vis_list, model_imagelist, context='ng', gcfcf=None, **kwargs):
     """Predict, iterating over both the scattered vis_list and image
 
     The visibility and image are scattered, the visibility is predicted on each part, and then the
@@ -43,8 +42,6 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=
 
     :param vis_list: list of vis
     :param model_imagelist: Model used to determine image parameters
-    :param vis_slices: Number of vis slices (w stack or timeslice)
-    :param facets: Number of facets (per axis)
     :param context: Type of processing e.g. 2d, wstack, timeslice or facets
     :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
@@ -74,8 +71,8 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context, vis_slices=
     return predict_results
 
 
-def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False, normalize=True,
-                                context='2d', gcfcf=None, **kwargs):
+def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False, normalize=True, context='ng',
+                                gcfcf=None, **kwargs):
     """ Sum results from invert, iterating over the scattered image and vis_list
 
     :param vis_list: list of vis
@@ -137,11 +134,9 @@ def residual_list_serial_workflow(vis, model_imagelist, context='2d', gcfcf=None
     :return: list of (image, sumwt) tuples
     """
     model_vis = zero_list_serial_workflow(vis)
-    model_vis = predict_list_serial_workflow(model_vis, model_imagelist, context=context,
-                                             gcfcf=gcfcf, **kwargs)
+    model_vis = predict_list_serial_workflow(model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs)
     residual_vis = subtract_list_serial_workflow(vis, model_vis)
-    result = invert_list_serial_workflow(residual_vis, model_imagelist, dopsf=False, normalize=True,
-                                         context=context,
+    result = invert_list_serial_workflow(residual_vis, model_imagelist, dopsf=False, normalize=True, context=context,
                                          gcfcf=gcfcf, **kwargs)
     return result
 
@@ -376,7 +371,7 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
                 agd = create_griddata_from_image(model,
                                                  polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
                 agd['pixels'].data = gd[0]['pixels'].data
-                vis = griddata_blockvisibility_reweight(vis, agd, g[0][1])
+                vis = griddata_blockvisibility_reweight(vis, agd, g[0][1], weighting=weighting)
                 return vis
             else:
                 return None

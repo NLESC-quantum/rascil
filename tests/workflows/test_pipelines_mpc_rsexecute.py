@@ -83,7 +83,7 @@ class TestPipelineMPC(unittest.TestCase):
 
         blockvis = create_blockvisibility(low, times, frequency=frequency, channel_bandwidth=channel_bandwidth,
                                           weight=1.0, phasecentre=phasecentre,
-                                          polarisation_frame=PolarisationFrame("stokesI"), zerow=True)
+                                          polarisation_frame=PolarisationFrame("stokesI"))
 
         advice = advise_wide_field(blockvis, guard_band_image=2.0, delA=0.02)
 

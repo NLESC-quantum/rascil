@@ -28,14 +28,12 @@ from rascil.workflows.shared.imaging import remove_sumwt
 log = logging.getLogger('rascil-logger')
 
 
-def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis_slices=1, facets=1,
-                                             gcfcf=None, docal=False, **kwargs):
+def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng', gcfcf=None,
+                                             docal=False, **kwargs):
     """Predict from a list of skymodels, producing one visibility per skymodel
 
     :param obsvis: "Observed Block Visibility"
     :param skymodel_list: skymodel list
-    :param vis_slices: Number of vis slices (w stack or timeslice)
-    :param facets: Number of facets (per axis)
     :param context: Type of processing e.g. 2d, wstack, timeslice or facets
     :param gcfcg: tuple containing grid correction and convolution function
     :param docal: Apply calibration table in skymodel
@@ -69,13 +67,9 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis
                 if sm.mask is not None:
                     model = sm.image.copy(deep=True)
                     model["pixels"].data *= sm.mask["pixels"].data
-                    imgv = predict_list_serial_workflow([imgv], [model], context=context,
-                                                     vis_slices=vis_slices, facets=facets, gcfcf=[g],
-                                                     **kwargs)[0]
+                    imgv = predict_list_serial_workflow([imgv], [model], context=context, gcfcf=[g], **kwargs)[0]
                 else:
-                    imgv = predict_list_serial_workflow([imgv], [sm.image], context=context,
-                                                     vis_slices=vis_slices, facets=facets, gcfcf=[g],
-                                                     **kwargs)[0]
+                    imgv = predict_list_serial_workflow([imgv], [sm.image], context=context, gcfcf=[g], **kwargs)[0]
                 v['vis'].data += imgv['vis'].data
         
         if docal and sm.gaintable is not None:
@@ -135,7 +129,7 @@ def predict_skymodel_list_compsonly_rsexecute_workflow(obsvis, skymodel_list, do
     return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm) for sm in skymodel_list]
 
 
-def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vis_slices=1, facets=1,
+def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context='ng',
                                             gcfcf=None, docal=False, **kwargs):
     """Calibrate and invert from a skymodel, iterating over the skymodel
 
@@ -144,9 +138,6 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vi
 
     :param vis_list: List of Visibility data models
     :param skymodel_list: skymodel list
-    :param vis_slices: Number of vis slices (w stack or timeslice)
-    :param facets: Number of facets (per axis)
-    :param context: Type of processing e.g. 2d, wstack, timeslice or facets
     :param gcfcg: tuple containing grid correction and convolution function
     :param docal: Apply calibration table in skymodel
     :param kwargs: Parameters for functions in components
@@ -164,8 +155,7 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context, vi
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
             
-        result = invert_list_serial_workflow([v], [sm.image], context=context,
-                                             vis_slices=vis_slices, facets=facets, gcfcf=[g],
+        result = invert_list_serial_workflow([v], [sm.image], context=context, gcfcf=[g],
                                              **kwargs)[0]
         if sm.mask is not None:
             result[0]["pixels"].data *= sm.mask["pixels"].data
@@ -278,16 +268,13 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
     return rsexecute.execute(vsum, nout=len(modelvis_list))(obsvis, modelvis_list)
 
 
-def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vis_slices=1, facets=1,
-                                              gcfcf=None, **kwargs):
+def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng', gcfcf=None, **kwargs):
     """Form residual image from observed visibility and a set of skymodel without calibration
 
     This is similar to convolving the skymodel images with the PSF
 
     :param vis_list: List of BlockVisibility data models
     :param skymodel_list: skymodel list
-    :param vis_slices: Number of vis slices (w stack or timeslice)
-    :param facets: Number of facets (per axis)
     :param context: Type of processing e.g. 2d, wstack, timeslice or facets
     :param gcfcg: tuple containing grid correction and convolution function
     :param docal: Apply calibration table in skymodel
@@ -323,13 +310,9 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context, vi
                     model["pixels"].data *= sm.mask["pixels"].data
                 else:
                     model = sm.image
-                v = predict_list_serial_workflow([v], [model], context=context,
-                                                 vis_slices=vis_slices, facets=facets, gcfcf=[g],
-                                                 **kwargs)[0]
+                v = predict_list_serial_workflow([v], [model], context=context, gcfcf=[g], **kwargs)[0]
         
-        result = invert_list_serial_workflow([v], [sm.image], context=context,
-                                             vis_slices=vis_slices, facets=facets, gcfcf=[g],
-                                             **kwargs)[0]
+        result = invert_list_serial_workflow([v], [sm.image], context=context, gcfcf=[g], **kwargs)[0]
         if sm.mask is not None:
             result[0]["pixels"].data *= sm.mask["pixels"].data
         return result
@@ -357,18 +340,15 @@ def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d'
     
     if skymodel_list is not None:
         # skymodel_list = rsexecute.scatter(skymodel_list)
-        model_vis = predict_skymodel_list_rsexecute_workflow(model_vis, skymodel_list,
-                                                             context=context,
-                                                             gcfcf=gcfcf, docal=True, **kwargs)
+        model_vis = predict_skymodel_list_rsexecute_workflow(model_vis, skymodel_list, context=context, gcfcf=gcfcf,
+                                                             docal=True, **kwargs)
     else:
         model_vis = predict_list_rsexecute_workflow(model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs)
     residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
     
     if skymodel_list is not None:
-        result = invert_skymodel_list_rsexecute_workflow(residual_vis, skymodel_list,
-                                                         context=context, dopsf=False, docal=True,
-                                                         gcfcf=gcfcf,
-                                                         **kwargs)
+        result = invert_skymodel_list_rsexecute_workflow(residual_vis, skymodel_list, gcfcf=gcfcf, docal=True,
+                                                         dopsf=False, **kwargs)
     else:
         result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, context=context, dopsf=False,
                                                 normalize=True, gcfcf=gcfcf, **kwargs)

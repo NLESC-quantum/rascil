@@ -279,12 +279,10 @@ def trial_case(results, seed=180555, context='timeslice', nworkers=8, threads_pe
     
     # We use predict_skymodel so that we can use skycomponents as well as images
     lprint("****** Starting GLEAM skymodel prediction ******")
-    predicted_bvis_list = [predict_skymodel_list_rsexecute_workflow(future_bvis_list[f],
-                                                                    [future_skymodel_list[f]],
-                                                                    context=context,
-                                                                    vis_slices=vis_slices, facets=facets,
-                                                                    gcfcf=gcfcf)[0]
-                          for f, freq in enumerate(frequency)]
+    predicted_bvis_list = [
+        predict_skymodel_list_rsexecute_workflow(future_bvis_list[f], [future_skymodel_list[f]], context=context,
+                                                 gcfcf=gcfcf)[0]
+        for f, freq in enumerate(frequency)]
     
     # Corrupt the visibility for the GLEAM model
     lprint("****** Visibility corruption ******")

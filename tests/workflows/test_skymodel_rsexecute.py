@@ -80,7 +80,7 @@ class TestSkyModel(unittest.TestCase):
         self.vis_list = rsexecute.compute(self.vis_list)
     
     def test_predict(self):
-        self.actualSetUp(zerow=True)
+        self.actualSetUp()
 
         self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
                               (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
@@ -97,14 +97,13 @@ class TestSkyModel(unittest.TestCase):
         assert numpy.max(numpy.abs(self.skymodel_list[0].image["pixels"].data)) > 0.0, "Image is empty"
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
-        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0],
-                                                                     self.skymodel_list, context='2d')
+        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='ng')
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
 
 
     def test_predict_nocomponents(self):
-        self.actualSetUp(zerow=True)
+        self.actualSetUp()
 
         self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
                               (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
@@ -123,13 +122,13 @@ class TestSkyModel(unittest.TestCase):
         assert numpy.max(numpy.abs(self.skymodel_list[0].image["pixels"].data)) > 0.0, "Image is empty"
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
-        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='2d')
+        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='ng')
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
 
 
     def test_predict_noimage(self):
-        self.actualSetUp(zerow=True)
+        self.actualSetUp()
 
         self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
                               (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
@@ -147,7 +146,7 @@ class TestSkyModel(unittest.TestCase):
         assert len(self.skymodel_list[0].components) == 11, len(self.skymodel_list[0].components)
 
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
-        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='2d')
+        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='ng')
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
 

@@ -41,16 +41,15 @@ def mpccal_skymodel_list_rsexecute_workflow(visobs, model, theta_list, nmajor=10
 
     for iteration in range(nmajor):
         # The E step of decoupling the data models
-        vdatamodel_list = predict_skymodel_list_rsexecute_workflow(visobs, theta_list, context=context,
-                                                                   docal=True, **kwargs)
+        vdatamodel_list = predict_skymodel_list_rsexecute_workflow(visobs, theta_list, context=context, docal=True,
+                                                                   **kwargs)
         vdatamodel_list = crosssubtract_datamodels_skymodel_list_rsexecute_workflow(visobs, vdatamodel_list)
 
         # The M step: 1 - Update the models by deconvolving the residual image. The residual image must be calculated
         # from a difference of the dirty images from the data model, and the dirty images
-        dirty_all_conv = convolve_skymodel_list_rsexecute_workflow(visobs, theta_list, context=context,
-                                                                   docal=True, **kwargs)
-        dirty_all_cal = invert_skymodel_list_rsexecute_workflow(vdatamodel_list, theta_list, context=context,
-                                                                docal=True, **kwargs)
+        dirty_all_conv = convolve_skymodel_list_rsexecute_workflow(visobs, theta_list, context=context, docal=True,
+                                                                   **kwargs)
+        dirty_all_cal = invert_skymodel_list_rsexecute_workflow(vdatamodel_list, theta_list, docal=True, **kwargs)
 
         def diff_dirty(dcal, dconv):
             assert numpy.max(numpy.abs(dcal[0]["pixels"].data)) > 0.0, "before: dcal subimage is zero"
@@ -84,8 +83,8 @@ def mpccal_skymodel_list_rsexecute_workflow(visobs, model, theta_list, nmajor=10
                                                          [model], **kwargs)
 
         # The M step: 2 - Update the gaintables
-        vpredicted_list = predict_skymodel_list_rsexecute_workflow(visobs, theta_list, context=context,
-                                                                   docal=True, **kwargs)
+        vpredicted_list = predict_skymodel_list_rsexecute_workflow(visobs, theta_list, context=context, docal=True,
+                                                                   **kwargs)
         vcalibrated_list, gaintable_list = calibrate_list_rsexecute_workflow(vdatamodel_list, vpredicted_list,
                                                                              calibration_context='T',
                                                                              iteration=iteration, global_solution=False,

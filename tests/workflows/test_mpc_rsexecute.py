@@ -106,8 +106,8 @@ class TestMPC(unittest.TestCase):
         
         future_vis = rsexecute.scatter(self.blockvis_list[0])
         future_skymodel = rsexecute.scatter(self.skymodel_list)
-        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel,
-                                                                     context='2d', docal=True)
+        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel, context='2d',
+                                                                    docal=True)
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         # for i, v in enumerate(skymodel_vislist):
         #     print(i, numpy.max(numpy.abs(v.vis)))
@@ -128,16 +128,15 @@ class TestMPC(unittest.TestCase):
         
         future_vis = rsexecute.scatter(self.blockvis_list[0])
         future_skymodel = rsexecute.scatter(self.skymodel_list)
-        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel,
-                                                                    context='2d', docal=True)
+        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel, context='2d',
+                                                                    docal=True)
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         
         result_skymodel = [SkyModel(components=None, image=self.skymodel_list[-1].image)
                            for v in skymodel_vislist]
         
         self.blockvis_list = rsexecute.scatter(self.blockvis_list)
-        result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel,
-                                                                   context='2d', docal=True)
+        result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel, docal=True)
         results = rsexecute.compute(result_skymodel, sync=True)
         assert numpy.max(numpy.abs(results[0][0]["pixels"].data)) > 0.0
         assert numpy.max(numpy.abs(results[0][1])) > 0.0
@@ -152,8 +151,8 @@ class TestMPC(unittest.TestCase):
         
         future_vis = rsexecute.scatter(self.blockvis_list[0])
         future_skymodel_list = rsexecute.scatter(self.skymodel_list)
-        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel_list,
-                                                                    context='2d', docal=True)
+        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(future_vis, future_skymodel_list, context='2d',
+                                                                    docal=True)
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         vobs = sum_predict_results(skymodel_vislist)
         
@@ -166,8 +165,7 @@ class TestMPC(unittest.TestCase):
                            for v in skymodel_vislist]
         
         self.blockvis_list = rsexecute.scatter(self.blockvis_list)
-        result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel,
-                                                                   context='2d', docal=True)
+        result_skymodel = invert_skymodel_list_rsexecute_workflow(skymodel_vislist, result_skymodel, docal=True)
         results = rsexecute.compute(result_skymodel, sync=True)
         assert numpy.max(numpy.abs(results[0][0]["pixels"].data)) > 0.0
         assert numpy.max(numpy.abs(results[0][1])) > 0.0

@@ -331,14 +331,14 @@ def simulation(args):
     # SkyModels. We want to add these across SkyModels and then concatenate BlockVis
     error_bvis_list = [rsexecute.execute(copy_visibility)(bvis, zero=True) for bvis in bvis_list]
     error_bvis_list = \
-        [sum_predict_results_rsexecute(predict_skymodel_list_rsexecute_workflow(bvis, error_sm_list[ibvis],
-                                                                                docal=True, context='2d'))
+        [sum_predict_results_rsexecute(
+            predict_skymodel_list_rsexecute_workflow(bvis, error_sm_list[ibvis], context='2d', docal=True))
          for ibvis, bvis in enumerate(error_bvis_list)]
     
     no_error_bvis_list = [rsexecute.execute(copy_visibility)(bvis, zero=True) for bvis in bvis_list]
     no_error_bvis_list = \
-        [sum_predict_results_rsexecute(predict_skymodel_list_rsexecute_workflow(bvis, no_error_sm_list[ibvis],
-                                                                                docal=True, context='2d'))
+        [sum_predict_results_rsexecute(
+            predict_skymodel_list_rsexecute_workflow(bvis, no_error_sm_list[ibvis], context='2d', docal=True))
          for ibvis, bvis in enumerate(no_error_bvis_list)]
     
     def concat_write(bvis, state):

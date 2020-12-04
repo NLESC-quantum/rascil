@@ -33,14 +33,6 @@ log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 log.addHandler(logging.StreamHandler(sys.stderr))
 
-try:
-    import nifty_gridder
-    
-    run_ng_tests = True
-except ImportError:
-    run_ng_tests = False
-
-
 class TestImaging(unittest.TestCase):
     def setUp(self):
         
@@ -138,15 +130,15 @@ class TestImaging(unittest.TestCase):
         self.components = self.components_list[centre]
         
         if makegcfcf:
-            self.gcfcf = [create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
+            self.gcfcf = create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
                                                             oversampling=4,
                                                             support=100,
                                                             use_aaf=True,
-                                                            polarisation_frame=self.vis_pol)]
+                                                            polarisation_frame=self.vis_pol)
             
-            self.gcfcf_clipped = [(self.gcfcf[0][0],
-                                   apply_bounding_box_convolutionfunction(self.gcfcf[0][1],
-                                                                          fractional_level=1e-3))]
+            self.gcfcf_clipped = (self.gcfcf[0],
+                                   apply_bounding_box_convolutionfunction(self.gcfcf[1],
+                                                                          fractional_level=1e-3))
                 
         else:
             self.gcfcf = None
@@ -210,7 +202,6 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp(zerow=True)
         self._predict_base(context='2d', fluxthreshold=3.0)
     
-    @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_predict_ng(self):
         self.actualSetUp()
         self._predict_base(context='ng', fluxthreshold=0.62)
@@ -248,7 +239,6 @@ class TestImaging(unittest.TestCase):
         self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list)
         self._invert_base(context='2d', extra='_uniform', positionthreshold=2.0, check_components=False)
     
-    @unittest.skipUnless(run_ng_tests, "requires the nifty_gridder module")
     def test_invert_ng(self):
         self.actualSetUp()
         self._invert_base(context='ng', positionthreshold=2.0, check_components=True)

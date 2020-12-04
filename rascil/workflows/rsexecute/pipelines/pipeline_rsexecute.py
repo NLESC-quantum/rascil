@@ -37,9 +37,6 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
     
     gt_list = list()
     
-    if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(model_imagelist[0])]
-    
     psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True, gcfcf=gcfcf,
                                                    **kwargs)
     
@@ -57,7 +54,7 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
                                                                   gcfcf=gcfcf, vis_slices=vis_slices, **kwargs)
         cal_vis_list, gt_list = calibrate_list_rsexecute_workflow(cal_vis_list,
                                                                   predicted_model_vislist,
-                                                                  gt_list,
+                                                                  gt_list=gt_list,
                                                                   calibration_context=calibration_context, **kwargs)
         
         def zero_model_image(im):
@@ -128,11 +125,6 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
     :param kwargs: Parameters for functions in components
     :return:
     """
-    if gcfcf is None:
-        def make_gcfcf(m, v):
-            return create_pswf_convolutionfunction(m, polarisation_frame=v.blockvisibility_acc.polarisation_frame)
-        gcfcf = [rsexecute.execute(make_gcfcf)(model_imagelist[0], vis_list[0])]
-    
     psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context, dopsf=True,
                                                    gcfcf=gcfcf,
                                                    **kwargs)

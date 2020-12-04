@@ -201,9 +201,9 @@ def invert_ng(bvis: BlockVisibility, model: Image, dopsf: bool = False,
     
     if mfs:
         for pol in range(npol):
-            lms = mst[pol, :, :].T
+            lms = numpy.ascontiguousarray(mst[pol, :, :].T)
             if numpy.max(numpy.abs(lms)) > 0.0:
-                lwt = wgtt[pol, :, :].T
+                lwt = numpy.ascontiguousarray(wgtt[pol, :, :].T)
                 dirty = ng.ms2dirty(fuvw,
                                     bvis.frequency.data,
                                     lms,
@@ -218,9 +218,9 @@ def invert_ng(bvis: BlockVisibility, model: Image, dopsf: bool = False,
             for vchan in range(vnchan):
                 ichan = vis_to_im[vchan]
                 frequency = numpy.array(freq[vchan:vchan + 1]).astype(numpy.float64)
-                lms = mst[pol, vchan, :, numpy.newaxis]
+                lms = numpy.ascontiguousarray(mst[pol, vchan, :, numpy.newaxis])
                 if numpy.max(numpy.abs(lms)) > 0.0:
-                    lwt = wgtt[pol, vchan, :, numpy.newaxis]
+                    lwt = numpy.ascontiguousarray(wgtt[pol, vchan, :, numpy.newaxis])
                     dirty = ng.ms2dirty(fuvw,
                                         frequency,
                                         lms, lwt,

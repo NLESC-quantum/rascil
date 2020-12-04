@@ -42,8 +42,6 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
    """
     
     def ft_cal_sm(ov, sm, g):
-        #assert isinstance(ov, BlockVisibility), ov
-        #assert isinstance(sm, SkyModel), sm
         if g is not None:
             assert len(g) == 2, g
             #assert isinstance(g[0], Image), g[0]

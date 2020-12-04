@@ -55,11 +55,7 @@ def predict_list_serial_workflow(vis_list, model_imagelist, context='ng', gcfcf=
     
     c = imaging_context(context)
     predict = c['predict']
-    
-    if gcfcf is None:
-        gcfcf = [create_pswf_convolutionfunction(m, polarisation_frame=vis_list[i].blockvisibility_acc.polarisation_frame)
-                 for i, m in enumerate(model_imagelist)]
-    
+
     # Loop over all windows
     if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
         predict_results = [predict(vis, model_imagelist[ivis], gcfcf=gcfcf[ivis], **kwargs)
@@ -103,11 +99,6 @@ def invert_list_serial_workflow(vis_list, template_model_imagelist, dopsf=False,
     
     c = imaging_context(context)
     invert = c['invert']
-    
-    if gcfcf is None:
-        assert len(template_model_imagelist) > 0
-        gcfcf = [create_pswf_convolutionfunction(template_model_imagelist[0],
-                                                 polarisation_frame=vis_list[0].polarisation_frame)]
 
     assert len(template_model_imagelist) == len(vis_list)
     if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
@@ -352,7 +343,7 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
             if model is not None:
                 griddata = create_griddata_from_image(model,
                                                       polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
-                griddata = grid_blockvisibility_weight_to_griddata(vis, griddata, g[0][1])
+                griddata = grid_blockvisibility_weight_to_griddata(vis, griddata)
                 return griddata
             else:
                 return None
@@ -371,7 +362,7 @@ def weight_list_serial_workflow(vis_list, model_imagelist, gcfcf=None, weighting
                 agd = create_griddata_from_image(model,
                                                  polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
                 agd['pixels'].data = gd[0]['pixels'].data
-                vis = griddata_blockvisibility_reweight(vis, agd, g[0][1], weighting=weighting)
+                vis = griddata_blockvisibility_reweight(vis, agd, weighting=weighting)
                 return vis
             else:
                 return None

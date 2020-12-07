@@ -8,3 +8,4 @@ from .imaging import *
 from .pipelines import *
 from .simulation import *
 from .skymodel import *
+from .visibility import *

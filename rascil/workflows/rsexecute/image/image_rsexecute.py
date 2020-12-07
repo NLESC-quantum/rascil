@@ -1,10 +1,10 @@
 
-__all__ = ['image_rsexecute_map_workflow', 'sum_images_rsexecute']
+__all__ = ['image_rsexecute_map_workflow', 'sum_images_rsexecute', 'image_gather_channels_rsexecute']
 
 import logging
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.processing_components.image import image_scatter_facets, image_gather_facets
+from rascil.processing_components.image import image_scatter_facets, image_gather_facets, image_gather_channels
 
 log = logging.getLogger('rascil-logger')
 
@@ -63,3 +63,25 @@ def sum_images_rsexecute(image_list, split=2):
         return rsexecute.execute(sum_images, nout=2)(result)
     else:
         return rsexecute.execute(sum_images, nout=2)(image_list)
+
+def image_gather_channels_rsexecute(image_list, split=2):
+    """ Gather a set of images in frequency, using a tree reduction
+
+    :param image_list: List of images
+    :param split: Order of split i.e. 2 is binary
+    :return: graph for summed image
+
+    """
+    def concat_images(image_list):
+        if len(image_list) == 1:
+            return image_list[0]
+        else:
+            assert len(image_list) > 1, image_list
+            return image_gather_channels(image_list)
+    if len(image_list) > split:
+        centre = len(image_list) // split
+        result = [image_gather_channels_rsexecute(image_list[:centre], split=split),
+                  image_gather_channels_rsexecute(image_list[centre:], split=split)]
+        return rsexecute.execute(concat_images, nout=2)(result)
+    else:
+        return rsexecute.execute(concat_images, nout=2)(image_list)

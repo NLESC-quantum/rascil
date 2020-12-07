@@ -49,10 +49,6 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
         sm.image = copy.deepcopy(dcm)
         return sm
     
-    # Make wkernels
-    if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)(m) for m in model_imagelist]
-    
     # Create PSFs
     psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context=context,
                                                    dopsf=True, gcfcf=gcfcf,

@@ -277,10 +277,10 @@ class TestGridDataGridding(unittest.TestCase):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
         gd = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
-        gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)]
+        gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd) for i in range(10)]
         assert numpy.max(numpy.abs(gd_list[0][0]["pixels"].data)) > 10.0
-        gd, sumwt = griddata_merge_weights(gd_list, algorithm='uniform')
-        self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
+        gd, sumwt = griddata_merge_weights(gd_list)
+        self.vis = griddata_blockvisibility_reweight(self.vis, gd)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf, gcf)
         cim = normalize_sumwt(cim, sumwt)
@@ -293,10 +293,10 @@ class TestGridDataGridding(unittest.TestCase):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesI"))
         gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
         gd = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
-        gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)]
+        gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd) for i in range(10)]
         assert numpy.max(numpy.abs(gd_list[0][0]["pixels"].data)) > 10.0
-        gd, sumwt = griddata_merge_weights(gd_list, algorithm='uniform')
-        self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
+        gd, sumwt = griddata_merge_weights(gd_list)
+        self.vis = griddata_blockvisibility_reweight(self.vis, gd)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf, gcf)
         cim = normalize_sumwt(cim, sumwt)
@@ -309,10 +309,10 @@ class TestGridDataGridding(unittest.TestCase):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQ"))
         gcf, cf = create_pswf_convolutionfunction(self.model, polarisation_frame=self.vis_pol)
         gd = create_griddata_from_image(self.model, polarisation_frame=self.vis_pol)
-        gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd, cf) for i in range(10)]
+        gd_list = [grid_blockvisibility_weight_to_griddata(self.vis, gd) for i in range(10)]
         assert numpy.max(numpy.abs(gd_list[0][0]["pixels"].data)) > 10.0
-        gd, sumwt = griddata_merge_weights(gd_list, algorithm='uniform')
-        self.vis = griddata_blockvisibility_reweight(self.vis, gd, cf)
+        gd, sumwt = griddata_merge_weights(gd_list)
+        self.vis = griddata_blockvisibility_reweight(self.vis, gd)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf, gcf)
         cim = normalize_sumwt(cim, sumwt)

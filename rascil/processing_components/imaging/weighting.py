@@ -28,7 +28,7 @@ from rascil import phyconst
 log = logging.getLogger('rascil-logger')
 
 
-def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.0, **kwargs):
+def weight_visibility(vis, model, weighting='uniform', robustness=0.0, **kwargs):
     """ Weight the visibility data
 
     This is done collectively so the weights are summed over all vis_lists and then
@@ -43,17 +43,15 @@ def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.
    """
 
     assert image_is_canonical(model)
-    if gcfcf is None:
-        gcfcf = create_pswf_convolutionfunction(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
 
     griddata = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
-    griddata, sumwt = grid_blockvisibility_weight_to_griddata(vis, griddata, gcfcf[1])
-    vis = griddata_blockvisibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
+    griddata, sumwt = grid_blockvisibility_weight_to_griddata(vis, griddata)
+    vis = griddata_blockvisibility_reweight(vis, griddata, weighting=weighting, robustness=robustness)
 
     return vis
 
 
-def weight_blockvisibility(vis, model, gcfcf=None, weighting="uniform", robustness=0.0, **kwargs):
+def weight_blockvisibility(vis, model, weighting="uniform", robustness=0.0, **kwargs):
     """ Weight the visibility data
 
     This is done collectively so the weights are summed over all vis_lists and then
@@ -66,7 +64,7 @@ def weight_blockvisibility(vis, model, gcfcf=None, weighting="uniform", robustne
     :return: List of vis_graphs
    """
     log.info("weight_blockvisibility: is deprecated, use weight_visibility")
-    return weight_visibility(vis, model, gcfcf, weighting, robustness, **kwargs)
+    return weight_visibility(vis, model, weighting, robustness, **kwargs)
 
 
 def taper_visibility_gaussian(vis, beam=None):

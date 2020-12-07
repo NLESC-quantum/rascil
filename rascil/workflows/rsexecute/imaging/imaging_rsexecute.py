@@ -71,23 +71,10 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=No
     c = imaging_context(context)
     predict = c['predict']
     
-    if gcfcf is None:
-        assert len(model_imagelist) > 0
-        
-        def make_gcfcf(m, v):
-            return create_pswf_convolutionfunction(m, polarisation_frame=v.blockvisibility_acc.polarisation_frame)
-        
-        gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(model_imagelist)]
-    
     # Loop over all windows
     assert len(model_imagelist) == len(vis_list)
-    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
-        predict_results = [rsexecute.execute(predict, pure=True, nout=1)
-                           (vis, model_imagelist[ivis], gcfcf=gcfcf[ivis], **kwargs)
-                           for ivis, vis in enumerate(vis_list)]
-    else:
-        predict_results = [rsexecute.execute(predict, pure=True, nout=1)
-                           (vis, model_imagelist[ivis], gcfcf=gcfcf[0], **kwargs)
+    predict_results = [rsexecute.execute(predict, pure=True, nout=1)
+                           (vis, model_imagelist[ivis], gcfcf=gcfcf, **kwargs)
                            for ivis, vis in enumerate(vis_list)]
     
     return rsexecute.optimize(predict_results)
@@ -126,27 +113,12 @@ def invert_list_rsexecute_workflow(vis_list, template_model_imagelist, context, 
     c = imaging_context(context)
     invert = c['invert']
     
-    # If we are doing facets, we need to create the gcf for each image
-    if gcfcf is None:
-        assert len(template_model_imagelist) > 0
-        
-        def make_gcfcf(m, v):
-            return create_pswf_convolutionfunction(m, polarisation_frame=v.blockvisibility_acc.polarisation_frame)
-        
-        gcfcf = [rsexecute.execute(make_gcfcf)(m, vis_list[i]) for i, m in enumerate(template_model_imagelist)]
-    
     # Loop over all vis_lists independently
     assert len(template_model_imagelist) == len(vis_list)
-    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
-        assert len(gcfcf) == len(vis_list)
-        invert_results = [rsexecute.execute(invert, nout=2)(vis, template_model_imagelist[ivis], dopsf=dopsf,
-                                                            normalise=normalize, gcfcf=gcfcf[ivis], **kwargs)
+    invert_results = [rsexecute.execute(invert, nout=2)(vis, template_model_imagelist[ivis], dopsf=dopsf,
+                                                            normalise=normalize, gcfcf=gcfcf, **kwargs)
                           for ivis, vis in enumerate(vis_list)]
-    else:
-        invert_results = [rsexecute.execute(invert, nout=2)(vis, template_model_imagelist[ivis], dopsf=dopsf,
-                                                            normalise=normalize, gcfcf=gcfcf[0], **kwargs)
-                          for ivis, vis in enumerate(vis_list)]
-    
+
     return rsexecute.optimize(invert_results)
 
 
@@ -452,16 +424,11 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
          vis_list = weight_list_rsexecute_workflow(vis_list, model_list, weighting='uniform')
 
    """
-    if gcfcf is None:
-        gcfcf = [rsexecute.execute(create_pswf_convolutionfunction)
-                 (m, polarisation_frame=vis_list[i].blockvisibility_acc.polarisation_frame)
-                 for i, m in enumerate(model_imagelist)]
-    
-    def grid_wt(vis, model, g):
+    def grid_wt(vis, model):
         if vis is not None:
             if model is not None:
                 griddata = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
-                griddata = grid_blockvisibility_weight_to_griddata(vis, griddata, g[0][1])
+                griddata = grid_blockvisibility_weight_to_griddata(vis, griddata)
                 
                 return griddata
             else:
@@ -469,8 +436,7 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
         else:
             return None
     
-    weight_list = [rsexecute.execute(grid_wt, pure=True, nout=1)(vis_list[i], model_imagelist[i],
-                                                                 gcfcf)
+    weight_list = [rsexecute.execute(grid_wt, pure=True, nout=1)(vis_list[i], model_imagelist[i])
                    for i in range(len(vis_list))]
     
     merged_weight_grid = rsexecute.execute(griddata_merge_weights, nout=1)(weight_list)
@@ -483,8 +449,7 @@ def weight_list_rsexecute_workflow(vis_list, model_imagelist, gcfcf=None, weight
                 # function mapping works
                 agd = create_griddata_from_image(model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame)
                 agd["pixels"].data = gd[0]["pixels"].data
-                vis = griddata_blockvisibility_reweight(vis, agd, g[0][1], weighting=weighting,
-                                                        robustness=robustness)
+                vis = griddata_blockvisibility_reweight(vis, agd, weighting=weighting, robustness=robustness)
                 return vis
             else:
                 return None

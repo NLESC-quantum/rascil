@@ -8,11 +8,14 @@ import unittest
 import astropy.units as u
 import numpy
 import numpy.testing
+import pandas
 from astropy.coordinates import SkyCoord, EarthLocation
 
+from rascil.data_models import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation.rfi import create_propagators, calculate_rfi_at_station, \
     calculate_station_correlation_rfi, simulate_DTV, simulate_DTV_prop, create_propagators_prop
+from rascil.processing_components.visibility.base import generate_baselines, create_blockvisibility
 
 log = logging.getLogger('rascil-logger')
 
@@ -37,6 +40,16 @@ class TestRFISim(unittest.TestCase):
         rmax = 1000.0
         low = create_named_configuration('LOWR3', rmax=rmax, skip=33)
         nants = len(low.names)
+
+        # Info. for dummy BlockVisibility
+        ftimes = (numpy.pi / 43200.0) * numpy.arange(0.0, 300.0, 30.0)
+        ffrequency = numpy.linspace(0.8e8, 1.2e8, 5)
+        channel_bandwidth = numpy.array([1e7, 1e7, 1e7, 1e7, 1e7])
+        polarisation_frame = PolarisationFrame("linear")
+        phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
+        bvis = create_blockvisibility(low, ftimes, ffrequency, channel_bandwidth=channel_bandwidth,
+                                      polarisation_frame=polarisation_frame, phasecentre=phasecentre, weight=1.0)
+
         
         # Calculate the power spectral density of the DTV station: Watts/Hz
         emitter = simulate_DTV(frequency, times, power=50e3, timevariable=False)
@@ -55,9 +68,8 @@ class TestRFISim(unittest.TestCase):
         assert rfi_at_station.shape == (ntimes, nants, nchannels), rfi_at_station.shape
         
         # Calculate the rfi correlation
-        # [nants, nants, ntimes, nchan]
-        correlation = calculate_station_correlation_rfi(rfi_at_station)
-        assert correlation.shape == (ntimes, nants, nants, nchannels, 1), correlation.shape
+        correlation = calculate_station_correlation_rfi(rfi_at_station, bvis.baselines)
+        assert correlation.shape == (ntimes, len(bvis.baselines), nchannels, 1), correlation.shape
 
 
     def test_rfi_prop(self):

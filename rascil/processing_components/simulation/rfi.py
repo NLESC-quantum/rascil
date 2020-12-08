@@ -167,6 +167,7 @@ def create_propagators_prop(config, frequency, nants_start, station_skip=1, atte
     if trans_range[1] is None:
         propagation[:, trans_range[0]:trans_range[1]] = propagation_trans
     else:
+        # print(propagation.shape, propagation_trans.shape)
         propagation[:, trans_range[0]:trans_range[1] + 1] = propagation_trans
 
     '''
@@ -195,37 +196,40 @@ def calculate_rfi_at_station(propagators, emitter):
     """ Calculate the rfi at each station
     :param propagators: [nstations, nchannels]
     :param emitter: [ntimes, nchannels]
-    :return: Complex array [nstations, ntimes, nchannels]
+    :return: Complex array [ntimes, nstations, nchannels]
     """
     rfi_at_station = emitter[:, numpy.newaxis, ...] * propagators[numpy.newaxis, ...]
     # rfi_at_station[numpy.abs(rfi_at_station)<1e-15] = 0.
     return rfi_at_station
 
 
-def calculate_station_correlation_rfi(rfi_at_station):
+def calculate_station_correlation_rfi(rfi_at_station, baselines):
     """ Form the correlation from the rfi at the station
 
-    :param rfi_at_station:
-    :return: Correlation(nant, nants, ntimes, nchan] in Jy
+    :param rfi_at_station: [btimes, nchan, nants, nants]
+    :param baselines: BlockVisibility baselines object
+    :return: Correlation(ntimes, nbaselines, nchan] in Jy
     """
     ntimes, nants, nchan = rfi_at_station.shape
     correlationt = numpy.zeros([ntimes, nchan, nants, nants], dtype='complex')
+    correlationb = numpy.zeros([ntimes, nchan, len(baselines)], dtype='complex')
     rfit = numpy.transpose(rfi_at_station, axes=[0, 2, 1])
     rfitc = numpy.conjugate(rfit)
-
     for itime in range(ntimes):
         for chan in range(nchan):
             correlationt[itime, chan, ...] = numpy.outer(rfit[itime, chan, :],
                                                          rfitc[itime, chan, :])
-
-    correlation = numpy.transpose(correlationt, axes=[0, 2, 3, 1])
-
+            # reshape station axes to baseline for xarray
+            for ibaseline, (a1, a2) in enumerate(baselines.data):
+                correlationb[itime, chan, ibaseline, ...] = correlationt[itime, chan, a1, a2]
+    # correlation = numpy.transpose(correlationt, axes=[0, 2, 3, 1])
+    correlation = numpy.transpose(correlationb, axes=[0, 2, 1])
     return correlation[..., numpy.newaxis] * 1e26
 
 
 def calculate_averaged_correlation(correlation, time_width, channel_width):
     """ Average the correlation in time and frequency
-    :param correlation: Correlation(nant, nants, ntimes, nchan]
+    :param correlation: Correlation(ntimes, nant, nants, nchan]
     :param channel_width: Number of channels to average
     :param time_width: Number of integrations to average
     :return:
@@ -244,34 +248,36 @@ def simulate_rfi_block(bvis, emitter_location, emitter_power=5e4, attenuation=1.
     """
 
     # Calculate the power spectral density of the DTV station: Watts/Hz
-    emitter = simulate_DTV(bvis.frequency, bvis.time, power=emitter_power, timevariable=False)
+    emitter = simulate_DTV(bvis.frequency, bvis.time, power=emitter_power,
+                           timevariable=False)
 
     # Calculate the propagators for signals from Perth to the stations in low
     # These are fixed in time but vary with frequency. The ad hoc attenuation
     # is set to produce signal roughly equal to noise at LOW
-    propagators = create_propagators(bvis.configuration, emitter_location, frequency=bvis.frequency,
-                                     attenuation=attenuation)
+    propagators = create_propagators(bvis.configuration, emitter_location,
+                                     frequency=bvis.frequency, attenuation=attenuation)
     # Now calculate the RFI at the stations, based on the emitter and the propagators
     rfi_at_station = calculate_rfi_at_station(propagators, emitter)
 
     # Calculate the rfi correlation using the fringe rotation and the rfi at the station
     # [ntimes, nants, nants, nchan, npol]
-    bvis['vis'].data[...] = calculate_station_correlation_rfi(rfi_at_station)
+    bvis['vis'].data[...] = calculate_station_correlation_rfi(rfi_at_station, baselines=bvis.baselines)
 
-    ntimes, nant, _, nchan, npol = bvis.vis.shape
+    ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
     s2r = numpy.pi / 43200.0
     k = numpy.array(bvis.frequency) / phyconst.c_m_s
-    uvw = bvis.uvw[..., numpy.newaxis] * k
+    uvw = bvis.uvw.data[..., numpy.newaxis] * k
 
     pole = SkyCoord(ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame='icrs', equinox='J2000')
 
     if use_pole:
         # Calculate phasor needed to shift from the phasecentre to the pole
         l, m, n = skycoord_to_lmn(pole, bvis.phasecentre)
-        phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')
+        # phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')
+        phasor = numpy.ones([ntimes, nbaselines, nchan, npol], dtype='complex')
         for chan in range(nchan):
-            phasor[:, :, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
+            phasor[:, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
 
         # Now fill this into the BlockVisibility
         bvis['vis'].data = bvis['vis'].data * phasor
@@ -288,15 +294,15 @@ def simulate_rfi_block(bvis, emitter_location, emitter_power=5e4, attenuation=1.
         # Now step through the time stamps, calculating the effective
         # sky position for the emitter, and performing phase rotation
         # appropriately
-        for itime, time in enumerate(bvis.time):
+        for itime, time in enumerate(bvis.time.data):
             ra = - hadec[0] + s2r * time
             dec = hadec[1]
             emitter_sky = SkyCoord(ra * u.rad, dec * u.rad)
             l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
 
-            phasor = numpy.ones([nant, nant, nchan, npol], dtype='complex')
+            phasor = numpy.ones([nbaselines, nchan, npol], dtype='complex')
             for chan in range(nchan):
-                phasor[:, :, chan, :] = simulate_point(uvw[itime, ..., chan], l, m)[..., numpy.newaxis]
+                phasor[:, chan, :] = simulate_point(uvw[itime, ..., chan], l, m)[..., numpy.newaxis]
 
             # Now fill this into the BlockVisibility
             bvis['vis'].data[itime, ...] = bvis['vis'].data[itime, ...] * phasor
@@ -354,11 +360,11 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
                                                                                                     transmitter_list)
 
     # temporary copy to calculate contribution for each transmitter
-    bvis_data_copy = copy.copy(bvis.data)
+    bvis_data_copy = copy.copy(bvis['vis'].data)
 
     for trans in transmitter_list:
 
-        print('Processing transmitter', trans)
+        # print('Processing transmitter', trans)
         emitter_power = transmitter_list[trans]['power']
         emitter_location = EarthLocation(lon=transmitter_list[trans]['location'][0],
                                          lat=transmitter_list[trans]['location'][1],
@@ -369,13 +375,15 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
         attenuation, beamgain = get_file_strings(attenuation_value, att_context, beamgain_value, bg_context, trans)
 
         # Calculate the power spectral density of the DTV station: Watts/Hz
-        emitter, DTV_range = simulate_DTV_prop(bvis.frequency, bvis.time, power=emitter_power, freq_cen=emitter_freq,
-                                               bw=emitter_bw, timevariable=False)
+        emitter, DTV_range = simulate_DTV_prop(bvis.frequency, bvis.time,
+                                               power=emitter_power, freq_cen=emitter_freq, bw=emitter_bw,
+                                               timevariable=False)
 
         # Calculate the propagators for signals from Perth to the stations in low
         # These are fixed in time but vary with frequency. The ad hoc attenuation
         # is set to produce signal roughly equal to noise at LOW
-        propagators = create_propagators_prop(bvis.configuration, bvis.frequency, nants_start=nants_start,
+        propagators = create_propagators_prop(bvis.configuration,
+                                              bvis.frequency, nants_start=nants_start,
                                               station_skip=station_skip, attenuation=attenuation,
                                               beamgainval=beamgain, trans_range=DTV_range)
         # Now calculate the RFI at the stations, based on the emitter and the propagators
@@ -385,26 +393,29 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
         # [ntimes, nants, nants, nchan, npol]
 
         # bvis['vis'].data[...] += calculate_station_correlation_rfi(rfi_at_station)
-        bvis_data_copy['vis'][...] = calculate_station_correlation_rfi(rfi_at_station)
+        # bvis_data_copy['vis'][...] = calculate_station_correlation_rfi(rfi_at_station)
+        bvis_data_copy[...] = calculate_station_correlation_rfi(rfi_at_station, baselines=bvis.baselines)
 
-        ntimes, nant, _, nchan, npol = bvis.vis.shape
+        ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
         s2r = numpy.pi / 43200.0
         k = numpy.array(bvis.frequency) / phyconst.c_m_s
-        uvw = bvis.uvw[..., numpy.newaxis] * k
+        uvw = bvis.uvw.data[..., numpy.newaxis] * k
 
         pole = SkyCoord(ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame='icrs', equinox='J2000')
 
         if use_pole:
             # Calculate phasor needed to shift from the phasecentre to the pole
             l, m, n = skycoord_to_lmn(pole, bvis.phasecentre)
-            phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')
+            # phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')
+            phasor = numpy.ones([ntimes, nbaselines, nchan, npol], dtype='complex')
             for chan in range(nchan):
-                phasor[:, :, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
+                phasor[:, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
 
             # Now fill this into the BlockVisibility
             # bvis['vis'].data = bvis['vis'].data * phasor
-            bvis['vis'].data += bvis_data_copy['vis'] * phasor
+            # bvis['vis'].data += bvis_data_copy['vis'] * phasor
+            bvis['vis'].data += bvis_data_copy * phasor
         else:
             # We know where the emitter is. Calculate the bearing to the emitter from
             # the site, generate az, el, and convert to ha, dec. ha, dec is static.
@@ -421,19 +432,21 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
             # Now step through the time stamps, calculating the effective
             # sky position for the emitter, and performing phase rotation
             # appropriately
-            for itime, time in enumerate(bvis.time):
+            for itime, time in enumerate(bvis.time.data):
                 ra = - hadec[0] + s2r * time
                 dec = hadec[1]
                 emitter_sky = SkyCoord(ra * u.rad, dec * u.rad)
                 l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
 
-                phasor = numpy.ones([nant, nant, nchan, npol], dtype='complex')
+                # phasor = numpy.ones([nant, nant, nchan, npol], dtype='complex')
+                phasor = numpy.ones([nbaselines, nchan, npol], dtype='complex')
                 for chan in range(nchan):
-                    phasor[:, :, chan, :] = simulate_point(uvw[itime, ..., chan], l, m)[..., numpy.newaxis]
+                    phasor[:, chan, :] = simulate_point(uvw[itime, ..., chan], l, m)[..., numpy.newaxis]
 
                 # Now fill this into the BlockVisibility
                 # bvis['vis'].data[itime, ...] = bvis['vis'].data[itime, ...] * phasor
-                bvis['vis'].data[itime, ...] += bvis_data_copy['vis'][itime, ...] * phasor
+                # bvis['vis'].data[itime, ...] += bvis_data_copy['vis'][itime, ...] * phasor
+                bvis['vis'].data[itime, ...] += bvis_data_copy[itime, ...] * phasor
 
             # print(trans, 'bvis_data_new', bvis['vis'].data[0][0][0])
 

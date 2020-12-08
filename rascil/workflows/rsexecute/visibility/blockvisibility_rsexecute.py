@@ -33,7 +33,7 @@ def create_blockvisibility_from_ms_rsexecute(msname, nchan_per_blockvis, nout, d
                    start_chan=chan_block * nchan_per_blockvis,
                    end_chan=(1 + chan_block) * nchan_per_blockvis - 1,
                    average_channels=average_channels)[0]
-                  for chan_block in range(nout) for dd in dds]]
+                  for dd in dds for chan_block in range(nout)]]
 
     # This is a list of lists so we flatten it to a list
     bvis_list = [item for sublist in bvis_list for item in sublist]

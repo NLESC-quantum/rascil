@@ -75,9 +75,9 @@ def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdis
     
     for ivis, vis in enumerate(vis_list):
         if y == 'amp':
-            yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis.data[..., 0, 0]).flat
+            yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis[..., 0, 0]).flat
         else:
-            yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis.data[..., 0, 0]).flat
+            yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis[..., 0, 0]).flat
         xvalue = vis.blockvisibility_acc.uvdist.data.flat
         plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[ivis], markersize=0.2)
     
@@ -103,9 +103,9 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
         colors = ["red", "blue", "green", "purple"]
         for pol in range(vis.blockvisibility_acc.npol):
             if y == 'amp':
-                yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis.data[..., 0, pol]).flat
+                yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis[..., 0, pol]).flat
             else:
-                yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis.data[..., 0, pol]).flat
+                yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis[..., 0, pol]).flat
             if x == "time":
                 xvalue = numpy.repeat(vis["time"].data, len(yvalue))
             else:
@@ -139,11 +139,18 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
         bvis = ovis.where(ovis["flags"] > 0)
         u = numpy.array(gvis.uvw_lambda.sel(spatial='u').data.flat)
         v = numpy.array(gvis.uvw_lambda.sel(spatial='v').data.flat)
-        plt.plot(u, v, '.', color='b', markersize=0.2, label="Unflagged")
-        plt.plot(-u, -v, '.', color='b', markersize=0.2)
+        if ivis == 0:
+            plt.plot(u, v, '.', color='b', markersize=0.2, label="Unflagged")
+        else:
+            plt.plot(u, v, '.', color='b', markersize=0.2,)
+
+            plt.plot(-u, -v, '.', color='b', markersize=0.2)
         u = numpy.array(bvis.uvw_lambda.sel(spatial='u').data.flat)
         v = numpy.array(bvis.uvw_lambda.sel(spatial='v').data.flat)
-        plt.plot(u, v, '.', color='r', markersize=0.2, label="Flagged")
+        if ivis == 0:
+            plt.plot(u, v, '.', color='r', markersize=0.2, label="Flagged")
+        else:
+            plt.plot(u, v, '.', color='r', markersize=0.2)
         plt.plot(-u, -v, '.', color='r', markersize=0.2)
     plt.xlabel('U (wavelengths)')
     plt.ylabel('V (wavelengths)')

@@ -156,7 +156,7 @@ def invert_ng(bvis: BlockVisibility, model: Image, dopsf: bool = False,
     # if dopsf:
     #     sbvis = fill_vis_for_psf(sbvis)
     
-    ms = sbvis.blockvisibility_acc.flagged_vis.data
+    ms = sbvis.blockvisibility_acc.flagged_vis
     ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
     ms = convert_pol_frame(ms, bvis.blockvisibility_acc.polarisation_frame,
                            im.image_acc.polarisation_frame, polaxis=2).astype("c16")
@@ -164,7 +164,7 @@ def invert_ng(bvis: BlockVisibility, model: Image, dopsf: bool = False,
     uvw = copy.deepcopy(sbvis.uvw.data)
     uvw = uvw.reshape([nrows * nbaselines, 3])
     
-    wgt = sbvis.blockvisibility_acc.flagged_imaging_weight.data.astype("f8")
+    wgt = sbvis.blockvisibility_acc.flagged_imaging_weight.astype("f8")
     wgt = wgt.reshape([nrows * nbaselines, vnchan, vnpol])
     
     # if epsilon > 5.0e-6:

@@ -163,8 +163,8 @@ def grid_blockvisibility_to_griddata(vis, griddata, cf):
     nrows, nbaselines, nvchan, nvpol = vis["vis"].data.shape
     nichan, nipol, _, _ = griddata["pixels"].data.shape
 
-    fvist = numpy.nan_to_num(vis.blockvisibility_acc.flagged_vis.data.reshape([nrows * nbaselines, nvchan, nvpol]).T)
-    fwtt = numpy.nan_to_num(vis.blockvisibility_acc.flagged_imaging_weight.data.reshape([nrows * nbaselines, nvchan, nvpol]).T)
+    fvist = numpy.nan_to_num(vis.blockvisibility_acc.flagged_vis.reshape([nrows * nbaselines, nvchan, nvpol]).T)
+    fwtt = numpy.nan_to_num(vis.blockvisibility_acc.flagged_imaging_weight.reshape([nrows * nbaselines, nvchan, nvpol]).T)
     # Do this in place to avoid creating a new copy. Doing the conjugation outside the loop
     # reduces run time immensely
     ccf = numpy.conjugate(cf["pixels"].data)
@@ -227,7 +227,7 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData):
 
 
     # Transpose to get row varying fastest
-    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.data.reshape([nrows * nbaselines, nvchan, nvpol]).T
+    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.reshape([nrows * nbaselines, nvchan, nvpol]).T
 
     for vchan in range(nvchan):
         imchan = vis_to_im[vchan]
@@ -290,7 +290,7 @@ def griddata_blockvisibility_reweight(vis, griddata, weighting="uniform", robust
         griddata.griddata_acc.griddata_wcs.sub([4]).wcs_world2pix(vis.frequency, 0)[0]).astype('int')
     
     nrows, nbaselines,nvchan, nvpol = vis.vis.shape
-    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.data.reshape([nrows * nbaselines, nvchan, nvpol]).T
+    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.reshape([nrows * nbaselines, nvchan, nvpol]).T
 
     if weighting == "uniform":
         for pol in range(nvpol):
@@ -306,7 +306,7 @@ def griddata_blockvisibility_reweight(vis, griddata, weighting="uniform", robust
     elif weighting == "robust":
         # Equation 3.15, 3.16 in Briggs thesis
         sumlocwt = numpy.sum(real_gd**2)
-        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight.data)
+        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight)
         # Larger +ve robustness tends to natural weighting
         f2 = (5.0 * numpy.power(10.0, -robustness))**2 * sumwt / sumlocwt
         for pol in range(nvpol):

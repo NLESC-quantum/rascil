@@ -103,8 +103,8 @@ def idft_visibility_skycomponent(vis: BlockVisibility,
         newcomp = copy_skycomponent(comp)
 
         phasor = numpy.conjugate(calculate_blockvisibility_phasor(comp.direction, vis))
-        flux = numpy.sum(vis.blockvisibility_acc.flagged_weight.data * vis.blockvisibility_acc.flagged_vis.data * phasor, axis=(0, 1))
-        weight = numpy.sum(vis.blockvisibility_acc.flagged_weight.data, axis=(0, 1))
+        flux = numpy.sum(vis.blockvisibility_acc.flagged_weight * vis.blockvisibility_acc.flagged_vis * phasor, axis=(0, 1))
+        weight = numpy.sum(vis.blockvisibility_acc.flagged_weight, axis=(0, 1))
 
         flux[weight > 0.0] = flux[weight > 0.0] / weight[weight > 0.0]
         flux[weight <= 0.0] = 0.0

@@ -592,36 +592,36 @@ def create_surface_errors_gaintable_rsexecute_workflow(band, sub_bvis_list,
             dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB1/interpolated_elevation/"
             vpa = import_image_from_fits(
                 '%s/B1_%d_0565_real_interpolated.fits' % (dir, int(el)), fixpol=True)
-            assert vpa.data[0, 0, 512, 512] > 0.5
-            assert vpa.data[0, 1, 512, 512] < 0.5
-            assert vpa.data[0, 2, 512, 512] < 0.5
-            assert vpa.data[0, 3, 512, 512] > 0.5
+            assert vpa["pixels"].data[0, 0, 512, 512] > 0.5
+            assert vpa["pixels"].data[0, 1, 512, 512] < 0.5
+            assert vpa["pixels"].data[0, 2, 512, 512] < 0.5
+            assert vpa["pixels"].data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
                 '%s/B1_%d_0565_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         elif band == 'B2':
             dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_SPFB2/interpolated_elevation/"
             vpa = import_image_from_fits(
                 '%s/B2_%d_1360_real_interpolated.fits' % (dir, int(el)), fixpol=True)
-            assert vpa.data[0, 0, 512, 512] > 0.5
-            assert vpa.data[0, 1, 512, 512] < 0.5
-            assert vpa.data[0, 2, 512, 512] < 0.5
-            assert vpa.data[0, 3, 512, 512] > 0.5
+            assert vpa["pixels"].data[0, 0, 512, 512] > 0.5
+            assert vpa["pixels"].data[0, 1, 512, 512] < 0.5
+            assert vpa["pixels"].data[0, 2, 512, 512] < 0.5
+            assert vpa["pixels"].data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
                 '%s/B2_%d_1360_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         elif band == 'Ku':
             dir = vp_directory + "/SKADCBeamPatterns/2019_08_06_SKA_Ku/interpolated_elevation/"
             vpa = import_image_from_fits(
                 '%s/Ku_%d_11700_real_interpolated.fits' % (dir, int(el)), fixpol=True)
-            assert vpa.data[0, 0, 512, 512] > 0.5
-            assert vpa.data[0, 1, 512, 512] < 0.5
-            assert vpa.data[0, 2, 512, 512] < 0.5
-            assert vpa.data[0, 3, 512, 512] > 0.5
+            assert vpa["pixels"].data[0, 0, 512, 512] > 0.5
+            assert vpa["pixels"].data[0, 1, 512, 512] < 0.5
+            assert vpa["pixels"].data[0, 2, 512, 512] < 0.5
+            assert vpa["pixels"].data[0, 3, 512, 512] > 0.5
             vpa_imag = import_image_from_fits(
                 '%s/Ku_%d_11700_imag_interpolated.fits' % (dir, int(el)), fixpol=True)
         else:
             raise ValueError("Unknown band %s" % band)
         
-        vpa.data = vpa.data + 1j * vpa_imag.data
+        vpa["pixels"].data = vpa["pixels"].data + 1j * vpa_imag["pixels"].data
         return vpa
     
     def find_vp(band, vis):

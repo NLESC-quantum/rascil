@@ -55,19 +55,14 @@ def generate_baselines(nant):
 
 
 def get_baseline(ant1, ant2, baselines):
-    """ Given the antenna numbers work out the baseline number. Takes 200ms to look
-    up all baselines for a 512 element array. Nevertheless there may be a better way
-    to do this.
+    """ Given the antenna numbers work out the baseline number.
     
     :param ant1:
     :param ant2:
     :param baselines:
     :return:
     """
-    for ibaseline, baseline in enumerate(baselines):
-        if baseline == (ant1, ant2):
-            return ibaseline
-    raise ValueError("Illegal antenna pair {}-{}".format(ant1, ant2))
+    return baselines.get_loc((ant1, ant2))
 
 
 def vis_summary(vis: BlockVisibility):
@@ -794,7 +789,7 @@ def create_blockvisibility_from_ms(msname, channum=None, start_chan=None, end_ch
             bv_integration_time = numpy.zeros([ntimes])
             
             for row, _ in enumerate(time):
-                ibaseline = get_baseline(antenna1[row], antenna2[row], baselines)
+                ibaseline = baselines.get_loc((antenna1[row], antenna2[row]))
                 time_index = time_index_row[row]
                 bv_times[time_index] = time[row]
                 bv_vis[time_index, ibaseline, ...] = ms_vis[row, ...]
@@ -1005,7 +1000,7 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
             for time_index, time in enumerate(bv_times):
                 for antenna1 in range(nants - 1):
                     for antenna2 in range(antenna1, nants):
-                        ibaseline = get_baseline(antenna1, antenna2, baselines)
+                        ibaseline = baselines.get_loc((antenna1, antenna2))
                         for channel_no, channel_index in enumerate(channum):
                             for pol_index in range(npol):
                                 bv_vis[time_index, ibaseline, channel_no, pol_index] = complex(

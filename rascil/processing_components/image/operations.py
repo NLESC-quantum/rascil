@@ -464,7 +464,7 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
     
     if reference_frequency is None:
         reference_frequency = numpy.average(im.frequency.data)
-    log.debug("calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)" % (reference_frequency))
+    log.debug("calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)" % (1e-6 * reference_frequency))
     
     newim_wcs = im.image_acc.wcs
     newim_wcs.wcs.ctype[3] = "MOMENT"

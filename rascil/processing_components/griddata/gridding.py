@@ -133,9 +133,9 @@ def spatial_mapping(griddata, u, v, w, cf=None):
     
         pu_grid, pv_grid = \
             numpy.round(grid_wcs.sub([1, 2]).wcs_world2pix(u, v, 0)).astype('int')
-        assert numpy.min(pu_grid) >= 0, "image sampling wrong: U axis underflows: %f" % numpy.min(pu_grid)
+        assert numpy.min(pu_grid) >= 0, "Cellsize is too large: U axis underflows: %f" % numpy.min(pu_grid)
         assert numpy.max(pu_grid) < griddata.griddata_acc.shape[2], "U axis overflows: %f" % numpy.max(pu_grid)
-        assert numpy.min(pv_grid) >= 0, "image sampling wrong: V axis underflows: %f" % numpy.min(pv_grid)
+        assert numpy.min(pv_grid) >= 0, "Cellsize is too large: V axis underflows: %f" % numpy.min(pv_grid)
         assert numpy.max(pv_grid) < griddata.griddata_acc.shape[3], "V axis overflows: %f" % numpy.max(pv_grid)
     
         return pu_grid, pv_grid

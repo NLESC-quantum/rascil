@@ -16,7 +16,8 @@ __all__ = ['simulate_list_rsexecute_workflow',
            'create_surface_errors_gaintable_rsexecute_workflow',
            'create_polarisation_gaintable_rsexecute_workflow',
            'create_heterogeneous_gaintable_rsexecute_workflow',
-           'create_atmospheric_errors_gaintable_rsexecute_workflow']
+           'create_atmospheric_errors_gaintable_rsexecute_workflow',
+           'create_voltage_pattern_gaintable_rsexecute_workflow']
 
 import logging
 from typing import List
@@ -94,10 +95,7 @@ def simulate_list_rsexecute_workflow(config='LOWBD2',
     :param format: 'blockvis' or 'vis': def 'blockvis'
     :return: graph of vis_list with different frequencies in different elements
     """
-    if format == 'vis':
-        create_vis = create_blockvisibility
-    else:
-        create_vis = create_blockvisibility
+    create_vis = create_blockvisibility
     
     if times is None:
         times = [0.0]
@@ -710,7 +708,7 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
             vp_list.append(vp)
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list
-
+    
     vp_nominal_list = [rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list]
     vp_actual_list = [rsexecute.execute(find_vp_actual)(bv, band) for bv in sub_bvis_list]
     
@@ -728,6 +726,54 @@ def create_polarisation_gaintable_rsexecute_workflow(band, sub_bvis_list,
         plot_gaintable(no_error_gt_list, title=basename + " nominal")
     
     return no_error_gt_list, error_gt_list
+
+
+def create_voltage_pattern_gaintable_rsexecute_workflow(band, sub_bvis_list,
+                                                     sub_components,
+                                                     get_vp,
+                                                     show=True,
+                                                     basename='',
+                                                     normalise=True):
+    """ Create gaintable for nominal voltage pattern
+
+    Compare with nominal and actual voltage patterns
+
+    :param band: B1, B2 or Ku
+    :param sub_bvis_list: List of vis (or graph)
+    :param sub_components: List of components (or graph)
+    :param show: Plot the results
+    :param basename: Base name for the plots
+    :param normalise: Normalise peak of each receptor
+    :return: (list of error-free gaintables, list of error gaintables) or graph
+     """
+    
+    def find_vp_nominal(bvis, band):
+        vp_types = numpy.unique(bvis.configuration.vp_type)
+        vp_list = []
+        for vp_type in vp_types:
+            vp = get_vp("{vp}_{band}".format(vp=vp_type, band=band)).copy(deep=True)
+            vpsym = 0.5 * (vp["pixels"].data[:, 0, ...] + vp["pixels"].data[:, 3, ...])
+            if normalise:
+                vpsym /= numpy.max(numpy.abs(vpsym))
+            vp["pixels"].data[:, 0, ...] = vpsym
+            vp["pixels"].data[:, 1, ...] = 0.0 + 0.0j
+            vp["pixels"].data[:, 2, ...] = 0.0 + 0.0j
+            vp["pixels"].data[:, 3, ...] = vpsym
+            vp_list.append(vp)
+        assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
+        return vp_list
+    
+    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list]
+
+    # Create the gain tables, one per Visibility and per component
+    no_error_gt_list = [rsexecute.execute(simulate_gaintable_from_voltage_pattern)
+                        (bvis, sub_components, vp_nominal_list[ibv])
+                        for ibv, bvis in enumerate(sub_bvis_list)]
+    if show:
+        no_error_gt_list = rsexecute.compute(no_error_gt_list, sync=True)
+        plot_gaintable(no_error_gt_list, title=basename + " nominal")
+    
+    return no_error_gt_list
 
 
 def create_heterogeneous_gaintable_rsexecute_workflow(band, sub_bvis_list, sub_components,

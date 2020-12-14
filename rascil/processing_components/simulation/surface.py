@@ -7,20 +7,18 @@ __all__ = ['simulate_gaintable_from_zernikes',
            'simulate_gaintable_from_voltage_pattern']
 
 import logging
-import collections
-
-from astropy.time import Time
 
 import numpy
+from astropy.time import Time
 from scipy.interpolate import RectBivariateSpline
 
-from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility
 from rascil.processing_components.util.coordinate_support import hadec_to_azel
-from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 from rascil.processing_components.util.geometry import calculate_azel
+from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 
 log = logging.getLogger('rascil-logger')
+
 
 def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=3,
                                             elevation_limit=15.0 * numpy.pi / 180.0, **kwargs):
@@ -36,17 +34,17 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     """
     
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
-
+    
     nant = gaintables[0].gaintable_acc.nants
     gnchan = gaintables[0].gaintable_acc.nchan
     frequency = gaintables[0].frequency
     
-    #if not isinstance(vp, collections.abc.Iterable):
+    # if not isinstance(vp, collections.abc.Iterable):
     if not isinstance(vp, list):
         vp = [vp]
-
-    nchan, npol, ny, nx = vp[0]["pixels"].data.shape
     
+    nchan, npol, ny, nx = vp[0]["pixels"].data.shape
+    vnpol = vis.blockvisibility_acc.npol
     vp_types = numpy.unique(vis.configuration.vp_type.data)
     
     nvp = len(vp_types)
@@ -59,18 +57,18 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     
     # We construct interpolators for each voltage pattern type and for each polarisation, and for real, imaginary parts
     if len(vp) == 1:
-        vp_types=[0]
+        vp_types = [0]
     else:
         assert len(vp) == len(vp_types)
-
+    
     real_spline = [[[RectBivariateSpline(range(ny), range(nx),
                                          vp[ivp]["pixels"].data[chan, pol, ...].real, kx=order, ky=order)
-                   for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
+                     for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
     imag_spline = [[[RectBivariateSpline(range(ny), range(nx),
                                          vp[ivp]["pixels"].data[chan, pol, ...].imag, kx=order, ky=order)
-                   for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
+                     for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
     
-    #assert isinstance(vis, BlockVisibility)
+    # assert isinstance(vis, BlockVisibility)
     vp0_wcs = vp[0].image_acc.wcs
     assert vp0_wcs.wcs.ctype[0] == 'AZELGEO long', vp0_wcs.wcs.ctype[0]
     assert vp0_wcs.wcs.ctype[1] == 'AZELGEO lati', vp0_wcs.wcs.ctype[1]
@@ -89,7 +87,7 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
             time_slice = {"time": slice(time - gt.interval[row] / 2,
                                         time + gt.interval[row] / 2)}
             v = vis.sel(time_slice)
-            utc_time = Time([numpy.average(v.time)/86400.0], format='mjd', scale='utc')
+            utc_time = Time([numpy.average(v.time) / 86400.0], format='mjd', scale='utc')
             azimuth_centre, elevation_centre = calculate_azel(v.configuration.location, utc_time,
                                                               vis.phasecentre)
             azimuth_centre = azimuth_centre[0].to('deg').value
@@ -97,10 +95,10 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
             
             if elevation_centre >= elevation_limit:
                 
-                antvp = numpy.zeros([nvp, gnchan, npol], dtype='complex')
-                antgain = numpy.zeros([nant, gnchan, npol], dtype='complex')
-                antwt = numpy.zeros([nant, gnchan, npol])
-
+                antvp = numpy.zeros([nvp, gnchan, vnpol], dtype='complex')
+                antgain = numpy.zeros([nant, gnchan, vnpol], dtype='complex')
+                antwt = numpy.zeros([nant, gnchan, vnpol])
+                
                 # Calculate the azel of this component
                 azimuth_comp, elevation_comp = calculate_azel(v.configuration.location, utc_time,
                                                               comp.direction)
@@ -111,14 +109,13 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                     azimuth_centre += 360.0
                 elif azimuth_comp - azimuth_centre < -180.0:
                     azimuth_centre -= 360.0
-
+                
                 try:
-                    gain = numpy.zeros([npol], dtype='complex')
                     # Interpolate values for all voltage pattern types
                     for ivp, _ in enumerate(vp_types):
                         for gchan in range(gnchan):
-                            worldloc = [[(azimuth_comp-azimuth_centre)*cosel, elevation_comp-elevation_centre,
-                                        vp[ivp].image_acc.wcs.wcs.crval[2], frequency[gchan]]]
+                            worldloc = [[(azimuth_comp - azimuth_centre) * cosel, elevation_comp - elevation_centre,
+                                         vp[ivp].image_acc.wcs.wcs.crval[2], frequency[gchan]]]
                             # radius = numpy.sqrt(((azimuth_comp-azimuth_centre)*cosel)**2 +
                             #                     (elevation_comp-elevation_centre)**2)
                             pixloc = vp[ivp].image_acc.wcs.deepcopy().wcs_world2pix(worldloc, 0)[0]
@@ -127,23 +124,40 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                             assert pixloc[1] > 2
                             assert pixloc[1] < ny - 3
                             chan = int(round(pixloc[3]))
-                            for pol in range(npol):
-                                gain[pol] = real_spline[pol][chan][ivp].ev(pixloc[1], pixloc[0]) \
-                                    + 1j * imag_spline[pol][chan][ivp].ev(pixloc[1], pixloc[0])
-                            ag = gain.reshape([2, 2])
-                            ag = numpy.linalg.inv(ag)
-                            antvp[ivp, gchan, :] = ag.reshape([4])
-                            number_good += 1
+                            if vnpol > 1:
+                                gain = numpy.zeros([npol], dtype='complex')
+                                for pol in range(vnpol):
+                                    gain[pol] = real_spline[pol][chan][ivp].ev(pixloc[1], pixloc[0]) \
+                                                + 1j * imag_spline[pol][chan][ivp].ev(pixloc[1], pixloc[0])
+                                ag = gain.reshape([2, 2])
+                                ag = numpy.linalg.inv(ag)
+                                antvp[ivp, gchan, :] = ag.reshape([4])
+                                number_good += 1
+                            else:
+                                gain = 0.5 * (real_spline[0][chan][ivp].ev(pixloc[1], pixloc[0])
+                                                 + 1j * imag_spline[0][chan][ivp].ev(pixloc[1], pixloc[0])
+                                                 + real_spline[3][chan][ivp].ev(pixloc[1], pixloc[0])
+                                                 + 1j * imag_spline[3][chan][ivp].ev(pixloc[1], pixloc[0]))
+                                if numpy.abs(gain) > 0.0:
+                                    antvp[ivp, gchan, 0] = 1.0 / gain
+                                    number_good += 1
+                                else:
+                                    antvp[ivp, gchan, 0] = 0.0
+                                    number_bad += 1
                         for ant in range(nant):
-                            antgain[ant, ...] = antvp[vp_for_ant[ant],...]
+                            antgain[ant, ...] = antvp[vp_for_ant[ant], ...]
                         antwt[...] = 1.0
                 except (ValueError, AssertionError):
                     number_bad += 1
                     antgain[...] = 0.0
                     antwt[...] = 0.0
-                    
-                gaintables[icomp].gain.data[row, :, :, :] = antgain.reshape([nant, gnchan, 2, 2])
-                gaintables[icomp].weight.data[row, :, :, :] = antwt.reshape([nant, gnchan, 2, 2])
+                
+                if vnpol > 1:
+                    gaintables[icomp].gain.data[row, :, :, :] = antgain.reshape([nant, gnchan, 2, 2])
+                    gaintables[icomp].weight.data[row, :, :, :] = antwt.reshape([nant, gnchan, 2, 2])
+                else:
+                    gaintables[icomp].gain.data[row, :, :, :] = antgain.reshape([nant, gnchan, 1, 1])
+                    gaintables[icomp].weight.data[row, :, :, :] = antwt.reshape([nant, gnchan, 1, 1])
                 gaintables[icomp].attrs["phasecentre"] = comp.direction
             else:
                 gaintables[icomp].gain.data[...] = 1.0 + 0.0j
@@ -178,7 +192,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
     gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
     nant = gaintables[0].gaintable_acc.nants
     
-    #assert isinstance(vis, BlockVisibility)
+    # assert isinstance(vis, BlockVisibility)
     assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
     
     # The time in the BlockVisibility is UTC in seconds
@@ -215,7 +229,7 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
             ha = numpy.average(calculate_blockvisibility_hourangles(vis_sel).to('rad').value)
             
             # Calculate the az el for this hourangle and the phasecentre declination
-            utc_time = Time([numpy.average(vis_sel.time)/86400.0], format='mjd', scale='utc')
+            utc_time = Time([numpy.average(vis_sel.time) / 86400.0], format='mjd', scale='utc')
             azimuth_centre, elevation_centre = calculate_azel(vis_sel.configuration.location, utc_time,
                                                               vis.phasecentre)
             azimuth_centre = azimuth_centre[0].to('deg').value
@@ -265,7 +279,6 @@ def simulate_gaintable_from_zernikes(vis, sc, vp_list, vp_coeffs, vis_slices=Non
             gaintables[icomp].gain.data[...] = 1.0 + 0.0j
             gaintables[icomp].attrs["phasecentre"] = comp.direction
             number_bad += nant
-
     
     if number_bad > 0:
         log.warning(

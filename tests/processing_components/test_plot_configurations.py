@@ -50,7 +50,7 @@ class TestPlotConfigurations(unittest.TestCase):
             self.createVis(config, rmax=2e2, names=names)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
-            plot_configuration([self.vis], title=config,
+            plot_configuration(self.vis.configuration, title=config,
                                plot_file='{dir}/test_plot_{config}_configuration.png'.format(
                                    dir=rascil_path("test_results"), config=config),
                                label=True)
@@ -61,7 +61,7 @@ class TestPlotConfigurations(unittest.TestCase):
             self.createVis(config)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
-            plot_configuration([self.vis], title=config,
+            plot_configuration(self.vis.configuration, title=config,
                             plot_file='{dir}/test_plot_{config}_configuration.png'.format(
                                 dir=rascil_path("test_results"), config=config))
 
@@ -69,7 +69,7 @@ class TestPlotConfigurations(unittest.TestCase):
                 self.createVis(config, +35.0)
                 assert self.config.configuration_acc.size() > 0.0
                 plt.clf()
-                plot_configuration([self.vis], title=config,
+                plot_configuration(self.vis.configuration, title=config,
                                    plot_file='{dir}/test_plot_{config}_configuration.png'.format(
                                        dir=rascil_path("test_results"), config=config))
             # print("Config ", config, " has centre", self.config.location.geodetic)

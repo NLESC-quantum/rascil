@@ -161,7 +161,7 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
     plt.show(block=False)
 
 
-def plot_configuration(vis_list, ax=None, plot_file=None, title='Configuration', label=False, **kwargs):
+def plot_configuration(config, ax=None, plot_file=None, title='Configuration', label=False, **kwargs):
     """ Standard plot of uv coverage
 
     :param vis_list:
@@ -169,16 +169,14 @@ def plot_configuration(vis_list, ax=None, plot_file=None, title='Configuration',
     :param kwargs:
     :return:
     """
-    
-    for ivis, vis in enumerate(vis_list):
-        antxyz = vis.attrs["configuration"].xyz.data
-        names = vis.attrs["configuration"].names.data
-        if label:
-            plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=2.4)
-            for iant, name in enumerate(names):
-                plt.annotate(name, (antxyz[iant, 0], antxyz[iant, 1]))
-        else:
-            plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=10.0)
+    antxyz = config.xyz.data
+    names = config.names.data
+    if label:
+        plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=2.4)
+        for iant, name in enumerate(names):
+            plt.annotate(name, (antxyz[iant, 0], antxyz[iant, 1]))
+    else:
+        plt.plot(antxyz[:, 0], antxyz[:, 1], '.', color='b', markersize=10.0)
     
     plt.xlabel('X (m)')
     plt.ylabel('Y (m)')
@@ -542,7 +540,7 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
                     if abs(comp.flux[0, 0]) > max_flux:
                         max_flux = abs(comp.flux[0, 0])
                     filtered_components.append(original_components[icomp])
-            log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
+            log.info("create_simulation_components: %d components > %.6f Jy after filtering with primary beam" %
                      (len(filtered_components), flux_limit))
             log.info("create_simulation_components: Strongest components is %g (Jy)" % max_flux)
             log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)

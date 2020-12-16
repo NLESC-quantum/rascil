@@ -15,8 +15,9 @@ assert sys.version_info[0] >= 3
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
+# Last line contains string that setup.py has trouble interpreting
 with open('requirements.txt') as reqs_file:
-    reqs = reqs_file.read()
+    reqs = reqs_file.read()[-2]
 
 # MF. This is a workaround to be able to build the library with MacOS
 if sys.platform == 'darwin':

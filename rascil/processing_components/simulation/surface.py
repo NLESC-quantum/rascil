@@ -83,24 +83,24 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     # For each hourangle, we need to calculate the location of a component
     # in AZELGEO. With that we can then look up the relevant gain from the
     # voltage pattern
-    gt0 = gaintables[0]
-    for row, time in enumerate(gt0.time):
-        time_slice = {"time": slice(time - gt0.interval[row] / 2,
-                                    time + gt0.interval[row] / 2)}
-        v = vis.sel(time_slice)
-        utc_time = Time([numpy.average(v.time) / 86400.0], format='mjd', scale='utc')
-        azimuth_centre, elevation_centre = calculate_azel(v.configuration.location, utc_time,
-                                                          vis.phasecentre)
-        azimuth_centre = azimuth_centre[0].to('deg').value
-        elevation_centre = elevation_centre[0].to('deg').value
-        
-        if elevation_centre >= elevation_limit:
-    
-            for icomp, comp in enumerate(sc):
-                antvp = numpy.zeros([nvp, gnchan, vnpol], dtype='complex')
-                antgain = numpy.zeros([nant, gnchan, vnpol], dtype='complex')
-                antwt = numpy.zeros([nant, gnchan, vnpol])
+    for icomp, comp in enumerate(sc):
+        gt = gaintables[icomp]
+        for row, time in enumerate(gt.time):
+            time_slice = {"time": slice(time - gt.interval[row] / 2,
+                                        time + gt.interval[row] / 2)}
+            v = vis.sel(time_slice)
+            utc_time = Time([numpy.average(v.time)/86400.0], format='mjd', scale='utc')
+            azimuth_centre, elevation_centre = calculate_azel(v.configuration.location, utc_time,
+                                                              vis.phasecentre)
+            azimuth_centre = azimuth_centre[0].to('deg').value
+            elevation_centre = elevation_centre[0].to('deg').value
+            
+            if elevation_centre >= elevation_limit:
                 
+                antvp = numpy.zeros([nvp, gnchan, npol], dtype='complex')
+                antgain = numpy.zeros([nant, gnchan, npol], dtype='complex')
+                antwt = numpy.zeros([nant, gnchan, npol])
+
                 # Calculate the azel of this component
                 azimuth_comp, elevation_comp = calculate_azel(v.configuration.location, utc_time,
                                                               comp.direction)
@@ -146,11 +146,10 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                 gaintables[icomp].weight.data[row, :, :, :] = antwt.reshape([nant, gnchan, 2, 2])
                 gaintables[icomp].attrs["phasecentre"] = comp.direction
             else:
-                for icomp, comp in enumerate(sc):
-                    gaintables[icomp].gain.data[...] = 1.0 + 0.0j
-                    gaintables[icomp].weight.data[row, :, :, :] = 0.0
-                    gaintables[icomp].attrs["phasecentre"] = comp.direction
-                    number_bad += nant
+                gaintables[icomp].gain.data[...] = 1.0 + 0.0j
+                gaintables[icomp].weight.data[row, :, :, :] = 0.0
+                gaintables[icomp].attrs["phasecentre"] = comp.direction
+                number_bad += nant
     
     assert number_good > 0, "simulate_gaintable_from_voltage_pattern: No points inside the voltage pattern image"
     if number_bad > 0:

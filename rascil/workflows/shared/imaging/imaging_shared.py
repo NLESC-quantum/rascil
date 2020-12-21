@@ -117,7 +117,7 @@ def sum_predict_results(results):
     for result in results:
         if result is not None:
             if sum_results is None:
-                sum_results = copy_visibility(result)
+                sum_results = result
             else:
                 assert sum_results['vis'].data.shape == result['vis'].data.shape
                 sum_results['vis'].data += result['vis'].data

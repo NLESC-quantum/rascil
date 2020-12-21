@@ -49,6 +49,8 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     
     nvp = len(vp_types)
     
+    # Each antennas can have one of a (small) number of different voltage patterns thus
+    # allowing for e.g. SKA and MeerKAT antennas for MID
     vp_for_ant = numpy.zeros([nant], dtype=int)
     for ivp in range(nvp):
         for ant in range(nant):
@@ -61,6 +63,9 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
     else:
         assert len(vp) == len(vp_types)
     
+    # These are substantial overheads so it is best to call these function as few times as possible.
+    # Note that we set up splines only in x, y so there is no interpolation in frequency. In the lookup
+    # below, we just use the nearest frequency channel.
     real_spline = [[[RectBivariateSpline(range(ny), range(nx),
                                          vp[ivp]["pixels"].data[chan, pol, ...].real, kx=order, ky=order)
                      for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
@@ -68,10 +73,9 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                                          vp[ivp]["pixels"].data[chan, pol, ...].imag, kx=order, ky=order)
                      for ivp, _ in enumerate(vp_types)] for chan in range(nchan)] for pol in range(npol)]
     
-    # assert isinstance(vis, BlockVisibility)
-    vp0_wcs = vp[0].image_acc.wcs
-    assert vp0_wcs.wcs.ctype[0] == 'AZELGEO long', vp0_wcs.wcs.ctype[0]
-    assert vp0_wcs.wcs.ctype[1] == 'AZELGEO lati', vp0_wcs.wcs.ctype[1]
+    vp_wcs = [v.image_acc.wcs for v in vp]
+    assert vp_wcs[0].wcs.ctype[0] == 'AZELGEO long', vp_wcs[0].wcs.ctype[0]
+    assert vp_wcs[0].wcs.ctype[1] == 'AZELGEO lati', vp_wcs[0].wcs.ctype[1]
     
     assert vis.configuration.mount[0] == 'azel', "Mount %s not supported yet" % vis.configuration.mount[0]
     
@@ -110,19 +114,18 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                 elif azimuth_comp - azimuth_centre < -180.0:
                     azimuth_centre -= 360.0
                 
-                try:
-                    # Interpolate values for all voltage pattern types
-                    for ivp, _ in enumerate(vp_types):
-                        for gchan in range(gnchan):
+                for ivp, _ in enumerate(vp_types):
+                    for gchan in range(gnchan):
+                        try:
                             worldloc = [[(azimuth_comp - azimuth_centre) * cosel, elevation_comp - elevation_centre,
-                                         vp[ivp].image_acc.wcs.wcs.crval[2], frequency[gchan]]]
-                            # radius = numpy.sqrt(((azimuth_comp-azimuth_centre)*cosel)**2 +
-                            #                     (elevation_comp-elevation_centre)**2)
-                            pixloc = vp[ivp].image_acc.wcs.deepcopy().wcs_world2pix(worldloc, 0)[0]
+                                         vp_wcs[ivp].wcs.crval[2], frequency.data[gchan]]]
+                            pixloc = vp_wcs[ivp].wcs_world2pix(worldloc, 1)[0]
                             assert pixloc[0] > 2
                             assert pixloc[0] < nx - 3
                             assert pixloc[1] > 2
                             assert pixloc[1] < ny - 3
+                            assert pixloc[3] > -1, pixloc
+                            assert pixloc[3] < gnchan, pixloc
                             chan = int(round(pixloc[3]))
                             if vnpol > 1:
                                 gain = numpy.zeros([npol], dtype='complex')
@@ -144,13 +147,14 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                                 else:
                                     antvp[ivp, gchan, 0] = 0.0
                                     number_bad += 1
-                        for ant in range(nant):
-                            antgain[ant, ...] = antvp[vp_for_ant[ant], ...]
-                        antwt[...] = 1.0
-                except (ValueError, AssertionError):
-                    number_bad += 1
-                    antgain[...] = 0.0
-                    antwt[...] = 0.0
+                            for ant in range(nant):
+                                antgain[ant, ...] = antvp[vp_for_ant[ant], ...]
+                            antwt[...] = 1.0
+                        except (IndexError, ValueError, AssertionError) as err:
+                            print(err)
+                            number_bad += 1
+                            antgain[...] = 0.0
+                            antwt[...] = 0.0
                 
                 if vnpol > 1:
                     gaintables[icomp].gain.data[row, :, :, :] = antgain.reshape([nant, gnchan, 2, 2])
@@ -159,12 +163,12 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                     gaintables[icomp].gain.data[row, :, :, :] = antgain.reshape([nant, gnchan, 1, 1])
                     gaintables[icomp].weight.data[row, :, :, :] = antwt.reshape([nant, gnchan, 1, 1])
                 gaintables[icomp].attrs["phasecentre"] = comp.direction
-            else:
-                for icomp, comp in enumerate(sc):
-                    gaintables[icomp].gain.data[...] = 1.0 + 0.0j
-                    gaintables[icomp].weight.data[row, :, :, :] = 0.0
-                    gaintables[icomp].attrs["phasecentre"] = comp.direction
-                    number_bad += nant
+        else:
+            for icomp, comp in enumerate(sc):
+                gaintables[icomp].gain.data[...] = 1.0 + 0.0j
+                gaintables[icomp].weight.data[row, :, :, :] = 0.0
+                gaintables[icomp].attrs["phasecentre"] = comp.direction
+                number_bad += nant
     
     assert number_good > 0, "simulate_gaintable_from_voltage_pattern: No points inside the voltage pattern image"
     if number_bad > 0:

@@ -137,7 +137,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     algorithm = get_parameter(kwargs, 'algorithm', 'msclean')
     
     if algorithm == 'msclean':
-        log.info("deconvolve_cube %s: Multi-scale clean of each polarisation and channel separately" %
+        log.info("deconvolve_cube %s: Starting Multi-scale clean of each polarisation and channel separately" %
                  prefix)
         gain = get_parameter(kwargs, 'gain', 0.7)
         assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
@@ -174,7 +174,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     elif algorithm == 'msmfsclean' or algorithm == 'mfsmsclean' or algorithm == 'mmclean':
         findpeak = get_parameter(kwargs, "findpeak", 'RASCIL')
         
-        log.info("deconvolve_cube %s: Multi-scale multi-frequency clean of each polarisation separately"
+        log.info("deconvolve_cube %s: Starting Multi-scale multi-frequency clean of each polarisation separately"
                  % prefix)
         nmoment = get_parameter(kwargs, "nmoment", 3)
         assert nmoment >= 1, "Number of frequency moments must be greater than or equal to one"
@@ -182,9 +182,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         assert nchan > 2 * (nmoment - 1), "Require nchan %d > 2 * (nmoment %d - 1)" % (nchan, 2 * (nmoment - 1))
         dirty_taylor = calculate_image_frequency_moments(dirty, nmoment=nmoment)
         if nmoment > 1:
-            log.debug(psf)
-            log.debug(nmoment)
-            psf_taylor = calculate_image_frequency_moments(psf, nmoment=2 * nmoment)
+             psf_taylor = calculate_image_frequency_moments(psf, nmoment=2 * nmoment)
         else:
             psf_taylor = calculate_image_frequency_moments(psf, nmoment=1)
         psf_peak = numpy.max(psf_taylor["pixels"].data)
@@ -238,7 +236,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
             log.info("deconvolve_cube %s: constructed moment cubes" % prefix)
     
     elif algorithm == 'hogbom':
-        log.info("deconvolve_cube %s: Hogbom clean of each polarisation and channel separately"
+        log.info("deconvolve_cube %s: Starting Hogbom clean of each polarisation and channel separately"
                  % prefix)
         gain = get_parameter(kwargs, 'gain', 0.1)
         assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
@@ -270,7 +268,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
         residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs,
                                                  dirty.image_acc.polarisation_frame)
     elif algorithm == 'hogbom-complex':
-        log.info("deconvolve_cube_complex: Hogbom-complex clean of each channel separately")
+        log.info("deconvolve_cube_complex: Starting Hogbom-complex clean of each channel separately")
         gain = get_parameter(kwargs, 'gain', 0.1)
         assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
         thresh = get_parameter(kwargs, 'threshold', 0.0)
@@ -328,7 +326,9 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     
     else:
         raise ValueError('deconvolve_cube %s: Unknown algorithm %s' % (prefix, algorithm))
-    
+
+    log.info("deconvolve_cube %s: Deconvolution finished" % (prefix))
+
     return comp_image, residual_image
 
 

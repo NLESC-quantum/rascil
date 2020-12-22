@@ -146,8 +146,7 @@ class TestMIDSimulations(unittest.TestCase):
                                                                     pointing_error=a2r * pointing_error,
                                                                     static_pointing_error=a2r * static_pointing_error,
                                                                     global_pointing_error=a2r * global_pointing_error,
-                                                                    seed=seed,
-                                                                    show=False, basename=basename)
+                                                                    seed=seed)
         elif mode == 'wind_pointing':
             # Wind-induced pointing errors
             no_error_gtl, error_gtl = \
@@ -155,8 +154,7 @@ class TestMIDSimulations(unittest.TestCase):
                                                                     sub_vp_list=future_vp_list,
                                                                     time_series="wind",
                                                                     time_series_type="precision",
-                                                                    seed=seed,
-                                                                    show=False, basename=basename)
+                                                                    seed=seed)
         elif mode == 'troposphere':
             screen = import_image_from_fits(args.screen)
             no_error_gtl, error_gtl = \
@@ -165,9 +163,7 @@ class TestMIDSimulations(unittest.TestCase):
                                                                        r0=args.r0,
                                                                        screen=screen,
                                                                        height=args.height,
-                                                                       type_atmosphere=args.mode,
-                                                                       show=args.show == "True",
-                                                                       basename=mode)
+                                                                       type_atmosphere=args.mode)
         elif mode == 'ionosphere':
             screen = import_image_from_fits(args.screen)
             no_error_gtl, error_gtl = \
@@ -176,29 +172,23 @@ class TestMIDSimulations(unittest.TestCase):
                                                                        r0=args.r0,
                                                                        screen=screen,
                                                                        height=args.height,
-                                                                       type_atmosphere=args.mode,
-                                                                       show=args.show == "True",
-                                                                       basename=mode)
+                                                                       type_atmosphere=args.mode)
         
         elif mode == 'surface':
             # Dish surface sag due to gravity
             no_error_gtl, error_gtl = \
                 create_surface_errors_gaintable_rsexecute_workflow(band, bvis_list, original_components,
-                                                                   vp_directory=vp_directory,
-                                                                   show=False, basename=basename)
+                                                                   vp_directory=vp_directory)
         elif mode == 'heterogeneous':
             # Different antennas
             no_error_gtl, error_gtl = \
                 create_heterogeneous_gaintable_rsexecute_workflow(band, bvis_list, original_components,
-                                                                  get_vp=partial(get_vp, vp_directory=""),
-                                                                  show=False, basename=basename)
+                                                                  get_vp=partial(get_vp, vp_directory=""))
         elif mode == 'polarisation':
             # Polarised beams
             no_error_gtl, error_gtl = \
                 create_polarisation_gaintable_rsexecute_workflow(band, bvis_list, original_components,
-                                                                 get_vp=partial(get_vp, vp_directory=""),
-                                                                 basename=basename,
-                                                                 show=True)
+                                                                 get_vp=partial(get_vp, vp_directory=""))
         else:
             raise ValueError("Unknown type of error %s" % mode)
         

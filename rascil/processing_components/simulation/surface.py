@@ -119,13 +119,13 @@ def simulate_gaintable_from_voltage_pattern(vis, sc, vp, vis_slices=None, order=
                         try:
                             worldloc = [[(azimuth_comp - azimuth_centre) * cosel, elevation_comp - elevation_centre,
                                          vp_wcs[ivp].wcs.crval[2], frequency.data[gchan]]]
-                            pixloc = vp_wcs[ivp].wcs_world2pix(worldloc, 1)[0]
-                            assert pixloc[0] > 2
-                            assert pixloc[0] < nx - 3
-                            assert pixloc[1] > 2
-                            assert pixloc[1] < ny - 3
-                            assert pixloc[3] > -1, pixloc
-                            assert pixloc[3] < gnchan, pixloc
+                            pixloc = vp_wcs[ivp].wcs_world2pix(worldloc, 0)[0]
+                            assert pixloc[0] > 2, f"Error in x pixel : {pixloc}"
+                            assert pixloc[0] < nx - 3, f"Error in x pixel : {pixloc}"
+                            assert pixloc[1] > 2, f"Error in y pixel : {pixloc}"
+                            assert pixloc[1] < ny - 3, f"Error in y pixel : {pixloc}"
+                            assert pixloc[3] > -1, f"Error in Frequency pixel : {pixloc}"
+                            assert pixloc[3] < gnchan, f"Error in Frequency pixel : {pixloc}"
                             chan = int(round(pixloc[3]))
                             if vnpol > 1:
                                 gain = numpy.zeros([npol], dtype='complex')

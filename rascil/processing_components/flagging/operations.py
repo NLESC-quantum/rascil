@@ -15,7 +15,6 @@ import numpy
 from astropy.wcs import WCS
 
 from rascil.data_models.memory_data_models import BlockVisibility,  FlagTable
-from rascil.processing_components.visibility.base import get_baseline
 
 log = logging.getLogger('rascil-logger')
 
@@ -76,5 +75,6 @@ def flagging_blockvisibility_with_bl(bvis, baseline=[]):
     #assert isinstance(baseline, list)
     if len(baseline) == 0:
         for ant1, ant2 in baseline:
-            bvis['flags'].data[:, ant1, ant2, :, :] = 1
+            ibaseline = bvis.baselines.get_loc((ant1, ant2))
+            bvis['flags'].data[:, ibaseline, :, :] = 1
     return bvis

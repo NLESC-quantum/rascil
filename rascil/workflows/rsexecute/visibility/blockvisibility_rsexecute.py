@@ -2,12 +2,15 @@
 
 """
 
-__all__ = ['create_blockvisibility_from_ms_rsexecute']
+__all__ = ['create_blockvisibility_from_ms_rsexecute', 'concatenate_blockvisibility_frequency_rsexecute',
+           'concatenate_blockvisibility_time_rsexecute']
 
 import logging
 
+from rascil.processing_components import concatenate_visibility
+
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.processing_components import create_blockvisibility_from_ms
+from rascil.processing_components import create_blockvisibility_from_ms, concatenate_blockvisibility_frequency
 
 log = logging.getLogger('rascil-logger')
 
@@ -40,3 +43,32 @@ def create_blockvisibility_from_ms_rsexecute(msname, nchan_per_blockvis, nout, d
 
     return bvis_list
 
+def concatenate_blockvisibility_frequency_rsexecute(bvis_list, split=2):
+    """ Concatenate a list of blockvisibility's, ordered in frequency
+
+    :param bvis_list: List of Blockvis, ordered in frequency
+    :param split: Split into
+    :return: BlockVis
+    """
+    if len(bvis_list) > split:
+        centre = len(bvis_list) // split
+        result = [concatenate_blockvisibility_frequency_rsexecute(bvis_list[:centre]),
+                  concatenate_blockvisibility_frequency_rsexecute(bvis_list[centre:])]
+        return rsexecute.execute(concatenate_blockvisibility_frequency, nout=2)(result)
+    else:
+        return rsexecute.execute(concatenate_blockvisibility_frequency, nout=2)(bvis_list)
+
+def concatenate_blockvisibility_time_rsexecute(bvis_list, split=2):
+    """ Concatenate a list of blockvisibility's, ordered in time
+
+    :param bvis_list: List of Blockvis, ordered in frequency
+    :param split: Split into
+    :return: BlockVis
+    """
+    if len(bvis_list) > split:
+        centre = len(bvis_list) // split
+        result = [concatenate_blockvisibility_time_rsexecute(bvis_list[:centre]),
+                  concatenate_blockvisibility_time_rsexecute(bvis_list[centre:])]
+        return rsexecute.execute(concatenate_visibility, nout=2)(result)
+    else:
+        return rsexecute.execute(concatenate_visibility, nout=2)(bvis_list)

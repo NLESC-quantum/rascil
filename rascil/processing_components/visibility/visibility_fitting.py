@@ -35,10 +35,10 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         m = params[2]
         u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
         v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
-        vobs = vis.blockvisibility_acc.flagged_vis.data
+        vobs = vis.blockvisibility_acc.flagged_vis
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
-        J = numpy.sum(vis.blockvisibility_acc.flagged_weight.data * (vres * numpy.conjugate(vres)).real)
+        J = numpy.sum(vis.blockvisibility_acc.flagged_weight * (vres * numpy.conjugate(vres)).real)
         return J
     
     def Jboth(params):
@@ -48,11 +48,11 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         m = params[2]
         u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
         v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
-        vobs = vis.blockvisibility_acc.flagged_vis.data
+        vobs = vis.blockvisibility_acc.flagged_vis
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
-        Vrp = vres * numpy.conjugate(p) * vis.blockvisibility_acc.flagged_weight.data
-        J = numpy.sum(vis.blockvisibility_acc.flagged_weight.data * (vres * numpy.conjugate(vres)).real)
+        Vrp = vres * numpy.conjugate(p) * vis.blockvisibility_acc.flagged_weight
+        J = numpy.sum(vis.blockvisibility_acc.flagged_weight * (vres * numpy.conjugate(vres)).real)
         gradJ = numpy.array([- 2.0 * numpy.sum(Vrp.real),
                              + 4.0 * numpy.pi * S * numpy.sum(u * Vrp.imag),
                              + 4.0 * numpy.pi * S * numpy.sum(v * Vrp.imag)])
@@ -65,9 +65,9 @@ def fit_visibility(vis, sc, tol=1e-6, niter=20, verbose=False, method='trust-exa
         
         u = vis.blockvisibility_acc.u_lambda.data[..., numpy.newaxis]
         v = vis.blockvisibility_acc.v_lambda.data[..., numpy.newaxis]
-        wt = vis.blockvisibility_acc.flagged_weight.data
+        wt = vis.blockvisibility_acc.flagged_weight
         
-        vobs = vis.blockvisibility_acc.flagged_vis.data
+        vobs = vis.blockvisibility_acc.flagged_vis
         p = numpy.exp(-2j * numpy.pi * (u * l + v * m))
         vres = vobs - S * p
         Vrp = vres * numpy.conjugate(p)

@@ -1186,21 +1186,27 @@ class BlockVisibilityAccessor(XarrayAccessorMixin):
     
     @property
     def flagged_vis(self):
-        """Flagged complex visibility [nrows, nbaseline, ncha, npol]
+        """Flagged complex visibility [nrows, nbaseline, nchan, npol]
+        
+        Note that a numpy or dask array is returned, not an xarray dataarray
         """
-        return self._obj['vis'] * (1 - self._obj['flags'])
+        return self._obj['vis'].data * (1 - self._obj['flags'].data)
     
     @property
     def flagged_weight(self):
         """Weight [: npol]
+        
+        Note that a numpy or dask array is returned, not an xarray dataarray
         """
-        return self._obj['weight'] * (1 - self._obj['flags'])
+        return self._obj['weight'].data * (1 - self._obj['flags'].data)
     
     @property
     def flagged_imaging_weight(self):
         """ Flagged Imaging_weight[nrows, nbaseline, nchan, npol]
+        
+        Note that a numpy or dask array is returned, not an xarray dataarray
         """
-        return self._obj['imaging_weight'] * (1 - self._obj['flags'])
+        return self._obj['imaging_weight'].data * (1 - self._obj['flags'].data)
     
     @property
     def nvis(self):

@@ -292,7 +292,7 @@ class TestImaging(unittest.TestCase):
         restored_image_list = restore_list_rsexecute_workflow(self.model_list, psf_image_list, residual_image_list,
                                                               psfwidth=1.0)
         restored_image_list = rsexecute.compute(restored_image_list, sync=True)
-        self.persist = True
+        
         if self.persist:
             export_image_to_fits(restored_image_list[centre], '%s/test_imaging_invert_%s_restored.fits' %
                                  (self.dir, rsexecute.type()))
@@ -320,7 +320,7 @@ class TestImaging(unittest.TestCase):
     @unittest.skip("Needs overlap to work - temporarily disabled")
     def test_restored_list_facet(self):
         self.actualSetUp(zerow=True)
-        self.persist = True
+        
         centre = self.freqwin // 2
         psf_image_list = invert_list_rsexecute_workflow(self.bvis_list, self.model_list, context='2d', dopsf=True)
         residual_image_list = residual_list_rsexecute_workflow(self.bvis_list, self.model_list, context='2d')

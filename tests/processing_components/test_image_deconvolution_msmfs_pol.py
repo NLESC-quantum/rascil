@@ -31,7 +31,7 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
         self.niter = 1000
         self.lowcore = create_named_configuration('LOWBD2-CORE')
         self.nchan = 5

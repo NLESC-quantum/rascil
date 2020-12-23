@@ -39,7 +39,7 @@ class TestImaging2D(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
         
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
     
     def actualSetUp(self, freqwin=1, dospectral=True,
                     image_pol=PolarisationFrame('stokesI'), zerow=False):
@@ -298,7 +298,7 @@ class TestImaging2D(unittest.TestCase):
         self._invert_base(name='invert_wterm_clipped', positionthreshold=35.0, check_components=False, gcfcf=gcfcf)
     
     def test_invert_spec_wterm(self):
-        self.persist = True
+        
         self.actualSetUp(zerow=False, dospectral=True, freqwin=4)
         gcf, cf = create_awterm_convolutionfunction(self.model, nw=50, wstep=16.0,
                                                     oversampling=4, support=100, use_aaf=True,

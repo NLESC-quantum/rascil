@@ -77,12 +77,10 @@ class TestImageDeconvolution(unittest.TestCase):
         self.cmodel = restore_cube(self.model, self.psf)
         assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 1.0) < 1e-7, \
             numpy.max(self.cmodel["pixels"].data)
-        self.persist = True
         if self.persist: export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
 
     def test_fit_psf(self):
         clean_beam = fit_psf(self.psf)
-        self.persist = True
         if self.persist: export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.dir))
 
         assert numpy.abs(clean_beam["bmaj"] - 1048.7435130499214) < 1.0e-7, clean_beam

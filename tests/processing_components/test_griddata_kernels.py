@@ -35,7 +35,7 @@ class TestGridDataKernels(unittest.TestCase):
         self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
         self.image = create_image(npixel=512, cellsize=0.0005, phasecentre=self.phasecentre,
                                   polarisation_frame=PolarisationFrame("stokesIQUV"))
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
     
     
     def test_fill_box_to_convolutionfunction(self):

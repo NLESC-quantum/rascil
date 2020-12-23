@@ -198,12 +198,10 @@ class TestImage(unittest.TestCase):
         m31_fft = fft_image_to_griddata(self.m31image)
         m31_fft_ifft = ifft_griddata_to_image(m31_fft, self.m31image)
         m31_fft_ifft["pixels"] = m31_fft_ifft["pixels"].real
-        self.persist = True
         if self.persist: export_image_to_fits(m31_fft_ifft, fitsfile='%s/test_m31_fft_fft.fits' % (self.dir))
         err = numpy.max(numpy.abs(self.m31image["pixels"].data - m31_fft_ifft["pixels"].data))
         assert err < 1e-7, err
         m31_fft_ifft["pixels"].data = numpy.abs(m31_fft_ifft["pixels"].data)
-        self.persist = True
     
     def test_fftim_factors(self):
         for i in [3, 5, 7]:
@@ -233,7 +231,6 @@ class TestImage(unittest.TestCase):
         
         vp = create_vp(telescope='MID_FEKO_B2')
         vp = scale_and_rotate_image(vp, 90.0 * numpy.pi / 180.0)
-        self.persist = True
         if self.persist:
             vp["pixels"].data = vp["pixels"].data.real
             fitsfile = '{}/test_vp_rotate_real.fits'.format(self.dir)

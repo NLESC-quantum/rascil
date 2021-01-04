@@ -17,7 +17,9 @@ with open('README.md') as readme_file:
 
 # Last line contains string that setup.py has trouble interpreting
 with open('requirements.txt') as reqs_file:
-    reqs = reqs_file.read()[-2]
+    reqs = reqs_file.read()
+reqs=reqs.split('\n')[-2]
+print(reqs)
 
 # MF. This is a workaround to be able to build the library with MacOS
 if sys.platform == 'darwin':

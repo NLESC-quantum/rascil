@@ -296,7 +296,7 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
         fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/mkatplus_local.cfg"),
                                                vp_type={"m0": "MEERKAT", "s0": "MID"},
-                                               mount='azel', name=name, location=location, **kwargs)
+                                               mount='alt-az', name=name, location=location, **kwargs)
     elif name == 'ASKAP':
         location = EarthLocation(lon=+116.6356824*u.deg, lat=-26.7013006*u.deg, height=377.0)
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))

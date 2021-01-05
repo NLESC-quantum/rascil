@@ -212,7 +212,7 @@ try:
             tb = table("%s/ANTENNA" % self.basename, desc, nrow=self.nant, ack=False)
 
             tb.putcol('OFFSET', numpy.zeros((self.nant, 3)), 0, self.nant)
-            tb.putcol('TYPE', ['GROUND-BASED,'] * self.nant, 0, self.nant)
+            tb.putcol('TYPE', ['GROUND-BASED'] * self.nant, 0, self.nant)
             tb.putcol('DISH_DIAMETER', [2.0, ] * self.nant, 0, self.nant)
             tb.putcol('FLAG_ROW', [False, ] * self.nant, 0, self.nant)
             tb.putcol('MOUNT', ['ALT-AZ', ] * self.nant, 0, self.nant)

@@ -848,7 +848,10 @@ try:
                     inttimeList = [dataSet.inttime for bl in dataSet.baselines]
                     # timeList = [(utc0/86400.0 - 2400000.5) * 86400 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
                     # timeList = [utc + dataSet.inttime / 2.0 for bl in dataSet.baselines]
-                    timeList = [dataSet.obstime + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+
+
+                    timeList = [dataSet.obstime for bl in dataSet.baselines]
+                    timeList_Centroid = [dataSet.obstime + dataSet.inttime / 2.0 for bl in dataSet.baselines]
 
                     ### Add in the new new source ID and name
                     sourceList = [sourceID for bl in dataSet.baselines]
@@ -902,7 +905,7 @@ try:
                         tb.putcol('SCAN_NUMBER', [s, ] * nBL, i, nBL)
                         tb.putcol('STATE_ID', [-1, ] * nBL, i, nBL)
                         tb.putcol('TIME', timeList, i, nBL)
-                        tb.putcol('TIME_CENTROID', timeList, i, nBL)
+                        tb.putcol('TIME_CENTROID', timeList_Centroid, i, nBL)
                         tb.putcol('DATA', matrix[..., j, :].transpose(0, 2, 1), i, nBL)
                         i += nBL
                     s += 1

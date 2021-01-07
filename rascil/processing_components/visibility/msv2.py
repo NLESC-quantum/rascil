@@ -106,8 +106,8 @@ try:
 
             self.nant = len(ants)
             self.array.append(
-                {'center': [0., 0., 0.], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
-            # {'center': [arrayX, arrayY, arrayZ], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
+                {'center': [arrayX, arrayY, arrayZ], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
+            # {'center': [0., 0., 0.], 'ants': ants, 'mapper': mapper, 'inputAnts': antennas})
 
         def add_data_set(self, obstime, inttime, baselines, visibilities, flags=None, pol='XX', source=None,
                          phasecentre=None,
@@ -220,11 +220,14 @@ try:
             tb.putcol('STATION', [self.siteName, ] * self.nant, 0, self.nant)
 
             for i, ant in enumerate(self.array[0]['ants']):
-                tb.putcell('OFFSET', i, self.site_config['offset'].data[i])
-                # tb.putcell('OFFSET', i, [0.0, 0.0, 0.0])
+                # tb.putcell('OFFSET', i, self.site_config['offset'].data[i])
+                tb.putcell('OFFSET', i, [0.0, 0.0, 0.0])
                 tb.putcell('POSITION', i, [ant.x + self.array[0]['center'][0],
                                            ant.y + self.array[0]['center'][1],
                                            ant.z + self.array[0]['center'][2]])
+                # tb.putcell('POSITION', i, [ant.x + self.array[0]['center'][0],
+                #                            ant.y + self.array[0]['center'][1],
+                #                            ant.z + self.array[0]['center'][2]])
                 # tb.putcell('TYPE', i, self.site_config.mount[i])
                 tb.putcell('DISH_DIAMETER', i, self.site_config['diameter'].data[i])
                 # tb.putcell('FLAG_ROW', i, False)
@@ -903,7 +906,7 @@ try:
                         tb.putcol('SCAN_NUMBER', [s, ] * nBL, i, nBL)
                         tb.putcol('STATE_ID', [-1, ] * nBL, i, nBL)
                         tb.putcol('TIME', timeList, i, nBL)
-                        tb.putcol('TIME_CENTROID', timeList_Centroid, i, nBL)
+                        tb.putcol('TIME_CENTROID', timeList, i, nBL)
                         tb.putcol('DATA', matrix[..., j, :].transpose(0, 2, 1), i, nBL)
                         i += nBL
                     s += 1

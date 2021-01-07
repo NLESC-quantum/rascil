@@ -847,11 +847,9 @@ try:
                     # timeList = [utc - astro.MJD_OFFSET for bl in dataSet.baselines]
                     inttimeList = [dataSet.inttime for bl in dataSet.baselines]
                     # timeList = [(utc0/86400.0 - 2400000.5) * 86400 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
-                    # timeList = [utc + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+                    timeList = [dataSet.obstime + dataSet.inttime / 2.0 for bl in dataSet.baselines]
 
-
-                    timeList = [dataSet.obstime for bl in dataSet.baselines]
-                    timeList_Centroid = [dataSet.obstime + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+                    timeList_Centroid = [dataSet.obstime + dataSet.inttime for bl in dataSet.baselines]
 
                     ### Add in the new new source ID and name
                     sourceList = [sourceID for bl in dataSet.baselines]

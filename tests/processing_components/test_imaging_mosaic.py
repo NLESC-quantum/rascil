@@ -20,7 +20,7 @@ from rascil.processing_components import create_blockvisibility_from_ms, show_im
 import logging
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 mpl_logger = logging.getLogger("matplotlib")
 mpl_logger.setLevel(logging.WARNING)
@@ -31,7 +31,7 @@ log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
-log.addHandler(logging.StreamHandler(sys.stderr))
+
 
 
 class TestImaging2D(unittest.TestCase):

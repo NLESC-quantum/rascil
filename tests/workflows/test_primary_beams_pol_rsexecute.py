@@ -27,7 +27,7 @@ from rascil.workflows.rsexecute.imaging import weight_list_rsexecute_workflow
 
 log = logging.getLogger('rascil-logger')
 
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.WARNING)
 
 
 class VoltagePatternsPolGraph(unittest.TestCase):

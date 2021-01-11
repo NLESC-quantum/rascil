@@ -108,7 +108,6 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                         for chan in range(nchan):
                             applied[sub_vis_row, ibaseline, chan, 0] = \
                                 original[sub_vis_row, ibaseline, chan, 0] * smueller1[chan, a1, a2]
-                            antantwt = gainwt[a1, chan, 0, 0] * gainwt[a2, chan, 0, 0]
                             appliedwt[sub_vis_row, ibaseline, chan, 0] = \
                                 gainwt[a1, chan, 0, 0] * gainwt[a2, chan, 0, 0]
                             #applied[sub_vis_row, ibaseline, chan, 0][antantwt == 0.0] = 0.0

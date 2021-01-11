@@ -57,7 +57,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import \
     invert_list_rsexecute_workflow, sum_predict_results_rsexecute, predict_list_rsexecute_workflow, \
     sum_invert_results_rsexecute
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import \
-    predict_skymodel_list_compsonly_rsexecute_workflow
+    predict_skymodel_list_rsexecute_workflow
 
 log = logging.getLogger('rascil-logger')
 
@@ -301,7 +301,7 @@ def predict_dft_rsexecute_workflow(sub_bvis_list, sub_components, gt_list, conte
     dft_bvis_list = [rsexecute.execute(copy_visibility, nout=1)(bvis, zero=True) for
                      bvis in sub_bvis_list]
     dft_bvis_list = [
-        predict_skymodel_list_compsonly_rsexecute_workflow(dft_bvis_list[ibv],
+        predict_skymodel_list_rsexecute_workflow(dft_bvis_list[ibv],
                                                            dft_sm_list[ibv],
                                                            context=context, docal=True)
         for ibv, bvis in enumerate(dft_bvis_list)]
@@ -375,7 +375,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
     nominal_bvis_list = [rsexecute.execute(copy_visibility, nout=1)(bvis, zero=True) for
                           bvis in sub_bvis_list]
     nominal_bvis_list = [
-        predict_skymodel_list_compsonly_rsexecute_workflow(nominal_bvis_list[ibv],
+        predict_skymodel_list_rsexecute_workflow(nominal_bvis_list[ibv],
                                                            nominal_sm_list[ibv],
                                                            context=context, docal=True,
                                                            **kwargs)
@@ -384,7 +384,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(sub_bvis_list,
     actual_bvis_list = [rsexecute.execute(copy_visibility, nout=1)(bvis, zero=True) for
                        bvis in sub_bvis_list]
     actual_bvis_list = [
-        predict_skymodel_list_compsonly_rsexecute_workflow(actual_bvis_list[ibv],
+        predict_skymodel_list_rsexecute_workflow(actual_bvis_list[ibv],
                                                            actual_sm_list[ibv],
                                                            context=context, docal=True,
                                                            **kwargs)

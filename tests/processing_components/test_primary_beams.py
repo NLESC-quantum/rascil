@@ -22,7 +22,6 @@ log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
-
 class TestPrimaryBeams(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path

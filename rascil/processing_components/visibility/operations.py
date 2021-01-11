@@ -12,7 +12,8 @@ __all__ = ['concatenate_blockvisibility_frequency',
            'average_blockvisibility_by_channel',
            'convert_blockvisibility_to_stokes',
            'convert_blockvisibility_to_stokes',
-           'convert_blockvisibility_to_stokesI']
+           'convert_blockvisibility_to_stokesI',
+           'convert_blockvisibility_stokesI_to_polframe']
 
 import copy
 import collections
@@ -355,5 +356,54 @@ def convert_blockvisibility_to_stokesI(vis):
                            imaging_weight=vis_imaging_weight,
                            integration_time=vis["integration_time"].data,
                            polarisation_frame=polarisation_frame,
+                           source=vis.attrs["source"],
+                           meta=vis.attrs["meta"])
+
+
+def convert_blockvisibility_stokesI_to_polframe(vis, poldef=None):
+    """Convert the Stokes I into full polarisation, return new Visibility
+
+    :param vis: blockvisibility
+    :param poldef: desired polarisation frame
+    :return: Converted visibility data.
+   """
+    if vis.blockvisibility_acc.polarisation_frame == poldef:
+        return vis
+    
+    npol = poldef.npol
+
+    stokesvis = vis.blockvisibility_acc.flagged_vis[..., 0][..., numpy.newaxis]
+    vis_data = numpy.repeat(stokesvis, npol, axis=-1)
+
+    stokesflags = vis.flags.data[..., 0][..., numpy.newaxis]
+    vis_flags = numpy.repeat(stokesflags, npol, axis=-1)
+
+    stokesweight = vis.blockvisibility_acc.flagged_weight[..., 0][..., numpy.newaxis]
+    vis_weight = numpy.repeat(stokesweight, npol, axis=-1)
+
+    stokesimaging_weight = vis.blockvisibility_acc.flagged_imaging_weight[..., 0][..., numpy.newaxis]
+    vis_imaging_weight = numpy.repeat(stokesimaging_weight, npol, axis=-1)
+
+    if poldef == PolarisationFrame('linear'):
+        vis_data[..., 2] = 0.0
+        vis_data[..., 3] = 0.0
+        
+    elif poldef == PolarisationFrame('circular'):
+        vis_data[..., 1] = 0.0
+        vis_data[..., 2] = 0.0
+    
+    return BlockVisibility(frequency=vis.frequency.data,
+                           channel_bandwidth=vis.channel_bandwidth.data,
+                           phasecentre=vis.phasecentre,
+                           baselines=vis["baselines"],
+                           configuration=vis.attrs["configuration"],
+                           uvw=vis["uvw"].data,
+                           time=vis["time"].data,
+                           vis=vis_data,
+                           flags=vis_flags,
+                           weight=vis_weight,
+                           imaging_weight=vis_imaging_weight,
+                           integration_time=vis["integration_time"].data,
+                           polarisation_frame=poldef,
                            source=vis.attrs["source"],
                            meta=vis.attrs["meta"])

@@ -15,7 +15,7 @@ from rascil.processing_components import create_image, create_image_from_array, 
     create_empty_image_like, fft_image_to_griddata, pad_image, create_w_term_like, create_vp, apply_voltage_pattern_to_image
 from rascil.processing_components.image.operations import export_image_to_fits, \
     calculate_image_frequency_moments, calculate_image_from_frequency_moments, add_image, qa_image, reproject_image, \
-    convert_polimage_to_stokes, import_image_from_fits, \
+    convert_polimage_to_stokes, import_image_from_fits, average_image_over_frequency, \
     convert_stokes_to_polimage, smooth_image, scale_and_rotate_image, fft_image_to_griddata, ifft_griddata_to_image
 from rascil.processing_components.simulation import create_test_image, create_low_test_image_from_gleam
 
@@ -147,7 +147,15 @@ class TestImage(unittest.TestCase):
         smooth = smooth_image(self.m31image)
         assert numpy.max(smooth["pixels"].data) > 0.0
         assert numpy.max(smooth["pixels"].data) > numpy.max(self.m31image["pixels"].data)
-    
+
+    def test_integrate_image_over_frequency(self):
+        frequency = numpy.linspace(0.9e8, 1.1e8, 9)
+        original_cube = create_low_test_image_from_gleam(npixel=512, cellsize=0.0001, frequency=frequency,
+                                                         flux_limit=1.0)
+        average = average_image_over_frequency(original_cube)
+        assert average["pixels"].data.shape[0] == 1
+        assert numpy.abs(numpy.sum(original_cube["pixels"].data)/9 - numpy.sum(average["pixels"].data)) < 1e-12
+
     def test_calculate_image_frequency_moments(self):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
         original_cube = create_low_test_image_from_gleam(npixel=512, cellsize=0.0001, frequency=frequency,

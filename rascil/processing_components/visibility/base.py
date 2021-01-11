@@ -124,13 +124,13 @@ def create_blockvisibility(config: Configuration,
     :param elevation_limit: in degrees
     :param source: Source name
     :param meta: Meta data as a dictionary
-    :param utc_time: Time of ha definition default is Time("2020-01-01T00:00:00", format='isot', scale='utc')
+    :param utc_time: Time of ha definition default is Time("2000-01-01T00:00:00", format='isot', scale='utc')
     :return: BlockVisibility
     """
     assert phasecentre is not None, "Must specify phase centre"
     
     if utc_time is None:
-        utc_time_zero = Time("2020-01-01T00:00:00", format='isot', scale='utc')
+        utc_time_zero = Time("2000-01-01T00:00:00", format='isot', scale='utc')
     elif isinstance(utc_time, Time):
         utc_time_zero = utc_time
         utc_time = None

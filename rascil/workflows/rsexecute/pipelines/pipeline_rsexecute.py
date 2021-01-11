@@ -151,7 +151,7 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
 
     residual_imagelist = residual_list_rsexecute_workflow(vis_list, deconvolve_model_imagelist, context=context,
                                                           vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
-    output = get_parameter(kwargs, "cube_output", "cubes")
+    output = get_parameter(kwargs, "restored_output", "cube")
     if output == "integrated":
         restored_imagelist = \
             restore_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs)

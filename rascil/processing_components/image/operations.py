@@ -3,6 +3,7 @@
 """
 
 __all__ = ['add_image',
+           'average_image_over_frequency',
            'calculate_image_frequency_moments',
            'calculate_image_from_frequency_moments',
            'convert_polimage_to_stokes',
@@ -371,6 +372,28 @@ def smooth_image(model: Image, width=1.0, normalise=True):
     return cmodel
 
 
+def average_image_over_frequency(im: Image) -> Image:
+    """Integrate image across frequency
+
+    :return: Integrated image
+    """
+    # assert isinstance(im, Image)
+    assert image_is_canonical(im)
+    
+    nchannels = len(im.frequency.data)
+    newim_data = numpy.mean(im["pixels"].data, axis=0)[numpy.newaxis, ...]
+
+    assert not numpy.isnan(numpy.sum(im["pixels"].data)), "NaNs present in image data"
+    
+    
+    newim_wcs = copy.deepcopy(im.image_acc.wcs)
+    
+    newim_wcs.wcs.crval[3] = numpy.average(im.frequency.data)
+    newim_wcs.wcs.crpix[3] = 1
+    
+    return create_image_from_array(newim_data, newim_wcs, im.image_acc.polarisation_frame)
+
+
 def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmoment=1) -> Image:
     """Calculate frequency weighted moments of an image cube
 
@@ -393,7 +416,7 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     :param nmoment: Number of moments to calculate
     :return: Moments image
     """
-    #assert isinstance(im, Image)
+    # assert isinstance(im, Image)
     assert image_is_canonical(im)
     
     assert nmoment > 0
@@ -408,16 +431,16 @@ def calculate_image_frequency_moments(im: Image, reference_frequency=None, nmome
     log.debug("calculate_image_frequency_moments: Reference frequency = %.3f (MHz)" % (reference_frequency / 1e6))
     
     moment_data = numpy.zeros([nmoment, npol, ny, nx])
-
+    
     assert not numpy.isnan(numpy.sum(im["pixels"].data)), "NaNs present in image data"
-
+    
     for moment in range(nmoment):
         for chan in range(nchan):
             weight = numpy.power((freq[chan] - reference_frequency) / reference_frequency, moment)
             moment_data[moment, ...] += im["pixels"].data[chan, ...] * weight
     
     assert not numpy.isnan(numpy.sum(moment_data)), "NaNs present in moment data"
-
+    
     moment_wcs = copy.deepcopy(im.image_acc.wcs)
     
     moment_wcs.wcs.ctype[3] = 'MOMENT'

@@ -36,7 +36,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
     
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
 
     def tearDown(self):
         rsexecute.close()
@@ -77,9 +77,9 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         vpbeam_wcs.wcs.ctype[0] = 'RA---SIN'
         vpbeam_wcs.wcs.ctype[1] = 'DEC--SIN'
         vpbeam_wcs.wcs.crval[0] = pbmodel.image_acc.wcs.wcs.crval[0]
-        vpbeam_wcs.wcs.wcs.crval[1] = pbmodel.image_acc.wcs.wcs.crval[1]
+        vpbeam_wcs.wcs.crval[1] = pbmodel.image_acc.wcs.wcs.crval[1]
         vpbeam = create_image_from_array(vpbeam["pixels"].data, wcs=vpbeam_wcs,
-                                         polarisation_frame=vpbeam.polarisation_frame)
+                                         polarisation_frame=vpbeam.image_acc.polarisation_frame)
 
         s3_components = create_test_skycomponents_from_s3(flux_limit=0.1,
                                                           phasecentre=self.phasecentre,
@@ -108,7 +108,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         stokes_comp = list()
         for comp in rec_comp:
             stokes_comp.append(convert_pol_frame(comp.flux[0], PolarisationFrame("linear"),
-                                                 PolarisationFrame("stokesIQUV")))
+                                                 PolarisationFrame("stokesIQUV"), polaxis=0))
 
         stokesI = numpy.abs(numpy.array([comp_flux[0] for comp_flux in stokes_comp]).real)
         stokesQ = numpy.abs(numpy.array([comp_flux[1] for comp_flux in stokes_comp]).real)
@@ -129,7 +129,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         bvis_list = rsexecute.scatter(bvis_list)
 
         model_list = \
-            [rsexecute.execute(create_image_from_visibility, nout=1)(bv, cellsize=cellsize, npixel=4096,
+            [rsexecute.execute(create_image_from_visibility, nout=1)(bv, cellsize=cellsize, npixel=512,
                                                                      phasecentre=self.phasecentre,
                                                                      override_cellsize=False,
                                                                      polarisation_frame=PolarisationFrame("stokesIQUV"))
@@ -141,16 +141,11 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         continuum_imaging_list = \
             continuum_imaging_list_rsexecute_workflow(bvis_list, model_list,
                                                       context='2d',
-                                                      algorithm='hogbom',
-                                                      facets=1,
+                                                      algorithm='msclean',
                                                       niter=1000,
                                                       fractional_threshold=0.1,
                                                       threshold=1e-4,
-                                                      nmajor=5, gain=0.1,
-                                                      deconvolve_facets=4,
-                                                      deconvolve_overlap=32,
-                                                      deconvolve_taper='tukey',
-                                                      psf_support=64)
+                                                      nmajor=5, gain=0.1)
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = 0
         if self.persist:
@@ -166,8 +161,8 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.show(block=False)
 
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data['max'] - 0.9953017707113947) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.0036396480874570846) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 0.49695741458324955) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.0231425246713768) < 1.0e-7, str(qa)
 
 
 if __name__ == '__main__':

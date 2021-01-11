@@ -1,5 +1,4 @@
 __all__ = ['predict_skymodel_list_rsexecute_workflow',
-           'predict_skymodel_list_compsonly_rsexecute_workflow',
            'restore_skymodel_list_rsexecute_workflow',
            'crosssubtract_datamodels_skymodel_list_rsexecute_workflow',
            'convolve_skymodel_list_rsexecute_workflow',
@@ -9,8 +8,6 @@ import logging
 
 import numpy
 
-from rascil.data_models.memory_data_models import Image, GainTable, SkyModel, \
-    ConvolutionFunction, BlockVisibility
 from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import image_scatter_facets, image_gather_facets
 from rascil.processing_components.image import restore_cube
@@ -29,7 +26,7 @@ log = logging.getLogger('rascil-logger')
 
 
 def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng', gcfcf=None,
-                                             docal=False, **kwargs):
+                                             docal=False, inverse=True, **kwargs):
     """Predict from a list of skymodels, producing one visibility per skymodel
 
     :param obsvis: "Observed Block Visibility"
@@ -44,20 +41,18 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
     def ft_cal_sm(ov, sm, g):
         if g is not None:
             assert len(g) == 2, g
-            #assert isinstance(g[0], Image), g[0]
-            #assert isinstance(g[1], ConvolutionFunction), g[1]
+            # assert isinstance(g[0], Image), g[0]
+            # assert isinstance(g[1], ConvolutionFunction), g[1]
         
         v = copy_visibility(ov, zero=True)
-
+        
         if len(sm.components) > 0:
-            dftv = copy_visibility(ov, zero=True)
             if sm.mask is not None:
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
-                dftv = dft_skycomponent_visibility(dftv, comps)
+                v = dft_skycomponent_visibility(v, comps)
             else:
-                dftv = dft_skycomponent_visibility(dftv, sm.components)
-            v['vis'].data += dftv['vis'].data
+                v = dft_skycomponent_visibility(v, sm.components)
         
         if sm.image is not None:
             if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
@@ -71,8 +66,8 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
                 v['vis'].data += imgv['vis'].data
         
         if docal and sm.gaintable is not None:
-            v = apply_gaintable(v, sm.gaintable, inverse=True)
-       
+            v = apply_gaintable(v, sm.gaintable, inverse=inverse)
+        
         return v
     
     if isinstance(obsvis, list):
@@ -88,43 +83,6 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
         else:
             return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism]) for ism, sm in
                     enumerate(skymodel_list)]
-
-
-def predict_skymodel_list_compsonly_rsexecute_workflow(obsvis, skymodel_list, docal=False, **kwargs):
-    """Predict from a list of component-only skymodels, producing one visibility per skymodel
-    
-    This is an optimised version of predict_skymodel_list_rsexecute_workflow, working on block
-    visibilities and ignoring the image in a skymodel
-
-    :param obsvis: "Observed Block Visibility"
-    :param skymodel_list: skymodel list
-    :param context: Type of processing e.g. 2d, wstack, timeslice or facets
-    :param docal: Apply calibration table in skymodel
-    :param kwargs: Parameters for functions in components
-    :return: List of vis_lists
-   """
-    
-    def ft_cal_sm(obv, sm):
-        #assert isinstance(obv, BlockVisibility), obv
-        bv = copy_visibility(obv)
-        
-        bv['vis'].data[...] = 0.0 + 0.0j
-        
-        assert len(sm.components) > 0
-        
-        if sm.mask is not None:
-            comps = copy_skycomponent(sm.components)
-            comps = apply_beam_to_skycomponent(comps, sm.mask)
-            bv = dft_skycomponent_visibility(bv, comps)
-        else:
-            bv = dft_skycomponent_visibility(bv, sm.components)
-        
-        if docal and sm.gaintable is not None:
-            bv = apply_gaintable(bv, sm.gaintable, inverse=True)
-        
-        return bv
-    
-    return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm) for sm in skymodel_list]
 
 
 def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context='ng',
@@ -143,16 +101,16 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context='ng
    """
     
     def ift_ical_sm(v, sm, g):
-        #assert isinstance(v, BlockVisibility), v
-        #assert isinstance(sm, SkyModel), sm
+        # assert isinstance(v, BlockVisibility), v
+        # assert isinstance(sm, SkyModel), sm
         if g is not None:
             assert len(g) == 2, g
-            #assert isinstance(g[0], Image), g[0]
-            #assert isinstance(g[1], ConvolutionFunction), g[1]
+            # assert isinstance(g[0], Image), g[0]
+            # assert isinstance(g[1], ConvolutionFunction), g[1]
         
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
-            
+        
         result = invert_list_serial_workflow([v], [sm.image], context=context, gcfcf=[g],
                                              **kwargs)[0]
         if sm.mask is not None:
@@ -181,8 +139,8 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
     :param restore_taper: Type of taper between facets
     :return: list of restored images (or graph)
     """
-    restore_facets=1
-
+    restore_facets = 1
+    
     assert len(skymodel_list) == len(psf_imagelist)
     if residual_imagelist is not None:
         assert len(skymodel_list) == len(residual_imagelist)
@@ -281,12 +239,12 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng
    """
     
     def ft_ift_sm(ov, sm, g):
-        #assert isinstance(ov, BlockVisibility), ov
-        #assert isinstance(sm, SkyModel), sm
+        # assert isinstance(ov, BlockVisibility), ov
+        # assert isinstance(sm, SkyModel), sm
         if g is not None:
             assert len(g) == 2, g
-            #assert isinstance(g[0], Image), g[0]
-            #assert isinstance(g[1], ConvolutionFunction), g[1]
+            # assert isinstance(g[0], Image), g[0]
+            # assert isinstance(g[1], ConvolutionFunction), g[1]
         
         v = copy_visibility(ov)
         

@@ -14,7 +14,7 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.visibility.operations import convert_blockvisibility_to_stokesI, \
-    convert_blockvisibility_to_stokes
+    convert_blockvisibility_to_stokes, convert_blockvisibility_stokesI_to_polframe
 
 
 class TestVisibilityConvertPol(unittest.TestCase):
@@ -44,7 +44,18 @@ class TestVisibilityConvertPol(unittest.TestCase):
             visi = convert_blockvisibility_to_stokesI(vis)
             assert visi.blockvisibility_acc.polarisation_frame.type == 'stokesI'
             assert visi.blockvisibility_acc.npol == 1
-    
+
+    def test_convert_visibility_I_polframe(self):
+        for pol in ['linear', 'circular']:
+            vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+                                         channel_bandwidth=self.channel_bandwidth,
+                                         phasecentre=self.phasecentre, weight=1.0,
+                                         polarisation_frame=PolarisationFrame("stokesI"))
+            assert vis.blockvisibility_acc.npol == 1
+            visp = convert_blockvisibility_stokesI_to_polframe(vis, poldef=PolarisationFrame(pol))
+            assert visp.blockvisibility_acc.polarisation_frame.type == pol
+            assert visp.blockvisibility_acc.npol == 4
+
     def test_convert_visibility_stokes(self):
         for pol in ['linear', 'circular']:
             vis = create_blockvisibility(self.lowcore, self.times, self.frequency,

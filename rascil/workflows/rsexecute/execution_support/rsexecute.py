@@ -142,6 +142,16 @@ class _rsexecutebase():
             raise ValueError('use_dask and use_dlg cannot be specified together')
         self._set_state(use_dask, use_dlg, None, verbose, optimize)
 
+        # Initialize astropy to avoid threading problems
+        if use_dask:
+            import astropy._erfa
+            import astropy.units as u
+            assert astropy._erfa.s2c(0 * u.rad, 0 * u.rad)[0] == 1.0
+            import astropy.constants
+            assert astropy.constants.c.unit == "m/s"
+            from astropy.coordinates import SkyCoord
+            assert isinstance(SkyCoord(0.0 * u.rad, 0.0 * u.rad, frame='icrs').to_string(), str)
+
     def _set_state(self, use_dask, use_dlg, client, verbose, optimize):
         self._using_dask = use_dask
         self._using_dlg = use_dlg

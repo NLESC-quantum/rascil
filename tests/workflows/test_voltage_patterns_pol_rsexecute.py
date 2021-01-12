@@ -25,7 +25,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger('rascil-logger')
 
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.WARNING)
 
 
 class TestVoltagePatternsPolGraph(unittest.TestCase):

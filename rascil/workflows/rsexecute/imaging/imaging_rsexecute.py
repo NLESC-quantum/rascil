@@ -142,6 +142,12 @@ def restore_list_rsexecute_workflow(model_imagelist, psf_imagelist, residual_ima
                                     restore_overlap=0, restore_taper='tukey', **kwargs):
     """ Create a graph to calculate the restored image
 
+    This restores each frequency plane using an cleanbeam fitted from the frequency-summed PSF
+    The output is a cube for each frequency. Note that the noise in the residual is that
+    (correctly) that for each frequency.
+
+    This will not give any information on the spectral behaviour
+
     :param model_imagelist: Model list (or graph)
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
@@ -178,6 +184,8 @@ def restore_rsexecute_workflow(model_imagelist, psf_imagelist, residual_imagelis
     - Integrates the residual across the band
     - Fits to the band-integrated PSF
     - Restores the model, cleanbeam, and residual
+    
+    This will not give any information on the spectral behaviour
 
     :param model_imagelist: Model list (or graph)
     :param psf_imagelist: PSF list (or graph)
@@ -202,7 +210,6 @@ def restore_rsexecute_workflow(model_imagelist, psf_imagelist, residual_imagelis
         restored = rsexecute.execute(restore_cube, nout=1)(model, residual=residual, cleanbeam=cleanbeam,
                                                            **kwargs)
     else:
-        residual = None
         restored = rsexecute.execute(restore_cube, nout=1)(model, cleanbeam=cleanbeam, **kwargs)
     
     return restored

@@ -15,7 +15,7 @@ log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
-log.addHandler(logging.StreamHandler(sys.stderr))
+
 
 run_ms_tests = False
 try:

@@ -30,8 +30,8 @@ class TestGeometry(unittest.TestCase):
     
     def test_azel(self):
         azel = calculate_blockvisibility_azel(self.bvis)
-        numpy.testing.assert_array_almost_equal(azel[0][0].deg, 152.5555, 3)
-        numpy.testing.assert_array_almost_equal(azel[1][0].deg, 24.024177, 3)
+        numpy.testing.assert_array_almost_equal(azel[0][0].deg, 152.436, 3)
+        numpy.testing.assert_array_almost_equal(azel[1][0].deg, 24.003, 3)
 
     def test_hourangle(self):
         ha = calculate_blockvisibility_hourangles(self.bvis)
@@ -39,11 +39,11 @@ class TestGeometry(unittest.TestCase):
 
     def test_parallatic_angle(self):
         pa = calculate_blockvisibility_parallactic_angles(self.bvis)
-        numpy.testing.assert_array_almost_equal(pa[0].deg, -101.939, 3)
+        numpy.testing.assert_array_almost_equal(pa[0].deg, -101.985, 3)
 
     def test_transit_time(self):
         transit_time = calculate_blockvisibility_transit_time(self.bvis)
-        numpy.testing.assert_array_almost_equal(transit_time.mjd, 58849.896483, 3)
+        numpy.testing.assert_array_almost_equal(transit_time.mjd, 51544.896, 3)
 
 
 if __name__ == '__main__':

@@ -144,7 +144,7 @@ def plot_uvcoverage(vis_list, ax=None, plot_file=None, title='UV coverage', **kw
         else:
             plt.plot(u, v, '.', color='b', markersize=0.2,)
 
-            plt.plot(-u, -v, '.', color='b', markersize=0.2)
+        plt.plot(-u, -v, '.', color='b', markersize=0.2)
         u = numpy.array(bvis.uvw_lambda.sel(spatial='u').data.flat)
         v = numpy.array(bvis.uvw_lambda.sel(spatial='v').data.flat)
         if ivis == 0:

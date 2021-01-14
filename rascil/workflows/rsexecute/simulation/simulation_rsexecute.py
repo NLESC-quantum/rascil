@@ -856,7 +856,7 @@ def create_standard_low_simulation_rsexecute_workflow(band, rmax, phasecentre, t
     
     assert ntimes > 0, "No data above elevation limit"
     
-    low = create_configuration_from_MIDfile(rascil_data_path("configurations/ska1low_local.cfg"),
+    low = create_configuration_from_MIDfile(rascil_data_path("configurations/ska1low.cfg"),
                                             rmax=rmax,
                                             location=low_location)
     

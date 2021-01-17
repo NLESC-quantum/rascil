@@ -98,15 +98,6 @@ If you get errors about the UTC table being out of date, typically of the form::
 
 you should repeat the rsync.
 
-Installation via conda
-++++++++++++++++++++++
-
-An alternative to the use of pip in the above sequence is to use Anaconda https://www.anaconda.com. The environment is defined in the conda environment file environment.yml::
-
-   conda env create -f environment.yml
-   conda activate rascil
-   conda config --env --prepend channels astropy
-
 Installation on specific machines
 +++++++++++++++++++++++++++++++++
 

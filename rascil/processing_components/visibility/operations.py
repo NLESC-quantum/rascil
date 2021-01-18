@@ -384,13 +384,8 @@ def convert_blockvisibility_stokesI_to_polframe(vis, poldef=None):
     stokesimaging_weight = vis.blockvisibility_acc.flagged_imaging_weight[..., 0][..., numpy.newaxis]
     vis_imaging_weight = numpy.repeat(stokesimaging_weight, npol, axis=-1)
 
-    if poldef == PolarisationFrame('linear'):
-        vis_data[..., 2] = 0.0
-        vis_data[..., 3] = 0.0
-        
-    elif poldef == PolarisationFrame('circular'):
-        vis_data[..., 1] = 0.0
-        vis_data[..., 2] = 0.0
+    vis_data[..., 1] = 0.0
+    vis_data[..., 2] = 0.0
     
     return BlockVisibility(frequency=vis.frequency.data,
                            channel_bandwidth=vis.channel_bandwidth.data,

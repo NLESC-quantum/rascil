@@ -28,7 +28,7 @@ from rascil.data_models.polarisation import PolarisationFrame, ReceptorFrame, \
     correlate_polarisation
 from rascil.processing_components.util import skycoord_to_lmn
 from rascil.processing_components.util import xyz_to_uvw, uvw_to_xyz, \
-    hadec_to_azel, xyz_at_latitude
+    hadec_to_azel, xyz_at_latitude, ecef_to_enu, enu_to_ecef, eci_to_uvw, enu_to_eci
 from rascil.processing_components.util.geometry import calculate_transit_time, utc_to_ms_epoch
 from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_transit_time, \
     calculate_blockvisibility_hourangles, calculate_blockvisibility_azel
@@ -141,7 +141,6 @@ def create_blockvisibility(config: Configuration,
     latitude = config.location.geodetic[1].to('rad').value
     ants_xyz = config['xyz'].data
     ants_xyz = xyz_at_latitude(ants_xyz, latitude)
-    
     nants = len(config['names'].data)
     
     baselines = pandas.MultiIndex.from_tuples(generate_baselines(nants), names=('antenna1', 'antenna2'))
@@ -201,6 +200,7 @@ def create_blockvisibility(config: Configuration,
             
             # Loop over all pairs of antennas. Note that a2>a1
             ant_pos = xyz_to_uvw(ants_xyz, ha, phasecentre.dec.rad)
+
             for ibaseline, (a1, a2) in enumerate(baselines):
                 if a1 != a2:
                     rweight[itime, ibaseline, ...] = weight
@@ -213,7 +213,7 @@ def create_blockvisibility(config: Configuration,
                 
                 ruvw[itime, ibaseline, :] = ant_pos[a2, :] - ant_pos[a1, :]
                 rflags[itime, ibaseline, ...] = 0
-            
+
             if itime > 0:
                 rintegrationtime[itime] = rtimes[itime] - rtimes[itime - 1]
             itime += 1

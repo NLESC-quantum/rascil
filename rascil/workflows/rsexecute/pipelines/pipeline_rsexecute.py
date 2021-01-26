@@ -108,9 +108,16 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
                                                                             **kwargs)
     residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, deconvolve_model_imagelist, context=context,
                                                           vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
-    restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist,
-                                                        **kwargs)
-    return (deconvolve_model_imagelist, residual_imagelist, restore_imagelist, gt_list)
+    output = get_parameter(kwargs, "restored_output", "cube")
+    if output == "integrated":
+        restored_imagelist = \
+            restore_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs)
+    else:
+        restored_imagelist = \
+            restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist,
+                                            residual_imagelist, **kwargs)
+
+    return (deconvolve_model_imagelist, residual_imagelist, restored_imagelist, gt_list)
 
 
 def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=None,

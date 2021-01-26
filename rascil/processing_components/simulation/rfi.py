@@ -20,12 +20,14 @@ __all__ = ['simulate_DTV', 'simulate_DTV_prop', 'create_propagators', 'create_pr
            'calculate_averaged_correlation', 'calculate_rfi_at_station',
            'simulate_rfi_block', 'simulate_rfi_block_prop', 'calculate_station_correlation_rfi']
 
-import astropy.units as u
 import numpy
 import copy
+
+import astropy.units as u
 from astropy.coordinates import SkyCoord, EarthLocation
 
 from rascil.processing_components.util.array_functions import average_chunks2
+from rascil.processing_components.visibility.visibility_geometry import calculate_blockvisibility_hourangles
 from rascil.processing_components.util.compass_bearing import calculate_initial_compass_bearing
 from rascil.processing_components.util.coordinate_support import simulate_point
 from rascil.processing_components.util.coordinate_support import skycoord_to_lmn, azel_to_hadec
@@ -139,6 +141,7 @@ def create_propagators(config, interferer, frequency, attenuation=1e-9):
 def create_propagators_prop(config, frequency, nants_start, station_skip=1, attenuation=1e-9, beamgainval=0.,
                             trans_range=[0, None]):
     """ Create a set of propagators
+    
     :param config: configuration
     :param frequency: frequencies
     :param attenuation: generic attenuation value to use if no transmitter specified, else filename to load
@@ -170,23 +173,6 @@ def create_propagators_prop(config, frequency, nants_start, station_skip=1, atte
         # print(propagation.shape, propagation_trans.shape)
         propagation[:, trans_range[0]:trans_range[1] + 1] = propagation_trans
 
-    '''
-    if transmitter:
-        # propagation = numpy.power(10, -1 * numpy.load(direct + 'Attenuation_' + transmitter + '.npy') / 10.)
-        propagation = numpy.power(10, -1 * numpy.load(attenuation) / 10.)
-        #beamgain = numpy.loadtxt(bg_direct + 'Beam_gain_' + beam_file + '.txt')
-        beam_gain = numpy.loadtxt(beamgain)
-        # trans_position = gain_list.index(transmitter)
-        # propagation[:, :] *= beamgain[trans_position]
-        propagation[:, :] *= beam_gain
-        propagation = propagation[:nants_start]
-        propagation = propagation[::station_skip]
-    else:
-        nants = len(config['names'])
-        propagation = numpy.ones([nants, nchannels], dtype='complex')
-        propagation[:, :] = attenuation
-    '''
-
     propagation = numpy.sqrt(propagation)
     # print(propagation.type)
     return propagation
@@ -194,6 +180,7 @@ def create_propagators_prop(config, frequency, nants_start, station_skip=1, atte
 
 def calculate_rfi_at_station(propagators, emitter):
     """ Calculate the rfi at each station
+    
     :param propagators: [nstations, nchannels]
     :param emitter: [ntimes, nchannels]
     :return: Complex array [ntimes, nstations, nchannels]
@@ -265,7 +252,6 @@ def simulate_rfi_block(bvis, emitter_location, emitter_power=5e4, attenuation=1.
 
     ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
-    s2r = numpy.pi / 43200.0
     k = numpy.array(bvis.frequency) / phyconst.c_m_s
     uvw = bvis.uvw.data[..., numpy.newaxis] * k
 
@@ -291,21 +277,22 @@ def simulate_rfi_block(bvis, emitter_location, emitter_power=5e4, attenuation=1.
         el = 0.0
         hadec = azel_to_hadec(az, el, site.lat.rad)
 
+        hourangles = calculate_blockvisibility_hourangles(bvis)
         # Now step through the time stamps, calculating the effective
         # sky position for the emitter, and performing phase rotation
         # appropriately
-        for itime, time in enumerate(bvis.time.data):
-            ra = - hadec[0] + s2r * time
+        for iha, ha in enumerate(hourangles.data):
+            ra = - hadec[0] + ha
             dec = hadec[1]
             emitter_sky = SkyCoord(ra * u.rad, dec * u.rad)
             l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
 
             phasor = numpy.ones([nbaselines, nchan, npol], dtype='complex')
             for chan in range(nchan):
-                phasor[:, chan, :] = simulate_point(uvw[itime, ..., chan], l, m)[..., numpy.newaxis]
+                phasor[:, chan, :] = simulate_point(uvw[iha, ..., chan], l, m)[..., numpy.newaxis]
 
             # Now fill this into the BlockVisibility
-            bvis['vis'].data[itime, ...] = bvis['vis'].data[itime, ...] * phasor
+            bvis['vis'].data[iha, ...] = bvis['vis'].data[iha, ...] * phasor
 
     return bvis
 
@@ -398,16 +385,14 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
 
         ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
-        s2r = numpy.pi / 43200.0
         k = numpy.array(bvis.frequency) / phyconst.c_m_s
         uvw = bvis.uvw.data[..., numpy.newaxis] * k
 
-        pole = SkyCoord(ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame='icrs', equinox='J2000')
 
         if use_pole:
             # Calculate phasor needed to shift from the phasecentre to the pole
+            pole = SkyCoord(ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame='icrs', equinox='J2000')
             l, m, n = skycoord_to_lmn(pole, bvis.phasecentre)
-            # phasor = numpy.ones([ntimes, nant, nant, nchan, npol], dtype='complex')
             phasor = numpy.ones([ntimes, nbaselines, nchan, npol], dtype='complex')
             for chan in range(nchan):
                 phasor[:, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
@@ -432,8 +417,12 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
             # Now step through the time stamps, calculating the effective
             # sky position for the emitter, and performing phase rotation
             # appropriately
-            for itime, time in enumerate(bvis.time.data):
-                ra = - hadec[0] + s2r * time
+            hourangles = calculate_blockvisibility_hourangles(bvis)
+            # Now step through the time stamps, calculating the effective
+            # sky position for the emitter, and performing phase rotation
+            # appropriately
+            for iha, ha in enumerate(hourangles.data):
+                ra = - hadec[0] + ha
                 dec = hadec[1]
                 emitter_sky = SkyCoord(ra * u.rad, dec * u.rad)
                 l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
@@ -441,12 +430,12 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
                 # phasor = numpy.ones([nant, nant, nchan, npol], dtype='complex')
                 phasor = numpy.ones([nbaselines, nchan, npol], dtype='complex')
                 for chan in range(nchan):
-                    phasor[:, chan, :] = simulate_point(uvw[itime, ..., chan], l, m)[..., numpy.newaxis]
+                    phasor[:, chan, :] = simulate_point(uvw[iha, ..., chan], l, m)[..., numpy.newaxis]
 
                 # Now fill this into the BlockVisibility
                 # bvis['vis'].data[itime, ...] = bvis['vis'].data[itime, ...] * phasor
                 # bvis['vis'].data[itime, ...] += bvis_data_copy['vis'][itime, ...] * phasor
-                bvis['vis'].data[itime, ...] += bvis_data_copy[itime, ...] * phasor
+                bvis['vis'].data[iha, ...] += bvis_data_copy[iha, ...] * phasor
 
             # print(trans, 'bvis_data_new', bvis['vis'].data[0][0][0])
 

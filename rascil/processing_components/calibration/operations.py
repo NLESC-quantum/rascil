@@ -215,7 +215,7 @@ def create_gaintable_from_blockvisibility(vis: BlockVisibility, timeslice=None,
     
     nants = vis.blockvisibility_acc.nants
     
-    if timeslice is None or timeslice == 'auto':
+    if timeslice is None or timeslice == 'auto' or timeslice == 0.0:
         utimes = numpy.unique(vis.time)
         gain_interval = vis.integration_time
     else:

@@ -27,8 +27,8 @@ def create_blockvisibility_from_ms_rsexecute(msname, nchan_per_blockvis, nout, d
     """
 
     # Read the MS into RASCIL BlockVisibility objects
-    log.info("Loading MS into {n} BlockVisibility's of {nchan} channels"
-             .format(n=nout * len(dds), nchan=nchan_per_blockvis))
+    log.info("Loading MS data descriptors {dds} into {n} BlockVisibility's of {nchan} channels"
+             .format(dds=dds, n=nout * len(dds), nchan=nchan_per_blockvis))
 
     bvis_list = [[rsexecute.execute(create_blockvisibility_from_ms, nout=nout)
                   (msname=msname,

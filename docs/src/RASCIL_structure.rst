@@ -26,4 +26,5 @@ accessed using the very top level import::
    RASCIL_polarisation_handling
    RASCIL_Fourier_processing
    RASCIL_dask
+   RASCIL_xarray
 

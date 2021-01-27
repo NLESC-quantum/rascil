@@ -22,9 +22,9 @@ stages:
   variables:
     PACKAGE_MANAGER: pip
   before_script:
-    - |
-      git clone https://github.com/dependabot/dependabot-script.git && \
-      BUNDLE_GEMFILE="/dependabot-script/Gemfile" bundle install -j $(nproc) --path vendor
+    - git clone https://github.com/dependabot/dependabot-script.git &&
+    - sleep 10
+    - BUNDLE_GEMFILE="/dependabot-script/Gemfile" bundle install -j $(nproc) --path vendor
   script: bundle exec ruby /dependabot-script/generic-update-script.rb
   cache:
     paths:

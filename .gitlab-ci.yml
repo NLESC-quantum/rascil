@@ -22,6 +22,7 @@ stages:
   variables:
     PACKAGE_MANAGER: pip
   before_script:
+    - gem update --system
     - bundle install -j $(nproc) --path vendor
   script: bundle exec ruby ./generic-update-script.rb
   cache:

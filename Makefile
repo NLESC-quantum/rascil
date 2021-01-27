@@ -101,7 +101,7 @@ install_requirements: upgrade_pip
 	pip install -r requirements-docs.txt
 	pip install -r requirements-test.txt
 	pip install -r requirements.txt
-	pip install -e .
+# 	pip install -e .
 	pip freeze
 
 update_requirements: requirements install_requirements

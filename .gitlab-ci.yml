@@ -9,6 +9,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 stages:
+  - compile_requirements # only runs for schedules
   - test
   - build
   - publish
@@ -17,6 +18,7 @@ stages:
 compile_requirements:
   only:
     - schedules
+  stage: compile_requirements
   before_script:
     - pip3 install --upgrade pip
   script:

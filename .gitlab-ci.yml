@@ -22,9 +22,7 @@ stages:
   variables:
     PACKAGE_MANAGER: pip
   before_script:
-    - |
-      git clone https://github.com/dependabot/dependabot-script.git
-      BUNDLE_GEMFILE="/dependabot-script/Gemfile" bundle install -j $(nproc) --path vendor
+    - BUNDLE_GEMFILE="/dependabot-script/Gemfile" bundle install -j $(nproc) --path vendor
   script: bundle exec ruby /dependabot-script/generic-update-script.rb
   cache:
     paths:
@@ -33,8 +31,11 @@ stages:
 pip:
   extends: .dependabot
   only:
+    - schedules
     variables:
       - $PACKAGE_MANAGER_SET =~ /\bpip\b/
+  script:
+      - git clone https://github.com/dependabot/dependabot-script.git
 
 #compile_requirements:
 #  only:

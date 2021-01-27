@@ -23,9 +23,8 @@ dependabot:
   variables:
     PACKAGE_MANAGER: pip
   before_script:
-    - chmod a+x build_bot.sh
-    - ./build_bot.sh
-  script: bundle exec ruby /dependabot-script/generic-update-script.rb
+    - BUNDLE_GEMFILE="./dependabot-script/Gemfile" bundle install -j $(nproc) --path vendor
+  script: bundle exec ruby ./dependabot-script/generic-update-script.rb
   cache:
     paths:
       - vendor/

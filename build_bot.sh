@@ -5,4 +5,4 @@ PROC_ID=$!
 
 wait $PROC_ID
 
-BUNDLE_GEMFILE="/dependabot-script/Gemfile" bundle install -j $(nproc) --path vendor
+BUNDLE_GEMFILE="./dependabot-script/Gemfile" bundle install -j $(nproc) --path vendor

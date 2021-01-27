@@ -20,13 +20,18 @@ compile_requirements:
     - schedules
   stage: compile_requirements
   before_script:
+    - apt-get update
+    - apt-get -y install rsync ca-certificates pybind11-dev
+    - mkdir -p /usr/share/casacore/data/
+    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
     - pip3 install --upgrade pip
   script:
-    - pip --version
-    - pip3 --version
-    - make requirements
+    - make update_requirements
+    - PYTHONPATH=`pwd` HOME=`pwd` make test
 
 linting:
+  except:
+    - schedules
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   stage: test
   before_script:

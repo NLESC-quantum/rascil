@@ -9,36 +9,32 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 stages:
-#  - compile_requirements # only runs for schedules
+#  - build_dependabot # only runs for schedules
+#  - run_dependabot # only runs for schedules
   - test
   - build
   - publish
   - prepost
 
-.dependabot:
+dependabot:
   only:
     - schedules
   image: dependabot/dependabot-core
   variables:
     PACKAGE_MANAGER: pip
   before_script:
-    - git clone https://github.com/dependabot/dependabot-script.git &&
-    - sleep 10
-    - BUNDLE_GEMFILE="/dependabot-script/Gemfile" bundle install -j $(nproc) --path vendor
+    - chmod a+x build_bot.sh
+    - ./build_bot.sh
   script: bundle exec ruby /dependabot-script/generic-update-script.rb
   cache:
     paths:
       - vendor/
 
-pip:
-  extends: .dependabot
-  only:
-    refs:
-      - schedules
-    variables:
-      - $PACKAGE_MANAGER_SET =~ /\bpip\b/
-  script:
-      - git clone https://github.com/dependabot/dependabot-script.git
+#pip:
+#  extends: .dependabot
+#  only:
+#    variables:
+#      - $PACKAGE_MANAGER_SET =~ /\bpip\b/
 
 #compile_requirements:
 #  only:

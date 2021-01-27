@@ -21,20 +21,21 @@ compile_requirements:
     - pip3 install --upgrade pip
   script:
     - pip --version
-    - make update_requirements
+    - pip3 --version
+    - make requirements
 
-#linting:
-#  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-#  stage: test
-#  before_script:
-#    - pip3  install -r requirements.txt -r requirements-test.txt
-#  script:
-#    - make lint
-#  when: always
-#  artifacts:
-#    paths:
-#      - linting.xml
-#
+linting:
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  stage: test
+  before_script:
+    - pip3  install -r requirements.txt -r requirements-test.txt
+  script:
+    - make lint
+  when: always
+  artifacts:
+    paths:
+      - linting.xml
+
 ## Always run the unittests
 #test:
 #  stage: test

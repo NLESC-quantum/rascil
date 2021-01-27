@@ -1,6 +1,6 @@
 
-0.2.0a0
--------
+0.2.0
+-----
 
 * This is a major upgrade breaking interfaces. To bring a wide range of improved capabilities, 
   we have switched to use xarray instead of numpy to hold class 
@@ -21,6 +21,11 @@
   awprojection.
 * Other workflows such as the pipelines work as before.
 * The LOW test beam is now a uniformly weighted 38m diameter disk
+* There is a new category of python code: command line apps. The first of these is the 
+  rascil/apps/rascil-imager.sh
+* Array configurations are now specified only in global coordinates: XYZ or long, lat, height.
+* We have chosen to drop installation via a Conda environment file. The instructions have been 
+  updated.
 
 0.1.9
 -----

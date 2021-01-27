@@ -9,39 +9,58 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 stages:
-  - compile_requirements # only runs for schedules
+#  - compile_requirements # only runs for schedules
   - test
   - build
   - publish
   - prepost
 
-compile_requirements:
+.dependabot:
   only:
     - schedules
-  stage: compile_requirements
+  image: dependabot/dependabot-core
+  variables:
+    PACKAGE_MANAGER: pip
   before_script:
-    - apt-get update
-    - apt-get -y install rsync ca-certificates pybind11-dev
-    - mkdir -p /usr/share/casacore/data/
-    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
-    - pip3 install --upgrade pip
-  script:
-    - make update_requirements
-    - PYTHONPATH=`pwd` HOME=`pwd` make test
-
-linting:
-  except:
-    - schedules
-  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-  stage: test
-  before_script:
-    - pip3  install -r requirements.txt -r requirements-test.txt
-  script:
-    - make lint
-  when: always
-  artifacts:
+    - bundle install -j $(nproc) --path vendor
+  script: bundle exec ruby ./generic-update-script.rb
+  cache:
     paths:
-      - linting.xml
+      - vendor/
+
+pip:
+  extends: .dependabot
+  only:
+    variables:
+      - $PACKAGE_MANAGER_SET =~ /\bpip\b/
+
+#compile_requirements:
+#  only:
+#    - schedules
+#  stage: compile_requirements
+#  before_script:
+#    - apt-get update
+#    - apt-get -y install rsync ca-certificates pybind11-dev
+#    - mkdir -p /usr/share/casacore/data/
+#    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
+#    - pip3 install --upgrade pip
+#  script:
+#    - make update_requirements
+#    - PYTHONPATH=`pwd` HOME=`pwd` make test
+#
+#linting:
+#  except:
+#    - schedules
+#  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+#  stage: test
+#  before_script:
+#    - pip3  install -r requirements.txt -r requirements-test.txt
+#  script:
+#    - make lint
+#  when: always
+#  artifacts:
+#    paths:
+#      - linting.xml
 
 ## Always run the unittests
 #test:

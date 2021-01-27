@@ -31,7 +31,8 @@ stages:
 pip:
   extends: .dependabot
   only:
-    - schedules
+    refs:
+      - schedules
     variables:
       - $PACKAGE_MANAGER_SET =~ /\bpip\b/
   script:

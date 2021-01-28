@@ -14,35 +14,31 @@ stages:
   - publish
   - prepost
 
-dependabot:
-  only:
-    - schedules
-  image: dependabot/dependabot-core
-  variables:
-    PACKAGE_MANAGER: pip
-    BUNDLE_GEMFILE: "./dependabot-script/Gemfile"
-  before_script:
-    - git clone https://github.com/dependabot/dependabot-script.git
-    - bundle install -j $(nproc) --path vendor
-  script: bundle exec ruby ./dependabot-script/generic-update-script.rb
-  cache:
-    paths:
-      - vendor/
-
-#compile_requirements:
+#dependabot:
 #  only:
 #    - schedules
-#  stage: compile_requirements
+#  image: dependabot/dependabot-core
+#  variables:
+#    PACKAGE_MANAGER: pip
+#    BUNDLE_GEMFILE: "./dependabot-script/Gemfile"
 #  before_script:
-#    - apt-get update
-#    - apt-get -y install rsync ca-certificates pybind11-dev
-#    - mkdir -p /usr/share/casacore/data/
-#    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
-#    - pip3 install --upgrade pip
-#  script:
-#    - make update_requirements
-#    - PYTHONPATH=`pwd` HOME=`pwd` make test
-#
+#    - git clone https://github.com/dependabot/dependabot-script.git
+#    - bundle install -j $(nproc) --path vendor
+#  script: bundle exec ruby ./dependabot-script/generic-update-script.rb
+#  cache:
+#    paths:
+#      - vendor/
+
+compile_requirements:
+  only:
+    - schedules
+  stage: compile_requirements
+  before_script:
+    - pip3 install --upgrade pip
+    - make update_requirements
+  script:
+    -# crate MR if difference between old and new reqs
+
 #linting:
 #  except:
 #    - schedules

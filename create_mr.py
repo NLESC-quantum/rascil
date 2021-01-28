@@ -27,23 +27,23 @@ def create_branch_and_commit(repo, private_token):
     if new_branch in repo.heads:
         repo.delete_head(new_branch, force=True)
 
-    current = repo.create_head(new_branch)
-    current.checkout()
-    print(f"Checked out new branch: {repo.active_branch}")
-
-    repo.git.add(A=True)
-    repo.git.commit(m='test gitpython')
-
-    remote_name = "new-remote"
+    remote_name = "origin"
     git_lab_push_url = f"https://${os.environ['GITLAB_USER']}:${private_token}@gitlab.com/ska-telescope/external/rascil.git"
     if remote_name not in repo.remotes:
         origin = repo.create_remote(remote_name, git_lab_push_url)
     else:
         origin = [x for x in repo.remotes if remote_name == x.name][0]
 
+    current = repo.create_head(new_branch, origin.refs[new_branch]).set_tracking_branch(origin.refs[new_branch])
+    current.checkout()
+    print(f"Checked out new branch: {repo.active_branch}")
+
+    repo.git.add(A=True)
+    repo.git.commit(m='test gitpython')
+
     print(origin)
     origin.fetch()
-    origin.push(current, '--set-upstream')
+    origin.push(current, None, '--set-upstream')
 
     # repo.git.push('--set-upstream', remote_name, current)
     # log.info("Pushed new commits")

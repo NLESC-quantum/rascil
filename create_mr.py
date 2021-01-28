@@ -41,7 +41,12 @@ def main():
     log.info(f"Local git repository {repo}")
 
     assignee_id = os.environ["GITLAB_ASSIGNEE_ID"]
-    original_branch = repo.active_branch.name
+
+    try:
+        original_branch = repo.active_branch.name
+    except TypeError:
+        detached_sha = repo.head.object.hexsha
+        original_branch = repo.git.branch('--contains', detached_sha).name
 
     if repo.index.diff(None) or repo.untracked_files:
         new_branch = create_branch_and_commit(repo)

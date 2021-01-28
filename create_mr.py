@@ -21,6 +21,9 @@ def create_branch_and_commit(repo):
     repo.config_writer().set_value("user", "email", "<>").release()
 
     new_branch = 'test-branch-to-update-reqs'
+
+    repo.delete_head(new_branch)
+
     current = repo.create_head(new_branch)
     current.checkout()
     log.info(f"Checked out new branch: {repo.active_branch}")

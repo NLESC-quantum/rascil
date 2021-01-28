@@ -29,7 +29,7 @@ def create_branch_and_commit(repo, private_token):
 
     current = repo.create_head(new_branch)
     current.checkout()
-    log.info(f"Checked out new branch: {repo.active_branch}")
+    print(f"Checked out new branch: {repo.active_branch}")
 
     repo.git.add(A=True)
     repo.git.commit(m='test gitpython')
@@ -41,6 +41,7 @@ def create_branch_and_commit(repo, private_token):
     else:
         origin = [x for x in repo.remotes if remote_name == x.name][0]
 
+    print(origin)
     origin.pull()
     origin.push('--set-upstream', remote_name, current)
 

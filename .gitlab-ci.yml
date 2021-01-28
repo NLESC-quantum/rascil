@@ -32,7 +32,6 @@ stages:
 compile_requirements:
   only:
     - schedules
-  stage: compile_requirements
   before_script:
     - pip3 install --upgrade pip
     - make requirements

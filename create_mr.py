@@ -60,7 +60,7 @@ def main():
     gl.auth()
 
     repo = Repo(".")
-    log.info(f"Local git repository {repo}")
+    print(f"Local git repository {repo}")
 
     assignee_id = os.environ["GITLAB_ASSIGNEE_ID"]
 
@@ -69,8 +69,9 @@ def main():
     except TypeError:
         detached_sha = repo.head.object.hexsha
         print(detached_sha)
-        print(repo.git.branch('--contains', detached_sha))
-        original_branch = repo.git.branch('--contains', detached_sha).split('*')[1].strip()
+        all_branches_with_sha = repo.git.branch('-a', '--contains', detached_sha)
+        print(all_branches_with_sha)
+        original_branch = [x.strip() for x in all_branches_with_sha.split('\n') if 'HEAD' not in x][0]
         print(original_branch)
         repo.git.checkout(original_branch)
         repo.git.pull()

@@ -32,7 +32,7 @@ def create_branch_and_commit(repo, private_token):
     repo.git.commit(m='test gitpython')
 
     remote_name = "origin"
-    git_lab_push_url = f"https://gitlab-ci-token:${private_token}@gitlab.com/ska-telescope/rascil.git"
+    git_lab_push_url = f"https://gitlab-ci-token:${private_token}@gitlab.com/ska-telescope/external/rascil.git"
     if remote_name not in repo.remotes:
         repo.create_remote(remote_name, git_lab_push_url)
 

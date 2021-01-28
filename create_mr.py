@@ -68,6 +68,8 @@ def main():
         original_branch = repo.active_branch.name
     except TypeError:
         detached_sha = repo.head.object.hexsha
+        print(detached_sha)
+        print(repo.git.branch('--contains', detached_sha))
         original_branch = repo.git.branch('--contains', detached_sha).split('*')[1].strip()
         print(original_branch)
         repo.git.checkout(original_branch)

@@ -46,7 +46,8 @@ def main():
         original_branch = repo.active_branch.name
     except TypeError:
         detached_sha = repo.head.object.hexsha
-        original_branch = repo.git.branch('--contains', detached_sha).name
+        original_branch = repo.git.branch('--contains', detached_sha).split('*')[1].strip()
+        # repo.git.checkout(original_branch)
 
     if repo.index.diff(None) or repo.untracked_files:
         new_branch = create_branch_and_commit(repo)

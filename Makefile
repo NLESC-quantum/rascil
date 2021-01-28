@@ -94,8 +94,8 @@ upgrade_pip:  ## make sure pip is up to date.
 requirements: upgrade_pip  ## update and compile requirements
 	pip install -U pip-tools
 	pip-compile -U --output-file requirements.txt requirements.in
-	pip-compile -U --output-file requirements-test.txt requirements-test.in
-	pip-compile -U --output-file requirements-docs.txt requirements-docs.in
+# 	pip-compile -U --output-file requirements-test.txt requirements-test.in
+# 	pip-compile -U --output-file requirements-docs.txt requirements-docs.in
 
 install_requirements: upgrade_pip
 	pip install -r requirements-docs.txt

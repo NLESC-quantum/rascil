@@ -78,7 +78,7 @@ def main():
             original_branch = original_branch.split('origin/')[1]
 
         print(original_branch)
-        repo.git.checkout(original_branch)
+        repo.git.checkout('--track', f'origin/{original_branch}')
         repo.git.pull()
 
     print(original_branch)

@@ -23,3 +23,6 @@ xarray
 pandas
 zarr
 git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
+
+gitpython
+python-gitlab

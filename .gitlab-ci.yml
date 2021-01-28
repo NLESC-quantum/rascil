@@ -34,6 +34,7 @@ compile_requirements:
     - schedules
   before_script:
     - pip3 install --upgrade pip
+    - pip install gitpython python-gitlab
     - make requirements
   script:
     - python3 create_mr.py

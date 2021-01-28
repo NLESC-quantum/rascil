@@ -17,6 +17,9 @@ def create_merge_request(gl, assignee, source_branch, target_branch):
 
 
 def create_branch_and_commit(repo):
+    repo.config_writer().set_value("user", "name", "Scheduled GitLab CI pipeline").release()
+    repo.config_writer().set_value("user", "email", "<>").release()
+
     new_branch = 'test-branch-to-update-reqs'
     current = repo.create_head(new_branch)
     current.checkout()

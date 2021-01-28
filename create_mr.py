@@ -43,7 +43,7 @@ def create_branch_and_commit(repo, private_token):
 
     print(origin)
     # origin.pull()
-    origin.push('--set-upstream', remote_name, current)
+    origin.push('--set-upstream', current)
 
     # repo.git.push('--set-upstream', remote_name, current)
     # log.info("Pushed new commits")

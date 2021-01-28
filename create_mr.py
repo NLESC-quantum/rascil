@@ -16,7 +16,7 @@ def create_merge_request(gl, assignee, source_branch, target_branch):
     log.info("Merge request created and assigned.")
 
 
-def create_branch_and_commit(repo):
+def create_branch_and_commit(repo, private_token):
     repo.config_writer().set_value("user", "name", "Scheduled GitLab CI pipeline").release()
     repo.config_writer().set_value("user", "email", "<>").release()
 
@@ -30,7 +30,13 @@ def create_branch_and_commit(repo):
 
     repo.git.add(A=True)
     repo.git.commit(m='test gitpython')
-    repo.git.push('--set-upstream', 'origin', current)
+
+    remote_name = "origin"
+    git_lab_push_url = f"https://gitlab-ci-token:${private_token}@gitlab.com/ska-telescope/rascil.git"
+    if remote_name not in repo.remotes:
+        repo.create_remote(remote_name, git_lab_push_url)
+
+    repo.git.push('--set-upstream', remote_name, current)
     log.info("Pushed new commits")
 
     return repo.active_branch.name
@@ -56,7 +62,7 @@ def main():
         # repo.git.checkout(original_branch)
 
     if repo.index.diff(None) or repo.untracked_files:
-        new_branch = create_branch_and_commit(repo)
+        new_branch = create_branch_and_commit(repo, private_token)
         create_merge_request(gl, assignee_id, new_branch, original_branch)
 
     else:

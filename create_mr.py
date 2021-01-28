@@ -69,8 +69,11 @@ def main():
     except TypeError:
         detached_sha = repo.head.object.hexsha
         original_branch = repo.git.branch('--contains', detached_sha).split('*')[1].strip()
-        # repo.git.checkout(original_branch)
+        print(original_branch)
+        repo.git.checkout(original_branch)
+        repo.git.pull()
 
+    print(original_branch)
     if repo.index.diff(None) or repo.untracked_files:
         # new_branch = create_branch_and_commit(repo, private_token)
         new_branch = 'test-branch-to-update-reqs'

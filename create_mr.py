@@ -22,7 +22,8 @@ def create_branch_and_commit(repo, private_token):
 
     new_branch = 'test-branch-to-update-reqs'
 
-    repo.delete_head(new_branch, force=True)
+    if new_branch in repo.heads:
+        repo.delete_head(new_branch, force=True)
 
     current = repo.create_head(new_branch)
     current.checkout()

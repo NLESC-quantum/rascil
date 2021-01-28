@@ -16,6 +16,7 @@ def create_merge_request(gl, assignee, source_branch, target_branch):
                                       'target_branch': target_branch,
                                       'title': 'WIP: SIM-706: test MR'})
     mr.assignee_id = assignee
+    mr.save()
     log.info("Merge request created and assigned.")
 
 
@@ -77,9 +78,9 @@ def main():
         if 'origin' in original_branch:
             original_branch = original_branch.split('origin/')[1]
 
-        print(original_branch)
-        repo.git.checkout('--track', f'origin/{original_branch}')
-        repo.git.pull()
+        # print(original_branch)
+        # repo.git.checkout('--track', f'origin/{original_branch}')
+        # repo.git.pull()
 
     print(original_branch)
     if repo.index.diff(None) or repo.untracked_files:

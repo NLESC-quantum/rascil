@@ -35,7 +35,8 @@ def create_branch_and_commit(repo, private_token):
     remote_name = "origin"
     git_lab_push_url = f"https://${os.environ['GITLAB_USER']}:${private_token}@gitlab.com/ska-telescope/external/rascil.git"
     if remote_name not in repo.remotes:
-        repo.create_remote(remote_name, git_lab_push_url)
+        origin = repo.create_remote(remote_name, git_lab_push_url)
+        origin.pull()
 
     repo.git.push('--set-upstream', remote_name, current)
     log.info("Pushed new commits")

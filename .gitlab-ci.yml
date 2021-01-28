@@ -35,8 +35,8 @@ compile_requirements:
   variables:
     GIT_LFS_SKIP_SMUDGE: 1
   before_script:
-#    - apt-get -y update
-#    - apt-get -y install git-lfs
+    - apt-get -y update
+    - apt-get -y install git-lfs
     - pip3 install --upgrade pip
     - pip install gitpython python-gitlab
     - make requirements

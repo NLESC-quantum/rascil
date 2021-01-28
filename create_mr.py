@@ -8,10 +8,12 @@ log = logging.getLogger('rascil-logger')
 
 
 def create_merge_request(gl, assignee, source_branch, target_branch):
+    rascil = gl.projects.get(19308749)
+
     log.info(f"Creating merge request for branch {source_branch} to {target_branch}")
-    mr = gl.mergerequests.create({'source_branch': source_branch,
-                                  'target_branch': target_branch,
-                                  'title': 'WIP: SIM-706: test MR'})
+    mr = rascil.mergerequests.create({'source_branch': source_branch,
+                                      'target_branch': target_branch,
+                                      'title': 'WIP: SIM-706: test MR'})
     mr.assignee_id = assignee
     log.info("Merge request created and assigned.")
 

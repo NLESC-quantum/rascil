@@ -72,6 +72,11 @@ def main():
         all_branches_with_sha = repo.git.branch('-a', '--contains', detached_sha)
         print(all_branches_with_sha)
         original_branch = [x.strip() for x in all_branches_with_sha.split('\n') if 'HEAD' not in x][0]
+        if '*' in original_branch:
+            original_branch = original_branch.strip('* ')
+        if 'origin' in original_branch:
+            original_branch = original_branch.split('origin/')[1]
+
         print(original_branch)
         repo.git.checkout(original_branch)
         repo.git.pull()

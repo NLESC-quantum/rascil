@@ -38,8 +38,8 @@ def create_branch_and_commit(repo, private_token):
         origin = repo.create_remote(remote_name, git_lab_push_url)
         origin.pull()
 
-    repo.git.push('--set-upstream', remote_name, current)
-    log.info("Pushed new commits")
+    # repo.git.push('--set-upstream', remote_name, current)
+    # log.info("Pushed new commits")
 
     return repo.active_branch.name
 

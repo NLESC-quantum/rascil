@@ -10,7 +10,8 @@ log = logging.getLogger('rascil-logger')
 def create_merge_request(gl, assignee, source_branch, target_branch):
     rascil = gl.projects.get(19308749)
 
-    log.info(f"Creating merge request for branch {source_branch} to {target_branch}")
+    print(f"Creating merge request for branch {source_branch} to {target_branch}")
+    print(rascil.branches.list())
     mr = rascil.mergerequests.create({'source_branch': source_branch,
                                       'target_branch': target_branch,
                                       'title': 'WIP: SIM-706: test MR'})
@@ -71,7 +72,8 @@ def main():
         # repo.git.checkout(original_branch)
 
     if repo.index.diff(None) or repo.untracked_files:
-        new_branch = create_branch_and_commit(repo, private_token)
+        # new_branch = create_branch_and_commit(repo, private_token)
+        new_branch = 'test-branch-to-update-reqs'
         create_merge_request(gl, assignee_id, new_branch, original_branch)
 
     else:

@@ -228,7 +228,7 @@ packaging==20.8
     # via
     #   bleach
     #   bokeh
-pandas==1.2.1
+pandas==1.0.0
     # via
     #   -r requirements.in
     #   xarray

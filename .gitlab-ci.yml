@@ -35,9 +35,9 @@ compile_requirements:
   stage: compile_requirements
   before_script:
     - pip3 install --upgrade pip
-    - make update_requirements
+    - make requirements
   script:
-    -# crate MR if difference between old and new reqs
+    - python3 create_mr.py
 
 #linting:
 #  except:

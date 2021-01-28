@@ -1,42 +1,55 @@
 import gitlab
 from git import Repo
+import logging
 
 import os
 
+log = logging.getLogger('rascil-logger')
 
-def create_merge_request(gl, assignee):
-    mr = gl.mergerequests.create({'source_branch': 'cool_feature',
-                               'target_branch': 'master',
-                               'title': 'merge cool feature',
-                               'labels': ['label1', 'label2']})
+
+def create_merge_request(gl, assignee, source_branch, target_branch):
+    log.info(f"Creating merge request for branch {source_branch} to {target_branch}")
+    mr = gl.mergerequests.create({'source_branch': source_branch,
+                                  'target_branch': target_branch,
+                                  'title': 'WIP: SIM-706: test MR'})
     mr.assignee_id = assignee
+    log.info("Merge request created and assigned.")
 
 
-def main():
-    # origin = "https://gitlab.com/"
-    private_token = os.environ["GITLAB_TOKEN"]
-    #
-    # gl = gitlab.Gitlab(origin, private_token, api_version='4')
-    # gl.auth()
-
-    repo = Repo(".")
-
-    assignee_id = "7801632"  # GH
-
+def create_branch_and_commit(repo):
     new_branch = 'test-branch-to-update-reqs'
     current = repo.create_head(new_branch)
     current.checkout()
-    # master = repo.heads.master
-    # repo.git.pull('origin', master)
+    log.info(f"Checked out new branch: {repo.active_branch}")
+
+    repo.git.add(A=True)
+    repo.git.commit(m='test gitpython')
+    repo.git.push('--set-upstream', 'origin', current)
+    log.info("Pushed new commits")
+
+    return repo.active_branch.name
+
+
+def main():
+    origin = "https://gitlab.com/"
+    private_token = os.environ["GITLAB_ACCESS_TOKEN"]
+
+    gl = gitlab.Gitlab(origin, private_token, api_version='4')
+    gl.auth()
+
+    repo = Repo(".")
+    log.info(f"Local git repository {repo}")
+
+    assignee_id = os.environ["GITLAB_ASSIGNEE_ID"]
+    original_branch = repo.active_branch.name
 
     if repo.index.diff(None) or repo.untracked_files:
+        new_branch = create_branch_and_commit(repo)
+        create_merge_request(gl, assignee_id, new_branch, original_branch)
 
-        repo.git.add(A=True)
-        repo.git.commit(m='test gitpython')
-        repo.git.push('--set-upstream', 'origin', current)
-        print('git push')
     else:
-        print('no changes')
+        log.info("No changes to commit.")
+
 
 if __name__ == '__main__':
     main()

@@ -87,9 +87,16 @@ class BranchManager:
         return remote_name
 
     def commit_and_push_to_branch(self, new_branch_name, commit_message=None):
-        # TODO: should we delete by default? how to make sure we don't delete something in use?
+        """
+        Create new branch, unless it already exists: if it does, delete first.
+        Add, commit, and push changes to this new branch.
+
+        :param new_branch_name: name of the new branch to be checked out
+        :param commit_message: message to add to the commit; if None, use default message
+        """
         self.set_git_config()
 
+        # TODO: should we delete by default? how to make sure we don't delete something in use?
         if new_branch_name in self.repo.heads:
             self.repo.delete_head(new_branch_name, force=True)
 
@@ -109,6 +116,14 @@ class BranchManager:
         return self.repo.active_branch.name
 
     def find_original_branch(self):
+        """
+        Determine what branch we are on when the process is started.
+
+        When this runs in the GitLab CI pipeline, the work happens on
+        detached HEAD, not on a branch. But we need to find the branch
+        the HEAD was detached from, in order to be able to create a merge
+        request into this branch.
+        """
         try:
             original_branch = self.repo.active_branch.name
 
@@ -128,6 +143,15 @@ class BranchManager:
         return original_branch
 
     def run_branch_manager(self, new_branch_name, message=None):
+        """
+        Execute the process of creating a new branch,
+        committing changes, and pushing to new branch,
+        if branch is dirty, i.e. there are files that changed.
+        Otherwise log info and return without making changes.
+
+        :param new_branch_name: new branch name to checkout if changes are present
+        :param message: commit message to use if changes are committed
+        """
         if self.repo.index.diff(None) or self.repo.untracked_files:
             return self.commit_and_push_to_branch(
                 new_branch_name, commit_message=message
@@ -142,6 +166,11 @@ class BranchManager:
 
 
 class MergeRequest:
+    """
+    Create and manage a GitLab Merge Request.
+
+    :param private_token: private access token of user with API and HTTP write access
+    """
     def __init__(self, private_token):
         self.private_token = private_token
         self.gitlab_object = gitlab.Gitlab(
@@ -154,6 +183,13 @@ class MergeRequest:
         self.rascil = self.gitlab_object.projects.get(19308749)
 
     def create_merge_request(self, source_branch, target_branch, mr_title):
+        """
+        Create a new merge request
+
+        :param source_branch: branch to be merged
+        :param target_branch: branch to be merged into
+        :param mr_title: title of the merge request
+        """
         log.info(
             f"Creating merge request for branch {source_branch} to {target_branch}"
         )
@@ -170,65 +206,15 @@ class MergeRequest:
         return mr
 
     def assign_to_mr(self, mr, assignee):
+        """
+        Assign merge request to an assignee
+
+        :param assignee: unique GitLab User ID of the person to assign to
+                         to find yours, navigate to Settings --> Main Settings --> User ID
+        """
         mr.assignee_id = assignee
         mr.save()
         log.info(f"Merge Request was assigned to user with id: {assignee}")
-
-
-# def create_merge_request(gl, assignee, source_branch, target_branch):
-#     rascil = gl.projects.get(19308749)
-#
-#     print(f"Creating merge request for branch {source_branch} to {target_branch}")
-#     print(rascil.branches.list())
-#     mr = rascil.mergerequests.create(
-#         {
-#             "source_branch": source_branch,
-#             "target_branch": target_branch,
-#             "title": "WIP: SIM-706: test MR",
-#         }
-#     )
-#     mr.assignee_id = assignee
-#     mr.save()
-#     log.info("Merge request created and assigned.")
-
-
-# def create_branch_and_commit(repo, private_token):
-#     repo.config_writer().set_value(
-#         "user", "name", "Scheduled GitLab CI pipeline"
-#     ).release()
-#     repo.config_writer().set_value("user", "email", "<>").release()
-#
-#     new_branch = "test-branch-to-update-reqs"
-#
-#     if new_branch in repo.heads:
-#         repo.delete_head(new_branch, force=True)
-#
-#     remote_name = "new_origin"
-#     git_lab_push_url = f"https://{os.environ['GITLAB_USER']}:{private_token}@gitlab.com/ska-telescope/external/rascil.git"
-#     if remote_name in repo.remotes:
-#         repo.delete_remote(remote_name)
-#     repo.create_remote(remote_name, git_lab_push_url)
-#
-#     # current = repo.create_head(new_branch, origin.refs[new_branch]).set_tracking_branch(origin.refs[new_branch])
-#     # current.checkout()
-#     repo.git.checkout("-b", new_branch)
-#     print(f"Checked out new branch: {repo.active_branch}")
-#
-#     repo.git.add(A=True)
-#     repo.git.commit(m="test gitpython")
-#
-#     # print(origin)
-#     # origin.fetch()
-#     # origin.push(current, None, '--set-upstream')
-#
-#     repo.git.push("--set-upstream", remote_name, new_branch)
-#     # log.info("Pushed new commits")
-#
-#     return repo.active_branch.name
-
-os.environ["GITLAB_ACCESS_TOKEN"] = "test_token"
-os.environ["GITLAB_USER"] = "test_user"
-os.environ["GITLAB_ASSIGNEE_ID"] = "test_id"
 
 
 def main():
@@ -236,30 +222,12 @@ def main():
     gitlab_user = os.environ["GITLAB_USER"]
     assignee_id = os.environ["GITLAB_ASSIGNEE_ID"]
 
-    # repo = Repo(".")
-    # print(f"Local git repository {repo}")
-
-    # try:
-    #     original_branch = repo.active_branch.name
-    # except TypeError:
-    #     detached_sha = repo.head.object.hexsha
-    #     print(detached_sha)
-    #     all_branches_with_sha = repo.git.branch("-a", "--contains", detached_sha)
-    #     print(all_branches_with_sha)
-    #     original_branch = [
-    #         x.strip() for x in all_branches_with_sha.split("\n") if "HEAD" not in x
-    #     ][0]
-    #     if "*" in original_branch:
-    #         original_branch = original_branch.strip("* ")
-    #     if "origin" in original_branch:
-    #         original_branch = original_branch.split("origin/")[1]
-
     branch_manager = BranchManager(private_token, gitlab_user)
     branch_manager.set_git_config()
     new_branch = branch_manager.run_branch_manager("test-branch-to-update-reqs")
-    original_branch = branch_manager.find_original_branch()
 
     if new_branch:
+        original_branch = branch_manager.find_original_branch()
         mr_object = MergeRequest(private_token)
         mr = mr_object.create_merge_request(
             new_branch, original_branch, "WIP: SIM-706: test MR"

@@ -87,8 +87,6 @@ docs:
 
 # Build the data file only if on the master
 data:
-  except:
-    - schedules
   stage: build
   script:
     - tar -zcf rascil_data.tgz data
@@ -98,11 +96,10 @@ data:
     expire_in: 6 months
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
 
 # Publish pip file to nexus only if this is a tagged build of the master
 publish_to_nexus:
-  except:
-    - schedules
   stage: publish
   variables:
     TWINE_USERNAME: $TWINE_USERNAME
@@ -117,23 +114,21 @@ publish_to_nexus:
   rules:
     - if: '$CI_COMMIT_TAG'
     - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
 
 # Trigger downstream docker build to nexus only if this is build of the master,
 # Pass the tag downstream so that the build can be marked stable if this is tagged
 staging: # Start the construction of dockers files in rascil-docker
-  except:
-    - schedules
   stage: publish
   variables:
     UPSTREAM_TAG: $CI_COMMIT_TAG
   trigger: ska-telescope/external/rascil-docker
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
 
 # Publish the docs, data, and coverage if this is a build of the master
 pages:
-  except:
-    - schedules
   stage: publish
   dependencies:
     - docs
@@ -152,6 +147,7 @@ pages:
     expire_in: 30 days
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
 
 prepare ci metrics:
   except:

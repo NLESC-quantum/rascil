@@ -14,26 +14,11 @@ stages:
   - publish
   - prepost
 
-#dependabot:
-#  only:
-#    - schedules
-#  image: dependabot/dependabot-core
-#  variables:
-#    PACKAGE_MANAGER: pip
-#    BUNDLE_GEMFILE: "./dependabot-script/Gemfile"
-#  before_script:
-#    - git clone https://github.com/dependabot/dependabot-script.git
-#    - bundle install -j $(nproc) --path vendor
-#  script: bundle exec ruby ./dependabot-script/generic-update-script.rb
-#  cache:
-#    paths:
-#      - vendor/
-
 compile_requirements:
   only:
     - schedules
   variables:
-    GIT_LFS_SKIP_SMUDGE: 1
+    GIT_LFS_SKIP_SMUDGE: 1  # do not download LFS related files
   before_script:
     - apt-get -y update
     - apt-get -y install git-lfs
@@ -43,146 +28,146 @@ compile_requirements:
   script:
     - python3 create_mr.py
 
-#linting:
-#  except:
-#    - schedules
-#  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-#  stage: test
-#  before_script:
-#    - pip3  install -r requirements.txt -r requirements-test.txt
-#  script:
-#    - make lint
-#  when: always
-#  artifacts:
-#    paths:
-#      - linting.xml
+linting:
+  except:
+    - schedules
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  stage: test
+  before_script:
+    - pip3  install -r requirements.txt -r requirements-test.txt
+  script:
+    - make lint
+  when: always
+  artifacts:
+    paths:
+      - linting.xml
 
-## Always run the unittests
-#test:
-#  stage: test
-#  before_script:
-#    - apt-get update
-#    - apt-get -y install rsync ca-certificates pybind11-dev
-#    - pip3 install -r requirements.txt -r requirements-test.txt
-#    - mkdir -p /usr/share/casacore/data/
-#    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
-#    - pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
-#    - mkdir -p test_results
-#  script:
-#    - PYTHONPATH=`pwd` HOME=`pwd` make test
-#  coverage: '/^TOTAL.+?(\d+\%)$/'
-#  artifacts:
-#    paths:
-#    - coverage
-#    - coverage.xml
-#    - unit-tests.xml
-#
-## Always try to build the docs since this catches errors via the notebook
-#docs:
-#  stage: test
-#  before_script:
-#    - apt-get update
-#    - apt-get -y install pandoc rsync
-#    - pip install -r requirements.txt -r requirements-docs.txt
-#    - mkdir -p docs/build/html
-#    - mkdir -p test_results
-#    - mkdir -p /usr/share/casacore/data/
-#    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
-#    - pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
-#  script:
-#    - PYTHONPATH=`pwd` HOME=`pwd` make docs
-#  artifacts:
-#    paths:
-#      - docs/build/html/
-#    expire_in: 1 week
-#
-## Build the data file only if on the master
-#data:
-#  stage: build
-#  script:
-#    - tar -zcf rascil_data.tgz data
-#  artifacts:
-#    paths:
-#      - rascil_data.tgz
-#    expire_in: 6 months
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master"'
-#
-## Publish pip file to nexus only if this is a tagged build of the master
-#publish_to_nexus:
-#  stage: publish
-#  variables:
-#    TWINE_USERNAME: $TWINE_USERNAME
-#    TWINE_PASSWORD: $TWINE_PASSWORD
-#  script:
-#    - echo "Commit tag is ${CI_COMMIT_TAG}"
-#    - echo "Commit message is ${CI_COMMIT_MESSAGE}"
-#    - pip3 install setuptools
-#    - python3 setup.py egg_info sdist bdist_wheel # --universal option to used for pure
-#    - pip3 install twine
-#    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
-#  rules:
-#    - if: '$CI_COMMIT_TAG'
-#    - if: '$CI_COMMIT_BRANCH == "master"'
-#
-## Trigger downstream docker build to nexus only if this is build of the master,
-## Pass the tag downstream so that the build can be marked stable if this is tagged
-#staging: # Start the construction of dockers files in rascil-docker
-#  stage: publish
-#  variables:
-#    UPSTREAM_TAG: $CI_COMMIT_TAG
-#  trigger: ska-telescope/rascil-docker
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master"'
-#
-## Publish the docs, data, and coverage if this is a build of the master
-#pages:
-#  stage: publish
-#  dependencies:
-#    - docs
-#    - test
-#    - data
-#  script:
-#    - rm -rf public
-#    - mkdir -p public
-#    - mv docs/build/html/* public
-#    - mv coverage public
-#    - mv rascil_data.tgz public
-#    - ls -l public
-#  artifacts:
-#    paths:
-#      - public
-#    expire_in: 30 days
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master"'
-#
-#prepare ci metrics:
-#  stage: prepost
-#  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-#  when: always
-#  before_script:
-#    - mkdir -p build/reports
-#    - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
-#    - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
-#    - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
-#  script:
-#    # Gitlab CI badges creation: START
-#    # The following reads::
-#    # build/reports/code-coverage.xml
-#    # build/reports/unit-tests.xml
-#    # build/reports/linting.xml
-#    # And writes:
-#    # build/reports/ci-metrics.json
-#    - apt-get -y update
-#    - apt-get install -y curl --no-install-recommends
-#    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
-#    # Gitlab CI badges creation: END
-#  artifacts:
-#    paths:
-#      - ./build
-#
-## Create Gitlab CI badges from CI metrics
-## https://developer.skatelescope.org/en/latest/tools/continuousintegration.html#automated-collection-of-ci-health-metrics-as-part-of-the-ci-pipeline
-#include:
-#  - project: 'ska-telescope/templates-repository'
-#    file: 'gitlab-ci/includes/post_step.yml'
+# Always run the unittests
+test:
+  stage: test
+  before_script:
+    - apt-get update
+    - apt-get -y install rsync ca-certificates pybind11-dev
+    - pip3 install -r requirements.txt -r requirements-test.txt
+    - mkdir -p /usr/share/casacore/data/
+    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
+    - pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
+    - mkdir -p test_results
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make test
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+    - coverage
+    - coverage.xml
+    - unit-tests.xml
+
+# Always try to build the docs since this catches errors via the notebook
+docs:
+  stage: test
+  before_script:
+    - apt-get update
+    - apt-get -y install pandoc rsync
+    - pip install -r requirements.txt -r requirements-docs.txt
+    - mkdir -p docs/build/html
+    - mkdir -p test_results
+    - mkdir -p /usr/share/casacore/data/
+    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
+    - pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make docs
+  artifacts:
+    paths:
+      - docs/build/html/
+    expire_in: 1 week
+
+# Build the data file only if on the master
+data:
+  stage: build
+  script:
+    - tar -zcf rascil_data.tgz data
+  artifacts:
+    paths:
+      - rascil_data.tgz
+    expire_in: 6 months
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+# Publish pip file to nexus only if this is a tagged build of the master
+publish_to_nexus:
+  stage: publish
+  variables:
+    TWINE_USERNAME: $TWINE_USERNAME
+    TWINE_PASSWORD: $TWINE_PASSWORD
+  script:
+    - echo "Commit tag is ${CI_COMMIT_TAG}"
+    - echo "Commit message is ${CI_COMMIT_MESSAGE}"
+    - pip3 install setuptools
+    - python3 setup.py egg_info sdist bdist_wheel # --universal option to used for pure
+    - pip3 install twine
+    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+# Trigger downstream docker build to nexus only if this is build of the master,
+# Pass the tag downstream so that the build can be marked stable if this is tagged
+staging: # Start the construction of dockers files in rascil-docker
+  stage: publish
+  variables:
+    UPSTREAM_TAG: $CI_COMMIT_TAG
+  trigger: ska-telescope/rascil-docker
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+# Publish the docs, data, and coverage if this is a build of the master
+pages:
+  stage: publish
+  dependencies:
+    - docs
+    - test
+    - data
+  script:
+    - rm -rf public
+    - mkdir -p public
+    - mv docs/build/html/* public
+    - mv coverage public
+    - mv rascil_data.tgz public
+    - ls -l public
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+prepare ci metrics:
+  stage: prepost
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  when: always
+  before_script:
+    - mkdir -p build/reports
+    - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
+    - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
+    - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
+  script:
+    # Gitlab CI badges creation: START
+    # The following reads::
+    # build/reports/code-coverage.xml
+    # build/reports/unit-tests.xml
+    # build/reports/linting.xml
+    # And writes:
+    # build/reports/ci-metrics.json
+    - apt-get -y update
+    - apt-get install -y curl --no-install-recommends
+    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
+    # Gitlab CI badges creation: END
+  artifacts:
+    paths:
+      - ./build
+
+# Create Gitlab CI badges from CI metrics
+# https://developer.skatelescope.org/en/latest/tools/continuousintegration.html#automated-collection-of-ci-health-metrics-as-part-of-the-ci-pipeline
+include:
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/post_step.yml'

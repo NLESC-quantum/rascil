@@ -95,8 +95,7 @@ data:
       - rascil_data.tgz
     expire_in: 6 months
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
 
 # Publish pip file to nexus only if this is a tagged build of the master
 publish_to_nexus:
@@ -113,8 +112,7 @@ publish_to_nexus:
     - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
   rules:
     - if: '$CI_COMMIT_TAG'
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
 
 # Trigger downstream docker build to nexus only if this is build of the master,
 # Pass the tag downstream so that the build can be marked stable if this is tagged
@@ -124,8 +122,7 @@ staging: # Start the construction of dockers files in rascil-docker
     UPSTREAM_TAG: $CI_COMMIT_TAG
   trigger: ska-telescope/external/rascil-docker
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
 
 # Publish the docs, data, and coverage if this is a build of the master
 pages:
@@ -146,8 +143,7 @@ pages:
       - public
     expire_in: 30 days
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
 
 prepare ci metrics:
   except:

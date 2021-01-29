@@ -18,7 +18,7 @@ compile_requirements:
   only:
     - schedules
   variables:
-    GIT_LFS_SKIP_SMUDGE: 1  # do not download LFS related files
+    GIT_LFS_SKIP_SMUDGE: "1"  # do not download LFS related files
   before_script:
     - apt-get -y update
     - apt-get -y install git-lfs

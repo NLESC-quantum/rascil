@@ -115,33 +115,6 @@ class BranchManager:
 
         return self.repo.active_branch.name
 
-    def find_original_branch(self):
-        """
-        Determine what branch we are on when the process is started.
-
-        When this runs in the GitLab CI pipeline, the work happens on
-        detached HEAD, not on a branch. But we need to find the branch
-        the HEAD was detached from, in order to be able to create a merge
-        request into this branch.
-        """
-        try:
-            original_branch = self.repo.active_branch.name
-
-        except TypeError:
-            detached_sha = self.repo.head.object.hexsha
-            all_branches_with_sha = self.repo.git.branch(
-                "-a", "--contains", detached_sha
-            )
-            original_branch = [
-                x.strip() for x in all_branches_with_sha.split("\n") if "HEAD" not in x
-            ][0]
-            if "*" in original_branch:
-                original_branch = original_branch.strip("* ")
-            if "origin" in original_branch:
-                original_branch = original_branch.split("origin/")[1]
-
-        return original_branch
-
     def run_branch_manager(self, new_branch_name, message=None):
         """
         Execute the process of creating a new branch,
@@ -228,7 +201,7 @@ def main():
     new_branch = branch_manager.run_branch_manager(new_branch_name)
 
     if new_branch:
-        original_branch = os.environ["CI_COMMIT_BRANCH"]  # branch_manager.find_original_branch()
+        original_branch = os.environ["CI_COMMIT_BRANCH"]
         mr_title = "WIP: Update requirements - to be actioned before next scheduled run"
         mr_object = MergeRequest(private_token)
         mr = mr_object.create_merge_request(

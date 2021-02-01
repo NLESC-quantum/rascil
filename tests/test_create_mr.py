@@ -177,49 +177,6 @@ class TestCommitAndPushToBranch:
         mock_git.return_value.commit.assert_called_with(m=commit_message)
 
 
-@patch.object(Repo, "active_branch")
-def test_find_original_branch_active(mock_active_branch, manager_fixture):
-    """
-    We are on an active branch, which is returned
-    """
-    mock_active_branch.return_value = Mock()
-    type(mock_active_branch).name = PropertyMock(return_value="working-branch")
-
-    result = manager_fixture.find_original_branch()
-    assert result == "working-branch"
-
-
-@pytest.mark.parametrize(
-    "all_branches_string, expected_branch",
-    [
-        ("some-branch-name", "some-branch-name"),
-        ("branch-to-return\nHEAD do not return", "branch-to-return"),
-        ("branch with * \nHEAD", "branch with"),
-        ("HEAD leave\n more HEAD\n test/origin/in-branch-name", "in-branch-name"),
-    ],
-)
-@patch.object(Repo, "active_branch")
-@patch.object(Repo, "head", Mock())
-@patch("git.Repo.git", new_callable=PropertyMock)
-def test_find_original_branch_detached(
-    mock_git, mock_active_branch, all_branches_string, expected_branch, manager_fixture
-):
-    """
-    We are on an detached head; code finds the source branch.
-    Test cases:
-        1. only one branch found and that is returned as is
-        2. two branches found, one contains the "HEAD" word; only the one without "HEAD" is returned
-        3. two branches found, the one without "HEAD" is returned, stripped of "* "
-        4. two branches found, the one without "HEAD" is returned, stripped of "test/origin/"
-    """
-    mock_active_branch.return_value = Mock()
-    type(mock_active_branch).name = PropertyMock(side_effect=TypeError("Error"))
-    mock_git.return_value = Mock(branch=Mock(side_effect=[all_branches_string]))
-
-    result = manager_fixture.find_original_branch()
-    assert result == expected_branch
-
-
 @patch.object(BranchManager, "commit_and_push_to_branch")
 @patch.object(Repo, "untracked_files", ["some-files"])
 @patch.object(Repo, "index", Mock())

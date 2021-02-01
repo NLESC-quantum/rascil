@@ -214,7 +214,7 @@ class MergeRequest:
         """
         mr.assignee_ids = assignees
         mr.save()
-        log.info(f"Merge Request was assigned to user with id: {assignee}")
+        log.info(f"Merge Request was assigned to user(s) with id(s): {assignees}")
 
 
 def main():

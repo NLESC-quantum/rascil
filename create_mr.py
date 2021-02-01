@@ -220,8 +220,8 @@ class MergeRequest:
 def main():
     # TODO: test with CI_JOB_TOKEN too --> for this the user is whoever owns the schedule
     # so I will need a GITLAB_USER var for the schedule only, which has the owner's user
-    private_token = os.environ["PROJECT_ACCESS_TOKEN"]
-    gitlab_user = os.environ["PROJECT_TOKEN_USER"]
+    private_token = os.environ["CI_JOB_TOKEN"]  # temp comment: os.environ["PROJECT_ACCESS_TOKEN"]
+    gitlab_user = os.environ["SCHEDULE_OWNER"]  # temp comment: os.environ["PROJECT_TOKEN_USER"]
     assignee_ids = os.environ["GITLAB_ASSIGNEE_ID"]
     new_branch_name = "test-branch-to-update-reqs"
 

@@ -205,14 +205,14 @@ class MergeRequest:
         log.info("Merge request created.")
         return mr
 
-    def assign_to_mr(self, mr, assignee):
+    def assign_to_mr(self, mr, assignees):
         """
         Assign merge request to an assignee
 
-        :param assignee: unique GitLab User ID of the person to assign to
-                         to find yours, navigate to Settings --> Main Settings --> User ID
+        :param assignees: unique GitLab User ID of the person to assign to
+                          to find yours, navigate to Settings --> Main Settings --> User ID
         """
-        mr.assignee_id = assignee
+        mr.assignee_ids = assignees
         mr.save()
         log.info(f"Merge Request was assigned to user with id: {assignee}")
 
@@ -222,7 +222,7 @@ def main():
     # so I will need a GITLAB_USER var for the schedule only, which has the owner's user
     private_token = os.environ["PROJECT_ACCESS_TOKEN"]
     gitlab_user = os.environ["PROJECT_TOKEN_USER"]
-    assignee_id = os.environ["GITLAB_ASSIGNEE_ID"]
+    assignee_ids = os.environ["GITLAB_ASSIGNEE_ID"]
     new_branch_name = "test-branch-to-update-reqs"
 
     branch_manager = BranchManager(private_token, gitlab_user)
@@ -236,7 +236,7 @@ def main():
         mr = mr_object.create_merge_request(
             new_branch, original_branch, mr_title
         )
-        mr_object.assign_to_mr(mr, assignee_id)
+        mr_object.assign_to_mr(mr, assignee_ids.split(","))
 
     else:
         log.info("No changes to commit.")

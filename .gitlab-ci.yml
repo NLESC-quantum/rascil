@@ -22,6 +22,7 @@ compile_requirements:
   before_script:
     - apt-get -y update
     - apt-get -y install git-lfs
+    - git lfs fetch --all  # without this, the job complains about not finding a file, that doesn't actually exist..
     - pip3 install --upgrade pip
     - pip install gitpython python-gitlab
     - make requirements

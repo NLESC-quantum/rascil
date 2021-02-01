@@ -218,12 +218,10 @@ class MergeRequest:
 
 
 def main():
-    # TODO: test with CI_JOB_TOKEN too --> for this the user is whoever owns the schedule
-    # so I will need a GITLAB_USER var for the schedule only, which has the owner's user
-    private_token = os.environ["CI_JOB_TOKEN"]  # temp comment: os.environ["PROJECT_ACCESS_TOKEN"]
-    gitlab_user = os.environ["SCHEDULE_OWNER"]  # temp comment: os.environ["PROJECT_TOKEN_USER"]
+    private_token = os.environ["PROJECT_ACCESS_TOKEN"]
+    gitlab_user = os.environ["PROJECT_TOKEN_USER"]
     assignee_ids = os.environ["GITLAB_ASSIGNEE_ID"]
-    new_branch_name = "test-branch-to-update-reqs"
+    new_branch_name = "scheduled-update-requirements"
 
     branch_manager = BranchManager(private_token, gitlab_user)
     branch_manager.set_git_config()
@@ -231,7 +229,7 @@ def main():
 
     if new_branch:
         original_branch = os.environ["CI_COMMIT_BRANCH"]  # branch_manager.find_original_branch()
-        mr_title = "WIP: SIM-706: test MR"
+        mr_title = "WIP: Update requirements - to be actioned before next scheduled run"
         mr_object = MergeRequest(private_token)
         mr = mr_object.create_merge_request(
             new_branch, original_branch, mr_title

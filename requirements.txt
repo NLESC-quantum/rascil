@@ -36,12 +36,16 @@ bleach==3.2.3
     # via nbconvert
 bokeh==2.2.3
     # via -r requirements.in
+certifi==2020.12.5
+    # via requests
 cffi==1.14.4
     # via
     #   argon2-cffi
     #   bcrypt
     #   cryptography
     #   pynacl
+chardet==4.0.0
+    # via requests
 click==7.1.2
     # via distributed
 cloudpickle==1.6.0
@@ -70,12 +74,18 @@ fasteners==0.16
     # via zarr
 future==0.18.2
     # via python-casacore
+gitdb==4.0.5
+    # via gitpython
+gitpython==3.1.12
+    # via -r requirements.in
 graphviz==0.16
     # via -r requirements.in
 h5py==3.1.0
     # via -r requirements.in
 heapdict==1.0.1
     # via zict
+idna==2.10
+    # via requests
 imageio==2.9.0
     # via scikit-image
 ipykernel==5.4.3
@@ -102,7 +112,7 @@ ipywidgets==7.6.3
     # via jupyter
 jedi==0.18.0
     # via ipython
-jinja2==2.11.2
+jinja2==2.11.3
     # via
     #   bokeh
     #   nbconvert
@@ -124,7 +134,7 @@ jupyter-contrib-core==0.3.3
     #   jupyter-nbextensions-configurator
 jupyter-contrib-nbextensions==0.5.1
     # via -r requirements.in
-jupyter-core==4.7.0
+jupyter-core==4.7.1
     # via
     #   jupyter-client
     #   jupyter-contrib-core
@@ -155,7 +165,7 @@ lxml==4.6.2
     # via jupyter-contrib-nbextensions
 markupsafe==1.1.1
     # via jinja2
-matplotlib==3.3.3
+matplotlib==3.3.4
     # via
     #   -r requirements.in
     #   aotools
@@ -180,7 +190,7 @@ nbformat==5.1.2
     #   nbclient
     #   nbconvert
     #   notebook
-nest-asyncio==1.4.3
+nest-asyncio==1.5.1
     # via nbclient
 networkx==2.5
     # via scikit-image
@@ -200,7 +210,7 @@ numba==0.52.0
     #   aotools
 numcodecs==0.7.3
     # via zarr
-numpy==1.19.5
+numpy==1.20.0
     # via
     #   -r requirements.in
     #   aotools
@@ -224,11 +234,11 @@ numpy==1.19.5
     #   tifffile
     #   xarray
     #   zarr
-packaging==20.8
+packaging==20.9
     # via
     #   bleach
     #   bokeh
-pandas==1.0.0
+pandas==1.2.1
     # via
     #   -r requirements.in
     #   xarray
@@ -291,7 +301,9 @@ python-dateutil==2.8.1
     #   jupyter-client
     #   matplotlib
     #   pandas
-pytz==2020.5
+python-gitlab==2.6.0
+    # via -r requirements.in
+pytz==2021.1
     # via pandas
 pywavelets==1.1.1
     # via scikit-image
@@ -302,7 +314,7 @@ pyyaml==5.4.1
     #   distributed
     #   jupyter-contrib-nbextensions
     #   jupyter-nbextensions-configurator
-pyzmq==21.0.2
+pyzmq==22.0.2
     # via
     #   jupyter-client
     #   notebook
@@ -313,6 +325,12 @@ qtpy==1.9.0
     # via qtconsole
 reproject==0.7.1
     # via -r requirements.in
+requests-toolbelt==0.9.1
+    # via python-gitlab
+requests==2.25.1
+    # via
+    #   python-gitlab
+    #   requests-toolbelt
 scikit-image==0.18.1
     # via -r requirements.in
 scipy==1.6.0
@@ -337,6 +355,8 @@ six==1.15.0
     #   pynacl
     #   python-casacore
     #   python-dateutil
+smmap==3.0.5
+    # via gitdb
 sortedcontainers==2.3.0
     # via distributed
 tabulate==0.8.7
@@ -380,6 +400,8 @@ traitlets==5.0.5
     #   qtconsole
 typing-extensions==3.7.4.3
     # via bokeh
+urllib3==1.26.3
+    # via requests
 wcwidth==0.2.5
     # via prompt-toolkit
 webencodings==0.5.1

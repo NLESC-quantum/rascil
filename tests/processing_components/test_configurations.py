@@ -42,11 +42,10 @@ class TestConfigurations(unittest.TestCase):
                                      polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_named_configurations(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LOWR3', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LLA', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.configuration_acc.size() > 0.0
-            #print("Config ", config, " has centre", self.config.location.geodetic)
- 
+            #print("Config ", config, " has centre", self.config.location.geodetic) 
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
             self.createVis(config, +35.0)
             assert self.config.configuration_acc.size() > 0.0
@@ -62,7 +61,7 @@ class TestConfigurations(unittest.TestCase):
             assert "MID" in numpy.unique(self.config["vp_type"])
 
     def test_SKA_LOW_configurations(self):
-        for config in ['LOW', 'LOWR3', 'LOWBD2-CORE']:
+        for config in ['LOW', 'LOWR3', 'LOWBD2-CORE', 'LLA']:
             self.config = create_named_configuration(config)
             assert self.config.configuration_acc.size() > 0.0
             assert "LOW" in numpy.unique(self.config.vp_type)

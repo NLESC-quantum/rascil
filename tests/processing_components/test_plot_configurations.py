@@ -11,6 +11,8 @@ import astropy.units as u
 import numpy
 from astropy.coordinates import SkyCoord
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from rascil.data_models import PolarisationFrame, rascil_path
@@ -57,8 +59,7 @@ class TestPlotConfigurations(unittest.TestCase):
                                label=True)
 
     def test_plot_configurations(self):
-        # for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MEERKAT+']:
-        for config in ['ASKAP']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LLA', 'ASKAP', 'MID', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
@@ -76,7 +77,7 @@ class TestPlotConfigurations(unittest.TestCase):
         print("Config ", config, " has centre", self.config.location.geodetic)
     
     def test_plot_configurations_uvcoverage(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MEERKAT+']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE','LLA', 'ASKAP', 'MID', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()

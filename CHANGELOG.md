@@ -1,3 +1,4 @@
+
 0.2.1b0
 -------
 * Implement using requirements*.in files for dependency management.
@@ -6,6 +7,7 @@
   `make requirements`, `make install_requirements`, `make update_requirements`
 * Added a new job, called `compile_requirements`, to the CI pipeline to update the requirements; 
   it is triggered by a schedule in GitLab
+* There is a new option to read in array configurations file with long,lat and specify an arbitrary height.
 
 0.2.0
 -----
@@ -31,7 +33,7 @@
 * The LOW test beam is now a uniformly weighted 38m diameter disk
 * There is a new category of python code: command line apps. The first of these is the 
   rascil/apps/rascil-imager.sh
-* Array configurations are now specified only in global coordinates: XYZ or long, lat, height.
+* Array configurations are now specified only in global coordinates: XYZ or long, lat, height. 
 * We have chosen to drop installation via a Conda environment file. The instructions have been 
   updated.
 

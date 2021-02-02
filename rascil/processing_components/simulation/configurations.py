@@ -5,6 +5,7 @@
 __all__ = ['create_configuration_from_file',
            'create_configuration_from_MIDfile',
            'create_configuration_from_SKAfile',
+           'create_configuration_from_LLAfile',
            'create_LOFAR_configuration',
            'create_named_configuration',
            'limit_rmax',
@@ -20,7 +21,7 @@ from rascil.data_models.memory_data_models import Configuration
 from rascil.data_models.parameters import rascil_data_path, get_parameter
 from rascil.processing_components.util.installation_checks import check_data_directory
 from rascil.processing_components.util.coordinate_support import xyz_at_latitude
-from rascil.processing_components.util import ecef_to_enu,eci_to_enu
+from rascil.processing_components.util import lla_to_ecef,ecef_to_enu,eci_to_enu
 
 import logging
 
@@ -179,6 +180,57 @@ def create_configuration_from_MIDfile(antfile: str, location=None,
 
     return fc
 
+def create_configuration_from_LLAfile(antfile: str, location: EarthLocation = None,
+                                   mount: str = 'azel',
+                                   names: str = "%d",
+                                   vp_type: Union[str, dict] = "Unknown",
+                                   diameter=35.0, alt=0.0,
+                                   rmax=None, name='', skip=1,
+                                   ecef=False) -> Configuration:
+    """ Define configuration from a longitude-latitude file
+
+    :param antfile: Antenna file name
+    :param location: Earthlocation of array
+    :param mount: mount type: 'azel', 'xy', 'equatorial'
+    :param names: Antenna names e.g. "VLA%d"
+    :param vp_type: string or rule to map name to voltage pattern type
+    :param diameter: Effective diameter of station or antenna
+    :param height: The altitude assumed
+    :param rmax: Maximum distance from array centre (m)
+    :param name: Name of array
+    :param ecef: Configuration file format: ECEF or local-xyz
+    :return: Configuration
+    """
+    check_data_directory()
+
+    antxyz = numpy.genfromtxt(antfile, delimiter=",")
+
+    nants = antxyz.shape[0]
+    if antxyz.shape[1] == 2: #if no altitude data
+        alts = alt * numpy.ones(nants)
+
+    lon, lat = antxyz[:,0], antxyz[:,1]
+    x,y,z = lla_to_ecef(lat*u.deg, lon*u.deg, alt)
+    antxyz = numpy.stack((x,y,z),axis=1)
+    
+    if ecef:
+        antxyz = ecef_to_enu(location, antxyz)
+
+    diameters = diameter * numpy.ones(nants)
+    anames = [names % ant for ant in range(nants)]
+    mounts = numpy.repeat(mount, nants)
+    antxyz, diameters, anames, mounts = limit_rmax(antxyz, diameters, anames, mounts, rmax)
+
+    antxyz = antxyz[::skip]
+    diameters = diameters[::skip]
+    anames = anames[::skip]
+    mounts = mounts[::skip]
+
+    fc = Configuration(location=location, names=anames, mount=mounts, xyz=antxyz,
+                       vp_type=find_vptype_from_name(anames, vp_type),
+                       diameter=diameters, name=name)
+    return fc
+
 
 def limit_rmax(antxyz, diameters, names, mounts, rmax):
     """ Select antennas with radius from centre < rmax
@@ -193,6 +245,7 @@ def limit_rmax(antxyz, diameters, names, mounts, rmax):
     if rmax is not None:
         lantxyz = antxyz - numpy.average(antxyz, axis=0)
         r = numpy.sqrt(lantxyz[:, 0] ** 2 + lantxyz[:, 1] ** 2 + lantxyz[:, 2] ** 2)
+
         antxyz = antxyz[r < rmax]
         log.debug('create_configuration_from_file: Maximum radius %.1f m includes %d antennas/stations' %
                   (rmax, antxyz.shape[0]))
@@ -334,6 +387,14 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
                                             vp_type="VLA",
                                             diameter=25.0,
                                             name=name, ecef=False, **kwargs)
+    elif name == 'LLA':
+        location = low_location
+        log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
+        fc = create_configuration_from_LLAfile(antfile=rascil_data_path("configurations/LOW_SKA-TEL-SKO-0000422_Rev3.txt"),
+                                            location=location, mount='XY',
+                                            vp_type="LOW",diameter=38.0, alt=300.0, 
+                                            name=name, ecef=True, **kwargs)
+
     else:
         raise ValueError("No such Configuration %s" % name)
     return fc

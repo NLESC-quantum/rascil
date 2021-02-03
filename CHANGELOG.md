@@ -1,7 +1,13 @@
 
 0.2.1b0
 -------
-* There is a new option to read in array configurations file with long,lat and spicify an arbitrary height.
+* Implement using requirements*.in files for dependency management.
+  Add files: requirements.in, requirements-docs.in, requirements-test.in
+* Makefile updated with requirements management commands:
+  `make requirements`, `make install_requirements`, `make update_requirements`
+* Added a new job, called `compile_requirements`, to the CI pipeline to update the requirements; 
+  it is triggered by a schedule in GitLab
+* There is a new option to read in array configurations file with long,lat and specify an arbitrary height.
 
 0.2.0
 -----

@@ -88,3 +88,19 @@ test:
 	python3 util/xmlcombine.py unit-tests-workflows.xml unit-tests-other.xml > unit-tests.xml
 	rm unit-tests-workflows.xml unit-tests-other.xml
 
+upgrade_pip:  ## make sure pip is up to date.
+	pip install --upgrade pip
+
+requirements: upgrade_pip  ## update and compile requirements
+	pip install -U pip-tools
+	pip-compile -U --output-file requirements.txt requirements.in
+	pip-compile -U --output-file requirements-test.txt requirements-test.in
+	pip-compile -U --output-file requirements-docs.txt requirements-docs.in
+
+install_requirements: upgrade_pip
+	pip install -r requirements-docs.txt
+	pip install -r requirements-test.txt
+	pip install -r requirements.txt
+	pip freeze
+
+update_requirements: requirements install_requirements

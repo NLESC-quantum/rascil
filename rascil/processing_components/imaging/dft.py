@@ -77,7 +77,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         # Phasor has shape [ntimes, nbaselines, nchan]
         # vflux has shape [nchan, npol]
         # vis has shape [[ntimes, nbaselines, nchan, npol]
-        phasor = calculate_blockvisibility_phasor(comp.direction, vis)[..., numpy.newaxis]
+        phasor = calculate_blockvisibility_phasor(comp.direction, vis)
         vis['vis'].data += vflux[numpy.newaxis, numpy.newaxis, ...] * phasor
 
     return vis

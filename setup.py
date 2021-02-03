@@ -15,11 +15,15 @@ assert sys.version_info[0] >= 3
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-# Last line contains string that setup.py has trouble interpreting
-with open('requirements.txt') as reqs_file:
-    reqs = reqs_file.read()
-reqs=reqs.split('\n')[:-2]
-print(reqs)
+# List of requirements cannot contain lines that start with #
+# can neither work with git+https ones, hence we'll remove it
+# and add it back below with the correct syntax for setup.py
+reqs = [line.strip() for line in open('requirements.txt').readlines()
+        if not line.strip().startswith('#') and line.strip() != ''
+        and not line.startswith('git')]
+reqs.append(
+    'nifty-gridder @ git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder'
+)
 
 # MF. This is a workaround to be able to build the library with MacOS
 if sys.platform == 'darwin':

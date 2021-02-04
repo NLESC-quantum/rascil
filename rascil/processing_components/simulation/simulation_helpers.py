@@ -61,7 +61,7 @@ def find_times_above_elevation_limit(start_times, end_times, location, phasecent
     return valid_start_times
 
 
-def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdist', plot_file=None, **kwargs):
+def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdist', plot_file=None, chan=0, **kwargs):
     """ Standard plot of visibility
 
     :param vis_list:
@@ -75,9 +75,9 @@ def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdis
     
     for ivis, vis in enumerate(vis_list):
         if y == 'amp':
-            yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis[..., 0, 0]).flat
+            yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis[..., chan, 0]).flat
         else:
-            yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis[..., 0, 0]).flat
+            yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis[..., chan, 0]).flat
         xvalue = vis.blockvisibility_acc.uvdist.data.flat
         plt.plot(xvalue[yvalue > 0.0], yvalue[yvalue > 0.0], '.', color=colors[ivis], markersize=0.2)
     
@@ -89,7 +89,7 @@ def plot_visibility(vis_list, colors=None, title='Visibility', y='amp', x='uvdis
     plt.show(block=False)
 
 
-def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', plot_file=None, **kwargs):
+def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', plot_file=None, chan=0, **kwargs):
     """ Standard plot of visibility
 
     :param vis_list:
@@ -103,9 +103,9 @@ def plot_visibility_pol(vis_list, title='Visibility_pol', y='amp', x='uvdist', p
         colors = ["red", "blue", "green", "purple"]
         for pol in range(vis.blockvisibility_acc.npol):
             if y == 'amp':
-                yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis[..., 0, pol]).flat
+                yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis[..., chan, pol]).flat
             else:
-                yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis[..., 0, pol]).flat
+                yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis[..., chan, pol]).flat
             if x == "time":
                 xvalue = numpy.repeat(vis["time"].data, len(yvalue))
             else:

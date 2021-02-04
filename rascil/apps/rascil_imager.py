@@ -74,7 +74,7 @@ def imager(args):
     assert args.ingest_msname is not None, "Input msname must be specified"
     
     if args.logfile is None:
-        logfile = args.ingest_msname.replace('.ms', f"_nmoment{args.clean_nmoment}.log")
+        logfile = args.ingest_msname.replace('.ms', ".log")
     else:
         logfile = args.logfile
     
@@ -175,6 +175,8 @@ def imager(args):
     
     # Save the processing statistics from Dask
     rsexecute.save_statistics(logfile.replace(".log", ""))
+    
+    log.info("Resulting image(s) {}".format(results))
     
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))
@@ -361,8 +363,6 @@ def main():
     parser = cli_parser()
     args = parser.parse_args()
     image = imager(args)
-    log.info("Resulting images are {}".format(image))
-
 
 if __name__ == "__main__":
     main()

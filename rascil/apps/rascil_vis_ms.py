@@ -1,0 +1,117 @@
+""" RASCIL MS visualisaation
+
+"""
+
+import argparse
+import datetime
+import logging
+import os
+import sys
+import pprint
+
+import matplotlib
+
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+
+from distributed import Client
+
+from rascil.data_models import PolarisationFrame
+from rascil.processing_components import create_blockvisibility_from_ms, plot_configuration, \
+    plot_visibility, plot_uvcoverage
+
+from rascil.workflows import weight_list_rsexecute_workflow, \
+    continuum_imaging_list_rsexecute_workflow, sum_invert_results, create_blockvisibility_from_ms_rsexecute, \
+    ical_list_rsexecute_workflow, invert_list_rsexecute_workflow, sum_invert_results_rsexecute
+
+from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute, get_dask_client
+
+from rascil.apps.common import display_ms_as_image
+
+from rascil.apps.apps_parser import apps_parser_imaging, apps_parser_cleaning, \
+    apps_parser_dask, apps_parser_ingest, apps_parser_app, apps_parser_calibration
+
+log = logging.getLogger("rascil-logger")
+log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
+
+
+def cli_parser():
+    """ Get a command line parser and populate it with arguments
+
+    First a CLI argument parser is created. Each function call adds more arguments to the parser.
+
+    :return: CLI parser argparse
+    """
+    
+    parser = argparse.ArgumentParser(description='RASCIL ms visualisation')
+    parser = apps_parser_app(parser)
+    parser = apps_parser_ingest(parser)
+    
+    return parser
+
+
+def visualise(args):
+    """ MS Visualiser
+
+    The return contains names of the files written to disk as fits files.
+
+    :param args: argparse with appropriate arguments
+    :return: Names of outputs as fits files
+    """
+    
+    # We need to tell all the Dask workers to use the same log
+    cwd = os.getcwd()
+    
+    assert args.ingest_msname is not None, "Input msname must be specified"
+    
+    if args.logfile is None:
+        logfile = args.ingest_msname.replace('.ms', ".log")
+    else:
+        logfile = args.logfile
+    
+    def init_logging():
+        logging.basicConfig(filename=logfile,
+                            filemode='a',
+                            format='%(asctime)s.%(msecs)d %(name)s %(levelname)s %(message)s',
+                            datefmt='%d/%m/%Y %I:%M:%S %p',
+                            level=logging.INFO)
+    
+    init_logging()
+    
+    log.info("\nRASCIL MS Visualiser\n")
+    
+    display_ms_as_image(msname=args.ingest_msname)
+    
+    bvis_list = create_blockvisibility_from_ms(args.ingest_msname)
+    
+    log.info(bvis_list[0])
+    
+    plt.clf()
+    plot_configuration(bvis_list[0].configuration)
+    plt.savefig(args.ingest_msname.replace('.ms', "_configuration.png"))
+  
+    plt.clf()
+    plot_uvcoverage(bvis_list)
+    plt.savefig(args.ingest_msname.replace('.ms', "_uvcoverage.png"))
+    plt.clf()
+
+    nchan = bvis_list[0]["vis"].shape[-2]
+
+    plt.clf()
+    plot_visibility(bvis_list, plot_file=args.ingest_msname.replace('.ms', "_visibility_amp.png"), chan=nchan//2)
+
+    plt.clf()
+    plot_visibility(bvis_list, plot_file=args.ingest_msname.replace('.ms', "_visibility_phase.png"), chan=nchan//2,
+                    y="phase")
+
+
+def main():
+    # Get command line inputs
+    parser = cli_parser()
+    args = parser.parse_args()
+    visualise(args)
+
+if __name__ == "__main__":
+    main()

@@ -41,9 +41,8 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
         self.comp = ncomp * [Skycomponent(direction=self.compreldirection, frequency=self.frequency,
                                           flux=self.flux)]
 
-
+    @unittest.skip("Don't run the slow version in CI")
     def test_dft_stokesiquv_blockvisibility(self):
-        
         self.init()
         for vpol in [PolarisationFrame("linear"), PolarisationFrame("circular")]:
             self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
@@ -52,6 +51,18 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
                                               polarisation_frame=vpol)
             self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
             assert numpy.max(numpy.abs(self.vismodel["vis"].data)) > 0.0
+
+    def test_dft_stokesiquv_blockvisibility_quick(self):
+    
+        self.init(ntimes=10, nchan=10, ncomp=10)
+        for vpol in [PolarisationFrame("linear"), PolarisationFrame("circular")]:
+            self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+                                              channel_bandwidth=self.channel_bandwidth,
+                                              phasecentre=self.phasecentre, weight=1.0,
+                                              polarisation_frame=vpol)
+            self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
+            assert numpy.max(numpy.abs(self.vismodel["vis"].data)) > 0.0
+
 
 if __name__ == '__main__':
     unittest.main()

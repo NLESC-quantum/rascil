@@ -92,6 +92,13 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
 
 
 def dft_cpu_kernel(ses, vfluxes, uvw_lambda):
+    """ CPU computational kernel for DFT
+    
+    :param ses: Direction cosines [ncomp, 3]
+    :param vfluxes: Fluxes [ncomp, nchan, npol]
+    :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan]
+    :return: Vis [ntimes, nbaselines, nchan, npol]
+    """
     phasors = \
         numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, ses))[..., numpy.newaxis]
     return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)

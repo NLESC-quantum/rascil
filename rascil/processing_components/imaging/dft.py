@@ -30,7 +30,7 @@ from scipy import interpolate
 
 from rascil.data_models.memory_data_models import BlockVisibility, Skycomponent
 from rascil.data_models.polarisation import convert_pol_frame
-from rascil.processing_components.imaging.imaging_params import get_frequency_map
+from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
 from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.visibility.base import calculate_blockvisibility_phasor
 
@@ -51,6 +51,9 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
     if not isinstance(sc, collections.abc.Iterable):
         sc = [sc]
 
+    vfluxes = list() # Flux for each component
+    ses = list() # lmn vector for each component
+    
     for comp in sc:
         #assert isinstance(comp, Skycomponent), comp
         flux = comp.flux
@@ -74,11 +77,31 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
                 # test here
                 vflux = flux
 
+        vfluxes.append(vflux)
 
-        phasor = calculate_blockvisibility_phasor(comp.direction, vis)
-        vis['vis'].data += numpy.einsum("fp,...fp->...fp", vflux, phasor)
+        l, m, n = skycoord_to_lmn(comp.direction, vis.phasecentre)
+        s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+        
+        ses.append(s)
+    
+    ses = numpy.array(ses)
+    vfluxes = numpy.array(vfluxes)
+    vis['vis'].data = dft_cpu_kernel(ses, vfluxes, vis.uvw_lambda)
 
     return vis
+
+
+def dft_cpu_kernel(ses, vfluxes, uvw_lambda):
+    """ CPU computational kernel for DFT
+    
+    :param ses: Direction cosines [ncomp, 3]
+    :param vfluxes: Fluxes [ncomp, nchan, npol]
+    :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan]
+    :return: Vis [ntimes, nbaselines, nchan, npol]
+    """
+    phasors = \
+        numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, ses))[..., numpy.newaxis]
+    return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
 
 
 def idft_visibility_skycomponent(vis: BlockVisibility,

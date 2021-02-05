@@ -30,15 +30,16 @@ from scipy import interpolate
 
 from rascil.data_models.memory_data_models import BlockVisibility, Skycomponent
 from rascil.data_models.polarisation import convert_pol_frame
-from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
 from rascil.processing_components.skycomponent import copy_skycomponent
+from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
 from rascil.processing_components.visibility.base import calculate_blockvisibility_phasor
-import cupy
+
+#import cupy
 
 log = logging.getLogger('rascil-logger')
 
 
-def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]]) \
+def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]], **kwargs) \
         -> BlockVisibility:
     """DFT to get the visibility from a Skycomponent, for BlockVisibility
 
@@ -87,12 +88,12 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
     
     ses = numpy.array(ses)
     vfluxes = numpy.array(vfluxes)
-    vis['vis'].data = dft_cpu_kernel(ses, vfluxes, vis.uvw_lambda)
+    vis['vis'].data = dft_compute_kernel(ses, vfluxes, vis.uvw_lambda, **kwargs)
 
     return vis
 
 
-def dft_cpu_kernel(ses, vfluxes, uvw_lambda):
+def dft_compute_kernel(ses, vfluxes, uvw_lambda, compute_kernel=None):
     """ CPU computational kernel for DFT
     
     :param ses: Direction cosines [ncomp, 3]
@@ -100,17 +101,38 @@ def dft_cpu_kernel(ses, vfluxes, uvw_lambda):
     :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
     :return: Vis [ntimes, nbaselines, nchan, npol]
     """
-    # with cupy.cuda.Device(0):
-    #     uvw_lambda_gpu = cupy.asarray(uvw_lambda.data)
-    #     ses_gpu = cupy.asarray(ses)
-    #     vfluxes_gpu = cupy.asarray(vfluxes)
-    #     phasors_gpu = \
-    #         cupy.exp(-2j * numpy.pi * cupy.einsum("tbfs,cs->ctbf", uvw_lambda_gpu, ses_gpu))[..., cupy.newaxis]
-    #     sum_gpu = cupy.sum(vfluxes_gpu[:, cupy.newaxis, cupy.newaxis, ...] * phasors_gpu, axis=0)
-    #     return cupy.asnumpy(sum_gpu)
-    phasors = \
-        numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, ses))[..., numpy.newaxis]
-    return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
+    
+    if compute_kernel is None:
+        compute_kernel = "cpu_numpy"
+
+    if compute_kernel == "gpu_cupy_einsum":
+        import cupy
+        with cupy.cuda.Device(0):
+            uvw_lambda_gpu = cupy.asarray(uvw_lambda.data)
+            ses_gpu = cupy.asarray(ses)
+            vfluxes_gpu = cupy.asarray(vfluxes)
+            phasors_gpu = \
+                cupy.exp(-2j * numpy.pi * cupy.einsum("tbfs,cs->ctbf", uvw_lambda_gpu, ses_gpu))[..., cupy.newaxis]
+            sum_gpu = cupy.sum(vfluxes_gpu[:, cupy.newaxis, cupy.newaxis, ...] * phasors_gpu, axis=0)
+            return cupy.asnumpy(sum_gpu)
+    elif compute_kernel == "cpu_einsum":
+        phasors = \
+           numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, ses))[..., numpy.newaxis]
+        return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
+    elif compute_kernel == "cpu_numpy":
+        phasors = \
+        numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data
+                                             * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, :], axis=-1))[..., numpy.newaxis]
+        return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
+    elif compute_kernel == "cpu_unrolled":
+        phasors = \
+        numpy.exp(-2j * numpy.pi * (uvw_lambda.data[..., 0] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 0] +
+                                    uvw_lambda.data[..., 1] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 1] +
+                                    uvw_lambda.data[..., 2] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 2]))[..., numpy.newaxis]
+        return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
+    else:
+        raise ValueError(f"compute_kernel {compute_kernel} not known")
+
 
 
 def idft_visibility_skycomponent(vis: BlockVisibility,

@@ -88,12 +88,12 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
     
     ses = numpy.array(ses)
     vfluxes = numpy.array(vfluxes)
-    vis['vis'].data = dft_compute_kernel(ses, vfluxes, vis.uvw_lambda, **kwargs)
+    vis['vis'].data = dft_kernel(ses, vfluxes, vis.uvw_lambda, **kwargs)
 
     return vis
 
 
-def dft_compute_kernel(ses, vfluxes, uvw_lambda, compute_kernel=None):
+def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
     """ CPU computational kernel for DFT
     
     :param ses: Direction cosines [ncomp, 3]
@@ -102,10 +102,10 @@ def dft_compute_kernel(ses, vfluxes, uvw_lambda, compute_kernel=None):
     :return: Vis [ntimes, nbaselines, nchan, npol]
     """
     
-    if compute_kernel is None:
-        compute_kernel = "cpu_numpy"
+    if dft_compute_kernel is None:
+        dft_compute_kernel = "cpu_numpy"
 
-    if compute_kernel == "gpu_cupy_einsum":
+    if dft_compute_kernel == "gpu_cupy_einsum":
         import cupy
         with cupy.cuda.Device(0):
             uvw_lambda_gpu = cupy.asarray(uvw_lambda.data)
@@ -115,23 +115,23 @@ def dft_compute_kernel(ses, vfluxes, uvw_lambda, compute_kernel=None):
                 cupy.exp(-2j * numpy.pi * cupy.einsum("tbfs,cs->ctbf", uvw_lambda_gpu, ses_gpu))[..., cupy.newaxis]
             sum_gpu = cupy.sum(vfluxes_gpu[:, cupy.newaxis, cupy.newaxis, ...] * phasors_gpu, axis=0)
             return cupy.asnumpy(sum_gpu)
-    elif compute_kernel == "cpu_einsum":
+    elif dft_compute_kernel == "cpu_einsum":
         phasors = \
            numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, ses))[..., numpy.newaxis]
         return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
-    elif compute_kernel == "cpu_numpy":
+    elif dft_compute_kernel == "cpu_numpy":
         phasors = \
         numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data
                                              * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, :], axis=-1))[..., numpy.newaxis]
         return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
-    elif compute_kernel == "cpu_unrolled":
+    elif dft_compute_kernel == "cpu_unrolled":
         phasors = \
         numpy.exp(-2j * numpy.pi * (uvw_lambda.data[..., 0] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 0] +
                                     uvw_lambda.data[..., 1] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 1] +
                                     uvw_lambda.data[..., 2] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 2]))[..., numpy.newaxis]
         return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
     else:
-        raise ValueError(f"compute_kernel {compute_kernel} not known")
+        raise ValueError(f"dft_compute_kernel {dft_compute_kernel} not known")
 
 
 

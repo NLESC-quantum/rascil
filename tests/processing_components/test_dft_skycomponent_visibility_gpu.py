@@ -49,15 +49,15 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
             compute_kernels = ['cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
 
         self.init(ntimes=2, nchan=10, ncomp=100)
-        for compute_kernel in compute_kernels:
+        for dft_compute_kernel in compute_kernels:
             import time
             start = time.time()
             self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                               channel_bandwidth=self.channel_bandwidth,
                                               phasecentre=self.phasecentre, weight=1.0,
                                               polarisation_frame=PolarisationFrame("linear"))
-            self.vismodel = dft_skycomponent_visibility(self.vis, self.comp, compute_kernel=compute_kernel)
-            print(f"{compute_kernel} {time.time() - start:.3}s")
+            self.vismodel = dft_skycomponent_visibility(self.vis, self.comp, dft_compute_kernel=dft_compute_kernel)
+            print(f"{dft_compute_kernel} {time.time() - start:.3}s")
             assert numpy.max(numpy.abs(self.vismodel["vis"].data)) > 0.0
 
     def test_dft_stokesiquv_blockvisibility_quick(self):

@@ -17,12 +17,11 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility, create_blockvisibility, \
     phaserotate_visibility
 
-
 class TestVisibilityDFTOperationsGPU(unittest.TestCase):
     def setUp(self):
         pass
         
-    def init(self, ntimes=10, nchan=10, ncomp=1000):
+    def init(self, ntimes=2, nchan=10, ncomp=1000):
 
         self.lowcore = create_named_configuration('LOWBD2', rmax=300.0)
         self.times = (numpy.pi / 43200.0) * numpy.linspace(0.0, 300.0, ntimes)
@@ -41,7 +40,7 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
         self.comp = ncomp * [Skycomponent(direction=self.compreldirection, frequency=self.frequency,
                                           flux=self.flux)]
 
-    @unittest.skip("Don't run the slow version in CI")
+    # @unittest.skip("Don't run the slow version in CI")
     def test_dft_stokesiquv_blockvisibility(self):
         self.init()
         for vpol in [PolarisationFrame("linear"), PolarisationFrame("circular")]:
@@ -54,7 +53,7 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
 
     def test_dft_stokesiquv_blockvisibility_quick(self):
     
-        self.init(ntimes=10, nchan=10, ncomp=10)
+        self.init(ntimes=2, nchan=2, ncomp=2)
         for vpol in [PolarisationFrame("linear"), PolarisationFrame("circular")]:
             self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                               channel_bandwidth=self.channel_bandwidth,

@@ -33,6 +33,7 @@ from rascil.data_models.polarisation import convert_pol_frame
 from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
 from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.visibility.base import calculate_blockvisibility_phasor
+import cupy
 
 log = logging.getLogger('rascil-logger')
 
@@ -99,6 +100,14 @@ def dft_cpu_kernel(ses, vfluxes, uvw_lambda):
     :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan]
     :return: Vis [ntimes, nbaselines, nchan, npol]
     """
+    # with cupy.cuda.Device(0):
+    #     uvw_lambda_gpu = cupy.asarray(uvw_lambda.data)
+    #     ses_gpu = cupy.asarray(ses)
+    #     vfluxes_gpu = cupy.asarray(vfluxes)
+    #     phasors_gpu = \
+    #         cupy.exp(-2j * numpy.pi * cupy.einsum("tbfs,cs->ctbf", uvw_lambda_gpu, ses_gpu))[..., cupy.newaxis]
+    #     sum_gpu = cupy.sum(vfluxes_gpu[:, cupy.newaxis, cupy.newaxis, ...] * phasors_gpu, axis=0)
+    #     return cupy.asnumpy(sum_gpu)
     phasors = \
         numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, ses))[..., numpy.newaxis]
     return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)

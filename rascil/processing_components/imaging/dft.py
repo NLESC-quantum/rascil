@@ -97,7 +97,7 @@ def dft_cpu_kernel(ses, vfluxes, uvw_lambda):
     
     :param ses: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
-    :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan]
+    :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
     :return: Vis [ntimes, nbaselines, nchan, npol]
     """
     # with cupy.cuda.Device(0):

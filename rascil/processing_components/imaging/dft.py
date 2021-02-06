@@ -93,6 +93,86 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
     return vis
 
 
+cuda_kernel_source = r'''
+#include <cupy/complex.cuh>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327950288
+#endif
+
+#define INDEX_3D(N3, N2, N1, I3, I2, I1)         (N1 * (N2 * I3 + I2) + I1)
+#define INDEX_4D(N4, N3, N2, N1, I4, I3, I2, I1) (N1 * (N2 * (N3 * I4 + I3) + I2) + I1)
+
+extern "C" {
+
+__global__ void dft_kernel(
+        const int num_components,
+        const int num_pols,
+        const int num_channels,
+        const int num_baselines,
+        const int num_times,
+        const double3 *const __restrict__ ses,        // Source direction cosines [num_components]
+        const double  *const __restrict__ vfluxes,    // Source fluxes [num_components, num_channels, num_pols]
+        const double3 *const __restrict__ uvw_lambda, // UVW in lambda [num_times, num_baselines, num_channels]
+        complex<double> *__restrict__ vis)            // Visibilities  [num_times, num_baselines, num_channels, num_pols]
+{
+    // Local (per-thread) visibility.
+    complex<double> vis_local[4]; // Allow up to 4 polarisations.
+    vis_local[0] = vis_local[1] = vis_local[2] = vis_local[3] = 0.0;
+
+    // Get indices of the output array this thread is working on.
+    const int i_baseline = blockDim.x * blockIdx.x + threadIdx.x;
+    const int i_channel  = blockDim.y * blockIdx.y + threadIdx.y;
+    const int i_time     = blockDim.z * blockIdx.z + threadIdx.z;
+
+    // Bounds check.
+    if (num_pols > 4 ||
+            i_baseline >= num_baselines ||
+            i_channel >= num_channels ||
+            i_time >= num_times) {
+        return;
+    }
+
+    // Load uvw-coordinates.
+    const double3 uvw = uvw_lambda[INDEX_3D(
+            num_times, num_baselines, num_channels,
+            i_time, i_baseline, i_channel)];
+
+    // Loop over components and calculate phase for each.
+    for (int i_component = 0; i_component < num_components; ++i_component) {
+        double sin_phase, cos_phase;
+        const double3 dir = ses[i_component];
+        const double phase = -2.0 * M_PI * (
+                dir.x * uvw.x + dir.y * uvw.y + dir.z * uvw.z);
+        sincos(phase, &sin_phase, &cos_phase);
+        complex<double> phasor(cos_phase, sin_phase);
+
+        // Multiply by flux in each polarisation and accumulate.
+        const unsigned int i_pol_start = INDEX_3D(
+                num_components, num_channels, num_pols,
+                i_component, i_channel, 0);
+        if (num_pols == 1) {
+            vis_local[0] += (phasor * vfluxes[i_pol_start]);
+        } else if (num_pols == 4) {
+            #pragma unroll
+            for (int i = 0; i < 4; ++i) {
+                vis_local[i] += (phasor * vfluxes[i_pol_start + i]);
+            }
+        }
+    }
+
+    // Write out local visibility.
+    for (int i = 0; i < num_pols; ++i) {
+        const unsigned int i_out = INDEX_4D(num_times, num_baselines,
+                num_channels, num_pols, i_time, i_baseline, i_channel, i);
+        vis[i_out] = vis_local[i];
+    }
+}
+
+}
+'''
+
+
 def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
     """ CPU computational kernel for DFT
     
@@ -115,6 +195,40 @@ def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
                 cupy.exp(-2j * numpy.pi * cupy.einsum("tbfs,cs->ctbf", uvw_lambda_gpu, ses_gpu))[..., cupy.newaxis]
             sum_gpu = cupy.sum(vfluxes_gpu[:, cupy.newaxis, cupy.newaxis, ...] * phasors_gpu, axis=0)
             return cupy.asnumpy(sum_gpu)
+    elif dft_compute_kernel == "gpu_cupy_raw":
+        import cupy
+
+        # Get the dimension sizes.
+        (num_times, num_baselines, num_channels, _) = uvw_lambda.shape
+        (num_components, _, num_pols) = vfluxes.shape
+
+        # Get a handle to the GPU kernel.
+        module = cupy.RawModule(code=cuda_kernel_source)
+        kernel_dft = module.get_function("dft_kernel")
+
+        # Allocate GPU memory and copy input arrays.
+        direction_cosines_gpu = cupy.asarray(ses)
+        fluxes_gpu = cupy.asarray(vfluxes)
+        uvw_gpu = cupy.asarray(uvw_lambda)
+        vis_gpu = cupy.zeros((num_times, num_baselines, num_channels, num_pols),
+                             dtype=cupy.complex128
+        )
+
+        # Define GPU kernel parameters, thread block size and grid size.
+        num_threads = (128, 2, 2)  # Product must not exceed 1024.
+        num_blocks = (
+            (num_baselines + num_threads[0] - 1) // num_threads[0],
+            (num_channels + num_threads[1] - 1) // num_threads[1],
+            (num_times + num_threads[2] - 1) // num_threads[2]
+        )
+        args = (
+            num_components, num_pols, num_channels, num_baselines, num_times,
+            direction_cosines_gpu, fluxes_gpu, uvw_gpu, vis_gpu
+        )
+
+        # Call the GPU kernel and copy results to host.
+        kernel_dft(num_blocks, num_threads, args)
+        return cupy.asnumpy(vis_gpu)
     elif dft_compute_kernel == "cpu_einsum":
         phasors = \
            numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, ses))[..., numpy.newaxis]

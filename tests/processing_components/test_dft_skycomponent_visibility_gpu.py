@@ -39,7 +39,7 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
         self.comp = ncomp * [Skycomponent(direction=self.compreldirection, frequency=self.frequency,
                                           flux=self.flux)]
     
-    # @unittest.skip("Don't run the slow version in CI")
+    @unittest.skip("Don't run in CI")
     def test_dft_stokesiquv_blockvisibility(self):
         try:
             import cupy

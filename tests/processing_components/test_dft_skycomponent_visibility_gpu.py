@@ -39,14 +39,14 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
         self.comp = ncomp * [Skycomponent(direction=self.compreldirection, frequency=self.frequency,
                                           flux=self.flux)]
     
-    @unittest.skip("Don't run in CI")
+    #@unittest.skip("Don't run in CI")
     def test_dft_stokesiquv_blockvisibility(self):
         try:
             import cupy
-            compute_kernels = ['gpu_cupy_einsum', 'cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
+            compute_kernels = ['gpu_cupy_raw', 'gpu_cupy_einsum', 'cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
         except ModuleNotFoundError:
             compute_kernels = ['cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
-        
+
         self.init(ntimes=2, nchan=10, ncomp=100)
         for dft_compute_kernel in compute_kernels:
             import time

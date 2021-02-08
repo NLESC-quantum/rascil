@@ -10,5 +10,5 @@ Apps
    :maxdepth: 1
 
    rascil_imager.rst
-
+   continuum_imaging_checker.rst
 

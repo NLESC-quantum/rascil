@@ -55,7 +55,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
 
     vfluxes = list() # Flux for each component
     ses = list() # lmn vector for each component
-    
+
     for comp in sc:
         #assert isinstance(comp, Skycomponent), comp
         flux = comp.flux
@@ -83,9 +83,9 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
 
         l, m, n = skycoord_to_lmn(comp.direction, vis.phasecentre)
         s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
-        
+
         ses.append(s)
-    
+
     ses = numpy.array(ses)
     vfluxes = numpy.array(vfluxes)
     vis['vis'].data = dft_kernel(ses, vfluxes, vis.uvw_lambda, **kwargs)
@@ -111,10 +111,10 @@ __global__ void dft_kernel(
         const int num_channels,
         const int num_baselines,
         const int num_times,
-        const double3 *const __restrict__ ses,        // Source direction cosines [num_components]
-        const double  *const __restrict__ vfluxes,    // Source fluxes [num_components, num_channels, num_pols]
-        const double3 *const __restrict__ uvw_lambda, // UVW in lambda [num_times, num_baselines, num_channels]
-        complex<double> *__restrict__ vis)            // Visibilities  [num_times, num_baselines, num_channels, num_pols]
+        const double3         *const __restrict__ ses,        // Source direction cosines [num_components]
+        const complex<double> *const __restrict__ vfluxes,    // Source fluxes [num_components, num_channels, num_pols]
+        const double3         *const __restrict__ uvw_lambda, // UVW in lambda [num_times, num_baselines, num_channels]
+        complex<double>       *__restrict__ vis)              // Visibilities  [num_times, num_baselines, num_channels, num_pols]
 {
     // Local (per-thread) visibility.
     complex<double> vis_local[4]; // Allow up to 4 polarisations.
@@ -175,13 +175,13 @@ __global__ void dft_kernel(
 
 def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
     """ CPU computational kernel for DFT
-    
+
     :param ses: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
     :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
     :return: Vis [ntimes, nbaselines, nchan, npol]
     """
-    
+
     if dft_compute_kernel is None:
         dft_compute_kernel = "cpu_numpy"
 
@@ -286,5 +286,3 @@ def idft_visibility_skycomponent(vis: BlockVisibility,
         weights_list.append(weight)
 
     return newsc, weights_list
-
-

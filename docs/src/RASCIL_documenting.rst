@@ -1,3 +1,4 @@
+.. _rascil_documenting:
 
 Documenting RASCIL
 ******************

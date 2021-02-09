@@ -32,7 +32,7 @@ bcrypt==3.2.0
     # via paramiko
 bdsf==1.9.2
     # via -r requirements.in
-bleach==3.2.3
+bleach==3.3.0
     # via nbconvert
 bokeh==2.2.3
     # via -r requirements.in
@@ -54,7 +54,7 @@ cloudpickle==1.6.0
     # via distributed
 configparser==5.0.1
     # via -r requirements.in
-cryptography==3.3.1
+cryptography==3.4.1
     # via paramiko
 cycler==0.10.0
     # via matplotlib
@@ -106,7 +106,7 @@ ipython-genutils==0.2.0
     #   notebook
     #   qtconsole
     #   traitlets
-ipython==7.19.0
+ipython==7.20.0
     # via
     #   ipykernel
     #   ipywidgets
@@ -214,7 +214,7 @@ numba==0.52.0
     #   aotools
 numcodecs==0.7.3
     # via zarr
-numpy==1.20.0
+numpy==1.20.1
     # via
     #   -r requirements.in
     #   aotools
@@ -281,7 +281,7 @@ pybind11==2.6.2
     # via nifty-gridder
 pycparser==2.20
     # via cffi
-pyerfa==1.7.1.1
+pyerfa==1.7.2
     # via astropy
 pygments==2.7.4
     # via
@@ -345,16 +345,19 @@ scipy==1.6.0
     #   bdsf
     #   reproject
     #   scikit-image
+semantic-version==2.8.5
+    # via setuptools-rust
 send2trash==1.5.0
     # via notebook
 seqfile==0.2.0
     # via -r requirements.in
+setuptools-rust==0.11.6
+    # via cryptography
 six==1.15.0
     # via
     #   argon2-cffi
     #   bcrypt
     #   bleach
-    #   cryptography
     #   cycler
     #   fasteners
     #   jsonschema
@@ -373,8 +376,10 @@ terminado==0.9.2
     # via notebook
 testpath==0.4.4
     # via nbconvert
-tifffile==2021.1.14
+tifffile==2021.2.1
     # via scikit-image
+toml==0.10.2
+    # via setuptools-rust
 toolz==0.11.1
     # via distributed
 tornado==6.1

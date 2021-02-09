@@ -1,4 +1,4 @@
-.. Workflows
+.. _rascil_workflows:
 
 .. toctree::
    :maxdepth: 2

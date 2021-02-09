@@ -17,10 +17,10 @@ rascil_imager is a command line app written using RASCIL. It supports three ways
 
 Notable features:
 
-  - Reads CASA MeasurementSets
+  - Reads a CASA MeasurementSet and writes FITS files
   - Image size can be a composite of 2, 3, 5
-  - Distributed across processors using Dask
-  - Multi Frequency Synthesis Multiscale CLEAN available, also with distribution over facets
+  - Distribute processing across processors using Dask
+  - Multi Frequency Synthesis Multiscale CLEAN available, also with distribution of CLEAN over facets
   - Wide field imaging using the fast and accurate nifty gridder
   - Selfcalibration available for atmosphere (T), complex gains (G), and bandpass (B)
 
@@ -32,8 +32,109 @@ CLI arguments are grouped:
   - :code:`--calibration` prefixed parameters control the calibration in the ICAL pipeline. (active only for mode ical)
   - :code:`--dask` prefixed parameters control the use of Dask/rsexecute for distributing the processing
 
-Example:
-++++++++
+MeasurementSet ingest
++++++++++++++++++++++
+
+Although a CASA MeasurementSet can hold heterogeneous observations, identified by data descriptors. rascil-imager can
+only process identical data descriptors from a MS. The number of channels and polarisation must be the same.
+
+Each selected data descriptor is optionally split into a number of channels optionally averaged and placed into one
+BlockVisibility.
+
+For example, using the arguments::
+
+    --ingest_msname SNR_G55_10s.calib.ms --ingest_dd 0 1 2 3 --ingest_vis_nchan 64 \
+    --ingest_chan_per_blockvis 8 --ingest_average_blockvis True
+
+will read data descriptors 0, 1, 2, 3, each of which has 64 channels. Each set of 64 channels are split
+into blocks of 8 and averaged. We thus end up with 32 separate datasets in RASCIL, each of which
+is a BlockVisibility and has 1 channel, for a total of 32 channels. If the argument :code:`--ingest_average_blockvis`
+is set to False, each BlockVisibility has eight channels, for a total of 256 channels.
+
+Imaging
++++++++
+
+To make an image from visibilities or to predict visibilities from a model, it is necessary to use a gridder.
+Nifty gridder (https://gitlab.mpcdf.mpg.de/ift/nifty_gridder) is currently the best gridder to use in RASCIL.
+It is written in c and uses OpenMP to distribute the processing across multiple threads.
+The Nifty Gridder uses an improved wstacking algorithm uses many fewer w-planes than w stacking or
+w projection. It is not necessary to explicitly set the number of w-planes.
+
+The gridder is set by the :code:`--imaging_context` argument. The default, :code:`--imaging_context ng` is the Nifty
+Gridder.
+
+CLEAN
++++++
+
+rascil-imager supports Hogbom CLEAN, MultiScale CLEAN, and Multi-Frequency Synthesis MultiScale Clean
+(also known as MMCLEAN). The first two work independently on different frequency channels, while
+MMClean works jointly cross all channels using a Taylor Series expansion in frequency for the emission.
+
+The clean methods support two processing speed enhancements:
+
+     - The multi-frequency-synthesis CLEAN works by fitting a Taylor series in frequency.
+       The :code:`--ingest_chan_per_blockvis` argument controls the aggregation of channels
+       in the MeasurementSet to form image planes for the CLEAN. Within a BlockVisibility the
+       different channels are gridded together to form one image. Each image is then used in the
+       mmclean algorithm. For example, a data set may have 256 channels spread over 4 data descriptors.
+       We can split these into 32 BlockVisibilities and then run the mmclean over these 32
+       channels.
+     - Only a limited central region of the PSF will be subtracted during the minor cycles.
+     - The cleaning may be partitioned into overlapping facets, each of which is cleaned independently,
+       and then merged with neighbours using a taper function. This works well for fields of compact sources
+       but is likely to not perform well for extended emission.
+
+
+Polarisation
+++++++++++++
+
+The polarisation processing behaviour is controlled by :code:`--image_pol`.
+
+ - :code:`--image_pol stokesI` will image only the I Stokes parameter
+ - :code:`--image_pol stokesIQUV` will image all Stokes parameters I, Q, U, V
+
+Note that the combination of MM CLEAN and stokesIQUV imaging is not likely to be meaningful.
+
+Self-calibration
+++++++++++++++++
+
+rascil-imager supports self-calibration as part of the imaging. At the end of each major cycle
+a calibration solution and application may optionally be performed.
+
+Calibration uses the Hamaker Bregman Sault formalism with the following Jones matrices supported: T (Atmospheric phase),
+G (Electronics gain), B - (Bandpass).
+
+An example consider the arguments::
+
+    calibration_T_first_selfcal = 2
+    calibration_T_phase_only = True
+    calibration_T_timeslice = None
+    calibration_G_first_selfcal = 5
+    calibration_G_phase_only = False
+    calibration_G_timeslice = 1200.0
+    calibration_B_first_selfcal = 8
+    calibration_B_phase_only = False
+    calibration_B_timeslice = 1.0e5
+    calibration_global_solution = True
+    calibration_calibration_context = "TGB"
+
+These will perform a phase only solution of the T term after the second major cycle for every integration,
+solution of G after 5 major cycles with timescale of 1200s, and solution of B after 8 major cycles, integrating
+across all frequencies where appropriate.
+
+Dask
+++++
+
+Dask is used to distribute processing across multiple cores or nodes. The setup and execution of a
+set of workers is controlled by a scheduler. By default, rascil uses the process scheduler which
+sets up a number of processes each with a number of threads. If the host has 16 cores, the set up
+will be 4 processes each with 4 threads for a total of 16 Dask workers.
+
+For distribution across a cluster, the Dask distributed processor is required. See :ref:`RASCIL_dask`
+for more details.
+
+Example script
+++++++++++++++
 
 The following runs the cip on a data set from the CASA examples::
 
@@ -47,7 +148,6 @@ The following runs the cip on a data set from the CASA examples::
     --clean_nmajor 5 --clean_algorithm mmclean --clean_scales 0 6 10 30 60 \
     --clean_fractional_threshold 0.3 --clean_threshold 0.12e-3 --clean_nmoment 5 \
     --clean_psf_support 640 --clean_restored_output integrated
-
 
 Command line arguments
 ++++++++++++++++++++++

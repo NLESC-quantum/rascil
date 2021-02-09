@@ -189,14 +189,14 @@ def ecef_to_enu(location, xyz):
 def enu_to_xyz(e, n, u, lat):
     """Convert ENU to XYZ coordinates.
     
-       [TMS] Thompson, Moran, Swenson, "Interferometry and Synthesis in Radio
-       Astronomy," 2nd ed., Wiley-VCH, 2004, pp. 86-89.
+    [TMS] Thompson, Moran, Swenson, "Interferometry and Synthesis in Radio
+    Astronomy," 2nd ed., Wiley-VCH, 2004, pp. 86-89.
 
     :param e: East
     :param n: North
     :param u: Up
     :param lat: Latitude
-    :result : xyz
+    :result: xyz
     """
     sin_lat, cos_lat = numpy.sin(lat), numpy.cos(lat)
     return -sin_lat * n + cos_lat * u, e, cos_lat * n + sin_lat * u

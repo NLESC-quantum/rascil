@@ -1,4 +1,4 @@
-.. _RASCIL_macos_install:
+.. _rascil_macos_install:
 
 Installation of RASCIL on macos
 ===============================

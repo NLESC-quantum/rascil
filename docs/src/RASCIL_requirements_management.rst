@@ -1,4 +1,4 @@
-.. _manage_requirements:
+.. _rascil_requirements_management:
 
 Managing requirements
 *********************

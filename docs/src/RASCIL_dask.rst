@@ -1,3 +1,4 @@
+.. _rascil_dask:
 
 RASCIL and DASK
 ***************

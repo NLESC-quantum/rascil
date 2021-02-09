@@ -1,3 +1,4 @@
+.. _rascil_release_process:
 
 Release process
 ***************

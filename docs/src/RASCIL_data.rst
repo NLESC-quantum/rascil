@@ -1,4 +1,4 @@
-.. Data
+.. _rascil_data:
 
 .. toctree::
    :maxdepth: 2

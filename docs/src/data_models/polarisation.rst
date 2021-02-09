@@ -1,4 +1,4 @@
-.. _rascil_data_models_polarisation:
+.. _rascil_data_models_polarisation_lower:
 
 .. py:currentmodule:: rascil.data_models.polarisation
 

@@ -6,10 +6,6 @@
 #
 aotools==1.0.4
     # via -r requirements.in
-appnope==0.1.2
-    # via
-    #   ipykernel
-    #   ipython
 argon2-cffi==20.1.0
     # via notebook
 argparse==1.4.0
@@ -30,12 +26,18 @@ attrs==20.3.0
     # via jsonschema
 backcall==0.2.0
     # via ipython
+backports.shutil-get-terminal-size==1.0.0
+    # via bdsf
 bcrypt==3.2.0
     # via paramiko
+bdsf==1.9.2
+    # via -r requirements.in
 bleach==3.2.3
     # via nbconvert
 bokeh==2.2.3
     # via -r requirements.in
+cached-property==1.5.2
+    # via h5py
 certifi==2020.12.5
     # via requests
 cffi==1.14.4
@@ -88,6 +90,8 @@ idna==2.10
     # via requests
 imageio==2.9.0
     # via scikit-image
+importlib-metadata==3.4.0
+    # via jsonschema
 ipykernel==5.4.3
     # via
     #   ipywidgets
@@ -216,6 +220,7 @@ numpy==1.20.0
     #   aotools
     #   astropy
     #   astropy-healpix
+    #   bdsf
     #   bokeh
     #   h5py
     #   imageio
@@ -337,6 +342,7 @@ scipy==1.6.0
     # via
     #   -r requirements.in
     #   aotools
+    #   bdsf
     #   reproject
     #   scikit-image
 send2trash==1.5.0
@@ -399,7 +405,9 @@ traitlets==5.0.5
     #   notebook
     #   qtconsole
 typing-extensions==3.7.4.3
-    # via bokeh
+    # via
+    #   bokeh
+    #   importlib-metadata
 urllib3==1.26.3
     # via requests
 wcwidth==0.2.5
@@ -414,6 +422,8 @@ zarr==2.6.1
     # via -r requirements.in
 zict==2.0.0
     # via distributed
+zipp==3.4.0
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

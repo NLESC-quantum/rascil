@@ -1,5 +1,5 @@
 """
-Stand-alone application for finding sources with BDSF
+Stand-alone application for finding sources with PyBDSF
 """
 
 import argparse
@@ -223,13 +223,10 @@ def check_source(centre, freq, comp, tol_val):
     
     return matches
 
+if __name__ == "__main__":
 
-def main():
     # Get command line inputs
     parser = cli_parser()
     args = parser.parse_args()
     analyze_image(args)
 
-
-if __name__ == "__main__":
-    main()

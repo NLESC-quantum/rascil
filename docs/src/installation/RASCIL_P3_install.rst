@@ -1,4 +1,4 @@
-.. _RASCIL_P3_install:
+.. _rascil_P3_install:
 
 Installation of RASCIL on P3
 ============================

@@ -1,3 +1,4 @@
+.. _rascil_developing:
 
 Developing in RASCIL
 ********************

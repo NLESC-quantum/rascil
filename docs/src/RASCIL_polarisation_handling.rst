@@ -1,4 +1,4 @@
-.. _polarisation_handling:
+.. _rascil_polarisation_handling:
 
 Polarisation handling
 *********************

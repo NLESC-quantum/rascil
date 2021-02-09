@@ -1,5 +1,4 @@
-.. Functions
-
+.. _rascil_functions:
 
 .. toctree::
    :maxdepth: 2

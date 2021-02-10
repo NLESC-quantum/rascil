@@ -36,18 +36,18 @@ def cli_parser():
     """
     parser = argparse.ArgumentParser(description='RASCIL continuum image checker')
     parser.add_argument('--ingest_fitsname', type=str, default=None, help='FITS file to be read')
-    parser.add_argument('--finder_bmaj', type=float, default=1.0,
+    parser.add_argument('--finder_beam_maj', type=float, default=1.0,
                         help='Major axis of the restoring beam')
-    parser.add_argument('--finder_bmin', type=float, default=1.0,
+    parser.add_argument('--finder_beam_min', type=float, default=1.0,
                         help='Minor axis of the restoring beam')
-    parser.add_argument('--finder_pos_angle', type=float, default=0.0,
+    parser.add_argument('--finder_beam_pos_angle', type=float, default=0.0,
                         help='Positioning angle of the restoring beam')
     parser.add_argument('--finder_th_isl', type=float, default=5.0,
                         help='Threshold to determine the size of the islands')
     parser.add_argument('--finder_th_pix', type=float, default=10.0,
                         help='Threshold to detect source (peak value)')
     parser.add_argument('--apply_primary', type=str, default='True',
-                        help='Whether to apply primary beams')
+                        help='Whether to apply primary beam')
     parser.add_argument('--telescope_model', type=str, default='MID',
                         help='The telescope to generate primary beam correction')
     parser.add_argument('--match_sep', type=float, default=1.e-5,
@@ -62,7 +62,7 @@ def cli_parser():
 
 def analyze_image(args):
     """
-    Main analyais routine.
+    Main analysis routine.
     
     :param args: argparse with appropriate arguments
 
@@ -72,7 +72,8 @@ def analyze_image(args):
     
     cwd = os.getcwd()
     
-    assert args.ingest_fitsname is not None, "Input FITS file name must be specified"
+    if args.ingest_fitsname is None:
+        raise Exception("Input FITS file name must be specified")
     
     if args.logfile is None:
         logfile = args.ingest_fitsname.replace('.fits', ".log")
@@ -102,12 +103,11 @@ def analyze_image(args):
     input_image = args.ingest_fitsname
     
     im = import_image_from_fits(args.ingest_fitsname)
-    print(im)
     
-    bmaj = args.finder_bmaj
-    bmin = args.finder_bmin
-    pos_angle = args.finder_pos_angle
-    beam_info = (bmaj, bmin, pos_angle)
+    beam_maj = args.finder_beam_maj
+    beam_min = args.finder_beam_min
+    beam_pos_angle = args.finder_beam_pos_angle
+    beam_info = (beam_maj, beam_min, beam_pos_angle)
     
     th_isl = args.finder_th_isl
     th_pix = args.finder_th_pix
@@ -125,10 +125,10 @@ def analyze_image(args):
     
     if args.apply_primary:
         telescope = args.telescope_model
-        out = add_primary_beams(input_image, out, telescope)
+        out = add_primary_beam(input_image, out, telescope)
     
-    tol_val = args.match_sep
-    results = check_source(im.image_acc.phasecentre, freq, out, tol_val)
+    match_sep = args.match_sep
+    results = check_source(im.image_acc.phasecentre, freq, out, match_sep)
     
     log.info("Resulting list of items {}".format(results))
     
@@ -175,16 +175,17 @@ def create_source_to_skycomponent(source_file, freq):
     
     data = pd.read_csv(source_file, sep=r'\s*,\s*', skiprows=5)
     comp = []
-    for i in range(len(data.index)):
-        direc = SkyCoord(ra=data['RA'][i] * u.deg, dec=data['DEC'][i] * u.deg, frame='icrs', equinox='J2000')
-        f = data['Total_flux'][i]
+    for i, row in data.iterrows():
+
+        direc = SkyCoord(ra=row['RA'] * u.deg, dec=row['DEC'] * u.deg, frame='icrs', equinox='J2000')
+        f = row['Total_flux']
         comp.append(create_skycomponent(direction=direc, flux=np.array([[f]]), frequency=np.array([freq]),
                                         polarisation_frame=PolarisationFrame('stokesI')))
     
     return comp
 
 
-def add_primary_beams(input_image, comp, telescope):
+def add_primary_beam(input_image, comp, telescope):
     """
     Add optional primary beam correction for fluxes.
 
@@ -202,14 +203,14 @@ def add_primary_beams(input_image, comp, telescope):
     return pbcomp
 
 
-def check_source(centre, freq, comp, tol_val):
+def check_source(centre, freq, comp, match_sep):
     """
     Check the difference between output sources and input.
     
     :param centre: Phase centre of image
     :param freq: Frequency or list of frequencies.
     :param comp: Output source list in skycomponent format
-    :param tol_val: The criteria for maximum separation
+    :param match_sep: The criteria for maximum separation
  
     :return matches: List of matched skycomponents
  
@@ -219,7 +220,7 @@ def check_source(centre, freq, comp, tol_val):
                                                     polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
     
     # separations = find_separation_skycomponents(comp, orig)
-    matches = find_skycomponent_matches(comp, orig, tol=tol_val)
+    matches = find_skycomponent_matches(comp, orig, tol=match_sep)
     
     return matches
 

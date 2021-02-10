@@ -444,6 +444,7 @@ def advise_wide_field(vis: BlockVisibility, delA=0.02,
     cellsize = synthesized_beam / oversampling_synthesised_beam
     if verbose:
         log.info("advise_wide_field: (cellsize) Cellsize %s" % (rad_deg_arcsec(cellsize)))
+        log.info("")
 
     def pwr2(n):
         ex = numpy.ceil(numpy.log(n) / numpy.log(2.0)).astype('int')
@@ -489,6 +490,7 @@ def advise_wide_field(vis: BlockVisibility, delA=0.02,
     # We will assume that the constraint holds at one quarter the entire FOV i.e. that
     # the full field of view includes the entire primary beam
 
+    log.info("")
     w_sampling_image = numpy.sqrt(2.0 * delA) / (numpy.pi * image_fov ** 2)
     if verbose:
         log.info("advice_wide_field: (w_sampling_image) W sampling for full image = %.1f (wavelengths)" % (w_sampling_image))
@@ -531,23 +533,51 @@ def advise_wide_field(vis: BlockVisibility, delA=0.02,
     freq_sampling_primary_beam = max_freq * (synthesized_beam / primary_beam_fov)
     if verbose:
         log.info("advice_wide_field: (freq_sampling_primary_beam) Frequency sampling for primary beam = %.1f (Hz)" % (freq_sampling_primary_beam))
+        log.info("")
 
-    wstep = w_sampling_primary_beam
-    vis_slices = max(1, int(2 * maximum_w / wstep))
-    wprojection_planes = vis_slices
+    wstep_primary_beam = w_sampling_primary_beam
+    vis_slices_primary_beam = max(1, int(2 * maximum_w / wstep_primary_beam))
+    wprojection_planes_primary_beam = vis_slices_primary_beam
+    nwpixels_primary_beam = int(2.0 * wprojection_planes_primary_beam * primary_beam_fov)
+    nwpixels_primary_beam = nwpixels_primary_beam - nwpixels_primary_beam % 2
     if verbose:
-        log.info('advice_wide_field: (vis_slices) Number of planes in w stack %d (primary beam)' % (vis_slices))
-        log.info('advice_wide_field: (wprojection_planes) Number of planes in w projection %d (primary beam)' % (
-            wprojection_planes))
+        log.info('advice_wide_field: (vis_slices_primary_beam) Number of planes in w stack %d (primary beam)' % (vis_slices_primary_beam))
+        log.info('advice_wide_field: (wprojection_planes_primary_beam) Number of planes in w projection %d (primary beam)' % (
+            wprojection_planes_primary_beam))
+        log.info('advice_wide_field: (nwpixels_primary_beam) W support = %d (pixels) (primary beam)' % nwpixels_primary_beam)
+        log.info("")
 
-    nwpixels = int(2.0 * wprojection_planes * primary_beam_fov)
-    nwpixels = nwpixels - nwpixels % 2
+    wstep_image = w_sampling_image
+    vis_slices_image = max(1, int(2 * maximum_w / wstep_image))
+    wprojection_planes_image = vis_slices_image
+    nwpixels_image = int(2.0 * wprojection_planes_image * image_fov)
+    nwpixels_image = nwpixels_image - nwpixels_image % 2
     if verbose:
-        log.info('advice_wide_field: (nwpixels) W support = %d (pixels) (primary beam)' % nwpixels)
+        log.info('advice_wide_field: (vis_slices_image) Number of planes in w stack %d (primary beam)' % (
+            vis_slices_image))
+        log.info('advice_wide_field: (wprojection_planes_image) Number of planes in w projection %d (image)' % (
+            wprojection_planes_image))
+        log.info('advice_wide_field: (nwpixels_image) W support = %d (pixels) (image)' % nwpixels_image)
+        log.info("")
+        log.info('advise_wide_field: by default, using primary beam to advise on w sampling parameters')
+        
+    wstep = wstep_primary_beam
+    vis_slices = vis_slices_primary_beam
+    wprojection_planes = wprojection_planes_primary_beam
+    nwpixels = nwpixels_primary_beam
 
-    del pwr2
-    del pwr23
-    return locals()
+    result = locals()
+    
+    keys = ['delA', 'oversampling_synthesised_beam', 'guard_band_image', 'facets', 'wprojection_planes', 'verbose',
+         'max_wavelength', 'min_wavelength', 'maximum_baseline', 'maximum_w', 'diameter', 'primary_beam_fov',
+         'image_fov', 'facet_fov', 'synthesized_beam', 'cellsize', 'npixels', 'npixels2',
+         'npixels23', 'npixels_min', 'w_sampling_image', 'w_sampling_facet', 'w_sampling_primary_beam',
+         'time_sampling_image', 'time_sampling_primary_beam', 'max_freq', 'freq_sampling_image',
+         'freq_sampling_primary_beam', 'wstep_primary_beam', 'vis_slices_primary_beam',
+         'wprojection_planes_primary_beam', 'nwpixels_primary_beam', 'wstep_image', 'vis_slices_image',
+         'wprojection_planes_image', 'nwpixels_image', 'wstep', 'vis_slices', 'nwpixels']
+
+    return {your_key: result[your_key] for your_key in keys}
 
 
 def rad_deg_arcsec(x):

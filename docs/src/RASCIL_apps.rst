@@ -18,6 +18,8 @@ Imaging
    :maxdepth: 1
 
    apps/rascil_imager.rst
+   apps/rascil_vis_ms.rst
+   apps/rascil_advise.rst
 
 
 Other

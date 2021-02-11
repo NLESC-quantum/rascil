@@ -1,4 +1,4 @@
-.. _RASCIL_install:
+.. _rascil_install:
 
 Installation
 ============

@@ -1,4 +1,4 @@
-.. _RASCIL_xarray:
+.. _rascil_xarray:
 
 .. toctree::
    :maxdepth: 3

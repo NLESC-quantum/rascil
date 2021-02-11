@@ -1,4 +1,4 @@
-.. _rascil_data_models:
+.. _rascil_data_models_lower:
 
 .. py:currentmodule:: rascil.data_models
 

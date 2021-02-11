@@ -28,7 +28,7 @@ def get_directory_size(directory):
 
 
 def display_ms_as_image(msname, nch=None):
-    log.info("Plotting vis plot for the channel", nch, "of the MS", msname)
+    log.info(f"Plotting vis plot for the channel {nch} of the MS {msname}")
     t = table(msname, readonly=True)
     # Ignore autocorrelations
     t = t.query("ANTENNA1 != ANTENNA2")
@@ -53,8 +53,8 @@ def display_ms_as_image(msname, nch=None):
         nch = 0
     elif nch > (freq.shape[0] - 1):
         nch = freq.shape[0] - 1
-    log.info("MS contains", freq.shape[0], "frequency channel(s), from 0 to", (freq.shape[0] - 1))
-    log.info("Plotting vis for the channel", nch, ", freq =", freq[nch], "Hz")
+    log.info(f"MS contains {freq.shape[0]} frequency channel(s), from 0 to {(freq.shape[0] - 1)}")
+    log.info(f"Plotting vis for the channel {nch}, freq = {freq[nch]} Hz")
     title_part2 = str(freq[nch]) + " Hz"
     t.close()
     
@@ -77,7 +77,7 @@ def display_ms_as_image(msname, nch=None):
     baselength_log10 = np.log10(baselength)
     blmax_log10 = np.amax(baselength_log10)
     blmin_log10 = np.amin(baselength_log10)
-    log.info("Log values min, max", blmin_log10, blmax_log10)
+    log.info(f"Log values min, max , {blmin_log10}, {blmax_log10}")
     
     # Plot dimensions
     nxt = int(np.amax(timestamps1))
@@ -122,6 +122,6 @@ def display_ms_as_image(msname, nch=None):
     figure_name = str(os.path.splitext(msname)[0]) + "_vis.png"
     plt.savefig(figure_name)
     plt.clf()
-    log.info("Exporting plot to ", figure_name)
+    log.info(f"Exporting plot to {figure_name}")
     
     return True

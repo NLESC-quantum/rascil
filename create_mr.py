@@ -6,14 +6,15 @@ It uses python-gitlab and gitpython packages.
 """
 
 import os
-from configparser import NoSectionError
-
+import sys
 import gitlab
 import logging
-
+from configparser import NoSectionError
 from git import Repo
 
 log = logging.getLogger("rascil-logger")
+log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class BranchManager:
@@ -101,7 +102,7 @@ class BranchManager:
             self.repo.delete_head(new_branch_name, force=True)
 
         self.repo.git.checkout("-b", new_branch_name)
-        print(f"Checked out new branch: {self.repo.active_branch}")
+        log.info(f"Checked out new branch: {self.repo.active_branch}")
 
         self.repo.git.add(A=True)
 
@@ -204,9 +205,7 @@ def main():
         original_branch = os.environ["CI_COMMIT_BRANCH"]
         mr_title = "WIP: Update requirements - to be actioned before next scheduled run"
         mr_object = MergeRequest(private_token)
-        mr = mr_object.create_merge_request(
-            new_branch, original_branch, mr_title
-        )
+        mr = mr_object.create_merge_request(new_branch, original_branch, mr_title)
         mr_object.assign_to_mr(mr, assignee_ids.split(","))
 
     else:

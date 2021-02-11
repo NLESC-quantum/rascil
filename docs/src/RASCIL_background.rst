@@ -1,4 +1,4 @@
-.. _RASCIL_background:
+.. _rascil_background:
 
 .. toctree::
    :maxdepth: 3
@@ -119,7 +119,7 @@ Requirements
 
 - Memory limit: The memory used should be compatible with execution on a personal computer or laptop.
 
-- How we maintain the requirements: :ref:`manage_requirements`
+- How we maintain the requirements: :ref:`RASCIL_requirements_management`
 
 Algorithms to be defined
 ------------------------

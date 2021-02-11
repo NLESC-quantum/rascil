@@ -1,4 +1,4 @@
-.. Structure
+.. _rascil_structure:
 
 .. toctree::
    :maxdepth: 2
@@ -15,6 +15,7 @@ accessed using the very top level import::
    import rascil.data_models
    import rascil.processing_components
    import rascil.workflows
+   import rascil.apps
 
 
 .. toctree::
@@ -23,6 +24,7 @@ accessed using the very top level import::
    RASCIL_data
    RASCIL_functions
    RASCIL_workflows
+   RASCIL_apps
    RASCIL_polarisation_handling
    RASCIL_Fourier_processing
    RASCIL_dask

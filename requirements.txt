@@ -26,8 +26,12 @@ attrs==20.3.0
     # via jsonschema
 backcall==0.2.0
     # via ipython
+backports.shutil-get-terminal-size==1.0.0
+    # via bdsf
 bcrypt==3.2.0
     # via paramiko
+bdsf==1.9.2
+    # via -r requirements.in
 bleach==3.3.0
     # via nbconvert
 bokeh==2.2.3
@@ -216,6 +220,7 @@ numpy==1.20.1
     #   aotools
     #   astropy
     #   astropy-healpix
+    #   bdsf
     #   bokeh
     #   h5py
     #   imageio
@@ -337,6 +342,7 @@ scipy==1.6.0
     # via
     #   -r requirements.in
     #   aotools
+    #   bdsf
     #   reproject
     #   scikit-image
 semantic-version==2.8.5

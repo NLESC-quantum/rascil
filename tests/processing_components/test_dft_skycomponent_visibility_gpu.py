@@ -45,7 +45,7 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
             import cupy
             compute_kernels = ['gpu_cupy_raw', 'gpu_cupy_einsum', 'cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
         except ModuleNotFoundError:
-            compute_kernels = ['cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
+            compute_kernels = ['cpu_looped', 'cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
 
         self.init(ntimes=2, nchan=10, ncomp=100)
         for dft_compute_kernel in compute_kernels:

@@ -183,7 +183,7 @@ def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
     """
 
     if dft_compute_kernel is None:
-        dft_compute_kernel = "cpu_numpy"
+        dft_compute_kernel = "cpu_looped"
 
     if dft_compute_kernel == "gpu_cupy_einsum":
         import cupy
@@ -240,10 +240,22 @@ def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
         return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
     elif dft_compute_kernel == "cpu_unrolled":
         phasors = \
-        numpy.exp(-2j * numpy.pi * (uvw_lambda.data[..., 0] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 0] +
-                                    uvw_lambda.data[..., 1] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 1] +
-                                    uvw_lambda.data[..., 2] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 2]))[..., numpy.newaxis]
+            numpy.exp(
+                -2j * numpy.pi * (uvw_lambda.data[..., 0] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 0] +
+                                  uvw_lambda.data[..., 1] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 1] +
+                                  uvw_lambda.data[..., 2] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 2]))[
+                ..., numpy.newaxis]
         return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
+    elif dft_compute_kernel == "cpu_looped":
+        ncomp, _ = ses.shape
+        ntimes, nbaselines, nchan, _ = uvw_lambda.shape
+        npol = vfluxes.shape[-1]
+        vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype='complex')
+        for icomp in range(ncomp):
+            phasor = numpy.exp(2j * numpy.pi * numpy.sum(uvw_lambda.data * ses[icomp, :], axis=-1))
+            for pol in range(npol):
+                vis[..., pol] += vfluxes[icomp, :, pol] * phasor
+        return vis
     else:
         raise ValueError(f"dft_compute_kernel {dft_compute_kernel} not known")
 

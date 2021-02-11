@@ -19,7 +19,7 @@ def init_sparse_pre(n, margin):
     # a = numpy.array([numpy.random.uniform(margin, 1.0 - margin, n),
     #                     numpy.random.uniform(margin, 1.0 - margin, n)]).reshape([n, 2])
     a = numpy.random.uniform(margin, 1.0 - margin, 2*n)
-    a = a.astype(float64)
+    a = a.astype(float)
     a = a.reshape(-1,2)
     return a
 

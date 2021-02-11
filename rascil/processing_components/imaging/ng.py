@@ -84,9 +84,9 @@ def predict_ng(bvis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility
     
     if mfs:
         for vpol in range(vnpol):
-            vist[vpol, :, :] = ng.dirty2ms(fuvw.astype(float64),
-                                           bvis.frequency.data.astype(float64),
-                                           model["pixels"].data[0, vpol, :, :].T.astype(float64),
+            vist[vpol, :, :] = ng.dirty2ms(fuvw.astype(float),
+                                           bvis.frequency.data.astype(float),
+                                           model["pixels"].data[0, vpol, :, :].T.astype(float),
                                            pixsize_x=pixsize,
                                            pixsize_y=pixsize,
                                            epsilon=epsilon,
@@ -98,9 +98,9 @@ def predict_ng(bvis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility
         for vpol in range(vnpol):
             for vchan in range(vnchan):
                 imchan = vis_to_im[vchan]
-                vist[vpol, vchan, :] = ng.dirty2ms(fuvw.astype(float64),
-                                                   numpy.array(freq[vchan:vchan + 1]).astype(float64),
-                                                   model["pixels"].data[imchan, vpol, :, :].T.astype(float64),
+                vist[vpol, vchan, :] = ng.dirty2ms(fuvw.astype(float),
+                                                   numpy.array(freq[vchan:vchan + 1]).astype(float),
+                                                   model["pixels"].data[imchan, vpol, :, :].T.astype(float),
                                                    pixsize_x=pixsize,
                                                    pixsize_y=pixsize,
                                                    epsilon=epsilon,
@@ -217,7 +217,7 @@ def invert_ng(bvis: BlockVisibility, model: Image, dopsf: bool = False,
         for pol in range(npol):
             for vchan in range(vnchan):
                 ichan = vis_to_im[vchan]
-                frequency = numpy.array(freq[vchan:vchan + 1]).astype(float64)
+                frequency = numpy.array(freq[vchan:vchan + 1]).astype(float)
                 lms = numpy.ascontiguousarray(mst[pol, vchan, :, numpy.newaxis])
                 if numpy.max(numpy.abs(lms)) > 0.0:
                     lwt = numpy.ascontiguousarray(wgtt[pol, vchan, :, numpy.newaxis])

@@ -23,6 +23,9 @@ from rascil.processing_components.skycomponent.operations import create_skycompo
 from rascil.processing_components.image.operations import import_image_from_fits
 from rascil.processing_components.imaging.primary_beams import create_pb
 
+class FileNotFoundError(Exception):
+       pass
+
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -73,7 +76,7 @@ def analyze_image(args):
     cwd = os.getcwd()
     
     if args.ingest_fitsname is None:
-        raise Exception("Input FITS file name must be specified")
+        raise FileNotFoundError("Input FITS file name must be specified")
     
     if args.logfile is None:
         logfile = args.ingest_fitsname.replace('.fits', ".log")

@@ -39,7 +39,7 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
         self.comp = ncomp * [Skycomponent(direction=self.compreldirection, frequency=self.frequency,
                                           flux=self.flux)]
     
-    @unittest.skip("Don't run in CI")
+    #@unittest.skip("Don't run in CI")
     def test_dft_stokesiquv_blockvisibility(self):
         try:
             import cupy
@@ -66,16 +66,24 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
     def test_dft_stokesiquv_blockvisibility_quick(self):
         
         self.init(ntimes=2, nchan=2, ncomp=2)
+        try:
+            import cupy
+            compute_kernels = ['gpu_cupy_raw', 'gpu_cupy_einsum', 'cpu_looped', 'cpu_einsum',
+                               'cpu_numpy', 'cpu_unrolled']
+        except ModuleNotFoundError:
+            compute_kernels = ['cpu_looped', 'cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
+
         vpol = PolarisationFrame("linear")
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
-                                          channel_bandwidth=self.channel_bandwidth,
-                                          phasecentre=self.phasecentre, weight=1.0,
-                                          polarisation_frame=vpol)
-        self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
-        qa = qa_visibility(self.vismodel)
-        numpy.testing.assert_almost_equal(qa.data['maxabs'], 240.0000000000)
-        numpy.testing.assert_almost_equal(qa.data['minabs'], 20.099751242241776)
-        numpy.testing.assert_almost_equal(qa.data['rms'], 94.29223125886809)
+        for dft_compute_kernel in compute_kernels:
+            self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+                                              channel_bandwidth=self.channel_bandwidth,
+                                              phasecentre=self.phasecentre, weight=1.0,
+                                              polarisation_frame=vpol)
+            self.vismodel = dft_skycomponent_visibility(self.vis, self.comp, dft_compute_kernel=dft_compute_kernel)
+            qa = qa_visibility(self.vismodel)
+            numpy.testing.assert_almost_equal(qa.data['maxabs'], 240.0000000000)
+            numpy.testing.assert_almost_equal(qa.data['minabs'], 20.099751242241776)
+            numpy.testing.assert_almost_equal(qa.data['rms'], 94.29223125886809)
 
 
 if __name__ == '__main__':

@@ -34,8 +34,6 @@ from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
 from rascil.processing_components.visibility.base import calculate_blockvisibility_phasor
 
-#import cupy
-
 log = logging.getLogger('rascil-logger')
 
 
@@ -54,7 +52,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         sc = [sc]
 
     vfluxes = list() # Flux for each component
-    ses = list() # lmn vector for each component
+    direction_cosines = list() # lmn vector for each component
 
     for comp in sc:
         #assert isinstance(comp, Skycomponent), comp
@@ -82,13 +80,13 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         vfluxes.append(vflux)
 
         l, m, n = skycoord_to_lmn(comp.direction, vis.phasecentre)
-        s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+        direction_cosine = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
 
-        ses.append(s)
+        direction_cosines.append(direction_cosine)
 
-    ses = numpy.array(ses)
+    direction_cosines = numpy.array(direction_cosines)
     vfluxes = numpy.array(vfluxes)
-    vis['vis'].data = dft_kernel(ses, vfluxes, vis.uvw_lambda, **kwargs)
+    vis['vis'].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
 
     return vis
 
@@ -111,7 +109,7 @@ __global__ void dft_kernel(
         const int num_channels,
         const int num_baselines,
         const int num_times,
-        const double3         *const __restrict__ ses,        // Source direction cosines [num_components]
+        const double3         *const __restrict__ direction_cosines,        // Source direction cosines [num_components]
         const complex<double> *const __restrict__ vfluxes,    // Source fluxes [num_components, num_channels, num_pols]
         const double3         *const __restrict__ uvw_lambda, // UVW in lambda [num_times, num_baselines, num_channels]
         complex<double>       *__restrict__ vis)              // Visibilities  [num_times, num_baselines, num_channels, num_pols]
@@ -141,7 +139,7 @@ __global__ void dft_kernel(
     // Loop over components and calculate phase for each.
     for (int i_component = 0; i_component < num_components; ++i_component) {
         double sin_phase, cos_phase;
-        const double3 dir = ses[i_component];
+        const double3 dir = direction_cosines[i_component];
         const double phase = -2.0 * M_PI * (
                 dir.x * uvw.x + dir.y * uvw.y + dir.z * uvw.z);
         sincos(phase, &sin_phase, &cos_phase);
@@ -173,10 +171,10 @@ __global__ void dft_kernel(
 '''
 
 
-def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
+def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None):
     """ CPU computational kernel for DFT
 
-    :param ses: Direction cosines [ncomp, 3]
+    :param direction_cosines: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
     :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
     :return: Vis [ntimes, nbaselines, nchan, npol]
@@ -189,10 +187,10 @@ def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
         import cupy
         with cupy.cuda.Device(0):
             uvw_lambda_gpu = cupy.asarray(uvw_lambda.data)
-            ses_gpu = cupy.asarray(ses)
+            direction_cosines_gpu = cupy.asarray(direction_cosines)
             vfluxes_gpu = cupy.asarray(vfluxes)
             phasors_gpu = \
-                cupy.exp(-2j * numpy.pi * cupy.einsum("tbfs,cs->ctbf", uvw_lambda_gpu, ses_gpu))[..., cupy.newaxis]
+                cupy.exp(-2j * numpy.pi * cupy.einsum("tbfs,cs->ctbf", uvw_lambda_gpu, direction_cosines_gpu))[..., cupy.newaxis]
             sum_gpu = cupy.sum(vfluxes_gpu[:, cupy.newaxis, cupy.newaxis, ...] * phasors_gpu, axis=0)
             return cupy.asnumpy(sum_gpu)
     elif dft_compute_kernel == "gpu_cupy_raw":
@@ -207,7 +205,7 @@ def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
         kernel_dft = module.get_function("dft_kernel")
 
         # Allocate GPU memory and copy input arrays.
-        direction_cosines_gpu = cupy.asarray(ses)
+        direction_cosines_gpu = cupy.asarray(direction_cosines)
         fluxes_gpu = cupy.asarray(vfluxes)
         uvw_gpu = cupy.asarray(uvw_lambda)
         vis_gpu = cupy.zeros((num_times, num_baselines, num_channels, num_pols),
@@ -231,28 +229,28 @@ def dft_kernel(ses, vfluxes, uvw_lambda, dft_compute_kernel=None):
         return cupy.asnumpy(vis_gpu)
     elif dft_compute_kernel == "cpu_einsum":
         phasors = \
-           numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, ses))[..., numpy.newaxis]
+           numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, direction_cosines))[..., numpy.newaxis]
         return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
     elif dft_compute_kernel == "cpu_numpy":
         phasors = \
         numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data
-                                             * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, :], axis=-1))[..., numpy.newaxis]
+                                             * direction_cosines[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, :], axis=-1))[..., numpy.newaxis]
         return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
     elif dft_compute_kernel == "cpu_unrolled":
         phasors = \
             numpy.exp(
-                -2j * numpy.pi * (uvw_lambda.data[..., 0] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 0] +
-                                  uvw_lambda.data[..., 1] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 1] +
-                                  uvw_lambda.data[..., 2] * ses[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 2]))[
+                -2j * numpy.pi * (uvw_lambda.data[..., 0] * direction_cosines[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 0] +
+                                  uvw_lambda.data[..., 1] * direction_cosines[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 1] +
+                                  uvw_lambda.data[..., 2] * direction_cosines[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 2]))[
                 ..., numpy.newaxis]
         return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
     elif dft_compute_kernel == "cpu_looped":
-        ncomp, _ = ses.shape
+        ncomp, _ = direction_cosines.shape
         ntimes, nbaselines, nchan, _ = uvw_lambda.shape
         npol = vfluxes.shape[-1]
         vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype='complex')
         for icomp in range(ncomp):
-            phasor = numpy.exp(2j * numpy.pi * numpy.sum(uvw_lambda.data * ses[icomp, :], axis=-1))
+            phasor = numpy.exp(2j * numpy.pi * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1))
             for pol in range(npol):
                 vis[..., pol] += vfluxes[icomp, :, pol] * phasor
         return vis

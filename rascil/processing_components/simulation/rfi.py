@@ -36,8 +36,8 @@ from rascil.processing_components.visibility.visibility_geometry import calculat
 
 log = logging.getLogger("rascil-logger")
 
-def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, timevariable=True,
-                      frequency_variable=True):
+def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, time_variable=False,
+                      frequency_variable=False):
     """ Calculate DTV sqrt(power) as a function of time and frequency
 
     :param frequency: (sample frequencies)
@@ -66,7 +66,7 @@ def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, 
 
     signal = numpy.zeros(shape, dtype='complex')
     sub_channel_range = (echan + 1) - bchan
-    if timevariable:
+    if time_variable:
         if frequency_variable:
             sshape = [ntimes, sub_channel_range]
             signal[:, bchan:echan + 1] += numpy.random.normal(0.0, amp, sshape) \
@@ -238,8 +238,10 @@ def get_file_strings(attenuation_value, att_context, beamgain_value, bg_context,
 
 
 def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=None,
-                            beamgain_state=None, use_pole=False, transmitter_list=None):
+                            beamgain_state=None, use_pole=False, transmitter_list=None,
+                            frequency_variable=False, time_variable=False):
     """ Simulate RFI block
+    :param timevariable:
     :param transmitter_list: dictionary of transmitters
     :param beamgain_state: beam gains to apply to the signal or file containing values and flag to declare which
     :param attenuation_state: Attenuation to be applied to signal or file containing values and flag to declare which
@@ -270,7 +272,8 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
         # Calculate the power spectral density of the DTV station: Watts/Hz
         emitter, DTV_range = simulate_DTV_prop(bvis.frequency, bvis.time,
                                                power=emitter_power, freq_cen=emitter_freq, bw=emitter_bw,
-                                               timevariable=False)
+                                               frequency_variable=frequency_variable,
+                                               time_variable=time_variable)
         
         # Calculate the propagators for signals from Perth to the stations in low
         # These are fixed in time but vary with frequency. The ad hoc attenuation

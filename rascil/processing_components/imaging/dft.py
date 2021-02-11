@@ -181,7 +181,7 @@ def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None):
     """
 
     if dft_compute_kernel is None:
-        dft_compute_kernel = "cpu_looped"
+        dft_compute_kernel = "cpu_einsum"
 
     if dft_compute_kernel == "gpu_cupy_einsum":
         import cupy

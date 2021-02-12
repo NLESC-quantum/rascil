@@ -93,7 +93,7 @@ class TestConfigurations(unittest.TestCase):
     
         xyz_diff = low_vis.configuration.xyz - lla_vis.configuration.xyz
         rms_xyz_diff = numpy.max(numpy.abs(xyz_diff))
-        assert rms_xyz_diff < 301.0, f"{rms_xyz_diff} {xyz_diff}"
+        assert rms_xyz_diff < 1.0, f"{rms_xyz_diff} {xyz_diff}"
 
 
 if __name__ == '__main__':

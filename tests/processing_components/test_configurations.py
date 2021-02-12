@@ -13,7 +13,7 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.visibility.base import create_blockvisibility, copy_visibility
 
 log = logging.getLogger('rascil-logger')
 
@@ -74,6 +74,27 @@ class TestConfigurations(unittest.TestCase):
     def test_unknown_configuration(self):
         with self.assertRaises(ValueError):
             self.config = create_named_configuration("SKA1-OWL")
+
+    def test_LLA_LOWR3_uvw_comparison(self):
+        self.createVis("LOWR3")
+        low_vis = copy_visibility(self.vis)
+        self.createVis("LLA")
+        lla_vis = copy_visibility(self.vis)
+    
+        uvw_diff = low_vis.uvw_lambda - lla_vis.uvw_lambda
+        rms_uvw_diff = numpy.max(numpy.abs(uvw_diff))
+        assert rms_uvw_diff < 1.22, f"{rms_uvw_diff} {uvw_diff}"
+
+    def test_LLA_LOWR3_xyz_comparison(self):
+        self.createVis("LOWR3")
+        low_vis = copy_visibility(self.vis)
+        self.createVis("LLA")
+        lla_vis = copy_visibility(self.vis)
+    
+        xyz_diff = low_vis.configuration.xyz - lla_vis.configuration.xyz
+        rms_xyz_diff = numpy.max(numpy.abs(xyz_diff))
+        assert rms_xyz_diff < 301.0, f"{rms_xyz_diff} {xyz_diff}"
+
 
 if __name__ == '__main__':
     unittest.main()

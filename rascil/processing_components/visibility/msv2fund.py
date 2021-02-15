@@ -314,7 +314,7 @@ try:
         def get_uvw(self, HA, dec, obs):
 
             Nbase = len(self.baselines)
-            uvw = numpy.zeros((Nbase, 3), dtype=numpy.float32)
+            uvw = numpy.zeros((Nbase, 3), dtype=float)
 
             # Phase center coordinates
             # Convert numbers to radians and, for HA, hours to degrees
@@ -352,7 +352,7 @@ try:
                 else:
                     s1, s2 = mapper.index(a1.stand.id), mapper.index(a2.stand.id)
                 packed.append(merge_baseline(s1, s2, shift=shift))
-            packed = numpy.array(packed, dtype=numpy.int32)
+            packed = numpy.array(packed, dtype=int)
 
             return numpy.argsort(packed)
 

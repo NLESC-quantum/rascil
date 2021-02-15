@@ -26,8 +26,12 @@ attrs==20.3.0
     # via jsonschema
 backcall==0.2.0
     # via ipython
+backports.shutil-get-terminal-size==1.0.0
+    # via bdsf
 bcrypt==3.2.0
     # via paramiko
+bdsf==1.9.2
+    # via -r requirements.in
 bleach==3.3.0
     # via nbconvert
 bokeh==2.2.3
@@ -36,7 +40,7 @@ cached-property==1.5.2
     # via h5py
 certifi==2020.12.5
     # via requests
-cffi==1.14.4
+cffi==1.14.5
     # via
     #   argon2-cffi
     #   bcrypt
@@ -50,7 +54,7 @@ cloudpickle==1.6.0
     # via distributed
 configparser==5.0.1
     # via -r requirements.in
-cryptography==3.4.1
+cryptography==3.4.5
     # via paramiko
 cycler==0.10.0
     # via matplotlib
@@ -74,7 +78,7 @@ future==0.18.2
     # via python-casacore
 gitdb==4.0.5
     # via gitpython
-gitpython==3.1.12
+gitpython==3.1.13
     # via -r requirements.in
 graphviz==0.16
     # via -r requirements.in
@@ -176,7 +180,7 @@ msgpack==1.0.2
     # via distributed
 natsort==7.1.1
     # via seqfile
-nbclient==0.5.1
+nbclient==0.5.2
     # via nbconvert
 nbconvert==6.0.7
     # via
@@ -216,6 +220,7 @@ numpy==1.20.1
     #   aotools
     #   astropy
     #   astropy-healpix
+    #   bdsf
     #   bokeh
     #   h5py
     #   imageio
@@ -238,7 +243,7 @@ packaging==20.9
     # via
     #   bleach
     #   bokeh
-pandas==1.2.1
+pandas==1.2.2
     # via
     #   -r requirements.in
     #   xarray
@@ -262,7 +267,7 @@ pillow==8.1.0
     #   scikit-image
 prometheus-client==0.9.0
     # via notebook
-prompt-toolkit==3.0.14
+prompt-toolkit==3.0.16
     # via
     #   ipython
     #   jupyter-console
@@ -278,7 +283,7 @@ pycparser==2.20
     # via cffi
 pyerfa==1.7.2
     # via astropy
-pygments==2.7.4
+pygments==2.8.0
     # via
     #   ipython
     #   jupyter-console
@@ -314,7 +319,7 @@ pyyaml==5.4.1
     #   distributed
     #   jupyter-contrib-nbextensions
     #   jupyter-nbextensions-configurator
-pyzmq==22.0.2
+pyzmq==22.0.3
     # via
     #   jupyter-client
     #   notebook
@@ -337,16 +342,13 @@ scipy==1.6.0
     # via
     #   -r requirements.in
     #   aotools
+    #   bdsf
     #   reproject
     #   scikit-image
-semantic-version==2.8.5
-    # via setuptools-rust
 send2trash==1.5.0
     # via notebook
 seqfile==0.2.0
     # via -r requirements.in
-setuptools-rust==0.11.6
-    # via cryptography
 six==1.15.0
     # via
     #   argon2-cffi
@@ -372,8 +374,6 @@ testpath==0.4.4
     # via nbconvert
 tifffile==2021.2.1
     # via scikit-image
-toml==0.10.2
-    # via setuptools-rust
 toolz==0.11.1
     # via distributed
 tornado==6.1

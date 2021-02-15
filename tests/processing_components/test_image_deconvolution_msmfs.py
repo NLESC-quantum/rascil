@@ -61,7 +61,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)
         if self.persist: export_image_to_fits(self.dirty, "%s/test_deconvolve_mmclean-dirty.fits" % self.dir)
         if self.persist: export_image_to_fits(self.psf, "%s/test_deconvolve_mmclean-psf.fits" % self.dir)
-        window = numpy.ones(shape=self.model["pixels"].shape, dtype=numpy.bool)
+        window = numpy.ones(shape=self.model["pixels"].shape, dtype=bool)
         window[..., 65:192, 65:192] = True
         self.innerquarter = create_image_from_array(window, self.model.image_acc.wcs,
                                                     polarisation_frame=PolarisationFrame('stokesI'))

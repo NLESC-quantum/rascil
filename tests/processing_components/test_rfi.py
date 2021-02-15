@@ -73,7 +73,7 @@ class TestRFISim(unittest.TestCase):
         
         # Calculate the rfi correlation. The return value is in Jy
         correlation = calculate_station_correlation_rfi(rfi_at_station, bvis.baselines)
-        numpy.testing.assert_almost_equal(numpy.max(numpy.abs(correlation)), 0.8809959832691211)
+        numpy.testing.assert_almost_equal(numpy.max(numpy.abs(correlation)), 0.8810092775005085)
         assert correlation.shape == (ntimes, len(bvis.baselines), nchannels, 1), correlation.shape
     
     def test_rfi_propagators(self):

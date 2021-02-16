@@ -16,7 +16,7 @@ from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.data_models.memory_data_models import Image, Skycomponent
 from rascil.processing_components.simulation import create_mid_simulation_components, find_pb_width_null
-from rascil.processing_components.skycomponent import insert_skycomponent
+from rascil.processing_components.skycomponent import insert_skycomponent, find_skycomponent_matches
 from rascil.processing_components.image import create_image, export_image_to_fits, smooth_image
 
 log = logging.getLogger('rascil-logger')
@@ -44,13 +44,9 @@ class TestContinuumImagingChecker(unittest.TestCase):
       flux_limit = 1.0
       original_components = create_mid_simulation_components(self.phasecentre, numpy.array([self.frequency]), flux_limit,
                                                            pbradius, pb_npixel, pb_cellsize,
-                                                           show=False, fov=10)                                               
-
-      print(len(original_components[0]))
+                                                           show=False, fov=10)                                             
     
       self.components = original_components[0]
-      for comp in self.components:
-          print(comp)
 
       self.model = create_image(npixel=self.npixel,
                                    cellsize=self.cellsize,
@@ -70,18 +66,23 @@ class TestContinuumImagingChecker(unittest.TestCase):
       parser = cli_parser()
       self.args = parser.parse_args([])
       self.args.ingest_fitsname = rascil_path("test_results/test_ci_checker.fits")
-      self.args.apply_primary = False
-      
+      #self.args.apply_primary = False
+      #self.args.finder_th_isl = 3.0
+      self.args.finder_th_pix = 8.0
+      self.args.finder_beam_min = 0.5      
 
   def test_ci_checker(self):
 
       self.make_mid_test_fits()
 
-#      out = analyze_image(self.args)
+      out = analyze_image(self.args)
 
      # check results
-#      print(out)
-
+      print(len(self.components), len(out)) 
+      #for comp in out:
+      #    print(comp)
+      matches = find_skycomponent_matches(out, self.components, tol=1e-4)
+      print(matches)
 
 
 

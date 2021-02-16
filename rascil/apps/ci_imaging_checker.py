@@ -53,6 +53,10 @@ def cli_parser():
                         help='Whether to apply primary beam')
     parser.add_argument('--telescope_model', type=str, default='MID',
                         help='The telescope to generate primary beam correction')
+    parser.add_argument('--check_source', type=str, default = 'False',
+			help = 'Option to check with original input source catalogue')
+    parser.add_argument('--input_source_format', type=str, default='gleam',
+			help = 'The input format of the source catalogue')
     parser.add_argument('--match_sep', type=float, default=1.e-5,
                         help='Maximum separation in radians for the source matching')
     parser.add_argument('--source_file', type=str, default='output.csv',
@@ -129,16 +133,23 @@ def analyze_image(args):
     if args.apply_primary:
         telescope = args.telescope_model
         out = add_primary_beam(input_image, out, telescope)
+
+    if args.check_source:
+        
+        match_sep = args.match_sep
+        if args.input_source_format == 'gleam':
+            orig = create_low_test_skycomponents_from_gleam(flux_limit=1.0, phasecentre=im.image_acc.phasecentre,
+                                                            frequency=np.array([freq]),
+							    polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
+        
+        results = check_source(orig, out, match_sep)    
+        log.info("Resulting list of matched items {}".format(results))
     
-    match_sep = args.match_sep
-    results = check_source(im.image_acc.phasecentre, freq, out, match_sep)
-    
-    log.info("Resulting list of items {}".format(results))
-    
+
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))
     
-    return results
+    return out
 
 
 def ci_checker(input_image, beam_info, source_file, th_isl, th_pix):
@@ -206,21 +217,17 @@ def add_primary_beam(input_image, comp, telescope):
     return pbcomp
 
 
-def check_source(centre, freq, comp, match_sep):
+def check_source(orig, comp, match_sep):
     """
     Check the difference between output sources and input.
     
-    :param centre: Phase centre of image
-    :param freq: Frequency or list of frequencies.
+    :param orig: Input source list in skycomponent format
     :param comp: Output source list in skycomponent format
     :param match_sep: The criteria for maximum separation
  
     :return matches: List of matched skycomponents
  
     """
-    orig = create_low_test_skycomponents_from_gleam(flux_limit=1.0, phasecentre=centre,
-                                                    frequency=np.array([freq]),
-                                                    polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
     
     # separations = find_separation_skycomponents(comp, orig)
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)

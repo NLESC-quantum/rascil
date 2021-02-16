@@ -60,7 +60,7 @@ class TestPlotConfigurations(unittest.TestCase):
                                label=True)
 
     def test_plot_configurations(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LLA', 'ASKAP', 'MID', 'MEERKAT+']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MEERKAT+']:
             self.config = create_named_configuration(config)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
@@ -77,14 +77,13 @@ class TestPlotConfigurations(unittest.TestCase):
                                    dir=rascil_path("test_results"), config=config))
     
     def test_plot_configurations_uvcoverage(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE','LLA', 'ASKAP', 'MID', 'MEERKAT+']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_uvcoverage([self.vis], title=config,
                             plot_file='{dir}/test_plot_{config}_uvcoverage.png'.format(
                                 dir=rascil_path("test_results"), config=config))
-            print("Config ", config, " has centre", self.config.location.geodetic)
     
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
             self.createVis(config, +35.0)

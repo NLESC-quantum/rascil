@@ -20,8 +20,6 @@ log = logging.getLogger('rascil-logger')
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
-
-
 class TestConfigurations(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
@@ -42,7 +40,7 @@ class TestConfigurations(unittest.TestCase):
                                      polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_named_configurations(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LLA', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.configuration_acc.size() > 0.0
             #print("Config ", config, " has centre", self.config.location.geodetic) 
@@ -61,7 +59,7 @@ class TestConfigurations(unittest.TestCase):
             assert "MID" in numpy.unique(self.config["vp_type"])
 
     def test_SKA_LOW_configurations(self):
-        for config in ['LOW', 'LOWR3', 'LOWBD2-CORE', 'LLA']:
+        for config in ['LOW', 'LOWR3', 'LOWBD2-CORE']:
             self.config = create_named_configuration(config)
             assert self.config.configuration_acc.size() > 0.0
             assert "LOW" in numpy.unique(self.config.vp_type)
@@ -74,27 +72,6 @@ class TestConfigurations(unittest.TestCase):
     def test_unknown_configuration(self):
         with self.assertRaises(ValueError):
             self.config = create_named_configuration("SKA1-OWL")
-
-    def test_LLA_LOWR3_uvw_comparison(self):
-        self.createVis("LOWR3")
-        low_vis = copy_visibility(self.vis)
-        self.createVis("LLA")
-        lla_vis = copy_visibility(self.vis)
-    
-        uvw_diff = low_vis.uvw_lambda - lla_vis.uvw_lambda
-        rms_uvw_diff = numpy.max(numpy.abs(uvw_diff))
-        assert rms_uvw_diff < 1.22, f"{rms_uvw_diff} {uvw_diff}"
-
-    def test_LLA_LOWR3_xyz_comparison(self):
-        self.createVis("LOWR3")
-        low_vis = copy_visibility(self.vis)
-        self.createVis("LLA")
-        lla_vis = copy_visibility(self.vis)
-    
-        xyz_diff = low_vis.configuration.xyz - lla_vis.configuration.xyz
-        rms_xyz_diff = numpy.max(numpy.abs(xyz_diff))
-        assert rms_xyz_diff < 1.0, f"{rms_xyz_diff} {xyz_diff}"
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -386,14 +386,6 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
                                             vp_type="VLA",
                                             diameter=25.0,
                                             name=name, ecef=False, **kwargs)
-    elif name == 'LLA':
-        location = low_location
-        log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_LLAfile(antfile=rascil_data_path("configurations/LOW_SKA-TEL-SKO-0000422_Rev3.txt"),
-                                            location=location, mount='XY', names='LOW_%d',
-                                            vp_type="LOW",diameter=38.0, alt=300.0, 
-                                            name=name, ecef=True, **kwargs)
-
     else:
         raise ValueError("No such Configuration %s" % name)
     return fc

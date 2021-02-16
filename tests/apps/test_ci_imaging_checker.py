@@ -3,6 +3,7 @@
 """
 import logging
 import unittest
+import sys
 
 import numpy
 from astropy import units as u
@@ -20,8 +21,8 @@ from rascil.processing_components.skycomponent import insert_skycomponent, find_
 from rascil.processing_components.image import create_image, export_image_to_fits, smooth_image
 
 log = logging.getLogger('rascil-logger')
-log.setLevel(logging.WARNING)
-
+log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 class TestContinuumImagingChecker(unittest.TestCase):
 
@@ -47,6 +48,11 @@ class TestContinuumImagingChecker(unittest.TestCase):
                                                            show=False, fov=10)                                             
     
       self.components = original_components[0]
+      self.components = sorted(self.components, key=lambda comp: numpy.max(comp.direction.ra))      
+      log.info("Original components:")
+      log.info(" RA Dec Flux ")
+      for comp in self.components:
+          log.info("%s %s %.3f"%(comp.direction.ra, comp.direction.dec, comp.flux[0]))
 
       self.model = create_image(npixel=self.npixel,
                                    cellsize=self.cellsize,
@@ -66,10 +72,9 @@ class TestContinuumImagingChecker(unittest.TestCase):
       parser = cli_parser()
       self.args = parser.parse_args([])
       self.args.ingest_fitsname = rascil_path("test_results/test_ci_checker.fits")
-      #self.args.apply_primary = False
-      #self.args.finder_th_isl = 3.0
-      self.args.finder_th_pix = 8.0
+
       self.args.finder_beam_min = 0.5      
+      #self.args.finder_beam_maj = 0.3
 
   def test_ci_checker(self):
 
@@ -77,12 +82,19 @@ class TestContinuumImagingChecker(unittest.TestCase):
 
       out = analyze_image(self.args)
 
-     # check results
-      print(len(self.components), len(out)) 
-      #for comp in out:
-      #    print(comp)
-      matches = find_skycomponent_matches(out, self.components, tol=1e-4)
-      print(matches)
+      # check results
+      out = sorted(out, key=lambda comp: numpy.max(comp.direction.ra)) 
+      log.info("Identified components:")
+      for comp in out:
+          log.info("%s %s %.3f"%(comp.direction.ra, comp.direction.dec, comp.flux[0]))
+
+      assert len(out) <= len(self.components)
+      log.info("BDSF expected to find %d sources, but found %d sources"%(len(self.components), len(out)))
+      matches = find_skycomponent_matches(out, self.components, tol=1e-3)
+      log.info("Found matches as follows.")
+      log.info("BDSF Original Separation")
+      for match in matches:
+          log.info("%d %d %10.6e" %(match[0], match[1], match[2])) 
 
 
 

@@ -673,7 +673,7 @@ def create_image(npixel=512,
                  channel_bandwidth=numpy.array([1e6]),
                  phasecentre=None,
                  nchan=None,
-                 dtype='float64') -> Image:
+                 dtype='float') -> Image:
     """Create an empty  image consistent with the inputs.
 
     :param npixel: Number of pixels

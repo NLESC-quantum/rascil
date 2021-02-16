@@ -969,8 +969,8 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
                                       offset=antenna_offset, stations=antenna_name)
         
         # Get RA and DEC
-        phase_center_ra_degrees = numpy.float(hdul[0].header['CRVAL6'])
-        phase_center_dec_degrees = numpy.float(hdul[0].header['CRVAL7'])
+        phase_center_ra_degrees = float(hdul[0].header['CRVAL6'])
+        phase_center_dec_degrees = float(hdul[0].header['CRVAL7'])
         
         # Get phasecentres
         phasecentre = SkyCoord(ra=phase_center_ra_degrees * u.deg,

@@ -320,7 +320,7 @@ try:
                                           col9, col10, col11, col12])
             tb = table("%s/FEED" % self.basename, desc, nrow=self.nant, ack=False)
 
-            presp = numpy.zeros((self.nant, 2, 2), dtype=numpy.complex64)
+            presp = numpy.zeros((self.nant, 2, 2), dtype=complex)
             if self.stokes[0] > 8:
                 ptype = numpy.tile([b'X', b'Y'], (self.nant, 1))
                 presp[:, 0, 0] = 1.0
@@ -864,8 +864,8 @@ try:
                         matrix *= 0.0
                         flag_matrix *= False
                     except (NameError, RuntimeError):
-                        matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.complex64)
-                        flag_matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=numpy.bool)
+                        matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=complex)
+                        flag_matrix = numpy.zeros((len(order), self.nStokes, self.nchan * nBand), dtype=bool)
 
                 # Save the visibility data in the right order
                 matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.visibilities[order, :]
@@ -880,8 +880,8 @@ try:
                     flag_matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
 
                     for j in range(nBand):
-                        fg = numpy.zeros((nBL, self.nStokes, self.nchan), dtype=numpy.bool)
-                        fc = numpy.zeros((nBL, self.nStokes, self.nchan, 1), dtype=numpy.bool)
+                        fg = numpy.zeros((nBL, self.nStokes, self.nchan), dtype=bool)
+                        fc = numpy.zeros((nBL, self.nStokes, self.nchan, 1), dtype=bool)
                         wg = numpy.ones((nBL, self.nStokes))
                         sg = numpy.ones((nBL, self.nStokes)) * 9999
 

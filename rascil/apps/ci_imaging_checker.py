@@ -37,7 +37,7 @@ def cli_parser():
     :param parser: argparse    
     :return: CLI parser argparse
     """
-    parser = argparse.ArgumentParser(description='RASCIL continuum image checker')
+    parser = argparse.ArgumentParser(description='RASCIL continuum imaging checker')
     parser.add_argument('--ingest_fitsname', type=str, default=None, help='FITS file to be read')
     parser.add_argument('--finder_beam_maj', type=float, default=1.0,
                         help='Major axis of the restoring beam')
@@ -119,9 +119,6 @@ def analyze_image(args):
     th_isl = args.finder_th_isl
     th_pix = args.finder_th_pix
     
-    # Adjust the best restoring beam configuration-- not sure about this yet
-    # factor = 1/(npixels/512) **2
-    # beam_info = (beam_info[0]* factor, beam_info[1] * factor, beam_info[2])
     
     freq = im.frequency.data[0]
     log.info("Use restoring beam: {}".format(beam_info))
@@ -139,7 +136,7 @@ def analyze_image(args):
         match_sep = args.match_sep
         if args.input_source_format == 'gleam':
             orig = create_low_test_skycomponents_from_gleam(flux_limit=1.0, phasecentre=im.image_acc.phasecentre,
-                                                            frequency=np.array([freq]),
+							    frequency=np.array([freq]), 
 							    polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
         
         results = check_source(orig, out, match_sep)    

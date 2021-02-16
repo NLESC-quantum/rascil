@@ -17,7 +17,7 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.data_models.memory_data_models import Image, Skycomponent
 from rascil.processing_components.simulation import create_mid_simulation_components, find_pb_width_null
 from rascil.processing_components.skycomponent import insert_skycomponent
-from rascil.processing_components.image import create_image, export_image_to_fits
+from rascil.processing_components.image import create_image, export_image_to_fits, smooth_image
 
 log = logging.getLogger('rascil-logger')
 log.setLevel(logging.WARNING)
@@ -30,7 +30,7 @@ class TestContinuumImagingChecker(unittest.TestCase):
       self.frequency = 1.e8
       self.phasecentre = SkyCoord(ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
       self.npixel = 512
-      self.cellsize = 0.000015
+      self.cellsize = 0.0004
       hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(pbtype="MID", frequency=numpy.array([self.frequency]))
 
       hwhm = hwhm_deg * numpy.pi / 180.0
@@ -59,6 +59,7 @@ class TestContinuumImagingChecker(unittest.TestCase):
                                    polarisation_frame=PolarisationFrame("stokesI"))
       
       self.model = insert_skycomponent(self.model, self.components)
+      self.model = smooth_image(self.model, width=3.0)
 
       export_image_to_fits(self.model, rascil_path('test_results/test_ci_checker.fits'))
 

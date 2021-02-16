@@ -525,6 +525,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame='icrs')
     pixlocs = skycoord_to_pixel(skycoords, im.image_acc.wcs, origin=0, mode='wcs')
 
+    nbad = 0
     for icomp, comp in enumerate(sc):
 
         assert comp.shape == 'Point', "Cannot handle shape %s" % comp.shape
@@ -553,6 +554,10 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
             y, x = numpy.round(pixloc[1]).astype('int'), numpy.round(pixloc[0]).astype('int')
             if 0 <= x < nx and 0 <= y < ny:
                 im["pixels"].data[:, :, y, x] += flux[...]
+            else:
+                nbad +=1
+    if nbad > 0:
+        log.warning(f"insert_skycomponent: {nbad} components of {len(sc)} do not fit on image")
 
     return im
 

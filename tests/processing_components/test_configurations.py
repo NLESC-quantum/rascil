@@ -13,14 +13,12 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.visibility.base import create_blockvisibility, copy_visibility
 
 log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
-
-
 
 class TestConfigurations(unittest.TestCase):
     def setUp(self):
@@ -42,7 +40,7 @@ class TestConfigurations(unittest.TestCase):
                                      polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_named_configurations(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LLA', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MIDR5', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.configuration_acc.size() > 0.0
             #print("Config ", config, " has centre", self.config.location.geodetic) 
@@ -61,7 +59,7 @@ class TestConfigurations(unittest.TestCase):
             assert "MID" in numpy.unique(self.config["vp_type"])
 
     def test_SKA_LOW_configurations(self):
-        for config in ['LOW', 'LOWR3', 'LOWBD2-CORE', 'LLA']:
+        for config in ['LOW', 'LOWR3', 'LOWBD2-CORE']:
             self.config = create_named_configuration(config)
             assert self.config.configuration_acc.size() > 0.0
             assert "LOW" in numpy.unique(self.config.vp_type)

@@ -50,41 +50,40 @@ class TestPlotConfigurations(unittest.TestCase):
     def test_select_configurations(self):
         for config in ['MID']:
             names = ['SKA057', 'SKA062', 'SKA072', 'SKA071', 'SKA002', 'SKA049']
-            self.createVis(config, rmax=2e2, names=names)
+            self.config = create_named_configuration(config)
+            self.config = select_configuration(self.config, names)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
-            plot_configuration(self.vis.configuration, title=config,
+            plot_configuration(self.config, title=config,
                                plot_file='{dir}/test_plot_{config}_configuration.png'.format(
                                    dir=rascil_path("test_results"), config=config),
                                label=True)
 
     def test_plot_configurations(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'LLA', 'ASKAP', 'MID', 'MEERKAT+']:
-            self.createVis(config)
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MEERKAT+']:
+            self.config = create_named_configuration(config)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
-            plot_configuration(self.vis.configuration, title=config,
+            plot_configuration(self.config, title=config,
                             plot_file='{dir}/test_plot_{config}_configuration.png'.format(
                                 dir=rascil_path("test_results"), config=config))
 
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
-            self.createVis(config, +35.0)
+            self.config = create_named_configuration(config)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
-            plot_configuration(self.vis.configuration, title=config,
+            plot_configuration(self.config, title=config,
                                plot_file='{dir}/test_plot_{config}_configuration.png'.format(
                                    dir=rascil_path("test_results"), config=config))
-        print("Config ", config, " has centre", self.config.location.geodetic)
     
     def test_plot_configurations_uvcoverage(self):
-        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE','LLA', 'ASKAP', 'MID', 'MEERKAT+']:
+        for config in ['LOW', 'LOWBD2', 'LOWBD2-CORE', 'ASKAP', 'MID', 'MEERKAT+']:
             self.createVis(config)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_uvcoverage([self.vis], title=config,
                             plot_file='{dir}/test_plot_{config}_uvcoverage.png'.format(
                                 dir=rascil_path("test_results"), config=config))
-            print("Config ", config, " has centre", self.config.location.geodetic)
     
         for config in ['LOFAR', 'VLAA', 'VLAA_north']:
             self.createVis(config, +35.0)

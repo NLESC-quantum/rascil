@@ -36,8 +36,8 @@ from rascil.processing_components.visibility.visibility_geometry import calculat
 
 log = logging.getLogger("rascil-logger")
 
-def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, timevariable=True,
-                      frequency_variable=True):
+def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, time_variable=False,
+                      frequency_variable=False):
     """ Calculate DTV sqrt(power) as a function of time and frequency
 
     :param frequency: (sample frequencies)
@@ -66,7 +66,7 @@ def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, 
 
     signal = numpy.zeros(shape, dtype='complex')
     sub_channel_range = (echan + 1) - bchan
-    if timevariable:
+    if time_variable:
         if frequency_variable:
             sshape = [ntimes, sub_channel_range]
             signal[:, bchan:echan + 1] += numpy.random.normal(0.0, amp, sshape) \
@@ -90,6 +90,10 @@ def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, 
 
 def create_propagators(config, interferer, frequency, attenuation=1e-9):
     """ Create a set of propagators
+    
+    :param config: RASCIL Configuration
+    :param interferer: EarthLocation for interferer
+    :param attenuation: Attenuation of signal
     :return: Complex array [nants, ntimes]
     """
     nchannels = len(frequency)
@@ -162,7 +166,7 @@ def calculate_station_correlation_rfi(rfi_at_station, baselines):
 
     :param rfi_at_station: [btimes, nchan, nants, nants]
     :param baselines: BlockVisibility baselines object
-    :return: Correlation(ntimes, nbaselines, nchan] in Jy
+    :return: correlation(ntimes, nbaselines, nchan] in Jy
     """
     ntimes, nants, nchan = rfi_at_station.shape
     correlationt = numpy.zeros([ntimes, nchan, nants, nants], dtype='complex')
@@ -238,13 +242,17 @@ def get_file_strings(attenuation_value, att_context, beamgain_value, bg_context,
 
 
 def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=None,
-                            beamgain_state=None, use_pole=False, transmitter_list=None):
-    """ Simulate RFI block
+                            beamgain_state=None, use_pole=False, transmitter_list=None,
+                            frequency_variable=False, time_variable=False):
+    """ Simulate RFI in a BlockVisility
+    
+    :param time_variable: Is the signal to be simulated as variable in time?
+    :param frequency_variable: Is the signal to be simulated as variable in frequency?
     :param transmitter_list: dictionary of transmitters
     :param beamgain_state: beam gains to apply to the signal or file containing values and flag to declare which
     :param attenuation_state: Attenuation to be applied to signal or file containing values and flag to declare which
     :param use_pole: Set the emitter to nbe at the southern celestial pole
-    :return:
+    :return: BlockVisibility
     """
     
     # sort inputs
@@ -270,7 +278,8 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
         # Calculate the power spectral density of the DTV station: Watts/Hz
         emitter, DTV_range = simulate_DTV_prop(bvis.frequency, bvis.time,
                                                power=emitter_power, freq_cen=emitter_freq, bw=emitter_bw,
-                                               timevariable=False)
+                                               frequency_variable=frequency_variable,
+                                               time_variable=time_variable)
         
         # Calculate the propagators for signals from Perth to the stations in low
         # These are fixed in time but vary with frequency. The ad hoc attenuation
@@ -300,7 +309,7 @@ def simulate_rfi_block_prop(bvis, nants_start, station_skip, attenuation_state=N
             for chan in range(nchan):
                 phasor[:, :, chan, :] = simulate_point(uvw[..., chan], l, m)[..., numpy.newaxis]
             
-            # Now fill this into the BlockVisibility
+            # Now add this into the BlockVisibility
             bvis['vis'].data += bvis_data_copy * phasor
         else:
             # We know where the emitter is. Calculate the bearing to the emitter from

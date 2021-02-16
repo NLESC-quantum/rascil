@@ -206,8 +206,6 @@ def create_configuration_from_LLAfile(antfile: str, location: EarthLocation = No
     antxyz = numpy.genfromtxt(antfile, delimiter=",")
 
     nants = antxyz.shape[0]
-    if antxyz.shape[1] == 2: #if no altitude data
-        alts = alt * numpy.ones(nants)
 
     lon, lat = antxyz[:,0], antxyz[:,1]
     x,y,z = lla_to_ecef(lat*u.deg, lon*u.deg, alt)
@@ -340,9 +338,10 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
     elif (name == 'LOW') or (name == 'LOWR3'):
         location = low_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_MIDfile(antfile=rascil_data_path("configurations/ska1low.cfg"),
-                                               vp_type="LOW",
-                                          mount='XY', name=name, location=location, **kwargs)
+        fc = create_configuration_from_LLAfile(antfile=rascil_data_path("configurations/LOW_SKA-TEL-SKO-0000422_Rev3.txt"),
+                                            location=location, mount='XY', names='LOW_%d',
+                                            vp_type="LOW",diameter=38.0, alt=300.0,
+                                            name=name, ecef=True, **kwargs)
     elif (name == 'MID') or (name == "MIDR5"):
         location = mid_location
         log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
@@ -387,14 +386,6 @@ def create_named_configuration(name: str = 'LOWBD2', **kwargs) -> Configuration:
                                             vp_type="VLA",
                                             diameter=25.0,
                                             name=name, ecef=False, **kwargs)
-    elif name == 'LLA':
-        location = low_location
-        log.debug("create_named_configuration: %s\n\t%s\n\t%s" % (name, location.geocentric, location.geodetic))
-        fc = create_configuration_from_LLAfile(antfile=rascil_data_path("configurations/LOW_SKA-TEL-SKO-0000422_Rev3.txt"),
-                                            location=location, mount='XY',
-                                            vp_type="LOW",diameter=38.0, alt=300.0, 
-                                            name=name, ecef=True, **kwargs)
-
     else:
         raise ValueError("No such Configuration %s" % name)
     return fc

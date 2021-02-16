@@ -58,7 +58,7 @@ class TestRFISim(unittest.TestCase):
                                       polarisation_frame=polarisation_frame, phasecentre=phasecentre, weight=1.0)
         
         # Calculate the power spectral density of the DTV station: Watts/Hz
-        emitter, channel_range = simulate_DTV_prop(frequency, times, power=50e3, timevariable=False)
+        emitter, channel_range = simulate_DTV_prop(frequency, times, power=50e3, time_variable=False)
         
         # Calculate the propagators for signals from Perth to the stations in low
         # These are fixed in time but vary with frequency. The ad hoc attenuation
@@ -73,7 +73,7 @@ class TestRFISim(unittest.TestCase):
         
         # Calculate the rfi correlation. The return value is in Jy
         correlation = calculate_station_correlation_rfi(rfi_at_station, bvis.baselines)
-        numpy.testing.assert_almost_equal(numpy.max(numpy.abs(correlation)), 10.143272111897195)
+        numpy.testing.assert_almost_equal(numpy.max(numpy.abs(correlation)), 0.8810092775005085)
         assert correlation.shape == (ntimes, len(bvis.baselines), nchannels, 1), correlation.shape
     
     def test_rfi_propagators(self):
@@ -102,7 +102,7 @@ class TestRFISim(unittest.TestCase):
         emitter, channel_range = simulate_DTV_prop(frequency, times, power=transmitter_dict['power'],
                                                    freq_cen=transmitter_dict['freq'] * 1e6,
                                                    bw=transmitter_dict['bw'] * 1e6,
-                                                   timevariable=False, frequency_variable=False)
+                                                   time_variable=False, frequency_variable=False)
         numpy.testing.assert_almost_equal(numpy.max(numpy.abs(emitter)), 0.05980416299307147)
         assert len(channel_range) == 2
         assert channel_range[0] == 117
@@ -122,7 +122,7 @@ class TestRFISim(unittest.TestCase):
         simulate_DTV_prop correctly calculates the power spectral density [W/Hz] of
         the DTV station in Perth using the transmitter bandwidth and frequency
     
-        Do all timevariable, frequency_variable cases
+        Do all time_variable, frequency_variable cases
         """
         sample_freq = 3e4
         nchannels = 1000
@@ -140,7 +140,7 @@ class TestRFISim(unittest.TestCase):
         emitter, channel_range = simulate_DTV_prop(frequency, times, power=transmitter_dict['power'],
                                                    freq_cen=transmitter_dict['freq'] * 1e6,
                                                    bw=transmitter_dict['bw'] * 1e6,
-                                                   timevariable=False, frequency_variable=False)
+                                                   time_variable=False, frequency_variable=False)
         
         numpy.testing.assert_almost_equal(numpy.max(numpy.abs(emitter)), 0.05980416299307147)
         assert len(channel_range) == 2
@@ -151,7 +151,7 @@ class TestRFISim(unittest.TestCase):
         emitter, channel_range = simulate_DTV_prop(frequency, times, power=transmitter_dict['power'],
                                                    freq_cen=transmitter_dict['freq'] * 1e6,
                                                    bw=transmitter_dict['bw'] * 1e6,
-                                                   timevariable=False, frequency_variable=True)
+                                                   time_variable=False, frequency_variable=True)
         
         numpy.testing.assert_almost_equal(numpy.max(numpy.abs(emitter)), 0.20291900444429292)
         assert len(channel_range) == 2
@@ -162,7 +162,7 @@ class TestRFISim(unittest.TestCase):
         emitter, channel_range = simulate_DTV_prop(frequency, times, power=transmitter_dict['power'],
                                                    freq_cen=transmitter_dict['freq'] * 1e6,
                                                    bw=transmitter_dict['bw'] * 1e6,
-                                                   timevariable=True, frequency_variable=False)
+                                                   time_variable=True, frequency_variable=False)
         
         numpy.testing.assert_almost_equal(numpy.max(numpy.abs(emitter)), 0.15779614478384324)
         assert len(channel_range) == 2
@@ -173,7 +173,7 @@ class TestRFISim(unittest.TestCase):
         emitter, channel_range = simulate_DTV_prop(frequency, times, power=transmitter_dict['power'],
                                                    freq_cen=transmitter_dict['freq'] * 1e6,
                                                    bw=transmitter_dict['bw'] * 1e6,
-                                                   timevariable=True, frequency_variable=True)
+                                                   time_variable=True, frequency_variable=True)
         
         numpy.testing.assert_almost_equal(numpy.max(numpy.abs(emitter)), 0.28001147137009325)
         assert len(channel_range) == 2

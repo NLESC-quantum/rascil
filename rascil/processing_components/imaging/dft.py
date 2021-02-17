@@ -250,7 +250,7 @@ def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None):
         npol = vfluxes.shape[-1]
         vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype='complex')
         for icomp in range(ncomp):
-            phasor = numpy.exp(2j * numpy.pi * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1))
+            phasor = numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1))
             for pol in range(npol):
                 vis[..., pol] += vfluxes[icomp, :, pol] * phasor
         return vis

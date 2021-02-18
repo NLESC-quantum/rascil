@@ -66,10 +66,10 @@ class TestContinuumImagingChecker(unittest.TestCase):
 
       #Parameters to be varied
       self.cellsize = 0.0004
-      self.npixel = 1024
+      self.npixel = 512
       self.flux_limit = 1.0
-      self.insert_method = 'Lanczos'
-      self.width = 1.0
+      self.insert_method = 'Nearest'
+      self.width = 3.0
 
       parser = cli_parser()
       self.args = parser.parse_args([])

@@ -190,8 +190,9 @@ def create_source_to_skycomponent(source_file, freq):
 
         direc = SkyCoord(ra=row['RA'] * u.deg, dec=row['DEC'] * u.deg, frame='icrs', equinox='J2000')
         f = row['Total_flux']
-        comp.append(create_skycomponent(direction=direc, flux=np.array([[f]]), frequency=np.array([freq]),
-                                        polarisation_frame=PolarisationFrame('stokesI')))
+        if f > 0: # filter out ghost sources
+            comp.append(create_skycomponent(direction=direc, flux=np.array([[f]]), frequency=np.array([freq]),
+                                            polarisation_frame=PolarisationFrame('stokesI')))
     
     return comp
 

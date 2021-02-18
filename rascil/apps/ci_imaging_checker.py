@@ -61,7 +61,7 @@ def cli_parser():
 			help = 'If use external source file, the file name of source file')
     parser.add_argument('--match_sep', type=float, default=1.e-5,
                         help='Maximum separation in radians for the source matching')
-    parser.add_argument('--source_file', type=str, default='output.csv',
+    parser.add_argument('--source_file', type=str, default=None,
                         help='Name of output source file')
     parser.add_argument('--logfile', type=str, default=None,
                         help='Name of output log file')
@@ -144,6 +144,10 @@ def analyze_image(args):
             if args.input_source_filename is None:
                 raise FileNotFoundError("Input HDF5 file name must be specified")
             orig = import_skycomponent_from_hdf5(args.input_source_filename)
+        if args.input_source_format == 'txt':
+            if args.input_source_filename is None:
+                raise FileNotFoundError("Input HDF5 file name must be specified")
+            orig = read_skycomponent_from_txt(args.input_source_filename, freq)
 
         results = check_source(orig, out, match_sep)    
         log.info("Resulting list of matched items {}".format(results))
@@ -238,6 +242,30 @@ def check_source(orig, comp, match_sep):
     
     return matches
 
+def read_skycomponent_from_txt(filename, freq):
+    """
+    Read source input from a txt file and make the date into skycomponents
+
+    :param filename: Name of input file
+    :param freq: Frequency or list of frequencies 
+    :return comp: List of skycomponents
+    """
+
+    data = np.loadtxt(filename, delimiter=',', unpack=True)
+    comp = []
+
+    ra = data[0]
+    dec = data[1]
+    flux = data[2]
+
+    for i, row in enumerate(ra):
+
+        direc = SkyCoord(ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame='icrs', equinox='J2000')
+        comp.append(create_skycomponent(direction=direc, flux=np.array([[flux[i]]]), frequency=np.array([freq]),
+                                	polarisation_frame=PolarisationFrame('stokesI')))
+
+    return comp
+    
 if __name__ == "__main__":
 
     # Get command line inputs

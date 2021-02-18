@@ -47,7 +47,9 @@ class TestContinuumImagingChecker(unittest.TestCase):
       log.info("Original components:")
       log.info(" RA Dec Flux ")
       for comp in self.components:
-          log.info("%s %s %.5f"%(comp.direction.ra, comp.direction.dec, comp.flux[0]))
+          coord_ra = comp.direction.ra.degree
+          coord_dec = comp.direction.dec.degree
+          log.info("%.6f, %.6f, %10.6e"%(coord_ra, coord_dec, comp.flux[0]))
 
       self.model = create_image(npixel=self.npixel,
                                    cellsize=self.cellsize,
@@ -91,7 +93,9 @@ class TestContinuumImagingChecker(unittest.TestCase):
       out = sorted(out, key=lambda comp: numpy.max(comp.direction.ra)) 
       log.info("Identified components:")
       for comp in out:
-          log.info("%s %s %.5f"%(comp.direction.ra, comp.direction.dec, comp.flux[0]))
+          coord_ra = comp.direction.ra.degree
+          coord_dec = comp.direction.dec.degree
+          log.info("%.6f, %.6f, %10.6e"%(coord_ra, coord_dec, comp.flux[0]))
 
       log.info("BDSF expected to find %d sources, but found %d sources"%(len(self.components), len(out)))
       assert len(out) <= len(self.components)
@@ -99,7 +103,7 @@ class TestContinuumImagingChecker(unittest.TestCase):
       log.info("Found matches as follows.")
       log.info("BDSF Original Separation")
       for match in matches:
-          log.info("%d %d %10.6e" %(match[0], match[1], match[2])) 
+          log.info("%d, %d, %10.6e" %(match[0], match[1], match[2])) 
 
 
 if __name__ == '__main__':

@@ -26,7 +26,8 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 @pytest.mark.parametrize("cellsize, npixel, flux_limit, insert_method, noise, tag", [
     (0.0004, 512, 1.0, "Nearest", 0.0, "nearest_512_nonoise"),
     (0.0004, 512, 1.0, "Nearest", 0.001, "nearest_512_noise_0.001"),
-    (0.0002, 1024, 1.0, "Nearest", 0.0, "nearest_1024")
+    (0.0004, 512, 1.0, "Lanczos", 0.001, "nearest_512_noise_0.001"),
+    (0.0002, 1024, 1.0, "Nearest", 0.001, "nearest_1024_noise_0.001")
 ])
 def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, noise, tag):
     frequency = 1.e8
@@ -50,12 +51,16 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
     
     comp_file = rascil_path(f"test_results/test_ci_checker_{tag}.hdf")
     export_skycomponent_to_hdf5(components,comp_file)
-
-    log.info("Original components:")
-    log.info(" RA Dec Flux ")
-    for cmp in components:
-        log.info("%s %s %.3f" % (cmp.direction.ra, cmp.direction.dec, cmp.flux[0]))
     
+    txtfile = rascil_path(f"test_results/test_ci_checker_{tag}.txt")
+    f = open(txtfile, "w")
+    f.write("# RA(deg), Dec(deg), Flux(Jy) \n")
+    for cmp in components:
+          coord_ra = cmp.direction.ra.degree
+          coord_dec = cmp.direction.dec.degree
+          f.write("%.6f, %.6f, %10.6e \n"%(coord_ra, coord_dec, cmp.flux[0]))
+    f.close()
+
     model = create_image(npixel=npixel,
                          cellsize=cellsize,
                          phasecentre=phasecentre,
@@ -79,8 +84,8 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
         "--finder_beam_maj", f"{numpy.rad2deg(cellsize)}",
         "--finder_beam_min", f"{numpy.rad2deg(cellsize)}",
 	"--check_source", f"True", 
-	"--input_source_format", f"hdf5",
-	"--input_source_filename", comp_file,
+	"--input_source_format", f"txt",
+	"--input_source_filename", txtfile,
 	"--match_sep", f"1.e-3"])
     
     out, matches_orig = analyze_image(args)
@@ -88,8 +93,10 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
     # check results directly
     sorted_comp = sorted(out, key=lambda cmp: numpy.max(cmp.direction.ra))
     log.info("Identified components:")
-    for comp in sorted_comp:
-        log.info("%s %s %.3f" % (comp.direction.ra, comp.direction.dec, comp.flux[0]))
+    for cmp in sorted_comp:
+        coord_ra = cmp.direction.ra.degree
+        coord_dec = cmp.direction.dec.degree
+        log.info("%.6f, %.6f, %10.6e \n"%(coord_ra, coord_dec, cmp.flux[0]))
     
     assert len(out) <= len(components)
     log.info("BDSF expected to find %d sources, but found %d sources" % (len(components), len(out)))
@@ -99,5 +106,5 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
     for match in matches_test:
         log.info("%d %d %10.6e" % (match[0], match[1], match[2]))
 
-    assert matches_orig == matches_test
+    numpy.testing.assert_array_almost_equal(matches_orig,matches_test)
 

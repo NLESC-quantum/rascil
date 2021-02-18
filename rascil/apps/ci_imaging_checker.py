@@ -148,6 +148,8 @@ def analyze_image(args):
             if args.input_source_filename is None:
                 raise FileNotFoundError("Input HDF5 file name must be specified")
             orig = read_skycomponent_from_txt(args.input_source_filename, freq)
+        else:
+            raise ValueError("Input format not supported")
 
         results = check_source(orig, out, match_sep)    
         log.info("Resulting list of matched items {}".format(results))

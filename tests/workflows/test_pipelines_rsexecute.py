@@ -43,10 +43,10 @@ class TestPipelineGraphs(unittest.TestCase):
         from numpy.random import default_rng
         self.rng = default_rng(1805550721)
 
-        rsexecute.set_client(use_dask=False)
+        rsexecute.set_client(use_dask=True)
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
 
 
     def tearDown(self):
@@ -627,7 +627,6 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                component_threshold=10.0)
         clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
-        self.persist = True
         if self.persist:
             export_image_to_fits(clean[centre],
                                  '%s/test_pipelines_continuum_imaging_skymodel_empty_threshold_rsexecute_clean.fits' %
@@ -638,8 +637,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_component_threshold_empty_rsexecute_restored.fits' % self.dir)
             
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.01686183120408) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06593874966691259) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01689877959136) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06616130027684675) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()

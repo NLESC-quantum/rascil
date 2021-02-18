@@ -16,7 +16,7 @@ from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 from rascil.processing_components.visibility.base import create_blockvisibility
 
 
-class TestVisibilityDFTOperationsGPU(unittest.TestCase):
+class TestVisibilityDFTOperationsKernels(unittest.TestCase):
     def setUp(self):
         pass
     
@@ -39,13 +39,13 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
         self.comp = ncomp * [Skycomponent(direction=self.compreldirection, frequency=self.frequency,
                                           flux=self.flux)]
     
-    @unittest.skip("Don't run in CI")
+    #@unittest.skip("Don't run in CI")
     def test_dft_stokesiquv_blockvisibility(self):
         try:
             import cupy
-            compute_kernels = ['gpu_cupy_raw', 'gpu_cupy_einsum', 'cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
+            compute_kernels = ['gpu_cupy_raw', 'cpu_looped', 'cpu_numba']
         except ModuleNotFoundError:
-            compute_kernels = ['cpu_looped', 'cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
+            compute_kernels = ['cpu_looped', 'cpu_numba']
 
         self.init(ntimes=2, nchan=10, ncomp=100)
         for dft_compute_kernel in compute_kernels:
@@ -68,10 +68,9 @@ class TestVisibilityDFTOperationsGPU(unittest.TestCase):
         self.init(ntimes=2, nchan=2, ncomp=2)
         try:
             import cupy
-            compute_kernels = ['gpu_cupy_raw', 'gpu_cupy_einsum', 'cpu_looped', 'cpu_einsum',
-                               'cpu_numpy', 'cpu_unrolled']
+            compute_kernels = ['gpu_cupy_raw', 'cpu_looped', 'cpu_numba']
         except ModuleNotFoundError:
-            compute_kernels = ['cpu_looped', 'cpu_einsum', 'cpu_numpy', 'cpu_unrolled']
+            compute_kernels = ['cpu_looped', 'cpu_numba']
 
         vpol = PolarisationFrame("linear")
         for dft_compute_kernel in compute_kernels:

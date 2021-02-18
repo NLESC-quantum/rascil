@@ -20,11 +20,12 @@ log = logging.getLogger('rascil-logger')
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
-
-@pytest.mark.parametrize("cellsize, npixel, flux_limit, insert_method",
-                         [(0.0004, 512, 1.0, "Nearest")
+@pytest.mark.parametrize("cellsize, npixel, flux_limit, insert_method, tag",
+                         [(0.0004, 512, 1.0, "Nearest", "nearest_512"),
+                          (0.0002, 1024, 1.0, "Nearest", "nearest_1024")
                           ])
-def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method):
+def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, tag):
+        
     frequency = 1.e8
     phasecentre = SkyCoord(ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
     hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(pbtype="MID", frequency=numpy.array([frequency]))
@@ -57,11 +58,12 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method):
     model = insert_skycomponent(model, components, insert_method=insert_method)
     model = smooth_image(model, width=1.0)
     
-    export_image_to_fits(model, rascil_path('test_results/test_ci_checker.fits'))
+    tagged_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
+    export_image_to_fits(model, tagged_file)
     
     parser = cli_parser()
     args = parser.parse_args([
-        "--ingest_fitsname", rascil_path("test_results/test_ci_checker.fits"),
+        "--ingest_fitsname", tagged_file,
         "--finder_beam_maj", f"{numpy.rad2deg(cellsize)}",
         "--finder_beam_min", f"{numpy.rad2deg(cellsize)}"])
     

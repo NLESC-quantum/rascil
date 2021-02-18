@@ -142,12 +142,13 @@ def analyze_image(args):
 							    polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
         if args.input_source_format == 'hdf5':
             if args.input_source_filename is None:
-                raise FileNotFoundError("Input HDF5 file name must be specified")
+                raise FileNotFoundError("Input file name must be specified")
             orig = import_skycomponent_from_hdf5(args.input_source_filename)
         if args.input_source_format == 'txt':
             if args.input_source_filename is None:
-                raise FileNotFoundError("Input HDF5 file name must be specified")
+                raise FileNotFoundError("Input file name must be specified")
             orig = read_skycomponent_from_txt(args.input_source_filename, freq)
+ 
         else:
             raise ValueError("Input format not supported")
 

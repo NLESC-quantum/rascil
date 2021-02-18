@@ -217,7 +217,8 @@ def cip(args, bvis_list, model_list, msname):
                                                   restored_output=args.clean_restored_output,  # Type of restored image
                                                   deconvolve_facets=args.clean_facets,
                                                   deconvolve_overlap=args.clean_overlap,
-                                                  deconvolve_taper=args.clean_taper)
+                                                  deconvolve_taper=args.clean_taper,
+                                                  component_threshold=args.component_threshold)
     # Execute the Dask graph
     log.info("Starting compute of continuum imaging pipeline graph ")
     result = rsexecute.compute(result, sync=True)
@@ -308,7 +309,8 @@ def ical(args, bvis_list, model_list, msname):
                                      deconvolve_taper=args.clean_taper,
                                      calibration_context=args.calibration_context,
                                      controls=controls,
-                                     global_solution=args.calibration_global_solution)
+                                     global_solution=args.calibration_global_solution,
+                                     component_threshold=args.component_threshold)
     # Execute the Dask graph
     log.info("Starting compute of ICAL pipeline graph ")
     deconvolved, residual, restored, gt_list = rsexecute.compute(result, sync=True)
@@ -356,7 +358,6 @@ def invert(args, bvis_list, model_list, msname):
         dirtyname = imagename + "_dirty.fits"
         export_image_to_fits(dirty, dirtyname)
         return dirtyname
-
 
 
 def main():

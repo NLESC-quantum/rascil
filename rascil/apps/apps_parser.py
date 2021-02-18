@@ -89,6 +89,8 @@ def apps_parser_cleaning(parser):
                         help='Clean loop gain')
     parser.add_argument('--clean_threshold', type=float, default=1e-4,
                         help='Clean stopping threshold (Jy/beam)')
+    parser.add_argument('--component_threshold', type=float, default=None,
+                        help='Pixels > this level are converted to skycomponents')
     parser.add_argument('--clean_fractional_threshold', type=float, default=0.3,
                         help='Fractional stopping threshold for major cycle')
     parser.add_argument('--clean_facets', type=int, default=1,

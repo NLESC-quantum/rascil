@@ -4,15 +4,19 @@
 
 __all__ = ['copy_skymodel', 'partition_skymodel_by_flux', 'show_skymodel', 'initialize_skymodel_voronoi',
            'calculate_skymodel_equivalent_image', 'update_skymodel_from_gaintables', 'update_skymodel_from_image',
-           'expand_skymodel_by_skycomponents', 'create_skymodel_from_skycomponents_gaintables']
+           'expand_skymodel_by_skycomponents', 'create_skymodel_from_skycomponents_gaintables',
+           'update_skymodel_from_model']
 
 import logging
 
 import matplotlib.pyplot as plt
 import numpy
 from astropy.wcs.utils import skycoord_to_pixel
+from astropy.wcs.utils import pixel_to_skycoord
 
-from rascil.data_models.memory_data_models import SkyModel, GainTable
+
+from rascil.data_models.memory_data_models import SkyModel, GainTable, Skycomponent
+from rascil.data_models import get_parameter
 from rascil.processing_components.calibration.operations import copy_gaintable
 from rascil.processing_components.image.operations import smooth_image
 from rascil.processing_components.skycomponent.base import copy_skycomponent
@@ -261,3 +265,35 @@ def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwar
                        gaintable=copy_gaintable(gaintables[icomp]))
               for icomp, comp in enumerate(components)]
     return result
+
+def update_skymodel_from_model(sm, **kwargs):
+    """ Extract the bright components from the model and place into the skymodel
+
+    :param model: Model image
+    :param sm: Skymodel
+    :param kwargs: Parameters for functions
+    :return: Updated skymodel
+    
+    """
+    component_threshold = get_parameter(kwargs, "component_threshold", None)
+    
+    if component_threshold is None:
+        return sm
+
+    newsm = copy_skymodel(sm)
+    points = numpy.where(numpy.abs(sm.image["pixels"].data)>component_threshold)
+    number_points = len(points[0])
+    log.info(f"update_skymodel_from_model: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
+    
+    wcs = sm.image.image_acc.wcs
+    for p in zip(points[2], points[3]):
+        direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
+        comp = Skycomponent(direction=direction,
+                            flux=sm.image["pixels"].data[..., p[0], p[1]],
+                            frequency=sm.image.frequency,
+                            polarisation_frame=sm.image.image_acc.polarisation_frame,
+                            shape='Point')
+        newsm.components.append(comp)
+        newsm.image["pixels"].data[..., p[0], p[1]] = 0.0
+
+    return newsm

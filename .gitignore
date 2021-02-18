@@ -92,3 +92,5 @@ tests/workflows/gaintable.png
 examples/mcve/xarray/mydask.png
 
 rascil/apps/output.csv
+
+tests/apps/output.csv

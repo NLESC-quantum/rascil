@@ -2,23 +2,24 @@ __all__ = ['predict_skymodel_list_rsexecute_workflow',
            'restore_skymodel_list_rsexecute_workflow',
            'crosssubtract_datamodels_skymodel_list_rsexecute_workflow',
            'convolve_skymodel_list_rsexecute_workflow',
-           'invert_skymodel_list_rsexecute_workflow']
+           'invert_skymodel_list_rsexecute_workflow',
+           'update_skymodel_list_rsexecute_workflow']
 
 import logging
 
 import numpy
 
+from rascil.processing_components import image_scatter_facets, image_gather_facets, update_skymodel_from_model
 from rascil.processing_components.calibration import apply_gaintable
-from rascil.processing_components.image import image_scatter_facets, image_gather_facets
 from rascil.processing_components.image import restore_cube
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.skycomponent import copy_skycomponent, apply_beam_to_skycomponent, insert_skycomponent
 from rascil.processing_components.visibility import copy_visibility
-from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 # ToDo - remove non-SkyModel parts
-from rascil.workflows.rsexecute.imaging.imaging_rsexecute import invert_list_rsexecute_workflow, \
+from rascil.workflows.rsexecute import invert_list_rsexecute_workflow, \
     predict_list_rsexecute_workflow, subtract_list_rsexecute_workflow, \
     zero_list_rsexecute_workflow
+from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.serial.imaging.imaging_serial import invert_list_serial_workflow, predict_list_serial_workflow
 from rascil.workflows.shared.imaging import remove_sumwt
 
@@ -27,9 +28,12 @@ log = logging.getLogger('rascil-logger')
 
 def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng', gcfcf=None,
                                              docal=False, inverse=True, **kwargs):
-    """Predict from a list of skymodels, producing one visibility per skymodel
+    """Predict from a list of skymodels
+    
+    If obsvis is a list then we pair obsvis element and skymodel_list element and predict
+    If obvis is BlockVisibility then we calculate BlockVisibility for each skymodel
 
-    :param obsvis: "Observed Block Visibility"
+    :param obsvis: Observed Block Visibility or list or graph
     :param skymodel_list: skymodel list
     :param context: Type of processing e.g. 2d, wstack, timeslice or facets
     :param gcfcg: tuple containing grid correction and convolution function
@@ -309,3 +313,20 @@ def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d'
         result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, context=context, dopsf=False,
                                                 normalize=True, gcfcf=gcfcf, **kwargs)
     return rsexecute.optimize(result)
+
+
+def update_skymodel_list_rsexecute_workflow(skymodel_list, **kwargs):
+    """ Extract the bright components and place into the skymodel
+
+    :param model_imagelist: list of deconvolved images (or graph)
+    :param skymodel_list: list of skymodels (or graph)
+    :param component_threshold: absolute threshold (Jy/pixel)
+    :param kwargs: Parameters for functions
+    :return: graph for the update
+
+    """
+    
+    result_list = [rsexecute.execute(update_skymodel_from_model)(skymodel_list[i], **kwargs)
+                   for i, _ in enumerate(skymodel_list)]
+    
+    return rsexecute.optimize(result_list)

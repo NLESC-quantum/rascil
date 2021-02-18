@@ -31,7 +31,7 @@ from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import ica
 
 log = logging.getLogger('rascil-logger')
 
-log.setLevel(logging.WARNING)
+log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
@@ -43,11 +43,12 @@ class TestPipelineGraphs(unittest.TestCase):
         from numpy.random import default_rng
         self.rng = default_rng(1805550721)
 
-        rsexecute.set_client(use_dask=True)
+        rsexecute.set_client(use_dask=False)
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
-        self.persist = os.getenv("RASCIL_PERSIST", False)
-    
+        self.persist = os.getenv("RASCIL_PERSIST", True)
+
+
     def tearDown(self):
         rsexecute.close()
     
@@ -139,10 +140,10 @@ class TestPipelineGraphs(unittest.TestCase):
                                 (self.bvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
         self.model_imagelist = rsexecute.persist(self.model_imagelist, sync=True)
-        
+
     def test_continuum_imaging_pipeline(self):
         self.actualSetUp()
-        
+    
         continuum_imaging_list = \
             continuum_imaging_list_rsexecute_workflow(self.bvis_list,
                                                       model_imagelist=self.model_imagelist,
@@ -156,7 +157,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                       deconvolve_taper='tukey', psf_support=64,
                                                       restore_facets=4,
                                                       do_wstacking=True)
-        
+    
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
         if self.persist:
@@ -166,11 +167,11 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_residual.fits' % self.dir)
             export_image_to_fits(restored[centre],
                                  '%s/test_pipelines_continuum_imaging_pipeline_rsexecute_restored.fits' % self.dir)
-        
+    
         qa = qa_image(restored[centre])
         assert numpy.abs(qa.data['max'] - 100.01718910094274) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.06593874966691299) < 1.0e-7, str(qa)
-    
+
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, dopol=True)
         
@@ -361,10 +362,10 @@ class TestPipelineGraphs(unittest.TestCase):
         controls = create_calibration_controls()
         controls['T']['first_selfcal'] = 1
         controls['T']['timeslice'] = 'auto'
-
+    
         skymodel_list = [rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist]
         skymodel_list = rsexecute.persist(skymodel_list)
-
+    
         ical_list = \
             ical_skymodel_list_rsexecute_workflow(self.bvis_list,
                                                   model_imagelist=self.model_imagelist,
@@ -392,9 +393,9 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(gt_list[centre]['T'],
                                      '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_gaintable.hdf5' %
                                      self.dir)
-        
+    
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_empty')
-
+    
         # shape: '(1, 1, 512, 512)'
         # max: '100.07184138596327'
         # min: '-0.1291884422737903'
@@ -404,10 +405,64 @@ class TestPipelineGraphs(unittest.TestCase):
         # medianabs: '0.021580552027293375'
         # medianabsdevmedian: '0.02158925516978749'
         # median: '0.00039522135548293363'
-
+    
         assert numpy.abs(qa.data['max'] - 100.07184138596327) < 1e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.1291884422737903) < 1e-7, str(qa)
+
+    @unittest.skip("Non-deterministic")
+    def test_ical_skymodel_pipeline_empty_threshold(self):
+        self.actualSetUp(add_errors=True)
+        controls = create_calibration_controls()
+        controls['T']['first_selfcal'] = 1
+        controls['T']['timeslice'] = 'auto'
     
+        skymodel_list = [rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist]
+        skymodel_list = rsexecute.persist(skymodel_list)
+    
+        ical_list = \
+            ical_skymodel_list_rsexecute_workflow(self.bvis_list,
+                                                  model_imagelist=self.model_imagelist,
+                                                  skymodel_list=skymodel_list,
+                                                  context='ng',
+                                                  algorithm='mmclean', facets=1,
+                                                  scales=[0],
+                                                  niter=100, fractional_threshold=0.1, threshold=0.01,
+                                                  nmoment=2,
+                                                  nmajor=5, gain=0.7,
+                                                  deconvolve_facets=4, deconvolve_overlap=32,
+                                                  deconvolve_taper='tukey', psf_support=64,
+                                                  restore_facets=1,
+                                                  calibration_context='T', controls=controls, do_selfcal=True,
+                                                  global_solution=False,
+                                                  component_threshold=10.0)
+        clean, residual, restored, skymodel_list, gt_list = rsexecute.compute(ical_list, sync=True)
+        centre = len(clean) // 2
+        if self.persist:
+            export_image_to_fits(clean[centre],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_clean.fits' % self.dir)
+            export_image_to_fits(residual[centre][0],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_residual.fits' % self.dir)
+            export_image_to_fits(restored[centre],
+                                 '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_restored.fits' % self.dir)
+            export_gaintable_to_hdf5(gt_list[centre]['T'],
+                                     '%s/test_pipelines_ical_skymodel_pipeline_empty_rsexecute_gaintable.hdf5' %
+                                     self.dir)
+    
+        qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_empty')
+    
+        # shape: '(1, 1, 512, 512)'
+        # max: '100.07184138596327'
+        # min: '-0.1291884422737903'
+        # maxabs: '100.07184138596327'
+        # rms: '3.7196897293378886'
+        # sum: '72967.68130171177'
+        # medianabs: '0.021580552027293375'
+        # medianabsdevmedian: '0.02158925516978749'
+        # median: '0.00039522135548293363'
+    
+        assert numpy.abs(qa.data['max'] - 100.07184138596327) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.1291884422737903) < 1e-7, str(qa)
+
     @unittest.skip("Non-deterministic")
     def test_ical_skymodel_pipeline_exact(self):
         
@@ -550,7 +605,42 @@ class TestPipelineGraphs(unittest.TestCase):
         qa = qa_image(restored[centre], context='restored')
         assert numpy.abs(qa.data['max'] - 100.01686183120408) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.06593874966691259) < 1.0e-7, str(qa)
+
+    def test_continuum_imaging_skymodel_pipeline_empty_threshold(self):
+        self.actualSetUp()
     
+        skymodel_list = [rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist]
+        skymodel_list = rsexecute.persist(skymodel_list)
+    
+        continuum_imaging_list = \
+            continuum_imaging_skymodel_list_rsexecute_workflow(self.bvis_list,
+                                                               model_imagelist=self.model_imagelist,
+                                                               skymodel_list=skymodel_list,
+                                                               context='ng',
+                                                               algorithm='mmclean', facets=1,
+                                                               scales=[0],
+                                                               niter=100, fractional_threshold=0.1, threshold=0.01,
+                                                               nmoment=2,
+                                                               nmajor=5, gain=0.7, deconvolve_facets=4,
+                                                               deconvolve_overlap=32, deconvolve_taper='tukey',
+                                                               psf_support=64, restore_facets=1,
+                                                               component_threshold=10.0)
+        clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
+        centre = len(clean) // 2
+        self.persist = True
+        if self.persist:
+            export_image_to_fits(clean[centre],
+                                 '%s/test_pipelines_continuum_imaging_skymodel_empty_threshold_rsexecute_clean.fits' %
+                                 self.dir)
+            export_image_to_fits(residual[centre][0],
+                                 '%s/test_pipelines_continuum_imaging_component_threshold_empty_rsexecute_residual.fits' % self.dir)
+            export_image_to_fits(restored[centre],
+                                 '%s/test_pipelines_continuum_imaging_component_threshold_empty_rsexecute_restored.fits' % self.dir)
+            
+        qa = qa_image(restored[centre], context='restored')
+        assert numpy.abs(qa.data['max'] - 100.01686183120408) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06593874966691259) < 1.0e-7, str(qa)
+
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
         

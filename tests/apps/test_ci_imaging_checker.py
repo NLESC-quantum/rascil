@@ -85,7 +85,7 @@ class TestContinuumImagingChecker(unittest.TestCase):
 
       self.make_mid_test_fits()
 
-      out = analyze_image(self.args)
+      out, matches_orig = analyze_image(self.args)
 
       # check results
       out = sorted(out, key=lambda comp: numpy.max(comp.direction.ra)) 
@@ -100,7 +100,6 @@ class TestContinuumImagingChecker(unittest.TestCase):
       log.info("BDSF Original Separation")
       for match in matches:
           log.info("%d %d %10.6e" %(match[0], match[1], match[2])) 
-
 
 
 if __name__ == '__main__':

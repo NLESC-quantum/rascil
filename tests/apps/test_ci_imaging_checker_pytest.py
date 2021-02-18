@@ -13,6 +13,7 @@ from numpy.random import default_rng
 from rascil.apps.ci_imaging_checker import cli_parser, analyze_image
 from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models.data_model_helpers import export_skycomponent_to_hdf5
 from rascil.processing_components.image import create_image, export_image_to_fits, smooth_image
 from rascil.processing_components.simulation import create_mid_simulation_components, find_pb_width_null
 from rascil.processing_components.skycomponent import insert_skycomponent, find_skycomponent_matches
@@ -46,6 +47,10 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
     
     components = original_components[0]
     components = sorted(components, key=lambda cmp: numpy.max(cmp.direction.ra))
+    
+    comp_file = rascil_path(f"test_results/test_ci_checker_{tag}.hdf")
+    export_skycomponent_to_hdf5(components,comp_file)
+
     log.info("Original components:")
     log.info(" RA Dec Flux ")
     for cmp in components:
@@ -72,20 +77,27 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
     args = parser.parse_args([
         "--ingest_fitsname", tagged_file,
         "--finder_beam_maj", f"{numpy.rad2deg(cellsize)}",
-        "--finder_beam_min", f"{numpy.rad2deg(cellsize)}"])
+        "--finder_beam_min", f"{numpy.rad2deg(cellsize)}",
+	"--check_source", f"True", 
+	"--input_source_format", f"hdf5",
+	"--input_source_filename", comp_file,
+	"--match_sep", f"1.e-3"])
     
-    out = analyze_image(args)
+    out, matches_orig = analyze_image(args)
     
-    # check results
-    out = sorted(out, key=lambda cmp: numpy.max(cmp.direction.ra))
+    # check results directly
+    sorted_comp = sorted(out, key=lambda cmp: numpy.max(cmp.direction.ra))
     log.info("Identified components:")
-    for comp in out:
+    for comp in sorted_comp:
         log.info("%s %s %.3f" % (comp.direction.ra, comp.direction.dec, comp.flux[0]))
     
     assert len(out) <= len(components)
     log.info("BDSF expected to find %d sources, but found %d sources" % (len(components), len(out)))
-    matches = find_skycomponent_matches(out, components, tol=1e-3)
+    matches_test = find_skycomponent_matches(out, components, tol=1e-3)
     log.info("Found matches as follows.")
     log.info("BDSF Original Separation")
-    for match in matches:
+    for match in matches_test:
         log.info("%d %d %10.6e" % (match[0], match[1], match[2]))
+
+    assert matches_orig == matches_test
+

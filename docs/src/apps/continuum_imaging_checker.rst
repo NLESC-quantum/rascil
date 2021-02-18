@@ -14,7 +14,7 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
   - Reads FITS images
   - Finds sources above a certain threshold and outputs the catalogue (in csv, fits and skycomponents format)
   - Apply a primary beam to the fluxes
-  - Optional: compares with input source catalogue
+  - Optional: compares with input source catalogue (takes hdf5 format)
  
 .. code-block:: none
 
@@ -28,6 +28,7 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
                                  [--telescope_model TELESCOPE_MODEL]
                                  [--check_source CHECK_SOURCE]
                                  [--input_source_format INPUT_SOURCE_FORMAT]
+                                 [--input_source_filename INPUT_SOURCE_FILENAME]
                                  [--match_sep MATCH_SEP]
                                  [--source_file SOURCE_FILE]
                                  [--logfile LOGFILE]                                 
@@ -43,7 +44,8 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
       --apply_primary APPLY_PRIMARY    Whether to apply primary beam
       --telescope_model TELESCOPE_MODEL    The telescope to generate primary beam correction
       --check_source CHECK_SOURCE       Option to check with original input source catalogue
-      --input_source_format IMPUT_SOURCE_FORMAT         The input format of the source catalogue
+      --input_source_format INPUT_SOURCE_FORMAT         The input format of the source catalogue
+      --input_source_filename INPUT_SOURCE_FILENAME  If use external source file, the file name of source file
       --match_sep MATCH_SEP    Maximum separation in radians for the source matching
       --source_file SOURCE_FILE    Name of output source file
       --logfile LOGFILE    Name of output log file

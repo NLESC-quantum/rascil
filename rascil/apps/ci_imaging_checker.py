@@ -16,7 +16,7 @@ import pandas as pd
 import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models import PolarisationFrame, import_skycomponent_from_hdf5
 from rascil.processing_components import create_low_test_skycomponents_from_gleam
 from rascil.processing_components.skycomponent.operations import create_skycomponent, find_skycomponent_matches, \
     apply_beam_to_skycomponent
@@ -57,6 +57,8 @@ def cli_parser():
 			help = 'Option to check with original input source catalogue')
     parser.add_argument('--input_source_format', type=str, default='gleam',
 			help = 'The input format of the source catalogue')
+    parser.add_argument('--input_source_filename',type=str, default=None,
+			help = 'If use external source file, the file name of source file')
     parser.add_argument('--match_sep', type=float, default=1.e-5,
                         help='Maximum separation in radians for the source matching')
     parser.add_argument('--source_file', type=str, default='output.csv',
@@ -138,7 +140,11 @@ def analyze_image(args):
             orig = create_low_test_skycomponents_from_gleam(flux_limit=1.0, phasecentre=im.image_acc.phasecentre,
 							    frequency=np.array([freq]), 
 							    polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
-        
+        if args.input_source_format == 'hdf5':
+            if args.input_source_filename is None:
+                raise FileNotFoundError("Input HDF5 file name must be specified")
+            orig = import_skycomponent_from_hdf5(args.input_source_filename)
+
         results = check_source(orig, out, match_sep)    
         log.info("Resulting list of matched items {}".format(results))
     
@@ -146,7 +152,7 @@ def analyze_image(args):
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))
     
-    return out
+    return out, results 
 
 
 def ci_checker(input_image, beam_info, source_file, th_isl, th_pix):

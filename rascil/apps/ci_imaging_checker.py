@@ -160,6 +160,9 @@ def analyze_image(args):
         results = check_source(orig, out, match_sep)
         log.info("Resulting list of matched items {}".format(results))
 
+    else:
+        results = None
+
 
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))

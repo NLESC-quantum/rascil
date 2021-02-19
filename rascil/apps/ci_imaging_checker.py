@@ -61,7 +61,7 @@ def cli_parser():
                         help='Whether to apply primary beam')
     parser.add_argument('--telescope_model', type=str, default='MID',
                         help='The telescope to generate primary beam correction')
-    parser.add_argument('--check_source', type=str, default='False',
+    parser.add_argument('--check_source', type=str, default=False,
                         help='Option to check with original input source catalogue')
     parser.add_argument('--input_source_format', type=str, default='external',
                         help='The input format of the source catalogue')
@@ -141,11 +141,7 @@ def analyze_image(args):
         telescope = args.telescope_model
         out = add_primary_beam(input_image, out, telescope)
 
-    print(args.check_source)
-
     if args.check_source:
-
-        print(args.check_source)
 
         match_sep = args.match_sep
         if args.input_source_format == 'external':
@@ -283,8 +279,6 @@ def ci_checker(input_image, beam_info, source_file, th_isl, th_pix):
     img.write_catalog(format='fits', catalog_type='srl', clobber=True)
     img.export_image(img_type='gaus_resid', clobber=True)
     # img.export_image(img_type='gaus_model', clobber=True)
-
-    assert os.path.exists(source_file)
 
     ci_checker_diagnostics(img, input_image)
 

@@ -12,9 +12,9 @@ continuum_imaging_checker
 continuum_imaging_checker is a command line app written using RASCIL. It uses the python package PyBDSF (https://github.com/lofar-astron/PyBDSF.git) to find sources in an image and check with the original inputs. Currently it features the following:
 
   - Reads FITS images
-  - Finds sources above a certain threshold and outputs the catalogue
-  - Apply a primary beam to the fluxes
-  - Compares with input source catalogue
+  - Finds sources above a certain threshold and outputs the catalogue (in csv, fits and skycomponents format)
+  - Optional: apply a primary beam to the fluxes
+  - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), Flux(Jy)"
  
 .. code-block:: none
 
@@ -26,6 +26,9 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
                                  [--finder_th_pix FINDER_TH_PIX]
                                  [--apply_primary APPLY_PRIMARY]
                                  [--telescope_model TELESCOPE_MODEL]
+                                 [--check_source CHECK_SOURCE]
+                                 [--input_source_format INPUT_SOURCE_FORMAT]
+                                 [--input_source_filename INPUT_SOURCE_FILENAME]
                                  [--match_sep MATCH_SEP]
                                  [--source_file SOURCE_FILE]
                                  [--logfile LOGFILE]                                 
@@ -40,6 +43,9 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
       --finder_th_pix FINDER_TH_PIX    Threshold to detect source (peak value)
       --apply_primary APPLY_PRIMARY    Whether to apply primary beam
       --telescope_model TELESCOPE_MODEL    The telescope to generate primary beam correction
+      --check_source CHECK_SOURCE       Option to check with original input source catalogue
+      --input_source_format INPUT_SOURCE_FORMAT         The input format of the source catalogue
+      --input_source_filename INPUT_SOURCE_FILENAME  If use external source file, the file name of source file
       --match_sep MATCH_SEP    Maximum separation in radians for the source matching
       --source_file SOURCE_FILE    Name of output source file
       --logfile LOGFILE    Name of output log file
@@ -53,6 +59,13 @@ The following runs the a data set from the RASCIL test::
     # Run this in the directory containing test-imaging-pipeline-dask_continuum_imaging_restored.fits
     python $RASCIL/rascil/apps/ci_imaging_checker.py \
     --ingest_fitsname test-imaging-pipeline-dask_continuum_imaging_restored.fits
+
+If a source check is required:: 
+
+    #!/bin/bash
+    python $RASCIL/rascil/apps/ci_imaging_checker.py \
+    --ingest_fitsname test-imaging-pipeline-dask_continuum_imaging_restored.fits --check_source True \
+    --input_source_format external --input_source_filename $RASCIL/data/models/GLEAM_filtered.txt
 
 
 Command line arguments

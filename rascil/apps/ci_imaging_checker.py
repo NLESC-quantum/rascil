@@ -18,7 +18,7 @@ import bdsf
 import astropy.units as u
 from astropy import modeling
 from astropy.coordinates import SkyCoord
-from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models import PolarisationFrame, import_skycomponent_from_hdf5
 from rascil.processing_components import create_low_test_skycomponents_from_gleam
 from rascil.processing_components.skycomponent.operations import create_skycomponent, find_skycomponent_matches, \
     apply_beam_to_skycomponent
@@ -41,7 +41,7 @@ def cli_parser():
     :param parser: argparse
     :return: CLI parser argparse
     """
-    parser = argparse.ArgumentParser(description='RASCIL continuum image checker')
+    parser = argparse.ArgumentParser(description='RASCIL continuum imaging checker')
     parser.add_argument('--ingest_fitsname', type=str, default=None, help='FITS file to be read')
     parser.add_argument('--finder_beam_maj', type=float, default=1.0,
                         help='Major axis of the restoring beam')
@@ -57,9 +57,15 @@ def cli_parser():
                         help='Whether to apply primary beam')
     parser.add_argument('--telescope_model', type=str, default='MID',
                         help='The telescope to generate primary beam correction')
+    parser.add_argument('--check_source', type=str, default = 'False',
+			help = 'Option to check with original input source catalogue')
+    parser.add_argument('--input_source_format', type=str, default='external',
+			help = 'The input format of the source catalogue')
+    parser.add_argument('--input_source_filename',type=str, default=None,
+			help = 'If use external source file, the file name of source file')
     parser.add_argument('--match_sep', type=float, default=1.e-5,
                         help='Maximum separation in radians for the source matching')
-    parser.add_argument('--source_file', type=str, default='output.csv',
+    parser.add_argument('--source_file', type=str, default=None,
                         help='Name of output source file')
     parser.add_argument('--logfile', type=str, default=None,
                         help='Name of output log file')
@@ -118,11 +124,8 @@ def analyze_image(args):
 
     th_isl = args.finder_th_isl
     th_pix = args.finder_th_pix
-
-    # Adjust the best restoring beam configuration-- not sure about this yet
-    # factor = 1/(npixels/512) **2
-    # beam_info = (beam_info[0]* factor, beam_info[1] * factor, beam_info[2])
-
+    
+    
     freq = im.frequency.data[0]
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(th_isl, th_pix))
@@ -134,15 +137,30 @@ def analyze_image(args):
         telescope = args.telescope_model
         out = add_primary_beam(input_image, out, telescope)
 
-    match_sep = args.match_sep
-    results = check_source(im.image_acc.phasecentre, freq, out, match_sep)
+    if args.check_source:
+        
+        match_sep = args.match_sep
+        if args.input_source_format == 'external':
+            if '.h5' in args.input_source_filename or 'hdf' in args.input_source_filename:
+                orig = import_skycomponent_from_hdf5(args.input_source_filename)
 
-    log.info("Resulting list of items {}".format(results))
+            elif '.txt' in args.input_source_filename:
+                orig = read_skycomponent_from_txt(args.input_source_filename, freq)
+            else:
+                raise FileFormatError("Input file must be of format: hdf5 or txt.")
+        else: # Use internally provided GLEAM model
+            orig = create_low_test_skycomponents_from_gleam(flux_limit=1.0, phasecentre=im.image_acc.phasecentre,
+                                                            frequency=np.array([freq]),
+                                                            polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
+
+        results = check_source(orig, out, match_sep)    
+        log.info("Resulting list of matched items {}".format(results))
+    
 
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))
-
-    return results
+    
+    return out, results 
 
 
 def bdsf_qa_image(im_data):
@@ -286,9 +304,10 @@ def create_source_to_skycomponent(source_file, freq):
 
         direc = SkyCoord(ra=row['RA'] * u.deg, dec=row['DEC'] * u.deg, frame='icrs', equinox='J2000')
         f = row['Total_flux']
-        comp.append(create_skycomponent(direction=direc, flux=np.array([[f]]), frequency=np.array([freq]),
-                                        polarisation_frame=PolarisationFrame('stokesI')))
-
+        if f > 0: # filter out ghost sources
+            comp.append(create_skycomponent(direction=direc, flux=np.array([[f]]), frequency=np.array([freq]),
+                                            polarisation_frame=PolarisationFrame('stokesI')))
+    
     return comp
 
 
@@ -310,27 +329,47 @@ def add_primary_beam(input_image, comp, telescope):
     return pbcomp
 
 
-def check_source(centre, freq, comp, match_sep):
+def check_source(orig, comp, match_sep):
     """
     Check the difference between output sources and input.
-
-    :param centre: Phase centre of image
-    :param freq: Frequency or list of frequencies.
+    
+    :param orig: Input source list in skycomponent format
     :param comp: Output source list in skycomponent format
     :param match_sep: The criteria for maximum separation
 
     :return matches: List of matched skycomponents
 
     """
-    orig = create_low_test_skycomponents_from_gleam(flux_limit=1.0, phasecentre=centre,
-                                                    frequency=np.array([freq]),
-                                                    polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
-
+    
     # separations = find_separation_skycomponents(comp, orig)
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)
 
     return matches
 
+def read_skycomponent_from_txt(filename, freq):
+    """
+    Read source input from a txt file and make the date into skycomponents
+
+    :param filename: Name of input file
+    :param freq: Frequency or list of frequencies 
+    :return comp: List of skycomponents
+    """
+
+    data = np.loadtxt(filename, delimiter=',', unpack=True)
+    comp = []
+
+    ra = data[0]
+    dec = data[1]
+    flux = data[2]
+
+    for i, row in enumerate(ra):
+
+        direc = SkyCoord(ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame='icrs', equinox='J2000')
+        comp.append(create_skycomponent(direction=direc, flux=np.array([[flux[i]]]), frequency=np.array([freq]),
+                                	polarisation_frame=PolarisationFrame('stokesI')))
+
+    return comp
+    
 if __name__ == "__main__":
 
     # Get command line inputs

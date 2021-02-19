@@ -24,13 +24,15 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 @pytest.mark.parametrize("cellsize, npixel, flux_limit, insert_method, noise, tag", [
-    (0.0004, 512, 1.0, "Nearest", 0.0, "nearest_512_nonoise"),
-    (0.0004, 512, 1.0, "Nearest", 0.001, "nearest_512_noise_0.001"),
-    (0.0004, 512, 1.0, "Lanczos", 0.001, "nearest_512_noise_0.001"),
-    (0.0002, 1024, 1.0, "Nearest", 0.001, "nearest_1024_noise_0.001")
+#    (0.0001, 512, 0.001, "Nearest", 0.0, "nearest_512_nonoise"),
+    (0.0001, 512, 0.001, "Nearest", 0.00003, "nearest_512_noise_0.00003"),
+    (0.0001, 512, 0.0001, "Nearest", 0.00003, "nearest_512_noise_0.00003_flux0.0001"),
+    (0.0001, 512, 0.001, "Nearest", 0.0003, "nearest_512_noise_0.00003"),
+    (0.0001, 512, 0.001, "Lanczos", 0.0003, "nearest_512_noise_0.00003"),
+    (0.0001, 1024, 0.001, "Nearest", 0.00003, "nearest_1024_noise_0.00003")
 ])
 def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, noise, tag):
-    frequency = 1.e8
+    frequency = 1.e9
     phasecentre = SkyCoord(ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame='icrs', equinox='J2000')
     hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(pbtype="MID", frequency=numpy.array([frequency]))
     
@@ -44,7 +46,8 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
     
     original_components = create_mid_simulation_components(phasecentre, numpy.array([frequency]), flux_limit,
                                                            pbradius, pb_npixel, pb_cellsize,
-                                                           show=False, fov=10)
+                                                           show=False, fov=10, apply_pb=True)
+    
     
     components = original_components[0]
     components = sorted(components, key=lambda cmp: numpy.max(cmp.direction.ra))

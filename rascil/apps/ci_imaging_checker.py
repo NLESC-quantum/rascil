@@ -46,7 +46,8 @@ def cli_parser():
     :return: CLI parser argparse
     """
     parser = argparse.ArgumentParser(description='RASCIL continuum imaging checker')
-    parser.add_argument('--ingest_fitsname', type=str, default=None, help='FITS file to be read')
+    parser.add_argument('--ingest_fitsname', type=str, default=None,
+                        help='FITS file to be read')
     parser.add_argument('--finder_beam_maj', type=float, default=1.0,
                         help='Major axis of the restoring beam')
     parser.add_argument('--finder_beam_min', type=float, default=1.0,
@@ -57,11 +58,11 @@ def cli_parser():
                         help='Threshold to determine the size of the islands')
     parser.add_argument('--finder_th_pix', type=float, default=10.0,
                         help='Threshold to detect source (peak value)')
-    parser.add_argument('--apply_primary', type=str, default='True',
+    parser.add_argument('--apply_primary', type=bool, default=True,
                         help='Whether to apply primary beam')
     parser.add_argument('--telescope_model', type=str, default='MID',
                         help='The telescope to generate primary beam correction')
-    parser.add_argument('--check_source', type=str, default=False,
+    parser.add_argument('--check_source', type=bool, default=False,
                         help='Option to check with original input source catalogue')
     parser.add_argument('--input_source_format', type=str, default='external',
                         help='The input format of the source catalogue')
@@ -129,7 +130,6 @@ def analyze_image(args):
     th_isl = args.finder_th_isl
     th_pix = args.finder_th_pix
 
-
     freq = im.frequency.data[0]
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(th_isl, th_pix))
@@ -152,17 +152,19 @@ def analyze_image(args):
                 orig = read_skycomponent_from_txt(args.input_source_filename, freq)
             else:
                 raise FileFormatError("Input file must be of format: hdf5 or txt.")
-        else: # Use internally provided GLEAM model
-            orig = create_low_test_skycomponents_from_gleam(flux_limit=1.0, phasecentre=im.image_acc.phasecentre,
-                                                            frequency=np.array([freq]),
-                                                            polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
+        else:  # Use internally provided GLEAM model
+            orig = create_low_test_skycomponents_from_gleam(
+                flux_limit=1.0,
+                phasecentre=im.image_acc.phasecentre,
+                frequency=np.array([freq]),
+                polarisation_frame=PolarisationFrame('stokesI'), radius=0.5
+            )
 
         results = check_source(orig, out, match_sep)
         log.info("Resulting list of matched items {}".format(results))
 
     else:
         results = None
-
 
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))
@@ -193,7 +195,7 @@ def bdsf_qa_image(im_data):
         'mean': np.mean(im_data)
     }
 
-    log.info("QA of image:")
+    log.info("QA of pybdsf image:")
     for item in image_stats.items():
         log.info("    {}".format(item))
 
@@ -304,7 +306,7 @@ def create_source_to_skycomponent(source_file, freq):
 
         direc = SkyCoord(ra=row['RA'] * u.deg, dec=row['DEC'] * u.deg, frame='icrs', equinox='J2000')
         f = row['Total_flux']
-        if f > 0: # filter out ghost sources
+        if f > 0:  # filter out ghost sources
             comp.append(create_skycomponent(direction=direc, flux=np.array([[f]]), frequency=np.array([freq]),
                                             polarisation_frame=PolarisationFrame('stokesI')))
 

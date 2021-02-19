@@ -124,8 +124,8 @@ def analyze_image(args):
 
     th_isl = args.finder_th_isl
     th_pix = args.finder_th_pix
-    
-    
+
+
     freq = im.frequency.data[0]
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(th_isl, th_pix))
@@ -138,7 +138,7 @@ def analyze_image(args):
         out = add_primary_beam(input_image, out, telescope)
 
     if args.check_source:
-        
+
         match_sep = args.match_sep
         if args.input_source_format == 'external':
             if '.h5' in args.input_source_filename or 'hdf' in args.input_source_filename:
@@ -153,14 +153,14 @@ def analyze_image(args):
                                                             frequency=np.array([freq]),
                                                             polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
 
-        results = check_source(orig, out, match_sep)    
+        results = check_source(orig, out, match_sep)
         log.info("Resulting list of matched items {}".format(results))
-    
+
 
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))
-    
-    return out, results 
+
+    return out, results
 
 
 def bdsf_qa_image(im_data):
@@ -240,17 +240,10 @@ def ci_checker_diagnostics(bdsf_image, input_image):
     ax.set_xlabel("Value")
     ax.legend()
 
-    diagnostics_dir = "./diagnostics"
-    if not os.path.exists(diagnostics_dir):
-        os.makedirs(diagnostics_dir)
-
     # Create histogram file name from input image name removeing file extension.
-    save_hist = os.path.join(
-        diagnostics_dir,
-        input_image.replace(
-            '.fits' if '.fits' in input_image else '.h5', "")
+    save_hist = input_image.replace(
+        '.fits' if '.fits' in input_image else '.h5', "") \
         + "_resid_gaus_hist.png"
-    )
 
     plt.tight_layout()
 
@@ -307,7 +300,7 @@ def create_source_to_skycomponent(source_file, freq):
         if f > 0: # filter out ghost sources
             comp.append(create_skycomponent(direction=direc, flux=np.array([[f]]), frequency=np.array([freq]),
                                             polarisation_frame=PolarisationFrame('stokesI')))
-    
+
     return comp
 
 
@@ -332,7 +325,7 @@ def add_primary_beam(input_image, comp, telescope):
 def check_source(orig, comp, match_sep):
     """
     Check the difference between output sources and input.
-    
+
     :param orig: Input source list in skycomponent format
     :param comp: Output source list in skycomponent format
     :param match_sep: The criteria for maximum separation
@@ -340,7 +333,7 @@ def check_source(orig, comp, match_sep):
     :return matches: List of matched skycomponents
 
     """
-    
+
     # separations = find_separation_skycomponents(comp, orig)
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)
 
@@ -351,7 +344,7 @@ def read_skycomponent_from_txt(filename, freq):
     Read source input from a txt file and make the date into skycomponents
 
     :param filename: Name of input file
-    :param freq: Frequency or list of frequencies 
+    :param freq: Frequency or list of frequencies
     :return comp: List of skycomponents
     """
 
@@ -369,7 +362,7 @@ def read_skycomponent_from_txt(filename, freq):
                                 	polarisation_frame=PolarisationFrame('stokesI')))
 
     return comp
-    
+
 if __name__ == "__main__":
 
     # Get command line inputs

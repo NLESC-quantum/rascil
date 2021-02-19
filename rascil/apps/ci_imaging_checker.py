@@ -55,7 +55,7 @@ def cli_parser():
                         help='The telescope to generate primary beam correction')
     parser.add_argument('--check_source', type=str, default = 'False',
 			help = 'Option to check with original input source catalogue')
-    parser.add_argument('--input_source_format', type=str, default='gleam',
+    parser.add_argument('--input_source_format', type=str, default='external',
 			help = 'The input format of the source catalogue')
     parser.add_argument('--input_source_filename',type=str, default=None,
 			help = 'If use external source file, the file name of source file')
@@ -136,21 +136,18 @@ def analyze_image(args):
     if args.check_source:
         
         match_sep = args.match_sep
-        if args.input_source_format == 'gleam':
+        if args.input_source_format == 'external':
+            if '.h5' in args.input_source_filename or 'hdf' in args.input_source_filename:
+                orig = import_skycomponent_from_hdf5(args.input_source_filename)
+
+            elif '.txt' in args.input_source_filename:
+                orig = read_skycomponent_from_txt(args.input_source_filename, freq)
+            else:
+                raise FileFormatError("Input file must be of format: hdf5 or txt.")
+        else: # Use internally provided GLEAM model
             orig = create_low_test_skycomponents_from_gleam(flux_limit=1.0, phasecentre=im.image_acc.phasecentre,
-							    frequency=np.array([freq]), 
-							    polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
-        if args.input_source_format == 'hdf5':
-            if args.input_source_filename is None:
-                raise FileNotFoundError("Input file name must be specified")
-            orig = import_skycomponent_from_hdf5(args.input_source_filename)
-        if args.input_source_format == 'txt':
-            if args.input_source_filename is None:
-                raise FileNotFoundError("Input file name must be specified")
-            orig = read_skycomponent_from_txt(args.input_source_filename, freq)
- 
-        else:
-            raise ValueError("Input format not supported")
+                                                            frequency=np.array([freq]),
+                                                            polarisation_frame=PolarisationFrame('stokesI'), radius=0.5)
 
         results = check_source(orig, out, match_sep)    
         log.info("Resulting list of matched items {}".format(results))

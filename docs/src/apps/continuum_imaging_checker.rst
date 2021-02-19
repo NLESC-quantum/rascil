@@ -13,8 +13,8 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
 
   - Reads FITS images
   - Finds sources above a certain threshold and outputs the catalogue (in csv, fits and skycomponents format)
-  - Apply a primary beam to the fluxes
-  - Optional: compares with input source catalogue (takes hdf5 format)
+  - Optional: apply a primary beam to the fluxes
+  - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), Flux(Jy)"
  
 .. code-block:: none
 
@@ -59,6 +59,13 @@ The following runs the a data set from the RASCIL test::
     # Run this in the directory containing test-imaging-pipeline-dask_continuum_imaging_restored.fits
     python $RASCIL/rascil/apps/ci_imaging_checker.py \
     --ingest_fitsname test-imaging-pipeline-dask_continuum_imaging_restored.fits
+
+If a source check is required:: 
+
+    #!/bin/bash
+    python $RASCIL/rascil/apps/ci_imaging_checker.py \
+    --ingest_fitsname test-imaging-pipeline-dask_continuum_imaging_restored.fits --check_source True \
+    --input_source_format external --input_source_filename $RASCIL/data/models/GLEAM_filtered.txt
 
 
 Command line arguments

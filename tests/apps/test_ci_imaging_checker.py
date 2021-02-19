@@ -87,8 +87,8 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
         "--finder_beam_maj", f"{numpy.rad2deg(cellsize)}",
         "--finder_beam_min", f"{numpy.rad2deg(cellsize)}",
 	"--check_source", f"True", 
-	"--input_source_format", f"txt",
-	"--input_source_filename", txtfile,
+	"--input_source_format", f"external",
+	"--input_source_filename", comp_file, #txtfile
 	"--match_sep", f"1.e-3"])
     
     out, matches_orig = analyze_image(args)

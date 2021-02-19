@@ -297,7 +297,7 @@ def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None):
         kernel_dft(num_blocks, num_threads, args)
         return cupy.asnumpy(vis_gpu)
     elif dft_compute_kernel == "cpu_numba":
-        return dft_numba_kernel(direction_cosines, vfluxes, uvw_lambda)
+        return dft_numba_kernel(direction_cosines, vfluxes, uvw_lambda.data)
     elif dft_compute_kernel == "cpu_looped":
         ncomp, _ = direction_cosines.shape
         ntimes, nbaselines, nchan, _ = uvw_lambda.shape

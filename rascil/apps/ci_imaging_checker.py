@@ -226,12 +226,17 @@ def ci_checker_diagnostics(bdsf_image, input_image):
     if not os.path.exists(diagnostics_dir):
         os.makedirs(diagnostics_dir)
 
+    # Create histogram file name from input image name removeing file extension.
     save_hist = os.path.join(
         diagnostics_dir,
-        input_image.replace(".fits", "") + "_resid_gaus_hist.png"
+        input_image.replace(
+            '.fits' if '.fits' in input_image else '.h5', "")
+        + "_resid_gaus_hist.png"
     )
 
     plt.tight_layout()
+
+    log.info('Saving histogram to "{}"'.format(save_hist))
     plt.savefig(save_hist)
     plt.close()
 

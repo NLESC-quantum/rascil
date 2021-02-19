@@ -210,7 +210,7 @@ def deconvolve_list_serial_workflow(dirty_list, psf_list, model_imagelist, prefi
         
         if this_peak > 1.1 * gthreshold:
             kwargs['threshold'] = gthreshold
-            result, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
+            result, _ , _= deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
             if result["pixels"].data.shape[0] == model["pixels"].data.shape[0]:
                 result.data += model.data
@@ -302,8 +302,8 @@ def deconvolve_channel_list_serial_workflow(dirty_list, psf_list, model_imagelis
     def deconvolve_subimage(dirty, psf):
         #assert isinstance(dirty, Image)
         #assert isinstance(psf, Image)
-        comp = deconvolve_cube(dirty, psf, **kwargs)
-        return comp[0]
+        comp, _, _ = deconvolve_cube(dirty, psf, **kwargs)
+        return comp
     
     def add_model(sum_model, model):
         #assert isinstance(output, Image)

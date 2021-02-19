@@ -111,8 +111,7 @@ class TestSkyModel(unittest.TestCase):
         
         self.model_list = [rsexecute.execute(copy.deepcopy)(sm.image) for sm in self.skymodel_list]
 
-        self.skymodel_list = update_skymodel_list_rsexecute_workflow(self.skymodel_list, self.model_list,
-                                                                     component_threshold=1.0)
+        self.skymodel_list = update_skymodel_list_rsexecute_workflow(self.skymodel_list, component_threshold=1.0)
         def zero_image(sm):
             sm.image["pixels"].data[...] = 0.0
             return sm
@@ -138,7 +137,6 @@ class TestSkyModel(unittest.TestCase):
         for i, sm in enumerate(self.skymodel_list):
             sm.components = []
         
-        ##assert isinstance(self.skymodel_list[0].image, Image), self.skymodel_list[0].image
         assert numpy.max(numpy.abs(self.skymodel_list[0].image["pixels"].data)) > 0.0, "Image is empty"
         
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)

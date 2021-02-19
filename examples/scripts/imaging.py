@@ -60,7 +60,7 @@ export_image_to_fits(dirty, '%s/imaging_dirty.fits' % (results_dir))
 export_image_to_fits(psf, '%s/imaging_psf.fits' % (results_dir))
 
 # Deconvolve using clean
-comp, residual = deconvolve_cube(dirty, psf, niter=10000, threshold=0.001,
+comp, residual, _ = deconvolve_cube(dirty, psf, niter=10000, threshold=0.001,
                                  fractional_threshold=0.001,
                                  window_shape='quarter', gain=0.7,
                                  scales=[0, 3, 10, 30])

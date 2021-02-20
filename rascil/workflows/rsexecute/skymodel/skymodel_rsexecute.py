@@ -2,8 +2,7 @@ __all__ = ['predict_skymodel_list_rsexecute_workflow',
            'restore_skymodel_list_rsexecute_workflow',
            'crosssubtract_datamodels_skymodel_list_rsexecute_workflow',
            'convolve_skymodel_list_rsexecute_workflow',
-           'invert_skymodel_list_rsexecute_workflow',
-           'update_skymodel_list_rsexecute_workflow']
+           'invert_skymodel_list_rsexecute_workflow']
 
 import logging
 
@@ -285,7 +284,7 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng
                 for ism, sm in enumerate(skymodel_list)]
 
 
-def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d', skymodel_list=None, gcfcf=None,
+def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='ng', skymodel_list=None, gcfcf=None,
                                               **kwargs):
     """ Create a graph to calculate residual image
 
@@ -313,20 +312,3 @@ def residual_skymodel_list_rsexecute_workflow(vis, model_imagelist, context='2d'
         result = invert_list_rsexecute_workflow(residual_vis, model_imagelist, context=context, dopsf=False,
                                                 normalize=True, gcfcf=gcfcf, **kwargs)
     return rsexecute.optimize(result)
-
-
-def update_skymodel_list_rsexecute_workflow(skymodel_list, **kwargs):
-    """ Extract the bright components and place into the skymodel
-
-    :param model_imagelist: list of deconvolved images (or graph)
-    :param skymodel_list: list of skymodels (or graph)
-    :param component_threshold: absolute threshold (Jy/pixel)
-    :param kwargs: Parameters for functions
-    :return: graph for the update
-
-    """
-    
-    result_list = [rsexecute.execute(update_skymodel_from_model)(skymodel_list[i], **kwargs)
-                   for i, _ in enumerate(skymodel_list)]
-    
-    return rsexecute.optimize(result_list)

@@ -261,13 +261,13 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
         
         if this_peak > 1.1 * gthreshold:
             kwargs['threshold'] = gthreshold
-            result, _, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
+            result, _, sc = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
             assert result["pixels"].data.shape == model["pixels"].data.shape
             result["pixels"].data = result["pixels"].data + model["pixels"].data
-            return result
+            return result, sc
         else:
-            return model.copy(deep=True)
+            return model.copy(deep=True), list()
     
     deconvolve_facets = get_parameter(kwargs, 'deconvolve_facets', 1)
     deconvolve_overlap = get_parameter(kwargs, 'deconvolve_overlap', 0)
@@ -362,9 +362,10 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
     #                                                                         taper=deconvolve_taper)
     # result_list = rsexecute.execute(image_scatter_channels, nout=nchan)(gathered_results_list, subimages=nchan)
     
-    scattered_channel_results_list = [rsexecute.execute(image_scatter_channels, nout=nchan)(scat, subimages=nchan)
+    scattered_channel_results_list = [rsexecute.execute(image_scatter_channels, nout=nchan)(scat[0], subimages=nchan)
                                       for scat in scattered_results_list]
-    
+    sc_results_list = [scat[1] for scat in scattered_results_list]
+
     # The structure is now [[channels] for facets]. We do the reverse transpose to the one above.
     result_list = [rsexecute.execute(image_gather_facets, nout=1)([scattered_channel_results_list[facet][chan]
                                                                    for facet in range(deconvolve_number_facets)],
@@ -372,7 +373,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
                                                                   overlap=deconvolve_overlap)
                    for chan in range(nchan)]
     
-    return rsexecute.optimize(result_list)
+    return rsexecute.optimize(result_list, sc_results_list)
 
 
 def deconvolve_list_channel_rsexecute_workflow(dirty_list, psf_list, model_imagelist, subimages, **kwargs):

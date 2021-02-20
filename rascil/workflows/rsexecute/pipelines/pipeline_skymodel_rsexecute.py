@@ -107,7 +107,7 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
                                                                        **kwargs)
     
     # First major cycle
-    deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
+    deconvolve_model_imagelist, sc_list = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
                                                                     model_imagelist,
                                                                     prefix='ical cycle 0',
                                                                     **kwargs)
@@ -149,7 +149,7 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
                                                                                gcfcf=gcfcf, **kwargs)
             
             prefix = "ical cycle %d" % (cycle + 1)
-            deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
+            deconvolve_model_imagelist, _ = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
                                                                             deconvolve_model_imagelist,
                                                                             prefix=prefix,
                                                                             **kwargs)

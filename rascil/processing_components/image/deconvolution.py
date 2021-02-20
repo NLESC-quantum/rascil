@@ -16,10 +16,15 @@ For example to make dirty image and PSF, deconvolve, and then restore::
     dirty, sumwt = invert_2d(vt, model)
     psf, sumwt = invert_2d(vt, model, dopsf=True)
 
-    comp, residual = deconvolve_cube(dirty, psf, niter=1000, threshold=0.001, fracthresh=0.01, window_shape='quarter',
+    comp, residual, sc = deconvolve_cube(dirty, psf, niter=1000, threshold=0.001, fracthresh=0.01, window_shape='quarter',
                                  gain=0.7, algorithm='msclean', scales=[0, 3, 10, 30])
 
     restored = restore_cube(comp, psf, residual)
+    
+All functions return an image holding clean components, residual image, and a list of skycomponents. The
+extraction of skycomponents is controlled by the argument component_threshold - any emission brighter
+than this is converted to a skycomponent and processed using direct Fourier summation instead of
+by gridded FFTs.
 
 """
 
@@ -38,6 +43,7 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.arrays.cleaners import hogbom, hogbom_complex, msclean, msmfsclean
 from rascil.processing_components.image.operations import calculate_image_frequency_moments, \
     calculate_image_from_frequency_moments, image_is_canonical
+from rascil.processing_components.skycomponent.operations import extract_skycomponents_from_image
 from rascil.processing_components.image.operations import create_image_from_array
 
 # from photutils import fit_2dgaussian
@@ -47,7 +53,7 @@ from rascil.processing_components.image.operations import create_image_from_arra
 log = logging.getLogger('rascil-logger')
 
 
-def deconvolve_cube(dirty: Image, psf: Image, prefix='', sc=None, **kwargs) -> (Image, Image):
+def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Image):
     """ Clean using a variety of algorithms
     
     The algorithms available are:
@@ -96,17 +102,15 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', sc=None, **kwargs) -> (
 
     psf = bound_psf(dirty,prefix, psf, **kwargs)
 
-    sc = None
-
     algorithm = get_parameter(kwargs, 'algorithm', 'msclean')
     if algorithm == 'msclean':
-        comp_image, residual_image, sc = msclean_kernel(dirty, prefix, psf, window, sc, **kwargs)
+        comp_image, residual_image, sc = msclean_kernel(dirty, prefix, psf, window, **kwargs)
     elif algorithm == 'msmfsclean' or algorithm == 'mfsmsclean' or algorithm == 'mmclean':
-        comp_image, residual_image, sc = mmclean_kernel(dirty, prefix, psf, window, sc, **kwargs)
+        comp_image, residual_image, sc = mmclean_kernel(dirty, prefix, psf, window, **kwargs)
     elif algorithm == 'hogbom':
-        comp_image, residual_image, sc = hogbom_kernel(dirty, prefix, psf, window, sc, **kwargs)
+        comp_image, residual_image, sc = hogbom_kernel(dirty, prefix, psf, window, **kwargs)
     elif algorithm == 'hogbom-complex':
-        comp_image, residual_image, sc = complex_hogbom_kernel(dirty, psf, window, sc, **kwargs)
+        comp_image, residual_image, sc = complex_hogbom_kernel(dirty, psf, window, **kwargs)
     else:
         raise ValueError('deconvolve_cube %s: Unknown algorithm %s' % (prefix, algorithm))
 
@@ -173,12 +177,11 @@ def bound_psf(dirty, prefix, psf, **kwargs):
     return psf
 
 
-def complex_hogbom_kernel(dirty, psf, window, sc=None, **kwargs):
+def complex_hogbom_kernel(dirty, psf, window, **kwargs):
     """ Complex Hogbom CLEAN of stokesIQUV image
 
     :param dirty: Image dirty image
     :param psf: Image Point Spread Function
-    :param sc: List of sky components to be added
     :param window_shape: Window image (Bool) - clean where True
     :param mask: Window in the form of an image, overrides window_shape
     :param algorithm: Cleaning algorithm: 'msclean'|'hogbom'|'mfsmsclean'
@@ -191,6 +194,8 @@ def complex_hogbom_kernel(dirty, psf, window, sc=None, **kwargs):
     :return: component image, residual image, skycomponents
     """
 
+    sc = list()
+    
     log.info("deconvolve_cube_complex: Starting Hogbom-complex clean of each channel separately")
     gain = get_parameter(kwargs, 'gain', 0.1)
     assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
@@ -246,7 +251,7 @@ def complex_hogbom_kernel(dirty, psf, window, sc=None, **kwargs):
     return comp_image, residual_image, sc
 
 
-def hogbom_kernel(dirty, prefix, psf, window, sc=None, **kwargs):
+def hogbom_kernel(dirty, prefix, psf, window, **kwargs):
     """ Hogbom Clean
 
     See: Hogbom CLEAN A&A Suppl, 15, 417, (1974)
@@ -266,6 +271,8 @@ def hogbom_kernel(dirty, prefix, psf, window, sc=None, **kwargs):
     :return: component image, residual image, skycomponents
     """
 
+    sc = list()
+    
     log.info("deconvolve_cube %s: Starting Hogbom clean of each polarisation and channel separately"
              % prefix)
     gain = get_parameter(kwargs, 'gain', 0.1)
@@ -298,7 +305,7 @@ def hogbom_kernel(dirty, prefix, psf, window, sc=None, **kwargs):
     return comp_image, residual_image, sc
 
 
-def mmclean_kernel(dirty, prefix, psf, window, sc=None, **kwargs):
+def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
     """ mfsmsclean, msmfsclean, mmclean: MultiScale Multi-Frequency CLEAN
     
     See: U. Rau and T. J. Cornwell,
@@ -373,17 +380,14 @@ def mmclean_kernel(dirty, prefix, psf, window, sc=None, **kwargs):
                                          dirty.image_acc.polarisation_frame)
     residual_image = create_image_from_array(residual_array, dirty_taylor.image_acc.wcs,
                                              dirty.image_acc.polarisation_frame)
-    return_moments = get_parameter(kwargs, "return_moments", False)
-    if not return_moments:
-        log.info("deconvolve_cube %s: calculating spectral cubes" % prefix)
-        comp_image = calculate_image_from_frequency_moments(dirty, comp_image)
-        residual_image = calculate_image_from_frequency_moments(dirty, residual_image)
-    else:
-        log.info("deconvolve_cube %s: constructed moment cubes" % prefix)
+    log.info("deconvolve_cube %s: calculating spectral cubes" % prefix)
+    comp_image = calculate_image_from_frequency_moments(dirty, comp_image)
+    comp_image, sc = extract_skycomponents_from_image(comp_image, **kwargs)
+    residual_image = calculate_image_from_frequency_moments(dirty, residual_image)
     return comp_image, residual_image, sc
 
 
-def msclean_kernel(dirty, prefix, psf, window, sc=None, **kwargs):
+def msclean_kernel(dirty, prefix, psf, window, **kwargs):
     """ MultiScale CLEAN
     
     See: Cornwell, T.J., Multiscale CLEAN (IEEE Journal of Selected Topics in Sig Proc,
@@ -391,7 +395,6 @@ def msclean_kernel(dirty, prefix, psf, window, sc=None, **kwargs):
 
     :param dirty: Image dirty image
     :param psf: Image Point Spread Function
-    :param sc: List of sky components to be added
     :param window_shape: Window image (Bool) - clean where True
     :param mask: Window in the form of an image, overrides window_shape
     :param algorithm: Cleaning algorithm: 'msclean'|'hogbom'|'mfsmsclean'
@@ -405,6 +408,8 @@ def msclean_kernel(dirty, prefix, psf, window, sc=None, **kwargs):
     
     """
 
+    sc = list()
+    
     log.info("deconvolve_cube %s: Starting Multi-scale clean of each polarisation and channel separately" %
              prefix)
     gain = get_parameter(kwargs, 'gain', 0.7)

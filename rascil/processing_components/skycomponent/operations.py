@@ -7,7 +7,8 @@ __all__ = ['create_skycomponent', 'filter_skycomponents_by_flux', 'filter_skycom
            'find_skycomponent_matches', 'find_skycomponent_matches_atomic', 'find_skycomponents',
            'insert_skycomponent', 'voronoi_decomposition', 'image_voronoi_iter',
            'partition_skycomponent_neighbours', 'select_components_by_separation', 'select_neighbouring_components',
-           'remove_neighbouring_components', 'apply_beam_to_skycomponent', 'apply_voltage_pattern_to_skycomponent']
+           'remove_neighbouring_components', 'apply_beam_to_skycomponent', 'apply_voltage_pattern_to_skycomponent',
+           'extract_skycomponents_from_image']
 
 import collections
 import logging
@@ -26,7 +27,7 @@ from photutils import segmentation
 from scipy import interpolate
 from scipy.spatial.qhull import Voronoi
 
-from rascil.data_models.memory_data_models import Image, Skycomponent
+from rascil.data_models import Image, Skycomponent, get_parameter
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
 from rascil.processing_components.calibration.jones import apply_jones
 from rascil.processing_components.image.operations import create_image_from_array
@@ -532,7 +533,9 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         flux = numpy.zeros([nchan, npol])
 
-        if comp.flux.shape[0] > 1:
+        if numpy.max(numpy.abs(comp.frequency-image_frequency)) < 1e-7:
+            flux = comp.flux
+        elif comp.flux.shape[0] > 1:
             for pol in range(npol):
                 fint = interpolate.interp1d(comp.frequency, comp.flux[:, pol], kind="cubic")
                 flux[:, pol] = fint(image_frequency)
@@ -631,3 +634,41 @@ def partition_skycomponent_neighbours(comps, targets):
         comps_lists.append(selected_comps)
 
     return comps_lists
+
+
+def extract_skycomponents_from_image(im, **kwargs):
+    """ Extract the bright components from the model
+
+    :param im: image
+    :param kwargs: Parameters for functions
+    :return: List of skycomponents
+
+    """
+    component_threshold = get_parameter(kwargs, "component_threshold", None)
+    component_extraction = get_parameter(kwargs, "component_extraction", 'pixels')
+
+    sc = list()
+    
+    if component_threshold is None:
+        return im, sc
+    
+    if component_extraction == "pixels":
+        points = numpy.where(numpy.abs(im["pixels"].data) > component_threshold)
+        number_points = len(points[0])
+        log.info(
+            f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
+        
+        wcs = im.image_acc.wcs
+        for p in zip(points[2], points[3]):
+            direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
+            comp = Skycomponent(direction=direction,
+                                flux=im["pixels"].data[..., p[0], p[1]],
+                                frequency=im.frequency,
+                                polarisation_frame=im.image_acc.polarisation_frame,
+                                shape='Point')
+            sc.append(comp)
+            im["pixels"].data[..., p[0], p[1]] = 0.0
+    else:
+        raise ValueError(f"Unknown component extraction method{component_extraction}")
+    
+    return im, sc

@@ -15,8 +15,7 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_named_configuration
 from rascil.processing_components import ingest_unittest_visibility, create_low_test_skymodel_from_gleam
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymodel_list_rsexecute_workflow, \
-    update_skymodel_list_rsexecute_workflow
+from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import predict_skymodel_list_rsexecute_workflow
 
 log = logging.getLogger('rascil-logger')
 
@@ -94,29 +93,6 @@ class TestSkyModel(unittest.TestCase):
         assert numpy.max(numpy.abs(self.skymodel_list[0].image["pixels"].data)) > 0.0, "Image is empty"
         
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
-        skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='ng')
-        skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
-        assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
-    
-    def test_predict_with_update(self):
-        self.actualSetUp()
-        
-        self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
-                              (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
-                               phasecentre=self.phasecentre,
-                               polarisation_frame=PolarisationFrame("stokesI"),
-                               flux_limit=0.3,
-                               flux_threshold=10.0,
-                               flux_max=5.0) for f, freq in enumerate(self.frequency)]
-        
-        self.model_list = [rsexecute.execute(copy.deepcopy)(sm.image) for sm in self.skymodel_list]
-
-        self.skymodel_list = update_skymodel_list_rsexecute_workflow(self.skymodel_list, component_threshold=1.0)
-        def zero_image(sm):
-            sm.image["pixels"].data[...] = 0.0
-            return sm
-        
-        self.skymodel_list = [rsexecute.execute(zero_image)(sm) for sm in self.skymodel_list]
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(self.vis_list[0], self.skymodel_list, context='ng')
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0

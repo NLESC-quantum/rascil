@@ -250,7 +250,7 @@ __global__ void dft_kernel(
 '''
 
 
-def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None):
+def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None, **kwargs):
     """ CPU computational kernel for DFT
 
     :param direction_cosines: Direction cosines [ncomp, 3]

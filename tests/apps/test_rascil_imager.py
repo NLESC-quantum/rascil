@@ -3,18 +3,16 @@
 """
 import logging
 import unittest
+
 import numpy
-
-from rascil.apps.rascil_imager import cli_parser, imager
-
-from rascil.data_models.parameters import rascil_path
-
-from rascil.processing_components import import_image_from_fits
-
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from rascil.apps.rascil_imager import cli_parser, imager
+from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.processing_components import export_blockvisibility_to_ms, concatenate_blockvisibility_frequency
+from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility, apply_gaintable
 from rascil.processing_components.image.operations import export_image_to_fits, qa_image, smooth_image
 from rascil.processing_components.imaging import dft_skycomponent_visibility
@@ -23,15 +21,11 @@ from rascil.processing_components.simulation import ingest_unittest_visibility, 
     create_unittest_model, create_unittest_components
 from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
-from rascil.processing_components import export_blockvisibility_to_ms, concatenate_blockvisibility_frequency
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.workflows.rsexecute.pipelines.pipeline_rsexecute import ical_list_rsexecute_workflow, \
-    continuum_imaging_list_rsexecute_workflow
-from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import ical_skymodel_list_rsexecute_workflow, \
-    continuum_imaging_skymodel_list_rsexecute_workflow
 
 log = logging.getLogger('rascil-logger')
 log.setLevel(logging.WARNING)
+
 
 class TestRASCILimager(unittest.TestCase):
     
@@ -40,10 +34,9 @@ class TestRASCILimager(unittest.TestCase):
         # We always want the same numbers
         from numpy.random import default_rng
         self.rng = default_rng(1805550721)
-
-
+        
         rsexecute.set_client(use_dask=True)
-
+        
         self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=750.0)
         self.freqwin = nfreqwin
@@ -100,10 +93,10 @@ class TestRASCILimager(unittest.TestCase):
         self.model_imagelist = [rsexecute.execute(insert_skycomponent, nout=1)
                                 (self.model_imagelist[freqwin], self.components_list[freqwin])
                                 for freqwin in range(nfreqwin)]
-
+        
         if self.persist:
             self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
-        
+            
             model = self.model_imagelist[0]
             self.cmodel = smooth_image(model)
             export_image_to_fits(model, '%s/test_rascil_imager_model.fits' % self.dir)
@@ -125,106 +118,123 @@ class TestRASCILimager(unittest.TestCase):
                               for i in range(self.freqwin)]
             self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
             self.bvis_list = rsexecute.scatter(self.bvis_list)
-
+        
         import shutil
         shutil.rmtree(rascil_path("test_results/test_rascil_imager.ms"), ignore_errors=True)
         self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
         self.bvis_list = [concatenate_blockvisibility_frequency(self.bvis_list)]
         export_blockvisibility_to_ms(rascil_path("test_results/test_rascil_imager.ms"),
                                      self.bvis_list)
-
+        
         rsexecute.close()
     
     def setUp(self) -> None:
         
         self.persist = True
         self.dir = rascil_path('test_results')
-
-        parser = cli_parser()
-        self.args = parser.parse_args([])
-        self.args.ingest_msname = rascil_path("test_results/test_rascil_imager.ms")
-        self.args.ingest_vis_nchan = 1
-        self.args.ingest_dds = range(7)
-        self.args.ingest_chan_per_blockvis = 1
-        self.args.imaging_npixel = 512
-        self.args.imaging_cellsize = 0.0005
         
-    
     def test_invert(self):
         
         self.make_MS(nfreqwin=7)
         
-        self.args.mode = "invert"
+        parser = cli_parser()
+        self.args = parser.parse_args([
+            "--mode", "invert",
+            "--ingest_msname", rascil_path("test_results/test_rascil_imager.ms"),
+            "--ingest_vis_nchan", "1",
+            "--ingest_dd", "0",
+            "--ingest_chan_per_blockvis", "1",
+            "--imaging_npixel", "512",
+            "--imaging_cellsize", "0.0005",
+            "--imaging_dft_kernel", "cpu_looped"
+        ])
+
         dirtyname = imager(self.args)
         dirty = import_image_from_fits(dirtyname)
         qa = qa_image(dirty)
         print(qa)
-
+        
         assert dirty["pixels"].shape == (1, 1, self.args.imaging_npixel, self.args.imaging_npixel)
         numpy.testing.assert_allclose(qa.data['max'], 120.00887877621307, atol=1e-7)
         numpy.testing.assert_allclose(qa.data['min'], -15.736477105371158, atol=1e-7)
-
+    
     def test_ical(self):
-    
+        
         self.make_MS(nfreqwin=7, add_errors=True)
-    
-        self.args.mode = "ical"
-        self.args.ingest_vis_nchan = 7
-        self.args.ingest_average_blockvis = False
-
-        self.args.clean_nmajor = 5
-        self.args.clean_niter = 1000
-        self.args.clean_algorithm = "mmclean"
-        self.args.clean_nmoment = 2
-        self.args.clean_gain = 0.1
-        self.args.clean_scales = [0]
-        self.args.clean_threshold = 0.003
-        self.args.clean_fractional_threshold = 0.3
-        self.args.clean_facets = 1
-        self.args.calibration_T_first_selfcal = 2
-        self.args.calibration_T_phase_only = True
-        self.args.calibration_T_timeslice = None
-        self.args.calibration_G_first_selfcal = 5
-        self.args.calibration_G_phase_only = False
-        self.args.calibration_G_timeslice = 1200.0
-        self.args.calibration_B_first_selfcal = 8
-        self.args.calibration_B_phase_only = False
-        self.args.calibration_B_timeslice = 1.0e5
-        self.args.calibration_global_solution = True
-        self.args.calibration_calibration_context = "TG"
-
+        
+        parser = cli_parser()
+        self.args = parser.parse_args([
+            "--mode", "ical",
+            "--ingest_msname", rascil_path("test_results/test_rascil_imager.ms"),
+            "--ingest_vis_nchan", "1",
+            "--ingest_dd", "0",
+            "--ingest_chan_per_blockvis", "1",
+            "--imaging_npixel", "512",
+            "--imaging_cellsize", "0.0005",
+            "--imaging_dft_kernel", "cpu_looped",
+            "--ingest_vis_nchan", "7",
+            "--ingest_average_blockvis", "False",
+            "--clean_nmajor", "5",
+            "--clean_niter", "1000",
+            "--clean_algorithm", "mmclean",
+            "--clean_nmoment", "2",
+            "--clean_gain", "0.1",
+            "--clean_scales", "0",
+            "--clean_threshold", "0.003",
+            "--clean_fractional_threshold", "0.3",
+            "--clean_facets", "1",
+            "--calibration_T_first_selfcal", "2",
+            "--calibration_T_phase_only", "True",
+            "--calibration_T_timeslice", "0.0",
+            "--calibration_G_first_selfcal", "5",
+            "--calibration_G_phase_only", "False",
+            "--calibration_G_timeslice", "1200.0",
+            "--calibration_B_first_selfcal", "8",
+            "--calibration_B_phase_only", "False",
+            "--calibration_B_timeslice", "1.0e5",
+            "--calibration_global_solution", "True",
+            "--calibration_context", "TG"])
+        
         deconvolvedname, residualname, restoredname = imager(self.args)
         restored = import_image_from_fits(restoredname)
         qa = qa_image(restored)
         print(qa)
-    
+        
         assert restored["pixels"].shape == (1, 1, 512, 512)
         numpy.testing.assert_allclose(qa.data['max'], 100.21408262286327, atol=1e-7)
         numpy.testing.assert_allclose(qa.data['min'], -0.4232514054580332, atol=1e-7)
-
+    
     def test_cip(self):
         
         self.make_MS(nfreqwin=7, add_errors=False)
-    
-        self.args.mode = "cip"
-        self.args.ingest_vis_nchan = 7
-        self.args.ingest_average_blockvis = False
 
-        self.args.clean_nmajor = 5
-        self.args.clean_niter = 1000
-        self.args.clean_algorithm = "mmclean"
-        self.args.clean_nmoment = 2
-        self.args.clean_gain = 0.1
-        self.args.clean_scales = [0]
-        self.args.clean_threshold = 0.003
-        self.args.clean_fractional_threshold = 0.3
-        self.args.clean_facets = 1
-    
+        parser = cli_parser()
+        self.args = parser.parse_args([
+            "--mode", "cip",
+            "--ingest_msname", rascil_path("test_results/test_rascil_imager.ms"),
+            "--ingest_vis_nchan", "1",
+            "--ingest_dd", "0",
+            "--ingest_chan_per_blockvis", "1",
+            "--imaging_npixel", "512",
+            "--imaging_cellsize", "0.0005",
+            "--imaging_dft_kernel", "cpu_looped",
+            "--ingest_vis_nchan", "7",
+            "--ingest_average_blockvis", "False",
+            "--clean_nmajor", "5",
+            "--clean_niter", "1000",
+            "--clean_algorithm", "mmclean",
+            "--clean_nmoment", "2",
+            "--clean_gain", "0.1",
+            "--clean_scales", "0",
+            "--clean_threshold", "0.003",
+            "--clean_fractional_threshold", "0.3",
+            "--clean_facets", "1"])
+
         deconvolvedname, residualname, restoredname = imager(self.args)
         restored = import_image_from_fits(restoredname)
         qa = qa_image(restored)
         print(qa)
-    
+        
         assert restored["pixels"].shape == (1, 1, 512, 512)
         numpy.testing.assert_allclose(qa.data['max'], 101.17459680479055, atol=1e-7)
         numpy.testing.assert_allclose(qa.data['min'], -0.03995828592915829, atol=1e-7)

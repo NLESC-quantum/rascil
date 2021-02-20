@@ -87,7 +87,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         direction_cosines.append(direction_cosine)
 
     direction_cosines = numpy.array(direction_cosines)
-    vfluxes = numpy.array(vfluxes)
+    vfluxes = numpy.array(vfluxes).astype("complex")
     vis['vis'].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
 
     return vis
@@ -260,57 +260,59 @@ def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None):
     """
 
     if dft_compute_kernel is None:
-        dft_compute_kernel = "cpu_looped"
+        dft_compute_kernel = "cpu_numba"
 
     if dft_compute_kernel == "gpu_cupy_raw":
-        import cupy
-
-        # Get the dimension sizes.
-        (num_times, num_baselines, num_channels, _) = uvw_lambda.shape
-        (num_components, _, num_pols) = vfluxes.shape
-
-        # Get a handle to the GPU kernel.
-        module = cupy.RawModule(code=cuda_kernel_source)
-        kernel_dft = module.get_function("dft_kernel")
-
-        # Allocate GPU memory and copy input arrays.
-        direction_cosines_gpu = cupy.asarray(direction_cosines)
-        fluxes_gpu = cupy.asarray(vfluxes)
-        uvw_gpu = cupy.asarray(uvw_lambda)
-        vis_gpu = cupy.zeros((num_times, num_baselines, num_channels, num_pols),
-                             dtype=cupy.complex128
-        )
-
-        # Define GPU kernel parameters, thread block size and grid size.
-        num_threads = (128, 2, 2)  # Product must not exceed 1024.
-        num_blocks = (
-            (num_baselines + num_threads[0] - 1) // num_threads[0],
-            (num_channels + num_threads[1] - 1) // num_threads[1],
-            (num_times + num_threads[2] - 1) // num_threads[2]
-        )
-        args = (
-            num_components, num_pols, num_channels, num_baselines, num_times,
-            direction_cosines_gpu, fluxes_gpu, uvw_gpu, vis_gpu
-        )
-
-        # Call the GPU kernel and copy results to host.
-        kernel_dft(num_blocks, num_threads, args)
-        return cupy.asnumpy(vis_gpu)
+        return dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes)
     elif dft_compute_kernel == "cpu_numba":
         return dft_numba_kernel(direction_cosines, vfluxes, uvw_lambda.data)
     elif dft_compute_kernel == "cpu_looped":
-        ncomp, _ = direction_cosines.shape
-        ntimes, nbaselines, nchan, _ = uvw_lambda.shape
-        npol = vfluxes.shape[-1]
-        vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype='complex')
-        for icomp in range(ncomp):
-            phasor = numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1))
-            for pol in range(npol):
-                vis[..., pol] += vfluxes[icomp, :, pol] * phasor
-        return vis
+        return dft_cpu_looped(direction_cosines, uvw_lambda, vfluxes)
     else:
         raise ValueError(f"dft_compute_kernel {dft_compute_kernel} not known")
 
+
+def dft_cpu_looped(direction_cosines, uvw_lambda, vfluxes):
+    ncomp, _ = direction_cosines.shape
+    ntimes, nbaselines, nchan, _ = uvw_lambda.shape
+    npol = vfluxes.shape[-1]
+    vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype='complex')
+    for icomp in range(ncomp):
+        phasor = numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1))
+        for pol in range(npol):
+            vis[..., pol] += vfluxes[icomp, :, pol] * phasor
+    return vis
+
+
+def dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes):
+    import cupy
+    # Get the dimension sizes.
+    (num_times, num_baselines, num_channels, _) = uvw_lambda.shape
+    (num_components, _, num_pols) = vfluxes.shape
+    # Get a handle to the GPU kernel.
+    module = cupy.RawModule(code=cuda_kernel_source)
+    kernel_dft = module.get_function("dft_kernel")
+    # Allocate GPU memory and copy input arrays.
+    direction_cosines_gpu = cupy.asarray(direction_cosines)
+    fluxes_gpu = cupy.asarray(vfluxes)
+    uvw_gpu = cupy.asarray(uvw_lambda)
+    vis_gpu = cupy.zeros((num_times, num_baselines, num_channels, num_pols),
+                         dtype=cupy.complex128
+                         )
+    # Define GPU kernel parameters, thread block size and grid size.
+    num_threads = (128, 2, 2)  # Product must not exceed 1024.
+    num_blocks = (
+        (num_baselines + num_threads[0] - 1) // num_threads[0],
+        (num_channels + num_threads[1] - 1) // num_threads[1],
+        (num_times + num_threads[2] - 1) // num_threads[2]
+    )
+    args = (
+        num_components, num_pols, num_channels, num_baselines, num_times,
+        direction_cosines_gpu, fluxes_gpu, uvw_gpu, vis_gpu
+    )
+    # Call the GPU kernel and copy results to host.
+    kernel_dft(num_blocks, num_threads, args)
+    return cupy.asnumpy(vis_gpu)
 
 
 def idft_visibility_skycomponent(vis: BlockVisibility,

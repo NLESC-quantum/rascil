@@ -54,7 +54,7 @@ cloudpickle==1.6.0
     # via distributed
 configparser==5.0.1
     # via -r requirements.in
-cryptography==3.4.5
+cryptography==3.4.6
     # via paramiko
 cycler==0.10.0
     # via matplotlib
@@ -92,7 +92,7 @@ imageio==2.9.0
     # via scikit-image
 importlib-metadata==3.4.0
     # via jsonschema
-ipykernel==5.4.3
+ipykernel==5.5.0
     # via
     #   ipywidgets
     #   jupyter
@@ -338,7 +338,7 @@ requests==2.25.1
     #   requests-toolbelt
 scikit-image==0.18.1
     # via -r requirements.in
-scipy==1.6.0
+scipy==1.6.1
     # via
     #   -r requirements.in
     #   aotools
@@ -364,7 +364,7 @@ smmap==3.0.5
     # via gitdb
 sortedcontainers==2.3.0
     # via distributed
-tabulate==0.8.7
+tabulate==0.8.8
     # via -r requirements.in
 tblib==1.7.0
     # via distributed

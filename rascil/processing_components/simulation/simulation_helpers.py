@@ -575,7 +575,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     :param fov: FOV in degrees (used to select catalog)
     :param flux_max: Maximum flux in model before application of primary beam
     :param polarisation_frame:
-    :param apply_pb: Apply the primary to the output components
+    :param apply_pb: Apply the primary beam to the output components
     :param show:
 
     :return:

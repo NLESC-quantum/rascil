@@ -5,7 +5,6 @@ Stand-alone application for finding sources with PyBDSF
 import argparse
 import datetime
 import logging
-import os
 import sys
 
 import matplotlib
@@ -91,8 +90,6 @@ def analyze_image(args):
 
     """
 
-    cwd = os.getcwd()
-
     if args.ingest_fitsname_restored is None:
         raise FileNotFoundError("Input restored FITS file name must be specified")
 
@@ -152,7 +149,6 @@ def analyze_image(args):
 
     if args.check_source == "True":
 
-        match_sep = args.match_sep
         if args.input_source_format == 'external':
             if '.h5' in args.input_source_filename or 'hdf' in args.input_source_filename:
                 orig = import_skycomponent_from_hdf5(args.input_source_filename)
@@ -169,7 +165,7 @@ def analyze_image(args):
                 polarisation_frame=PolarisationFrame('stokesI'), radius=0.5
             )
 
-        results = check_source(orig, out, match_sep)
+        results = check_source(orig, out, args.match_sep)
         log.info("Resulting list of matched items {}".format(results))
 
     else:
@@ -317,7 +313,7 @@ def create_source_to_skycomponent(source_file, freq):
     Put the sources into RASCIL-readable skycomponents
 
     :param source_file: Output file name of the source list
-    :param freq: Frequency or list of frequencies
+    :param freq: Frequency or list of frequencies in float
 
     :return comp: List of skycomponents
     """
@@ -365,7 +361,6 @@ def check_source(orig, comp, match_sep):
 
     """
 
-    # separations = find_separation_skycomponents(comp, orig)
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)
 
     return matches
@@ -376,7 +371,7 @@ def read_skycomponent_from_txt(filename, freq):
     Read source input from a txt file and make the date into skycomponents
 
     :param filename: Name of input file
-    :param freq: Frequency or list of frequencies
+    :param freq: Frequency or list of frequencies in float
     :return comp: List of skycomponents
     """
 

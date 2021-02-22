@@ -12,8 +12,8 @@ continuum_imaging_checker
 continuum_imaging_checker is a command line app written using RASCIL. It uses the python package PyBDSF (https://github.com/lofar-astron/PyBDSF.git) to find sources in an image and check with the original inputs. Currently it features the following:
 
   - Reads FITS images.
-  - Finds sources above a certain threshold and outputs the catalogue (in csv, fits and skycomponents format).
-  - Produces residual image statistics and plots a histogram of the noise with Goussian fit.
+  - Finds sources above a certain threshold and outputs the catalogue (in CSV, FITS and skycomponents format).
+  - Produces residual image statistics and plots a histogram of the noise with Gaussian fit.
   - Optional: apply a primary beam to the fluxes.
   - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), Flux(Jy)".
 

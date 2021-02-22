@@ -25,7 +25,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 @pytest.mark.parametrize("cellsize, npixel, flux_limit, insert_method, noise, tag", [
-    # (0.0001, 512, 0.001, "Nearest", 0.0, "nearest_512_nonoise"),
+     (0.0001, 512, 0.001, "Nearest", 0.0, "nearest_512_nonoise"),
     (0.0001, 512, 0.001, "Nearest", 0.00003, "nearest_npixel512_noise0.00003_flux0.001"),
     (0.0001, 512, 0.0001, "Nearest", 0.00003, "nearest_npixel512_noise0.00003_flux0.0001"),
     (0.0001, 512, 0.001, "Nearest", 0.0003, "nearest_npixel512_noise0.00003_flux0.001"),
@@ -93,7 +93,7 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
         "--match_sep", "1.0e-3"
     ])
 
-    out, matches_orig = analyze_image(args)
+    out, matches_found = analyze_image(args)
 
     # check results directly
     sorted_comp = sorted(out, key=lambda cmp: numpy.max(cmp.direction.ra))
@@ -105,13 +105,13 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
 
     assert len(out) <= len(components)
     log.info("BDSF expected to find %d sources, but found %d sources" % (len(components), len(out)))
-    matches_test = find_skycomponent_matches(out, components, tol=1e-3)
+    matches_expected = find_skycomponent_matches(out, components, tol=1e-3)
     log.info("Found matches as follows.")
     log.info("BDSF Original Separation")
-    for match in matches_test:
+    for match in matches_expected:
         log.info("%d %d %10.6e" % (match[0], match[1], match[2]))
 
-    numpy.testing.assert_array_almost_equal(matches_orig, matches_test)
+    numpy.testing.assert_array_almost_equal(matches_found, matches_expected)
 
     assert os.path.exists(rascil_path(f"test_results/test_ci_checker_{tag}_restored_gaus_hist.png"))
     assert os.path.exists(rascil_path(f"test_results/test_ci_checker_{tag}_residual_gaus_hist.png"))

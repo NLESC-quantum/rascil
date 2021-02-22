@@ -8,7 +8,7 @@ import logging
 
 import numpy
 
-from rascil.processing_components import image_scatter_facets, image_gather_facets, update_skymodel_from_model
+from rascil.processing_components import image_scatter_facets, image_gather_facets
 from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import restore_cube
 from rascil.processing_components.imaging import dft_skycomponent_visibility

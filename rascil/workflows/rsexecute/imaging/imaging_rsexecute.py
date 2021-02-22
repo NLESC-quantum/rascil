@@ -373,7 +373,7 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, pr
                                                                   overlap=deconvolve_overlap)
                    for chan in range(nchan)]
     
-    return rsexecute.optimize(result_list, sc_results_list)
+    return result_list, sc_results_list
 
 
 def deconvolve_list_channel_rsexecute_workflow(dirty_list, psf_list, model_imagelist, subimages, **kwargs):

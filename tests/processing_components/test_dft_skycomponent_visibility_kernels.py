@@ -65,9 +65,11 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
             numpy.testing.assert_almost_equal(qa.data['minabs'], 1004.987562112086)
             numpy.testing.assert_almost_equal(qa.data['rms'], 4714.611562943335)
         
-        for dft_compute_kernel in compute_kernels[1:]:
-            err = numpy.max(numpy.abs(vis[dft_compute_kernel]['vis'].data-vis['cpu_looped']['vis'].data))
-            assert err < 1e-12, err
+        # Now check the values of the other kernels against that for 'cpu_looped'
+        for dft_compute_kernel in compute_kernels:
+            if dft_compute_kernel != 'cpu_looped':
+                err = numpy.max(numpy.abs(vis[dft_compute_kernel]['vis'].data-vis['cpu_looped']['vis'].data))
+                assert err < 1e-12, err
     
     def test_dft_stokesiquv_blockvisibility_quick(self):
         

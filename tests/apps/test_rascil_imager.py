@@ -3,6 +3,7 @@
 """
 import logging
 import unittest
+import shutil
 
 import numpy
 from astropy import units as u
@@ -119,7 +120,6 @@ class TestRASCILimager(unittest.TestCase):
             self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
             self.bvis_list = rsexecute.scatter(self.bvis_list)
         
-        import shutil
         shutil.rmtree(rascil_path("test_results/test_rascil_imager.ms"), ignore_errors=True)
         self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
         self.bvis_list = [concatenate_blockvisibility_frequency(self.bvis_list)]

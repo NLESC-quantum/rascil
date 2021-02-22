@@ -26,7 +26,7 @@ from rascil.processing_components.image.operations import import_image_from_fits
 from rascil.processing_components.imaging.primary_beams import create_pb
 
 
-class FileNotFoundError(Exception):
+class FileFormatError(Exception):
     pass
 
 

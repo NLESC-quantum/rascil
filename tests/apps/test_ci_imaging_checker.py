@@ -1,5 +1,17 @@
 """ Regression for continuum imaging checker
 
+    The script mainly tests two things:
+    1) the BDSF source finder
+    2) the matching algorithm 
+
+    Input parameters:
+    param cellsize: Cell size of each pixel in the image
+    param npixel: Number of pixels for the generated image
+    param flux_limit: Threshold for source selection
+    param insert_method: Method of interpolation for inserting sources into image
+    param noise: amount of noise added onto the image 
+    param tag: Tag to keep track of the relavant files and images. 
+
 """
 import logging
 import sys

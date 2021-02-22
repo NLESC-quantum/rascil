@@ -233,15 +233,6 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
     # "bins" are the bin edge points, so need the mid points.
     mid_points = bins[:-1] + 0.5*abs(bins[1:] - bins[:-1])
 
-    # fitter = modeling.fitting.LevMarLSQFitter()
-    # model = modeling.models.Gaussian1D(
-    #     amplitude=counts.max(),
-    #     mean=bdsf_image.raw_mean,
-    #     stddev=bdsf_image.raw_rms
-    # )
-    # fitted_model = fitter(model, mid_points, counts)
-    # ax.plot(mid_points, fitted_model(mid_points), label="Gaussian", zorder=10)
-
     def gaussian(x, amplitude, mean, stddev):
         return amplitude * np.exp(-((x - mean) / 4.0 / stddev)**2)
 

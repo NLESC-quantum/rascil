@@ -53,6 +53,10 @@ def simulate_DTV_prop(frequency, times, power=50e3, freq_cen=177.5e06, bw=7e06, 
     
     # find frequency range for DTV
     DTVrange = numpy.where((frequency <= freq_cen + (bw / 2.)) & (frequency >= freq_cen - (bw / 2.)))
+    if len(DTVrange[0]) == 0:
+        raise ValueError(f"No overlap between DTV band: centre {freq_cen}Hz, bandwidth"
+                         f" {bw}Hz and specified frequency range {frequency}")
+    
     # idx = (np.abs(frequency - freq_cen)).argmin()
     # print(frequency, freq_cen, bw, DTVrange)
     echan = DTVrange[0].max()

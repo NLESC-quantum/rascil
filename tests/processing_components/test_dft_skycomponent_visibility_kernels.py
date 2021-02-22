@@ -39,29 +39,35 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
         self.comp = ncomp * [Skycomponent(direction=self.compreldirection, frequency=self.frequency,
                                           flux=self.flux)]
     
-    #@unittest.skip("Don't run in CI")
     def test_dft_stokesiquv_blockvisibility(self):
         try:
             import cupy
-            compute_kernels = ['gpu_cupy_raw', 'cpu_looped', 'cpu_numba']
+            compute_kernels = ['cpu_looped', 'cpu_numba', 'gpu_cupy_raw']
         except ModuleNotFoundError:
             compute_kernels = ['cpu_looped', 'cpu_numba']
-
+        
+        vis = dict()
+        
         self.init(ntimes=2, nchan=10, ncomp=100)
         for dft_compute_kernel in compute_kernels:
             import time
-            start = time.time()
-            self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency,
+            #start = time.time()
+            vis[dft_compute_kernel] = create_blockvisibility(self.lowcore, self.times, self.frequency,
                                               channel_bandwidth=self.channel_bandwidth,
                                               phasecentre=self.phasecentre, weight=1.0,
                                               polarisation_frame=PolarisationFrame("linear"))
-            self.vismodel = dft_skycomponent_visibility(self.vis, self.comp, dft_compute_kernel=dft_compute_kernel)
-            vis_size = self.vismodel["vis"].nbytes / 1024 / 1024 / 1024
-            print(f"{dft_compute_kernel} {time.time() - start:.3}s Vis size {vis_size:.3}GB")
-            qa = qa_visibility(self.vismodel)
+            vis[dft_compute_kernel] = dft_skycomponent_visibility(vis[dft_compute_kernel], self.comp,
+                                                                  dft_compute_kernel=dft_compute_kernel)
+            #vis_size = vis[dft_compute_kernel]["vis"].nbytes / 1024 / 1024 / 1024
+            #print(f"{dft_compute_kernel} {time.time() - start:.3}s Vis size {vis_size:.3}GB")
+            qa = qa_visibility(vis[dft_compute_kernel])
             numpy.testing.assert_almost_equal(qa.data['maxabs'], 12000.0000000000)
             numpy.testing.assert_almost_equal(qa.data['minabs'], 1004.987562112086)
             numpy.testing.assert_almost_equal(qa.data['rms'], 4714.611562943335)
+        
+        for dft_compute_kernel in compute_kernels[1:]:
+            err = numpy.max(numpy.abs(vis[dft_compute_kernel]['vis'].data-vis['cpu_looped']['vis'].data))
+            assert err < 1e-12, err
     
     def test_dft_stokesiquv_blockvisibility_quick(self):
         

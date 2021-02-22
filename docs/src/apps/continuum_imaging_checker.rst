@@ -11,14 +11,16 @@ continuum_imaging_checker
 
 continuum_imaging_checker is a command line app written using RASCIL. It uses the python package PyBDSF (https://github.com/lofar-astron/PyBDSF.git) to find sources in an image and check with the original inputs. Currently it features the following:
 
-  - Reads FITS images
-  - Finds sources above a certain threshold and outputs the catalogue (in csv, fits and skycomponents format)
-  - Optional: apply a primary beam to the fluxes
-  - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), Flux(Jy)"
- 
+  - Reads FITS images.
+  - Finds sources above a certain threshold and outputs the catalogue (in csv, fits and skycomponents format).
+  - Produces residual image statistics and plots a histogram of the noise with Goussian fit.
+  - Optional: apply a primary beam to the fluxes.
+  - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), Flux(Jy)".
+
 .. code-block:: none
 
-    usage: ci_imaging_checker.py [-h] [--ingest_fitsname INGEST_FITSNAME]
+    usage: ci_imaging_checker.py [-h] [--ingest_fitsname_restored INGEST_FITSNAME_RESTORED]
+                                 [--ingest_fitsname_residual INGEST_FITSNAME_RESIDUAL]
                                  [--finder_beam_maj FINDER_BEAM_MAJ]
                                  [--finder_beam_min FINDER_BEAM_MIN]
                                  [--finder_beam_pos_angle FINDER_BEAM_POS_ANGLE]
@@ -31,11 +33,12 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
                                  [--input_source_filename INPUT_SOURCE_FILENAME]
                                  [--match_sep MATCH_SEP]
                                  [--source_file SOURCE_FILE]
-                                 [--logfile LOGFILE]                                 
-   
+                                 [--logfile LOGFILE]
+
     optional arguments:
       -h, --help            show this help message and exit
-      --ingest_fitsname INGEST_FITSNAME    FITS file to be read
+      --ingest_fitsname_restored INGEST_FITSNAME_RESTORED    restored FITS file to be read
+      --ingest_fitsname_residual INGEST_FITSNAME_RESIDUAL    residual FITS file to be read
       --finder_beam_maj FINDER_BEAM_MAJ    Major axis of the restoring beam
       --finder_beam_min FINDER_BEAM_MIN    Minor axis of the restoring beam
       --finder_beam_pos_angle FINDER_BEAM_POS_ANGLE    Positioning angle of the restoring beam
@@ -56,15 +59,21 @@ Example:
 The following runs the a data set from the RASCIL test::
 
     #!/bin/bash
-    # Run this in the directory containing test-imaging-pipeline-dask_continuum_imaging_restored.fits
+    # Run this in the directory containing both the
+    # restored and residual fits files:
+    # test-imaging-pipeline-dask_continuum_imaging_restored.fits
+    # test-imaging-pipeline-dask_continuum_imaging_residual.fits
     python $RASCIL/rascil/apps/ci_imaging_checker.py \
-    --ingest_fitsname test-imaging-pipeline-dask_continuum_imaging_restored.fits
+    --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
+    --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits
 
-If a source check is required:: 
+If a source check is required::
 
     #!/bin/bash
     python $RASCIL/rascil/apps/ci_imaging_checker.py \
-    --ingest_fitsname test-imaging-pipeline-dask_continuum_imaging_restored.fits --check_source True \
+    --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
+    --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits \
+    --check_source True \
     --input_source_format external --input_source_filename $RASCIL/data/models/GLEAM_filtered.txt
 
 
@@ -75,4 +84,3 @@ Command line arguments
    :filename: ../../rascil/apps/ci_imaging_checker.py
    :func: cli_parser
    :prog: ci_imaging_checker.py
-

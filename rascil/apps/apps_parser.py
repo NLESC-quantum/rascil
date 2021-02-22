@@ -33,7 +33,7 @@ def apps_parser_ingest(parser):
                         help='Number of channels in a single data descriptor in the MS')
     parser.add_argument('--ingest_chan_per_blockvis', type=int, default=1,
                         help='Number of channels per blockvis (before any average)')
-    parser.add_argument('--ingest_average_blockvis', type=str, default="True",
+    parser.add_argument('--ingest_average_blockvis', type=str, default="False",
                         help="Average all channels in blockvis?")
 
     return parser

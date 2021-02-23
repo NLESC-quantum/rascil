@@ -26,6 +26,8 @@ import logging
 from typing import List, Union
 
 import numpy
+import numba
+from numba import jit
 from scipy import interpolate
 
 from rascil.data_models.memory_data_models import BlockVisibility, Skycomponent
@@ -85,9 +87,74 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
         direction_cosines.append(direction_cosine)
 
     direction_cosines = numpy.array(direction_cosines)
-    vfluxes = numpy.array(vfluxes)
+    vfluxes = numpy.array(vfluxes).astype("complex")
     vis['vis'].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
 
+    return vis
+
+
+
+def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None, **kwargs):
+    """ CPU computational kernel for DFT, choice dependent on dft_compute_kernel
+
+    :param direction_cosines: Direction cosines [ncomp, 3]
+    :param vfluxes: Fluxes [ncomp, nchan, npol]
+    :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
+    :param dft_compute_kernel: string: cpu_numba, cpu_looped, gpu_raw
+    :param kwargs: Kernel arguments (needed for future expansion)
+    :return: Vis [ntimes, nbaselines, nchan, npol]
+    """
+
+    if dft_compute_kernel is None:
+        dft_compute_kernel = "cpu_numba"
+
+    if dft_compute_kernel == "gpu_cupy_raw":
+        return dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes)
+    elif dft_compute_kernel == "cpu_numba":
+        return dft_numba_kernel(direction_cosines, vfluxes, uvw_lambda.data)
+    elif dft_compute_kernel == "cpu_looped":
+        return dft_cpu_looped(direction_cosines, uvw_lambda, vfluxes)
+    else:
+        raise ValueError(f"dft_compute_kernel {dft_compute_kernel} not known")
+
+
+@jit(numba.c16[:,:,:,:](numba.f8[:,:],numba.c16[:,:,:], numba.f8[:,:,:,:]),nopython=True)
+def dft_numba_kernel(direction_cosines, vfluxes, uvw_lambda):
+    """ CPU computational kernel for DFT
+
+    :param direction_cosines: Direction cosines [ncomp, 3]
+    :param vfluxes: Fluxes [ncomp, nchan, npol]
+    :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
+    :return: Vis [ntimes, nbaselines, nchan, npol]
+    """
+    # Get the dimension sizes.
+    (times, baselines, channels, _) = uvw_lambda.shape
+    (components, _, pols) = vfluxes.shape
+
+    # Local (per-thread) visibility.
+    vis = numpy.zeros((times,baselines,channels,pols),dtype=numpy.complex128)
+    for num_times in range(times):
+        for num_baselines in range(baselines):
+            for num_channels in range(channels):
+                # Load uvw-coordinates.
+                uvw = uvw_lambda[num_times, num_baselines, num_channels]
+                #Loop over components and calculate phase for each.
+                vis_local = numpy.zeros((4,), dtype=numpy.complex128)
+                for num_components in range(components):
+                    ddir = direction_cosines[num_components]
+                    phase = -2.0 * numpy.pi * (
+                        ddir[0] * uvw[0] + ddir[1] * uvw[1] + ddir[2] * uvw[2])
+                    sin_phase = numpy.sin(phase)
+                    cos_phase = numpy.cos(phase)
+                    phasor = complex(cos_phase, sin_phase)
+
+                    # Multiply by flux in each polarisation and accumulate.
+                    for i in range(pols):
+                        vis_local[i] += (phasor * vfluxes[num_components, num_channels, i ])
+
+                # Write out local visibility.
+                for i in range(pols):
+                    vis[num_times, num_baselines, num_channels, i] = vis_local[i]
     return vis
 
 
@@ -170,93 +237,67 @@ __global__ void dft_kernel(
 }
 '''
 
-
-def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None):
-    """ CPU computational kernel for DFT
+def dft_cpu_looped(direction_cosines, uvw_lambda, vfluxes):
+    """ CPU computational kernel for DFT, using explicit loop over components
 
     :param direction_cosines: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
     :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
     :return: Vis [ntimes, nbaselines, nchan, npol]
     """
+    ncomp, _ = direction_cosines.shape
+    ntimes, nbaselines, nchan, _ = uvw_lambda.shape
+    npol = vfluxes.shape[-1]
+    vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype='complex')
+    for icomp in range(ncomp):
+        phasor = numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1))
+        for pol in range(npol):
+            vis[..., pol] += vfluxes[icomp, :, pol] * phasor
+    return vis
 
-    if dft_compute_kernel is None:
-        dft_compute_kernel = "cpu_einsum"
 
-    if dft_compute_kernel == "gpu_cupy_einsum":
+def dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes):
+    """ CPU computational kernel for DFT, using CUDA raw code via cupy
+
+    :param direction_cosines: Direction cosines [ncomp, 3]
+    :param vfluxes: Fluxes [ncomp, nchan, npol]
+    :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
+    :return: Vis [ntimes, nbaselines, nchan, npol]
+    """
+    # We try to import cupy, raise an exception if not installed
+    try:
         import cupy
-        with cupy.cuda.Device(0):
-            uvw_lambda_gpu = cupy.asarray(uvw_lambda.data)
-            direction_cosines_gpu = cupy.asarray(direction_cosines)
-            vfluxes_gpu = cupy.asarray(vfluxes)
-            phasors_gpu = \
-                cupy.exp(-2j * numpy.pi * cupy.einsum("tbfs,cs->ctbf", uvw_lambda_gpu, direction_cosines_gpu))[..., cupy.newaxis]
-            sum_gpu = cupy.sum(vfluxes_gpu[:, cupy.newaxis, cupy.newaxis, ...] * phasors_gpu, axis=0)
-            return cupy.asnumpy(sum_gpu)
-    elif dft_compute_kernel == "gpu_cupy_raw":
-        import cupy
-
-        # Get the dimension sizes.
-        (num_times, num_baselines, num_channels, _) = uvw_lambda.shape
-        (num_components, _, num_pols) = vfluxes.shape
-
-        # Get a handle to the GPU kernel.
-        module = cupy.RawModule(code=cuda_kernel_source)
-        kernel_dft = module.get_function("dft_kernel")
-
-        # Allocate GPU memory and copy input arrays.
-        direction_cosines_gpu = cupy.asarray(direction_cosines)
-        fluxes_gpu = cupy.asarray(vfluxes)
-        uvw_gpu = cupy.asarray(uvw_lambda)
-        vis_gpu = cupy.zeros((num_times, num_baselines, num_channels, num_pols),
-                             dtype=cupy.complex128
-        )
-
-        # Define GPU kernel parameters, thread block size and grid size.
-        num_threads = (128, 2, 2)  # Product must not exceed 1024.
-        num_blocks = (
-            (num_baselines + num_threads[0] - 1) // num_threads[0],
-            (num_channels + num_threads[1] - 1) // num_threads[1],
-            (num_times + num_threads[2] - 1) // num_threads[2]
-        )
-        args = (
-            num_components, num_pols, num_channels, num_baselines, num_times,
-            direction_cosines_gpu, fluxes_gpu, uvw_gpu, vis_gpu
-        )
-
-        # Call the GPU kernel and copy results to host.
-        kernel_dft(num_blocks, num_threads, args)
-        return cupy.asnumpy(vis_gpu)
-    elif dft_compute_kernel == "cpu_einsum":
-        phasors = \
-           numpy.exp(-2j * numpy.pi * numpy.einsum("tbfs,cs->ctbf", uvw_lambda.data, direction_cosines))[..., numpy.newaxis]
-        return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
-    elif dft_compute_kernel == "cpu_numpy":
-        phasors = \
-        numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data
-                                             * direction_cosines[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, :], axis=-1))[..., numpy.newaxis]
-        return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
-    elif dft_compute_kernel == "cpu_unrolled":
-        phasors = \
-            numpy.exp(
-                -2j * numpy.pi * (uvw_lambda.data[..., 0] * direction_cosines[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 0] +
-                                  uvw_lambda.data[..., 1] * direction_cosines[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 1] +
-                                  uvw_lambda.data[..., 2] * direction_cosines[:, numpy.newaxis, numpy.newaxis, numpy.newaxis, 2]))[
-                ..., numpy.newaxis]
-        return numpy.sum(vfluxes[:, numpy.newaxis, numpy.newaxis, ...] * phasors, axis=0)
-    elif dft_compute_kernel == "cpu_looped":
-        ncomp, _ = direction_cosines.shape
-        ntimes, nbaselines, nchan, _ = uvw_lambda.shape
-        npol = vfluxes.shape[-1]
-        vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype='complex')
-        for icomp in range(ncomp):
-            phasor = numpy.exp(2j * numpy.pi * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1))
-            for pol in range(npol):
-                vis[..., pol] += vfluxes[icomp, :, pol] * phasor
-        return vis
-    else:
-        raise ValueError(f"dft_compute_kernel {dft_compute_kernel} not known")
-
+    except ModuleNotFoundError:
+        "cupy is not installed - cannot run CUDA"
+        raise ModuleNotFoundError("cupy is not installed - cannot run CUDA")
+        
+    # Get the dimension sizes.
+    (num_times, num_baselines, num_channels, _) = uvw_lambda.shape
+    (num_components, _, num_pols) = vfluxes.shape
+    # Get a handle to the GPU kernel.
+    module = cupy.RawModule(code=cuda_kernel_source)
+    kernel_dft = module.get_function("dft_kernel")
+    # Allocate GPU memory and copy input arrays.
+    direction_cosines_gpu = cupy.asarray(direction_cosines)
+    fluxes_gpu = cupy.asarray(vfluxes)
+    uvw_gpu = cupy.asarray(uvw_lambda)
+    vis_gpu = cupy.zeros((num_times, num_baselines, num_channels, num_pols),
+                         dtype=cupy.complex128
+                         )
+    # Define GPU kernel parameters, thread block size and grid size.
+    num_threads = (128, 2, 2)  # Product must not exceed 1024.
+    num_blocks = (
+        (num_baselines + num_threads[0] - 1) // num_threads[0],
+        (num_channels + num_threads[1] - 1) // num_threads[1],
+        (num_times + num_threads[2] - 1) // num_threads[2]
+    )
+    args = (
+        num_components, num_pols, num_channels, num_baselines, num_times,
+        direction_cosines_gpu, fluxes_gpu, uvw_gpu, vis_gpu
+    )
+    # Call the GPU kernel and copy results to host.
+    kernel_dft(num_blocks, num_threads, args)
+    return cupy.asnumpy(vis_gpu)
 
 
 def idft_visibility_skycomponent(vis: BlockVisibility,

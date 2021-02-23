@@ -9,7 +9,7 @@ import sys
 
 import matplotlib
 matplotlib.use('Agg')
-from matplotlib.pyplot import plt
+import matplotlib.pyplot as plt
 
 from scipy import optimize
 import numpy as np
@@ -178,7 +178,7 @@ def bdsf_qa_image(im_data):
     medianabsdevmedian, median and mean.
 
     :param im_data: image data
-    :return: None
+    :return image_stats: statistics of the image
     """
 
     image_stats = {
@@ -199,6 +199,20 @@ def bdsf_qa_image(im_data):
         log.info("    {}".format(item))
 
     return image_stats
+
+
+def gaussian(x, amplitude, mean, stddev):
+    """
+    Gaussian fit for histogram.
+
+    :param x: x-axis points
+    :param amplitude: gaussian applitude
+    :param mean: mean on the distribution
+    :param stddev: standard deviation of the distribution
+
+    :return Gaussian finction
+    """
+    return amplitude*np.exp(-((x - mean)/4.0/stddev)**2)
 
 
 def ci_checker_diagnostics(bdsf_image, input_image, image_type):
@@ -223,15 +237,9 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
     # "bins" are the bin edge points, so need the mid points.
     mid_points = bins[:-1] + 0.5*abs(bins[1:] - bins[:-1])
 
-    def gaussian(x, amplitude, mean, stddev):
-        return amplitude * np.exp(-((x - mean) / 4.0 / stddev)**2)
+    p0 = [counts.max(), bdsf_image.raw_mean, bdsf_image.raw_rms]
 
-    popt, pcov = optimize.curve_fit(
-        gaussian,
-        mid_points,
-        counts,
-        p0=[counts.max(), bdsf_image.raw_mean, bdsf_image.raw_rms]
-    )
+    popt, pcov = optimize.curve_fit(gaussian, mid_points, counts, p0=p0)
     mean = popt[1]
     stddev = abs(popt[2])
 

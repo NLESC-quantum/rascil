@@ -653,21 +653,24 @@ def extract_skycomponents_from_image(im, **kwargs):
         return im, sc
     
     if component_extraction == "pixels":
-        points = numpy.where(numpy.abs(im["pixels"].data) > component_threshold)
+        nchan, npol, _, _ = im["pixels"].shape
+        refchan = nchan // 2
+        points = numpy.where(numpy.abs(im["pixels"].data[refchan, 0]) > component_threshold)
         number_points = len(points[0])
-        log.info(
-            f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
-        
-        wcs = im.image_acc.wcs
-        for p in zip(points[2], points[3]):
-            direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
-            comp = Skycomponent(direction=direction,
-                                flux=im["pixels"].data[..., p[0], p[1]],
-                                frequency=im.frequency,
-                                polarisation_frame=im.image_acc.polarisation_frame,
-                                shape='Point')
-            sc.append(comp)
-            im["pixels"].data[..., p[0], p[1]] = 0.0
+        if number_points > 0:
+            log.info(
+                f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
+            
+            wcs = im.image_acc.wcs
+            for p in zip(points[0], points[1]):
+                direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
+                comp = Skycomponent(direction=direction,
+                                    flux=im["pixels"].data[..., p[0], p[1]],
+                                    frequency=im.frequency,
+                                    polarisation_frame=im.image_acc.polarisation_frame,
+                                    shape='Point')
+                sc.append(comp)
+                im["pixels"].data[..., p[0], p[1]] = 0.0
     else:
         raise ValueError(f"Unknown component extraction method{component_extraction}")
     

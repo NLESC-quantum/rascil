@@ -376,9 +376,9 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
                                findpeak, prefix)
         else:
             log.info("deconvolve_cube %s: Skipping pol %d" % (prefix, pol))
-    comp_image = create_image_from_array(comp_array, dirty_taylor.image_acc.wcs,
+    comp_image = create_image_from_array(comp_array, dirty.image_acc.wcs,
                                          dirty.image_acc.polarisation_frame)
-    residual_image = create_image_from_array(residual_array, dirty_taylor.image_acc.wcs,
+    residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs,
                                              dirty.image_acc.polarisation_frame)
     log.info("deconvolve_cube %s: calculating spectral cubes" % prefix)
     comp_image = calculate_image_from_frequency_moments(dirty, comp_image)

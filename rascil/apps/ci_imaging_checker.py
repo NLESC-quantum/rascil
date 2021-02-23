@@ -119,15 +119,20 @@ def analyze_image(args):
 
     im = import_image_from_fits(args.ingest_fitsname_restored)
 
+    th_isl = args.finder_th_isl
+    th_pix = args.finder_th_pix
+
+    freq = im.frequency.data[0]
+    cellsize = im.image_acc.wcs.wcs.cdelt[1]
+    beam_maj_expected = np.rad2deg(cellsize)
+    beam_min_expected = np.rad2deg(cellsize)
+    log.info("Suggested size of restoring beam: {}, {}".format(beam_maj_expected, beam_min_expected))
+
     beam_maj = args.finder_beam_maj
     beam_min = args.finder_beam_min
     beam_pos_angle = args.finder_beam_pos_angle
     beam_info = (beam_maj, beam_min, beam_pos_angle)
 
-    th_isl = args.finder_th_isl
-    th_pix = args.finder_th_pix
-
-    freq = im.frequency.data[0]
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(th_isl, th_pix))
 
@@ -144,7 +149,7 @@ def analyze_image(args):
     if args.check_source == "True":
 
         if args.input_source_format == 'external':
-            if '.h5' in args.input_source_filename or 'hdf' in args.input_source_filename:
+            if '.h5' in args.input_source_filename or '.hdf' in args.input_source_filename:
                 orig = import_skycomponent_from_hdf5(args.input_source_filename)
 
             elif '.txt' in args.input_source_filename:

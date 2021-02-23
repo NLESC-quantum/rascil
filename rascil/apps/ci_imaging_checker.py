@@ -9,7 +9,7 @@ import sys
 
 import matplotlib
 matplotlib.use('Agg')
-from matplotlib.pyplot import plt
+import matplotlib.pyplot as plt
 
 from scipy import optimize
 import numpy as np

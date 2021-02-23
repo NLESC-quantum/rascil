@@ -183,8 +183,8 @@ class TestImagingPipeline(unittest.TestCase):
         
         qa = qa_image(restored, context='Restored clean image - no selfcal')
         
-        assert abs(qa.data['max'] - 4.097285694489327) < 1e-7, str(qa)
-        assert abs(qa.data['min'] + 0.005733306864762829) < 1e-7, str(qa)
+        assert abs(qa.data['max'] - 4.095923079969659) < 1e-7, str(qa)
+        assert abs(qa.data['min'] + 0.007467582076303162) < 1e-7, str(qa)
 
 
 if __name__ == '__main__':

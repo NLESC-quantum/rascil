@@ -519,7 +519,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
 
     log.debug("insert_skycomponent: Using insert method %s" % insert_method)
 
-    image_frequency = im.frequency
+    image_frequency = im.frequency.data
 
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
@@ -533,11 +533,11 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         flux = numpy.zeros([nchan, npol])
 
-        if numpy.max(numpy.abs(comp.frequency-image_frequency)) < 1e-7:
+        if numpy.max(numpy.abs(comp.frequency.data-image_frequency)) < 1e-7:
             flux = comp.flux
         elif comp.flux.shape[0] > 1:
             for pol in range(npol):
-                fint = interpolate.interp1d(comp.frequency, comp.flux[:, pol], kind="cubic")
+                fint = interpolate.interp1d(comp.frequency.data, comp.flux[:, pol], kind="cubic")
                 flux[:, pol] = fint(image_frequency)
         else:
             flux = comp.flux

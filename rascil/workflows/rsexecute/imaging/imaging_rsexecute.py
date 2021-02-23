@@ -243,6 +243,10 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, sc
         dec_imagelist = rsexecute.persist(dec_imagelist)
 
     """
+    
+    if sc_list is None:
+        sc_list = list()
+        
     nchan = len(dirty_list)
     # Number of moments. 1 is the sum.
     nmoment = get_parameter(kwargs, "nmoment", 1)
@@ -270,26 +274,18 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, sc
         
         if this_peak > 1.1 * gthreshold:
             kwargs['threshold'] = gthreshold
-            result, _, sc = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
+            result, _, newsc = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
-            if sc is not None and len(sc) > 0:
+            if len(newsc) > 0:
                 log.info("deconvolve_list_rsexecute_workflow: Newly identified components")
-                for icmp, cmp in enumerate(sc):
+                for icmp, cmp in enumerate(newsc):
                     log.info(f"deconvolve_list_rsexecute_workflow {prefix}: Component {icmp} {cmp.flux[0, 0]:.6f} Jy")
             else:
                 log.info("deconvolve_list_rsexecute_workflow: There are no newly identified components")
 
             assert result["pixels"].data.shape == model["pixels"].data.shape
             result["pixels"].data = result["pixels"].data + model["pixels"].data
-            if sc is None or len(sc) == 0:
-                sc = scl
-            else:
-                if scl is not None:
-                    sc = sc + scl
-            if scl is None or len(sc) == 0:
-                return (result, sc)
-            else:
-                return (result, scl + sc)
+            return (result, scl + newsc)
         else:
             return (model.copy(deep=True), scl)
 

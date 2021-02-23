@@ -7,6 +7,11 @@ import datetime
 import logging
 import sys
 
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib.pyplot import plt
+
+from scipy import optimize
 import numpy as np
 import pandas as pd
 import bdsf

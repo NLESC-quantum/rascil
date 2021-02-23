@@ -37,7 +37,6 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 @pytest.mark.parametrize("cellsize, npixel, flux_limit, insert_method, noise, tag", [
-     (0.0001, 512, 0.001, "Nearest", 0.0, "nearest_512_nonoise"),
     (0.0001, 512, 0.001, "Nearest", 0.00003, "nearest_npixel512_noise0.00003_flux0.001"),
     (0.0001, 512, 0.0001, "Nearest", 0.00003, "nearest_npixel512_noise0.00003_flux0.0001"),
     (0.0001, 512, 0.001, "Nearest", 0.0003, "nearest_npixel512_noise0.00003_flux0.001"),

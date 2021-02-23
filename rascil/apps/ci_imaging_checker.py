@@ -7,12 +7,7 @@ import datetime
 import logging
 import sys
 
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy import optimize
-
-matplotlib.use('Agg')
 import pandas as pd
 import bdsf
 import astropy.units as u
@@ -25,14 +20,8 @@ from rascil.processing_components.skycomponent.operations import create_skycompo
 from rascil.processing_components.image.operations import import_image_from_fits
 from rascil.processing_components.imaging.primary_beams import create_pb
 
-
 class FileFormatError(Exception):
     pass
-
-
-class FileFormatError(Exception):
-    pass
-
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
@@ -295,7 +284,6 @@ def ci_checker(input_image_restored, input_image_residual, beam_info, source_fil
     img_rest.write_catalog(outfile=source_file, format='csv', catalog_type='srl', clobber=True)
     img_rest.write_catalog(format='fits', catalog_type='srl', clobber=True)
     img_rest.export_image(img_type='gaus_resid', clobber=True)
-    # img_rest.export_image(img_type='gaus_model', clobber=True)
 
     log.info('Analysing the restored image')
     ci_checker_diagnostics(img_rest, input_image_restored, "restored")

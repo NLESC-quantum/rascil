@@ -16,7 +16,6 @@ import numpy as np
 import pandas as pd
 import bdsf
 import astropy.units as u
-from astropy import modeling
 from astropy.coordinates import SkyCoord
 from rascil.data_models import PolarisationFrame, import_skycomponent_from_hdf5
 from rascil.processing_components import create_low_test_skycomponents_from_gleam

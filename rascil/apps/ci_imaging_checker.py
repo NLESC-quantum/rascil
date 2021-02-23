@@ -96,7 +96,7 @@ def analyze_image(args):
         logfile = args.logfile
 
     if args.source_file is None:
-        source_file = args.ingest_fitsname_restored.replace('.fits', ".csv")
+        source_file = args.ingest_fitsname_restored.replace('.fits', ".pybdsm.srl.csv")
     else:
         source_file = args.source_file
 

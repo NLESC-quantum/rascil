@@ -47,7 +47,7 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
     :param sc: Skycomponent or list of SkyComponents
     :return: BlockVisibility or BlockVisibility
     """
-    if sc is None:
+    if sc is None or (isinstance(sc, list) and len(sc) == 0):
         return vis
 
     if not isinstance(sc, collections.abc.Iterable):

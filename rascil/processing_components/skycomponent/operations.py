@@ -638,6 +638,8 @@ def partition_skycomponent_neighbours(comps, targets):
 
 def extract_skycomponents_from_image(im, **kwargs):
     """ Extract the bright components from the model
+    
+    This produces one component per frequency channel
 
     :param im: image
     :param kwargs: Parameters for functions
@@ -654,23 +656,25 @@ def extract_skycomponents_from_image(im, **kwargs):
     
     if component_extraction == "pixels":
         nchan, npol, _, _ = im["pixels"].shape
-        refchan = nchan // 2
-        points = numpy.where(numpy.abs(im["pixels"].data[refchan, 0]) > component_threshold)
-        number_points = len(points[0])
-        if number_points > 0:
-            log.info(
-                f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
-            
-            wcs = im.image_acc.wcs
-            for p in zip(points[0], points[1]):
-                direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
-                comp = Skycomponent(direction=direction,
-                                    flux=im["pixels"].data[..., p[0], p[1]],
-                                    frequency=im.frequency,
-                                    polarisation_frame=im.image_acc.polarisation_frame,
-                                    shape='Point')
-                sc.append(comp)
-                im["pixels"].data[..., p[0], p[1]] = 0.0
+        for chan in range(nchan):
+            chansc = list()
+            points = numpy.where(numpy.abs(im["pixels"].data[chan, 0]) > component_threshold)
+            number_points = len(points[0])
+            if number_points > 0:
+                log.info(
+                    f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
+                
+                wcs = im.image_acc.wcs
+                for p in zip(points[0], points[1]):
+                    direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
+                    comp = Skycomponent(direction=direction,
+                                        flux=[im["pixels"].data[chan, :, p[0], p[1]]],
+                                        frequency=[im.frequency[chan]],
+                                        polarisation_frame=im.image_acc.polarisation_frame,
+                                        shape='Point')
+                    chansc.append(comp)
+                    im["pixels"].data[chan, :, p[0], p[1]] = 0.0
+            sc.append(chansc)
     else:
         raise ValueError(f"Unknown component extraction method{component_extraction}")
     

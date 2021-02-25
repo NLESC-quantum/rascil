@@ -46,7 +46,10 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
     
     # Create a list of copied input visibilities
     model_vislist = [rsexecute.execute(copy_visibility, nout=1)(v, zero=True) for v in vis_list]
-    sc_list = [rsexecute.execute(lambda sm: sm.components)(sm) for sm in skymodel_list]
+    if skymodel_list is None:
+        sc_list = [list() for m in model_imagelist]
+    else:
+        sc_list = [rsexecute.execute(lambda sm: sm.components)(sm) for sm in skymodel_list]
     
     # Create a list of visibilities for the calibration (?)
     if do_selfcal:
@@ -107,9 +110,14 @@ def ical_skymodel_list_rsexecute_workflow(vis_list, model_imagelist, context, sk
     nmajor = get_parameter(kwargs, "nmajor", 5)
     if nmajor > 1:
         for cycle in range(nmajor):
-            skymodel_list = [rsexecute.execute(SkyModel)(image=model, components=sc_list[imodel])
-                             for imodel, model in enumerate(deconvolve_model_imagelist)]
-    
+            assert len(sc_list) == len(deconvolve_model_imagelist)
+            if len(sc_list) > 0:
+                skymodel_list = [rsexecute.execute(SkyModel)(image=model, components=sc_list[imodel])
+                                for imodel, model in enumerate(deconvolve_model_imagelist)]
+            else:
+                skymodel_list = [rsexecute.execute(SkyModel)(image=model)
+                                for imodel, model in enumerate(deconvolve_model_imagelist)]
+
             if do_selfcal:
     
                 model_vislist = predict_skymodel_list_rsexecute_workflow(model_vislist, skymodel_list, context=context,

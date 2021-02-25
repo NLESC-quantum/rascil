@@ -576,13 +576,10 @@ class TestPipelineGraphs(unittest.TestCase):
     def test_continuum_imaging_skymodel_pipeline_empty(self):
         self.actualSetUp()
         
-        skymodel_list = [rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist]
-        skymodel_list = rsexecute.persist(skymodel_list)
-        
         continuum_imaging_list = \
             continuum_imaging_skymodel_list_rsexecute_workflow(self.bvis_list,
                                                                model_imagelist=self.model_imagelist,
-                                                               skymodel_list=skymodel_list,
+                                                               skymodel_list=None,
                                                                context='ng',
                                                                algorithm='mmclean', facets=1,
                                                                scales=[0],
@@ -603,25 +600,22 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_empty_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.01686183120408) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06593874966691259) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01721905697069) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06629874362871377) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp()
     
-        skymodel_list = [rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist]
-        skymodel_list = rsexecute.persist(skymodel_list)
-    
         continuum_imaging_list = \
             continuum_imaging_skymodel_list_rsexecute_workflow(self.bvis_list,
                                                                model_imagelist=self.model_imagelist,
-                                                               skymodel_list=skymodel_list,
+                                                               skymodel_list=None,
                                                                context='ng',
                                                                algorithm='mmclean', facets=1,
                                                                scales=[0],
                                                                niter=100, fractional_threshold=0.1, threshold=0.01,
                                                                nmoment=2,
-                                                               nmajor=5, gain=0.7, deconvolve_facets=4,
+                                                               nmajor=5, gain=0.7, deconvolve_facets=1,
                                                                deconvolve_overlap=32, deconvolve_taper='tukey',
                                                                psf_support=64, restore_facets=1,
                                                                component_threshold=10.0)
@@ -637,8 +631,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_component_threshold_empty_rsexecute_restored.fits' % self.dir)
             
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.01689877959136) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06616130027684675) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01717878662392) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06624824007973251) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
@@ -652,10 +646,9 @@ class TestPipelineGraphs(unittest.TestCase):
 
         scaled_components_list = [rsexecute.execute(downscale_list)(comp_list)
                                   for comp_list in self.components_list]
-        skymodel_list = [rsexecute.execute(SkyModel)(components=comp_list)
-                         for comp_list in scaled_components_list]
-        skymodel_list = rsexecute.compute(skymodel_list, sync=True)
-        skymodel_list = rsexecute.scatter(skymodel_list)
+        skymodel_list = [rsexecute.execute(SkyModel)(components=comp_list, image=self.model_imagelist[i])
+                         for i, comp_list in enumerate(scaled_components_list)]
+        skymodel_list = rsexecute.persist(skymodel_list)
 
         continuum_imaging_list = \
             continuum_imaging_skymodel_list_rsexecute_workflow(self.bvis_list,
@@ -666,7 +659,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                scales=[0],
                                                                niter=100, fractional_threshold=0.1, threshold=0.01,
                                                                nmoment=2,
-                                                               nmajor=5, gain=0.7, deconvolve_facets=4,
+                                                               nmajor=5, gain=0.7, deconvolve_facets=1,
                                                                deconvolve_overlap=32, deconvolve_taper='tukey',
                                                                psf_support=64, restore_facets=1)
         clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
@@ -682,17 +675,20 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='restored')
         
-        assert numpy.abs(qa.data['max'] - 100.00770215156139) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.03303737521096155) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.0077589418119) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.033164240531133315) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()
         
-        skymodel_list = [rsexecute.execute(SkyModel)(components=comp_list) for comp_list in self.components_list]
+        skymodel_list = [rsexecute.execute(SkyModel)
+                         (components=comp_list,image=self.model_imagelist[i])
+                         for i, comp_list in enumerate(self.components_list)]
         skymodel_list = rsexecute.persist(skymodel_list)
         
         continuum_imaging_list = \
-            continuum_imaging_skymodel_list_rsexecute_workflow(self.bvis_list, model_imagelist=self.model_imagelist,
+            continuum_imaging_skymodel_list_rsexecute_workflow(self.bvis_list,
+                                                               model_imagelist=self.model_imagelist,
                                                                skymodel_list=skymodel_list,
                                                                context='ng',
                                                                algorithm='mmclean', facets=1,
@@ -700,7 +696,7 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                niter=100, fractional_threshold=0.1, threshold=0.01,
                                                                nmoment=2,
                                                                nmajor=5, gain=0.7,
-                                                               deconvolve_facets=4, deconvolve_overlap=32,
+                                                               deconvolve_facets=1, deconvolve_overlap=32,
                                                                deconvolve_taper='tukey', psf_support=64,
                                                                restore_facets=1)
         clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
@@ -713,7 +709,9 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_rsexecute_exact_residual.fits' % self.dir)
             export_image_to_fits(restored[centre],
                                  '%s/test_pipelines_continuum_imaging_skymodel_rsexecute_exact_restored.fits' % self.dir)
-        
+
+        #max: '100.01622760085863'
+        #min: '-0.06636774330387876'
         qa = qa_image(restored[centre], context='restored')
         assert numpy.abs(qa.data['max'] - 100.0) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min']) < 1.0e-12, str(qa)

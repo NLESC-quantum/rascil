@@ -287,11 +287,16 @@ def deconvolve_list_rsexecute_workflow(dirty_list, psf_list, model_imagelist, sc
             result["pixels"].data = result["pixels"].data + model["pixels"].data
             # Add together the nested component lists
             finalsc = list()
-            if scl is None:
-                finalsc = newsc
+            if len(newsc) > 0:
+                if scl is None:
+                    finalsc = newsc
+                else:
+                    assert len(scl) == nchan, scl
+                    assert len(newsc) == nchan, newsc
+                    for chan in range(nchan):
+                        finalsc.append(scl[chan] + newsc[chan])
             else:
-                for chan in range(nchan):
-                    finalsc.append(scl[chan] + newsc[chan])
+                finalsc = scl
             return (result, finalsc)
         else:
             return (model.copy(deep=True), scl)

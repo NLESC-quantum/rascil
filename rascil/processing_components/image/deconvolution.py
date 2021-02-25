@@ -104,19 +104,19 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
 
     algorithm = get_parameter(kwargs, 'algorithm', 'msclean')
     if algorithm == 'msclean':
-        comp_image, residual_image, sc = msclean_kernel(dirty, prefix, psf, window, **kwargs)
+        comp_image, residual_image = msclean_kernel(dirty, prefix, psf, window, **kwargs)
     elif algorithm == 'msmfsclean' or algorithm == 'mfsmsclean' or algorithm == 'mmclean':
-        comp_image, residual_image, sc = mmclean_kernel(dirty, prefix, psf, window, **kwargs)
+        comp_image, residual_image = mmclean_kernel(dirty, prefix, psf, window, **kwargs)
     elif algorithm == 'hogbom':
-        comp_image, residual_image, sc = hogbom_kernel(dirty, prefix, psf, window, **kwargs)
+        comp_image, residual_image = hogbom_kernel(dirty, prefix, psf, window, **kwargs)
     elif algorithm == 'hogbom-complex':
-        comp_image, residual_image, sc = complex_hogbom_kernel(dirty, psf, window, **kwargs)
+        comp_image, residual_image = complex_hogbom_kernel(dirty, psf, window, **kwargs)
     else:
         raise ValueError('deconvolve_cube %s: Unknown algorithm %s' % (prefix, algorithm))
 
     log.info("deconvolve_cube %s: Deconvolution finished" % (prefix))
 
-    return comp_image, residual_image, sc
+    return comp_image, residual_image
 
 
 def find_window(dirty, prefix, **kwargs):
@@ -248,7 +248,7 @@ def complex_hogbom_kernel(dirty, psf, window, **kwargs):
                                          polarisation_frame=PolarisationFrame('stokesIQUV'))
     residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs,
                                              polarisation_frame=PolarisationFrame('stokesIQUV'))
-    return comp_image, residual_image, sc
+    return comp_image, residual_image
 
 
 def hogbom_kernel(dirty, prefix, psf, window, **kwargs):
@@ -271,8 +271,6 @@ def hogbom_kernel(dirty, prefix, psf, window, **kwargs):
     :return: component image, residual image, skycomponents
     """
 
-    sc = list()
-    
     log.info("deconvolve_cube %s: Starting Hogbom clean of each polarisation and channel separately"
              % prefix)
     gain = get_parameter(kwargs, 'gain', 0.1)
@@ -302,7 +300,7 @@ def hogbom_kernel(dirty, prefix, psf, window, **kwargs):
     comp_image = create_image_from_array(comp_array, dirty.image_acc.wcs, dirty.image_acc.polarisation_frame)
     residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs,
                                              dirty.image_acc.polarisation_frame)
-    return comp_image, residual_image, sc
+    return comp_image, residual_image
 
 
 def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
@@ -382,9 +380,8 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
                                              dirty.image_acc.polarisation_frame)
     log.info("deconvolve_cube %s: calculating spectral cubes" % prefix)
     comp_image = calculate_image_from_frequency_moments(dirty, comp_image)
-    comp_image, sc = extract_skycomponents_from_image(comp_image, **kwargs)
     residual_image = calculate_image_from_frequency_moments(dirty, residual_image)
-    return comp_image, residual_image, sc
+    return comp_image, residual_image
 
 
 def msclean_kernel(dirty, prefix, psf, window, **kwargs):
@@ -441,7 +438,7 @@ def msclean_kernel(dirty, prefix, psf, window, **kwargs):
     comp_image = create_image_from_array(comp_array, dirty.image_acc.wcs, dirty.image_acc.polarisation_frame)
     residual_image = create_image_from_array(residual_array, dirty.image_acc.wcs,
                                              dirty.image_acc.polarisation_frame)
-    return comp_image, residual_image, sc
+    return comp_image, residual_image
 
 
 def fit_psf(psf: Image, **kwargs):

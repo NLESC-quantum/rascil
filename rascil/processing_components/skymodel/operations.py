@@ -5,7 +5,7 @@
 __all__ = ['copy_skymodel', 'partition_skymodel_by_flux', 'show_skymodel', 'initialize_skymodel_voronoi',
            'calculate_skymodel_equivalent_image', 'update_skymodel_from_gaintables', 'update_skymodel_from_image',
            'expand_skymodel_by_skycomponents', 'create_skymodel_from_skycomponents_gaintables',
-           'update_skymodel_from_model']
+           'update_skymodel_from_model', 'extract_skycomponents_from_skymodel']
 
 import logging
 
@@ -297,3 +297,45 @@ def update_skymodel_from_model(sm, **kwargs):
         newsm.image["pixels"].data[..., p[0], p[1]] = 0.0
 
     return newsm
+
+
+def extract_skycomponents_from_skymodel(sm, **kwargs):
+    """ Extract the bright components from the image in a skymodel
+
+    This produces one component per frequency channel
+
+    :param sm: skymodel
+    :param kwargs: Parameters for functions
+    :return: Updated skymodel
+
+    """
+    component_threshold = get_parameter(kwargs, "component_threshold", None)
+    component_extraction = get_parameter(kwargs, "component_extraction", 'pixels')
+    
+    
+    if component_threshold is None:
+        return sm
+    
+    if component_extraction == "pixels":
+        nchan, npol, _, _ = sm.image["pixels"].shape
+        refchan = nchan // 2
+        points = numpy.where(numpy.abs(sm.image["pixels"].data[refchan, 0]) > component_threshold)
+        number_points = len(points[0])
+        if number_points > 0:
+            log.info(
+                f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
+            
+            wcs = sm.image.image_acc.wcs
+            for p in zip(points[0], points[1]):
+                direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
+                comp = Skycomponent(direction=direction,
+                                    flux=sm.image["pixels"].data[:, :, p[0], p[1]],
+                                    frequency=sm.image.frequency,
+                                    polarisation_frame=sm.image.image_acc.polarisation_frame,
+                                    shape='Point')
+                sm.components.append(comp)
+                sm.image["pixels"].data[:, :, p[0], p[1]] = 0.0
+    else:
+        raise ValueError(f"Unknown component extraction method{component_extraction}")
+    
+    return sm

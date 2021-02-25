@@ -35,7 +35,7 @@ log.setLevel(logging.INFO)
 class TestImagingPipeline(unittest.TestCase):
     def setUp(self):
         
-        rsexecute.set_client(use_dask=False)
+        rsexecute.set_client(use_dask=True)
         
         from rascil.data_models.parameters import rascil_path
         self.dir = rascil_path('test_results')
@@ -144,7 +144,7 @@ class TestImagingPipeline(unittest.TestCase):
                                                                threshold=0.01,
                                                                nmoment=1,
                                                                nmajor=5, gain=0.7,
-                                                               deconvolve_facets=1,
+                                                               deconvolve_facets=4,
                                                                deconvolve_overlap=32,
                                                                deconvolve_taper='tukey',
                                                                psf_support=64, do_wstacking=True,
@@ -183,8 +183,8 @@ class TestImagingPipeline(unittest.TestCase):
         
         qa = qa_image(restored, context='Restored clean image - no selfcal')
         
-        assert abs(qa.data['max'] - 4.095923079969659) < 1e-7, str(qa)
-        assert abs(qa.data['min'] + 0.007467582076303162) < 1e-7, str(qa)
+        assert abs(qa.data['max'] - 4.097087862193297) < 1e-7, str(qa)
+        assert abs(qa.data['min'] + 0.0057224414680035135) < 1e-7, str(qa)
 
 
 if __name__ == '__main__':

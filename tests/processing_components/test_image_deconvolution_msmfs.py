@@ -22,7 +22,7 @@ from rascil.processing_components.visibility.base import create_blockvisibility
 
 log = logging.getLogger('rascil-logger')
 
-log.setLevel(logging.WARNING)
+log.setLevel(logging.INFO)
 
 
 class TestImageDeconvolutionMSMFS(unittest.TestCase):
@@ -67,7 +67,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
                                                     polarisation_frame=PolarisationFrame('stokesI'))
     
     def test_deconvolve_mmclean_no_taylor(self):
-        self.comp, self.residual, _ =deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=1, findpeak='RASCIL',
                                                    fractional_threshold=0.01, window_shape="quarter")
@@ -79,7 +79,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         assert numpy.max(self.residual["pixels"].data) < 3.0
     
     def test_deconvolve_mmclean_no_taylor_edge(self):
-        self.comp, self.residual, _ =deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=1, findpeak='RASCIL',
                                                    fractional_threshold=0.01, window_shape='no_edge', window_edge=32)
@@ -91,7 +91,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         assert numpy.max(self.residual["pixels"].data) < 3.0
     
     def test_deconvolve_mmclean_no_taylor_noscales(self):
-        self.comp, self.residual, _ =deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0], threshold=0.01, nmoment=1, findpeak='RASCIL',
                                                    fractional_threshold=0.01, window_shape="quarter")
@@ -105,7 +105,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         assert numpy.max(self.residual["pixels"].data) < 3.0
     
     def test_deconvolve_mmclean_linear(self):
-        self.comp, self.residual, _ =deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=2, findpeak='RASCIL',
                                                    fractional_threshold=0.01, window_shape="quarter")
@@ -117,7 +117,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         assert numpy.max(self.residual["pixels"].data) < 3.0
     
     def test_deconvolve_mmclean_linear_noscales(self):
-        self.comp, self.residual, _ =deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0], threshold=0.01, nmoment=2, findpeak='RASCIL',
                                                    fractional_threshold=0.01, window_shape="quarter")
@@ -131,7 +131,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         assert numpy.max(self.residual["pixels"].data) < 3.0
     
     def test_deconvolve_mmclean_quadratic(self):
-        self.comp, self.residual, _ =deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=2, findpeak='RASCIL',
                                                    fractional_threshold=0.01, window_shape="quarter")
@@ -143,7 +143,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         assert numpy.max(self.residual["pixels"].data) < 3.0
     
     def test_deconvolve_mmclean_quadratic_noscales(self):
-        self.comp, self.residual, _ =deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0], threshold=0.01, nmoment=2, findpeak='RASCIL',
                                                    fractional_threshold=0.01, window_shape="quarter")
@@ -157,7 +157,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         assert numpy.max(self.residual["pixels"].data) < 3.0
     
     def test_deconvolve_mmclean_quadratic_psf(self):
-        self.comp, self.residual, _ =deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
+        self.comp, self.residual = deconvolve_cube(self.dirty, self.psf, niter=self.niter, gain=0.1,
                                                    algorithm='mmclean',
                                                    scales=[0, 3, 10], threshold=0.01, nmoment=2, findpeak='RASCIL',
                                                    fractional_threshold=0.01, window_shape="quarter",

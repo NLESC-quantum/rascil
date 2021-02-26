@@ -210,7 +210,7 @@ def deconvolve_list_serial_workflow(dirty_list, psf_list, model_imagelist, prefi
         
         if this_peak > 1.1 * gthreshold:
             kwargs['threshold'] = gthreshold
-            result, _ , _= deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
+            result, _ = deconvolve_cube(dirty, psf, prefix=lprefix, mask=msk, **kwargs)
             
             if result["pixels"].data.shape[0] == model["pixels"].data.shape[0]:
                 result.data += model.data

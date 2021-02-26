@@ -16,7 +16,7 @@ For example to make dirty image and PSF, deconvolve, and then restore::
     dirty, sumwt = invert_2d(vt, model)
     psf, sumwt = invert_2d(vt, model, dopsf=True)
 
-    comp, residual, sc = deconvolve_cube(dirty, psf, niter=1000, threshold=0.001, fracthresh=0.01, window_shape='quarter',
+    comp, residual = deconvolve_cube(dirty, psf, niter=1000, threshold=0.001, fracthresh=0.01, window_shape='quarter',
                                  gain=0.7, algorithm='msclean', scales=[0, 3, 10, 30])
 
     restored = restore_cube(comp, psf, residual)

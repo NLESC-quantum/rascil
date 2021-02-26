@@ -31,7 +31,7 @@ from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import ica
 
 log = logging.getLogger('rascil-logger')
 
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
@@ -175,8 +175,6 @@ class TestPipelineGraphs(unittest.TestCase):
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, dopol=True)
         
-        self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
-        
         continuum_imaging_list = \
             continuum_imaging_list_rsexecute_workflow(self.bvis_list,
                                                       model_imagelist=self.model_imagelist,
@@ -201,16 +199,6 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_pipeline_pol_rsexecute_residual.fits' % self.dir)
             export_image_to_fits(restored[centre],
                                  '%s/test_pipelines_continuum_imaging_pipeline_pol_rsexecute_restored.fits' % self.dir)
-
-        # shape: '(1, 4, 512, 512)'
-        # max: '100.0176908638641'
-        # min: '-0.0658984665865698'
-        # maxabs: '100.0176908638641'
-        # rms: '1.956630666919213'
-        # sum: '94254.37064262747'
-        # medianabs: '0.00013371252335181178'
-        # medianabsdevmedian: '0.00015014922996476563'
-        # median: '4.191860637553575e-05'
 
         qa = qa_image(restored[centre])
         assert numpy.abs(qa.data['max'] - 100.01718910094273) < 1.0e-7, str(qa)
@@ -249,16 +237,6 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre])
 
-        # shape: '(1, 1, 512, 512)'
-        # max: '100.01806496946458'
-        # min: '-100.01806496946458'
-        # maxabs: '100.01806496946458'
-        # rms: '3.8296135273845415'
-        # sum: '78539.5285735257'
-        # medianabs: '0.008886031696449033'
-        # medianabsdevmedian: '0.008008004747634967'
-        # median: '0.004751479717392764'
-
         assert numpy.abs(qa.data['max'] - 100.01806496946458) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.06555462924332975) < 1.0e-7, str(qa)
     
@@ -293,16 +271,6 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(gt_list[centre]['T'],
                                      '%s/test_pipelines_ical_pipeline_pol_rsexecute_gaintable.hdf5' %
                                      self.dir)
-
-        # shape: '(1, 4, 512, 512)'
-        # max: '100.01794300704981'
-        # min: '-0.06614721555038076'
-        # maxabs: '100.01794300704981'
-        # rms: '1.9566271382605045'
-        # sum: '94247.42565540374'
-        # medianabs: '0.00012119260895500113'
-        # medianabsdevmedian: '0.00013779748982964998'
-        # median: '3.7803846884311977e-05'
 
         qa = qa_image(restored[centre])
         assert numpy.abs(qa.data['max'] - 100.01614515505372) < 1.0e-7, str(qa)
@@ -342,16 +310,6 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
         
         qa = qa_image(restored[centre])
-
-        # shape: '(1, 1, 512, 512)'
-        # max: '99.22485878707184'
-        # min: '-0.6086389127999817'
-        # maxabs: '99.22485878707184'
-        # rms: '3.8003164925182054'
-        # sum: '77899.8922405312'
-        # medianabs: '0.07818787845745906'
-        # medianabsdevmedian: '0.07802338649921994'
-        # median: '0.00814423022916257'
 
         assert numpy.abs(qa.data['max'] - 99.2248587870718) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.6086389127999817) < 1.0e-7, str(qa)
@@ -438,8 +396,8 @@ class TestPipelineGraphs(unittest.TestCase):
     
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_empty')
         
-        assert numpy.abs(qa.data['max'] - 100.01737784787471) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06555462924332986) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.32031762728077) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 3.1344051505677517) < 1e-7, str(qa)
 
     def test_ical_skymodel_pipeline_exact(self):
         
@@ -594,9 +552,9 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_empty_threshold_rsexecute_clean.fits' %
                                  self.dir)
             export_image_to_fits(residual[centre][0],
-                                 '%s/test_pipelines_continuum_imaging_component_threshold_empty_rsexecute_residual.fits' % self.dir)
+                                 '%s/test_pipelines_continuum_imaging_skymodel_empty_threshold_rsexecute_residual.fits' % self.dir)
             export_image_to_fits(restored[centre],
-                                 '%s/test_pipelines_continuum_imaging_component_threshold_empty_rsexecute_restored.fits' % self.dir)
+                                 '%s/test_pipelines_continuum_imaging_skymodel_empty_threshold_rsexecute_restored.fits' % self.dir)
             
         qa = qa_image(restored[centre], context='restored')
         assert numpy.abs(qa.data['max'] - 100.01622760085863) < 1.0e-7, str(qa)
@@ -633,7 +591,6 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                restore_facets=1)
         clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
-        self.persist = True
         if self.persist:
             export_image_to_fits(clean[centre],
                                  '%s/test_pipelines_continuum_imaging_skymodel_partial_rsexecute_clean.fits' %
@@ -680,8 +637,6 @@ class TestPipelineGraphs(unittest.TestCase):
             export_image_to_fits(restored[centre],
                                  '%s/test_pipelines_continuum_imaging_skymodel_rsexecute_exact_restored.fits' % self.dir)
 
-        #max: '100.01622760085863'
-        #min: '-0.06636774330387876'
         qa = qa_image(restored[centre], context='restored')
         assert numpy.abs(qa.data['max'] - 100.0) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min']) < 1.0e-12, str(qa)

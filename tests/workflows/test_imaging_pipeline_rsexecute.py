@@ -30,13 +30,15 @@ log = logging.getLogger("rascil-logger")
 logging.info("Starting imaging-pipeline")
 log.setLevel(logging.WARNING)
 
+# These tests probe whether the results depend on whether Dask is used and also whether
+# optimisation in Dask is used.
 @pytest.mark.parametrize("use_dask, optimise, component_threshold, test_max, test_min", [
     (True,  True,  None, 4.093297359544571, -0.005846355119035153),
     (True,  False, None, 4.093297359544571, -0.005846355119035153),
     (False, False, None, 4.093297359544571, -0.005846355119035153),
-    (True,  True,  1.0,  4.093686139135822, -0.005874719205258523),
-    (True,  False, 1.0,  4.093686139135822, -0.005874719205258523),
-    (False, False, 1.0,  4.093686139135822, -0.005874719205258523),
+    (True,  True,  1.0,  4.093825055185321, -0.1019797392673627),
+    (True,  False, 1.0,  4.093825055185321, -0.1019797392673627),
+    (False, False, 1.0,  4.093825055185321, -0.1019797392673627)
 ])
 def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, test_min):
     rsexecute.set_client(use_dask=use_dask, optim=optimise)

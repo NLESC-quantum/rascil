@@ -302,7 +302,7 @@ def deconvolve_channel_list_serial_workflow(dirty_list, psf_list, model_imagelis
     def deconvolve_subimage(dirty, psf):
         #assert isinstance(dirty, Image)
         #assert isinstance(psf, Image)
-        comp, _, _ = deconvolve_cube(dirty, psf, **kwargs)
+        comp, _ = deconvolve_cube(dirty, psf, **kwargs)
         return comp
     
     def add_model(sum_model, model):

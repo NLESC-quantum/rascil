@@ -158,9 +158,11 @@ def find_window(dirty, prefix, **kwargs):
 def bound_psf(dirty, prefix, psf, **kwargs):
     """Find the bounded psf
     
-    :param dirty:
-    :param prefix:
-    :param psf:
+    The kwargs argument psf_support denotes the half width of a box centered on the psf centre
+    
+    :param dirty: Dirty image, used for default sizes
+    :param prefix: Informational prefix to log messages
+    :param psf: Point Spread Function
     :param kwargs:
     :return:
     """

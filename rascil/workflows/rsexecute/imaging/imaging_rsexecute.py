@@ -261,7 +261,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(dirty_list, psf_list, model_i
         
         if this_peak > 1.1 * gthreshold:
             kwargs['threshold'] = gthreshold
-            result = deconvolve_cube(dirty, psf, prefix=prefix, mask=msk, **kwargs)
+            result, _ = deconvolve_cube(dirty, psf, prefix=prefix, mask=msk, **kwargs)
             
             assert result["pixels"].data.shape == model["pixels"].data.shape
             result["pixels"].data = result["pixels"].data + model["pixels"].data

@@ -21,7 +21,8 @@ log = logging.getLogger('rascil-logger')
 
 
 def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=1, facets=1,
-                                 gcfcf=None, calibration_context='TG', do_selfcal=True, **kwargs):
+                                 gcfcf=None, calibration_context='TG', do_selfcal=True,
+                                 pipeline_name="ical", **kwargs):
     """Create graph for ICAL pipeline
     
     :param vis_list: List of vis (or graph)
@@ -75,7 +76,9 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
                                                               **kwargs)
 
     deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
-                                                                       model_imagelist, prefix='ical cycle 0', **kwargs)
+                                                                    model_imagelist,
+                                                                    prefix=f"{pipeline_name} cycle 0",
+                                                                    **kwargs)
     nmajor = get_parameter(kwargs, "nmajor", 5)
     if nmajor > 1:
         for cycle in range(nmajor):
@@ -99,10 +102,10 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
                                                                       gcfcf=gcfcf,
                                                                       **kwargs)
 
-            prefix = "ical cycle %d" % (cycle + 1)
             deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
                                                                                deconvolve_model_imagelist,
-                                                                               prefix=prefix, **kwargs)
+                                                                            prefix=f"{pipeline_name} cycle {cycle+1}",
+                                                                            **kwargs)
     residual_imagelist = residual_list_rsexecute_workflow(cal_vis_list, deconvolve_model_imagelist, context=context,
                                                           vis_slices=vis_slices, facets=facets, gcfcf=gcfcf, **kwargs)
     output = get_parameter(kwargs, "restored_output", "cube")
@@ -118,7 +121,7 @@ def ical_list_rsexecute_workflow(vis_list, model_imagelist, context, vis_slices=
 
 
 def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context, gcfcf=None,
-                                              vis_slices=1, facets=1, **kwargs):
+                                              vis_slices=1, facets=1, pipeline_name="cip", **kwargs):
     """ Create graph for the continuum imaging pipeline.
     
     Same as ICAL but with no selfcal.
@@ -137,7 +140,9 @@ def continuum_imaging_list_rsexecute_workflow(vis_list, model_imagelist, context
                                                           vis_slices=vis_slices, facets=facets, **kwargs)
 
     deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(residual_imagelist, psf_imagelist,
-                                                                       model_imagelist, prefix='cip cycle 0', **kwargs)
+                                                                    model_imagelist,
+                                                                    prefix='cip cycle 0',
+                                                                    **kwargs)
     nmajor = get_parameter(kwargs, "nmajor", 5)
     if nmajor > 1:
         for cycle in range(nmajor):

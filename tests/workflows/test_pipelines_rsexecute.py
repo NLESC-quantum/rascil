@@ -95,27 +95,27 @@ class TestPipelineGraphs(unittest.TestCase):
         self.model_imagelist = [rsexecute.execute(create_unittest_model, nout=1)
                                 (self.bvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005)
                                 for i in range(nfreqwin)]
-        self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
+        self.model_imagelist = rsexecute.persist(self.model_imagelist)
         
         self.components_list = [rsexecute.execute(create_unittest_components)
                                 (self.model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :])
                                 for freqwin, m in enumerate(self.model_imagelist)]
-        self.components_list = rsexecute.compute(self.components_list, sync=True)
+        self.components_list = rsexecute.persist(self.components_list)
         
         self.bvis_list = [rsexecute.execute(dft_skycomponent_visibility)
                               (self.bvis_list[freqwin], self.components_list[freqwin])
                               for freqwin, _ in enumerate(self.bvis_list)]
-        self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
-        self.bvis_list = rsexecute.scatter(self.bvis_list)
+        self.bvis_list = rsexecute.persist(self.bvis_list)
         
         self.model_imagelist = [rsexecute.execute(insert_skycomponent, nout=1)
                                 (self.model_imagelist[freqwin], self.components_list[freqwin])
                                 for freqwin in range(nfreqwin)]
-        self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
+        self.model_imagelist = rsexecute.persist(self.model_imagelist)
         
-        model = self.model_imagelist[0]
-        self.cmodel = smooth_image(model)
         if self.persist:
+            model = rsexecute.compute(self.model_imagelist[0], sync=True)
+            self.cmodel = smooth_image(model)
+    
             export_image_to_fits(model, '%s/test_pipelines_rsexecute_model.fits' % self.dir)
             export_image_to_fits(self.cmodel, '%s/test_pipelines_rsexecute_cmodel.fits' % self.dir)
         
@@ -356,7 +356,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 99.2248587870718) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 0.6086389127999817) < 1.0e-7, str(qa)
 
-    @unittest.skip("Non-deterministic")
     def test_ical_skymodel_pipeline_empty(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -396,20 +395,9 @@ class TestPipelineGraphs(unittest.TestCase):
     
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_empty')
     
-        # shape: '(1, 1, 512, 512)'
-        # max: '100.07184138596327'
-        # min: '-0.1291884422737903'
-        # maxabs: '100.07184138596327'
-        # rms: '3.7196897293378886'
-        # sum: '72967.68130171177'
-        # medianabs: '0.021580552027293375'
-        # medianabsdevmedian: '0.02158925516978749'
-        # median: '0.00039522135548293363'
-    
-        assert numpy.abs(qa.data['max'] - 100.07184138596327) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.1291884422737903) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01737784787471) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06555462924332986) < 1e-7, str(qa)
 
-    @unittest.skip("Non-deterministic")
     def test_ical_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -449,21 +437,10 @@ class TestPipelineGraphs(unittest.TestCase):
                                      self.dir)
     
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_empty')
-    
-        # shape: '(1, 1, 512, 512)'
-        # max: '100.07184138596327'
-        # min: '-0.1291884422737903'
-        # maxabs: '100.07184138596327'
-        # rms: '3.7196897293378886'
-        # sum: '72967.68130171177'
-        # medianabs: '0.021580552027293375'
-        # medianabsdevmedian: '0.02158925516978749'
-        # median: '0.00039522135548293363'
-    
-        assert numpy.abs(qa.data['max'] - 100.07184138596327) < 1e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.1291884422737903) < 1e-7, str(qa)
+        
+        assert numpy.abs(qa.data['max'] - 100.01737784787471) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06555462924332986) < 1e-7, str(qa)
 
-    @unittest.skip("Non-deterministic")
     def test_ical_skymodel_pipeline_exact(self):
         
         self.actualSetUp(add_errors=True)
@@ -505,20 +482,10 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_exact')
 
-        # shape: '(1, 1, 512, 512)'
-        # max: '100.00008262713018'
-        # min: '-0.0002528759240868758'
-        # maxabs: '100.00008262713018'
-        # rms: '3.7286679080216034'
-        # sum: '73303.14947494591'
-        # medianabs: '3.7566942647849636e-05'
-        # medianabsdevmedian: '3.455461115723066e-05'
-        # median: '1.885354764046226e-05'
+        assert numpy.abs(qa.data['max'] - 100.01737784787471) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06555462924332986) < 1e-7, str(qa)
 
-        assert numpy.abs(qa.data['max'] - 100.02345654897059) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.0044566100882072355) < 1.0e-7, str(qa)
     
-    @unittest.skip("Non-deterministic")
     def test_ical_skymodel_pipeline_partial(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -570,8 +537,9 @@ class TestPipelineGraphs(unittest.TestCase):
         qa = qa_image(restored[centre], context='test_ical_skymodel_pipeline_partial')
         print(qa)
         
-        assert numpy.abs(qa.data['max'] - 100.0172263142844) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.05661951481124512) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01737784787471) < 1e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06555462924332986) < 1e-7, str(qa)
+
     
     def test_continuum_imaging_skymodel_pipeline_empty(self):
         self.actualSetUp()
@@ -631,8 +599,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_component_threshold_empty_rsexecute_restored.fits' % self.dir)
             
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.67866987519317) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 1.16462029108362081) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01622760085863) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06636774330387876) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
@@ -659,11 +627,13 @@ class TestPipelineGraphs(unittest.TestCase):
                                                                scales=[0],
                                                                niter=100, fractional_threshold=0.1, threshold=0.01,
                                                                nmoment=2,
-                                                               nmajor=5, gain=0.7, deconvolve_facets=1,
-                                                               deconvolve_overlap=32, deconvolve_taper='tukey',
-                                                               psf_support=64, restore_facets=1)
+                                                               nmajor=5, gain=0.7,
+                                                               deconvolve_facets=1, deconvolve_overlap=32,
+                                                               deconvolve_taper='tukey', psf_support=64,
+                                                               restore_facets=1)
         clean, residual, restored, skymodel = rsexecute.compute(continuum_imaging_list, sync=True)
         centre = len(clean) // 2
+        self.persist = True
         if self.persist:
             export_image_to_fits(clean[centre],
                                  '%s/test_pipelines_continuum_imaging_skymodel_partial_rsexecute_clean.fits' %
@@ -675,8 +645,8 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='restored')
         
-        assert numpy.abs(qa.data['max'] - 100.0077589418119) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.033164240531133315) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 50.0) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.0) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()

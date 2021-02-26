@@ -11,7 +11,7 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_low_test_skymodel_from_gleam, \
-    extract_skycomponents_from_image
+    extract_skycomponents_from_skymodel
 from rascil.processing_components import find_nearest_skycomponent
 
 log = logging.getLogger('rascil-logger')
@@ -51,11 +51,12 @@ def test_skycomponent_extract(npixel, cellsize, component_extraction):
                                                  flux_max=10.0,
                                                  flux_threshold=1.0)
     # Now extract all sources > 1.0Jy
-    newim, newsc = extract_skycomponents_from_image(sm.image, component_threshold=1.0,
+    sm = extract_skycomponents_from_skymodel(sm, component_threshold=1.0,
                                                     component_extraction=component_extraction)
     
-    for i, sc in enumerate(newsc):
+    for i, sc in enumerate(sm.components):
         log.info(f"{i}, {sc}")
-    for i, sc in enumerate(newsc):
+        
+    for i, sc in enumerate(sm.components):
         fsc, sep = find_nearest_skycomponent(sc.direction, all_sm.components)
         assert sep < cellsize, "Separation {sep} exceeds cellsize {cellsize}"

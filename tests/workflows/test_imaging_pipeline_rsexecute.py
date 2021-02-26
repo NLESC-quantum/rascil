@@ -115,7 +115,7 @@ def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, tes
                                                            deconvolve_overlap=32,
                                                            deconvolve_taper='tukey',
                                                            psf_support=64, do_wstacking=True,
-                                                           component_threshold=None,
+                                                           component_threshold=component_threshold,
                                                            component_extraction="pixels")
     
     centre = nfreqwin // 2

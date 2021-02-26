@@ -600,8 +600,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_empty_rsexecute_restored.fits' % self.dir)
         
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.01721905697069) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06629874362871377) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.01686183120421) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.06593874966674994) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp()
@@ -631,8 +631,8 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_component_threshold_empty_rsexecute_restored.fits' % self.dir)
             
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.01717878662392) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06624824007973251) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.67866987519317) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 1.16462029108362081) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()

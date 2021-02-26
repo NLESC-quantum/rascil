@@ -110,7 +110,7 @@ class TestImagingPipeline(unittest.TestCase):
         
         # Works ok if the model_list is precalculated
         model_list = rsexecute.compute(model_list, sync=True)
-                
+        
         skymodel_list = [rsexecute.execute(SkyModel)(image=im) for im in model_list]
         skymodel_list = rsexecute.persist(skymodel_list)
         

@@ -79,7 +79,7 @@ def mpccal_skymodel_list_rsexecute_workflow(visobs, model, theta_list, nmajor=10
 
         residual = rsexecute.execute(make_residual, nout=1)(dirty_all_cal, theta_list, iteration)
 
-        deconvolved, _ = deconvolve_list_rsexecute_workflow([(residual, 1.0)], [psf_obs[0]], [model], **kwargs)
+        deconvolved = deconvolve_list_rsexecute_workflow([(residual, 1.0)], [psf_obs[0]], [model], **kwargs)
 
         # The M step: 2 - Update the gaintables
         vpredicted_list = predict_skymodel_list_rsexecute_workflow(visobs, theta_list, context=context, docal=True,

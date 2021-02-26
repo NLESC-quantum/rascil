@@ -127,7 +127,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                                                        normalize=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
-        deconvolved, _ = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
+        deconvolved = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
                                                             niter=100, fractional_threshold=0.1, scales=[0, 3],
                                                             threshold=0.1, gain=0.7)
         deconvolved = rsexecute.persist(deconvolved)
@@ -144,7 +144,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                                                        normalize=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
-        dec_imagelist, _ = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
+        dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
                                                               niter=100, fractional_threshold=0.01, scales=[0, 3],
                                                               algorithm='mmclean', nmoment=1, nchan=self.freqwin,
                                                               threshold=0.7, gain=0.7)
@@ -168,7 +168,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                                                        normalize=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
-        dec_imagelist, _ = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
+        dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist, self.model_imagelist,
                                                               niter=100, fractional_threshold=0.1, scales=[0, 3],
                                                               algorithm='mmclean', nmoment=1, nchan=self.freqwin,
                                                               threshold=0.01, gain=0.7, deconvolve_facets=8,

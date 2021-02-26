@@ -560,7 +560,7 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
 
 def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradius, pb_npixel, pb_cellsize, show=False,
                                      fov=10, polarisation_frame=PolarisationFrame("stokesI"), flux_max=10.0,
-                                     pb_type="MID"):
+                                     pb_type="MID", apply_pb=True):
     """ Construct components for simulation
 
     :param context: singlesource or null or s3sky
@@ -575,6 +575,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     :param fov: FOV in degrees (used to select catalog)
     :param flux_max: Maximum flux in model before application of primary beam
     :param polarisation_frame:
+    :param apply_pb: Apply the primary beam to the output components
     :param show:
 
     :return:
@@ -606,6 +607,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     pb_applied_components = apply_beam_to_skycomponent(original_components, pb)
     
     filtered_components = []
+    filtered_pb_components = []
     reference_component = -1
     reference_flux = 0.0
     for icomp, comp in enumerate(original_components):
@@ -621,7 +623,8 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
             filtered_components.append(scomp)
             if scomp.flux[0, 0] > reference_flux:
                 reference_component = len(filtered_components) - 1
-    
+            filtered_pb_components.append(pb_applied_components[icomp])
+
     log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
              (len(filtered_components), flux_limit))
     log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)
@@ -632,4 +635,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     
     log.info("create_simulation_components: Created %d components" % len(filtered_components))
     
-    return filtered_components, reference_component
+    if apply_pb:
+        return filtered_pb_components, reference_component
+    else:
+        return filtered_components, reference_component

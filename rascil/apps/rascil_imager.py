@@ -218,6 +218,7 @@ def cip(args, bvis_list, model_list, msname):
                                                   deconvolve_facets=args.clean_facets,
                                                   deconvolve_overlap=args.clean_overlap,
                                                   deconvolve_taper=args.clean_taper,
+                                                  dft_compute_kernel=args.imaging_dft_kernel)
                                                   component_threshold=args.component_threshold)
     # Execute the Dask graph
     log.info("Starting compute of continuum imaging pipeline graph ")
@@ -311,6 +312,7 @@ def ical(args, bvis_list, model_list, msname):
                                      controls=controls,
                                      global_solution=args.calibration_global_solution,
                                      component_threshold=args.component_threshold)
+                                     dft_compute_kernel=args.imaging_dft_kernel)
     # Execute the Dask graph
     log.info("Starting compute of ICAL pipeline graph ")
     deconvolved, residual, restored, gt_list = rsexecute.compute(result, sync=True)
@@ -335,7 +337,8 @@ def invert(args, bvis_list, model_list, msname):
                                        context=args.imaging_context,
                                        dopsf=args.imaging_dopsf == "True",
                                        threads=args.imaging_ng_threads,
-                                       wstacking=args.imaging_w_stacking == "True")
+                                       wstacking=args.imaging_w_stacking == "True",
+                                       dft_compute_kernel=args.imaging_dft_kernel)
     result = sum_invert_results_rsexecute(result)
     # Execute the Dask graph
     log.info("Starting compute of invert graph ")

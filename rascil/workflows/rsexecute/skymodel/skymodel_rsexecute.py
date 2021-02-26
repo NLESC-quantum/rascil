@@ -53,9 +53,9 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
             if sm.mask is not None:
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
-                v = dft_skycomponent_visibility(v, comps)
+                v = dft_skycomponent_visibility(v, comps, **kwargs)
             else:
-                v = dft_skycomponent_visibility(v, sm.components)
+                v = dft_skycomponent_visibility(v, sm.components, **kwargs)
         
         if sm.image is not None:
             if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:

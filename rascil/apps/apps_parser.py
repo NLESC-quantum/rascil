@@ -63,6 +63,8 @@ def apps_parser_imaging(parser):
                         help='Type of weighting uniform or robust or natural)')
     parser.add_argument('--imaging_robustness', type=float, default=0.0, help='Robustness for robust weighting')
     parser.add_argument('--imaging_dopsf', type=str, default="False", help='Make the PSF instead of the dirty image?')
+    parser.add_argument('--imaging_dft_kernel', type=str, default=None,
+                        help='DFT kernel: cpu_looped | cpu_numba | gpu_raw ')
 
     return parser
 

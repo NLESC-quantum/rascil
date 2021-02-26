@@ -18,9 +18,10 @@ log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.INFO)
 
-
+# cellsize - cellsize of image to be created
+# npixel - number of pixels of image to be created
+# component_extraction - Method of component extraction - only one case currently
 @pytest.mark.parametrize("cellsize, npixel, component_extraction", [
-#    (0.001, 512, "pixels"),
     (0.005, 1024, "pixels")
 ])
 def test_skycomponent_extract(npixel, cellsize, component_extraction):
@@ -28,7 +29,7 @@ def test_skycomponent_extract(npixel, cellsize, component_extraction):
     cellsize = 0.001
     
     frequency = numpy.linspace(0.9e8, 1.1e8, 20)
-    print(frequency)
+
     channel_bandwidth = numpy.array(len(frequency) * [frequency[1]-frequency[0]])
     phasecentre = SkyCoord(ra=+30.0 * u.deg, dec=dec, frame='icrs', equinox='J2000')
     

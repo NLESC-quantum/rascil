@@ -17,15 +17,6 @@ log = logging.getLogger('rascil-logger')
 
 log.setLevel(logging.WARNING)
 
-
-# @pytest.mark.parametrize("use_dask, skip, rmax, image_max, image_min, image_rms, msout", [
-#     ("False", 2, 100.0, 7.884746414642449, -5.307614937960145, 0.05118448822547908,
-#      "simulate_rfi_skip2_noDask.ms"),
-#     ("True", 2, 100.0, 7.884746414642449, -5.307614937960145, 0.05118448822547908,
-#      "simulate_rfi_skip2.ms"),
-#     ("True", 1, 100.0, 4.818641965003371, -4.456976982078982, 0.024397676084681765,
-#      "simulate_rfi_skip1.ms")
-# ])
 def test_skymodel_update():
     dec = -40.0 * u.deg
     cellsize = 0.001

@@ -32,6 +32,11 @@ log.setLevel(logging.WARNING)
 
 # These tests probe whether the results depend on whether Dask is used and also whether
 # optimisation in Dask is used.
+
+# use_dask - Use dask for processing
+# optimise - Enable dask graph optimisation
+# component_threshold - Threshold for classifying as component
+# test_max, test_min: max, min in tests.
 @pytest.mark.parametrize("use_dask, optimise, component_threshold, test_max, test_min", [
     (True,  True,  None, 4.093297359544571, -0.005846355119035153),
     (True,  False, None, 4.093297359544571, -0.005846355119035153),

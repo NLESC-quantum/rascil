@@ -158,10 +158,6 @@ def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, tes
     
     qa = qa_image(restored, context='Restored clean image - no selfcal')
     
-    # Correct serial values for skycomponent extraction
-    # assert abs(qa.data['max'] - 4.093686139135822) < 1e-7, str(qa)
-    # assert abs(qa.data['min'] + 0.005874719205258523) < 1e-7, str(qa)
-    
     # Correct values for no skycomponent extraction
     assert abs(qa.data['max'] - test_max) < 1e-7, str(qa)
     assert abs(qa.data['min'] - test_min) < 1e-7, str(qa)

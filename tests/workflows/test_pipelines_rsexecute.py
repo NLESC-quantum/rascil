@@ -560,7 +560,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data['max'] - 100.37273326707677) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data['min'] + 3.212367646304462) < 1.0e-7, str(qa)
 
-    @unittest.skip("Unstable test")
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
         
@@ -604,8 +603,8 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='restored')
         
-        assert numpy.abs(qa.data['max'] - 50.0) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.0) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.0077589418119) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.033164240531133315) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()

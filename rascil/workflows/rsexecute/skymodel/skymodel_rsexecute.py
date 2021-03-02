@@ -41,9 +41,17 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
     :return: List of vis_lists
    """
     
-    def ft_cal_sm(ov, sm, g, wv):
+    def ft_cal_sm(sm, g, wv):
+        """ Predict visibility for a skymodel
+        
+        :param sm: Skymodel
+        :param g: Convolution function
+        :param wv: Work visibility
+        :return: Visibility with dft of components, fft of image, gaintable
+        """
         if g is not None:
-            assert len(g) == 2, g
+            if len(g) != 2:
+                raise ValueError("Convolution function value incorrect")
         
         wv["vis"].data[...] = 0.0
         
@@ -74,12 +82,13 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
     
     if isinstance(obsvis, list):
         # This is the usual case of one obsvis per skymodel
-        assert len(obsvis) == len(skymodel_list)
+        if len(obsvis) != len(skymodel_list):
+            raise ValueError("Obsvis and skymodel lists should have the same length")
         # Since we probably will loop over many skymodels, we can save a lot of copying
         # by passing down work blockvisibilitys
         workvis = [rsexecute.execute(copy_visibility, nout=1)(vv, zero=True) for vv in obsvis]
         if gcfcf is None:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None, workvis[ism]) for ism, sm in
+            return [rsexecute.execute(ft_cal_sm, nout=1)(sm, None, workvis[ism]) for ism, sm in
                     enumerate(skymodel_list)]
         else:
             return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism], workvis[ism])
@@ -112,9 +121,17 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context='ng
    """
     
     def ift_ical_sm(v, sm, g):
-        if g is not None:
-            assert len(g) == 2, g
+        """ Inverse Fourier sum of visibility to image and components
         
+        :param v: Visibility to be transformed
+        :param sm: Skymodel
+        :param g: Convolution function
+        :return: Skymodel containing transforms
+        """
+        if g is not None:
+            if len(g) != 2:
+                raise ValueError("Convolution function value incorrect")
+
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
         
@@ -148,10 +165,12 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
     """
     restore_facets = 1
     
-    assert len(skymodel_list) == len(psf_imagelist)
+    if len(skymodel_list) != len(psf_imagelist):
+        raise ValueError("Skymodel and PSF lists must be the same length")
     if residual_imagelist is not None:
-        assert len(skymodel_list) == len(residual_imagelist)
-    
+        if len(skymodel_list) != len(residual_imagelist):
+            raise ValueError("Skymodel and residual lists must be the same length")
+
     if restore_facets % 2 == 0 or restore_facets == 1:
         actual_number_facets = restore_facets
     else:
@@ -225,7 +244,6 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
             vr = copy_visibility(verr)
             vr['vis'].data += m['vis'].data
             result.append(vr)
-        assert len(result) == len(mv)
         return result
     
     return rsexecute.execute(vsum, nout=len(modelvis_list))(obsvis, modelvis_list)
@@ -246,13 +264,10 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng
    """
     
     def ft_ift_sm(ov, sm, g):
-        # assert isinstance(ov, BlockVisibility), ov
-        # assert isinstance(sm, SkyModel), sm
         if g is not None:
-            assert len(g) == 2, g
-            # assert isinstance(g[0], Image), g[0]
-            # assert isinstance(g[1], ConvolutionFunction), g[1]
-        
+            if len(g) != 2:
+                raise ValueError("Convolution function value incorrect")
+    
         v = copy_visibility(ov)
         
         v['vis'].data[...] = 0.0 + 0.0j

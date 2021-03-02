@@ -449,7 +449,7 @@ def create_low_test_skymodel_from_gleam(npixel=512, polarisation_frame=Polarisat
                                         frequency=numpy.array([1e8]), channel_bandwidth=numpy.array([1e6]),
                                         phasecentre=None, kind='cubic', applybeam=True, flux_limit=0.1,
                                         flux_max=numpy.inf, flux_threshold=1.0, insert_method='Nearest',
-                                        telescope='LOW') -> SkyModel:
+                                        telescope='LOW', radius=None) -> SkyModel:
     """Create LOW test skymodel from the GLEAM survey
 
     Stokes I is estimated from a cubic spline fit to the measured fluxes. The polarised flux is always zero.
@@ -483,7 +483,8 @@ def create_low_test_skymodel_from_gleam(npixel=512, polarisation_frame=Polarisat
     if phasecentre is None:
         phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
     
-    radius = npixel * cellsize
+    if radius is None:
+        radius = npixel * cellsize
     
     sc = create_low_test_skycomponents_from_gleam(flux_limit=flux_limit, polarisation_frame=polarisation_frame,
                                                   frequency=frequency, phasecentre=phasecentre,

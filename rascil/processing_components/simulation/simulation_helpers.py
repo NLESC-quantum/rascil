@@ -625,7 +625,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
                 reference_component = len(filtered_components) - 1
             filtered_pb_components.append(pb_applied_components[icomp])
 
-    log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
+    log.info("create_simulation_components: %d components > %.6f Jy after filtering with primary beam" %
              (len(filtered_components), flux_limit))
     log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)
     if show:

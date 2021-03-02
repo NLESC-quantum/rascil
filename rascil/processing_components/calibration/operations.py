@@ -19,6 +19,7 @@ from astropy.time import Time
 
 from rascil.data_models.memory_data_models import GainTable, BlockVisibility, QA
 from rascil.data_models.polarisation import ReceptorFrame
+from rascil.data_models import get_parameter
 log = logging.getLogger('rascil-logger')
 
 
@@ -48,13 +49,11 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
     else:
         log.debug('apply_gaintable: Apply gaintable')
     
-    is_scalar = gt.gain.shape[-2:] == (1, 1)
     if vis.blockvisibility_acc.npol == 1:
         log.debug('apply_gaintable: scalar gains')
     
     # row_numbers = numpy.array(list(range(len(vis.time))), dtype='int')
     row_numbers = numpy.arange(len(vis.time))
-    done = numpy.zeros(len(row_numbers), dtype='int')
 
     for row in range(ntimes):
         vis_rows = numpy.abs(vis.time.data - gt.time.data[row]) < gt.interval.data[row] / 2.0
@@ -70,9 +69,21 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             nant, nchan, nrec, _ = gain.shape
             baselines = vis.baselines.data
             
-            original = vis.blockvisibility_acc.flagged_vis[vis_rows]
-            applied = copy.copy(vis.blockvisibility_acc.flagged_vis[vis_rows])
-            appliedwt = copy.copy(vis.blockvisibility_acc.flagged_weight[vis_rows])
+            # Try to ignore visibility flags in application of gains. Should have no impact
+            # and will save time in applying the flags
+            use_flags = get_parameter(kwargs, "use_flags", False)
+            flagged = use_flags and numpy.max(vis["flags"][vis_rows].data) > 0.0
+            if flagged:
+                log.debug("apply_gaintable:Applying flags")
+                original = vis.blockvisibility_acc.flagged_vis[vis_rows]
+                applied = copy.copy(vis.blockvisibility_acc.flagged_vis[vis_rows])
+                appliedwt = copy.copy(vis.blockvisibility_acc.flagged_weight[vis_rows])
+            else:
+                log.debug("apply_gaintable:flags are absent or being ignored")
+                original = vis["vis"].data[vis_rows]
+                applied = copy.copy(original)
+                appliedwt = copy.copy(vis["weight"].data[vis_rows])
+
             if vis.blockvisibility_acc.npol == 1:
                 if inverse:
                     # lgain = numpy.ones_like(gain)
@@ -131,7 +142,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                 igain[a1, chan, :, :] = numpy.linalg.inv(gain[a1, chan, :, :])
                                 cigain[a1, chan, :, :] = numpy.conjugate(igain[a1, chan, :, :])
                                 has_inverse_ant[a1, chan] = True
-                            except numpy.linalg.linalg.LinAlgError:
+                            except numpy.linalg.LinAlgError:
                                 has_inverse_ant[a1, chan] = False
                     
                     for sub_vis_row in range(original.shape[0]):
@@ -161,7 +172,7 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
                                 igain[a1, chan, :, :] = numpy.linalg.inv(gain[a1, chan, :, :])
                                 cigain[a1, chan, :, :] = numpy.conjugate(igain[a1, chan, :, :])
                                 has_inverse_ant[a1, chan] = True
-                            except numpy.linalg.linalg.LinAlgError:
+                            except numpy.linalg.LinAlgError:
                                 has_inverse_ant[a1, chan] = False
                     
                     for sub_vis_row in range(original.shape[0]):
@@ -181,7 +192,6 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             
             else:
                 times = Time(vis.time / 86400.0, format='mjd', scale='utc')
-                print("No row in gaintable for visibility time range  {} to {}".format(times[0].isot, times[-1].isot))
                 log.warning("No row in gaintable for visibility row, time range  {} to {}".format(times[0].isot, times[-1].isot))
 
             vis["vis"].data[vis_rows] = applied

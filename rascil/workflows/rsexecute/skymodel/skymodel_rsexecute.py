@@ -41,50 +41,58 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
     :return: List of vis_lists
    """
     
-    def ft_cal_sm(ov, sm, g):
+    def ft_cal_sm(ov, sm, g, wv):
         if g is not None:
             assert len(g) == 2, g
-            # assert isinstance(g[0], Image), g[0]
-            # assert isinstance(g[1], ConvolutionFunction), g[1]
         
-        v = copy_visibility(ov, zero=True)
+        wv["vis"].data[...] = 0.0
         
         if len(sm.components) > 0:
             if sm.mask is not None:
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
-                v = dft_skycomponent_visibility(v, comps, **kwargs)
+                wv = dft_skycomponent_visibility(wv, comps, **kwargs)
             else:
-                v = dft_skycomponent_visibility(v, sm.components, **kwargs)
+                wv = dft_skycomponent_visibility(wv, sm.components, **kwargs)
         
         if sm.image is not None:
             if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
-                imgv = copy_visibility(ov, zero=True)
+                wv_data = wv["vis"].data
+                wv["vis"].data[...] = 0.0
                 if sm.mask is not None:
                     model = sm.image.copy(deep=True)
                     model["pixels"].data *= sm.mask["pixels"].data
-                    imgv = predict_list_serial_workflow([imgv], [model], context=context, gcfcf=[g], **kwargs)[0]
+                    wv = predict_list_serial_workflow([wv], [model], context=context, gcfcf=[g], **kwargs)[0]
                 else:
-                    imgv = predict_list_serial_workflow([imgv], [sm.image], context=context, gcfcf=[g], **kwargs)[0]
-                v['vis'].data += imgv['vis'].data
+                    wv = predict_list_serial_workflow([wv], [sm.image], context=context, gcfcf=[g], **kwargs)[0]
+                wv['vis'].data += wv_data
         
         if docal and sm.gaintable is not None:
-            v = apply_gaintable(v, sm.gaintable, inverse=inverse)
+            wv = apply_gaintable(wv, sm.gaintable, inverse=inverse)
         
-        return v
+        return wv
     
     if isinstance(obsvis, list):
+        # This is the usual case of one obsvis per skymodel
         assert len(obsvis) == len(skymodel_list)
+        # Since we probably will loop over many skymodels, we can save a lot of copying
+        # by passing down work blockvisibilitys
+        workvis = [rsexecute.execute(copy_visibility, nout=1)(vv, zero=True) for vv in obsvis]
         if gcfcf is None:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None) for ism, sm in enumerate(skymodel_list)]
-        else:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism]) for ism, sm in
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None, workvis[ism]) for ism, sm in
                     enumerate(skymodel_list)]
-    else:
-        if gcfcf is None:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None) for ism, sm in enumerate(skymodel_list)]
         else:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism]) for ism, sm in
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism], workvis[ism])
+                    for ism, sm in enumerate(skymodel_list)]
+    else:
+        # This is used for Model Partition Calibration where a blockvisibility is calculated for
+        # one obsvis and each skymodel
+        workvis = rsexecute.execute(copy_visibility, nout=1)(obsvis, zero=True)
+        if gcfcf is None:
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None, workvis) for ism, sm in
+                    enumerate(skymodel_list)]
+        else:
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism], workvis) for ism, sm in
                     enumerate(skymodel_list)]
 
 
@@ -104,12 +112,8 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context='ng
    """
     
     def ift_ical_sm(v, sm, g):
-        # assert isinstance(v, BlockVisibility), v
-        # assert isinstance(sm, SkyModel), sm
         if g is not None:
             assert len(g) == 2, g
-            # assert isinstance(g[0], Image), g[0]
-            # assert isinstance(g[1], ConvolutionFunction), g[1]
         
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)

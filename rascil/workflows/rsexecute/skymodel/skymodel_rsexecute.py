@@ -92,17 +92,17 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
             return [rsexecute.execute(ft_cal_sm, nout=1)(sm, None, workvis[ism]) for ism, sm in
                     enumerate(skymodel_list)]
         else:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism], workvis[ism])
+            return [rsexecute.execute(ft_cal_sm, nout=1)(sm, gcfcf[ism], workvis[ism])
                     for ism, sm in enumerate(skymodel_list)]
     else:
         # This is used for Model Partition Calibration where a blockvisibility is calculated for
         # one obsvis and each skymodel
         workvis = rsexecute.execute(copy_visibility, nout=1)(obsvis, zero=True)
         if gcfcf is None:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None, workvis) for ism, sm in
+            return [rsexecute.execute(ft_cal_sm, nout=1)(sm, None, workvis) for ism, sm in
                     enumerate(skymodel_list)]
         else:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism], workvis) for ism, sm in
+            return [rsexecute.execute(ft_cal_sm, nout=1)(sm, gcfcf[ism], workvis) for ism, sm in
                     enumerate(skymodel_list)]
 
 

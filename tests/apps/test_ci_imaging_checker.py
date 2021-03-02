@@ -84,7 +84,7 @@ def test_continuum_imaging_checker(cellsize, npixel, flux_limit, insert_method, 
     model = insert_skycomponent(model, components, insert_method=insert_method)
 
     if noise > 0.0:
-        rng = default_rng()
+        rng = default_rng(1805550721)
         model["pixels"].data += rng.normal(0.0, noise, model["pixels"].data.shape)
 
     model = smooth_image(model, width=1.0)

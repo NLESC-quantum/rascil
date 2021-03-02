@@ -218,7 +218,7 @@ def cip(args, bvis_list, model_list, msname):
                                                   deconvolve_facets=args.clean_facets,
                                                   deconvolve_overlap=args.clean_overlap,
                                                   deconvolve_taper=args.clean_taper,
-                                                  dft_compute_kernel=args.imaging_dft_kernel)
+                                                  dft_compute_kernel=args.imaging_dft_kernel,
                                                   component_threshold=args.component_threshold)
     # Execute the Dask graph
     log.info("Starting compute of continuum imaging pipeline graph ")
@@ -311,7 +311,7 @@ def ical(args, bvis_list, model_list, msname):
                                      calibration_context=args.calibration_context,
                                      controls=controls,
                                      global_solution=args.calibration_global_solution,
-                                     component_threshold=args.component_threshold)
+                                     component_threshold=args.component_threshold,
                                      dft_compute_kernel=args.imaging_dft_kernel)
     # Execute the Dask graph
     log.info("Starting compute of ICAL pipeline graph ")

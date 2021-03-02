@@ -7,7 +7,6 @@
 
 .cache
 /workspace
-/algorithm_reference_library.egg-info/
 
 dask-worker-space
 */notebooks/*_files
@@ -39,8 +38,6 @@ noarch/
 rascil.egg-info/
 
 examples/random/
-
-tests/workflows/voltage_pattern_gaintable.png
 
 *.img
 
@@ -90,5 +87,3 @@ test_results_master/
 tests/workflows/gaintable.png
 
 examples/mcve/xarray/mydask.png
-
-rascil/apps/output.csv

@@ -33,7 +33,7 @@ def apps_parser_ingest(parser):
                         help='Number of channels in a single data descriptor in the MS')
     parser.add_argument('--ingest_chan_per_blockvis', type=int, default=1,
                         help='Number of channels per blockvis (before any average)')
-    parser.add_argument('--ingest_average_blockvis', type=str, default="True",
+    parser.add_argument('--ingest_average_blockvis', type=str, default="False",
                         help="Average all channels in blockvis?")
 
     return parser
@@ -91,6 +91,8 @@ def apps_parser_cleaning(parser):
                         help='Clean loop gain')
     parser.add_argument('--clean_threshold', type=float, default=1e-4,
                         help='Clean stopping threshold (Jy/beam)')
+    parser.add_argument('--component_threshold', type=float, default=None,
+                        help='Pixels > this level are converted to skycomponents')
     parser.add_argument('--clean_fractional_threshold', type=float, default=0.3,
                         help='Fractional stopping threshold for major cycle')
     parser.add_argument('--clean_facets', type=int, default=1,

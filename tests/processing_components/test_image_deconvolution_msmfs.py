@@ -22,7 +22,7 @@ from rascil.processing_components.visibility.base import create_blockvisibility
 
 log = logging.getLogger('rascil-logger')
 
-log.setLevel(logging.WARNING)
+log.setLevel(logging.INFO)
 
 
 class TestImageDeconvolutionMSMFS(unittest.TestCase):

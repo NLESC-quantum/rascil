@@ -4,15 +4,19 @@
 
 __all__ = ['copy_skymodel', 'partition_skymodel_by_flux', 'show_skymodel', 'initialize_skymodel_voronoi',
            'calculate_skymodel_equivalent_image', 'update_skymodel_from_gaintables', 'update_skymodel_from_image',
-           'expand_skymodel_by_skycomponents', 'create_skymodel_from_skycomponents_gaintables']
+           'expand_skymodel_by_skycomponents', 'create_skymodel_from_skycomponents_gaintables',
+           'extract_skycomponents_from_skymodel']
 
 import logging
 
 import matplotlib.pyplot as plt
 import numpy
 from astropy.wcs.utils import skycoord_to_pixel
+from astropy.wcs.utils import pixel_to_skycoord
 
-from rascil.data_models.memory_data_models import SkyModel, GainTable
+
+from rascil.data_models.memory_data_models import SkyModel, GainTable, Skycomponent
+from rascil.data_models import get_parameter
 from rascil.processing_components.calibration.operations import copy_gaintable
 from rascil.processing_components.image.operations import smooth_image
 from rascil.processing_components.skycomponent.base import copy_skycomponent
@@ -261,3 +265,49 @@ def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwar
                        gaintable=copy_gaintable(gaintables[icomp]))
               for icomp, comp in enumerate(components)]
     return result
+
+def extract_skycomponents_from_skymodel(sm, component_threshold=None,
+                                        component_extraction="pixels",
+                                        **kwargs):
+    """ Extract the bright components from the image in a skymodel
+
+    This produces one component per frequency channel
+
+    :param sm: skymodel
+    :param component_threshold: Threshold in Jy to be classified as a source
+    :param component_extraction: Method to extract skycomponents: pixels or None
+    :param kwargs: Parameters for functions
+    :return: Updated skymodel
+
+    """
+    
+    if component_threshold is None:
+        return sm
+
+    if component_extraction is None:
+        return sm
+
+    if component_extraction == "pixels":
+        newsm = copy_skymodel(sm)
+        nchan, npol, _, _ = newsm.image["pixels"].shape
+        refchan = nchan // 2
+        points = numpy.where(numpy.abs(newsm.image["pixels"].data[refchan, 0]) > component_threshold)
+        number_points = len(points[0])
+        if number_points > 0:
+            log.info(
+                f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
+            
+            wcs = newsm.image.image_acc.wcs
+            for p in zip(points[0], points[1]):
+                direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
+                comp = Skycomponent(direction=direction,
+                                    flux=newsm.image["pixels"].data[:, :, p[0], p[1]],
+                                    frequency=newsm.image.frequency,
+                                    polarisation_frame=newsm.image.image_acc.polarisation_frame,
+                                    shape='Point')
+                newsm.components.append(comp)
+                newsm.image["pixels"].data[:, :, p[0], p[1]] = 0.0
+    else:
+        raise ValueError(f"Unknown component extraction method{component_extraction}")
+    
+    return newsm

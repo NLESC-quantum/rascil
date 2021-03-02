@@ -489,19 +489,13 @@ def calculate_image_from_frequency_moments(im: Image, moment_image: Image, refer
         reference_frequency = numpy.average(im.frequency.data)
     log.debug("calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)" % (1e-6 * reference_frequency))
     
-    newim_wcs = im.image_acc.wcs
-    newim_wcs.wcs.ctype[3] = "MOMENT"
-    newim_wcs.wcs.crval[3] = 1
-    newim_wcs.wcs.crpix[3] = 1
-    newim_wcs.wcs.cdelt[3] = 1
-
     newim_data = numpy.zeros_like(im["pixels"].data[...])
     for moment in range(nmoment):
         for chan in range(nchan):
             weight = numpy.power((im.frequency[chan].data - reference_frequency) / reference_frequency, moment)
             newim_data[chan, ...] += moment_image["pixels"].data[moment, ...] * weight
     
-    newim = create_image_from_array(newim_data, wcs=newim_wcs,
+    newim = create_image_from_array(newim_data, wcs=im.image_acc.wcs,
                                     polarisation_frame=im.image_acc.polarisation_frame)
     return newim
 

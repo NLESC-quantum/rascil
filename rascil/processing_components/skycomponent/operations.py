@@ -7,7 +7,8 @@ __all__ = ['create_skycomponent', 'filter_skycomponents_by_flux', 'filter_skycom
            'find_skycomponent_matches', 'find_skycomponent_matches_atomic', 'find_skycomponents',
            'insert_skycomponent', 'voronoi_decomposition', 'image_voronoi_iter',
            'partition_skycomponent_neighbours', 'select_components_by_separation', 'select_neighbouring_components',
-           'remove_neighbouring_components', 'apply_beam_to_skycomponent', 'apply_voltage_pattern_to_skycomponent']
+           'remove_neighbouring_components', 'apply_beam_to_skycomponent',
+           'apply_voltage_pattern_to_skycomponent']
 
 import collections
 import logging
@@ -26,7 +27,7 @@ from photutils import segmentation
 from scipy import interpolate
 from scipy.spatial.qhull import Voronoi
 
-from rascil.data_models.memory_data_models import Image, Skycomponent
+from rascil.data_models import Image, Skycomponent, get_parameter
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
 from rascil.processing_components.calibration.jones import apply_jones
 from rascil.processing_components.image.operations import create_image_from_array
@@ -518,7 +519,7 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
 
     log.debug("insert_skycomponent: Using insert method %s" % insert_method)
 
-    image_frequency = im.frequency
+    image_frequency = im.frequency.data
 
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
@@ -533,9 +534,12 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         flux = numpy.zeros([nchan, npol])
 
-        if comp.flux.shape[0] > 1:
+        if len(comp.frequency.data) == len(image_frequency) and \
+                numpy.max(numpy.abs(comp.frequency.data-image_frequency)) < 1e-7:
+            flux = comp.flux
+        elif comp.flux.shape[0] > 1:
             for pol in range(npol):
-                fint = interpolate.interp1d(comp.frequency, comp.flux[:, pol], kind="cubic")
+                fint = interpolate.interp1d(comp.frequency.data, comp.flux[:, pol], kind="cubic")
                 flux[:, pol] = fint(image_frequency)
         else:
             flux = comp.flux

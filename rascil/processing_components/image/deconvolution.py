@@ -77,17 +77,17 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     
     :param dirty: Image dirty image
     :param psf: Image Point Spread Function
-    :param sc: List of sky components to be added
+    :param prefix: Informational message for logging
     :param window_shape: Window image (Bool) - clean where True
     :param mask: Window in the form of an image, overrides window_shape
-    :param algorithm: Cleaning algorithm: 'msclean'|'hogbom'|'mfsmsclean'
+    :param algorithm: Cleaning algorithm: 'msclean'|'hogbom'|'hogbom-complex'|'mfsmsclean'
     :param gain: loop gain (float) 0.7
     :param threshold: Clean threshold (0.0)
     :param fractional_threshold: Fractional threshold (0.01)
     :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
     :param nmoment: Number of frequency moments (default 3)
     :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'ASKAPSoft'|'CASA'|'RASCIL', Default is RASCIL.
-    :return: component image, residual image, skycomponents
+    :return: component image, residual image
 
     See also
         :py:func:`rascil.processing_components.arrays.cleaners.hogbom`
@@ -118,15 +118,21 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix='', **kwargs) -> (Image, Im
     return comp_image, residual_image
 
 
-def find_window(dirty, prefix, **kwargs):
+def find_window(dirty, prefix, window_shape=None, **kwargs):
     """ Find a clean window from a dirty image
     
-    :param dirty:
-    :param prefix:
+    The values for window_shape are:
+        "quarter" - Inner quarter of image
+        "no_edge" - all but window_edge pixels around the perimeter
+        mask - If an Image, use as the window (overrides other options)
+        None - Entire image
+    
+    :param dirty: Image of the dirty image
+    :param prefix: Informational prefix for log messages
+    :param window_shape: Shape of window
     :param kwargs:
-    :return:
+    :return: Numpy array
     """
-    window_shape = get_parameter(kwargs, 'window_shape', None)
     if window_shape == 'quarter':
         log.info("deconvolve_cube %s: window is inner quarter" % prefix)
         qx = dirty["pixels"].shape[3] // 4
@@ -154,17 +160,19 @@ def find_window(dirty, prefix, **kwargs):
     return window
 
 
-def bound_psf(dirty, prefix, psf, **kwargs):
-    """Find the bounded psf
+def bound_psf(dirty, prefix, psf, psf_support=None, **kwargs):
+    """Calculate the PSF within a given support
     
-    :param dirty:
-    :param prefix:
-    :param psf:
+    :param dirty: Dirty image, used for default sizes
+    :param prefix: Informational prefix to log messages
+    :param psf: Point Spread Function
+    :param psf_support: The half width of a box centered on the psf centre
     :param kwargs:
-    :return:
+    :return: psf: bounded point spread function (i.e. with smaller size in x and y)
     """
-    psf_support = get_parameter(kwargs, 'psf_support',
-                                max(dirty["pixels"].shape[2] // 2, dirty["pixels"].shape[3] // 2))
+    if psf_support is None:
+        psf_support =max(dirty["pixels"].shape[2] // 2, dirty["pixels"].shape[3] // 2)
+        
     if (psf_support <= psf["pixels"].shape[2] // 2) and ((psf_support <= psf["pixels"].shape[3] // 2)):
         centre = [psf["pixels"].shape[2] // 2, psf["pixels"].shape[3] // 2]
         psf = psf.isel(x=slice((centre[0] - psf_support), (centre[0] + psf_support)),
@@ -181,29 +189,17 @@ def complex_hogbom_kernel(dirty, psf, window, **kwargs):
 
     :param dirty: Image dirty image
     :param psf: Image Point Spread Function
-    :param window_shape: Window image (Bool) - clean where True
-    :param mask: Window in the form of an image, overrides window_shape
-    :param algorithm: Cleaning algorithm: 'msclean'|'hogbom'|'mfsmsclean'
-    :param gain: loop gain (float) 0.7
+    :param window: Window array (Bool) - clean where True
+    :param gain: loop gain (float) 0.q
     :param threshold: Clean threshold (0.0)
     :param fractional_threshold: Fractional threshold (0.01)
-    :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
-    :param nmoment: Number of frequency moments (default 3)
-    :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'ASKAPSoft'|'CASA'|'RASCIL', Default is RASCIL.
-    :return: component image, residual image, skycomponents
+    :return: component image, residual image
     """
 
-    sc = list()
-    
     log.info("deconvolve_cube_complex: Starting Hogbom-complex clean of each channel separately")
-    gain = get_parameter(kwargs, 'gain', 0.1)
-    assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
-    thresh = get_parameter(kwargs, 'threshold', 0.0)
-    assert thresh >= 0.0
-    niter = get_parameter(kwargs, 'niter', 100)
-    assert niter > 0
-    fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.1)
-    assert 0.0 <= fracthresh < 1.0
+
+    fracthresh, gain, niter, thresh, scales = common_arguments(**kwargs)
+
     comp_array = numpy.zeros(dirty["pixels"].data.shape)
     residual_array = numpy.zeros(dirty["pixels"].data.shape)
     for channel in range(dirty["pixels"].data.shape[0]):
@@ -250,36 +246,55 @@ def complex_hogbom_kernel(dirty, psf, window, **kwargs):
     return comp_image, residual_image
 
 
+def common_arguments(**kwargs):
+    """ Extract the common arguments from kwargs
+    
+    :param gain: loop gain (float) default: 0.7
+    :param niter: Number of minor cycle iterations: 100
+    :param threshold: Clean threshold default 0.0
+    :param fractional_threshold: Fractional threshold default 0.1
+    :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
+
+    :param kwargs:
+    :return: fracthresh, gain, niter, thresh, scales
+    """
+    gain = get_parameter(kwargs, 'gain', 0.1)
+    if gain <= 0.0 or gain >= 2.0: raise ValueError("Loop gain must be between 0 and 2")
+    thresh = get_parameter(kwargs, 'threshold', 0.0)
+    if thresh < 0.0: raise ValueError("Threshold must be positive or zero")
+    niter = get_parameter(kwargs, 'niter', 100)
+    if niter < 0: raise ValueError("niter must be greater than zero")
+    fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.1)
+    if fracthresh < 0.0 or fracthresh > 1.0: raise ValueError("Fractional threshold should be in range 0.0, 1.0")
+    scales = get_parameter(kwargs, "scales", [0, 3, 10, 30])
+    
+    return fracthresh, gain, niter, thresh, scales
+
+
 def hogbom_kernel(dirty, prefix, psf, window, **kwargs):
     """ Hogbom Clean
 
     See: Hogbom CLEAN A&A Suppl, 15, 417, (1974)
 
     :param dirty: Image dirty image
+    :param prefix: Informational message for logging
     :param psf: Image Point Spread Function
-    :param sc: List of sky components to be added
-    :param window_shape: Window image (Bool) - clean where True
-    :param mask: Window in the form of an image, overrides window_shape
-    :param algorithm: Cleaning algorithm: 'msclean'|'hogbom'|'mfsmsclean'
-    :param gain: loop gain (float) 0.7
+    :param window: Window array (Bool) - clean where True
+    :param gain: loop gain (float) 0.1
     :param threshold: Clean threshold (0.0)
     :param fractional_threshold: Fractional threshold (0.01)
     :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
     :param nmoment: Number of frequency moments (default 3)
     :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'ASKAPSoft'|'CASA'|'RASCIL', Default is RASCIL.
-    :return: component image, residual image, skycomponents
+
+    :return: component image, residual image
     """
 
     log.info("deconvolve_cube %s: Starting Hogbom clean of each polarisation and channel separately"
              % prefix)
-    gain = get_parameter(kwargs, 'gain', 0.1)
-    assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
-    thresh = get_parameter(kwargs, 'threshold', 0.0)
-    assert thresh >= 0.0
-    niter = get_parameter(kwargs, 'niter', 100)
-    assert niter > 0
-    fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.1)
-    assert 0.0 < fracthresh < 1.0
+
+    fracthresh, gain, niter, thresh, scales = common_arguments(**kwargs)
+
     comp_array = numpy.zeros(dirty["pixels"].data.shape)
     residual_array = numpy.zeros(dirty["pixels"].data.shape)
     for channel in range(dirty["pixels"].data.shape[0]):
@@ -314,25 +329,25 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
     :param dirty: Image dirty image
     :param psf: Image Point Spread Function
     :param sc: List of sky components to be added
-    :param window_shape: Window image (Bool) - clean where True
     :param mask: Window in the form of an image, overrides window_shape
-    :param algorithm: Cleaning algorithm: 'msclean'|'hogbom'|'mfsmsclean'
     :param gain: loop gain (float) 0.7
     :param threshold: Clean threshold (0.0)
     :param fractional_threshold: Fractional threshold (0.01)
     :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
     :param nmoment: Number of frequency moments (default 3)
     :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'ASKAPSoft'|'CASA'|'RASCIL', Default is RASCIL.
-    :return: component image, residual image, skycomponents
+    :return: component image, residual image
     """
 
     findpeak = get_parameter(kwargs, "findpeak", 'RASCIL')
     log.info("deconvolve_cube %s: Starting Multi-scale multi-frequency clean of each polarisation separately"
              % prefix)
     nmoment = get_parameter(kwargs, "nmoment", 3)
-    assert nmoment >= 1, "Number of frequency moments must be greater than or equal to one"
+    if not (nmoment >= 1):
+        raise ValueError("Number of frequency moments must be greater than or equal to one")
     nchan = dirty["pixels"].shape[0]
-    assert nchan > 2 * (nmoment - 1), "Require nchan %d > 2 * (nmoment %d - 1)" % (nchan, 2 * (nmoment - 1))
+    if not (nchan > 2 * (nmoment - 1)):
+        raise ValueError( "Require nchan %d > 2 * (nmoment %d - 1)" % (nchan, 2 * (nmoment - 1)))
     dirty_taylor = calculate_image_frequency_moments(dirty, nmoment=nmoment)
     if nmoment > 1:
         psf_taylor = calculate_image_frequency_moments(psf, nmoment=2 * nmoment)
@@ -344,15 +359,14 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
     log.info("deconvolve_cube %s: Shape of Dirty moments image %s" %
              (prefix, str(dirty_taylor["pixels"].shape)))
     log.info("deconvolve_cube %s: Shape of PSF moments image %s" % (prefix, str(psf_taylor["pixels"].shape)))
+
+
+    fracthresh, gain, niter, thresh, scales = common_arguments(**kwargs)
+
     gain = get_parameter(kwargs, 'gain', 0.7)
-    assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
-    thresh = get_parameter(kwargs, 'threshold', 0.0)
-    assert thresh >= 0.0
-    niter = get_parameter(kwargs, 'niter', 100)
-    assert niter > 0
-    scales = get_parameter(kwargs, 'scales', [0, 3, 10, 30])
-    fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.1)
-    assert 0.0 < fracthresh < 1.0
+    if not (0.0 < gain < 2.0):
+        raise ValueError("Loop gain must be between 0 and 2")
+
     comp_array = numpy.zeros(dirty_taylor["pixels"].data.shape)
     residual_array = numpy.zeros(dirty_taylor["pixels"].data.shape)
     for pol in range(dirty_taylor["pixels"].data.shape[1]):
@@ -391,32 +405,25 @@ def msclean_kernel(dirty, prefix, psf, window, **kwargs):
 
     :param dirty: Image dirty image
     :param psf: Image Point Spread Function
-    :param window_shape: Window image (Bool) - clean where True
+    :param window: Window image (Bool) - clean where True
     :param mask: Window in the form of an image, overrides window_shape
-    :param algorithm: Cleaning algorithm: 'msclean'|'hogbom'|'mfsmsclean'
     :param gain: loop gain (float) 0.7
     :param threshold: Clean threshold (0.0)
     :param fractional_threshold: Fractional threshold (0.01)
     :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
-    :param nmoment: Number of frequency moments (default 3)
-    :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'ASKAPSoft'|'CASA'|'RASCIL', Default is RASCIL.
-    :return: component image, residual image, skycomponents
+    :return: component image, residual image
     
     """
 
-    sc = list()
-    
     log.info("deconvolve_cube %s: Starting Multi-scale clean of each polarisation and channel separately" %
              prefix)
-    gain = get_parameter(kwargs, 'gain', 0.7)
-    assert 0.0 < gain < 2.0, "Loop gain must be between 0 and 2"
-    thresh = get_parameter(kwargs, 'threshold', 0.0)
-    assert thresh >= 0.0
-    niter = get_parameter(kwargs, 'niter', 100)
-    assert niter > 0
-    scales = get_parameter(kwargs, 'scales', [0, 3, 10, 30])
+
+    fracthresh, gain, niter, thresh, scales = common_arguments(**kwargs)
+
     fracthresh = get_parameter(kwargs, 'fractional_threshold', 0.01)
-    assert 0.0 < fracthresh < 1.0
+    if not (0.0 < fracthresh < 1.0):
+        raise ValueError("fractional_threshold should be in range 0.0 to 1.0")
+    
     comp_array = numpy.zeros_like(dirty["pixels"].data)
     residual_array = numpy.zeros_like(dirty["pixels"].data)
     for channel in range(dirty["pixels"].data.shape[0]):
@@ -447,8 +454,6 @@ def fit_psf(psf: Image, **kwargs):
     :return: fitted PSF, Gaussian2D, size
 
     """
-    assert image_is_canonical(psf)
-    
     npixel = psf["pixels"].data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)
     y, x = numpy.mgrid[sl, sl]
@@ -498,7 +503,13 @@ def fit_psf(psf: Image, **kwargs):
 def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
     """ Restore the model image to the residuals
 
-    :params psf: Input PSF
+    The clean beam can be specified as a dictionary with
+    fields "bmaj", "bmin" (both in arcsec) "bpa" in degrees.
+    
+    :param model: Model image (i.e. deconvolved)
+    :param psf: Input PSF
+    :param residual: Residual image
+    :param cleanbeam: Clean beam
     :return: restored image
 
     """

@@ -32,6 +32,7 @@ log.setLevel(logging.WARNING)
 
 # These tests probe whether the results depend on whether Dask is used and also whether
 # optimisation in Dask is used.
+
 @pytest.mark.parametrize("use_dask, optimise, component_threshold, test_max, test_min", [
     (True,  True,  None, 4.093297359544571, -0.005846355119035153),
     (True,  False, None, 4.093297359544571, -0.005846355119035153),
@@ -41,6 +42,13 @@ log.setLevel(logging.WARNING)
     (False, False, 1.0,  4.093825055185321, -0.1019797392673627)
 ])
 def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, test_min):
+    """ Test of imaging pipeline
+    
+    :param use_dask: - Use dask for processing
+    :param optimise: - Enable dask graph optimisation
+    :param component_threshold: - Threshold in Jy/pixel for classifying as component
+    :param test_max, test_min:: max, min in tests.
+"""
     rsexecute.set_client(use_dask=use_dask, optim=optimise)
     
     from rascil.data_models.parameters import rascil_path
@@ -152,10 +160,6 @@ def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, tes
                          % (dir))
     
     qa = qa_image(restored, context='Restored clean image - no selfcal')
-    
-    # Correct serial values for skycomponent extraction
-    # assert abs(qa.data['max'] - 4.093686139135822) < 1e-7, str(qa)
-    # assert abs(qa.data['min'] + 0.005874719205258523) < 1e-7, str(qa)
     
     # Correct values for no skycomponent extraction
     assert abs(qa.data['max'] - test_max) < 1e-7, str(qa)

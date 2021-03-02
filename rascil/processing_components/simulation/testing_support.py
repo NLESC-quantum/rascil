@@ -147,6 +147,7 @@ def create_test_image_from_s3(npixel=16384, polarisation_frame=PolarisationFrame
 
         data/models/S3_1400MHz_1mJy_10deg.csv, use flux_limit>= 1e-3
         data/models/S3_1400MHz_100uJy_10deg.csv, use flux_limit < 1e-3
+        data/models/S3_1400MHz_10uJy_10deg.csv, use flux_limit < 1e-4
         data/models/S3_1400MHz_1mJy_18deg.csv, use flux_limit>= 1e-3
         data/models/S3_1400MHz_100uJy_18deg.csv, use flux_limit < 1e-3
 
@@ -202,8 +203,11 @@ def create_test_image_from_s3(npixel=16384, polarisation_frame=PolarisationFrame
             fovstr = '10'
         if flux_limit >= 1e-3:
             csvfilename = rascil_data_path('models/S3_1400MHz_1mJy_%sdeg.csv' % fovstr)
-        else:
+        elif flux_limit >= 1e-4:
             csvfilename = rascil_data_path('models/S3_1400MHz_100uJy_%sdeg.csv' % fovstr)
+        else:
+            fovstr = '10'
+            csvfilename = rascil_data_path('models/S3_1400MHz_10uJy_%sdeg.csv' % fovstr)
         log.info('create_test_image_from_s3: Reading S3 sources from %s ' % csvfilename)
     else:
         assert fov in [10, 20, 40], "Field of view invalid: use one of %s" % ([10, 20, 40])
@@ -278,6 +282,7 @@ def create_test_skycomponents_from_s3(polarisation_frame=PolarisationFrame("stok
 
         data/models/S3_1400MHz_1mJy_10deg.csv, use flux_limit>= 1e-3
         data/models/S3_1400MHz_100uJy_10deg.csv, use flux_limit < 1e-3
+        data/models/S3_1400MHz_10uJy_10deg.csv, use flux_limit < 1e-4
         data/models/S3_1400MHz_1mJy_18deg.csv, use flux_limit>= 1e-3
         data/models/S3_1400MHz_100uJy_18deg.csv, use flux_limit < 1e-3
 
@@ -315,8 +320,11 @@ def create_test_skycomponents_from_s3(polarisation_frame=PolarisationFrame("stok
             fovstr = '10'
         if flux_limit >= 1e-3:
             csvfilename = rascil_data_path('models/S3_1400MHz_1mJy_%sdeg.csv' % fovstr)
-        else:
+        elif flux_limit >= 1e-4:
             csvfilename = rascil_data_path('models/S3_1400MHz_100uJy_%sdeg.csv' % fovstr)
+        else:
+            fovstr = '10'
+            csvfilename = rascil_data_path('models/S3_1400MHz_10uJy_%sdeg.csv' % fovstr)
         log.info('create_test_skycomponents_from_s3: Reading S3-SEX sources from %s ' % csvfilename)
     else:
         assert fov in [10, 20, 40], "Field of view invalid: use one of %s" % ([10, 20, 40])

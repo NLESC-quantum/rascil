@@ -5,7 +5,7 @@
 __all__ = ['copy_skymodel', 'partition_skymodel_by_flux', 'show_skymodel', 'initialize_skymodel_voronoi',
            'calculate_skymodel_equivalent_image', 'update_skymodel_from_gaintables', 'update_skymodel_from_image',
            'expand_skymodel_by_skycomponents', 'create_skymodel_from_skycomponents_gaintables',
-           'update_skymodel_from_model', 'extract_skycomponents_from_skymodel']
+           'extract_skycomponents_from_skymodel']
 
 import logging
 
@@ -266,39 +266,6 @@ def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwar
               for icomp, comp in enumerate(components)]
     return result
 
-def update_skymodel_from_model(sm, **kwargs):
-    """ Extract the bright components from the model and place into the skymodel
-
-    :param model: Model image
-    :param sm: Skymodel
-    :param kwargs: Parameters for functions
-    :return: Updated skymodel
-    
-    """
-    component_threshold = get_parameter(kwargs, "component_threshold", None)
-    
-    if component_threshold is None:
-        return sm
-
-    newsm = copy_skymodel(sm)
-    points = numpy.where(numpy.abs(sm.image["pixels"].data)>component_threshold)
-    number_points = len(points[0])
-    log.info(f"update_skymodel_from_model: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
-    
-    wcs = sm.image.image_acc.wcs
-    for p in zip(points[2], points[3]):
-        direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
-        comp = Skycomponent(direction=direction,
-                            flux=sm.image["pixels"].data[..., p[0], p[1]],
-                            frequency=sm.image.frequency,
-                            polarisation_frame=sm.image.image_acc.polarisation_frame,
-                            shape='Point')
-        newsm.components.append(comp)
-        newsm.image["pixels"].data[..., p[0], p[1]] = 0.0
-
-    return newsm
-
-
 def extract_skycomponents_from_skymodel(sm, **kwargs):
     """ Extract the bright components from the image in a skymodel
 
@@ -311,7 +278,6 @@ def extract_skycomponents_from_skymodel(sm, **kwargs):
     """
     component_threshold = get_parameter(kwargs, "component_threshold", None)
     component_extraction = get_parameter(kwargs, "component_extraction", 'pixels')
-    
     
     if component_threshold is None:
         return sm
@@ -336,6 +302,8 @@ def extract_skycomponents_from_skymodel(sm, **kwargs):
                                     shape='Point')
                 newsm.components.append(comp)
                 newsm.image["pixels"].data[:, :, p[0], p[1]] = 0.0
+        if numpy.max(numpy.abs(newsm.image["pixels"].data[refchan, 0])) > component_threshold:
+            return ArithmeticError(f"extract_skycomponents_from_image: Not all flux > {component_threshold:.6f} Jy extracted")
     else:
         raise ValueError(f"Unknown component extraction method{component_extraction}")
     

@@ -43,7 +43,6 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.arrays.cleaners import hogbom, hogbom_complex, msclean, msmfsclean
 from rascil.processing_components.image.operations import calculate_image_frequency_moments, \
     calculate_image_from_frequency_moments, image_is_canonical
-from rascil.processing_components.skycomponent.operations import extract_skycomponents_from_image
 from rascil.processing_components.image.operations import create_image_from_array
 
 # from photutils import fit_2dgaussian

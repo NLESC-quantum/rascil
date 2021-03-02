@@ -5,6 +5,7 @@ __all__ = ['predict_skymodel_list_rsexecute_workflow',
            'invert_skymodel_list_rsexecute_workflow']
 
 import logging
+import copy
 
 import numpy
 
@@ -65,7 +66,7 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
         
         if sm.image is not None:
             if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
-                wv_data = wv["vis"].data
+                wv_data = copy.deepcopy(wv["vis"].data)
                 wv["vis"].data[...] = 0.0
                 if sm.mask is not None:
                     model = sm.image.copy(deep=True)

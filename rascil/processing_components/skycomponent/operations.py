@@ -7,8 +7,7 @@ __all__ = ['create_skycomponent', 'filter_skycomponents_by_flux', 'filter_skycom
            'find_skycomponent_matches', 'find_skycomponent_matches_atomic', 'find_skycomponents',
            'insert_skycomponent', 'voronoi_decomposition', 'image_voronoi_iter',
            'partition_skycomponent_neighbours', 'select_components_by_separation', 'select_neighbouring_components',
-           'remove_neighbouring_components', 'apply_beam_to_skycomponent', 'apply_voltage_pattern_to_skycomponent',
-           'extract_skycomponents_from_image']
+           'remove_neighbouring_components', 'apply_beam_to_skycomponent', 'apply_voltage_pattern_to_skycomponent']
 
 import collections
 import logging
@@ -639,48 +638,3 @@ def partition_skycomponent_neighbours(comps, targets):
         comps_lists.append(selected_comps)
 
     return comps_lists
-
-
-def extract_skycomponents_from_image(im, **kwargs):
-    """ Extract the bright components from the model
-    
-    This produces one component per frequency channel
-
-    :param im: image
-    :param kwargs: Parameters for functions
-    :return: List of skycomponents
-
-    """
-    component_threshold = get_parameter(kwargs, "component_threshold", None)
-    component_extraction = get_parameter(kwargs, "component_extraction", 'pixels')
-
-    sc = list()
-    
-    if component_threshold is None:
-        return im, sc
-    
-    if component_extraction == "pixels":
-        nchan, npol, _, _ = im["pixels"].shape
-        for chan in range(nchan):
-            chansc = list()
-            points = numpy.where(numpy.abs(im["pixels"].data[chan, 0]) > component_threshold)
-            number_points = len(points[0])
-            if number_points > 0:
-                log.info(
-                    f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents")
-                
-                wcs = im.image_acc.wcs
-                for p in zip(points[0], points[1]):
-                    direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
-                    comp = Skycomponent(direction=direction,
-                                        flux=[im["pixels"].data[chan, :, p[0], p[1]]],
-                                        frequency=[im.frequency[chan]],
-                                        polarisation_frame=im.image_acc.polarisation_frame,
-                                        shape='Point')
-                    chansc.append(comp)
-                    im["pixels"].data[chan, :, p[0], p[1]] = 0.0
-            sc.append(chansc)
-    else:
-        raise ValueError(f"Unknown component extraction method{component_extraction}")
-    
-    return im, sc

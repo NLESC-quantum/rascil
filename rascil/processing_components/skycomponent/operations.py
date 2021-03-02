@@ -533,7 +533,8 @@ def insert_skycomponent(im: Image, sc: Union[Skycomponent, List[Skycomponent]], 
         pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
         flux = numpy.zeros([nchan, npol])
 
-        if numpy.max(numpy.abs(comp.frequency.data-image_frequency)) < 1e-7:
+        if len(comp.frequency.data) == len(image_frequency) and \
+                numpy.max(numpy.abs(comp.frequency.data-image_frequency)) < 1e-7:
             flux = comp.flux
         elif comp.flux.shape[0] > 1:
             for pol in range(npol):

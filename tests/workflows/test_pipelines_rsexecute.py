@@ -22,7 +22,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation import ingest_unittest_visibility, \
     create_unittest_model, create_unittest_components
 from rascil.processing_components.simulation import simulate_gaintable
-from rascil.processing_components.skycomponent.operations import insert_skycomponent
+from rascil.processing_components.skycomponent import insert_skycomponent, copy_skycomponent
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines.pipeline_rsexecute import ical_list_rsexecute_workflow, \
     continuum_imaging_list_rsexecute_workflow
@@ -557,15 +557,16 @@ class TestPipelineGraphs(unittest.TestCase):
                                  '%s/test_pipelines_continuum_imaging_skymodel_empty_threshold_rsexecute_restored.fits' % self.dir)
             
         qa = qa_image(restored[centre], context='restored')
-        assert numpy.abs(qa.data['max'] - 100.01622760085863) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.06636774330387876) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.37273326707677) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 3.212367646304462) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
         
         def downscale(comp):
-            comp.flux *= 0.5
-            return comp
+            newcomp = copy_skycomponent(comp)
+            newcomp.flux *= 0.5
+            return newcomp
 
         def downscale_list(cl):
             return [downscale(comp) for comp in cl]
@@ -602,8 +603,8 @@ class TestPipelineGraphs(unittest.TestCase):
         
         qa = qa_image(restored[centre], context='restored')
         
-        assert numpy.abs(qa.data['max'] - 50.0) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data['min'] + 0.0) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['max'] - 100.0077589418119) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data['min'] + 0.033164240531133315) < 1.0e-7, str(qa)
     
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()

@@ -266,22 +266,27 @@ def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwar
               for icomp, comp in enumerate(components)]
     return result
 
-def extract_skycomponents_from_skymodel(sm, **kwargs):
+def extract_skycomponents_from_skymodel(sm, component_threshold=None,
+                                        component_extraction="pixels",
+                                        **kwargs):
     """ Extract the bright components from the image in a skymodel
 
     This produces one component per frequency channel
 
     :param sm: skymodel
+    :param component_threshold: Threshold in Jy to be classified as a source
+    :param component_extraction: Method to extract skycomponents: pixels or None
     :param kwargs: Parameters for functions
     :return: Updated skymodel
 
     """
-    component_threshold = get_parameter(kwargs, "component_threshold", None)
-    component_extraction = get_parameter(kwargs, "component_extraction", 'pixels')
     
     if component_threshold is None:
         return sm
-    
+
+    if component_extraction is None:
+        return sm
+
     if component_extraction == "pixels":
         newsm = copy_skymodel(sm)
         nchan, npol, _, _ = newsm.image["pixels"].shape

@@ -2,14 +2,15 @@
 
 """
 
-__all__ = ['ifft', 'fft', 'pad_mid', 'extract_mid', 'extract_oversampled']
+__all__ = ["ifft", "fft", "pad_mid", "extract_mid", "extract_oversampled"]
 
 import numpy
 
 try:
     import pyfftw
+
     # import multiprocessing
-    nthread = 4 #multiprocessing.cpu_count()
+    nthread = 4  # multiprocessing.cpu_count()
     # Enable the PyFFTW cache
     if not pyfftw.interfaces.cache.is_enabled():
         pyfftw.interfaces.cache.enable()
@@ -22,10 +23,10 @@ except ImportError:
 
 
 def fft(a):
-    """ Fourier transformation from image to grid space
-    
+    """Fourier transformation from image to grid space
+
     .. note::
-    
+
         If there are four axes then the last outer axes are not transformed
 
     :param a: image in `lm` coordinate space
@@ -33,62 +34,99 @@ def fft(a):
     """
 
     if not pyfftw_exists:
-        if (len(a.shape) == 4):
-            return numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.ifftshift(a, axes=[2, 3])), axes=[2, 3])
-        if (len(a.shape) == 5):
-            return numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.ifftshift(a, axes=[3, 4])), axes=[3, 4])
+        if len(a.shape) == 4:
+            return numpy.fft.fftshift(
+                numpy.fft.fft2(numpy.fft.ifftshift(a, axes=[2, 3])), axes=[2, 3]
+            )
+        if len(a.shape) == 5:
+            return numpy.fft.fftshift(
+                numpy.fft.fft2(numpy.fft.ifftshift(a, axes=[3, 4])), axes=[3, 4]
+            )
         else:
             return numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.ifftshift(a)))
     else:
-        if (len(a.shape) == 4):
+        if len(a.shape) == 4:
             b = pyfftw.interfaces.numpy_fft.fftshift(
-                pyfftw.interfaces.numpy_fft.fft2(pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[2, 3]),
-                                                 auto_align_input=False, planner_effort='FFTW_MEASURE', threads=nthread), axes=[2, 3])
-        if (len(a.shape) == 5):
+                pyfftw.interfaces.numpy_fft.fft2(
+                    pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[2, 3]),
+                    auto_align_input=False,
+                    planner_effort="FFTW_MEASURE",
+                    threads=nthread,
+                ),
+                axes=[2, 3],
+            )
+        if len(a.shape) == 5:
             b = pyfftw.interfaces.numpy_fft.fftshift(
-                pyfftw.interfaces.numpy_fft.fft2(pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[3, 4]),
-                                                 auto_align_input=False, planner_effort='FFTW_MEASURE', threads=nthread), axes=[3, 4])
+                pyfftw.interfaces.numpy_fft.fft2(
+                    pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[3, 4]),
+                    auto_align_input=False,
+                    planner_effort="FFTW_MEASURE",
+                    threads=nthread,
+                ),
+                axes=[3, 4],
+            )
         else:
             b = pyfftw.interfaces.numpy_fft.fftshift(
-                pyfftw.interfaces.numpy_fft.fft2(pyfftw.interfaces.numpy_fft.ifftshift(a), auto_align_input=False, threads=nthread,
-                                                 planner_effort='FFTW_MEASURE'))
+                pyfftw.interfaces.numpy_fft.fft2(
+                    pyfftw.interfaces.numpy_fft.ifftshift(a),
+                    auto_align_input=False,
+                    threads=nthread,
+                    planner_effort="FFTW_MEASURE",
+                )
+            )
         return b
 
 
 def ifft(a):
-    """ Fourier transformation from grid to image space
+    """Fourier transformation from grid to image space
 
     .. note::
-    
+
         If there are four axes then the last outer axes are not transformed
 
     :param a: `uv` grid to transform
     :return: an image in `lm` coordinate space
     """
     if not pyfftw_exists:
-        if (len(a.shape) == 4):
-            return numpy.fft.fftshift(numpy.fft.ifft2(numpy.fft.ifftshift(a, axes=[2, 3])), axes=[2, 3])
-        elif (len(a.shape) == 5):
-            return numpy.fft.fftshift(numpy.fft.ifft2(numpy.fft.ifftshift(a, axes=[2, 3, 4])), axes=[2, 3, 4])
+        if len(a.shape) == 4:
+            return numpy.fft.fftshift(
+                numpy.fft.ifft2(numpy.fft.ifftshift(a, axes=[2, 3])), axes=[2, 3]
+            )
+        elif len(a.shape) == 5:
+            return numpy.fft.fftshift(
+                numpy.fft.ifft2(numpy.fft.ifftshift(a, axes=[2, 3, 4])), axes=[2, 3, 4]
+            )
         else:
             return numpy.fft.fftshift(numpy.fft.ifft2(numpy.fft.ifftshift(a)))
     else:
         # a = pyfftw.byte_align(a)
         b = pyfftw.interfaces.numpy_fft.fftshift(
-            pyfftw.interfaces.numpy_fft.ifft2(pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[2, 3]),
-                                              auto_align_input=False, planner_effort='FFTW_MEASURE'),
-            axes=[2, 3])
-        if (len(a.shape) == 4):
+            pyfftw.interfaces.numpy_fft.ifft2(
+                pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[2, 3]),
+                auto_align_input=False,
+                planner_effort="FFTW_MEASURE",
+            ),
+            axes=[2, 3],
+        )
+        if len(a.shape) == 4:
             pass
-        elif (len(a.shape) == 5):
+        elif len(a.shape) == 5:
             b = pyfftw.interfaces.numpy_fft.fftshift(
-                pyfftw.interfaces.numpy_fft.ifft2(pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[2, 3, 4]),
-                                                  auto_align_input=False, planner_effort='FFTW_MEASURE'),
-                axes=[2, 3, 4])
+                pyfftw.interfaces.numpy_fft.ifft2(
+                    pyfftw.interfaces.numpy_fft.ifftshift(a, axes=[2, 3, 4]),
+                    auto_align_input=False,
+                    planner_effort="FFTW_MEASURE",
+                ),
+                axes=[2, 3, 4],
+            )
         else:
             b = pyfftw.interfaces.numpy_fft.fftshift(
-                pyfftw.interfaces.numpy_fft.ifft2(pyfftw.interfaces.numpy_fft.ifftshift(a), auto_align_input=False,
-                                                  planner_effort='FFTW_MEASURE'))
+                pyfftw.interfaces.numpy_fft.ifft2(
+                    pyfftw.interfaces.numpy_fft.ifftshift(a),
+                    auto_align_input=False,
+                    planner_effort="FFTW_MEASURE",
+                )
+            )
         return b
 
 
@@ -101,7 +139,7 @@ def pad_mid(ff, npixel):
     sinc pattern in the uv-grid.
 
     .. note::
-    
+
         Only the two innermost axes are transformed
 
         This function does not handle odd-sized dimensions properly
@@ -117,12 +155,11 @@ def pad_mid(ff, npixel):
     if npixel == nx:
         return ff
     assert npixel > nx and npixel > ny
-    pw = [(0, 0)] * (ff.ndim - 2) + [(npixel // 2 - cy, npixel // 2 - cy),
-                                     (npixel // 2 - cx, npixel // 2 - cx)]
-    return numpy.pad(ff,
-                     pad_width=pw,
-                     mode='constant',
-                     constant_values=0.0)
+    pw = [(0, 0)] * (ff.ndim - 2) + [
+        (npixel // 2 - cy, npixel // 2 - cy),
+        (npixel // 2 - cx, npixel // 2 - cx),
+    ]
+    return numpy.pad(ff, pad_width=pw, mode="constant", constant_values=0.0)
 
 
 def extract_mid(a, npixel):
@@ -133,7 +170,7 @@ def extract_mid(a, npixel):
     operation to pad.
 
     .. note::
-    
+
         Only the two innermost axes are transformed
 
     :param npixel: desired size of the section to extract
@@ -144,9 +181,9 @@ def extract_mid(a, npixel):
     cy = ny // 2
     s = npixel // 2
     if npixel % 2 != 0:
-        return a[..., cx - s:cx + s + 1, cy - s:cy + s + 1]
+        return a[..., cx - s : cx + s + 1, cy - s : cy + s + 1]
     else:
-        return a[..., cx - s:cx + s, cy - s:cy + s]
+        return a[..., cx - s : cx + s, cy - s : cy + s]
 
 
 def extract_oversampled(a, xf, yf, kernel_oversampling, kernelwidth):
@@ -176,7 +213,9 @@ def extract_oversampled(a, xf, yf, kernel_oversampling, kernelwidth):
     mx = npixela // 2 - kernel_oversampling * (kernelwidth // 2) - xf
     assert mx >= 0 and my >= 0, "mx %d and my %d" % (mx, my)
     # Extract every kernel_oversampling-th pixel
-    mid = a[my: my + kernel_oversampling * kernelwidth: kernel_oversampling,
-          mx: mx + kernel_oversampling * kernelwidth: kernel_oversampling]
+    mid = a[
+        my : my + kernel_oversampling * kernelwidth : kernel_oversampling,
+        mx : mx + kernel_oversampling * kernelwidth : kernel_oversampling,
+    ]
     # normalise
     return kernel_oversampling * kernel_oversampling * mid

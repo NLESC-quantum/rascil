@@ -11,25 +11,46 @@ import pprint
 
 import matplotlib
 
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 
 from distributed import Client
 
 from rascil.data_models import PolarisationFrame
-from rascil.processing_components import create_image_from_visibility, qa_image, \
-    show_image, convert_blockvisibility_to_stokesI, export_image_to_fits, image_gather_channels, \
-    create_calibration_controls
+from rascil.processing_components import (
+    create_image_from_visibility,
+    qa_image,
+    show_image,
+    convert_blockvisibility_to_stokesI,
+    export_image_to_fits,
+    image_gather_channels,
+    create_calibration_controls,
+)
 
-from rascil.workflows import weight_list_rsexecute_workflow, \
-    continuum_imaging_list_rsexecute_workflow, sum_invert_results, create_blockvisibility_from_ms_rsexecute, \
-    ical_list_rsexecute_workflow, invert_list_rsexecute_workflow, sum_invert_results_rsexecute
+from rascil.workflows import (
+    weight_list_rsexecute_workflow,
+    continuum_imaging_list_rsexecute_workflow,
+    sum_invert_results,
+    create_blockvisibility_from_ms_rsexecute,
+    ical_list_rsexecute_workflow,
+    invert_list_rsexecute_workflow,
+    sum_invert_results_rsexecute,
+)
 
-from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute, get_dask_client
+from rascil.workflows.rsexecute.execution_support.rsexecute import (
+    rsexecute,
+    get_dask_client,
+)
 
-from rascil.apps.apps_parser import apps_parser_imaging, apps_parser_cleaning, \
-    apps_parser_dask, apps_parser_ingest, apps_parser_app, apps_parser_calibration
+from rascil.apps.apps_parser import (
+    apps_parser_imaging,
+    apps_parser_cleaning,
+    apps_parser_dask,
+    apps_parser_ingest,
+    apps_parser_app,
+    apps_parser_calibration,
+)
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
@@ -37,14 +58,14 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cli_parser():
-    """ Get a command line parser and populate it with arguments
+    """Get a command line parser and populate it with arguments
 
     First a CLI argument parser is created. Each function call adds more arguments to the parser.
 
     :return: CLI parser argparse
     """
 
-    parser = argparse.ArgumentParser(description='RASCIL continuum imager')
+    parser = argparse.ArgumentParser(description="RASCIL continuum imager")
     parser = apps_parser_app(parser)
     parser = apps_parser_ingest(parser)
     parser = apps_parser_imaging(parser)
@@ -56,7 +77,7 @@ def cli_parser():
 
 
 def imager(args):
-    """ Continuum imager
+    """Continuum imager
 
     The return contains names of the files written to disk as fits files.
 
@@ -74,16 +95,18 @@ def imager(args):
     assert args.ingest_msname is not None, "Input msname must be specified"
 
     if args.logfile is None:
-        logfile = args.ingest_msname.replace('.ms', ".log")
+        logfile = args.ingest_msname.replace(".ms", ".log")
     else:
         logfile = args.logfile
 
     def init_logging():
-        logging.basicConfig(filename=logfile,
-                            filemode='a',
-                            format='%(asctime)s.%(msecs)d %(name)s %(levelname)s %(message)s',
-                            datefmt='%d/%m/%Y %I:%M:%S %p',
-                            level=logging.INFO)
+        logging.basicConfig(
+            filename=logfile,
+            filemode="a",
+            format="%(asctime)s.%(msecs)d %(name)s %(levelname)s %(message)s",
+            datefmt="%d/%m/%Y %I:%M:%S %p",
+            level=logging.INFO,
+        )
 
     init_logging()
 
@@ -99,9 +122,11 @@ def imager(args):
             log.info("Using scheduler {}".format(args.dask_scheduler))
             client = Client(scheduler=args.dask_scheduler)
         else:
-            client = get_dask_client(n_workers=args.dask_nworkers,
-                                     threads_per_worker=args.dask_nthreads,
-                                     memory_limit=args.dask_memory)
+            client = get_dask_client(
+                n_workers=args.dask_nworkers,
+                threads_per_worker=args.dask_nthreads,
+                memory_limit=args.dask_memory,
+            )
         rsexecute.set_client(use_dask=True, client=client)
         rsexecute.init_statistics()
     else:
@@ -129,10 +154,13 @@ def imager(args):
     nchan_per_blockvis = args.ingest_chan_per_blockvis
     nout = channels_per_dd // nchan_per_blockvis
 
-    bvis_list = create_blockvisibility_from_ms_rsexecute(msname=args.ingest_msname,
-                                                         dds=dds, nout=nout,
-                                                         nchan_per_blockvis=nchan_per_blockvis,
-                                                         average_channels=args.ingest_average_blockvis == "True")
+    bvis_list = create_blockvisibility_from_ms_rsexecute(
+        msname=args.ingest_msname,
+        dds=dds,
+        nout=nout,
+        nchan_per_blockvis=nchan_per_blockvis,
+        average_channels=args.ingest_average_blockvis == "True",
+    )
     bvis_list = rsexecute.persist(bvis_list)
 
     # If the cellsize has not been specified, we compute the blockvis now and
@@ -148,21 +176,34 @@ def imager(args):
 
     # Make only the Stokes I image so we convert the visibility to Stokes I
     if args.imaging_pol == "stokesI":
-        bvis_list = [rsexecute.execute(convert_blockvisibility_to_stokesI)(bv) for bv in bvis_list]
+        bvis_list = [
+            rsexecute.execute(convert_blockvisibility_to_stokesI)(bv)
+            for bv in bvis_list
+        ]
 
     npixel = args.imaging_npixel
 
     # Define the model to be used as a template, one for each BlockVisibility
-    model_list = [rsexecute.execute(create_image_from_visibility)
-                  (bvis, npixel=npixel, nchan=args.imaging_nchan, cellsize=cellsize,
-                   polarisation_frame=PolarisationFrame(args.imaging_pol)) for bvis in bvis_list]
+    model_list = [
+        rsexecute.execute(create_image_from_visibility)(
+            bvis,
+            npixel=npixel,
+            nchan=args.imaging_nchan,
+            cellsize=cellsize,
+            polarisation_frame=PolarisationFrame(args.imaging_pol),
+        )
+        for bvis in bvis_list
+    ]
     model_list = rsexecute.persist(model_list)
 
     # Create a graph to weight the data
     if args.imaging_weighting != "natural":
-        bvis_list = weight_list_rsexecute_workflow(bvis_list, model_list,
-                                                   weighting=args.imaging_weighting,
-                                                   robustness=args.imaging_robustness)
+        bvis_list = weight_list_rsexecute_workflow(
+            bvis_list,
+            model_list,
+            weighting=args.imaging_weighting,
+            robustness=args.imaging_robustness,
+        )
     bvis_list = rsexecute.persist(bvis_list)
 
     if args.mode == "cip":
@@ -186,7 +227,7 @@ def imager(args):
 
 
 def cip(args, bvis_list, model_list, msname):
-    """ Run continuum imaging pipeline
+    """Run continuum imaging pipeline
 
     :param args: The parameters read from the CLI using argparse
     :param bvis_list: A list of or graph to make BlockVisibilitys
@@ -194,32 +235,31 @@ def cip(args, bvis_list, model_list, msname):
     :param msname: The filename of the MeasurementSet
     :return: Names of output images (deconvolved, residual, restored)
     """
-    result = \
-        continuum_imaging_list_rsexecute_workflow(bvis_list,  # List of BlockVisibilitys
-                                                  model_list,  # List of model images
-
-                                                  context=args.imaging_context,  # Use nifty-gridder
-                                                  threads=args.imaging_ng_threads,
-                                                  wstacking=args.imaging_w_stacking == "True",  # Correct for w term in gridding
-
-                                                  niter=args.clean_niter,  # iterations in minor cycle
-                                                  nmajor=args.clean_nmajor,  # Number of major cycles
-                                                  algorithm=args.clean_algorithm,
-                                                  gain=args.clean_gain,  # CLEAN loop gain
-                                                  scales=args.clean_scales,  # Scales for multi-scale cleaning
-                                                  fractional_threshold=args.clean_fractional_threshold,
-                                                  # Threshold per major cycle
-                                                  threshold=args.clean_threshold,  # Final stopping threshold
-                                                  nmoment=args.clean_nmoment,
-                                                  # Number of frequency moments (1 = no dependence)
-                                                  psf_support=args.clean_psf_support,
-                                                  # Support of PSF used in minor cycles (halfwidth in pixels)
-                                                  restored_output=args.clean_restored_output,  # Type of restored image
-                                                  deconvolve_facets=args.clean_facets,
-                                                  deconvolve_overlap=args.clean_overlap,
-                                                  deconvolve_taper=args.clean_taper,
-                                                  dft_compute_kernel=args.imaging_dft_kernel,
-                                                  component_threshold=args.component_threshold)
+    result = continuum_imaging_list_rsexecute_workflow(
+        bvis_list,  # List of BlockVisibilitys
+        model_list,  # List of model images
+        context=args.imaging_context,  # Use nifty-gridder
+        threads=args.imaging_ng_threads,
+        wstacking=args.imaging_w_stacking == "True",  # Correct for w term in gridding
+        niter=args.clean_niter,  # iterations in minor cycle
+        nmajor=args.clean_nmajor,  # Number of major cycles
+        algorithm=args.clean_algorithm,
+        gain=args.clean_gain,  # CLEAN loop gain
+        scales=args.clean_scales,  # Scales for multi-scale cleaning
+        fractional_threshold=args.clean_fractional_threshold,
+        # Threshold per major cycle
+        threshold=args.clean_threshold,  # Final stopping threshold
+        nmoment=args.clean_nmoment,
+        # Number of frequency moments (1 = no dependence)
+        psf_support=args.clean_psf_support,
+        # Support of PSF used in minor cycles (halfwidth in pixels)
+        restored_output=args.clean_restored_output,  # Type of restored image
+        deconvolve_facets=args.clean_facets,
+        deconvolve_overlap=args.clean_overlap,
+        deconvolve_taper=args.clean_taper,
+        dft_compute_kernel=args.imaging_dft_kernel,
+        component_threshold=args.component_threshold,
+    )
     # Execute the Dask graph
     log.info("Starting compute of continuum imaging pipeline graph ")
     result = rsexecute.compute(result, sync=True)
@@ -232,7 +272,7 @@ def cip(args, bvis_list, model_list, msname):
 def write_results(imagename, result):
     deconvolved, residual, restored = result
     log.info("Writing restored image as single plane at mid-frequency")
-    log.info(qa_image(restored, context='Restored'))
+    log.info(qa_image(restored, context="Restored"))
     show_image(restored, title=f"{imagename} Clean restored image")
     plt.savefig(imagename + "_restored.png")
     plt.show(block=False)
@@ -241,7 +281,7 @@ def write_results(imagename, result):
     # The residual images come as (image, weight) pairs so to get one image
     # we form a weight sum
     residual_image, sumwt = sum_invert_results(residual)
-    log.info(qa_image(residual_image, context='Residual'))
+    log.info(qa_image(residual_image, context="Residual"))
     show_image(residual_image, title=f"{imagename} Clean residual image")
     plt.savefig(imagename + "_residual.png")
     plt.show(block=False)
@@ -250,7 +290,7 @@ def write_results(imagename, result):
     # The deconvolved image is a list of channels images. We gather these into
     # one image
     deconvolved_image = image_gather_channels(deconvolved)
-    log.info(qa_image(deconvolved_image, context='Deconvolved'))
+    log.info(qa_image(deconvolved_image, context="Deconvolved"))
     show_image(deconvolved_image, title=f"{imagename} Clean deconvolved image")
     plt.savefig(imagename + "_deconvolved.png")
     plt.show(block=False)
@@ -260,7 +300,7 @@ def write_results(imagename, result):
 
 
 def ical(args, bvis_list, model_list, msname):
-    """ Run ICAL pipeline
+    """Run ICAL pipeline
 
     :param args: The parameters read from the CLI using argparse
     :param bvis_list: A list of or graph to make BlockVisibilitys
@@ -270,49 +310,48 @@ def ical(args, bvis_list, model_list, msname):
     """
     controls = create_calibration_controls()
 
-    controls['T']['first_selfcal'] = args.calibration_T_first_selfcal
-    controls['T']['phase_only'] = args.calibration_T_phase_only
-    controls['T']['timeslice'] = args.calibration_T_timeslice
+    controls["T"]["first_selfcal"] = args.calibration_T_first_selfcal
+    controls["T"]["phase_only"] = args.calibration_T_phase_only
+    controls["T"]["timeslice"] = args.calibration_T_timeslice
 
-    controls['G']['first_selfcal'] = args.calibration_G_first_selfcal
-    controls['G']['timeslice'] = args.calibration_G_timeslice
+    controls["G"]["first_selfcal"] = args.calibration_G_first_selfcal
+    controls["G"]["timeslice"] = args.calibration_G_timeslice
 
-    controls['B']['first_selfcal'] = args.calibration_B_first_selfcal
+    controls["B"]["first_selfcal"] = args.calibration_B_first_selfcal
     if args.calibration_B_timeslice is None:
-        controls['B']['timeslice'] = 1e5
+        controls["B"]["timeslice"] = 1e5
     else:
-        controls['B']['timeslice'] = args.calibration_B_timeslice
+        controls["B"]["timeslice"] = args.calibration_B_timeslice
 
     # Next we define a graph to run the continuum imaging pipeline
-    result = \
-        ical_list_rsexecute_workflow(bvis_list,  # List of BlockVisibilitys
-                                     model_list,  # List of model images
-
-                                     context=args.imaging_context,  # Use nifty-gridder
-                                     threads=args.imaging_ng_threads,
-                                     wstacking=args.imaging_w_stacking == "True",  # Correct for w term in gridding
-
-                                     niter=args.clean_niter,  # iterations in minor cycle
-                                     nmajor=args.clean_nmajor,  # Number of major cycles
-                                     algorithm=args.clean_algorithm,
-                                     gain=args.clean_gain,  # CLEAN loop gain
-                                     scales=args.clean_scales,  # Scales for multi-scale cleaning
-                                     fractional_threshold=args.clean_fractional_threshold,
-                                     # Threshold per major cycle
-                                     threshold=args.clean_threshold,  # Final stopping threshold
-                                     nmoment=args.clean_nmoment,
-                                     # Number of frequency moments (1 = no dependence)
-                                     psf_support=args.clean_psf_support,
-                                     # Support of PSF used in minor cycles (halfwidth in pixels)
-                                     restored_output=args.clean_restored_output,  # Type of restored image
-                                     deconvolve_facets=args.clean_facets,
-                                     deconvolve_overlap=args.clean_overlap,
-                                     deconvolve_taper=args.clean_taper,
-                                     calibration_context=args.calibration_context,
-                                     controls=controls,
-                                     global_solution=args.calibration_global_solution,
-                                     component_threshold=args.component_threshold,
-                                     dft_compute_kernel=args.imaging_dft_kernel)
+    result = ical_list_rsexecute_workflow(
+        bvis_list,  # List of BlockVisibilitys
+        model_list,  # List of model images
+        context=args.imaging_context,  # Use nifty-gridder
+        threads=args.imaging_ng_threads,
+        wstacking=args.imaging_w_stacking == "True",  # Correct for w term in gridding
+        niter=args.clean_niter,  # iterations in minor cycle
+        nmajor=args.clean_nmajor,  # Number of major cycles
+        algorithm=args.clean_algorithm,
+        gain=args.clean_gain,  # CLEAN loop gain
+        scales=args.clean_scales,  # Scales for multi-scale cleaning
+        fractional_threshold=args.clean_fractional_threshold,
+        # Threshold per major cycle
+        threshold=args.clean_threshold,  # Final stopping threshold
+        nmoment=args.clean_nmoment,
+        # Number of frequency moments (1 = no dependence)
+        psf_support=args.clean_psf_support,
+        # Support of PSF used in minor cycles (halfwidth in pixels)
+        restored_output=args.clean_restored_output,  # Type of restored image
+        deconvolve_facets=args.clean_facets,
+        deconvolve_overlap=args.clean_overlap,
+        deconvolve_taper=args.clean_taper,
+        calibration_context=args.calibration_context,
+        controls=controls,
+        global_solution=args.calibration_global_solution,
+        component_threshold=args.component_threshold,
+        dft_compute_kernel=args.imaging_dft_kernel,
+    )
     # Execute the Dask graph
     log.info("Starting compute of ICAL pipeline graph ")
     deconvolved, residual, restored, gt_list = rsexecute.compute(result, sync=True)
@@ -322,7 +361,7 @@ def ical(args, bvis_list, model_list, msname):
 
 
 def invert(args, bvis_list, model_list, msname):
-    """ Run invert
+    """Run invert
 
     :param args: The parameters read from the CLI using argparse
     :param bvis_list: A list of or graph to make BlockVisibilitys
@@ -331,14 +370,15 @@ def invert(args, bvis_list, model_list, msname):
     :return: Names of output image (dirty image or psf image)
     """
     # Next we define a graph to run the continuum imaging pipeline
-    result = \
-        invert_list_rsexecute_workflow(bvis_list,  # List of BlockVisibilitys
-                                       model_list,  # List of model images
-                                       context=args.imaging_context,
-                                       dopsf=args.imaging_dopsf == "True",
-                                       threads=args.imaging_ng_threads,
-                                       wstacking=args.imaging_w_stacking == "True",
-                                       dft_compute_kernel=args.imaging_dft_kernel)
+    result = invert_list_rsexecute_workflow(
+        bvis_list,  # List of BlockVisibilitys
+        model_list,  # List of model images
+        context=args.imaging_context,
+        dopsf=args.imaging_dopsf == "True",
+        threads=args.imaging_ng_threads,
+        wstacking=args.imaging_w_stacking == "True",
+        dft_compute_kernel=args.imaging_dft_kernel,
+    )
     result = sum_invert_results_rsexecute(result)
     # Execute the Dask graph
     log.info("Starting compute of invert graph ")
@@ -346,7 +386,7 @@ def invert(args, bvis_list, model_list, msname):
     log.info("Finished compute of invert graph")
     imagename = msname.replace(".ms", "_invert")
     if args.imaging_dopsf == "True":
-        log.info(qa_image(dirty, context='PSF'))
+        log.info(qa_image(dirty, context="PSF"))
         show_image(dirty, title=f"{imagename} PSF image")
         plt.savefig(imagename + "_psf.png")
         plt.show(block=False)
@@ -354,7 +394,7 @@ def invert(args, bvis_list, model_list, msname):
         export_image_to_fits(dirty, psfname)
         return psfname
     else:
-        log.info(qa_image(dirty, context='Dirty'))
+        log.info(qa_image(dirty, context="Dirty"))
         show_image(dirty, title=f"{imagename} Dirty image")
         plt.savefig(imagename + "_dirty.png")
         plt.show(block=False)
@@ -368,6 +408,7 @@ def main():
     parser = cli_parser()
     args = parser.parse_args()
     image = imager(args)
+
 
 if __name__ == "__main__":
     main()

@@ -30,40 +30,41 @@ from Bottom to Top.
 
 """
 
-__all__ = ['uvw_ha_dec']
+__all__ = ["uvw_ha_dec"]
 
 import numpy
 
+
 def uvw_ha_dec(antxyz, ha, dec):
-    """ Calculate uvw for hour angle and declination
-    
+    """Calculate uvw for hour angle and declination
+
     :param antxyz:
     :param ha:
     :param dec:
     :return:
     """
-  #     implicit real*8 (a-h,o-z), integer*4 (i-n)
-  #     real*8 lx(*),ly(*),lz(*),uant(*),vant(*),want(*)
-  #     sh=sin(h)
-  #     ch=cos(h)
-  #     sd=sin(delta)
-  #     cd=cos(delta)
-  #     do 10 i=1,n
-  #        uant(i)=sh*lx(i)+ch*ly(i)
-  #        vant(i)=-sd*(ch*lx(i)-sh*ly(i))+cd*lz(i)
-  #        want(i)=cd*(ch*lx(i)-sh*ly(i))+sd*lz(i)
-  # 10  continue
+    #     implicit real*8 (a-h,o-z), integer*4 (i-n)
+    #     real*8 lx(*),ly(*),lz(*),uant(*),vant(*),want(*)
+    #     sh=sin(h)
+    #     ch=cos(h)
+    #     sd=sin(delta)
+    #     cd=cos(delta)
+    #     do 10 i=1,n
+    #        uant(i)=sh*lx(i)+ch*ly(i)
+    #        vant(i)=-sd*(ch*lx(i)-sh*ly(i))+cd*lz(i)
+    #        want(i)=cd*(ch*lx(i)-sh*ly(i))+sd*lz(i)
+    # 10  continue
 
     cosdec = numpy.cos(dec)
     sindec = numpy.sin(dec)
     cosha = numpy.cos(ha)
     sinha = numpy.sin(ha)
-    
+
     x, y, z = numpy.hsplit(antxyz, 3)
 
-    u =  sinha * x + cosha * y
+    u = sinha * x + cosha * y
     u0 = cosha * x - sinha * y
-    v =  - sindec * u0 + cosdec * z
-    w =  cosdec * u0 + sindec * z
-    
+    v = -sindec * u0 + cosdec * z
+    w = cosdec * u0 + sindec * z
+
     return numpy.hstack([u, v, w])

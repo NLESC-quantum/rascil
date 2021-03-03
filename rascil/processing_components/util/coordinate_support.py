@@ -30,11 +30,31 @@ from Bottom to Top.
 
 """
 
-__all__ = ['xyz_at_latitude', 'xyz_to_baselines', 'xyz_to_uvw', 'uvw_to_xyz',
-           'uvw_transform', 'simulate_point', 'skycoord_to_lmn', 'lmn_to_skycoord',
-           'visibility_shift', 'azel_to_hadec', 'hadec_to_azel', 'baselines',
-           'pa_z', 'parallactic_angle', 'enu_to_xyz', 'lla_to_ecef', 'ecef_to_lla',
-           'enu_to_ecef', 'ecef_to_enu', 'eci_to_uvw', 'uvw_to_eci', 'eci_to_enu', 'enu_to_eci']
+__all__ = [
+    "xyz_at_latitude",
+    "xyz_to_baselines",
+    "xyz_to_uvw",
+    "uvw_to_xyz",
+    "uvw_transform",
+    "simulate_point",
+    "skycoord_to_lmn",
+    "lmn_to_skycoord",
+    "visibility_shift",
+    "azel_to_hadec",
+    "hadec_to_azel",
+    "baselines",
+    "pa_z",
+    "parallactic_angle",
+    "enu_to_xyz",
+    "lla_to_ecef",
+    "ecef_to_lla",
+    "enu_to_ecef",
+    "ecef_to_enu",
+    "eci_to_uvw",
+    "uvw_to_eci",
+    "eci_to_enu",
+    "enu_to_eci",
+]
 
 import numpy
 from astropy.coordinates import SkyCoord, CartesianRepresentation
@@ -50,7 +70,9 @@ def lla_to_ecef(lat, lon, alt):
     """
     WGS84_a = 6378137.00000000
     WGS84_b = 6356752.31424518
-    N = WGS84_a ** 2 / numpy.sqrt(WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2)
+    N = WGS84_a ** 2 / numpy.sqrt(
+        WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2
+    )
 
     x = (N + alt) * numpy.cos(lat) * numpy.cos(lon)
     y = (N + alt) * numpy.cos(lat) * numpy.sin(lon)
@@ -87,7 +109,9 @@ def ecef_to_lla(x, y, z):
     lat = numpy.arctan2(num, den)
 
     # Elevation
-    N = WGS84_a ** 2 / numpy.sqrt(WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2)
+    N = WGS84_a ** 2 / numpy.sqrt(
+        WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2
+    )
     alt = p / numpy.cos(lat) - N
 
     return lat, lon, alt
@@ -188,7 +212,7 @@ def ecef_to_enu(location, xyz):
 
 def enu_to_xyz(e, n, u, lat):
     """Convert ENU to XYZ coordinates.
-    
+
     [TMS] Thompson, Moran, Swenson, "Interferometry and Synthesis in Radio
     Astronomy," 2nd ed., Wiley-VCH, 2004, pp. 86-89.
 
@@ -249,8 +273,16 @@ def eci_to_uvw(xyz, ha, dec):
 
     x, y, z = numpy.hsplit(xyz, 3)  # pylint: disable=unbalanced-tuple-unpacking
     u = numpy.sin(ha) * x + numpy.cos(ha) * y
-    v = -numpy.sin(dec) * numpy.cos(ha) * x + numpy.sin(dec) * numpy.sin(ha) * y + numpy.cos(dec) * z
-    w = numpy.cos(dec) * numpy.cos(ha) * x - numpy.cos(dec) * numpy.sin(ha) * y + numpy.sin(dec) * z
+    v = (
+        -numpy.sin(dec) * numpy.cos(ha) * x
+        + numpy.sin(dec) * numpy.sin(ha) * y
+        + numpy.cos(dec) * z
+    )
+    w = (
+        numpy.cos(dec) * numpy.cos(ha) * x
+        - numpy.cos(dec) * numpy.sin(ha) * y
+        + numpy.sin(dec) * z
+    )
     return numpy.hstack([u, v, w])
     # Two rotations:
     #  1. by 'ha' along the z axis
@@ -286,8 +318,16 @@ def uvw_to_eci(uvw, ha, dec):
     #
 
     u, v, w = numpy.hsplit(uvw, 3)  # pylint: disable=unbalanced-tuple-unpacking
-    e = numpy.sin(ha) * u -numpy.cos(ha) * numpy.sin(dec) * v + numpy.cos(ha) * numpy.cos(dec) * w
-    c = numpy.cos(ha) * u + numpy.sin(dec) * numpy.sin(ha) * v -numpy.sin(ha) * numpy.cos(dec) * w
+    e = (
+        numpy.sin(ha) * u
+        - numpy.cos(ha) * numpy.sin(dec) * v
+        + numpy.cos(ha) * numpy.cos(dec) * w
+    )
+    c = (
+        numpy.cos(ha) * u
+        + numpy.sin(dec) * numpy.sin(ha) * v
+        - numpy.sin(ha) * numpy.cos(dec) * w
+    )
     i = numpy.cos(dec) * v + numpy.sin(dec) * w
     return numpy.hstack([u, v, w])
 
@@ -397,7 +437,9 @@ def xyz_to_baselines(ants_xyz, ha_range, dec):
     :param dec: declination of astronomical source [constant, not :math:`f(t)`]
     """
 
-    dist_uvw = numpy.concatenate([baselines(xyz_to_uvw(ants_xyz, hax, dec)) for hax in ha_range])
+    dist_uvw = numpy.concatenate(
+        [baselines(xyz_to_uvw(ants_xyz, hax, dec)) for hax in ha_range]
+    )
     return dist_uvw
 
 
@@ -439,7 +481,13 @@ def lmn_to_skycoord(lmn, phasecentre: SkyCoord):
     # Convert l,m,n to SkyCoord convention, also enforce celestial sphere
     n = numpy.sqrt(1 - lmn[0] ** 2 - lmn[1] ** 2) - 1.0
     dc = n + 1, lmn[0], lmn[1]
-    target = SkyCoord(x=dc[0], y=dc[1], z=dc[2], representation_type='cartesian', frame=phasecentre.skyoffset_frame())
+    target = SkyCoord(
+        x=dc[0],
+        y=dc[1],
+        z=dc[2],
+        representation_type="cartesian",
+        frame=phasecentre.skyoffset_frame(),
+    )
     return target.transform_to(phasecentre.frame)
 
 
@@ -508,19 +556,24 @@ def uvw_transform(uvw, transform_matrix):
 
 def parallactic_angle(ha, dec, lat):
     """Calculate parallactic angle of source at ha, dec observed from site at latitude dec
-    
+
     H = t - α
     sin(a) = sin(δ) sin(φ) + cos(δ) cos(φ) cos(H)
     sin(A) = - sin(H) cos(δ) / cos(a)
     cos(A) = { sin(δ) - sin(φ) sin(a) } / cos(φ) cos(a)
-    
+
     :param ha: Hour angle (radians)
     :param dec: Declination (radians)
     :param lat: Site latitude (radians)
     :return:
     """
-    return numpy.arctan2(numpy.cos(lat) * numpy.sin(ha),
-                         (numpy.sin(lat) * numpy.cos(dec) - numpy.cos(lat) * numpy.sin(dec) * numpy.cos(ha)))
+    return numpy.arctan2(
+        numpy.cos(lat) * numpy.sin(ha),
+        (
+            numpy.sin(lat) * numpy.cos(dec)
+            - numpy.cos(lat) * numpy.sin(dec) * numpy.cos(ha)
+        ),
+    )
 
 
 def pa_z(ha, dec, lat):
@@ -530,27 +583,36 @@ def pa_z(ha, dec, lat):
     sin(a) = sin(δ) sin(φ) + cos(δ) cos(φ) cos(H)
     sin(A) = - sin(H) cos(δ) / cos(a)
     cos(A) = { sin(δ) - sin(φ) sin(a) } / cos(φ) cos(a)
-    
+
     :param ha: Hour angle (radians)
     :param dec: Declination (radians)
     :param lat: Site latitude (radians)
     :return:
     """
-    sinz = numpy.sin(dec) * numpy.sin(lat) + numpy.cos(dec) * numpy.cos(lat) * numpy.cos(ha)
-    return numpy.arctan2(numpy.cos(lat) * numpy.sin(ha),
-                         (numpy.sin(lat) * numpy.cos(dec) - numpy.cos(lat) * numpy.sin(dec) * numpy.cos(ha))), \
-           numpy.arcsin(sinz)
+    sinz = numpy.sin(dec) * numpy.sin(lat) + numpy.cos(dec) * numpy.cos(
+        lat
+    ) * numpy.cos(ha)
+    return (
+        numpy.arctan2(
+            numpy.cos(lat) * numpy.sin(ha),
+            (
+                numpy.sin(lat) * numpy.cos(dec)
+                - numpy.cos(lat) * numpy.sin(dec) * numpy.cos(ha)
+            ),
+        ),
+        numpy.arcsin(sinz),
+    )
 
 
 def hadec_to_azel(ha, dec, latitude):
-    """ Convert HA Dec to Az El
-    
+    """Convert HA Dec to Az El
+
     TMS Appendix 4.1
-    
+
     sinel = sinlat sindec + coslat cosdec cosha
     cosel cosaz = coslat sindec - sinlat cosdec cosha
     cosel sinaz = - cosdec sinha
-    
+
     :param ha:
     :param dec:
     :param latitude:
@@ -563,20 +625,20 @@ def hadec_to_azel(ha, dec, latitude):
     cosha = numpy.cos(ha)
     sinha = numpy.sin(ha)
 
-    az = numpy.arctan2(- cosdec * sinha, (coslat * sindec - sinlat * cosdec * cosha))
+    az = numpy.arctan2(-cosdec * sinha, (coslat * sindec - sinlat * cosdec * cosha))
     el = numpy.arcsin(sinlat * sindec + coslat * cosdec * cosha)
     return az, el
 
 
 def azel_to_hadec(az, el, latitude):
     """Converting Az El to HA Dec
-    
+
     TMS Appendix 4.1
-    
+
     sindec = sinlat sinel + coslat cosel cosaz
     cosdec cosha = coslat sinel - sinlat cosel cosaz
     cosdec sinha = -cosel sinaz
-    
+
     :param az:
     :param el:
     :param latitude:

@@ -11,10 +11,14 @@ function can be stored in a GridData, most probably with finer spatial sampling.
 
 """
 
-__all__ = ['create_convolutionfunction_from_image', 'copy_convolutionfunction',
-           'calculate_bounding_box_convolutionfunction',
-           'apply_bounding_box_convolutionfunction', 'qa_convolutionfunction',
-           'export_convolutionfunction_to_fits']
+__all__ = [
+    "create_convolutionfunction_from_image",
+    "copy_convolutionfunction",
+    "calculate_bounding_box_convolutionfunction",
+    "apply_bounding_box_convolutionfunction",
+    "qa_convolutionfunction",
+    "export_convolutionfunction_to_fits",
+]
 
 import copy
 import logging
@@ -26,12 +30,19 @@ from astropy.wcs import WCS
 from rascil.data_models.memory_data_models import ConvolutionFunction
 from rascil.data_models.memory_data_models import QA
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
 
 
-def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', oversampling=8, support=16,
-                                          polarisation_frame=None):
-    """ Create a convolution function from an image
+def create_convolutionfunction_from_image(
+    im,
+    nw=1,
+    wstep=1e15,
+    wtype="WW",
+    oversampling=8,
+    support=16,
+    polarisation_frame=None,
+):
+    """Create a convolution function from an image
 
     The griddata has axes [chan, pol, z, dy, dx, y, x] where z, y, x are spatial axes in either sky or Fourier plane. The
     order in the WCS is reversed so the grid_WCS describes UU, VV, WW, STOKES, FREQ axes
@@ -51,11 +62,11 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     """
     assert len(im["pixels"].data.shape) == 4
 
-    assert im.image_acc.wcs.wcs.ctype[0] == 'RA---SIN', im.image_acc.wcs.wcs.ctype[0]
-    assert im.image_acc.wcs.wcs.ctype[1] == 'DEC--SIN', im.image_acc.wcs.wcs.ctype[1]
-    
+    assert im.image_acc.wcs.wcs.ctype[0] == "RA---SIN", im.image_acc.wcs.wcs.ctype[0]
+    assert im.image_acc.wcs.wcs.ctype[1] == "DEC--SIN", im.image_acc.wcs.wcs.ctype[1]
+
     d2r = numpy.pi / 180.0
-    
+
     # WCS Coords are [x, y, dy, dx, z, pol, chan] where x, y, z are spatial axes in real space or Fourier space
     # Array Coords are [chan, pol, z, dy, dx, y, x] where x, y, z are spatial axes in real space or Fourier space
     nchan, npol, ny, nx = im["pixels"].data.shape
@@ -70,29 +81,40 @@ def create_convolutionfunction_from_image(im, nw=1, wstep=1e15, wtype='WW', over
     cdelt[1] = 1.0 / (ny * cdelt[1] * d2r)
 
     cf_wcs = WCS(naxis=7)
-    cf_wcs.wcs.crpix = [float(support // 2) + 1.0,
-                        float(support // 2) + 1.0,
-                        float(oversampling // 2) + 1.0,
-                        float(oversampling // 2) + 1.0,
-                        float(nw // 2 + 1.0),
-                        crpix[2], crpix[3]]
+    cf_wcs.wcs.crpix = [
+        float(support // 2) + 1.0,
+        float(support // 2) + 1.0,
+        float(oversampling // 2) + 1.0,
+        float(oversampling // 2) + 1.0,
+        float(nw // 2 + 1.0),
+        crpix[2],
+        crpix[3],
+    ]
     cf_wcs.wcs.ctype = ["UU", "VV", "DUU", "DVV", wtype, ctype[2], ctype[3]]
     cf_wcs.wcs.crval = [0.0, 0.0, 0.0, 0.0, 0.0, crval[2], crval[3]]
-    cf_wcs.wcs.cdelt = [cdelt[0], cdelt[1],
-                        cdelt[0] / oversampling, cdelt[1] / oversampling,
-                        wstep,
-                        cdelt[2],
-                        cdelt[3]]
+    cf_wcs.wcs.cdelt = [
+        cdelt[0],
+        cdelt[1],
+        cdelt[0] / oversampling,
+        cdelt[1] / oversampling,
+        wstep,
+        cdelt[2],
+        cdelt[3],
+    ]
 
-    cf_wcs.wcs.radesys = 'ICRS'
+    cf_wcs.wcs.radesys = "ICRS"
     cf_wcs.wcs.equinox = 2000.0
 
-    cf_data = numpy.zeros([nchan, npol, nw, oversampling, oversampling, support, support], dtype='complex')
-    
+    cf_data = numpy.zeros(
+        [nchan, npol, nw, oversampling, oversampling, support, support], dtype="complex"
+    )
+
     if polarisation_frame is None:
         polarisation_frame = im.image_acc.polarisation_frame
-    
-    return ConvolutionFunction(data=cf_data, cf_wcs=cf_wcs, polarisation_frame=polarisation_frame)
+
+    return ConvolutionFunction(
+        data=cf_data, cf_wcs=cf_wcs, polarisation_frame=polarisation_frame
+    )
 
 
 def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
@@ -121,18 +143,20 @@ def apply_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     newcf.convolutionfunction_acc.cf_wcs.wcs.crpix[0] += nnx / 2 - nx / 2
     newcf.convolutionfunction_acc.cf_wcs.wcs.crpix[1] += nny / 2 - ny / 2
 
-    newcf = ConvolutionFunction(data=newcf["pixels"].data[..., y0:y1, x0:x1],
-                                cf_wcs=newcf.convolutionfunction_acc.cf_wcs,
-                                polarisation_frame=newcf.convolutionfunction_acc.polarisation_frame)
+    newcf = ConvolutionFunction(
+        data=newcf["pixels"].data[..., y0:y1, x0:x1],
+        cf_wcs=newcf.convolutionfunction_acc.cf_wcs,
+        polarisation_frame=newcf.convolutionfunction_acc.polarisation_frame,
+    )
     return newcf
 
 
 def calculate_bounding_box_convolutionfunction(cf, fractional_level=1e-4):
     """Calculate bounding boxes
-    
+
     Returns a list of bounding boxes where each element is
     (z, (y0, y1), (x0, x1))
-    
+
     These can be used in griddata/degridding.
 
     :param cf:
@@ -157,21 +181,23 @@ def qa_convolutionfunction(cf, context="") -> QA:
     :return: QA
     """
     ##assert isinstance(cf, ConvolutionFunction), cf
-    data = {'shape': str(cf["pixels"].data.shape),
-            'max': numpy.max(cf.data),
-            'min': numpy.min(cf.data),
-            'rms': numpy.std(cf.data),
-            'sum': numpy.sum(cf.data),
-            'medianabs': numpy.median(numpy.abs(cf.data)),
-            'median': numpy.median(cf.data)}
-    
+    data = {
+        "shape": str(cf["pixels"].data.shape),
+        "max": numpy.max(cf.data),
+        "min": numpy.min(cf.data),
+        "rms": numpy.std(cf.data),
+        "sum": numpy.sum(cf.data),
+        "medianabs": numpy.median(numpy.abs(cf.data)),
+        "median": numpy.median(cf.data),
+    }
+
     qa = QA(origin="qa_image", data=data, context=context)
     return qa
 
 
 def copy_convolutionfunction(cf):
     """Make a copy of a convolution function
-    
+
     :param cf:
     :return:
     """
@@ -179,8 +205,10 @@ def copy_convolutionfunction(cf):
     return copy.deepcopy(cf)
 
 
-def export_convolutionfunction_to_fits(cf: ConvolutionFunction, fitsfile: str = 'cf.fits'):
-    """ Write a convolution function to fits
+def export_convolutionfunction_to_fits(
+    cf: ConvolutionFunction, fitsfile: str = "cf.fits"
+):
+    """Write a convolution function to fits
 
     :param cf: Convolu
     :param fitsfile: Name of output fits file in storage
@@ -191,6 +219,9 @@ def export_convolutionfunction_to_fits(cf: ConvolutionFunction, fitsfile: str = 
 
     """
     ##assert isinstance(cf, ConvolutionFunction), cf
-    return fits.writeto(filename=fitsfile, data=numpy.real(cf["pixels"].data),
-                        header=cf.convolutionfunction_acc.cf_wcs.to_header(),
-                        overwrite=True)
+    return fits.writeto(
+        filename=fitsfile,
+        data=numpy.real(cf["pixels"].data),
+        header=cf.convolutionfunction_acc.cf_wcs.to_header(),
+        overwrite=True,
+    )

@@ -3,10 +3,12 @@ Simple flagging operations (Still in development)
 
 """
 
-__all__ = ['flagtable_summary',
-           'copy_flagtable',
-           'create_flagtable_from_blockvisibility',
-           'qa_flagtable']
+__all__ = [
+    "flagtable_summary",
+    "copy_flagtable",
+    "create_flagtable_from_blockvisibility",
+    "qa_flagtable",
+]
 
 import copy
 import logging
@@ -15,7 +17,7 @@ import numpy
 
 from rascil.data_models.memory_data_models import BlockVisibility, FlagTable, QA
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
 
 
 def flagtable_summary(ft: FlagTable):
@@ -40,21 +42,26 @@ def copy_flagtable(ft: FlagTable, zero=False) -> FlagTable:
     newft = copy.copy(ft)
     newft.data = numpy.copy(ft.data)
     if zero:
-        ft.data['flags'][...] = 0.0
+        ft.data["flags"][...] = 0.0
     return newft
 
 
 def create_flagtable_from_blockvisibility(bvis: BlockVisibility, **kwargs) -> FlagTable:
-    """ Create FlagTable matching BlockVisibility
+    """Create FlagTable matching BlockVisibility
 
     :param bvis:
     :param kwargs:
     :return:
     """
-    return FlagTable(flags=bvis.flags, frequency=bvis.frequency, channel_bandwidth=bvis.channel_bandwidth,
-                     configuration=bvis.configuration, time=bvis.time,
-                     integration_time=bvis.integration_time,
-                     polarisation_frame=bvis.blockvisibility_acc.polarisation_frame)
+    return FlagTable(
+        flags=bvis.flags,
+        frequency=bvis.frequency,
+        channel_bandwidth=bvis.channel_bandwidth,
+        configuration=bvis.configuration,
+        time=bvis.time,
+        integration_time=bvis.integration_time,
+        polarisation_frame=bvis.blockvisibility_acc.polarisation_frame,
+    )
 
 
 def qa_flagtable(ft: FlagTable, context=None) -> QA:
@@ -67,12 +74,12 @@ def qa_flagtable(ft: FlagTable, context=None) -> QA:
     ##assert isinstance(ft, FlagTable), ft
 
     aflags = numpy.abs(ft.flags)
-    data = {'maxabs': numpy.max(aflags),
-            'minabs': numpy.min(aflags),
-            'mean': numpy.mean(aflags),
-            'sum': numpy.sum(aflags),
-            'medianabs': numpy.median(aflags)}
-    qa = QA(origin='qa_flagtable',
-            data=data,
-            context=context)
+    data = {
+        "maxabs": numpy.max(aflags),
+        "minabs": numpy.min(aflags),
+        "mean": numpy.mean(aflags),
+        "sum": numpy.sum(aflags),
+        "medianabs": numpy.median(aflags),
+    }
+    qa = QA(origin="qa_flagtable", data=data, context=context)
     return qa

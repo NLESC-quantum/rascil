@@ -11,9 +11,9 @@ from rascil.processing_components.util.installation_checks import check_data_dir
 
 class TestDataPath(unittest.TestCase):
     def test_rascil_data_path(self):
-        data_path = rascil_data_path('configurations')
+        data_path = rascil_data_path("configurations")
         check_data_directory()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

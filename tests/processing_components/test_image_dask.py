@@ -22,45 +22,63 @@ from rascil.processing_components.visibility.base import create_blockvisibility
 
 from rascil.processing_components.image.operations import export_image_to_fits
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
 
 log.setLevel(logging.WARNING)
+
 
 class TestImageDask(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
-        self.dir = rascil_path('test_results')
-        
+
+        self.dir = rascil_path("test_results")
+
         self.frequency = numpy.linspace(1e8, 1.5e8, 3)
         self.channel_bandwidth = numpy.array([2.5e7, 2.5e7, 2.5e7])
         self.flux = numpy.array([[100.0], [100.0], [100.0]])
-        self.phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
-        self.config = create_named_configuration('LOWBD2-CORE')
+        self.phasecentre = SkyCoord(
+            ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
+        )
+        self.config = create_named_configuration("LOWBD2-CORE")
         self.times = numpy.linspace(-300.0, 300.0, 3) * numpy.pi / 43200.0
         nants = self.config.xyz.shape[0]
         assert nants > 1
         assert len(self.config.names) == nants
         assert len(self.config.mount) == nants
-        
+
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def createVis(self, config, dec=-35.0, rmax=None):
         self.config = create_named_configuration(config, rmax=rmax)
-        self.phasecentre = SkyCoord(ra=+15 * u.deg, dec=dec * u.deg, frame='icrs', equinox='J2000')
-        self.vis = create_blockvisibility(self.config, self.times, self.frequency,
-                                     channel_bandwidth=self.channel_bandwidth,
-                                     phasecentre=self.phasecentre, weight=1.0,
-                                     polarisation_frame=PolarisationFrame('stokesI'))
+        self.phasecentre = SkyCoord(
+            ra=+15 * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000"
+        )
+        self.vis = create_blockvisibility(
+            self.config,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+            polarisation_frame=PolarisationFrame("stokesI"),
+        )
 
     @unittest.skip("Not yet ready for testing")
     def test_map_create_pb(self):
         # Yields TypeError: can't pickle astropy.wcs.StrListProxy objects
-        self.createVis(config='LOWBD2', rmax=1000.0)
-        model = create_image_from_visibility(self.vis, cellsize=0.001, override_cellsize=False)
-        model = model.chunk({"x":128, "y":128})
-        create = functools.partial(create_pb, pointingcentre=self.phasecentre, telescope='MID')
+        self.createVis(config="LOWBD2", rmax=1000.0)
+        model = create_image_from_visibility(
+            self.vis, cellsize=0.001, override_cellsize=False
+        )
+        model = model.chunk({"x": 128, "y": 128})
+        create = functools.partial(
+            create_pb, pointingcentre=self.phasecentre, telescope="MID"
+        )
         print(model)
         beam = xarray.map_blocks(create, model, template=model)
         print(beam)
         assert numpy.max(beam["pixels"]) > 0.0
-        if self.persist: export_image_to_fits(beam, "%s/test_image_rsexecute_scatter_gather.fits" % (self.dir))
+        if self.persist:
+            export_image_to_fits(
+                beam, "%s/test_image_rsexecute_scatter_gather.fits" % (self.dir)
+            )

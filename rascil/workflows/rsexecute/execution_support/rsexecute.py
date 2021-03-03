@@ -2,7 +2,7 @@
 
 """
 
-__all__ = ['rsexecute', 'get_dask_client', '_rsexecutebase']
+__all__ = ["rsexecute", "get_dask_client", "_rsexecutebase"]
 
 import os
 import logging
@@ -15,26 +15,37 @@ from dask import delayed, optimize, config
 
 from dask.distributed import wait, Client, LocalCluster
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
 
 # Support daliuge's delayed function, make it fail if not available but used
 try:
     from dlg import delayed as dlg_delayed
     from dlg.dask_emulation import compute as dlg_compute
 except ImportError:
+
     def dlg_delayed(*args, **kwargs):
         raise Exception("daliuge is not available")
+
     def dlg_compute(*args, **kwargs):
         pass
 
-log = logging.getLogger('rascil-logger')
 
-def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
-                    processes=True, create_cluster=False,
-                    memory_limit=None, local_dir='.', with_file=False,
-                    scheduler_file='./scheduler.json',
-                    dashboard_address=':8787'):
-    """ Get a Dask.distributed Client to be used in rsexecute
+log = logging.getLogger("rascil-logger")
+
+
+def get_dask_client(
+    timeout=30,
+    n_workers=None,
+    threads_per_worker=None,
+    processes=True,
+    create_cluster=False,
+    memory_limit=None,
+    local_dir=".",
+    with_file=False,
+    scheduler_file="./scheduler.json",
+    dashboard_address=":8787",
+):
+    """Get a Dask.distributed Client to be used in rsexecute
 
     The default operation of rsexecute.set_client is to create a set of workes on one node. Hence if you
     want to use a cluster it is necessary to use get_dask_client.
@@ -52,53 +63,74 @@ def get_dask_client(timeout=30, n_workers=None, threads_per_worker=None,
     :param dashboard_address: Port used for diagnostics (':8787')
     :return: Dask client
     """
-    scheduler = os.getenv('RASCIL_DASK_SCHEDULER', None)
+    scheduler = os.getenv("RASCIL_DASK_SCHEDULER", None)
     if scheduler is not None:
         print("Creating Dask Client using externally defined scheduler")
         c = Client(scheduler, timeout=timeout)
     elif with_file:
-        print("Creating Dask Client using externally defined scheduler in file  %s" % scheduler_file)
+        print(
+            "Creating Dask Client using externally defined scheduler in file  %s"
+            % scheduler_file
+        )
         c = Client(scheduler_file=scheduler_file, timeout=timeout)
 
     elif create_cluster:
         print("Creating Dask Localcluster - xarray feaures may not work correctly")
         if n_workers is not None:
             if memory_limit is not None:
-                cluster = LocalCluster(n_workers=n_workers, threads_per_worker=threads_per_worker, processes=processes,
-                                       memory_limit=memory_limit,
-                                       dashboard_address=dashboard_address)
+                cluster = LocalCluster(
+                    n_workers=n_workers,
+                    threads_per_worker=threads_per_worker,
+                    processes=processes,
+                    memory_limit=memory_limit,
+                    dashboard_address=dashboard_address,
+                )
             else:
-                cluster = LocalCluster(n_workers=n_workers, threads_per_worker=threads_per_worker, processes=processes,
-                                       dashboard_address=dashboard_address)
+                cluster = LocalCluster(
+                    n_workers=n_workers,
+                    threads_per_worker=threads_per_worker,
+                    processes=processes,
+                    dashboard_address=dashboard_address,
+                )
         else:
             if memory_limit is not None:
-                cluster = LocalCluster(threads_per_worker=threads_per_worker, processes=processes,
-                                       memory_limit=memory_limit,
-                                       dashboard_address=dashboard_address)
+                cluster = LocalCluster(
+                    threads_per_worker=threads_per_worker,
+                    processes=processes,
+                    memory_limit=memory_limit,
+                    dashboard_address=dashboard_address,
+                )
             else:
-                cluster = LocalCluster(threads_per_worker=threads_per_worker, processes=processes,
-                                       dashboard_address=dashboard_address)
+                cluster = LocalCluster(
+                    threads_per_worker=threads_per_worker,
+                    processes=processes,
+                    dashboard_address=dashboard_address,
+                )
 
         print("Creating LocalCluster and Dask Client")
         c = Client(cluster)
     else:
         print("Creating Dask.distributed Client")
-        c = Client(threads_per_worker=threads_per_worker, processes=processes,
-                   memory_limit=memory_limit, local_directory=local_dir)
+        c = Client(
+            threads_per_worker=threads_per_worker,
+            processes=processes,
+            memory_limit=memory_limit,
+            local_directory=local_dir,
+        )
 
-    addr = c.scheduler_info()['address']
-    services = c.scheduler_info()['services']
-    if 'bokeh' in services.keys():
-        bokeh_addr = 'http:%s:%s' % (addr.split(':')[1], services['bokeh'])
-        print('Diagnostic pages available on port %s' % bokeh_addr)
-    if 'dashboard' in services.keys():
-        db_addr = 'http:%s:%s' % (addr.split(':')[1], services['dashboard'])
-        print('Diagnostic pages available on port %s' % db_addr)
+    addr = c.scheduler_info()["address"]
+    services = c.scheduler_info()["services"]
+    if "bokeh" in services.keys():
+        bokeh_addr = "http:%s:%s" % (addr.split(":")[1], services["bokeh"])
+        print("Diagnostic pages available on port %s" % bokeh_addr)
+    if "dashboard" in services.keys():
+        db_addr = "http:%s:%s" % (addr.split(":")[1], services["dashboard"])
+        print("Diagnostic pages available on port %s" % db_addr)
     return c
 
 
-class _rsexecutebase():
-    """ Initialise rsexecute framework
+class _rsexecutebase:
+    """Initialise rsexecute framework
 
     A singleton of this class is created and is available globally as rsexecute. Hence it is not necessary to
     declare an instance of _rsexecutebase.
@@ -126,10 +158,11 @@ class _rsexecutebase():
     :param verbose: Be verbose in printing messages
     :param optimize: Optimize if using dask (True)
     """
+
     _instance = None
 
     def __init__(self, use_dask=True, use_dlg=False, verbose=False, optimize=True):
-        """ Initialise rsexecute framework
+        """Initialise rsexecute framework
 
         A singleton of this class is created and is available globally as rsexecute
 
@@ -139,18 +172,23 @@ class _rsexecutebase():
         :param optimize: Optimize if using dask (True)
         """
         if bool(use_dask) and bool(use_dlg):
-            raise ValueError('use_dask and use_dlg cannot be specified together')
+            raise ValueError("use_dask and use_dlg cannot be specified together")
         self._set_state(use_dask, use_dlg, None, verbose, optimize)
 
         # Initialize astropy to avoid threading problems
         if use_dask:
             import astropy._erfa
             import astropy.units as u
+
             assert astropy._erfa.s2c(0 * u.rad, 0 * u.rad)[0] == 1.0
             import astropy.constants
+
             assert astropy.constants.c.unit == "m/s"
             from astropy.coordinates import SkyCoord
-            assert isinstance(SkyCoord(0.0 * u.rad, 0.0 * u.rad, frame='icrs').to_string(), str)
+
+            assert isinstance(
+                SkyCoord(0.0 * u.rad, 0.0 * u.rad, frame="icrs").to_string(), str
+            )
 
     def _set_state(self, use_dask, use_dlg, client, verbose, optimize):
         self._using_dask = use_dask
@@ -160,7 +198,7 @@ class _rsexecutebase():
         self._optimize = optimize
 
     def execute(self, func, *args, **kwargs):
-        """ Wrap for immediate or deferred execution
+        """Wrap for immediate or deferred execution
 
         Passes through if dask is not being used
 
@@ -176,18 +214,26 @@ class _rsexecutebase():
             return func
 
     def type(self):
-        """ Get the name of the execution system
+        """Get the name of the execution system
 
         :return:
         """
         if self._using_dask:
-            return 'dask'
+            return "dask"
         elif self._using_dlg:
-            return 'daliuge'
+            return "daliuge"
         else:
-            return 'function'
+            return "function"
 
-    def set_client(self, client=None, use_dask=True, use_dlg=False, verbose=False, optim=True, **kwargs):
+    def set_client(
+        self,
+        client=None,
+        use_dask=True,
+        use_dlg=False,
+        verbose=False,
+        optim=True,
+        **kwargs
+    ):
         """Set the Dask/DALiuGE client to be used
 
         If you want to customise the Client or use an externally defined Scheduler use get_dask_client and pass it in.
@@ -201,10 +247,10 @@ class _rsexecutebase():
         """
         # We need this so that xarray knows which scheduler to use
         if use_dask:
-            config.set(scheduler='distributed')
+            config.set(scheduler="distributed")
 
         if bool(use_dask) and bool(use_dlg):
-            raise ValueError('use_dask and use_dlg cannot be specified together')
+            raise ValueError("use_dask and use_dlg cannot be specified together")
 
         if isinstance(self._client, Client):
             if self._verbose:
@@ -213,7 +259,7 @@ class _rsexecutebase():
 
         if use_dask:
             client = client or get_dask_client(**kwargs)
-            #assert isinstance(client, Client)
+            # assert isinstance(client, Client)
             self._set_state(True, False, client, verbose, optim)
             self._client.profile()
             self._client.get_task_stream()
@@ -224,7 +270,7 @@ class _rsexecutebase():
             self._set_state(False, False, None, verbose, optim)
 
         if self._verbose:
-            print('rsexecute.set_client: defined Dask distributed client')
+            print("rsexecute.set_client: defined Dask distributed client")
 
     def compute(self, value, sync=False):
         """Get the actual value
@@ -243,20 +289,29 @@ class _rsexecutebase():
                 return value.compute()
             else:
                 import dask
+
                 try:
                     scheduler = dask.config.get("scheduler")
-                    assert scheduler == "distributed" or scheduler == "dask.distributed", scheduler
+                    assert (
+                        scheduler == "distributed" or scheduler == "dask.distributed"
+                    ), scheduler
                 except:
                     pass
                 future = self.client.compute(value, sync=sync)
                 wait(future)
                 if self._verbose:
                     duration = time.time() - start
-                    log.debug("rsexecute.compute: Execution using Dask took %.3f seconds" % duration)
-                    print("rsexecute.compute: Execution using Dask took %.3f seconds" % duration)
+                    log.debug(
+                        "rsexecute.compute: Execution using Dask took %.3f seconds"
+                        % duration
+                    )
+                    print(
+                        "rsexecute.compute: Execution using Dask took %.3f seconds"
+                        % duration
+                    )
                 return future
         elif self._using_dlg:
-            kwargs = {'client': self._client} if self._client else {}
+            kwargs = {"client": self._client} if self._client else {}
             return dlg_compute(value, **kwargs)
         else:
             return value
@@ -306,7 +361,7 @@ class _rsexecutebase():
             return graph
 
     def run(self, func, *args, **kwargs):
-        """ Run a function on the client
+        """Run a function on the client
 
         :param func:
         :return:
@@ -320,7 +375,7 @@ class _rsexecutebase():
             return func(*args, **kwargs)
 
     def optimize(self, *args, **kwargs):
-        """ Run Dask optimisation of graphs
+        """Run Dask optimisation of graphs
 
         Only does something when using dask
 
@@ -334,19 +389,17 @@ class _rsexecutebase():
             return args[0]
 
     def close(self):
-        """ Close the client
-
-        """
+        """Close the client"""
         if self._using_dask and isinstance(self._client, Client):
             if self._verbose:
-                print('rsexcute.close: closed down Dask Client')
+                print("rsexcute.close: closed down Dask Client")
             if self._client.cluster is not None:
                 self._client.cluster.close()
             self._client.close()
             self._client = None
 
     def init_statistics(self):
-        """ Initialise the profile and task stream info
+        """Initialise the profile and task stream info
 
         rsexecute can save the Dask profile and Task Stream information for later saving
 
@@ -357,8 +410,8 @@ class _rsexecutebase():
             self._client.profile()
             self._client.get_task_stream()
 
-    def save_statistics(self, name='dask'):
-        """ Save the statistics to html files
+    def save_statistics(self, name="dask"):
+        """Save the statistics to html files
 
         rsexecute can save the Dask profile and Task Stream information for later saving. This
         saves the current statistics to html files.
@@ -367,17 +420,18 @@ class _rsexecutebase():
         """
 
         if self._using_dask:
-            task_stream, graph = self.client.get_task_stream(plot='save',
-                                                             filename="%s_task_stream.html" % name)
-            self.client.profile(plot='save', filename="%s_profile.html" % name)
+            task_stream, graph = self.client.get_task_stream(
+                plot="save", filename="%s_task_stream.html" % name
+            )
+            self.client.profile(plot="save", filename="%s_profile.html" % name)
 
             def print_ts(ts):
                 log.info("Processor time used in each function")
                 summary = {}
                 number = {}
                 for t in ts:
-                    name = t['key'].split('-')[0]
-                    elapsed = t['startstops'][0]['stop'] - t['startstops'][0]['start']
+                    name = t["key"].split("-")[0]
+                    elapsed = t["startstops"][0]["stop"] - t["startstops"][0]["start"]
                     if name not in summary.keys():
                         summary[name] = elapsed
                         number[name] = 1
@@ -390,22 +444,31 @@ class _rsexecutebase():
                 table = []
                 headers = ["Function", "Time (s)", "Percent", "Number calls"]
                 for key in summary.keys():
-                    table.append([key, "{0:.3f}".format(summary[key]), "{0:.3f}".format(100.0 * summary[key] / total),
-                                  number[key]])
+                    table.append(
+                        [
+                            key,
+                            "{0:.3f}".format(summary[key]),
+                            "{0:.3f}".format(100.0 * summary[key] / total),
+                            number[key],
+                        ]
+                    )
                 log.info("\n" + tabulate(table, headers=headers))
                 duration = time.time() - self.start_time
-                speedup = (total / duration)
-                log.info("Total processor time {0:.3f} (s), total wallclock time {1:.3f} (s), speedup {2:.2f}".
-                      format(total, duration, speedup))
+                speedup = total / duration
+                log.info(
+                    "Total processor time {0:.3f} (s), total wallclock time {1:.3f} (s), speedup {2:.2f}".format(
+                        total, duration, speedup
+                    )
+                )
 
             try:
                 print_ts(task_stream)
-            except  (ValueError, KeyError):
+            except (ValueError, KeyError):
                 log.warning("Dask task stream is unintelligible")
 
     @property
     def client(self):
-        """ Client being used
+        """Client being used
 
         :return: client
         """
@@ -413,7 +476,7 @@ class _rsexecutebase():
 
     @property
     def using_dask(self):
-        """ Is dask being used?
+        """Is dask being used?
 
         :return:
         """
@@ -421,7 +484,7 @@ class _rsexecutebase():
 
     @property
     def using_dlg(self):
-        """ Is daluige being used?
+        """Is daluige being used?
 
         :return:
         """
@@ -429,7 +492,7 @@ class _rsexecutebase():
 
     @property
     def optimizing(self):
-        """ Is Dask optimisation being performed?
+        """Is Dask optimisation being performed?
 
         :return:
         """
@@ -444,5 +507,3 @@ def rsexecutebase(*args, **kwargs):
 
 # Any new rsexecute created by import of this file points to the only _rsexecutebase
 rsexecute = rsexecutebase(use_dask=True)
-
-

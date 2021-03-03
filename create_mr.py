@@ -145,6 +145,7 @@ class MergeRequest:
 
     :param private_token: private access token of user with API and HTTP write access
     """
+
     def __init__(self, private_token):
         self.private_token = private_token
         self.gitlab_object = gitlab.Gitlab(

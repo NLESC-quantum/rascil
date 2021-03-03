@@ -13,51 +13,81 @@ from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 
 from rascil.processing_components.calibration import apply_gaintable
-from rascil.processing_components.calibration.chain_calibration import create_calibration_controls, calibrate_chain
-from rascil.processing_components.calibration.operations import create_gaintable_from_blockvisibility, gaintable_summary
+from rascil.processing_components.calibration.chain_calibration import (
+    create_calibration_controls,
+    calibrate_chain,
+)
+from rascil.processing_components.calibration.operations import (
+    create_gaintable_from_blockvisibility,
+    gaintable_summary,
+)
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import copy_visibility, create_blockvisibility
+from rascil.processing_components.visibility.base import (
+    copy_visibility,
+    create_blockvisibility,
+)
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
 
 log.setLevel(logging.WARNING)
+
 
 class TestCalibrationChain(unittest.TestCase):
     def setUp(self):
         numpy.random.seed(1805550721)
-    
-    def actualSetup(self, sky_pol_frame='stokesIQUV', data_pol_frame='linear', f=None, vnchan=1):
-        self.lowcore = create_named_configuration('LOWBD2-CORE')
+
+    def actualSetup(
+        self, sky_pol_frame="stokesIQUV", data_pol_frame="linear", f=None, vnchan=1
+    ):
+        self.lowcore = create_named_configuration("LOWBD2-CORE")
         self.times = (numpy.pi / 43200.0) * numpy.linspace(0.0, 30.0, 3)
         self.frequency = numpy.linspace(1.0e8, 1.1e8, vnchan)
         if vnchan > 1:
-            self.channel_bandwidth = numpy.array(vnchan * [self.frequency[1] - self.frequency[0]])
+            self.channel_bandwidth = numpy.array(
+                vnchan * [self.frequency[1] - self.frequency[0]]
+            )
         else:
             self.channel_bandwidth = numpy.array([2e7])
-        
+
         if f is None:
             f = [100.0, 50.0, -10.0, 40.0]
-        
-        if sky_pol_frame == 'stokesI':
+
+        if sky_pol_frame == "stokesI":
             f = [100.0]
-        
-        self.flux = numpy.outer(numpy.array([numpy.power(freq / 1e8, -0.7) for freq in self.frequency]), f)
-        
+
+        self.flux = numpy.outer(
+            numpy.array([numpy.power(freq / 1e8, -0.7) for freq in self.frequency]), f
+        )
+
         # The phase centre is absolute and the component is specified relative (for now).
         # This means that the component should end up at the position phasecentre+compredirection
-        self.phasecentre = SkyCoord(ra=+180.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
-        self.compabsdirection = SkyCoord(ra=+181.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
-        self.comp = Skycomponent(direction=self.compabsdirection, frequency=self.frequency, flux=self.flux,
-                                 polarisation_frame=PolarisationFrame(sky_pol_frame))
-        self.vis = create_blockvisibility(self.lowcore, self.times, self.frequency, phasecentre=self.phasecentre,
-                                          channel_bandwidth=self.channel_bandwidth, weight=1.0,
-                                          polarisation_frame=PolarisationFrame(data_pol_frame))
+        self.phasecentre = SkyCoord(
+            ra=+180.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
+        )
+        self.compabsdirection = SkyCoord(
+            ra=+181.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
+        )
+        self.comp = Skycomponent(
+            direction=self.compabsdirection,
+            frequency=self.frequency,
+            flux=self.flux,
+            polarisation_frame=PolarisationFrame(sky_pol_frame),
+        )
+        self.vis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            phasecentre=self.phasecentre,
+            channel_bandwidth=self.channel_bandwidth,
+            weight=1.0,
+            polarisation_frame=PolarisationFrame(data_pol_frame),
+        )
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
-    
+
     def test_calibrate_T_function(self):
-        self.actualSetup('stokesI', 'stokesI', f=[100.0])
+        self.actualSetup("stokesI", "stokesI", f=[100.0])
         # Prepare the corrupted visibility data_models
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
@@ -66,16 +96,16 @@ class TestCalibrationChain(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gt)
         # Now get the control dictionary and calibrate
         controls = create_calibration_controls()
-        controls['T']['first_selfcal'] = 0
-        controls['T']['phase_only'] = False
-        calibrated_vis, gaintables = calibrate_chain(self.vis, original, calibration_context='T',
-                                                     controls=controls)
-        residual = numpy.max(gaintables['T'].residual)
+        controls["T"]["first_selfcal"] = 0
+        controls["T"]["phase_only"] = False
+        calibrated_vis, gaintables = calibrate_chain(
+            self.vis, original, calibration_context="T", controls=controls
+        )
+        residual = numpy.max(gaintables["T"].residual)
         assert residual < 1e-8, "Max T residual = %s" % (residual)
-
 
     def test_calibrate_T_function_phase_only(self):
-        self.actualSetup('stokesI', 'stokesI', f=[100.0])
+        self.actualSetup("stokesI", "stokesI", f=[100.0])
         # Prepare the corrupted visibility data_models
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
@@ -84,17 +114,17 @@ class TestCalibrationChain(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gt)
         # Now get the control dictionary and calibrate
         controls = create_calibration_controls()
-        controls['T']['first_selfcal'] = 0
-        controls['T']['phase_only'] = True
-        calibrated_vis, gaintables = calibrate_chain(self.vis, original, calibration_context='T',
-                                                     controls=controls)
-        residual = numpy.max(gaintables['T'].residual)
+        controls["T"]["first_selfcal"] = 0
+        controls["T"]["phase_only"] = True
+        calibrated_vis, gaintables = calibrate_chain(
+            self.vis, original, calibration_context="T", controls=controls
+        )
+        residual = numpy.max(gaintables["T"].residual)
         assert residual < 1e-8, "Max T residual = %s" % (residual)
-
 
     @unittest.skip("G converges slowly")
     def test_calibrate_G_function(self):
-        self.actualSetup('stokesIQUV', 'linear', f=[100.0, 50.0, 0.0, 0.0])
+        self.actualSetup("stokesIQUV", "linear", f=[100.0, 50.0, 0.0, 0.0])
         # Prepare the corrupted visibility data_models
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
@@ -103,15 +133,16 @@ class TestCalibrationChain(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gt)
         # Now get the control dictionary and calibrate
         controls = create_calibration_controls()
-        controls['G']['first_selfcal'] = 0
-        calibrated_vis, gaintables = calibrate_chain(self.vis, original, calibration_context='G',
-                                                     controls=controls)
-        residual = numpy.max(gaintables['G'].residual)
+        controls["G"]["first_selfcal"] = 0
+        calibrated_vis, gaintables = calibrate_chain(
+            self.vis, original, calibration_context="G", controls=controls
+        )
+        residual = numpy.max(gaintables["G"].residual)
         assert residual < 1e-8, "Max G residual = %s" % residual
 
     @unittest.skip("G converges slowly")
     def test_calibrate_TG_function(self):
-        self.actualSetup('stokesI', 'stokesI', f=[100.0])
+        self.actualSetup("stokesI", "stokesI", f=[100.0])
         # Prepare the corrupted visibility data_models
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
@@ -120,15 +151,16 @@ class TestCalibrationChain(unittest.TestCase):
         self.vis = apply_gaintable(self.vis, gt)
         # Now get the control dictionary and calibrate
         controls = create_calibration_controls()
-        controls['T']['first_selfcal'] = 0
-        controls['G']['first_selfcal'] = 0
-        calibrated_vis, gaintables = calibrate_chain(self.vis, original, calibration_context='TG',
-                                                     controls=controls)
-        residual = numpy.max(gaintables['T'].residual)
+        controls["T"]["first_selfcal"] = 0
+        controls["G"]["first_selfcal"] = 0
+        calibrated_vis, gaintables = calibrate_chain(
+            self.vis, original, calibration_context="TG", controls=controls
+        )
+        residual = numpy.max(gaintables["T"].residual)
         assert residual < 1e-8, "Max T residual = %s" % residual
-        residual = numpy.max(gaintables['G'].residual)
+        residual = numpy.max(gaintables["G"].residual)
         assert residual < 1e-8, "Max T residual = %s" % residual
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

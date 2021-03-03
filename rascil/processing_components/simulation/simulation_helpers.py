@@ -509,7 +509,7 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
         log.info("create_simulation_components: Constructing s3sky components")
         from rascil.processing_components.simulation import create_test_skycomponents_from_s3
         
-        all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 100.0,
+        all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit,
                                                            phasecentre=phasecentre,
                                                            polarisation_frame=polarisation_frame,
                                                            frequency=numpy.array(frequency),
@@ -587,7 +587,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     log.info("create_simulation_components: Constructing s3sky components")
     from rascil.processing_components.simulation import create_test_skycomponents_from_s3
     
-    all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 10.0,
+    all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit,
                                                        phasecentre=phasecentre,
                                                        polarisation_frame=PolarisationFrame("stokesI"),
                                                        frequency=numpy.array(frequency),

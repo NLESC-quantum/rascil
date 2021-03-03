@@ -76,13 +76,13 @@ def apply_gaintable(vis: BlockVisibility, gt: GainTable, inverse=False, **kwargs
             if flagged:
                 log.debug("apply_gaintable:Applying flags")
                 original = vis.blockvisibility_acc.flagged_vis[vis_rows]
-                applied = copy.copy(vis.blockvisibility_acc.flagged_vis[vis_rows])
-                appliedwt = copy.copy(vis.blockvisibility_acc.flagged_weight[vis_rows])
+                applied = copy.deepcopy(original)
+                appliedwt = copy.deepcopy(vis.blockvisibility_acc.flagged_weight[vis_rows])
             else:
                 log.debug("apply_gaintable:flags are absent or being ignored")
                 original = vis["vis"].data[vis_rows]
-                applied = copy.copy(original)
-                appliedwt = copy.copy(vis["weight"].data[vis_rows])
+                applied = copy.deepcopy(original)
+                appliedwt = copy.deepcopy(vis["weight"].data[vis_rows])
 
             if vis.blockvisibility_acc.npol == 1:
                 if inverse:

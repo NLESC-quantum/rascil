@@ -307,6 +307,8 @@ def extract_skycomponents_from_skymodel(sm, component_threshold=None,
                                     shape='Point')
                 newsm.components.append(comp)
                 newsm.image["pixels"].data[:, :, p[0], p[1]] = 0.0
+        if numpy.max(numpy.abs(newsm.image["pixels"].data[refchan, 0])) > component_threshold:
+            return ArithmeticError(f"extract_skycomponents_from_image: Not all flux > {component_threshold:.6f} Jy extracted")
     else:
         raise ValueError(f"Unknown component extraction method{component_extraction}")
     

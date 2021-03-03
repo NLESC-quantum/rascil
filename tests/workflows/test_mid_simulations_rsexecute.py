@@ -208,13 +208,13 @@ class TestMIDSimulations(unittest.TestCase):
         error_bvis_list = \
             [sum_predict_results_rsexecute(
                 predict_skymodel_list_rsexecute_workflow(bvis, error_sm_list[ibvis], context='2d', docal=True))
-             for ibvis, bvis in enumerate(error_bvis_list)]
+                for ibvis, bvis in enumerate(error_bvis_list)]
         
         no_error_bvis_list = [rsexecute.execute(copy_visibility)(bvis, zero=True) for bvis in bvis_list]
         no_error_bvis_list = \
             [sum_predict_results_rsexecute(
                 predict_skymodel_list_rsexecute_workflow(bvis, no_error_sm_list[ibvis], context='2d', docal=True))
-             for ibvis, bvis in enumerate(no_error_bvis_list)]
+                for ibvis, bvis in enumerate(no_error_bvis_list)]
         
         error_bvis = rsexecute.execute(concatenate_visibility, nout=1)(error_bvis_list)
         no_error_bvis = rsexecute.execute(concatenate_visibility, nout=1)(no_error_bvis_list)
@@ -258,8 +258,8 @@ class TestMIDSimulations(unittest.TestCase):
         parser.add_argument('--declination', type=float, default=-40.0, help='Declination (degrees)')
         parser.add_argument('--rmax', type=float, default=1e3, help='Maximum distance of station from centre (m)')
         parser.add_argument('--band', type=str, default='B2', help="Band")
-        parser.add_argument('--integration_time', type=float, default=3600, help='Integration time (s)')
-        parser.add_argument('--time_range', type=float, nargs=2, default=[-4.0, 4.0], help='Time range in hour angle')
+        parser.add_argument('--integration_time', type=float, default=1800, help='Integration time (s)')
+        parser.add_argument('--time_range', type=float, nargs=2, default=[-1.0, 1.0], help='Time range in hour angle')
         parser.add_argument('--image_pol', type=str, default='stokesIQUV', help='RASCIL polarisation frame for image')
         parser.add_argument('--vis_pol', type=str, default='linear',
                             help='RASCIL polarisation frame for visibility')
@@ -318,14 +318,14 @@ class TestMIDSimulations(unittest.TestCase):
     def test_wind(self):
         
         args = self.get_args()
-        args.fluxlimit = 0.1
+        args.flux_limit = 0.01
         
         error_dirty, sumwt = self.simulation(args, 'wind_pointing',
                                              image_polarisation_frame=PolarisationFrame("stokesIQUV"),
                                              vis_polarisation_frame=PolarisationFrame("linear"))
         
         qa = qa_image(error_dirty)
-
+        
         # shape: '(1, 4, 1024, 1024)'
         # max: '0.0002463188957351486'
         # min: '-0.00044142488572784577'
@@ -335,15 +335,15 @@ class TestMIDSimulations(unittest.TestCase):
         # medianabs: '0.0'
         # medianabsdevmedian: '0.0'
         # median: '0.0'
-
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.0002463188957351486, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.00044142488572784577, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 1.8021367426909772e-05, 5, err_msg=str(qa))
+        
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.000139353747921011, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.0028688981199968574, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 1.6083641925025978e-05, 5, err_msg=str(qa))
     
     def test_heterogeneous(self):
         
         args = self.get_args()
-        args.fluxlimit = 0.1
+        args.flux_limit = 0.01
         
         error_dirty, sumwt = self.simulation(args, 'heterogeneous',
                                              image_polarisation_frame=PolarisationFrame("stokesIQUV"),
@@ -351,21 +351,21 @@ class TestMIDSimulations(unittest.TestCase):
         
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.006232996309120276, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.00038496045275951873, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 3.728425607449823e-05, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.007721348155708392, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.0006678172286967584, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 5.212090558783337e-05, 5, err_msg=str(qa))
     
     def test_random(self):
         
         args = self.get_args()
-        args.fluxlimit = 0.1
+        args.flux_limit = 0.01
         
         error_dirty, sumwt = self.simulation(args, 'random_pointing',
                                              image_polarisation_frame=PolarisationFrame("stokesIQUV"),
                                              vis_polarisation_frame=PolarisationFrame("linear"))
         
         qa = qa_image(error_dirty)
-
+        
         # shape: '(1, 4, 1024, 1024)'
         # max: '2.472368365158522e-06'
         # min: '-9.762213174928972e-07'
@@ -375,7 +375,7 @@ class TestMIDSimulations(unittest.TestCase):
         # medianabs: '0.0'
         # medianabsdevmedian: '0.0'
         # median: '0.0'
-
+        
         numpy.testing.assert_almost_equal(qa.data['max'], 2.472368365158522e-06, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['min'], -9.762213174928972e-07, 5, err_msg=str(qa))
         numpy.testing.assert_almost_equal(qa.data['rms'], 7.831098142486326e-08, 5, err_msg=str(qa))
@@ -383,7 +383,7 @@ class TestMIDSimulations(unittest.TestCase):
     def test_surface(self):
         
         args = self.get_args()
-        args.fluxlimit = 0.1
+        args.flux_limit = 0.01
         
         if os.path.isdir(rascil_path('models/interpolated')):
             error_dirty, sumwt = self.simulation(args, 'surface',
@@ -395,6 +395,8 @@ class TestMIDSimulations(unittest.TestCase):
             numpy.testing.assert_almost_equal(qa.data['max'], 2.2055849698035616e-06, 5, err_msg=str(qa))
             numpy.testing.assert_almost_equal(qa.data['min'], -6.838117387793031e-07, 5, err_msg=str(qa))
             numpy.testing.assert_almost_equal(qa.data['rms'], 3.7224203394509413e-07, 5, err_msg=str(qa))
+        else:
+            log.warning("test_surface: Interpolated voltage patterns not available - cannot test surface")
     
     def test_polarisation(self):
         
@@ -407,6 +409,6 @@ class TestMIDSimulations(unittest.TestCase):
                                              vis_polarisation_frame=PolarisationFrame("linear"))
         qa = qa_image(error_dirty)
         
-        numpy.testing.assert_almost_equal(qa.data['max'], 0.0004365409779069447, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['min'], -0.00046135977866455243, 5, err_msg=str(qa))
-        numpy.testing.assert_almost_equal(qa.data['rms'], 9.279652696332783e-06, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['max'], 0.00037863455250564473, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['min'], -0.0004809777038127784, 5, err_msg=str(qa))
+        numpy.testing.assert_almost_equal(qa.data['rms'], 1.2845605938834913e-05, 5, err_msg=str(qa))

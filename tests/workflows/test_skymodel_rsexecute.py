@@ -38,12 +38,13 @@ class TestSkyModel(unittest.TestCase):
     
     def actualSetUp(self, freqwin=1, dopol=False, zerow=False):
         
-        self.npixel = 256
+        self.npixel = 512
         self.low = create_named_configuration('LOWBD2', rmax=300.0)
         self.freqwin = freqwin
         self.vis_list = list()
         self.ntimes = 5
         self.cellsize = 0.001
+        self.radius = self.npixel * self.cellsize / 2.0
         # Choose the interval so that the maximum change in w is smallish
         integration_time = numpy.pi * (24 / (12 * 60))
         self.times = numpy.linspace(-integration_time * (self.ntimes // 2), integration_time * (self.ntimes // 2),
@@ -82,6 +83,7 @@ class TestSkyModel(unittest.TestCase):
         self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
                               (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
                                phasecentre=self.phasecentre,
+                               radius=self.radius,
                                polarisation_frame=PolarisationFrame("stokesI"),
                                flux_limit=0.3,
                                flux_threshold=1.0,
@@ -102,6 +104,7 @@ class TestSkyModel(unittest.TestCase):
         
         self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
                               (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
+                               radius=self.radius,
                                phasecentre=self.phasecentre,
                                polarisation_frame=PolarisationFrame("stokesI"),
                                flux_limit=0.3,
@@ -125,6 +128,7 @@ class TestSkyModel(unittest.TestCase):
         
         self.skymodel_list = [rsexecute.execute(create_low_test_skymodel_from_gleam)
                               (npixel=self.npixel, cellsize=self.cellsize, frequency=[self.frequency[f]],
+                               radius=self.radius,
                                phasecentre=self.phasecentre,
                                polarisation_frame=PolarisationFrame("stokesI"),
                                flux_limit=0.3,

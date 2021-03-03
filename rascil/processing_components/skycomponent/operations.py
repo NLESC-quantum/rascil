@@ -7,8 +7,7 @@ __all__ = ['create_skycomponent', 'filter_skycomponents_by_flux', 'filter_skycom
            'find_skycomponent_matches', 'find_skycomponent_matches_atomic', 'find_skycomponents',
            'insert_skycomponent', 'voronoi_decomposition', 'image_voronoi_iter',
            'partition_skycomponent_neighbours', 'select_components_by_separation', 'select_neighbouring_components',
-           'remove_neighbouring_components', 'apply_beam_to_skycomponent',
-           'apply_voltage_pattern_to_skycomponent']
+           'remove_neighbouring_components', 'apply_beam_to_skycomponent', 'apply_voltage_pattern_to_skycomponent']
 
 import collections
 import logging

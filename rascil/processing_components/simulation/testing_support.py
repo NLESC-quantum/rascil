@@ -297,7 +297,8 @@ def create_test_skycomponents_from_s3(polarisation_frame=PolarisationFrame("stok
     :param phasecentre: phasecentre (SkyCoord)
     :param fov: fov 10 | 20 | 40
     :param flux_limit: Minimum flux (Jy)
-    :return: Image
+    :param radius: radius of search area in radians (Default is half-width of the axis)
+    :return: Skycomponents
     """
     check_data_directory()
     
@@ -410,6 +411,7 @@ def create_low_test_image_from_gleam(npixel=512, polarisation_frame=Polarisation
     :param channel_bandwidth: Channel width (Hz)
     :param phasecentre: phasecentre (SkyCoord)
     :param kind: Kind of interpolation (see scipy.interpolate.interp1d) Default: linear
+    :param radius: radius of search area in radians (Default is half-width of the diagonal)
     :return: Image
 
     """
@@ -457,7 +459,7 @@ def create_low_test_skymodel_from_gleam(npixel=512, polarisation_frame=Polarisat
                                         frequency=numpy.array([1e8]), channel_bandwidth=numpy.array([1e6]),
                                         phasecentre=None, kind='cubic', applybeam=True, flux_limit=0.1,
                                         flux_max=numpy.inf, flux_threshold=1.0, insert_method='Nearest',
-                                        telescope='LOW') -> SkyModel:
+                                        telescope='LOW', radius=None) -> SkyModel:
     """Create LOW test skymodel from the GLEAM survey
 
     Stokes I is estimated from a cubic spline fit to the measured fluxes. The polarised flux is always zero.
@@ -482,7 +484,7 @@ def create_low_test_skymodel_from_gleam(npixel=512, polarisation_frame=Polarisat
     :param flux_max: Maximum strength component to be included in components
     :param flux_threshold: Split between components (brighter) and image (weaker)
     :param insert_method: Nearest | PSWF | Lanczos
-    :return:
+    :param radius: radius of search area in radians (Default is half-width of the axis)
     :return: SkyModel
 
     """
@@ -491,7 +493,8 @@ def create_low_test_skymodel_from_gleam(npixel=512, polarisation_frame=Polarisat
     if phasecentre is None:
         phasecentre = SkyCoord(ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame='icrs', equinox='J2000')
     
-    radius = npixel * cellsize
+    if radius is None:
+        radius = npixel * cellsize
     
     sc = create_low_test_skycomponents_from_gleam(flux_limit=flux_limit, polarisation_frame=polarisation_frame,
                                                   frequency=frequency, phasecentre=phasecentre,

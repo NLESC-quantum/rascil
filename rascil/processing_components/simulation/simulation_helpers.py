@@ -509,7 +509,7 @@ def create_simulation_components(context, phasecentre, frequency, pbtype, offset
         log.info("create_simulation_components: Constructing s3sky components")
         from rascil.processing_components.simulation import create_test_skycomponents_from_s3
         
-        all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 100.0,
+        all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit,
                                                            phasecentre=phasecentre,
                                                            polarisation_frame=polarisation_frame,
                                                            frequency=numpy.array(frequency),
@@ -587,7 +587,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
     log.info("create_simulation_components: Constructing s3sky components")
     from rascil.processing_components.simulation import create_test_skycomponents_from_s3
     
-    all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit / 10.0,
+    all_components = create_test_skycomponents_from_s3(flux_limit=flux_limit,
                                                        phasecentre=phasecentre,
                                                        polarisation_frame=PolarisationFrame("stokesI"),
                                                        frequency=numpy.array(frequency),
@@ -625,7 +625,7 @@ def create_mid_simulation_components(phasecentre, frequency, flux_limit, pbradiu
                 reference_component = len(filtered_components) - 1
             filtered_pb_components.append(pb_applied_components[icomp])
 
-    log.info("create_simulation_components: %d components > %.3f Jy after filtering with primary beam" %
+    log.info("create_simulation_components: %d components > %.6f Jy after filtering with primary beam" %
              (len(filtered_components), flux_limit))
     log.info("create_simulation_components: Total flux in components is %g (Jy)" % total_flux)
     if show:

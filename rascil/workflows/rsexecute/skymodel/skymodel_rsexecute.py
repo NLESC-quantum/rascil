@@ -28,7 +28,7 @@ log = logging.getLogger('rascil-logger')
 def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng', gcfcf=None,
                                              docal=False, inverse=True, **kwargs):
     """Predict from a list of skymodels
-    
+
     If obsvis is a list then we pair obsvis element and skymodel_list element and predict
     If obvis is BlockVisibility then we calculate BlockVisibility for each skymodel
 
@@ -42,10 +42,16 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
    """
     
     def ft_cal_sm(ov, sm, g):
+        """ Predict visibility for a skymodel
+
+        :param sm: Skymodel
+        :param g: Convolution function
+        :param ov: Input visibility
+        :return: Visibility with dft of components, fft of image, gaintable
+        """
         if g is not None:
-            assert len(g) == 2, g
-            # assert isinstance(g[0], Image), g[0]
-            # assert isinstance(g[1], ConvolutionFunction), g[1]
+            if len(g) != 2:
+                raise ValueError("Convolution function value incorrect")
         
         v = copy_visibility(ov, zero=True)
         
@@ -74,7 +80,8 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
         return v
     
     if isinstance(obsvis, list):
-        assert len(obsvis) == len(skymodel_list)
+        if len(obsvis) != len(skymodel_list):
+            raise ValueError("Obsvis and skymodel lists should have the same length")
         if gcfcf is None:
             return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None) for ism, sm in enumerate(skymodel_list)]
         else:
@@ -104,12 +111,16 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context='ng
    """
     
     def ift_ical_sm(v, sm, g):
-        # assert isinstance(v, BlockVisibility), v
-        # assert isinstance(sm, SkyModel), sm
+        """ Inverse Fourier sum of visibility to image and components
+
+        :param v: Visibility to be transformed
+        :param sm: Skymodel
+        :param g: Convolution function
+        :return: Skymodel containing transforms
+        """
         if g is not None:
-            assert len(g) == 2, g
-            # assert isinstance(g[0], Image), g[0]
-            # assert isinstance(g[1], ConvolutionFunction), g[1]
+            if len(g) != 2:
+                raise ValueError("Convolution function value incorrect")
         
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
@@ -199,9 +210,9 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
 
 def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_list):
     """Form data models by subtracting sum from the observed and adding back each model in turn
-    
+
     vmodel[p] = vobs - sum(i!=p) modelvis[i]
-    
+
     This is the E step in the Expectation-Maximisation algorithm.
 
     :param obsvis: "Observed" visibility

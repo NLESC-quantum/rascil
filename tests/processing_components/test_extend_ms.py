@@ -10,22 +10,28 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.processing_components.simulation import create_named_configuration
-from rascil.processing_components.visibility.base import create_blockvisibility, extend_blockvisibility_to_ms
+from rascil.processing_components.visibility.base import (
+    create_blockvisibility,
+    extend_blockvisibility_to_ms,
+)
 from rascil.data_models import rascil_path, rascil_data_path, BlockVisibility
-from rascil.processing_components.visibility.base import create_blockvisibility_from_ms, export_blockvisibility_to_ms
+from rascil.processing_components.visibility.base import (
+    create_blockvisibility_from_ms,
+    export_blockvisibility_to_ms,
+)
 
 import logging
 
-log = logging.getLogger('logger')
+log = logging.getLogger("logger")
 
 log.setLevel(logging.WARNING)
 
 
 class TestExtendMS(unittest.TestCase):
-
     def setUp(self):
         try:
             from casacore.tables import table  # pylint: disable=import-error
+
             self.casacore_available = True
             #            except ModuleNotFoundError:
         except:
@@ -47,6 +53,7 @@ class TestExtendMS(unittest.TestCase):
         msoutfile = rascil_path("test_results/test_extend_xcasa.ms")
         # remove temp file if exists
         import os, shutil
+
         if os.path.exists(msoutfile):
             shutil.rmtree(msoutfile, ignore_errors=False)
         # open an existent file
@@ -56,5 +63,5 @@ class TestExtendMS(unittest.TestCase):
             extend_blockvisibility_to_ms(msoutfile, bvis)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -3,7 +3,7 @@ Functions that add noise.
 
 """
 
-__all__ = ['calculate_noise_blockvisibility', 'addnoise_visibility']
+__all__ = ["calculate_noise_blockvisibility", "addnoise_visibility"]
 
 import logging
 
@@ -11,7 +11,8 @@ import numpy
 
 from rascil.data_models.memory_data_models import BlockVisibility
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
+
 
 def calculate_noise_blockvisibility(bandwidth, int_time, diameter, t_sys, eta):
     """Calculate noise rms per visibility [nchan, npol]
@@ -23,9 +24,9 @@ def calculate_noise_blockvisibility(bandwidth, int_time, diameter, t_sys, eta):
     :param eta: Efficiency
     :returns: Sigma [nrows, nchan]
     """
-    
+
     k_b = 1.38064852e-23
-    area = numpy.pi * (diameter / 2.) ** 2
+    area = numpy.pi * (diameter / 2.0) ** 2
     bt = numpy.outer(int_time, bandwidth)
     sigma = (numpy.sqrt(2) * k_b * t_sys) / (area * eta * (numpy.sqrt(bt)))
     sigma *= 1e26
@@ -33,18 +34,19 @@ def calculate_noise_blockvisibility(bandwidth, int_time, diameter, t_sys, eta):
 
 
 def addnoise_visibility(vis, t_sys=None, eta=None, seed=None):
-    """ Add noise to a visibility
-    
+    """Add noise to a visibility
+
     TODO: Obtain sensitivity values from vis as a function of frequency
-    
+
     :param vis:
     :param t_sys: System temperature
     :param eta: Efficiency
     :return: vis with noise added
     """
-    #assert isinstance(vis, BlockVisibility), vis
-    
+    # assert isinstance(vis, BlockVisibility), vis
+
     from numpy.random import default_rng
+
     if seed is None:
         rng = default_rng(1805550721)
     else:
@@ -52,17 +54,29 @@ def addnoise_visibility(vis, t_sys=None, eta=None, seed=None):
 
     if t_sys is None:
         t_sys = 20.0
-    
+
     if eta is None:
         eta = 0.78
-    
-    sigma = calculate_noise_blockvisibility(vis.channel_bandwidth.data, vis['integration_time'].data,
-                                            vis.configuration.diameter.data[0], t_sys=t_sys, eta=eta)
-    log.debug('addnoise_visibility: RMS noise value (first integration, first channel): %g' % sigma[0, 0])
+
+    sigma = calculate_noise_blockvisibility(
+        vis.channel_bandwidth.data,
+        vis["integration_time"].data,
+        vis.configuration.diameter.data[0],
+        t_sys=t_sys,
+        eta=eta,
+    )
+    log.debug(
+        "addnoise_visibility: RMS noise value (first integration, first channel): %g"
+        % sigma[0, 0]
+    )
     ntimes, nbaseline, nchan, npol = vis.vis.shape
     shape = (nbaseline, npol)
     for time in range(ntimes):
         for chan in range(nchan):
-            vis["vis"].data[time, ..., chan, :].real += rng.normal(0, sigma[time, chan], shape)
-            vis["vis"].data[time, ..., chan, :].imag += rng.normal(0, sigma[time, chan], shape)
+            vis["vis"].data[time, ..., chan, :].real += rng.normal(
+                0, sigma[time, chan], shape
+            )
+            vis["vis"].data[time, ..., chan, :].imag += rng.normal(
+                0, sigma[time, chan], shape
+            )
     return vis

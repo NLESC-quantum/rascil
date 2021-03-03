@@ -19,7 +19,7 @@ This and related modules contain various approachs for dealing with the wide-fie
 extra phase term in the Fourier transform cannot be ignored.
 """
 
-__all__ = ['dft_skycomponent_visibility', 'idft_visibility_skycomponent']
+__all__ = ["dft_skycomponent_visibility", "idft_visibility_skycomponent"]
 
 import collections
 import logging
@@ -34,13 +34,16 @@ from rascil.data_models.memory_data_models import BlockVisibility, Skycomponent
 from rascil.data_models.polarisation import convert_pol_frame
 from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
-from rascil.processing_components.visibility.base import calculate_blockvisibility_phasor
+from rascil.processing_components.visibility.base import (
+    calculate_blockvisibility_phasor,
+)
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
 
 
-def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]], **kwargs) \
-        -> BlockVisibility:
+def dft_skycomponent_visibility(
+    vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]], **kwargs
+) -> BlockVisibility:
     """DFT to get the visibility from a Skycomponent, for BlockVisibility
 
     :param vis: BlockVisibility
@@ -53,18 +56,23 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
     if not isinstance(sc, collections.abc.Iterable):
         sc = [sc]
 
-    vfluxes = list() # Flux for each component
-    direction_cosines = list() # lmn vector for each component
+    vfluxes = list()  # Flux for each component
+    direction_cosines = list()  # lmn vector for each component
 
     for comp in sc:
-        #assert isinstance(comp, Skycomponent), comp
+        # assert isinstance(comp, Skycomponent), comp
         flux = comp.flux
         if comp.polarisation_frame != vis.blockvisibility_acc.polarisation_frame:
-            flux = convert_pol_frame(flux, comp.polarisation_frame, vis.blockvisibility_acc.polarisation_frame)
+            flux = convert_pol_frame(
+                flux,
+                comp.polarisation_frame,
+                vis.blockvisibility_acc.polarisation_frame,
+            )
 
         # Interpolate in frequency if necessary
-        if len(comp.frequency) == len(vis.frequency) and \
-                numpy.allclose(comp.frequency,vis.frequency.data, rtol=1e-15):
+        if len(comp.frequency) == len(vis.frequency) and numpy.allclose(
+            comp.frequency, vis.frequency.data, rtol=1e-15
+        ):
             vflux = flux
         else:
             nchan, npol = flux.shape
@@ -72,7 +80,9 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
             vflux = numpy.zeros([nvchan, npol])
             if nchan > 1:
                 for pol in range(flux.shape[1]):
-                    fint = interpolate.interp1d(comp.frequency, comp.flux[:, pol], kind="cubic")
+                    fint = interpolate.interp1d(
+                        comp.frequency, comp.flux[:, pol], kind="cubic"
+                    )
                     vflux[:, pol] = fint(vis.frequency.data)
             else:
                 # Just take the value since we cannot interpolate. Might want to put some
@@ -88,14 +98,15 @@ def dft_skycomponent_visibility(vis: BlockVisibility, sc: Union[Skycomponent, Li
 
     direction_cosines = numpy.array(direction_cosines)
     vfluxes = numpy.array(vfluxes).astype("complex")
-    vis['vis'].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
+    vis["vis"].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
 
     return vis
 
 
-
-def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None, **kwargs):
-    """ CPU computational kernel for DFT, choice dependent on dft_compute_kernel
+def dft_kernel(
+    direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None, **kwargs
+):
+    """CPU computational kernel for DFT, choice dependent on dft_compute_kernel
 
     :param direction_cosines: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
@@ -118,9 +129,12 @@ def dft_kernel(direction_cosines, vfluxes, uvw_lambda, dft_compute_kernel=None, 
         raise ValueError(f"dft_compute_kernel {dft_compute_kernel} not known")
 
 
-@jit(numba.c16[:,:,:,:](numba.f8[:,:],numba.c16[:,:,:], numba.f8[:,:,:,:]),nopython=True)
+@jit(
+    numba.c16[:, :, :, :](numba.f8[:, :], numba.c16[:, :, :], numba.f8[:, :, :, :]),
+    nopython=True,
+)
 def dft_numba_kernel(direction_cosines, vfluxes, uvw_lambda):
-    """ CPU computational kernel for DFT
+    """CPU computational kernel for DFT
 
     :param direction_cosines: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
@@ -132,25 +146,30 @@ def dft_numba_kernel(direction_cosines, vfluxes, uvw_lambda):
     (components, _, pols) = vfluxes.shape
 
     # Local (per-thread) visibility.
-    vis = numpy.zeros((times,baselines,channels,pols),dtype=numpy.complex128)
+    vis = numpy.zeros((times, baselines, channels, pols), dtype=numpy.complex128)
     for num_times in range(times):
         for num_baselines in range(baselines):
             for num_channels in range(channels):
                 # Load uvw-coordinates.
                 uvw = uvw_lambda[num_times, num_baselines, num_channels]
-                #Loop over components and calculate phase for each.
+                # Loop over components and calculate phase for each.
                 vis_local = numpy.zeros((4,), dtype=numpy.complex128)
                 for num_components in range(components):
                     ddir = direction_cosines[num_components]
-                    phase = -2.0 * numpy.pi * (
-                        ddir[0] * uvw[0] + ddir[1] * uvw[1] + ddir[2] * uvw[2])
+                    phase = (
+                        -2.0
+                        * numpy.pi
+                        * (ddir[0] * uvw[0] + ddir[1] * uvw[1] + ddir[2] * uvw[2])
+                    )
                     sin_phase = numpy.sin(phase)
                     cos_phase = numpy.cos(phase)
                     phasor = complex(cos_phase, sin_phase)
 
                     # Multiply by flux in each polarisation and accumulate.
                     for i in range(pols):
-                        vis_local[i] += (phasor * vfluxes[num_components, num_channels, i ])
+                        vis_local[i] += (
+                            phasor * vfluxes[num_components, num_channels, i]
+                        )
 
                 # Write out local visibility.
                 for i in range(pols):
@@ -158,7 +177,7 @@ def dft_numba_kernel(direction_cosines, vfluxes, uvw_lambda):
     return vis
 
 
-cuda_kernel_source = r'''
+cuda_kernel_source = r"""
 #include <cupy/complex.cuh>
 
 #ifndef M_PI
@@ -235,10 +254,11 @@ __global__ void dft_kernel(
 }
 
 }
-'''
+"""
+
 
 def dft_cpu_looped(direction_cosines, uvw_lambda, vfluxes):
-    """ CPU computational kernel for DFT, using explicit loop over components
+    """CPU computational kernel for DFT, using explicit loop over components
 
     :param direction_cosines: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
@@ -248,16 +268,20 @@ def dft_cpu_looped(direction_cosines, uvw_lambda, vfluxes):
     ncomp, _ = direction_cosines.shape
     ntimes, nbaselines, nchan, _ = uvw_lambda.shape
     npol = vfluxes.shape[-1]
-    vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype='complex')
+    vis = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype="complex")
     for icomp in range(ncomp):
-        phasor = numpy.exp(-2j * numpy.pi * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1))
+        phasor = numpy.exp(
+            -2j
+            * numpy.pi
+            * numpy.sum(uvw_lambda.data * direction_cosines[icomp, :], axis=-1)
+        )
         for pol in range(npol):
             vis[..., pol] += vfluxes[icomp, :, pol] * phasor
     return vis
 
 
 def dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes):
-    """ CPU computational kernel for DFT, using CUDA raw code via cupy
+    """CPU computational kernel for DFT, using CUDA raw code via cupy
 
     :param direction_cosines: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
@@ -270,7 +294,7 @@ def dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes):
     except ModuleNotFoundError:
         "cupy is not installed - cannot run CUDA"
         raise ModuleNotFoundError("cupy is not installed - cannot run CUDA")
-        
+
     # Get the dimension sizes.
     (num_times, num_baselines, num_channels, _) = uvw_lambda.shape
     (num_components, _, num_pols) = vfluxes.shape
@@ -281,28 +305,35 @@ def dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes):
     direction_cosines_gpu = cupy.asarray(direction_cosines)
     fluxes_gpu = cupy.asarray(vfluxes)
     uvw_gpu = cupy.asarray(uvw_lambda)
-    vis_gpu = cupy.zeros((num_times, num_baselines, num_channels, num_pols),
-                         dtype=cupy.complex128
-                         )
+    vis_gpu = cupy.zeros(
+        (num_times, num_baselines, num_channels, num_pols), dtype=cupy.complex128
+    )
     # Define GPU kernel parameters, thread block size and grid size.
     num_threads = (128, 2, 2)  # Product must not exceed 1024.
     num_blocks = (
         (num_baselines + num_threads[0] - 1) // num_threads[0],
         (num_channels + num_threads[1] - 1) // num_threads[1],
-        (num_times + num_threads[2] - 1) // num_threads[2]
+        (num_times + num_threads[2] - 1) // num_threads[2],
     )
     args = (
-        num_components, num_pols, num_channels, num_baselines, num_times,
-        direction_cosines_gpu, fluxes_gpu, uvw_gpu, vis_gpu
+        num_components,
+        num_pols,
+        num_channels,
+        num_baselines,
+        num_times,
+        direction_cosines_gpu,
+        fluxes_gpu,
+        uvw_gpu,
+        vis_gpu,
     )
     # Call the GPU kernel and copy results to host.
     kernel_dft(num_blocks, num_threads, args)
     return cupy.asnumpy(vis_gpu)
 
 
-def idft_visibility_skycomponent(vis: BlockVisibility,
-                                 sc: Union[Skycomponent, List[Skycomponent]]) -> \
-        ([Skycomponent, List[Skycomponent]], List[numpy.ndarray]):
+def idft_visibility_skycomponent(
+    vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]]
+) -> ([Skycomponent, List[Skycomponent]], List[numpy.ndarray]):
     """Inverse DFT a Skycomponent from BlockVisibility
 
     :param vis: BlockVisibility
@@ -319,17 +350,26 @@ def idft_visibility_skycomponent(vis: BlockVisibility,
     weights_list = list()
 
     for comp in sc:
-        #assert isinstance(comp, Skycomponent), comp
+        # assert isinstance(comp, Skycomponent), comp
         newcomp = copy_skycomponent(comp)
 
         phasor = numpy.conjugate(calculate_blockvisibility_phasor(comp.direction, vis))
-        flux = numpy.sum(vis.blockvisibility_acc.flagged_weight * vis.blockvisibility_acc.flagged_vis * phasor, axis=(0, 1))
+        flux = numpy.sum(
+            vis.blockvisibility_acc.flagged_weight
+            * vis.blockvisibility_acc.flagged_vis
+            * phasor,
+            axis=(0, 1),
+        )
         weight = numpy.sum(vis.blockvisibility_acc.flagged_weight, axis=(0, 1))
 
         flux[weight > 0.0] = flux[weight > 0.0] / weight[weight > 0.0]
         flux[weight <= 0.0] = 0.0
         if comp.polarisation_frame != vis.blockvisibility_acc.polarisation_frame:
-            flux = convert_pol_frame(flux, vis.blockvisibility_acc.polarisation_frame, comp.polarisation_frame)
+            flux = convert_pol_frame(
+                flux,
+                vis.blockvisibility_acc.polarisation_frame,
+                comp.polarisation_frame,
+            )
 
         newcomp.flux = flux
 

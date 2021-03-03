@@ -2,7 +2,7 @@
 
 """
 
-__all__ = ['gaintable_timeslice_iter', 'gaintable_null_iter']
+__all__ = ["gaintable_timeslice_iter", "gaintable_null_iter"]
 
 import logging
 
@@ -11,11 +11,12 @@ import numpy
 from rascil.data_models.memory_data_models import GainTable
 from rascil.data_models.parameters import get_parameter
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
+
 
 def gaintable_null_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
     """One time iterator returning true for all rows
-    
+
     :param gt:
     :param kwargs:
     :return:
@@ -24,7 +25,7 @@ def gaintable_null_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
 
 
 def gaintable_timeslice_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
-    """ GainTable iterator
+    """GainTable iterator
 
     :param gt: GainTable
     :param timeslice: 'auto' or time in seconds
@@ -34,19 +35,21 @@ def gaintable_timeslice_iter(gt: GainTable, **kwargs) -> numpy.ndarray:
     ##assert isinstance(gt, GainTable)
     timemin = numpy.min(gt.time)
     timemax = numpy.max(gt.time)
-    
-    timeslice = get_parameter(kwargs, "timeslice", 'auto')
-    if timeslice == 'auto':
+
+    timeslice = get_parameter(kwargs, "timeslice", "auto")
+    if timeslice == "auto":
         boxes = numpy.unique(gt.time)
         timeslice = 0.1
     elif timeslice is None:
         timeslice = timemax - timemin
-        boxes = [0.5*(timemax+timemin)]
+        boxes = [0.5 * (timemax + timemin)]
     elif isinstance(timeslice, float) or isinstance(timeslice, int):
         boxes = numpy.arange(timemin, timemax, timeslice)
     else:
         gt_slices = get_parameter(kwargs, "gaintable_slices", None)
-        assert gt_slices is not None, "Time slicing not specified: set either timeslice or gaintable_slices"
+        assert (
+            gt_slices is not None
+        ), "Time slicing not specified: set either timeslice or gaintable_slices"
         boxes = numpy.linspace(timemin, timemax, gt_slices)
         if gt_slices > 1:
             timeslice = boxes[1] - boxes[0]

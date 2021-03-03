@@ -2,8 +2,14 @@
 
 """
 
-__all__ = ['imaging_context', 'imaging_contexts', 'sum_invert_results', 'remove_sumwt', 'threshold_list',
-           'sum_predict_results']
+__all__ = [
+    "imaging_context",
+    "imaging_contexts",
+    "sum_invert_results",
+    "remove_sumwt",
+    "threshold_list",
+    "sum_predict_results",
+]
 
 import logging
 
@@ -12,46 +18,51 @@ import numpy
 from rascil.processing_components.image import calculate_image_frequency_moments
 from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.processing_components.imaging import normalize_sumwt
-from rascil.processing_components.imaging import predict_2d, invert_2d, predict_awprojection, invert_awprojection
+from rascil.processing_components.imaging import (
+    predict_2d,
+    invert_2d,
+    predict_awprojection,
+    invert_awprojection,
+)
 from rascil.processing_components.visibility import copy_visibility
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
 
 
 def imaging_contexts():
     """Contains all the context information for imaging
-    
+
     The fields are:
         predict: Predict function to be used
         invert: Invert function to be used
         inner: The innermost axis
-    
+
     :return:
     """
     from rascil.processing_components.imaging.ng import predict_ng, invert_ng
-    contexts = {'2d': {'predict': predict_2d,
-                       'invert': invert_2d},
-                'ng': {'predict': predict_ng,
-                       'invert': invert_ng},
-                'wprojection': {'predict': predict_awprojection,
-                                'invert': invert_awprojection}}
-    
+
+    contexts = {
+        "2d": {"predict": predict_2d, "invert": invert_2d},
+        "ng": {"predict": predict_ng, "invert": invert_ng},
+        "wprojection": {"predict": predict_awprojection, "invert": invert_awprojection},
+    }
+
     return contexts
 
 
-def imaging_context(context='2d'):
+def imaging_context(context="2d"):
     contexts = imaging_contexts()
     assert context in contexts.keys(), context
     return contexts[context]
 
 
 def sum_invert_results_local(image_list):
-    """ Sum a set of invert results with appropriate weighting
+    """Sum a set of invert results with appropriate weighting
     without normalize_sumwt at the end
     :param image_list: List of [image, sum weights] pairs
     :return: image, sum of weights
     """
-    
+
     first = True
     sumwt = 0.0
     im = None
@@ -69,13 +80,13 @@ def sum_invert_results_local(image_list):
             else:
                 im["pixels"].data += scale * arg[0].data
                 sumwt += arg[1]
-    
+
     assert not first, "No invert results"
     return im, sumwt
 
 
 def sum_invert_results(image_list, normalize=True):
-    """ Sum a set of invert results with appropriate weighting
+    """Sum a set of invert results with appropriate weighting
 
     :param normalize:
     :param image_list: List of [image, sum weights] pairs
@@ -83,23 +94,25 @@ def sum_invert_results(image_list, normalize=True):
     """
     if len(image_list) == 1:
         return image_list[0]
-    
+
     im = create_empty_image_like(image_list[0][0])
     sumwt = image_list[0][1].copy()
     sumwt *= 0.0
-    
+
     for i, arg in enumerate(image_list):
         if arg is not None:
-            im["pixels"].data += arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0]["pixels"].data
+            im["pixels"].data += (
+                arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0]["pixels"].data
+            )
             sumwt += arg[1]
-    
+
     if normalize:
         im = normalize_sumwt(im, sumwt)
     return im, sumwt
 
 
 def remove_sumwt(results):
-    """ Remove sumwt term in list of tuples (image, sumwt)
+    """Remove sumwt term in list of tuples (image, sumwt)
 
     :param results:
     :return: A list of just the dirty images
@@ -108,7 +121,7 @@ def remove_sumwt(results):
 
 
 def sum_predict_results(results):
-    """ Sum a set of predict results of the same shape
+    """Sum a set of predict results of the same shape
 
     :param results: List of visibilities to be summed
     :return: summed visibility
@@ -119,14 +132,16 @@ def sum_predict_results(results):
             if sum_results is None:
                 sum_results = result
             else:
-                assert sum_results['vis'].data.shape == result['vis'].data.shape
-                sum_results['vis'].data += result['vis'].data
-    
+                assert sum_results["vis"].data.shape == result["vis"].data.shape
+                sum_results["vis"].data += result["vis"].data
+
     return sum_results
 
 
-def threshold_list(imagelist, threshold, fractional_threshold, use_moment0=True, prefix=''):
-    """ Find actual threshold for list of results, optionally using moment 0
+def threshold_list(
+    imagelist, threshold, fractional_threshold, use_moment0=True, prefix=""
+):
+    """Find actual threshold for list of results, optionally using moment 0
 
     :param prefix: Prefix in log messages
     :param imagelist:
@@ -139,23 +154,34 @@ def threshold_list(imagelist, threshold, fractional_threshold, use_moment0=True,
     for i, result in enumerate(imagelist):
         if use_moment0:
             moments = calculate_image_frequency_moments(result)
-            this_peak = numpy.max(numpy.abs(moments["pixels"].data[0, ...] / result["pixels"].shape[0]))
+            this_peak = numpy.max(
+                numpy.abs(moments["pixels"].data[0, ...] / result["pixels"].shape[0])
+            )
             peak = max(peak, this_peak)
-            log.info("threshold_list: using moment 0, sub_image %d, peak = %f," % (i, this_peak))
+            log.info(
+                "threshold_list: using moment 0, sub_image %d, peak = %f,"
+                % (i, this_peak)
+            )
         else:
             ref_chan = result["pixels"].data.shape[0] // 2
             this_peak = numpy.max(numpy.abs(result["pixels"].data[ref_chan]))
             peak = max(peak, this_peak)
-            log.info("threshold_list: using refchan %d , sub_image %d, peak = %f," % (ref_chan, i, this_peak))
-    
+            log.info(
+                "threshold_list: using refchan %d , sub_image %d, peak = %f,"
+                % (ref_chan, i, this_peak)
+            )
+
     actual = max(peak * fractional_threshold, threshold)
-    
+
     if use_moment0:
-        log.info("threshold_list %s: Global peak in moment 0 = %.6f, sub-image clean threshold will be %.6f" % (prefix,
-                                                                                                                peak,
-                                                                                                                actual))
+        log.info(
+            "threshold_list %s: Global peak in moment 0 = %.6f, sub-image clean threshold will be %.6f"
+            % (prefix, peak, actual)
+        )
     else:
-        log.info("threshold_list %s: Global peak = %.6f, sub-image clean threshold will be %.6f" % (prefix, peak,
-                                                                                                    actual))
-    
+        log.info(
+            "threshold_list %s: Global peak = %.6f, sub-image clean threshold will be %.6f"
+            % (prefix, peak, actual)
+        )
+
     return actual

@@ -8,17 +8,28 @@ from datetime import datetime
 
 import numpy
 
-from rascil.processing_components.visibility.msv2supp import cmp_to_total, STOKES_CODES, NUMERIC_STOKES, merge_baseline
+from rascil.processing_components.visibility.msv2supp import (
+    cmp_to_total,
+    STOKES_CODES,
+    NUMERIC_STOKES,
+    merge_baseline,
+)
 
-log = logging.getLogger('rascil-logger')
+log = logging.getLogger("rascil-logger")
 
-__version__ = '0.1'
-__revision__ = '$Rev$'
-__all__ = ['STOKES_CODES', 'NUMERIC_STOKES', 'Stand', 'Observatory', 'Antenna', 'BaseData']
+__version__ = "0.1"
+__revision__ = "$Rev$"
+__all__ = [
+    "STOKES_CODES",
+    "NUMERIC_STOKES",
+    "Stand",
+    "Observatory",
+    "Antenna",
+    "BaseData",
+]
 
 try:
     from casacore.tables import table, tableutil
-
 
     @cmp_to_total
     class Stand(object):
@@ -79,7 +90,12 @@ try:
                 return 0
 
         def __str__(self):
-            return "Stand %i:  x=%+.2f m, y=%+.2f m, z=%+.2f m" % (self.id, self.x, self.y, self.z)
+            return "Stand %i:  x=%+.2f m, y=%+.2f m, z=%+.2f m" % (
+                self.id,
+                self.x,
+                self.y,
+                self.z,
+            )
 
         def __reduce__(self):
             return (Stand, (self.id, self.x, self.y, self.z))
@@ -130,14 +146,12 @@ try:
 
             return out
 
-
     class Observatory(object):
         def __init__(self, name, lon, lat, alt):
             self.name = name
             self.lon = lon
             self.lat = lat
             self.alt = alt
-
 
     class Antenna(object):
         """
@@ -155,8 +169,17 @@ try:
 
         """
 
-        def __init__(self, id, stand=None, pol=0, theta=0.0, phi=0.0,
-                     fee=None, feePort=1, cable=None):
+        def __init__(
+            self,
+            id,
+            stand=None,
+            pol=0,
+            theta=0.0,
+            phi=0.0,
+            fee=None,
+            feePort=1,
+            cable=None,
+        ):
             self.id = int(id)
 
             if stand is None:
@@ -174,11 +197,26 @@ try:
             self.cable = cable
 
         def __str__(self):
-            return "Antenna %i: stand=%i, polarization=%i; " % (self.id, self.stand.id, self.pol)
+            return "Antenna %i: stand=%i, polarization=%i; " % (
+                self.id,
+                self.stand.id,
+                self.pol,
+            )
 
         def __reduce__(self):
-            return (Antenna, (
-                self.id, self.stand, self.pol, self.theta, self.phi, self.fee, self.feePort, self.cable))
+            return (
+                Antenna,
+                (
+                    self.id,
+                    self.stand,
+                    self.pol,
+                    self.theta,
+                    self.phi,
+                    self.fee,
+                    self.feePort,
+                    self.cable,
+                ),
+            )
 
         def __lt__(self, y):
             if self.id < y.id:
@@ -218,7 +256,6 @@ try:
             else:
                 return 0
 
-
     class Frequency:
         """
         Information about the frequency setup used in the file.
@@ -232,15 +269,25 @@ try:
             self.sideBand = 1
             self.baseBand = 0
 
-
     @cmp_to_total
     class MS_UVData(object):
         """
         UV visibility data set for a given observation time.
         """
 
-        def __init__(self, obstime, inttime, baselines, visibilities, flags, weights=None, pol=STOKES_CODES['XX'], source=None,
-                     phasecentre=None, uvw=None):
+        def __init__(
+            self,
+            obstime,
+            inttime,
+            baselines,
+            visibilities,
+            flags,
+            weights=None,
+            pol=STOKES_CODES["XX"],
+            source=None,
+            phasecentre=None,
+            uvw=None,
+        ):
             self.obstime = obstime
             self.inttime = inttime
             self.baselines = baselines
@@ -320,23 +367,39 @@ try:
             # Convert numbers to radians and, for HA, hours to degrees
             HA2 = HA * 15.0 * numpy.pi / 180
             dec2 = dec * numpy.pi / 180
-            lat2 = obs.location.geodetic[1].to('rad').value
+            lat2 = obs.location.geodetic[1].to("rad").value
 
             # Coordinate transformation matrices
-            trans1 = numpy.array([[0, -numpy.sin(lat2), numpy.cos(lat2)],
-                                  [1, 0, 0],
-                                  [0, numpy.cos(lat2), numpy.sin(lat2)]])
-            trans2 = numpy.array([[numpy.sin(HA2), numpy.cos(HA2), 0],
-                                  [-numpy.sin(dec2) * numpy.cos(HA2), numpy.sin(dec2) * numpy.sin(HA2),
-                                   numpy.cos(dec2)],
-                                  [numpy.cos(dec2) * numpy.cos(HA2), -numpy.cos(dec2) * numpy.sin(HA2),
-                                   numpy.sin(dec2)]])
+            trans1 = numpy.array(
+                [
+                    [0, -numpy.sin(lat2), numpy.cos(lat2)],
+                    [1, 0, 0],
+                    [0, numpy.cos(lat2), numpy.sin(lat2)],
+                ]
+            )
+            trans2 = numpy.array(
+                [
+                    [numpy.sin(HA2), numpy.cos(HA2), 0],
+                    [
+                        -numpy.sin(dec2) * numpy.cos(HA2),
+                        numpy.sin(dec2) * numpy.sin(HA2),
+                        numpy.cos(dec2),
+                    ],
+                    [
+                        numpy.cos(dec2) * numpy.cos(HA2),
+                        -numpy.cos(dec2) * numpy.sin(HA2),
+                        numpy.sin(dec2),
+                    ],
+                ]
+            )
 
             for i, (a1, a2) in enumerate(self.baselines):
                 # Go from a east, north, up coordinate system to a celestial equation,
                 # east, north celestial pole system
                 xyzPrime = a1.stand - a2.stand
-                xyz = trans1 @ numpy.array([[xyzPrime[0]], [xyzPrime[1]], [xyzPrime[2]]])
+                xyz = trans1 @ numpy.array(
+                    [[xyzPrime[0]], [xyzPrime[1]], [xyzPrime[2]]]
+                )
 
                 # Go from CE, east, NCP to u, v, w
                 temp = trans2 @ xyz
@@ -355,7 +418,6 @@ try:
             packed = numpy.array(packed, dtype=int)
 
             return numpy.argsort(packed)
-
 
     class BaseData(object):
         """
@@ -397,7 +459,7 @@ try:
             """
 
             # Valid time string (modulo the 'T')
-            timeRE = re.compile(r'\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?')
+            timeRE = re.compile(r"\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?")
 
             if type(ref_time) in (int, float):
                 refDateTime = datetime.utcfromtimestamp(ref_time)
@@ -409,19 +471,21 @@ try:
                 if re.match(timeRE, ref_time) is None:
                     raise RuntimeError("Malformed date/time provided: %s" % ref_time)
                 else:
-                    ref_time = ref_time.replace(' ', 'T', 1)
+                    ref_time = ref_time.replace(" ", "T", 1)
             else:
                 raise RuntimeError("Unknown time format provided.")
 
             return ref_time
 
-        def __init__(self, filename, ref_time=0.0, source_name = None, frame='ITRF', verbose=False):
+        def __init__(
+            self, filename, ref_time=0.0, source_name=None, frame="ITRF", verbose=False
+        ):
             # File-specific information
             self.filename = filename
             self.verbose = verbose
             self.site_config = None
             # Observatory-specific information
-            self.siteName = 'Unknown'
+            self.siteName = "Unknown"
             self.frame = frame
             self.source_name = source_name
 
@@ -481,7 +545,7 @@ try:
                 self.channelWidth = channel_width[0]
                 offset = 0.0
             else:
-                assert (len(freq) == self.nchan)
+                assert len(freq) == self.nchan
                 offset = freq[0] - self.refVal
                 self.channelWidth = channel_width[0]
 
@@ -501,7 +565,17 @@ try:
 
             raise NotImplementedError
 
-        def add_data_set(self, obstime, inttime, baselines, visibilities, flags, weights=None, pol='XX', source=None):
+        def add_data_set(
+            self,
+            obstime,
+            inttime,
+            baselines,
+            visibilities,
+            flags,
+            weights=None,
+            pol="XX",
+            source=None,
+        ):
             """
             Create a UVData object to store a collection of visibilities.
 
@@ -513,7 +587,17 @@ try:
                 numericPol = pol
 
             self.data.append(
-                MS_UVData(obstime, inttime, baselines, visibilities, flags,  weights=weights, pol=numericPol, source=source))
+                MS_UVData(
+                    obstime,
+                    inttime,
+                    baselines,
+                    visibilities,
+                    flags,
+                    weights=weights,
+                    pol=numericPol,
+                    source=source,
+                )
+            )
 
         def write(self):
             """
@@ -529,9 +613,10 @@ try:
 
             raise NotImplementedError
 
+
 except ImportError:
     import warnings
 
-    warnings.warn('Cannot import casacore.tables, MS support disabled', ImportWarning)
+    warnings.warn("Cannot import casacore.tables, MS support disabled", ImportWarning)
 
     raise RuntimeError("Cannot import casacore.tables, MS support disabled")

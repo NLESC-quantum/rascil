@@ -5,7 +5,6 @@ __all__ = ['predict_skymodel_list_rsexecute_workflow',
            'invert_skymodel_list_rsexecute_workflow']
 
 import logging
-import copy
 
 import numpy
 
@@ -29,7 +28,7 @@ log = logging.getLogger('rascil-logger')
 def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng', gcfcf=None,
                                              docal=False, inverse=True, **kwargs):
     """Predict from a list of skymodels
-    
+
     If obsvis is a list then we pair obsvis element and skymodel_list element and predict
     If obvis is BlockVisibility then we calculate BlockVisibility for each skymodel
 
@@ -42,67 +41,57 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng'
     :return: List of vis_lists
    """
     
-    def ft_cal_sm(sm, g, wv):
+    def ft_cal_sm(ov, sm, g):
         """ Predict visibility for a skymodel
-        
+
         :param sm: Skymodel
         :param g: Convolution function
-        :param wv: Work visibility
+        :param ov: Input visibility
         :return: Visibility with dft of components, fft of image, gaintable
         """
         if g is not None:
             if len(g) != 2:
                 raise ValueError("Convolution function value incorrect")
         
-        wv["vis"].data[...] = 0.0
+        v = copy_visibility(ov, zero=True)
         
         if len(sm.components) > 0:
             if sm.mask is not None:
                 comps = copy_skycomponent(sm.components)
                 comps = apply_beam_to_skycomponent(comps, sm.mask)
-                wv = dft_skycomponent_visibility(wv, comps, **kwargs)
+                v = dft_skycomponent_visibility(v, comps, **kwargs)
             else:
-                wv = dft_skycomponent_visibility(wv, sm.components, **kwargs)
+                v = dft_skycomponent_visibility(v, sm.components, **kwargs)
         
         if sm.image is not None:
             if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
-                wv_data = copy.deepcopy(wv["vis"].data)
-                wv["vis"].data[...] = 0.0
+                imgv = copy_visibility(ov, zero=True)
                 if sm.mask is not None:
                     model = sm.image.copy(deep=True)
                     model["pixels"].data *= sm.mask["pixels"].data
-                    wv = predict_list_serial_workflow([wv], [model], context=context, gcfcf=[g], **kwargs)[0]
+                    imgv = predict_list_serial_workflow([imgv], [model], context=context, gcfcf=[g], **kwargs)[0]
                 else:
-                    wv = predict_list_serial_workflow([wv], [sm.image], context=context, gcfcf=[g], **kwargs)[0]
-                wv['vis'].data += wv_data
+                    imgv = predict_list_serial_workflow([imgv], [sm.image], context=context, gcfcf=[g], **kwargs)[0]
+                v['vis'].data += imgv['vis'].data
         
         if docal and sm.gaintable is not None:
-            wv = apply_gaintable(wv, sm.gaintable, inverse=inverse)
+            v = apply_gaintable(v, sm.gaintable, inverse=inverse)
         
-        return wv
+        return v
     
     if isinstance(obsvis, list):
-        # This is the usual case of one obsvis per skymodel
         if len(obsvis) != len(skymodel_list):
             raise ValueError("Obsvis and skymodel lists should have the same length")
-        # Since we probably will loop over many skymodels, we can save a lot of copying
-        # by passing down work blockvisibilitys
-        workvis = [rsexecute.execute(copy_visibility, nout=1)(vv, zero=True) for vv in obsvis]
         if gcfcf is None:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(sm, None, workvis[ism]) for ism, sm in
-                    enumerate(skymodel_list)]
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None) for ism, sm in enumerate(skymodel_list)]
         else:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(sm, gcfcf[ism], workvis[ism])
-                    for ism, sm in enumerate(skymodel_list)]
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism]) for ism, sm in
+                    enumerate(skymodel_list)]
     else:
-        # This is used for Model Partition Calibration where a blockvisibility is calculated for
-        # one obsvis and each skymodel
-        workvis = rsexecute.execute(copy_visibility, nout=1)(obsvis, zero=True)
         if gcfcf is None:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(sm, None, workvis) for ism, sm in
-                    enumerate(skymodel_list)]
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None) for ism, sm in enumerate(skymodel_list)]
         else:
-            return [rsexecute.execute(ft_cal_sm, nout=1)(sm, gcfcf[ism], workvis) for ism, sm in
+            return [rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism]) for ism, sm in
                     enumerate(skymodel_list)]
 
 
@@ -123,7 +112,7 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context='ng
     
     def ift_ical_sm(v, sm, g):
         """ Inverse Fourier sum of visibility to image and components
-        
+
         :param v: Visibility to be transformed
         :param sm: Skymodel
         :param g: Convolution function
@@ -132,7 +121,7 @@ def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, context='ng
         if g is not None:
             if len(g) != 2:
                 raise ValueError("Convolution function value incorrect")
-
+        
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
         
@@ -166,12 +155,10 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
     """
     restore_facets = 1
     
-    if len(skymodel_list) != len(psf_imagelist):
-        raise ValueError("Skymodel and PSF lists must be the same length")
+    assert len(skymodel_list) == len(psf_imagelist)
     if residual_imagelist is not None:
-        if len(skymodel_list) != len(residual_imagelist):
-            raise ValueError("Skymodel and residual lists must be the same length")
-
+        assert len(skymodel_list) == len(residual_imagelist)
+    
     if restore_facets % 2 == 0 or restore_facets == 1:
         actual_number_facets = restore_facets
     else:
@@ -223,9 +210,9 @@ def restore_skymodel_list_rsexecute_workflow(skymodel_list, psf_imagelist, resid
 
 def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_list):
     """Form data models by subtracting sum from the observed and adding back each model in turn
-    
+
     vmodel[p] = vobs - sum(i!=p) modelvis[i]
-    
+
     This is the E step in the Expectation-Maximisation algorithm.
 
     :param obsvis: "Observed" visibility
@@ -245,6 +232,7 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
             vr = copy_visibility(verr)
             vr['vis'].data += m['vis'].data
             result.append(vr)
+        assert len(result) == len(mv)
         return result
     
     return rsexecute.execute(vsum, nout=len(modelvis_list))(obsvis, modelvis_list)
@@ -265,10 +253,13 @@ def convolve_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, context='ng
    """
     
     def ft_ift_sm(ov, sm, g):
+        # assert isinstance(ov, BlockVisibility), ov
+        # assert isinstance(sm, SkyModel), sm
         if g is not None:
-            if len(g) != 2:
-                raise ValueError("Convolution function value incorrect")
-    
+            assert len(g) == 2, g
+            # assert isinstance(g[0], Image), g[0]
+            # assert isinstance(g[1], ConvolutionFunction), g[1]
+        
         v = copy_visibility(ov)
         
         v['vis'].data[...] = 0.0 + 0.0j

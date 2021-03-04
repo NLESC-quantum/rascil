@@ -95,7 +95,6 @@ class TestPrimaryBeams(unittest.TestCase):
             "MID_FEKO_B1",
             "MID_FEKO_B2",
             "MID_FEKO_Ku",
-            "MID_GRASP",
             "LOW",
         ]:
             model = create_image_from_visibility(

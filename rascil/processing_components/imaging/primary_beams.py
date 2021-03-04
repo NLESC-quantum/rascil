@@ -142,17 +142,6 @@ def create_vp(
             blockage=0.0,
             use_local=use_local,
         )
-    elif telescope == "MID_GRASP":
-        log.debug("create_vp: Using GRASP model for MID voltage pattern")
-        real_vp = import_image_from_fits(
-            rascil_data_path("models/MID_GRASP_VP_real.fits"), fixpol=fixpol
-        )
-        imag_vp = import_image_from_fits(
-            rascil_data_path("models/MID_GRASP_VP_imag.fits"), fixpol=fixpol
-        )
-        real_vp["pixels"].data = real_vp["pixels"].data + 1j * imag_vp["pixels"].data
-        real_vp["pixels"].data /= numpy.max(numpy.abs(real_vp["pixels"].data))
-        return real_vp
     elif telescope == "MID_FEKO_B1LOW" or telescope == "MID_B1LOW":
         log.debug("create_vp: Using FEKO model for MID voltage pattern")
         real_vp = import_image_from_fits(

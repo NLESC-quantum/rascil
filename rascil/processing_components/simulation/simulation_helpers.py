@@ -520,7 +520,7 @@ def create_mid_simulation_components(
     all_components = create_test_skycomponents_from_s3(
         flux_limit=flux_limit,
         phasecentre=phasecentre,
-        polarisation_frame=PolarisationFrame("stokesI"),
+        polarisation_frame=polarisation_frame,
         frequency=numpy.array(frequency),
         radius=pbradius,
         fov=fov,
@@ -538,7 +538,7 @@ def create_mid_simulation_components(
         cellsize=pb_cellsize,
         phasecentre=phasecentre,
         frequency=frequency,
-        polarisation_frame=PolarisationFrame("stokesI"),
+        polarisation_frame=polarisation_frame,
     )
 
     pb = create_pb(pbmodel, pb_type, pointingcentre=phasecentre, use_local=False)

@@ -31,7 +31,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 class TestSkyModel(unittest.TestCase):
     def setUp(self):
 
-        rsexecute.set_client(use_dask=False)
+        rsexecute.set_client(use_dask=True)
 
         from rascil.data_models.parameters import rascil_path
 

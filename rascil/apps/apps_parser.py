@@ -223,7 +223,7 @@ def apps_parser_cleaning(parser):
     parser.add_argument(
         "--clean_restored_output",
         type=str,
-        default="list",
+        default="integrated",
         help="Type of restored image output: list or integrated",
     )
 

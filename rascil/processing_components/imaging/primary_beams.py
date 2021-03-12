@@ -119,6 +119,9 @@ def create_vp(
     """
 
     if telescope == "MID_GAUSS":
+        if model is None:
+            raise ValueError(f"Need model image for MID_GAUSS telescope type")
+        
         log.debug(
             "create_vp: Using numeric tapered Gaussian model for MID voltage pattern"
         )
@@ -134,6 +137,9 @@ def create_vp(
             use_local=use_local,
         )
     elif telescope == "MID":
+        if model is None:
+            raise ValueError(f"Need model image for MID telescope type")
+    
         log.debug("create_vp: Using no taper analytic model for MID voltage pattern")
         return create_vp_generic(
             model,

@@ -55,19 +55,19 @@ def predict_skymodel_list_rsexecute_workflow(
     :return: List of vis_lists
     """
 
-    def ft_cal_sm(ov, sm, g):
+    def ft_cal_sm(v, sm, g):
         """Predict visibility for a skymodel
 
         :param sm: Skymodel
         :param g: Convolution function
-        :param ov: Input visibility
+        :param v: Input visibility
         :return: Visibility with dft of components, fft of image, gaintable
         """
+        v["vis"].data[...] = 0.0
+        
         if g is not None:
             if len(g) != 2:
                 raise ValueError("Convolution function value incorrect")
-
-        v = copy_visibility(ov, zero=True)
 
         if len(sm.components) > 0:
             if sm.mask is not None:
@@ -79,7 +79,7 @@ def predict_skymodel_list_rsexecute_workflow(
 
         if sm.image is not None:
             if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
-                imgv = copy_visibility(ov, zero=True)
+                imgv = copy_visibility(v, zero=True)
                 if sm.mask is not None:
                     model = sm.image.copy(deep=True)
                     model["pixels"].data *= sm.mask["pixels"].data

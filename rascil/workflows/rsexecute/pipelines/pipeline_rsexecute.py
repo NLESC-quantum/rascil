@@ -19,7 +19,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     invert_list_rsexecute_workflow,
     residual_list_rsexecute_workflow,
-    restore_rsexecute_workflow,
+    restore_centre_rsexecute_workflow,
     predict_list_rsexecute_workflow,
     subtract_list_rsexecute_workflow,
     restore_list_rsexecute_workflow,
@@ -190,13 +190,15 @@ def ical_list_rsexecute_workflow(
     )
     output = get_parameter(kwargs, "restored_output", "cube")
     if output == "integrated":
-        restored_imagelist = restore_rsexecute_workflow(
+        restored_imagelist = restore_centre_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
         )
-    else:
+    elif output == "list":
         restored_imagelist = restore_list_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
         )
+    else:
+        raise ValueError("ical_list_rsexecute_workflow: Unknown restored_output {output)")
 
     return (deconvolve_model_imagelist, residual_imagelist, restored_imagelist, gt_list)
 
@@ -274,13 +276,15 @@ def continuum_imaging_list_rsexecute_workflow(
     )
     output = get_parameter(kwargs, "restored_output", "cube")
     if output == "integrated":
-        restored_imagelist = restore_rsexecute_workflow(
+        restored_imagelist = restore_centre_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
         )
-    else:
+    elif output == "list":
         restored_imagelist = restore_list_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
         )
+    else:
+        raise ValueError("continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output)")
 
     return deconvolve_model_imagelist, residual_imagelist, restored_imagelist
 

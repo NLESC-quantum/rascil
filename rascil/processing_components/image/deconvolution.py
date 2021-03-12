@@ -544,7 +544,7 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
     residual_image = create_image_from_array(
         residual_array, dirty.image_acc.wcs, dirty.image_acc.polarisation_frame
     )
-    log.info("deconvolve_cube %s: calculating spectral cubes" % prefix)
+    log.info("deconvolve_cube %s: calculating spectral cubes from frequency moment images" % prefix)
     comp_image = calculate_image_from_frequency_moments(dirty, comp_image)
     residual_image = calculate_image_from_frequency_moments(dirty, residual_image)
     return comp_image, residual_image

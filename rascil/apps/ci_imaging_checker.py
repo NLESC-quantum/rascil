@@ -18,7 +18,7 @@ import pandas as pd
 import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from rascil.data_models import PolarisationFrame, import_skycomponent_from_hdf5
+from rascil.data_models import PolarisationFrame, import_skycomponent_from_hdf5, export_skycomponent_to_hdf5
 from rascil.processing_components import create_low_test_skycomponents_from_gleam
 from rascil.processing_components.skycomponent.operations import (
     create_skycomponent,
@@ -61,19 +61,19 @@ def cli_parser():
         "--finder_beam_maj",
         type=float,
         default=1.0,
-        help="Major axis of the restoring beam",
+        help="Major axis of the restoring beam (degrees)",
     )
     parser.add_argument(
         "--finder_beam_min",
         type=float,
         default=1.0,
-        help="Minor axis of the restoring beam",
+        help="Minor axis of the restoring beam (degrees)",
     )
     parser.add_argument(
         "--finder_beam_pos_angle",
         type=float,
         default=0.0,
-        help="Positioning angle of the restoring beam",
+        help="Positioning angle of the restoring beam (degrees)",
     )
     parser.add_argument(
         "--finder_th_isl",
@@ -127,6 +127,9 @@ def cli_parser():
         "--source_file", type=str, default=None, help="Name of output source file"
     )
     parser.add_argument(
+        "--rascil_source_file", type=str, default=None, help="Name of output RASCIL components hdf file"
+    )
+    parser.add_argument(
         "--logfile", type=str, default=None, help="Name of output log file"
     )
 
@@ -170,7 +173,7 @@ def analyze_image(args):
 
     init_logging()
 
-    log.info("\nRASCIL Continuum Imagine Checker\n")
+    log.info("\nRASCIL Continuum Imaging Checker\n")
 
     starttime = datetime.datetime.now()
     log.info("Started : {}".format(starttime))
@@ -179,6 +182,12 @@ def analyze_image(args):
     input_image_restored = args.ingest_fitsname_restored
 
     im = import_image_from_fits(args.ingest_fitsname_restored)
+    nchan = im["pixels"].shape[0]
+    if nchan > 0:
+        refchan = nchan // 2
+        log.info(f"Found spectral cube with {nchan} channels, using channel {refchan} for source finding")
+    else:
+        refchan = 0
 
     th_isl = args.finder_th_isl
     th_pix = args.finder_th_pix
@@ -210,9 +219,15 @@ def analyze_image(args):
         source_file,
         th_isl,
         th_pix,
+        refchan
     )
 
-    out = create_source_to_skycomponent(source_file, freq)
+    if args.rascil_source_file is None:
+        rascil_source_file = args.ingest_fitsname_restored.replace(".fits", ".pybdsm.srl.hdf")
+    else:
+        rascil_source_file = args.rascil_source_file
+
+    out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
 
     if args.apply_primary == "True":
         telescope = args.telescope_model
@@ -368,7 +383,8 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
 
 
 def ci_checker(
-    input_image_restored, input_image_residual, beam_info, source_file, th_isl, th_pix
+    input_image_restored, input_image_residual, beam_info, source_file, th_isl, th_pix,
+        refchan
 ):
     """
     PyBDSF-based source finder
@@ -379,6 +395,7 @@ def ci_checker(
     :param source_file : Output file name of the source list
     :param th_isl : Island threshold
     :param th_pix: Peak threshold
+    :param refchan: Reference channel for spectral cube
 
     : return None
     """
@@ -386,7 +403,8 @@ def ci_checker(
     # Process image.
     log.info("Analysing the restored image")
     img_rest = bdsf.process_image(
-        input_image_restored, beam=beam_info, thresh_isl=th_isl, thresh_pix=th_pix
+        input_image_restored, beam=beam_info, thresh_isl=th_isl, thresh_pix=th_pix,
+        collapse_ch0=refchan,
     )
 
     # Write the source catalog and the residual image.
@@ -402,18 +420,20 @@ def ci_checker(
     if input_image_residual is not None:
         log.info("Analysing the residual image")
         img_resid = bdsf.process_image(
-            input_image_residual, beam=beam_info, thresh_isl=th_isl, thresh_pix=th_pix
+            input_image_residual, beam=beam_info, thresh_isl=th_isl, thresh_pix=th_pix,
+            collapse_ch0=refchan
         )
         ci_checker_diagnostics(img_resid, input_image_residual, "residual")
 
     return
 
 
-def create_source_to_skycomponent(source_file, freq):
+def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     """
     Put the sources into RASCIL-readable skycomponents
 
     :param source_file: Output file name of the source list
+    :param rascil_source_file: Output file name of the RASCIL skycomponents hdf file
     :param freq: Frequency or list of frequencies in float
 
     :return comp: List of skycomponents
@@ -436,6 +456,8 @@ def create_source_to_skycomponent(source_file, freq):
                     polarisation_frame=PolarisationFrame("stokesI"),
                 )
             )
+
+    export_skycomponent_to_hdf5(comp, rascil_source_file)
 
     return comp
 
@@ -471,6 +493,11 @@ def check_source(orig, comp, match_sep):
     """
 
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)
+    
+    for match in matches:
+        m_comp = comp[match[0]]
+        m_orig = orig[match[1]]
+        log.info(f"Original: {m_orig} Match {m_comp}")
 
     return matches
 

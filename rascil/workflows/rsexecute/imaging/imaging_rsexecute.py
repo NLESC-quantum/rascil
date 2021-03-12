@@ -15,7 +15,7 @@ __all__ = [
     "subtract_list_rsexecute_workflow",
     "sum_invert_results_rsexecute",
     "sum_predict_results_rsexecute",
-    "restore_rsexecute_workflow",
+    "restore_centre_rsexecute_workflow",
 ]
 
 import collections
@@ -168,12 +168,12 @@ def invert_list_rsexecute_workflow(
 def residual_list_rsexecute_workflow(
     vis, model_imagelist, context="2d", gcfcf=None, **kwargs
 ):
-    """Create a graph to calculate residual image
+    """Create a graph to calculate (list or graph) of residual images
 
     :param vis: List of vis (or graph)
     :param model_imagelist: Model used to determine image parameters
-    :param context: Imaging context e.g. '2d', 'wstack'
-    :param gcfcg: tuple containing grid correction and convolution function
+    :param context: Imaging context e.g. '2d', 'ng'
+    :param gcfcf: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: list of (image, sumwt) tuples or graph
     """
@@ -203,13 +203,11 @@ def restore_list_rsexecute_workflow(
     restore_taper="tukey",
     **kwargs
 ):
-    """Create a graph to calculate the restored image
+    """Create a graph to calculate the restored images
 
-    This restores each frequency plane using an cleanbeam fitted from the frequency-summed PSF
-    The output is a cube for each frequency. Note that the noise in the residual is that
+    This restores each frequency plane using a cleanbeam fitted from the frequency-summed PSF
+    The output is an image for each frequency. Note that the noise in the residual is
     (correctly) that for each frequency.
-
-    This will not give any information on the spectral behaviour
 
     :param model_imagelist: Model list (or graph)
     :param psf_imagelist: PSF list (or graph)
@@ -249,7 +247,7 @@ def restore_list_rsexecute_workflow(
     return rsexecute.optimize(restored_list)
 
 
-def restore_rsexecute_workflow(
+def restore_centre_rsexecute_workflow(
     model_imagelist,
     psf_imagelist,
     residual_imagelist=None,
@@ -266,13 +264,14 @@ def restore_rsexecute_workflow(
     - Fits to the band-integrated PSF
     - Restores the model, cleanbeam, and residual
 
-    This will not give any information on the spectral behaviour
+    This will not give any information on the spectral behaviour, use residual_list_rsexecute_workflow
+    for that purpose.
 
     :param model_imagelist: Model list (or graph)
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
     :param kwargs: Parameters for functions in components
-    :return: list of restored images (or graph)
+    :return: list of restored images (or graphs)
     """
     assert len(model_imagelist) == len(psf_imagelist)
     if residual_imagelist is not None:
@@ -287,6 +286,7 @@ def restore_rsexecute_workflow(
     model = model_imagelist[centre]
 
     if residual_imagelist is not None:
+        # Get residual calculated across the band
         residual = sum_invert_results_rsexecute(residual_imagelist)[0]
         restored = rsexecute.execute(restore_cube, nout=1)(
             model, residual=residual, cleanbeam=cleanbeam, **kwargs

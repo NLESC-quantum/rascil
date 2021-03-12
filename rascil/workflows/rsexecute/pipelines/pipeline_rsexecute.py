@@ -188,7 +188,7 @@ def ical_list_rsexecute_workflow(
         gcfcf=gcfcf,
         **kwargs,
     )
-    output = get_parameter(kwargs, "restored_output", "cube")
+    output = get_parameter(kwargs, "restored_output", "list")
     if output == "integrated":
         restored_imagelist = restore_centre_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
@@ -198,7 +198,7 @@ def ical_list_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
         )
     else:
-        raise ValueError("ical_list_rsexecute_workflow: Unknown restored_output {output)")
+        raise ValueError(f"ical_list_rsexecute_workflow: Unknown restored_output {output}")
 
     return (deconvolve_model_imagelist, residual_imagelist, restored_imagelist, gt_list)
 
@@ -274,7 +274,7 @@ def continuum_imaging_list_rsexecute_workflow(
         gcfcf=gcfcf,
         **kwargs,
     )
-    output = get_parameter(kwargs, "restored_output", "cube")
+    output = get_parameter(kwargs, "restored_output", "list")
     if output == "integrated":
         restored_imagelist = restore_centre_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
@@ -284,7 +284,7 @@ def continuum_imaging_list_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
         )
     else:
-        raise ValueError("continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output)")
+        raise ValueError(f"continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output}")
 
     return deconvolve_model_imagelist, residual_imagelist, restored_imagelist
 

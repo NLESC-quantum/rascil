@@ -271,7 +271,18 @@ def cip(args, bvis_list, model_list, msname):
 
 def write_results(imagename, result):
     deconvolved, residual, restored = result
-    log.info("Writing restored image as single plane at mid-frequency")
+
+    if isinstance(restored, list):
+        # This is the case where we have a list of restored images
+        restored = image_gather_channels(restored)
+        log.info("Writing restored image as spectral cube")
+        restoredname = imagename + "_restored_cube.fits"
+        export_image_to_fits(restored, restoredname)
+    else:
+        log.info("Writing restored image as single plane at mid-frequency")
+        restoredname = imagename + "_restored_centre.fits"
+        export_image_to_fits(restored, restoredname)
+
     log.info(qa_image(restored, context="Restored"))
     show_image(restored, title=f"{imagename} Clean restored image")
     plt.savefig(imagename + "_restored.png")

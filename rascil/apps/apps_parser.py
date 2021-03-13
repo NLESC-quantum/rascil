@@ -224,7 +224,7 @@ def apps_parser_cleaning(parser):
         "--clean_restored_output",
         type=str,
         default="integrated",
-        help="Type of restored image output: cubes (3D) or integrated (2D)",
+        help="Type of restored image output: list or integrated",
     )
 
     return parser

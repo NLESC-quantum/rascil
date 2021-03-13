@@ -213,6 +213,8 @@ class TestRASCILimager(unittest.TestCase):
                 "0.0005",
                 "--imaging_dft_kernel",
                 "cpu_looped",
+                "--clean_restored_output",
+                "integrated"
             ]
         )
 
@@ -297,6 +299,8 @@ class TestRASCILimager(unittest.TestCase):
                 "True",
                 "--calibration_context",
                 "TG",
+                "--clean_restored_output",
+                "integrated"
             ]
         )
 
@@ -354,6 +358,8 @@ class TestRASCILimager(unittest.TestCase):
                 "0.3",
                 "--clean_facets",
                 "1",
+                "--clean_restored_output",
+                "integrated"
             ]
         )
 

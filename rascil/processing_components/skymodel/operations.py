@@ -123,7 +123,7 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
 
     for ism, sm in enumerate(sms):
         plt.clf()
-        plt.subplot(121, projection=sms[ism].image.wcs.sub([1, 2]))
+        plt.subplot(121, projection=sms[ism].image.image_acc.wcs.sub([1, 2]))
         sp += 1
 
         smodel = sms[ism].image.copy(deep=True)
@@ -131,22 +131,22 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
         smodel = smooth_image(smodel, psf_width)
 
         if vmax is None:
-            vmax = numpy.max(smodel.data[0, 0, ...])
+            vmax = numpy.max(smodel["pixels"].data[0, 0, ...])
         if vmin is None:
-            vmin = numpy.min(smodel.data[0, 0, ...])
+            vmin = numpy.min(smodel["pixels"].data[0, 0, ...])
 
         plt.imshow(
-            smodel.data[0, 0, ...], origin="lower", cmap=cm, vmax=vmax, vmin=vmin
+            smodel["pixels"].data[0, 0, ...], origin="lower", cmap=cm, vmax=vmax, vmin=vmin
         )
-        plt.xlabel(sms[ism].image.wcs.wcs.ctype[0])
-        plt.ylabel(sms[ism].image.wcs.wcs.ctype[1])
+        plt.xlabel(sms[ism].image.image_acc.wcs.wcs.ctype[0])
+        plt.ylabel(sms[ism].image.image_acc.wcs.wcs.ctype[1])
 
         plt.title("SkyModel%d" % ism)
 
         components = sms[ism].components
         if components is not None:
             for sc in components:
-                x, y = skycoord_to_pixel(sc.direction, sms[ism].image.wcs, 0, "wcs")
+                x, y = skycoord_to_pixel(sc.direction, sms[ism].image.image_acc.wcs, 0, "wcs")
                 plt.plot(x, y, marker="+", color="red")
 
         gaintable = sms[ism].gaintable

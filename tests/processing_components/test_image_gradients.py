@@ -29,7 +29,7 @@ class TestGradients(unittest.TestCase):
 
     def test_create_gradient(self):
         real_vp = import_image_from_fits(
-            rascil_data_path("models/MID_GRASP_VP_real.fits")
+            rascil_data_path("models/MID_FEKO_VP_B2_45_1360_real.fits")
         )
         gradx, grady = image_gradients(real_vp)
 

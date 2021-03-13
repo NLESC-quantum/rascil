@@ -33,6 +33,7 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
                                  [--input_source_filename INPUT_SOURCE_FILENAME]
                                  [--match_sep MATCH_SEP]
                                  [--source_file SOURCE_FILE]
+                                 [--rascil_source_file RASCIL_SOURCE_FILE]
                                  [--logfile LOGFILE]
 
     optional arguments:
@@ -51,6 +52,7 @@ continuum_imaging_checker is a command line app written using RASCIL. It uses th
       --input_source_filename INPUT_SOURCE_FILENAME  If use external source file, the file name of source file
       --match_sep MATCH_SEP    Maximum separation in radians for the source matching
       --source_file SOURCE_FILE    Name of output source file
+      --rascil_source_file RASCIL_SOURCE_FILE    Name of output RASCIL skycomponents file
       --logfile LOGFILE    Name of output log file
 
 Example:

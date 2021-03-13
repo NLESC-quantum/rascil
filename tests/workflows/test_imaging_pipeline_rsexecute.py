@@ -94,8 +94,6 @@ def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, tes
         zerow=False,
     )
 
-    bvis_list = rsexecute.persist(bvis_list)
-
     npixel = 512
     cellsize = 1e-3
 
@@ -113,12 +111,10 @@ def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, tes
         for f, freq in enumerate(frequency)
     ]
     log.info("About to make GLEAM model")
-    gleam_model = rsexecute.persist(gleam_model)
 
     predicted_vislist = predict_list_rsexecute_workflow(
         bvis_list, gleam_model, context="ng"
     )
-    predicted_vislist = rsexecute.persist(predicted_vislist)
 
     model_list = [
         rsexecute.execute(create_image_from_visibility, nout=1)(
@@ -133,8 +129,6 @@ def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, tes
         )
         for f, freq in enumerate(frequency)
     ]
-
-    model_list = rsexecute.persist(model_list)
 
     continuum_imaging_list = continuum_imaging_skymodel_list_rsexecute_workflow(
         predicted_vislist,

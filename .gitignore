@@ -87,3 +87,5 @@ test_results_master/
 tests/workflows/gaintable.png
 
 examples/mcve/xarray/mydask.png
+
+.git-blame-ignore-revs.txt

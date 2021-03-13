@@ -14,7 +14,6 @@ __all__ = [
     "plot_gaintable",
     "plot_pointingtable",
     "find_pb_width_null",
-    "create_simulation_components",
     "create_mid_simulation_components",
     "plot_pa",
 ]
@@ -476,251 +475,6 @@ def find_pb_width_null(pbtype, frequency, **kwargs):
     return HWHM_deg, null_az_deg, null_el_deg
 
 
-def create_simulation_components(
-    context,
-    phasecentre,
-    frequency,
-    pbtype,
-    offset_dir,
-    flux_limit,
-    pbradius,
-    pb_npixel,
-    pb_cellsize,
-    show=False,
-    fov=10,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    filter_by_primary_beam=True,
-    flux_max=10.0,
-):
-    """Construct components for simulation
-
-    :param context: singlesource or null or s3sky
-    :param phasecentre: Centre of components
-    :param frequency: Frequency
-    :param pbtype: Type of primary beam
-    :param offset_dir: Offset in ra, dec degrees
-    :param flux_limit: Lower limit flux
-    :param pbradius: Radius of components in radians
-    :param pb_npixel: Number of pixels in the primary beam model
-    :param pb_cellsize: Cellsize in primary beam model
-    :param fov: FOV in degrees (used to select catalog)
-    :param flux_max: Maximum flux in model before application of primary beam
-    :param filter_by_primary_beam: Filter components by primary beam
-    :param polarisation_frame:
-    :param show:
-
-    :return:
-    """
-
-    HWHM_deg, null_az_deg, null_el_deg = find_pb_width_null(pbtype, frequency)
-
-    dec = phasecentre.dec.deg
-    ra = phasecentre.ra.deg
-
-    if context == "singlesource":
-        log.info("create_simulation_components: Constructing single component")
-        offset = [HWHM_deg * offset_dir[0], HWHM_deg * offset_dir[1]]
-        log.info(
-            "create_simulation_components: Offset from pointing centre = %.3f, %.3f deg"
-            % (offset[0], offset[1])
-        )
-
-        # The point source is offset to approximately the halfpower point
-        odirection = SkyCoord(
-            ra=(ra + offset[0] / numpy.cos(numpy.pi * dec / 180.0)) * units.deg,
-            dec=(dec + offset[1]) * units.deg,
-            frame="icrs",
-            equinox="J2000",
-        )
-
-        if polarisation_frame.type == "stokesIQUV":
-            original_components = [
-                Skycomponent(
-                    flux=[[1.0, 0.0, 0.0, 0.0]],
-                    direction=odirection,
-                    frequency=frequency,
-                    polarisation_frame=PolarisationFrame("stokesIQUV"),
-                )
-            ]
-        else:
-            original_components = [
-                Skycomponent(
-                    flux=[[1.0]],
-                    direction=odirection,
-                    frequency=frequency,
-                    polarisation_frame=PolarisationFrame("stokesI"),
-                )
-            ]
-
-        offset_direction = odirection
-
-    elif context == "doublesource":
-
-        original_components = []
-
-        log.info("create_simulation_components: Constructing double components")
-
-        for sign_offset in [(-1, 0), (1, 0)]:
-            offset = [HWHM_deg * sign_offset[0], HWHM_deg * sign_offset[1]]
-
-            log.info(
-                "create_simulation_components: Offset from pointing centre = %.3f, %.3f deg"
-                % (offset[0], offset[1])
-            )
-
-            odirection = SkyCoord(
-                ra=(ra + offset[0] / numpy.cos(numpy.pi * dec / 180.0)) * units.deg,
-                dec=(dec + offset[1]) * units.deg,
-                frame="icrs",
-                equinox="J2000",
-            )
-            if polarisation_frame.type == "stokesIQUV":
-                original_components.append(
-                    Skycomponent(
-                        flux=[[1.0, 0.0, 0.0, 0.0]],
-                        direction=odirection,
-                        frequency=frequency,
-                        polarisation_frame=PolarisationFrame("stokesIQUV"),
-                    )
-                )
-            else:
-                original_components.append(
-                    Skycomponent(
-                        flux=[[1.0]],
-                        direction=odirection,
-                        frequency=frequency,
-                        polarisation_frame=PolarisationFrame("stokesI"),
-                    )
-                )
-
-        for o in original_components:
-            print(o)
-
-        offset_direction = odirection
-
-    elif context == "null":
-        log.info(
-            "create_simulation_components: Constructing single component at the null"
-        )
-
-        offset = [null_az_deg * offset_dir[0], null_el_deg * offset_dir[1]]
-        HWHM = HWHM_deg * numpy.pi / 180.0
-
-        log.info(
-            "create_simulation_components: Offset from pointing centre = %.3f, %.3f deg"
-            % (offset[0], offset[1])
-        )
-
-        # The point source is offset to approximately the null point
-        offset_direction = SkyCoord(
-            ra=(ra + offset[0] / numpy.cos(numpy.pi * dec / 180.0)) * units.deg,
-            dec=(dec + offset[1]) * units.deg,
-            frame="icrs",
-            equinox="J2000",
-        )
-
-        if polarisation_frame.type == "stokesIQUV":
-            original_components = [
-                Skycomponent(
-                    flux=[[1.0, 0.0, 0.0, 0.0]],
-                    direction=offset_direction,
-                    frequency=frequency,
-                    polarisation_frame=PolarisationFrame("stokesIQUV"),
-                )
-            ]
-        else:
-            original_components = [
-                Skycomponent(
-                    flux=[[1.0]],
-                    direction=offset_direction,
-                    frequency=frequency,
-                    polarisation_frame=PolarisationFrame("stokesI"),
-                )
-            ]
-
-    else:
-        offset = [0.0, 0.0]
-        # Make a skymodel from S3
-        max_flux = 0.0
-        total_flux = 0.0
-        log.info("create_simulation_components: Constructing s3sky components")
-        from rascil.processing_components.simulation import (
-            create_test_skycomponents_from_s3,
-        )
-
-        all_components = create_test_skycomponents_from_s3(
-            flux_limit=flux_limit,
-            phasecentre=phasecentre,
-            polarisation_frame=polarisation_frame,
-            frequency=numpy.array(frequency),
-            radius=pbradius,
-            fov=fov,
-        )
-        original_components = filter_skycomponents_by_flux(
-            all_components, flux_max=flux_max
-        )
-        log.info(
-            "create_simulation_components: %d components before filtering with primary beam"
-            % (len(original_components))
-        )
-
-        if filter_by_primary_beam:
-            pbmodel = create_image(
-                npixel=pb_npixel,
-                cellsize=pb_cellsize,
-                phasecentre=phasecentre,
-                frequency=frequency,
-                polarisation_frame=PolarisationFrame("stokesI"),
-            )
-            stokesi_components = [copy_skycomponent(o) for o in original_components]
-            for s in stokesi_components:
-                s.flux = numpy.array([[s.flux[0, 0]]])
-                s.polarisation_frame = PolarisationFrame("stokesI")
-
-            pb = create_pb(
-                pbmodel, "MID_GAUSS", pointingcentre=phasecentre, use_local=False
-            )
-            pb_applied_components = [copy_skycomponent(c) for c in stokesi_components]
-            pb_applied_components = apply_beam_to_skycomponent(
-                pb_applied_components, pb
-            )
-            filtered_components = []
-            for icomp, comp in enumerate(pb_applied_components):
-                if comp.flux[0, 0] > flux_limit:
-                    total_flux += comp.flux[0, 0]
-                    if abs(comp.flux[0, 0]) > max_flux:
-                        max_flux = abs(comp.flux[0, 0])
-                    filtered_components.append(original_components[icomp])
-            log.info(
-                "create_simulation_components: %d components > %.6f Jy after filtering with primary beam"
-                % (len(filtered_components), flux_limit)
-            )
-            log.info(
-                "create_simulation_components: Strongest components is %g (Jy)"
-                % max_flux
-            )
-            log.info(
-                "create_simulation_components: Total flux in components is %g (Jy)"
-                % total_flux
-            )
-            original_components = [copy_skycomponent(c) for c in filtered_components]
-            if show:
-                plt.clf()
-                show_image(pb, components=original_components)
-                plt.show(block=False)
-
-        log.info(
-            "create_simulation_components: Created %d components"
-            % len(original_components)
-        )
-        # Primary beam points to the phasecentre
-        offset_direction = SkyCoord(
-            ra=ra * units.deg, dec=dec * units.deg, frame="icrs", equinox="J2000"
-        )
-
-    return original_components, offset_direction
-
-
 def create_mid_simulation_components(
     phasecentre,
     frequency,
@@ -766,7 +520,7 @@ def create_mid_simulation_components(
     all_components = create_test_skycomponents_from_s3(
         flux_limit=flux_limit,
         phasecentre=phasecentre,
-        polarisation_frame=PolarisationFrame("stokesI"),
+        polarisation_frame=polarisation_frame,
         frequency=numpy.array(frequency),
         radius=pbradius,
         fov=fov,
@@ -784,7 +538,7 @@ def create_mid_simulation_components(
         cellsize=pb_cellsize,
         phasecentre=phasecentre,
         frequency=frequency,
-        polarisation_frame=PolarisationFrame("stokesI"),
+        polarisation_frame=polarisation_frame,
     )
 
     pb = create_pb(pbmodel, pb_type, pointingcentre=phasecentre, use_local=False)

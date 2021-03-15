@@ -1,4 +1,4 @@
-image: python:3.8
+image: python:3.7
 
 variables:
   MPLBACKEND: "agg"
@@ -24,7 +24,8 @@ compile_requirements:
     - apt-get -y install git-lfs
     - git lfs fetch --all  # without this, the job complains about not finding a file, that doesn't actually exist..
     - pip3 install --upgrade pip
-    - pip install gitpython python-gitlab numpy==1.20.1
+    - pip install gitpython python-gitlab
+    - pip install importlib-metadata numpy  # importlib-metadata is needed for python<=3.7; numpy is needed for bdsf
     - make requirements
   script:
     - python3 create_mr.py

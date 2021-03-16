@@ -298,7 +298,7 @@ pyparsing==2.4.7
     #   packaging
 pyrsistent==0.17.3
     # via jsonschema
-python-casacore==3.3.1
+python-casacore==3.4.0
     # via -r requirements.in
 python-dateutil==2.8.1
     # via

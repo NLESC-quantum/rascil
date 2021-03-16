@@ -178,7 +178,7 @@ def simulate_gaintable_from_voltage_pattern(
                                 pixloc[3] > -1
                             ), f"Error in Frequency pixel : {pixloc}"
                             assert (
-                                pixloc[3] < gnchan
+                                pixloc[3] < nchan
                             ), f"Error in Frequency pixel : {pixloc}"
                             chan = int(round(pixloc[3]))
                             if vnpol > 1:

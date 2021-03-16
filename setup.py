@@ -52,7 +52,7 @@ packages_data = [
 
 setup(
     name="rascil",
-    version="0.2.1",
+    version="0.2.2b0",
     python_requires=">=3.7",
     description="Radio Astronomy Simulation, Calibration, and Imaging Library",
     long_description=readme + "\n\n",

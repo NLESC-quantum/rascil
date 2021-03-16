@@ -39,7 +39,7 @@ Steps:
         git tag -a 0.1.6 -m "Docker files moved to separate repo"
 
 
- * Commit and push the chanegs directly to master.
+ * Commit and push the changes directly to master.
  * Goto RASCIL, merge your MR to the master. This will trigger a build of RASCIL and then a build in
     rascil-docker. The pip file can be installed as follows::
 
@@ -55,4 +55,4 @@ Steps:
         python3
         >>> import rascil
 
- * Reset the version numbers both in rascil and rascil-docker to the next pre-release e.g. 0.1.7b0
+ * Reset the version numbers in rascil to the next pre-release e.g. 0.1.7b0

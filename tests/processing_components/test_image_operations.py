@@ -18,6 +18,7 @@ from rascil.processing_components import (
     create_empty_image_like,
     fft_image_to_griddata,
     pad_image,
+    sub_image,
     create_w_term_like,
     create_vp,
     apply_voltage_pattern_to_image,
@@ -346,6 +347,12 @@ class TestImage(unittest.TestCase):
 
         with self.assertRaises(IndexError):
             padded = pad_image(m31image, [1, 1])
+
+    def test_sub_image(self):
+        m31image = create_test_image(cellsize=0.001, frequency=[1e8])
+        padded = sub_image(m31image, [1, 1, 64, 64])
+        assert padded.image_acc.shape == (1, 1, 64, 64)
+
 
     def test_scale_and_rotate(self):
 

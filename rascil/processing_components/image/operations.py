@@ -18,6 +18,7 @@ __all__ = ['add_image',
            'image_is_canonical',
            'import_image_from_fits',
            'pad_image',
+           'sub_image',
            'polarisation_frame_from_wcs',
            'qa_image',
            'remove_continuum_image',
@@ -961,6 +962,9 @@ def pad_image(im: Image, shape):
     if im["pixels"].data.shape == shape:
         return im
     else:
+        if len(shape) == 2:
+            shape = (1, 1, shape[0], shape[1])
+            
         newwcs = copy.deepcopy(im.image_acc.wcs)
         newwcs.wcs.crpix[0] = im.image_acc.wcs.wcs.crpix[0] + shape[3] // 2 - im["pixels"].data.shape[3] // 2
         newwcs.wcs.crpix[1] = im.image_acc.wcs.wcs.crpix[1] + shape[2] // 2 - im["pixels"].data.shape[2] // 2
@@ -975,6 +979,40 @@ def pad_image(im: Image, shape):
         xstart = shape[3] // 2 - im["pixels"].data.shape[3] // 2
         xend = xstart + im["pixels"].data.shape[3]
         newdata[..., ystart:yend, xstart:xend] = im["pixels"][...]
+        return create_image_from_array(newdata, newwcs, polarisation_frame=im.image_acc.polarisation_frame)
+
+
+def sub_image(im: Image, shape):
+    """Subsection an image to desired shape, cutting equally from all edges
+
+    Appropriate for standard 4D image with axes (freq, pol, y, x). Only works in y, x
+
+    The wcs crpix is adjusted appropriately.
+
+    :param im: Image to be padded
+    :param shape: Shape in 4 dimensions
+    :return: Padded image
+    """
+    
+    if im["pixels"].data.shape == shape:
+        return im
+    else:
+        if len(shape) == 2:
+            shape = (1, 1, shape[0], shape[1])
+            
+        newwcs = copy.deepcopy(im.image_acc.wcs)
+        newwcs.wcs.crpix[0] = im.image_acc.wcs.wcs.crpix[0] + shape[3] // 2 - im["pixels"].data.shape[3] // 2
+        newwcs.wcs.crpix[1] = im.image_acc.wcs.wcs.crpix[1] + shape[2] // 2 - im["pixels"].data.shape[2] // 2
+        
+        for axis, _ in enumerate(im["pixels"].data.shape):
+            if shape[axis] > im["pixels"].data.shape[axis]:
+                raise ValueError("Padded shape %s is larger than input shape %s" % (shape, im["pixels"].data.shape))
+        
+        ystart = im["pixels"].data.shape[2] // 2 - shape[2] // 2
+        yend = ystart + shape[2]
+        xstart = im["pixels"].data.shape[3] // 2 - shape[3] // 2
+        xend = xstart + shape[3]
+        newdata = im["pixels"][..., ystart:yend, xstart:xend]
         return create_image_from_array(newdata, newwcs, polarisation_frame=im.image_acc.polarisation_frame)
 
 

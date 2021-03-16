@@ -12,7 +12,7 @@ source link in the top right corner.
 [![Documentation Status](https://readthedocs.org/projects/rascil/badge/?version=latest)](https://developer.skatelescope.org/projects/rascil/en/latest/?badge=latest)
 
 
-The [Documentation](https://ska-telescope.gitlab.io/rascil/) includes usage 
+The [Documentation](https://ska-telescope.gitlab.io/external/rascil/) includes usage 
 examples, API, and installation directions.
 
-RASCIL CI/CD occurs on  [Gitlab](https://gitlab.com/ska-telescope/rascil)
+RASCIL CI/CD occurs on  [Gitlab](https://gitlab.com/ska-telescope/external/rascil)

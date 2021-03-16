@@ -1,6 +1,6 @@
 
-0.2.1b0
--------
+0.2.1
+-----
 * New app rascil_advise to advise on imaging parameters for a MeasurementSet
 * New app ci_imaging_checker to check sources in continuum imaging images with BDSF
 * Implement using requirements*.in files for dependency management.

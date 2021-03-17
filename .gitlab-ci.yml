@@ -58,9 +58,7 @@ test:
     - pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
     - mkdir -p test_results
   script:
-#    - PYTHONPATH=`pwd` HOME=`pwd` make test
-    - PYTHONPATH=`pwd` HOME=`pwd` py.test tests/apps/test_rascil_advise.py --verbose
-    - PYTHONPATH=`pwd` HOME=`pwd` py.test tests/apps/test_*.py --verbose
+    - PYTHONPATH=`pwd` HOME=`pwd` make test
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:

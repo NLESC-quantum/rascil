@@ -58,7 +58,7 @@ setup(
     long_description=readme + "\n\n",
     author="See CONTRIBUTORS",
     author_email="realtimcornwell@gmail.com",
-    url="https://gitlab.com/ska-telescope/rascil",
+    url="https://gitlab.com/ska-telescope/external/rascil",
     license="Apache License Version 2.0",
     zip_safe=False,
     classifiers=[

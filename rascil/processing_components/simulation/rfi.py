@@ -81,16 +81,16 @@ def simulate_DTV_prop(
             f"No overlap between DTV band: centre {freq_cen}Hz, bandwidth"
             f" {bw}Hz and specified frequency range {frequency}"
         )
+    elif len(DTVrange[0] == 1):
+        bchan = DTVrange[0].min()
+        echan = DTVrange[0].max() + 1
+    else:
+        echan = DTVrange[0].max()
+        bchan = DTVrange[0].min()
 
-    # idx = (np.abs(frequency - freq_cen)).argmin()
-    # print(frequency, freq_cen, bw, DTVrange)
-    echan = DTVrange[0].max()
-    bchan = DTVrange[0].min()
     nchan = len(frequency)
     ntimes = len(times)
     shape = [ntimes, nchan]
-    # bchan = nchan // 4
-    # echan = 3 * nchan // 4
     amp = numpy.sqrt(power / (2.0 * (frequency[echan] - frequency[bchan])))
 
     signal = numpy.zeros(shape, dtype="complex")

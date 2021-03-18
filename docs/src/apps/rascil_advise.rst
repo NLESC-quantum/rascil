@@ -9,7 +9,7 @@
 rascil_advise
 =============
 
-rascil_vis_ms is a command line app written using RASCIL. It provides advice on imaging parameters for
+rascil_advise is a command line app written using RASCIL. It provides advice on imaging parameters for
 a CASA MeasurementSet.
 
 Example script

@@ -85,8 +85,8 @@ def simulate_DTV_prop(
         bchan = DTVrange[0].min()
         echan = DTVrange[0].max() + 1
     else:
-        echan = DTVrange[0].max()
         bchan = DTVrange[0].min()
+        echan = DTVrange[0].max()
 
     nchan = len(frequency)
     ntimes = len(times)

@@ -350,8 +350,8 @@ class TestImage(unittest.TestCase):
 
     def test_sub_image(self):
         m31image = create_test_image(cellsize=0.001, frequency=[1e8])
-        padded = sub_image(m31image, [1, 1, 64, 64])
-        assert padded.image_acc.shape == (1, 1, 64, 64)
+        sub = sub_image(m31image, [1, 1, 64, 64])
+        assert sub.image_acc.shape == (1, 1, 64, 64)
 
 
     def test_scale_and_rotate(self):

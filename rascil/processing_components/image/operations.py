@@ -962,9 +962,7 @@ def pad_image(im: Image, shape):
     if im["pixels"].data.shape == shape:
         return im
     else:
-        if len(shape) == 2:
-            shape = (1, 1, shape[0], shape[1])
-            
+        
         newwcs = copy.deepcopy(im.image_acc.wcs)
         newwcs.wcs.crpix[0] = im.image_acc.wcs.wcs.crpix[0] + shape[3] // 2 - im["pixels"].data.shape[3] // 2
         newwcs.wcs.crpix[1] = im.image_acc.wcs.wcs.crpix[1] + shape[2] // 2 - im["pixels"].data.shape[2] // 2

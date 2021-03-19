@@ -217,6 +217,7 @@ def imager(args):
 
     # Save the processing statistics from Dask
     rsexecute.save_statistics(logfile.replace(".log", ""))
+    rsexecute.close()
 
     log.info("Resulting image(s) {}".format(results))
 
@@ -264,6 +265,7 @@ def cip(args, bvis_list, model_list, msname):
     log.info("Starting compute of continuum imaging pipeline graph ")
     result = rsexecute.compute(result, sync=True)
     log.info("Finished compute of continuum imaging pipeline graph")
+    
 
     imagename = msname.replace(".ms", "_nmoment{}_cip".format(args.clean_nmoment))
     return write_results(imagename, result)
@@ -367,6 +369,8 @@ def ical(args, bvis_list, model_list, msname):
     log.info("Starting compute of ICAL pipeline graph ")
     deconvolved, residual, restored, gt_list = rsexecute.compute(result, sync=True)
     log.info("Finished compute of ICAL pipeline graph")
+    
+
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
     return write_results(imagename, (deconvolved, residual, restored))
 
@@ -396,6 +400,8 @@ def invert(args, bvis_list, model_list, msname):
     dirty, sumwt = rsexecute.compute(result, sync=True)
     log.info("Finished compute of invert graph")
     imagename = msname.replace(".ms", "_invert")
+    
+    
     if args.imaging_dopsf == "True":
         log.info(qa_image(dirty, context="PSF"))
         show_image(dirty, title=f"{imagename} PSF image")

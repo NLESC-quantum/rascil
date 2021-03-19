@@ -25,6 +25,7 @@ compile_requirements:
     - git lfs fetch --all  # without this, the job complains about not finding a file, that doesn't actually exist..
     - pip3 install --upgrade pip
     - pip install gitpython python-gitlab
+    - pip install importlib-metadata numpy  # importlib-metadata is needed for python<=3.7; numpy is needed for bdsf
     - make requirements
   script:
     - python3 create_mr.py

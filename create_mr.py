@@ -185,7 +185,6 @@ class MergeRequest:
         Update merge request settings:
             - assign MR
             - add reviewers
-            - set "should_remove_source_branch" to True
 
         :param mr: merge request object
         :param assignees: unique GitLab User ID of the person to assign to
@@ -194,7 +193,6 @@ class MergeRequest:
         """
         mr.assignee_ids = assignees
         mr.reviewer_ids = reviewers
-        mr.should_remove_source_branch = True
         mr.save()
         log.info(f"Merge Request was assigned to user(s) with id(s): {assignees}")
         log.info(f"Review request was sent to user(s) with id(s): {reviewers}")
@@ -216,7 +214,7 @@ def main():
         mr_title = "WIP: SIM-805: Update requirements - to be actioned before next scheduled run"
         mr_object = MergeRequest(private_token)
         mr = mr_object.create_merge_request(new_branch, original_branch, mr_title)
-        mr_object.udpate_mr_settings(mr, assignee_ids.split(","), reviewer_ids)
+        mr_object.udpate_mr_settings(mr, assignee_ids.split(","), reviewer_ids.split(","))
 
     else:
         log.info("No changes to commit.")

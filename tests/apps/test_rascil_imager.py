@@ -43,7 +43,8 @@ log.setLevel(logging.WARNING)
 
 class TestRASCILimager(unittest.TestCase):
     def make_MS(
-        self, add_errors=False, nfreqwin=5, dospectral=True, dopol=False, zerow=False
+        self, add_errors=False, nfreqwin=5, dospectral=True, dopol=False, zerow=False,
+            mode=""
     ):
 
         # We always want the same numbers
@@ -175,12 +176,12 @@ class TestRASCILimager(unittest.TestCase):
             self.bvis_list = rsexecute.scatter(self.bvis_list)
 
         shutil.rmtree(
-            rascil_path("test_results/test_rascil_imager.ms"), ignore_errors=True
+            rascil_path(f"test_results/test_rascil_imager_{mode}.ms"), ignore_errors=True
         )
         self.bvis_list = rsexecute.compute(self.bvis_list, sync=True)
         self.bvis_list = [concatenate_blockvisibility_frequency(self.bvis_list)]
         export_blockvisibility_to_ms(
-            rascil_path("test_results/test_rascil_imager.ms"), self.bvis_list
+            rascil_path(f"test_results/test_rascil_imager_{mode}.ms"), self.bvis_list
         )
 
         rsexecute.close()
@@ -192,7 +193,7 @@ class TestRASCILimager(unittest.TestCase):
 
     def test_invert(self):
 
-        self.make_MS(nfreqwin=7)
+        self.make_MS(nfreqwin=7, mode='invert')
 
         parser = cli_parser()
         self.args = parser.parse_args(
@@ -200,7 +201,7 @@ class TestRASCILimager(unittest.TestCase):
                 "--mode",
                 "invert",
                 "--ingest_msname",
-                rascil_path("test_results/test_rascil_imager.ms"),
+                rascil_path(f"test_results/test_rascil_imager_invert.ms"),
                 "--ingest_vis_nchan",
                 "1",
                 "--ingest_dd",
@@ -234,7 +235,7 @@ class TestRASCILimager(unittest.TestCase):
 
     def test_ical(self):
 
-        self.make_MS(nfreqwin=7, add_errors=True)
+        self.make_MS(nfreqwin=7, add_errors=True, mode='ical')
 
         parser = cli_parser()
         self.args = parser.parse_args(
@@ -242,7 +243,7 @@ class TestRASCILimager(unittest.TestCase):
                 "--mode",
                 "ical",
                 "--ingest_msname",
-                rascil_path("test_results/test_rascil_imager.ms"),
+                rascil_path("test_results/test_rascil_imager_ical.ms"),
                 "--ingest_vis_nchan",
                 "1",
                 "--ingest_dd",
@@ -315,17 +316,17 @@ class TestRASCILimager(unittest.TestCase):
 
     def test_cip(self):
 
-        self.make_MS(nfreqwin=7, add_errors=False)
+        self.make_MS(nfreqwin=7, add_errors=False, mode='cip')
 
         parser = cli_parser()
         self.args = parser.parse_args(
             [
                 "--use_dask",
-                "False",
+                "True",
                 "--mode",
                 "cip",
                 "--ingest_msname",
-                rascil_path("test_results/test_rascil_imager.ms"),
+                rascil_path("test_results/test_rascil_imager_cip.ms"),
                 "--ingest_vis_nchan",
                 "1",
                 "--ingest_dd",

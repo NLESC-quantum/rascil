@@ -633,11 +633,10 @@ def msclean_kernel(dirty, prefix, psf, window, **kwargs):
 
 
 def fit_psf(psf: Image, **kwargs):
-    """Fit PSF using astropy.modeling
+    """Fit a two dimensional Gaussian to a PSF using astropy.modeling
 
     :params psf: Input PSF
-    :return: fitted PSF, Gaussian2D, size
-
+    :return: bmaj (arcsec), bmin (arcsec), bpa (deg)
     """
     npixel = psf["pixels"].data.shape[3]
     sl = slice(npixel // 2 - 7, npixel // 2 + 8)

@@ -304,7 +304,7 @@ class TestRASCILimager(unittest.TestCase):
             ]
         )
 
-        deconvolvedname, residualname, restoredname = imager(self.args)
+        deconvolvedname, residualname, restoredname, skymodelname = imager(self.args)
         restored = import_image_from_fits(restoredname)
         qa = qa_image(restored)
         print(qa)
@@ -320,6 +320,8 @@ class TestRASCILimager(unittest.TestCase):
         parser = cli_parser()
         self.args = parser.parse_args(
             [
+                "--use_dask",
+                "False",
                 "--mode",
                 "cip",
                 "--ingest_msname",
@@ -363,7 +365,7 @@ class TestRASCILimager(unittest.TestCase):
             ]
         )
 
-        deconvolvedname, residualname, restoredname = imager(self.args)
+        deconvolvedname, residualname, restoredname, skymodelname = imager(self.args)
         restored = import_image_from_fits(restoredname)
         qa = qa_image(restored)
         print(qa)

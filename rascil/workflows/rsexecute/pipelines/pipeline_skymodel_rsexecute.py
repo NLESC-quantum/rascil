@@ -28,6 +28,7 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import (
     invert_skymodel_list_rsexecute_workflow,
     residual_skymodel_list_rsexecute_workflow,
     restore_skymodel_list_rsexecute_workflow,
+    restore_centre_skymodel_list_rsexecute_workflow
 )
 
 log = logging.getLogger("rascil-logger")
@@ -215,7 +216,13 @@ def ical_skymodel_list_rsexecute_workflow(
                 prefix=f"{pipeline_name} cycle {cycle+1}",
                 **kwargs,
             )
+            
     # Now recreate the sky models
+    skymodel_list = [
+        rsexecute.execute(setmodel, nout=1)(skymodel_list[i], m)
+        for i, m in enumerate(deconvolve_model_imagelist)
+    ]
+
     residual_imagelist = residual_skymodel_list_rsexecute_workflow(
         cal_vis_list,
         deconvolve_model_imagelist,
@@ -224,24 +231,24 @@ def ical_skymodel_list_rsexecute_workflow(
         gcfcf=gcfcf,
         **kwargs,
     )
-    # Create restored images
-    restore_imagelist = restore_skymodel_list_rsexecute_workflow(
-        skymodel_list=skymodel_list,
-        psf_imagelist=psf_imagelist,
-        residual_imagelist=residual_imagelist,
-    )
-    # restore_imagelist = restore_list_rsexecute_workflow(deconvolve_model_imagelist, psf_imagelist, residual_imagelist)
-    return (
-        deconvolve_model_imagelist,
-        residual_imagelist,
-        restore_imagelist,
-        skymodel_list,
-        gt_list,
-    )
+    output = get_parameter(kwargs, "restored_output", "list")
+    if output == "integrated":
+        restored_imagelist = restore_centre_skymodel_list_rsexecute_workflow(
+            skymodel_list, psf_imagelist, residual_imagelist, **kwargs
+        )
+    elif output == "list":
+        restored_imagelist = restore_skymodel_list_rsexecute_workflow(
+            skymodel_list, psf_imagelist, residual_imagelist, **kwargs
+        )
+    else:
+        raise ValueError(f"continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output}")
+
+    return deconvolve_model_imagelist, residual_imagelist, restored_imagelist, \
+        skymodel_list, gt_list
 
 
 def continuum_imaging_skymodel_list_rsexecute_workflow(
-    vis_list, model_imagelist, context, skymodel_list, gcfcf=None, **kwargs
+    vis_list, model_imagelist, context, skymodel_list=None, gcfcf=None, **kwargs
 ):
     """Create graph for the continuum imaging pipeline.
 

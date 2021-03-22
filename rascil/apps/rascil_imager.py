@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 from distributed import Client
 
-from rascil.data_models import PolarisationFrame
+from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
 from rascil.processing_components import (
     create_image_from_visibility,
     qa_image,
@@ -30,10 +30,12 @@ from rascil.processing_components import (
 
 from rascil.workflows import (
     weight_list_rsexecute_workflow,
+    continuum_imaging_skymodel_list_rsexecute_workflow,
     continuum_imaging_list_rsexecute_workflow,
     sum_invert_results,
     create_blockvisibility_from_ms_rsexecute,
     ical_list_rsexecute_workflow,
+    ical_skymodel_list_rsexecute_workflow,
     invert_list_rsexecute_workflow,
     sum_invert_results_rsexecute,
 )
@@ -236,7 +238,7 @@ def cip(args, bvis_list, model_list, msname):
     :param msname: The filename of the MeasurementSet
     :return: Names of output images (deconvolved, residual, restored)
     """
-    result = continuum_imaging_list_rsexecute_workflow(
+    result = continuum_imaging_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
         context=args.imaging_context,  # Use nifty-gridder
@@ -265,14 +267,13 @@ def cip(args, bvis_list, model_list, msname):
     log.info("Starting compute of continuum imaging pipeline graph ")
     result = rsexecute.compute(result, sync=True)
     log.info("Finished compute of continuum imaging pipeline graph")
-    
 
     imagename = msname.replace(".ms", "_nmoment{}_cip".format(args.clean_nmoment))
     return write_results(imagename, result)
 
 
 def write_results(imagename, result):
-    deconvolved, residual, restored = result
+    deconvolved, residual, restored, skymodel = result
 
     if isinstance(restored, list):
         # This is the case where we have a list of restored images
@@ -309,7 +310,11 @@ def write_results(imagename, result):
     plt.show(block=False)
     deconvolvedname = imagename + "_deconvolved.fits"
     export_image_to_fits(deconvolved_image, deconvolvedname)
-    return (deconvolvedname, residualname, restoredname)
+
+    skymodelname = imagename + "_skymodel.hdf"
+    export_skymodel_to_hdf5(skymodel, skymodelname)
+
+    return (deconvolvedname, residualname, restoredname, skymodelname)
 
 
 def ical(args, bvis_list, model_list, msname):
@@ -337,7 +342,7 @@ def ical(args, bvis_list, model_list, msname):
         controls["B"]["timeslice"] = args.calibration_B_timeslice
 
     # Next we define a graph to run the continuum imaging pipeline
-    result = ical_list_rsexecute_workflow(
+    result = ical_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
         context=args.imaging_context,  # Use nifty-gridder
@@ -367,12 +372,13 @@ def ical(args, bvis_list, model_list, msname):
     )
     # Execute the Dask graph
     log.info("Starting compute of ICAL pipeline graph ")
-    deconvolved, residual, restored, gt_list = rsexecute.compute(result, sync=True)
+    deconvolved, residual, restored, skymodel, gt_list = rsexecute.compute(
+        result, sync=True
+    )
     log.info("Finished compute of ICAL pipeline graph")
-    
 
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
-    return write_results(imagename, (deconvolved, residual, restored))
+    return write_results(imagename, (deconvolved, residual, restored, skymodel))
 
 
 def invert(args, bvis_list, model_list, msname):
@@ -400,8 +406,7 @@ def invert(args, bvis_list, model_list, msname):
     dirty, sumwt = rsexecute.compute(result, sync=True)
     log.info("Finished compute of invert graph")
     imagename = msname.replace(".ms", "_invert")
-    
-    
+
     if args.imaging_dopsf == "True":
         log.info(qa_image(dirty, context="PSF"))
         show_image(dirty, title=f"{imagename} PSF image")

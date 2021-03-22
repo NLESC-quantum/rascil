@@ -198,9 +198,6 @@ def restore_list_rsexecute_workflow(
     model_imagelist,
     psf_imagelist,
     residual_imagelist=None,
-    restore_facets=1,
-    restore_overlap=0,
-    restore_taper="tukey",
     **kwargs
 ):
     """Create a graph to calculate the restored images
@@ -251,9 +248,6 @@ def restore_centre_rsexecute_workflow(
     model_imagelist,
     psf_imagelist,
     residual_imagelist=None,
-    restore_facets=1,
-    restore_overlap=0,
-    restore_taper="tukey",
     **kwargs
 ):
     """Create a graph to calculate the restored image

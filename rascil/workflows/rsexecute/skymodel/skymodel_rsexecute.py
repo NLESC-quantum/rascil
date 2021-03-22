@@ -1,6 +1,7 @@
 __all__ = [
     "predict_skymodel_list_rsexecute_workflow",
     "restore_skymodel_list_rsexecute_workflow",
+    "restore_centre_skymodel_list_rsexecute_workflow",
     "crosssubtract_datamodels_skymodel_list_rsexecute_workflow",
     "convolve_skymodel_list_rsexecute_workflow",
     "invert_skymodel_list_rsexecute_workflow",
@@ -12,12 +13,13 @@ import numpy
 
 from rascil.processing_components import image_scatter_facets, image_gather_facets
 from rascil.processing_components.calibration import apply_gaintable
-from rascil.processing_components.image import restore_cube
+from rascil.processing_components.image import restore_cube, fit_psf
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.skycomponent import (
+from rascil.processing_components import (
     copy_skycomponent,
     apply_beam_to_skycomponent,
     insert_skycomponent,
+    normalize_sumwt
 )
 from rascil.processing_components.visibility import copy_visibility
 
@@ -27,6 +29,7 @@ from rascil.workflows.rsexecute import (
     predict_list_rsexecute_workflow,
     subtract_list_rsexecute_workflow,
     zero_list_rsexecute_workflow,
+    sum_invert_results_rsexecute,
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.serial.imaging.imaging_serial import (
@@ -174,13 +177,10 @@ def invert_skymodel_list_rsexecute_workflow(
         ]
 
 
-def restore_skymodel_list_rsexecute_workflow(
+def restore_centre_skymodel_list_rsexecute_workflow(
     skymodel_list,
     psf_imagelist,
     residual_imagelist=None,
-    restore_facets=1,
-    restore_overlap=0,
-    restore_taper="tukey",
     **kwargs
 ):
     """Create a graph to calculate the restored skymodel
@@ -189,100 +189,78 @@ def restore_skymodel_list_rsexecute_workflow(
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
     :param kwargs: Parameters for functions in components
-    :param restore_facets: Number of facets used per axis (used to distribute)
-    :param restore_overlap: Overlap in pixels (0 is best)
-    :param restore_taper: Type of taper between facets
     :return: list of restored images (or graph)
     """
-    restore_facets = 1
-
     assert len(skymodel_list) == len(psf_imagelist)
     if residual_imagelist is not None:
         assert len(skymodel_list) == len(residual_imagelist)
 
-    if restore_facets % 2 == 0 or restore_facets == 1:
-        actual_number_facets = restore_facets
+    # Find the PSF by summing over all channels, fit to this psf
+    psf = sum_invert_results_rsexecute(psf_imagelist)[0]
+    cleanbeam = rsexecute.execute(fit_psf, nout=1)(psf)
+    
+    # Add the model over all channels
+    centre = len(skymodel_list) // 2
+    model = skymodel_list[centre].image
+
+    if residual_imagelist is not None:
+        # Get residual calculated across the band
+        residual = sum_invert_results_rsexecute(residual_imagelist)[0]
+        restored = rsexecute.execute(restore_cube, nout=1)(
+            model, residual=residual, cleanbeam=cleanbeam, **kwargs
+        )
     else:
-        actual_number_facets = max(1, (restore_facets - 1))
+        restored = rsexecute.execute(restore_cube, nout=1)(
+            model, cleanbeam=cleanbeam, **kwargs
+        )
 
-    psf_list = rsexecute.execute(remove_sumwt, nout=len(psf_imagelist))(psf_imagelist)
+    return restored
 
-    def skymodel_scatter_facets(sm, facets, overlap, taper):
-        im = sm.image.copy(deep=True)
-        im = insert_skycomponent(im, sm.components, **kwargs)
-        return image_scatter_facets(im, facets, overlap, taper)
 
-    # Scatter each list element into a list. We will then run restore_cube on each
-    facet_model_list = [
-        rsexecute.execute(
-            skymodel_scatter_facets, nout=actual_number_facets * actual_number_facets
-        )(sm, facets=restore_facets, overlap=restore_overlap, taper=restore_taper)
-        for sm in skymodel_list
-    ]
-    facet_psf_list = [
-        rsexecute.execute(
-            image_scatter_facets, nout=actual_number_facets * actual_number_facets
-        )(psf, facets=restore_facets, overlap=restore_overlap, taper=restore_taper)
-        for psf in psf_list
-    ]
+def restore_skymodel_list_rsexecute_workflow(
+        skymodel_list,
+        psf_imagelist,
+        residual_imagelist=None,
+        **kwargs
+):
+    """Create a graph to calculate the restored skymodel
+
+    :param skymodel_list: Skymodel list (or graph)
+    :param psf_imagelist: PSF list (or graph)
+    :param residual_imagelist: Residual list (or graph)
+    :param kwargs: Parameters for functions in components
+    :return: list of restored images (or graph)
+    """
+    assert len(skymodel_list) == len(psf_imagelist)
+    if residual_imagelist is not None:
+        assert len(skymodel_list) == len(residual_imagelist)
+    
+    psf_list = sum_invert_results_rsexecute(psf_imagelist)
+    psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
+    cleanbeam = rsexecute.execute(fit_psf)(psf)
 
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
             residual_imagelist
         )
-        facet_residual_list = [
-            rsexecute.execute(
-                image_scatter_facets, nout=actual_number_facets * actual_number_facets
-            )(
-                residual,
-                facets=restore_facets,
-                overlap=restore_overlap,
-                taper=restore_taper,
+        restored_list = [
+            rsexecute.execute(restore_cube, nout=1)(
+                skymodel_list[i].image,
+                cleanbeam=cleanbeam,
+                residual=residual_list[i],
+                **kwargs
             )
-            for residual in residual_list
-        ]
-        facet_restored_list = [
-            [
-                rsexecute.execute(
-                    restore_cube, nout=actual_number_facets * actual_number_facets
-                )(
-                    model=facet_model_list[i][im],
-                    psf=facet_psf_list[i][im],
-                    residual=facet_residual_list[i][im],
-                    **kwargs
-                )
-                for im, _ in enumerate(facet_model_list[i])
-            ]
             for i, _ in enumerate(skymodel_list)
         ]
     else:
-        facet_restored_list = [
-            [
-                rsexecute.execute(
-                    restore_cube, nout=actual_number_facets * actual_number_facets
-                )(model=facet_model_list[i][im], psf=facet_psf_list[i][im], **kwargs)
-                for im, _ in enumerate(facet_model_list[i])
-            ]
+        restored_list = [
+            rsexecute.execute(restore_cube, nout=1)(
+                skymodel_list[i].image, cleanbeam=cleanbeam, residual=None, **kwargs
+            )
             for i, _ in enumerate(skymodel_list)
         ]
-
-    def skymodel_gather_facets(restored, sm, facets, overlap, taper):
-        return image_gather_facets(restored, sm.image, facets, overlap, taper)
-
-    # Now we run restore_cube on each and gather the results across all facets
-    restored_imagelist = [
-        rsexecute.execute(skymodel_gather_facets)(
-            facet_restored_list[i],
-            skymodel_list[i],
-            facets=restore_facets,
-            overlap=restore_overlap,
-            taper=restore_taper,
-        )
-        for i, _ in enumerate(skymodel_list)
-    ]
-
-    return rsexecute.optimize(restored_imagelist)
-
+    
+    return restored_list
 
 def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_list):
     """Form data models by subtracting sum from the observed and adding back each model in turn

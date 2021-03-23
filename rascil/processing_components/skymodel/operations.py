@@ -32,6 +32,7 @@ from rascil.processing_components.skycomponent.operations import (
     filter_skycomponents_by_flux,
     insert_skycomponent,
     image_voronoi_iter,
+    find_skycomponents,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -136,7 +137,11 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
             vmin = numpy.min(smodel["pixels"].data[0, 0, ...])
 
         plt.imshow(
-            smodel["pixels"].data[0, 0, ...], origin="lower", cmap=cm, vmax=vmax, vmin=vmin
+            smodel["pixels"].data[0, 0, ...],
+            origin="lower",
+            cmap=cm,
+            vmax=vmax,
+            vmin=vmin,
         )
         plt.xlabel(sms[ism].image.image_acc.wcs.wcs.ctype[0])
         plt.ylabel(sms[ism].image.image_acc.wcs.wcs.ctype[1])
@@ -146,7 +151,9 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
         components = sms[ism].components
         if components is not None:
             for sc in components:
-                x, y = skycoord_to_pixel(sc.direction, sms[ism].image.image_acc.wcs, 0, "wcs")
+                x, y = skycoord_to_pixel(
+                    sc.direction, sms[ism].image.image_acc.wcs, 0, "wcs"
+                )
                 plt.plot(x, y, marker="+", color="red")
 
         gaintable = sms[ism].gaintable
@@ -312,7 +319,7 @@ def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwar
 
 
 def extract_skycomponents_from_skymodel(
-    sm, component_threshold=None, component_extraction="pixels", **kwargs
+    sm, component_threshold=None, component_extraction="fit", **kwargs
 ):
     """Extract the bright components from the image in a skymodel
 
@@ -320,7 +327,7 @@ def extract_skycomponents_from_skymodel(
 
     :param sm: skymodel
     :param component_threshold: Threshold in Jy to be classified as a source
-    :param component_extraction: Method to extract skycomponents: pixels or None
+    :param component_extraction: Method to extract skycomponents: pixels or fit
     :param kwargs: Parameters for functions
     :return: Updated skymodel
 
@@ -331,8 +338,7 @@ def extract_skycomponents_from_skymodel(
 
     if component_extraction is None:
         return sm
-
-    if component_extraction == "pixels":
+    elif component_extraction == "pixels":
         newsm = copy_skymodel(sm)
         nchan, npol, _, _ = newsm.image["pixels"].shape
         refchan = nchan // 2
@@ -356,13 +362,24 @@ def extract_skycomponents_from_skymodel(
                     shape="Point",
                 )
                 newsm.components.append(comp)
-                newsm.image["pixels"].data[:, :, p[0], p[1]] = 0.0
-        if (
-            numpy.max(numpy.abs(newsm.image["pixels"].data[refchan, 0]))
-            > component_threshold
-        ):
-            return ArithmeticError(
-                f"extract_skycomponents_from_image: Not all flux > {component_threshold:.6f} Jy extracted"
+    elif component_extraction == "fit":
+        newsm = copy_skymodel(sm)
+        smoothed = smooth_image(newsm.image, 3.0)
+        try:
+            found_components = find_skycomponents(
+                smoothed, 3.0, threshold=component_threshold
+            )
+            number_points = len(found_components)
+            if number_points > 0:
+                log.info(
+                    f"extract_skycomponents_from_image: Found {number_points} sources > {component_threshold} Jy"
+                )
+                for comp in found_components:
+                    newsm.components.append(comp)
+                newsm.image["pixels"].data[...] = 0.0
+        except AssertionError:
+            log.warning(
+                f"extract_skycomponents_from_image: No sources found > > {component_threshold} Jy"
             )
     else:
         raise ValueError(f"Unknown component extraction method{component_extraction}")

@@ -1066,8 +1066,22 @@ def create_unittest_components(
     single=False,
     symmetric=False,
     angular_scale=1.0,
+    offset=(0.0, 0.0),
 ):
-    # Fill the visibility with exactly computed point sources.
+    """Fill the visibility with exactly computed point sources.
+
+    :param model: Model image
+    :param flux: Flux of sources
+    :param applypb: Do we want to apply the primary
+    :param telescope: Name of primary beam
+    :param npixel: Number of pixels in image
+    :param scale: Multiplicative scale
+    :param single: Just a single source?
+    :param symmetric: Do we want a symmetric source distribution
+    :param angular_scale:
+    :param offset: Offset of components from pixels
+    :return:
+    """
 
     if npixel is None:
         _, _, _, npixel = model["pixels"].data.shape
@@ -1094,16 +1108,21 @@ def create_unittest_components(
         ix, iy = center
         # The phase center in 0-relative coordinates is n // 2 so we centre the grid of
         # components on ny // 2, nx // 2. The wcs must be defined consistently.
-        p = int(
-            round(
-                rpix[0]
-                + ix * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[0])
+        p = (
+            int(
+                round(
+                    rpix[0]
+                    + ix * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[0])
+                )
             )
-        ), int(
-            round(
-                rpix[1]
-                + iy * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[1])
+            + offset[0],
+            int(
+                round(
+                    rpix[1]
+                    + iy * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[1])
+                )
             )
+            + offset[1],
         )
         sc = pixel_to_skycoord(p[0], p[1], model.image_acc.wcs, origin=1)
         log.info("Component at (%f, %f) [0-rel] %s" % (p[0], p[1], str(sc)))

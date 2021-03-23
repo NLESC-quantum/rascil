@@ -41,7 +41,7 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 
 @pytest.mark.parametrize(
-    "enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method",
+    "enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
     [
         (
             False,
@@ -52,7 +52,8 @@ log.setLevel(logging.INFO)
             98.163111,
             -13.706506,
             None,
-            "None"
+            "None",
+            0.0
         ),
         (
             False,
@@ -63,7 +64,8 @@ log.setLevel(logging.INFO)
             100.21408262286327,
             -0.4232514054580332,
             None,
-            "None"
+            "None",
+            0.0
         ),
         (
             False,
@@ -74,23 +76,38 @@ log.setLevel(logging.INFO)
             101.17459680479055,
             -0.03995828592915829,
             None,
-            "None"
+            "None",
+            0.0
+        ),
+        (
+            False,
+            "cip_offset",
+            False,
+            "cip",
+            False,
+            101.17459680479055,
+            -0.03995828592915829,
+            None,
+            "None",
+            0.5
         ),
         (
             True,
-            "cip_component",
+            "fit_component",
             True,
             "cip",
             False,
             0.8232816724012679,
             -0.04643019920266998,
             "1.0",
-            "pixels"
+            "fit",
+            0.5
         )
 
     ]
 )
-def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method):
+def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold,
+                       component_method, offset):
     
     if not enabled:
         return True
@@ -165,7 +182,8 @@ def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_
 
     components_list = [
         rsexecute.execute(create_unittest_components)(
-            model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :]
+            model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :],
+            offset=(offset, 0.0)
         )
         for freqwin, m in enumerate(model_imagelist)
     ]

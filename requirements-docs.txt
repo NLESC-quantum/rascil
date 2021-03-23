@@ -42,7 +42,7 @@ sphinx-automodapi==0.13
     # via -r requirements-docs.in
 sphinx-rtd-theme==0.5.1
     # via -r requirements-docs.in
-sphinx==3.5.2
+sphinx==3.5.3
     # via
     #   -r requirements-docs.in
     #   sphinx-argparse
@@ -60,7 +60,7 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.4
     # via sphinx
-urllib3==1.26.3
+urllib3==1.26.4
     # via requests
 
 # The following packages are considered to be unsafe in a requirements file:

@@ -191,10 +191,16 @@ def apps_parser_cleaning(parser):
         help="Clean stopping threshold (Jy/beam)",
     )
     parser.add_argument(
-        "--component_threshold",
+        "--clean_component_threshold",
         type=float,
         default=None,
-        help="Pixels > this level are converted to skycomponents",
+        help="Sources > this level are converted to skycomponents",
+    )
+    parser.add_argument(
+        "--clean_component_method",
+        type=str,
+        default="pixels",
+        help="Method to convert sources in image to skycomponents",
     )
     parser.add_argument(
         "--clean_fractional_threshold",

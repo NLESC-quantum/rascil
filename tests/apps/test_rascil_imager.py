@@ -41,36 +41,56 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 
 @pytest.mark.parametrize(
-    "enabled, use_dask, mode, add_errors, flux_max, flux_min",
+    "enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method",
     [
         (
-            True,
+            False,
+            "invert",
             True,
             "invert",
             False,
             98.163111,
-            -13.706506
+            -13.706506,
+            None,
+            "None"
         ),
         (
-            True,
+            False,
+            "ical",
             True,
             "ical",
             True,
             100.21408262286327,
-            -0.4232514054580332
+            -0.4232514054580332,
+            None,
+            "None"
         ),
         (
-            True,
+            False,
+            "cip",
             True,
             "cip",
             False,
             101.17459680479055,
-            -0.03995828592915829
+            -0.03995828592915829,
+            None,
+            "None"
+        ),
+        (
+            True,
+            "cip_component",
+            True,
+            "cip",
+            False,
+            0.8232816724012679,
+            -0.04643019920266998,
+            "1.0",
+            "pixels"
         )
 
     ]
 )
-def test_rascil_imager(enabled, use_dask, mode, add_errors, flux_max, flux_min):
+def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method):
     
     if not enabled:
         return True
@@ -210,12 +230,12 @@ def test_rascil_imager(enabled, use_dask, mode, add_errors, flux_max, flux_min):
         bvis_list = rsexecute.scatter(bvis_list)
 
     shutil.rmtree(
-        rascil_path(f"test_results/test_rascil_imager_{mode}.ms"), ignore_errors=True
+        rascil_path(f"test_results/test_rascil_imager_{tag}.ms"), ignore_errors=True
     )
     bvis_list = rsexecute.compute(bvis_list, sync=True)
     bvis_list = [concatenate_blockvisibility_frequency(bvis_list)]
     export_blockvisibility_to_ms(
-        rascil_path(f"test_results/test_rascil_imager_{mode}.ms"), bvis_list
+        rascil_path(f"test_results/test_rascil_imager_{tag}.ms"), bvis_list
     )
 
     rsexecute.close()
@@ -226,7 +246,7 @@ def test_rascil_imager(enabled, use_dask, mode, add_errors, flux_max, flux_min):
         "--use_dask",
         f"{use_dask}",
         "--ingest_msname",
-        rascil_path(f"test_results/test_rascil_imager_{mode}.ms"),
+        rascil_path(f"test_results/test_rascil_imager_{tag}.ms"),
         "--ingest_vis_nchan",
         f"{nfreqwin}",
         "--ingest_dd",
@@ -239,8 +259,6 @@ def test_rascil_imager(enabled, use_dask, mode, add_errors, flux_max, flux_min):
         "0.0005",
         "--imaging_dft_kernel",
         "cpu_looped",
-        "--clean_restored_output",
-        "integrated"
     ]
     
     clean_args = [
@@ -265,6 +283,20 @@ def test_rascil_imager(enabled, use_dask, mode, add_errors, flux_max, flux_min):
         "--clean_restored_output",
         "integrated"
     ]
+    if component_threshold is not None and component_method is not None:
+        clean_args += [
+            "--clean_component_threshold",
+            f"{component_threshold}",
+            "--clean_component_method",
+            f"{component_method}"
+        ]
+    else:
+        clean_args += [
+            "--clean_component_threshold",
+            "1e15",
+            "--clean_component_method",
+            "pixels"
+        ]
     
     calibration_args = [
         "--calibration_T_first_selfcal",
@@ -323,5 +355,5 @@ def test_rascil_imager(enabled, use_dask, mode, add_errors, flux_max, flux_min):
         return ValueError(f"rascil-imager: Unknown mode {mode}")
 
     
-    numpy.testing.assert_allclose(qa.data["max"], flux_max, atol=1e-7)
-    numpy.testing.assert_allclose(qa.data["min"], flux_min, atol=1e-7)
+    numpy.testing.assert_allclose(qa.data["max"], flux_max, atol=1e-7, err_msg=f"{qa}")
+    numpy.testing.assert_allclose(qa.data["min"], flux_min, atol=1e-7, err_msg=f"{qa}")

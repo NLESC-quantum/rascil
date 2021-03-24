@@ -41,10 +41,10 @@ def plot_skycomponents_positions(
     :return:
     """
     if comps_ref is None:  # No comparison needed
-        ra_test = [comp.direction.ra.radian for comp in comps_test]
-        dec_test = [comp.direction.dec.radian for comp in comps_test]
+        ra_test = [comp.direction.ra.degree for comp in comps_test]
+        dec_test = [comp.direction.dec.degree for comp in comps_test]
 
-        plt.plot(ra_test, dec_test, ".", color="b", markersize=5, label="Components")
+        plt.plot(ra_test, dec_test, "o", color="b", markersize=5, label="Components")
 
     else:
 
@@ -57,27 +57,27 @@ def plot_skycomponents_positions(
         dec_error = numpy.zeros(len(matches))
         for i, match in enumerate(matches):
             m_comp = comps_test[match[0]]
-            ra_test[i] = m_comp.direction.ra.radian
-            dec_test[i] = m_comp.direction.dec.radian
+            ra_test[i] = m_comp.direction.ra.degree
+            dec_test[i] = m_comp.direction.dec.degree
             m_ref = comps_ref[match[1]]
-            ra_ref[i] = m_ref.direction.ra.radian
-            dec_ref[i] = m_ref.direction.dec.radian
+            ra_ref[i] = m_ref.direction.ra.degree
+            dec_ref[i] = m_ref.direction.dec.degree
             ra_error[i] = numpy.abs(
-                m_comp.direction.ra.radian - m_ref.direction.ra.radian
+                m_comp.direction.ra.degree - m_ref.direction.ra.degree
             )
             dec_error[i] = numpy.abs(
-                m_comp.direction.dec.radian - m_ref.direction.dec.radian
+                m_comp.direction.dec.degree - m_ref.direction.dec.degree
             )
 
         plt.plot(
-            ra_test, dec_test, ".", color="b", markersize=5, label="Tested components"
+            ra_test, dec_test, "o", color="b", markersize=5, label="Tested components"
         )
         plt.plot(
-            ra_ref, dec_ref, ".", color="r", markersize=5, label="Original components"
+            ra_ref, dec_ref, "x", color="r", markersize=8, label="Original components"
         )
 
-    plt.xlabel("RA (rad)")
-    plt.ylabel("Dec (rad)")
+    plt.xlabel("RA (deg)")
+    plt.ylabel("Dec (deg)")
     plt.legend(loc="best")
     if plot_file is not None:
         plt.savefig(plot_file + "_position_value.png")
@@ -88,9 +88,9 @@ def plot_skycomponents_positions(
         if comps_ref is None:
             log.info("Error: No reference components. No position errors are plotted.")
         else:
-            plt.plot(ra_error, dec_error, ".", markersize=5)
-        plt.xlabel("RA (rad)")
-        plt.ylabel("Dec (rad)")
+            plt.plot(ra_error, dec_error, "o", markersize=5)
+        plt.xlabel(r"$\Delta\ RA\ (deg)$")
+        plt.ylabel(r"$\Delta\ Dec\ (deg)$")
         plt.title("Errors in RA and Dec")
         if plot_file is not None:
             plt.savefig(plot_file + "_position_error.png")
@@ -119,21 +119,21 @@ def plot_skycomponents_position_distance(
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
 
-        ra_error[i] = numpy.abs(m_comp.direction.ra.radian - m_ref.direction.ra.radian)
+        ra_error[i] = numpy.abs(m_comp.direction.ra.degree - m_ref.direction.ra.degree)
         dec_error[i] = numpy.abs(
-            m_comp.direction.dec.radian - m_ref.direction.dec.radian
+            m_comp.direction.dec.degree - m_ref.direction.dec.degree
         )
 
-        dist[i] = m_comp.direction.separation(phasecentre).rad
+        dist[i] = m_comp.direction.separation(phasecentre).degree
 
     fig, (ax1, ax2) = plt.subplots(2, sharex=True)
     fig.suptitle("Position error vs. Distance")
-    ax1.plot(dist, ra_error, ".", color="b", markersize=5)
-    ax2.plot(dist, dec_error, ".", color="b", markersize=5)
+    ax1.plot(dist, ra_error, "o", color="b", markersize=5)
+    ax2.plot(dist, dec_error, "o", color="b", markersize=5)
 
-    ax1.set_ylabel("RA (rad)")
-    ax2.set_ylabel("Dec (rad)")
-    ax2.set_xlabel("Separation To Center(rad)")
+    ax1.set_ylabel("RA (deg)")
+    ax2.set_ylabel("Dec (deg)")
+    ax2.set_xlabel("Separation To Center(deg)")
     if plot_file is not None:
         plt.savefig(plot_file + "_position_distance.png")
     plt.show(block=False)
@@ -159,7 +159,7 @@ def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **k
         flux_in[i] = m_ref.flux[0]
         flux_out[i] = m_comp.flux[0]
 
-    plt.plot(flux_in, flux_out, ".", color="b", markersize=5)
+    plt.loglog(flux_in, flux_out, "o", color="b", markersize=5)
 
     plt.xlabel("Flux in (Jy)")
     plt.ylabel("Flux out (Jy)")
@@ -193,11 +193,11 @@ def plot_skycomponents_flux_ratio(
             flux_ratio[i] = 0.
         else:
             flux_ratio[i] = m_comp.flux[0] / m_ref.flux[0]
-        dist[i] = m_comp.direction.separation(phasecentre).rad
+        dist[i] = m_comp.direction.separation(phasecentre).degree
 
-    plt.plot(dist, flux_ratio, ".", color="b", markersize=5)
+    plt.plot(dist, flux_ratio, "o", color="b", markersize=5)
 
-    plt.xlabel("Separation to center (Rad)")
+    plt.xlabel("Separation to center (Deg)")
     plt.ylabel("Flux Ratio")
     if plot_file is not None:
         plt.savefig(plot_file + "_flux_ratio.png")
@@ -222,11 +222,18 @@ def plot_skycomponents_flux_histogram(
     flux_in = [comp.flux[0,0] for comp in comps_test]
     flux_out = [comp.flux[0,0] for comp in comps_ref]
 
+    hist = [flux_in, flux_out]
+    labels = ["Flux In", "Flux Out"]
+    colors = ["r", "b"]
+    hist_min = min(numpy.min(flux_in), numpy.min(flux_out))
+    hist_max = max(numpy.max(flux_in), numpy.max(flux_out))
+
+    bins=numpy.logspace(hist_min, hist_max, nbins)
     fig, ax = plt.subplots()
-    ax.hist(flux_in, bins=nbins, log=True, color="b", label="Flux In")
-    ax.hist(flux_out, bins=nbins, log=True, color="r", label="Flux Out")
+    ax.hist(hist, bins=nbins, log=True, color=colors, label=labels)
 
     ax.set_xlabel("Flux (Jy)")
+    ax.set_xscale("log")
     ax.set_ylabel("Source Count")
     plt.legend(loc="best")
     if plot_file is not None:

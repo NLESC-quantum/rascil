@@ -203,7 +203,9 @@ def analyze_image(args):
     if nchan > 0:
         refchan = nchan // 2
         log.info(
-            "Found spectral cube with {nchan} channels, using channel {refchan} for source finding"
+            "Found spectral cube with {} channels, using channel {} for source finding".format(
+                nchan, refchan
+            )
         )
     else:
         refchan = 0

@@ -33,11 +33,11 @@ def plot_skycomponents_positions(
 ):
     """Generate position scatter plot for two lists of skycomponents
 
-    :param comps_test: List of components to be test
+    :param comps_test: List of components to be tested
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
-    :param plot_error : Whether to plot absolute values or error
+    :param plot_error : If True, plot error, else just plot absolute values
     :return: [ra_error, dec_error]:
              The error array for users to check
     """
@@ -106,7 +106,7 @@ def plot_skycomponents_position_distance(
 ):
     """Generate position error plot vs distance for two lists of skycomponents
 
-    :param comps_test: List of components to be test
+    :param comps_test: List of components to be tested
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
@@ -149,7 +149,7 @@ def plot_skycomponents_position_distance(
 def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **kwargs):
     """Generate flux scatter plot for two lists of skycomponents
 
-    :param comps_test: List of components to be test
+    :param comps_test: List of components to be tested
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
@@ -184,7 +184,7 @@ def plot_skycomponents_flux_ratio(
 
     """Generate flux ratio plot vs distance for two lists of skycomponents
 
-    :param comps_test: List of components to be test
+    :param comps_test: List of components to be tested
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
@@ -223,7 +223,7 @@ def plot_skycomponents_flux_histogram(
 
     """Generate flux ratio plot vs distance for two lists of skycomponents
 
-    :param comps_test: List of components to be test
+    :param comps_test: List of components to be tested
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad

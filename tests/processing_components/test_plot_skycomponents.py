@@ -30,7 +30,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux_histogram,
 )
 
-log = logging.getLogger("logger")
+log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 

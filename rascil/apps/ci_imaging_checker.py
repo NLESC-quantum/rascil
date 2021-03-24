@@ -169,9 +169,6 @@ def analyze_image(args):
     if args.ingest_fitsname_restored is None:
         raise FileNotFoundError("Input restored FITS file name must be specified")
 
-    #if args.ingest_fitsname_residual is None:
-    #    raise FileNotFoundError("Input residual FITS file name must be specified")
-
     if args.logfile is None:
         logfile = args.ingest_fitsname_restored.replace(".fits", ".log")
     else:
@@ -588,15 +585,23 @@ def plot_errors(orig, comp, match_sep, phasecentre, plot_file):
     :return
 
     """
-    plot_skycomponents_positions(comp, orig, plot_file=plot_file, tol=match_sep)
-    plot_skycomponents_position_distance(
+    ra_comp, dec_comp = plot_skycomponents_positions(
+        comp, orig, plot_file=plot_file, tol=match_sep
+    )
+    ra_error, dec_error = plot_skycomponents_position_distance(
         comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
     )
-    plot_skycomponents_flux(comp, orig, plot_file=plot_file, tol=match_sep)
-    plot_skycomponents_flux_ratio(
+    flux_in, flux_out = plot_skycomponents_flux(
+        comp, orig, plot_file=plot_file, tol=match_sep
+    )
+    dist, flux_ratio = plot_skycomponents_flux_ratio(
         comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
     )
-    plot_skycomponents_flux_histogram(comp, orig, plot_file=plot_file, tol=match_sep)
+    fluxes = plot_skycomponents_flux_histogram(
+        comp, orig, plot_file=plot_file, tol=match_sep
+    )
+
+    return
 
 
 if __name__ == "__main__":

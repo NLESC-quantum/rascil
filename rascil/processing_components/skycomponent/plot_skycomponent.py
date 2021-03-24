@@ -38,7 +38,8 @@ def plot_skycomponents_positions(
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
     :param plot_error : Whether to plot absolute values or error
-    :return:
+    :return: [ra_error, dec_error]:
+             The error array for users to check
     """
     if comps_ref is None:  # No comparison needed
         ra_test = [comp.direction.ra.degree for comp in comps_test]
@@ -97,6 +98,8 @@ def plot_skycomponents_positions(
         plt.show(block=False)
         plt.clf()
 
+    return [ra_test, dec_test]
+
 
 def plot_skycomponents_position_distance(
     comps_test, comps_ref, phasecentre, plot_file=None, tol=1e-5, **kwargs
@@ -108,7 +111,8 @@ def plot_skycomponents_position_distance(
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
     :param phasecentre: Centre of image in SkyCoords
-    :return:
+    :return: [ra_error, dec_error]:
+             The error array for users to check
     """
 
     matches = find_skycomponent_matches(comps_test, comps_ref, tol)
@@ -139,6 +143,8 @@ def plot_skycomponents_position_distance(
     plt.show(block=False)
     plt.clf()
 
+    return [ra_error, dec_error]
+
 
 def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **kwargs):
     """Generate flux scatter plot for two lists of skycomponents
@@ -147,7 +153,8 @@ def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **k
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
-    :return:
+    :return: [flux_in, flux_out]:
+             The flux array for users to check
     """
 
     matches = find_skycomponent_matches(comps_test, comps_ref, tol)
@@ -168,6 +175,8 @@ def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **k
     plt.show(block=False)
     plt.clf()
 
+    return [flux_in, flux_out]
+
 
 def plot_skycomponents_flux_ratio(
     comps_test, comps_ref, phasecentre, plot_file=None, tol=1e-5, **kwargs
@@ -180,7 +189,8 @@ def plot_skycomponents_flux_ratio(
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
     :param phasecentre: Centre of image in SkyCoords
-    :return:
+    :return: [dist, flux_ratio]:
+             The flux array for users to check
     """
 
     matches = find_skycomponent_matches(comps_test, comps_ref, tol)
@@ -189,8 +199,8 @@ def plot_skycomponents_flux_ratio(
     for i, match in enumerate(matches):
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
-        if m_ref.flux[0] == 0.:
-            flux_ratio[i] = 0.
+        if m_ref.flux[0] == 0.0:
+            flux_ratio[i] = 0.0
         else:
             flux_ratio[i] = m_comp.flux[0] / m_ref.flux[0]
         dist[i] = m_comp.direction.separation(phasecentre).degree
@@ -204,6 +214,8 @@ def plot_skycomponents_flux_ratio(
     plt.show(block=False)
     plt.clf()
 
+    return [dist, flux_ratio]
+
 
 def plot_skycomponents_flux_histogram(
     comps_test, comps_ref, plot_file=None, nbins=10, tol=1e-5, **kwargs
@@ -215,12 +227,15 @@ def plot_skycomponents_flux_histogram(
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
-    :param nbins: number of bins for the histrogram
-    :return:
+    :param nbins: Number of bins for the histrogram
+    :return: hist: The flux array for users to check
     """
 
-    flux_in = [comp.flux[0,0] for comp in comps_test]
-    flux_out = [comp.flux[0,0] for comp in comps_ref]
+    flux_in = numpy.array([comp.flux[0, 0] for comp in comps_test])
+    flux_out = numpy.array([comp.flux[0, 0] for comp in comps_ref])
+
+    flux_in = flux_in[flux_in > 0.0]
+    flux_out = flux_out[flux_out > 0.0]
 
     hist = [flux_in, flux_out]
     labels = ["Flux In", "Flux Out"]
@@ -228,9 +243,10 @@ def plot_skycomponents_flux_histogram(
     hist_min = min(numpy.min(flux_in), numpy.min(flux_out))
     hist_max = max(numpy.max(flux_in), numpy.max(flux_out))
 
-    bins=numpy.logspace(hist_min, hist_max, nbins)
+    hist_bins = numpy.logspace(numpy.log10(hist_min), numpy.log10(hist_max), nbins)
+
     fig, ax = plt.subplots()
-    ax.hist(hist, bins=nbins, log=True, color=colors, label=labels)
+    ax.hist(hist, bins=hist_bins, log=True, color=colors, label=labels)
 
     ax.set_xlabel("Flux (Jy)")
     ax.set_xscale("log")
@@ -240,3 +256,5 @@ def plot_skycomponents_flux_histogram(
         plt.savefig(plot_file + "_flux_histogram.png")
     plt.show(block=False)
     plt.clf()
+
+    return hist

@@ -706,15 +706,15 @@ def create_pointing_errors_gaintable_rsexecute_workflow(
 
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_pointingtable)(
-            bvis, sub_components, nominal_pt_list[ibv], sub_vp_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_pointingtable, nout=len(sub_components)
+        )(bvis, sub_components, nominal_pt_list[ibv], sub_vp_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
     actual_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_pointingtable)(
-            bvis, sub_components, actual_pt_list[ibv], sub_vp_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_pointingtable, nout=len(sub_components)
+        )(bvis, sub_components, actual_pt_list[ibv], sub_vp_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
 
@@ -820,15 +820,15 @@ def create_surface_errors_gaintable_rsexecute_workflow(
 
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_pointingtable)(
-            bvis, sub_components, nominal_pt_list[ibv], vp_nominal_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_pointingtable, nout=len(sub_components)
+        )(bvis, sub_components, nominal_pt_list[ibv], vp_nominal_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
     actual_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_pointingtable)(
-            bvis, sub_components, actual_pt_list[ibv], vp_actual_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_pointingtable, nout=len(sub_components)
+        )(bvis, sub_components, actual_pt_list[ibv], vp_actual_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
     return nominal_gt_list, actual_gt_list
@@ -883,15 +883,15 @@ def create_polarisation_gaintable_rsexecute_workflow(
 
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_voltage_pattern)(
-            bvis, sub_components, vp_nominal_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_voltage_pattern, nout=len(sub_components)
+        )(bvis, sub_components, vp_nominal_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
     actual_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_voltage_pattern)(
-            bvis, sub_components, vp_actual_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_voltage_pattern, nout=len(sub_components)
+        )(bvis, sub_components, vp_actual_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
     return nominal_gt_list, actual_gt_list
@@ -933,9 +933,9 @@ def create_voltage_pattern_gaintable_rsexecute_workflow(
 
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_voltage_pattern)(
-            bvis, sub_components, vp_nominal_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_voltage_pattern, nout=len(sub_components)
+        )(bvis, sub_components, vp_nominal_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
 
@@ -982,15 +982,15 @@ def create_heterogeneous_gaintable_rsexecute_workflow(
 
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_voltage_pattern)(
-            bvis, sub_components, vp_nominal_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_voltage_pattern, nout=len(sub_components)
+        )(bvis, sub_components, vp_nominal_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
     actual_gt_list = [
-        rsexecute.execute(simulate_gaintable_from_voltage_pattern)(
-            bvis, sub_components, vp_actual_list[ibv]
-        )
+        rsexecute.execute(
+            simulate_gaintable_from_voltage_pattern, nout=len(sub_components)
+        )(bvis, sub_components, vp_actual_list[ibv])
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
     return nominal_gt_list, actual_gt_list

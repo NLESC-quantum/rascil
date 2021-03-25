@@ -12,9 +12,7 @@ __all__ = [
 
 import collections
 import logging
-import matplotlib
 
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 import astropy.units as u

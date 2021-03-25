@@ -1,3 +1,11 @@
+"""
+Generate an HTML and a Markdown file containing links
+to files within a given path.
+
+At the moment, the output index will contain links
+to local files, and not online-hosted ones.
+"""
+
 import logging
 import os
 import datetime as dt
@@ -148,7 +156,7 @@ def sort_files(path):
         if ".pybdsm" in f and (f.endswith(".csv") or f.endswith(".fits")):
             pybdsf_source_files.append(f)
 
-        if f.endswith(".hdf"):
+        if f.endswith(".hdf") or f.endswith(".h5") or f.endswith(".hdf5"):
             rascil_hdf_files.append(f)
 
         if f.endswith(".png"):

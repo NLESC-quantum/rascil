@@ -375,7 +375,7 @@ def simulate_gaintable_from_zernikes(
                             vp.image_acc.wcs.wcs.crval[3],
                         ]
                         try:
-                            pixloc = wcs_azel.sub(2).wcs_world2pix([worldloc[:2]], 1)[0]
+                            pixloc = wcs_azel.sub(2).wcs_world2pix([worldloc[:2]], 0)[0]
                             assert pixloc[0] > 2
                             assert pixloc[0] < nx - 3
                             assert pixloc[1] > 2

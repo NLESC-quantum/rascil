@@ -296,7 +296,7 @@ def create_test_image_from_s3(
 
     log.info("create_test_image_from_s3: %d sources read" % (len(fluxes)))
 
-    p = w.sub(2).wcs_world2pix(numpy.array(ras), numpy.array(decs), 1)
+    p = w.sub(2).wcs_world2pix(numpy.array(ras), numpy.array(decs), 0)
     fluxes = numpy.array(fluxes)
     total_flux = numpy.sum(fluxes)
     ip = numpy.round(p).astype("int")

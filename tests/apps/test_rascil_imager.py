@@ -10,11 +10,14 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.apps.rascil_imager import cli_parser, imager
+from rascil.data_models import SkyModel
 from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models.data_model_helpers import export_skymodel_to_hdf5
 from rascil.processing_components import (
     export_blockvisibility_to_ms,
     concatenate_blockvisibility_frequency,
+    find_skycomponents
 )
 from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import (
@@ -44,63 +47,75 @@ log.setLevel(logging.INFO)
     "enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
     [
         (
-            False,
-            "invert",
             True,
             "invert",
             False,
-            98.163111,
-            -13.706506,
+            "invert",
+            False,
+            98.10510395192918,
+            -14.188333310466623,
             None,
             "None",
             0.0
         ),
         (
-            False,
-            "ical",
             True,
-            "ical",
+            "offset_component",
             True,
-            100.21408262286327,
-            -0.4232514054580332,
-            None,
-            "None",
-            0.0
-        ),
-        (
+            "invert",
             False,
-            "cip",
-            True,
-            "cip",
-            False,
-            101.17459680479055,
-            -0.03995828592915829,
-            None,
-            "None",
-            0.0
-        ),
-        (
-            False,
-            "cip_offset",
-            False,
-            "cip",
-            False,
-            101.17459680479055,
-            -0.03995828592915829,
+            95.10047028401166,
+            -13.984945907964839,
             None,
             "None",
             0.5
+         ),
+        (
+            True,
+            "ical",
+            True,
+            "ical",
+            True,
+            100.05778149889112,
+            -0.6724281281952541,
+            None,
+            "None",
+            0.0
         ),
         (
+            True,
+            "cip",
+            True,
+            "cip",
+            False,
+            101.11474342157628,
+            -0.5442019450782798,
+            None,
+            "None",
+            0.0
+        ),
+       (
             True,
             "fit_component",
             True,
             "cip",
             False,
-            0.8232816724012679,
-            -0.04643019920266998,
-            "1.0",
+            0.6973434926969364,
+            -0.5672498405015786,
+            "0.1",
             "fit",
+            0.5
+        ),
+        (
+            True,
+            "pixels_component",
+            True,
+            "cip",
+            False,
+            2.4637711558211572,
+            -1.2629985198020042,
+            "0.1",
+            "pixels",
             0.5
         )
 
@@ -116,7 +131,7 @@ def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_
     dospectral=True
     zerow=False
     dopol=False
-    persist = False
+    persist = True
 
     # We always want the same numbers
     from numpy.random import default_rng
@@ -197,22 +212,23 @@ def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_
     ]
     bvis_list = rsexecute.persist(bvis_list)
 
-    model_imagelist = [
-        rsexecute.execute(insert_skycomponent, nout=1)(
-            model_imagelist[freqwin], components_list[freqwin]
-        )
-        for freqwin in range(nfreqwin)
-    ]
-
     if persist:
+        model_imagelist = [
+            rsexecute.execute(insert_skycomponent, nout=1)(
+                model_imagelist[freqwin], components_list[freqwin]
+            )
+            for freqwin in range(nfreqwin)
+        ]
+    
         model_imagelist = rsexecute.compute(model_imagelist, sync=True)
 
         model = model_imagelist[0]
         cmodel = smooth_image(model)
-        export_image_to_fits(model, "%s/test_rascil_imager_model.fits" % dir)
-        export_image_to_fits(
-            cmodel, "%s/test_rascil_imager_cmodel.fits" % dir
-        )
+        export_image_to_fits(model, rascil_path("test_results/test_rascil_imager_model.fits"))
+        export_image_to_fits(cmodel, rascil_path("test_results/test_rascil_imager_cmodel.fits"))
+        found_components = find_skycomponents(cmodel)
+        sm = SkyModel(components=found_components)
+        export_skymodel_to_hdf5(sm, rascil_path("test_results/test_rascil_imager_cmodel.hdf"))
 
     if add_errors:
         seeds = [
@@ -276,12 +292,12 @@ def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_
         "--imaging_cellsize",
         "0.0005",
         "--imaging_dft_kernel",
-        "cpu_looped",
+        "cpu_numba",
     ]
     
     clean_args = [
         "--clean_nmajor",
-        "5",
+        "9",
         "--clean_niter",
         "1000",
         "--clean_algorithm",
@@ -295,7 +311,7 @@ def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_
         "--clean_threshold",
         "0.003",
         "--clean_fractional_threshold",
-        "0.3",
+        "0.03",
         "--clean_facets",
         "1",
         "--clean_restored_output",

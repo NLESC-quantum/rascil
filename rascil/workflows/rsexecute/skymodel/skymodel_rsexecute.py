@@ -20,6 +20,7 @@ from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import restore_cube, fit_psf
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.visibility import copy_visibility
+
 # ToDo - remove non-SkyModel parts
 from rascil.workflows.rsexecute import (
     invert_list_rsexecute_workflow,
@@ -40,7 +41,7 @@ log = logging.getLogger("rascil-logger")
 
 
 def predict_skymodel_list_rsexecute_workflow(
-        obsvis, skymodel_list, context="ng", gcfcf=None, docal=False, inverse=True, **kwargs
+    obsvis, skymodel_list, context="ng", gcfcf=None, docal=False, inverse=True, **kwargs
 ):
     """Predict from a list of skymodels
 
@@ -55,7 +56,7 @@ def predict_skymodel_list_rsexecute_workflow(
     :param kwargs: Parameters for functions in components
     :return: List of vis_lists
     """
-    
+
     def ft_cal_sm(ov, sm, g):
         """Predict visibility for a skymodel
 
@@ -67,9 +68,9 @@ def predict_skymodel_list_rsexecute_workflow(
         if g is not None:
             if len(g) != 2:
                 raise ValueError("Convolution function value incorrect")
-        
+
         v = copy_visibility(ov, zero=True)
-        
+
         if len(sm.components) > 0:
             if sm.mask is not None:
                 comps = copy_skycomponent(sm.components)
@@ -77,7 +78,7 @@ def predict_skymodel_list_rsexecute_workflow(
                 v = dft_skycomponent_visibility(v, comps, **kwargs)
             else:
                 v = dft_skycomponent_visibility(v, sm.components, **kwargs)
-        
+
         if sm.image is not None:
             if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
                 imgv = copy_visibility(ov, zero=True)
@@ -92,12 +93,12 @@ def predict_skymodel_list_rsexecute_workflow(
                         [imgv], [sm.image], context=context, gcfcf=[g], **kwargs
                     )[0]
                 v["vis"].data += imgv["vis"].data
-        
+
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable, inverse=inverse)
-        
+
         return v
-    
+
     if isinstance(obsvis, list):
         if len(obsvis) != len(skymodel_list):
             raise ValueError("Obsvis and skymodel lists should have the same length")
@@ -125,7 +126,7 @@ def predict_skymodel_list_rsexecute_workflow(
 
 
 def invert_skymodel_list_rsexecute_workflow(
-        vis_list, skymodel_list, context="ng", gcfcf=None, docal=False, **kwargs
+    vis_list, skymodel_list, context="ng", gcfcf=None, docal=False, **kwargs
 ):
     """Calibrate and invert from a skymodel, iterating over the skymodel
 
@@ -137,7 +138,7 @@ def invert_skymodel_list_rsexecute_workflow(
     :param kwargs: Parameters for functions in components
     :return: List of (image, weight) tuples)
     """
-    
+
     def ift_ical_sm(v, sm, g):
         """Inverse Fourier sum of visibility to image and components
 
@@ -149,18 +150,18 @@ def invert_skymodel_list_rsexecute_workflow(
         if g is not None:
             if len(g) != 2:
                 raise ValueError("Convolution function value incorrect")
-        
+
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
-        
+
         result = invert_list_serial_workflow(
             [v], [sm.image], context=context, gcfcf=[g], **kwargs
         )[0]
         if sm.mask is not None:
             result[0]["pixels"].data *= sm.mask["pixels"].data
-        
+
         return result
-    
+
     if gcfcf is None:
         return [
             rsexecute.execute(ift_ical_sm, nout=1)(vis_list[i], sm, None)
@@ -174,7 +175,7 @@ def invert_skymodel_list_rsexecute_workflow(
 
 
 def restore_centre_skymodel_list_rsexecute_workflow(
-        skymodel_list, psf_imagelist, residual_imagelist=None, **kwargs
+    skymodel_list, psf_imagelist, residual_imagelist=None, **kwargs
 ):
     """Create a graph to calculate the restored skymodel at the centre channel
 
@@ -187,15 +188,15 @@ def restore_centre_skymodel_list_rsexecute_workflow(
     assert len(skymodel_list) == len(psf_imagelist)
     if residual_imagelist is not None:
         assert len(skymodel_list) == len(residual_imagelist)
-    
+
     # Find the PSF by summing over all channels, fit to this psf
     psf = sum_invert_results_rsexecute(psf_imagelist)[0]
     cleanbeam = rsexecute.execute(fit_psf, nout=1)(psf)
-    
+
     # Add the model over all channels
     centre = len(skymodel_list) // 2
     model = skymodel_list[centre].image
-    
+
     if residual_imagelist is not None:
         # Get residual calculated across the band
         residual = sum_invert_results_rsexecute(residual_imagelist)[0]
@@ -206,12 +207,12 @@ def restore_centre_skymodel_list_rsexecute_workflow(
         restored = rsexecute.execute(restore_cube, nout=1)(
             model, cleanbeam=cleanbeam, **kwargs
         )
-    
+
     return restored
 
 
 def restore_skymodel_list_rsexecute_workflow(
-        skymodel_list, psf_imagelist, residual_imagelist=None, **kwargs
+    skymodel_list, psf_imagelist, residual_imagelist=None, **kwargs
 ):
     """Create a graph to calculate the restored skymodel
 
@@ -224,11 +225,11 @@ def restore_skymodel_list_rsexecute_workflow(
     assert len(skymodel_list) == len(psf_imagelist)
     if residual_imagelist is not None:
         assert len(skymodel_list) == len(residual_imagelist)
-    
+
     psf_list = sum_invert_results_rsexecute(psf_imagelist)
     psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
     cleanbeam = rsexecute.execute(fit_psf)(psf)
-    
+
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
             residual_imagelist
@@ -249,12 +250,12 @@ def restore_skymodel_list_rsexecute_workflow(
             )
             for i, _ in enumerate(skymodel_list)
         ]
-    
+
     return restored_list
 
 
 def residual_skymodel_list_rsexecute_workflow(
-        vis, model_imagelist, context="ng", skymodel_list=None, gcfcf=None, **kwargs
+    vis, model_imagelist, context="ng", skymodel_list=None, gcfcf=None, **kwargs
 ):
     """Create a graph to calculate residual image for a skymodel_list
 
@@ -266,7 +267,7 @@ def residual_skymodel_list_rsexecute_workflow(
     :return: list of (image, sumwt) tuples or graph
     """
     model_vis = zero_list_rsexecute_workflow(vis)
-    
+
     if skymodel_list is not None:
         model_vis = predict_skymodel_list_rsexecute_workflow(
             model_vis, skymodel_list, context=context, gcfcf=gcfcf, docal=True, **kwargs
@@ -276,7 +277,7 @@ def residual_skymodel_list_rsexecute_workflow(
             model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs
         )
     residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
-    
+
     if skymodel_list is not None:
         result = invert_skymodel_list_rsexecute_workflow(
             residual_vis, skymodel_list, gcfcf=gcfcf, docal=True, dopsf=False, **kwargs
@@ -295,7 +296,7 @@ def residual_skymodel_list_rsexecute_workflow(
 
 
 def deconvolve_skymodel_list_rsexecute_workflow(
-        dirty_image_list, psf_list, skymodel_list, prefix="", **kwargs
+    dirty_image_list, psf_list, skymodel_list, prefix="", **kwargs
 ):
     """
 
@@ -306,25 +307,24 @@ def deconvolve_skymodel_list_rsexecute_workflow(
     :param kwargs:
     :return:
     """
-    
+
+    deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
+
+    deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
+        dirty_image_list, psf_list, deconvolve_model_imagelist, prefix=prefix, **kwargs
+    )
+
+    # Now recreate the sky models
     # Set the skymodel image and then if the model is not fixed extract skycomponents
     def update_skymodel(sm, im):
         sm.image = im
         if not sm.fixed:
             sm = extract_skycomponents_from_skymodel(sm, **kwargs)
         return sm
-    
-    deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
-    
-    deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
-        dirty_image_list, psf_list, deconvolve_model_imagelist, prefix=prefix, **kwargs
-    )
-    
-    # Now recreate the sky models
+
     skymodel_list = [
         rsexecute.execute(update_skymodel, nout=1)(skymodel_list[i], m)
         for i, m in enumerate(deconvolve_model_imagelist)
     ]
-    
-    return skymodel_list
 
+    return skymodel_list

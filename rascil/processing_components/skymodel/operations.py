@@ -16,15 +16,16 @@ __all__ = [
 ]
 
 import logging
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy
-from astropy.wcs.utils import skycoord_to_pixel
+from astropy.modeling import models, fitting
 from astropy.wcs.utils import pixel_to_skycoord
+from astropy.wcs.utils import skycoord_to_pixel
 
-
-from rascil.data_models.memory_data_models import SkyModel, GainTable, Skycomponent
 from rascil.data_models import get_parameter
+from rascil.data_models.memory_data_models import SkyModel, Skycomponent, Image
 from rascil.processing_components.calibration.operations import copy_gaintable
 from rascil.processing_components.image.operations import smooth_image
 from rascil.processing_components.skycomponent.base import copy_skycomponent
@@ -33,6 +34,7 @@ from rascil.processing_components.skycomponent.operations import (
     insert_skycomponent,
     image_voronoi_iter,
     find_skycomponents,
+    fit_skycomponent
 )
 
 log = logging.getLogger("rascil-logger")
@@ -48,22 +50,22 @@ def copy_skymodel(sm):
         newcomps = [copy_skycomponent(comp) for comp in sm.components]
     else:
         newcomps = None
-
+    
     if sm.image is not None:
         newimage = sm.image.copy(deep=True)
     else:
         newimage = None
-
+    
     if sm.mask is not None:
         newmask = sm.mask.copy(deep=True)
     else:
         newmask = None
-
+    
     if sm.gaintable is not None:
         newgt = copy_gaintable(sm.gaintable)
     else:
         newgt = None
-
+    
     return SkyModel(
         components=newcomps,
         image=newimage,
@@ -121,21 +123,21 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
     :return:
     """
     sp = 1
-
+    
     for ism, sm in enumerate(sms):
         plt.clf()
         plt.subplot(121, projection=sms[ism].image.image_acc.wcs.sub([1, 2]))
         sp += 1
-
+        
         smodel = sms[ism].image.copy(deep=True)
         smodel = insert_skycomponent(smodel, sms[ism].components)
         smodel = smooth_image(smodel, psf_width)
-
+        
         if vmax is None:
             vmax = numpy.max(smodel["pixels"].data[0, 0, ...])
         if vmin is None:
             vmin = numpy.min(smodel["pixels"].data[0, 0, ...])
-
+        
         plt.imshow(
             smodel["pixels"].data[0, 0, ...],
             origin="lower",
@@ -145,9 +147,9 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
         )
         plt.xlabel(sms[ism].image.image_acc.wcs.wcs.ctype[0])
         plt.ylabel(sms[ism].image.image_acc.wcs.wcs.ctype[1])
-
+        
         plt.title("SkyModel%d" % ism)
-
+        
         components = sms[ism].components
         if components is not None:
             for sc in components:
@@ -155,7 +157,7 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
                     sc.direction, sms[ism].image.image_acc.wcs, 0, "wcs"
                 )
                 plt.plot(x, y, marker="+", color="red")
-
+        
         gaintable = sms[ism].gaintable
         if gaintable is not None:
             plt.subplot(122)
@@ -191,11 +193,11 @@ def initialize_skymodel_voronoi(model, comps, gt=None):
             newgt.attrs["phasecentre"] = comps[i].direction
         else:
             newgt = None
-
+        
         skymodel_images.append(
             SkyModel(image=im, components=None, gaintable=newgt, mask=mask)
         )
-
+    
     return skymodel_images
 
 
@@ -213,11 +215,11 @@ def calculate_skymodel_equivalent_image(sm):
         if th.image is not None:
             if th.mask is not None:
                 combined_model["pixels"].data += (
-                    th.mask["pixels"].data * th.image["pixels"].data
+                        th.mask["pixels"].data * th.image["pixels"].data
                 )
             else:
                 combined_model["pixels"].data += th.image["pixels"].data
-
+    
     return combined_model
 
 
@@ -233,7 +235,7 @@ def update_skymodel_from_image(sm, im, damping=0.5):
         if th.mask is not None:
             newim["pixels"].data *= th.mask["pixels"].data
         th.image["pixels"].data += damping * newim["pixels"].data
-
+    
     return sm
 
 
@@ -246,13 +248,13 @@ def update_skymodel_from_gaintables(sm, gt_list, calibration_context="T", dampin
     :return: List of skymodels
     """
     assert len(sm) == len(gt_list)
-
+    
     for i, th in enumerate(sm):
         # assert isinstance(th.gaintable, GainTable), th.gaintable
         th.gaintable["gain"].data *= numpy.exp(
             damping * 1j * numpy.angle(gt_list[i][calibration_context].gain)
         )
-
+    
     return sm
 
 
@@ -264,7 +266,7 @@ def expand_skymodel_by_skycomponents(sm, **kwargs):
     :param sm: SkyModel
     :return: List of SkyModels
     """
-
+    
     def copy_image(im):
         """Copy an image
 
@@ -275,7 +277,7 @@ def expand_skymodel_by_skycomponents(sm, **kwargs):
             return None
         else:
             return im.copy(deep=True)
-
+    
     result = [
         SkyModel(
             components=[comp],
@@ -319,7 +321,7 @@ def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwar
 
 
 def extract_skycomponents_from_skymodel(
-    sm, component_threshold=None, component_extraction="fit", **kwargs
+        sm, **kwargs
 ):
     """Extract the bright components from the image in a skymodel
 
@@ -332,13 +334,14 @@ def extract_skycomponents_from_skymodel(
     :return: Updated skymodel
 
     """
-
+    component_threshold = get_parameter(kwargs, "component_threshold", None)
     if component_threshold is None:
         return sm
-
-    if component_extraction is None:
+    
+    component_method = get_parameter(kwargs, "component_method", None)
+    if component_method is None:
         return sm
-    elif component_extraction == "pixels":
+    elif component_method == "pixels":
         newsm = copy_skymodel(sm)
         nchan, npol, _, _ = newsm.image["pixels"].shape
         refchan = nchan // 2
@@ -350,7 +353,7 @@ def extract_skycomponents_from_skymodel(
             log.info(
                 f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents"
             )
-
+            
             wcs = newsm.image.image_acc.wcs
             for p in zip(points[0], points[1]):
                 direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
@@ -362,12 +365,11 @@ def extract_skycomponents_from_skymodel(
                     shape="Point",
                 )
                 newsm.components.append(comp)
-    elif component_extraction == "fit":
+    elif component_method == "fit":
         newsm = copy_skymodel(sm)
-        smoothed = smooth_image(newsm.image, 3.0)
         try:
             found_components = find_skycomponents(
-                smoothed, 3.0, threshold=component_threshold
+                newsm.image, 3, threshold=component_threshold
             )
             number_points = len(found_components)
             if number_points > 0:
@@ -375,13 +377,17 @@ def extract_skycomponents_from_skymodel(
                     f"extract_skycomponents_from_image: Found {number_points} sources > {component_threshold} Jy"
                 )
                 for comp in found_components:
-                    newsm.components.append(comp)
+                    fitted_comp = fit_skycomponent(sm.image, comp)
+                    newsm.components.append(fitted_comp)
                 newsm.image["pixels"].data[...] = 0.0
         except AssertionError:
             log.warning(
                 f"extract_skycomponents_from_image: No sources found > > {component_threshold} Jy"
             )
+            return sm
     else:
-        raise ValueError(f"Unknown component extraction method{component_extraction}")
-
+        raise ValueError(f"Unknown component extraction method{component_method}")
+    
     return newsm
+
+

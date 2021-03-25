@@ -12,6 +12,7 @@ __all__ = [
     "find_skycomponent_matches",
     "find_skycomponent_matches_atomic",
     "find_skycomponents",
+    "fit_skycomponent",
     "insert_skycomponent",
     "voronoi_decomposition",
     "image_voronoi_iter",
@@ -24,9 +25,16 @@ __all__ = [
 ]
 
 import collections
+import warnings
 import logging
 import copy
 from typing import Union, List
+from astropy.modeling import models, fitting
+from astropy.wcs.utils import pixel_to_skycoord
+from astropy.wcs.utils import skycoord_to_pixel
+
+from rascil.data_models import get_parameter
+from rascil.data_models.memory_data_models import SkyModel, Skycomponent, Image
 
 import astropy.units as u
 import numpy
@@ -43,7 +51,8 @@ from scipy.spatial.qhull import Voronoi
 from rascil.data_models import Image, Skycomponent, get_parameter
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
 from rascil.processing_components.calibration.jones import apply_jones
-from rascil.processing_components.image.operations import create_image_from_array
+from rascil.processing_components.image import create_image_from_array
+from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.util.array_functions import (
     insert_function_sinc,
     insert_function_L,
@@ -309,7 +318,6 @@ def find_skycomponents(
                 im["pixels"].data[chan, pol],
                 segments,
                 filter_kernel=kernel,
-                wcs=im.image_acc.wcs.sub([1, 2]),
             ).to_table()
             for pol in [0]
         ]
@@ -328,22 +336,12 @@ def find_skycomponents(
         # Get flux and position. Astropy's quantities make this
         # unnecessarily complicated.
         flux = numpy.array(comp_prop(segment, "max_value"))
-        # These values seem inconsistent with the xcentroid, and ycentroid values
-        # ras = u.Quantity(list(map(u.Quantity,
-        #         comp_prop(segment, "ra_icrs_centroid"))))
-        # decs = u.Quantity(list(map(u.Quantity,
-        #         comp_prop(segment, "dec_icrs_centroid"))))
         xs = u.Quantity(list(map(u.Quantity, comp_prop(segment, "xcentroid"))))
         ys = u.Quantity(list(map(u.Quantity, comp_prop(segment, "ycentroid"))))
 
         sc = pixel_to_skycoord(xs, ys, im.image_acc.wcs, 0)
         ras = sc.ra
         decs = sc.dec
-
-        # Remove NaNs from RA/DEC (happens if there is no flux in that
-        # polarsiation/channel)
-        # ras[numpy.isnan(ras)] = 0.0
-        # decs[numpy.isnan(decs)] = 0.0
 
         # Determine "true" position by weighting
         aflux = numpy.abs(flux)
@@ -400,14 +398,14 @@ def apply_beam_to_skycomponent(
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
     if beam.image_acc.wcs.wcs.ctype[0] == "RA---SIN":
-        pixlocs = skycoord_to_pixel(skycoords, beam.image_acc.wcs, origin=1, mode="wcs")
+        pixlocs = skycoord_to_pixel(skycoords, beam.image_acc.wcs, origin=0, mode="wcs")
     else:
         wcs = copy.deepcopy(beam.image_acc.wcs)
         wcs.wcs.ctype[0] = "RA---SIN"
         wcs.wcs.ctype[1] = "DEC--SIN"
         wcs.wcs.crval[0] = phasecentre.ra.deg
         wcs.wcs.crval[1] = phasecentre.dec.deg
-        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode="wcs")
+        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=0, mode="wcs")
 
     newsc = []
     total_flux = numpy.zeros([nchan, npol])
@@ -485,7 +483,7 @@ def apply_voltage_pattern_to_skycomponent(
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
     if vp.image_acc.wcs.wcs.ctype[0] == "RA---SIN":
-        pixlocs = skycoord_to_pixel(skycoords, vp.image_acc.wcs, origin=1, mode="wcs")
+        pixlocs = skycoord_to_pixel(skycoords, vp.image_acc.wcs, origin=0, mode="wcs")
     else:
         assert phasecentre is not None, "Need to know the phasecentre"
         wcs = copy.deepcopy(vp.image_acc.wcs)
@@ -493,7 +491,7 @@ def apply_voltage_pattern_to_skycomponent(
         wcs.wcs.ctype[1] = "DEC--SIN"
         wcs.wcs.crval[0] = phasecentre.ra.deg
         wcs.wcs.crval[1] = phasecentre.dec.deg
-        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode="wcs")
+        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=0, mode="wcs")
 
     newsc = []
     total_flux = numpy.zeros([nchan, npol], dtype="complex")
@@ -775,3 +773,72 @@ def partition_skycomponent_neighbours(comps, targets):
         comps_lists.append(selected_comps)
 
     return comps_lists
+
+
+def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
+    """Fit a two dimensional Gaussian skycomponent using astropy.modeling
+
+    :params im: Input image
+    :params sc: Skycomponent
+    :return: Skycomponent
+    """
+    pixloc = numpy.round(skycoord_to_pixel(sc.direction, im.image_acc.wcs, origin=0)).astype('int')
+    sl_y = slice(pixloc[1] - 7, pixloc[1] + 8)
+    sl_x = slice(pixloc[0] - 7, pixloc[0] + 8)
+    
+    # im["pixels"].data[0,0,150,121]
+    y, x = numpy.mgrid[sl_y, sl_x]
+    z = im["pixels"].data[0, 0, sl_y, sl_x]
+    
+    # isotropic at the moment!
+    from scipy.optimize import minpack
+    
+    newsc = copy_skycomponent(sc)
+    
+    try:
+        p_init = models.Gaussian2D(
+            amplitude=numpy.max(z), x_mean=numpy.mean(x), y_mean=numpy.mean(y)
+        )
+        fit_p = fitting.LevMarLSQFitter()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fit = fit_p(p_init, x, y, z)
+        
+        # Now fill in the new skycomponent values
+        newsc.direction = pixel_to_skycoord(fit.x_mean, fit.y_mean, im.image_acc.wcs, 0)
+        iy = round(fit.y_mean.value)
+        ix = round(fit.x_mean.value)
+        # We could fit each frequency separately. For the moment, we just scale
+        newsc.flux = im["pixels"].data[:, :, iy, ix]
+        force_point_sources = get_parameter(kwargs, "force_point_sources", True)
+        if force_point_sources or (fit.x_fwhm <= 0.0 or fit.y_fwhm <= 0.0):
+            newsc.shape = "Point"
+        else:
+            newsc.shape = "Gaussian"
+            # cellsize in radians
+            cellsize = numpy.abs((im["x"][0].data - im["x"][-1].data)) / len(im["x"])
+            
+            r2a = 180.0 * 3600.0 / numpy.pi
+            
+            gaussian_pixels = (fit.x_fwhm, fit.y_fwhm, fit.theta)
+            
+            if gaussian_pixels[1] > gaussian_pixels[0]:
+                clean_gaussian = {
+                    "bmaj": gaussian_pixels[1] * cellsize * r2a,
+                    "bmin": gaussian_pixels[0] * cellsize * r2a,
+                    "bpa": numpy.rad2deg(gaussian_pixels[2]),
+                }
+            else:
+                clean_gaussian = {
+                    "bmaj": gaussian_pixels[0] * cellsize * r2a,
+                    "bmin": gaussian_pixels[1] * cellsize * r2a,
+                    "bpa": numpy.rad2deg(gaussian_pixels[2]) + 90.0,
+                }
+            newsc.shape = "Gaussian"
+            newsc.params = clean_gaussian
+    
+    except (minpack.error, ValueError) as err:
+        log.warning(f"fit_skycomponent: fit failed {err}")
+        return sc
+    
+    return newsc

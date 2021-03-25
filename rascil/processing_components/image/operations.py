@@ -328,7 +328,7 @@ def show_components(im, comps, npixels=128, fig=None, vmax=None, vmin=None, titl
     for isc, sc in enumerate(comps):
         newim = im.copy(deep=True)
         plt.subplot(111, projection=newim.image_acc.wcs.sub([1, 2]))
-        centre = numpy.round(skycoord_to_pixel(sc.direction, newim.image_acc.wcs, 1, 'wcs')).astype('int')
+        centre = numpy.round(skycoord_to_pixel(sc.direction, newim.image_acc.wcs, 0, 'wcs')).astype('int')
         newim["pixels"].data = \
             newim["pixels"].data[:, :, (centre[1] - npixels // 2):(centre[1] + npixels // 2),
             (centre[0] - npixels // 2):(centre[0] + npixels // 2)]
@@ -709,7 +709,7 @@ def create_image(npixel=512,
         
     # The negation in the longitude is needed by definition of RA, DEC
     w.wcs.cdelt = [-cellsize * 180.0 / numpy.pi, cellsize * 180.0 / numpy.pi, dpol, channel_bandwidth[0]]
-    w.wcs.crpix = [npixel // 2 + 1, npixel // 2 + 1, pol[0], 1.0]
+    w.wcs.crpix = [npixel // 2, npixel // 2, pol[0], 0.0]
     w.wcs.ctype = ["RA---SIN", "DEC--SIN", 'STOKES', 'FREQ']
     w.wcs.crval = [phasecentre.ra.deg, phasecentre.dec.deg, 1.0, frequency[0]]
     w.naxis = 4

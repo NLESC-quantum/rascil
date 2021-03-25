@@ -9,7 +9,7 @@ import sys
 
 import matplotlib
 
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from scipy import optimize
@@ -289,8 +289,8 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
     log.info("Performing image diagnostics")
 
     histogram(bdsf_image, input_image, image_type)
-    bdsf_qa_image(im_data)
-    # source_region_mask(bdsf_image)
+    bdsf_qa_image(bdsf_image.resid_gaus_arr)
+    source_region_mask(bdsf_image)
     # running_mean(im_data)
     # power_spectrum(image, signal_channel, noise_channel, resolution)
 
@@ -335,7 +335,9 @@ def ci_checker(
     img_rest.write_catalog(format="fits", catalog_type="srl", clobber=True)
     img_rest.export_image(img_type="gaus_resid", clobber=True)
 
-    print(dir(img_rest.image_arr))
+    # print()
+    # print(img_rest.mask_arr)
+    # print()
 
     log.info("Analysing the restored image")
     ci_checker_diagnostics(img_rest, input_image_restored, "restored")
@@ -355,8 +357,7 @@ def ci_checker(
             input_image_residual.replace(
                 ".fits" if ".fits" in input_image_residual else ".h5", ""
             )
-            + "_"
-            + "residual"
+            + "_residual"
             + "_rms"
         )
 

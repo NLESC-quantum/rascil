@@ -9,7 +9,7 @@ from scipy import optimize
 import numpy as np
 import astropy.constants as consts
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy
 
@@ -151,19 +151,58 @@ def source_region_mask(img):
     # gives the beam "IN SIGMA UNITS in pixels" so we need to convert to
     # straight pixels by multiplying by the FWHM. See init_beam() function in
     # pybdsf source code.
-    beam_width = img.pixel_beam[0]*2.35482
+    beam_width = img.pixel_beam()[0]*2.35482
     beam_radius = beam_width/2.0
 
-    # x_extent = img.
+    image_to_be_masked = img.image_arr[0, 0, :, :]
+    image_shape = [img.image_arr.shape[-2], img.image_arr.shape[-1]]
 
-    # Xposn: the x image coordinate of the source, in pixels
-    # Yposn: the y image coordinate of the source, in pixels
+    grid = np.meshgrid(
+        np.arange(0, img.image_arr.shape[-2]),
+        np.arange(0, img.image_arr.shape[-1]),
+        sparse=True,
+        indexing='ij'
+    )
 
-    for source in source_list:
-        x_source =  Yposn
-        source_radius = np.sqrt(x_pix*x_pix + y_pix*y_pix)
+    source_regions = np.ones(shape=image_shape, dtype=int)
+    background_regions = np.zeros(shape=image_shape, dtype=int)
 
-    histogram(im_data, input_image, image_type)
+    for gaussian in img.gaussians:
+
+        source_radius = np.sqrt(
+            (grid[0] - gaussian.centre_pix[0])**2
+            + (grid[1] - gaussian.centre_pix[1])**2
+        )
+
+        source_regions[source_radius < beam_radius*2.0] = 0
+
+    background_regions[source_regions == 0] = 1
+
+    background_mask = np.ma.array(
+        image_to_be_masked,
+        mask=background_regions,
+        copy=True
+    )
+
+    source_mask = np.ma.array(
+        image_to_be_masked,
+        mask=source_regions,
+        copy=True
+    )
+
+    plt.imshow(image_to_be_masked)
+    plt.colorbar()
+    plt.show()
+
+    plt.imshow(source_mask)
+    plt.colorbar()
+    plt.show()
+
+    plt.imshow(background_mask)
+    plt.colorbar()
+    plt.show()
+
+    # histogram(im_data, input_image, image_type)
 
     return
 

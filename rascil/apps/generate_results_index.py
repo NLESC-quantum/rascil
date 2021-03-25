@@ -1,7 +1,10 @@
+import logging
 import os
 import datetime as dt
 
 from rascil.data_models import rascil_path
+
+LOGGER = logging.getLogger("rascil-logger")
 
 # dictionary keys
 LOG = "log"
@@ -68,6 +71,8 @@ def generate_html_file(path, sorted_file_dict):
     html_file.write(f"{html_string}" f"{HTML_END}")
     html_file.close()
 
+    LOGGER.info("HTML file created at: %s", path + "/index.html")
+
 
 def generate_md_sub_string(category_text, path, file_list):
     """
@@ -106,12 +111,21 @@ def generate_markdown_file(path, sorted_file_dict):
         sub_string = generate_md_sub_string(CATEGORY_STRINGS[k], path, v)
         md_string = f"{md_string}\n{sub_string}"
 
-    md_file = open(path + "/test.md", "w")
+    md_file = open(path + "/index.md", "w")
     md_file.write(md_string)
     md_file.close()
 
+    LOGGER.info("Markdown file created at: %s", path + "/index.md")
+
 
 def sort_files(path):
+    """
+    Sort files and sub-directories within a given path into categories.
+    The categories are described in the CATEGORY_STRINGS global variable
+
+    :param path: path to directory to check
+    :return: dictionary of lists of sorted files
+    """
     path = rascil_path(path)
 
     log_files = []
@@ -160,3 +174,14 @@ def sort_files(path):
     }
 
     return sorted_dict
+
+
+def create_index(path):
+    LOGGER.info(
+        "Generating index HTML and Markdown files " "for contents of directory: %s",
+        rascil_path(path),
+    )
+
+    sorted_files = sort_files(path)
+    generate_markdown_file(path, sorted_files)
+    generate_html_file(path, sorted_files)

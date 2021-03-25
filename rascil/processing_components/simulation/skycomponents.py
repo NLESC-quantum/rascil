@@ -33,8 +33,6 @@ def addnoise_skycomponent(
     :return: Skycomponent(s) with noise added
     """
 
-    assert mode is "direction" or "flux" or "both", "Wrong mode"
-
     if seed is None:
         rng = default_rng(1805550721)
     else:
@@ -73,7 +71,7 @@ def addnoise_skycomponent(
                 )
             )
 
-    if mode is "flux":
+    elif mode is "flux":
 
         fluxes += rng.normal(0.0, noise, len(fluxes))
         for i, flux in enumerate(fluxes):
@@ -89,7 +87,7 @@ def addnoise_skycomponent(
                 )
             )
 
-    if mode is "both":
+    elif mode is "both":
 
         ras += rng.normal(0.0, noise, len(ras))
         decs += rng.normal(0.0, noise, len(decs))
@@ -109,5 +107,10 @@ def addnoise_skycomponent(
                     params={},
                 )
             )
+
+    else:
+
+        log.debug("Wrong mode")
+        comps = sc
 
     return comps

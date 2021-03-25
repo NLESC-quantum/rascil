@@ -51,22 +51,22 @@ class TestSimSkycomponents(unittest.TestCase):
         )
 
         original = copy_skycomponent(self.components)
-        self.components = addnoise_skycomponent(
+        result = addnoise_skycomponent(
             self.components, noise=self.noise, mode="both"
         )
         ra_orig = numpy.array([comp.direction.ra.radian for comp in original])
         dec_orig = numpy.array([comp.direction.dec.radian for comp in original])
         flux_orig = numpy.array([comp.flux[0, 0] for comp in original])
 
-        ra_new = numpy.array([comp.direction.ra.radian for comp in self.components])
-        dec_new = numpy.array([comp.direction.dec.radian for comp in self.components])
-        flux_new = numpy.array([comp.flux[0, 0] for comp in self.components])
+        ra_result = numpy.array([comp.direction.ra.radian for comp in result])
+        dec_result = numpy.array([comp.direction.dec.radian for comp in result])
+        flux_result = numpy.array([comp.flux[0, 0] for comp in result])
 
-        assert len(self.components) == len(original)
+        assert len(result) == len(original)
 
-        assert_almost_equal(numpy.mean(ra_orig), numpy.mean(ra_new), decimal=3)
-        assert_almost_equal(numpy.mean(dec_orig), numpy.mean(dec_new), decimal=3)
-        assert_almost_equal(numpy.mean(flux_orig), numpy.mean(flux_new), decimal=3)
+        assert_almost_equal(numpy.mean(ra_orig), numpy.mean(ra_result), decimal=3)
+        assert_almost_equal(numpy.mean(dec_orig), numpy.mean(dec_result), decimal=3)
+        assert_almost_equal(numpy.mean(flux_orig), numpy.mean(flux_result), decimal=3)
 
 
 if __name__ == "__main__":

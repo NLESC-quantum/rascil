@@ -1,6 +1,14 @@
 """
 Unit tests for plot_skycomponents
 
+Output files:
+
+    test_plot_skycomponents_flux_histogram.png
+    test_plot_skycomponents_flux_ratio.png
+    test_plot_skycomponents_flux_value.png
+    test_plot_skycomponents_position_distance.png
+    test_plot_skycomponents_position_error.png
+    test_plot_skycomponents_position_value.png
 """
 import logging
 import unittest
@@ -116,7 +124,7 @@ class TestPlotSkycomponent(unittest.TestCase):
             self.components, noise=self.noise, mode="flux"
         )
         [flux_in, flux_out] = plot_skycomponents_flux_histogram(
-            comp_test, self.components, plot_file=self.plot_file
+            comp_test, self.components, plot_file=self.plot_file, nbins=100,
         )
 
         assert len(flux_out) <= len(self.components)

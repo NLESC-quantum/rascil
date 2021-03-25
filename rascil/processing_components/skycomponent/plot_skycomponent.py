@@ -61,12 +61,9 @@ def plot_skycomponents_positions(
             m_ref = comps_ref[match[1]]
             ra_ref[i] = m_ref.direction.ra.degree
             dec_ref[i] = m_ref.direction.dec.degree
-            ra_error[i] = numpy.abs(
-                m_comp.direction.ra.degree - m_ref.direction.ra.degree
-            )
-            dec_error[i] = numpy.abs(
-                m_comp.direction.dec.degree - m_ref.direction.dec.degree
-            )
+            ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+
+            dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
 
         plt.plot(
             ra_test, dec_test, "o", color="b", markersize=5, label="Tested components"
@@ -121,10 +118,8 @@ def plot_skycomponents_position_distance(
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
 
-        ra_error[i] = numpy.abs(m_comp.direction.ra.degree - m_ref.direction.ra.degree)
-        dec_error[i] = numpy.abs(
-            m_comp.direction.dec.degree - m_ref.direction.dec.degree
-        )
+        ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+        dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
 
         dist[i] = m_comp.direction.separation(phasecentre).degree
 

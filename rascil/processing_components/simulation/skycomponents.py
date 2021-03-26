@@ -38,11 +38,11 @@ def addnoise_skycomponent(
     else:
         rng = default_rng(seed)
 
-    single = not isinstance(sc, collections.abc.Iterable)
+    single = not isinstance(sc, collections.abc.Iterable) and type(sc) is not "str"
 
     if single:
         sc = [sc]
-
+       
     log.debug("addnoise_skycomponent: Processing %d components" % (len(sc)))
 
     ras = [comp.direction.ra.radian for comp in sc]

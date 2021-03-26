@@ -141,6 +141,13 @@ def cli_parser():
         help="Maximum separation in radians for the source matching",
     )
     parser.add_argument(
+        "--quiet_bdsf",
+        type=str,
+        default="False",
+        help="If True, suppress bdsf.process_image() text output to screen. "
+        "Output is still sent to the log file.",
+    )
+    parser.add_argument(
         "--source_file", type=str, default=None, help="Name of output source file"
     )
     parser.add_argument(
@@ -232,6 +239,7 @@ def analyze_image(args):
     log.info("Use threshold: {}, {}".format(th_isl, th_pix))
 
     input_image_residual = args.ingest_fitsname_residual
+    quiet_bdsf = False if args.quiet_bdsf == "False" else True
 
     ci_checker(
         input_image_restored,
@@ -241,6 +249,7 @@ def analyze_image(args):
         th_isl,
         th_pix,
         refchan,
+        quiet_bdsf=quiet_bdsf,
     )
 
     if args.rascil_source_file is None:
@@ -419,6 +428,7 @@ def ci_checker(
     th_isl,
     th_pix,
     refchan,
+    quiet_bdsf=False,
 ):
     """
     PyBDSF-based source finder
@@ -430,7 +440,8 @@ def ci_checker(
     :param th_isl : Island threshold
     :param th_pix: Peak threshold
     :param refchan: Reference channel for spectral cube
-
+    :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
+                       Output is still sent to the log file
     : return None
     """
 
@@ -442,6 +453,7 @@ def ci_checker(
         thresh_isl=th_isl,
         thresh_pix=th_pix,
         collapse_ch0=refchan,
+        quiet=quiet_bdsf,
     )
 
     # Write the source catalog and the residual image.
@@ -462,6 +474,7 @@ def ci_checker(
             thresh_isl=th_isl,
             thresh_pix=th_pix,
             collapse_ch0=refchan,
+            quiet=quiet_bdsf,
         )
         ci_checker_diagnostics(img_resid, input_image_residual, "residual")
 

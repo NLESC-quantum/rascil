@@ -166,14 +166,14 @@ def test_continuum_imaging_checker(
         [
             "--ingest_fitsname_restored",
             tagged_file,
-            "--ingest_fitsname_residual",
-            tagged_file,
             "--finder_beam_maj",
             f"{numpy.rad2deg(cellsize)}",
             "--finder_beam_min",
             f"{numpy.rad2deg(cellsize)}",
             "--check_source",
             "True",
+	    "--plot_source",
+	    "True",
             "--input_source_format",
             "external",
             "--input_source_filename",
@@ -209,6 +209,4 @@ def test_continuum_imaging_checker(
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_restored_gaus_hist.png")
     )
-    assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_residual_gaus_hist.png")
-    )
+

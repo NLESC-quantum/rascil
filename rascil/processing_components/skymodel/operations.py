@@ -329,7 +329,7 @@ def extract_skycomponents_from_skymodel(
 
     :param sm: skymodel
     :param component_threshold: Threshold in Jy to be classified as a source
-    :param component_extraction: Method to extract skycomponents: pixels or fit
+    :param component_method: Method to extract skycomponents: pixels or fit
     :param kwargs: Parameters for functions
     :return: Updated skymodel
 
@@ -379,7 +379,8 @@ def extract_skycomponents_from_skymodel(
                 for comp in found_components:
                     fitted_comp = fit_skycomponent(sm.image, comp)
                     newsm.components.append(fitted_comp)
-                newsm.image["pixels"].data[...] = 0.0
+                if newsm.image is not None:
+                    newsm.image["pixels"].data[...] = 0.0
         except AssertionError:
             log.warning(
                 f"extract_skycomponents_from_image: No sources found > > {component_threshold} Jy"

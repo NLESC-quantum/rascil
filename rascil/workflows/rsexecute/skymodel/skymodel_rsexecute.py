@@ -154,6 +154,9 @@ def invert_skymodel_list_rsexecute_workflow(
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
 
+        if sm.image is None:
+            raise ValueError("skymodel image is None")
+        
         result = invert_list_serial_workflow(
             [v], [sm.image], context=context, gcfcf=[g], **kwargs
         )[0]

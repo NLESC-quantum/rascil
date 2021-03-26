@@ -106,7 +106,8 @@ def ical_skymodel_list_rsexecute_workflow(
             log.info(
                 "ical_list_rsexecute_workflow: setting initial model to zero after initial selfcal"
             )
-            sm.image["pixels"].data[...] = 0.0
+            if sm.image is not None:
+                sm.image["pixels"].data[...] = 0.0
             return sm
         
         skymodel_list = [

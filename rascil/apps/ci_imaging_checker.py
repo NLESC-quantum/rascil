@@ -55,7 +55,8 @@ def cli_parser():
     :param parser: argparse
     :return: CLI parser argparse
     """
-    parser = argparse.ArgumentParser(description="RASCIL continuum imaging checker")
+    parser = argparse.ArgumentParser(description="RASCIL continuum imaging checker",
+                                     fromfile_prefix_chars="@")
     parser.add_argument(
         "--ingest_fitsname_restored",
         type=str,

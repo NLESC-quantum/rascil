@@ -35,6 +35,7 @@ and check with the original inputs. Currently it features the following:
                                  [--input_source_format INPUT_SOURCE_FORMAT]
                                  [--input_source_filename INPUT_SOURCE_FILENAME]
                                  [--match_sep MATCH_SEP]
+                                 [--quiet_bdsf  QUIET_BDSF]
                                  [--source_file SOURCE_FILE]
                                  [--rascil_source_file RASCIL_SOURCE_FILE]
                                  [--logfile LOGFILE]
@@ -55,9 +56,32 @@ and check with the original inputs. Currently it features the following:
       --input_source_format INPUT_SOURCE_FORMAT         The input format of the source catalogue
       --input_source_filename INPUT_SOURCE_FILENAME  If use external source file, the file name of source file
       --match_sep MATCH_SEP    Maximum separation in radians for the source matching
+      --quiet_bdsf  QUIET_BDSF    If True, suppress bdsf.process_image() text output to screen. Output is still sent to the log file.
       --source_file SOURCE_FILE    Name of output source file
       --rascil_source_file RASCIL_SOURCE_FILE    Name of output RASCIL skycomponents file
       --logfile LOGFILE    Name of output log file
+
+Supplying arguments from a file:
+++++++++++++++++++++++++++++++++
+
+You can also load arguments into the app from a file.
+
+Example arguments file, called `args.txt`::
+
+    --ingest_fitsname_restored=test-imaging-pipeline-dask_continuum_imaging_restored.fits
+    --ingest_fitsname_residual=test-imaging-pipeline-dask_continuum_imaging_residual.fits
+    --check_source=True
+    --plot_source=True
+
+Make sure each line contains one argument, there is an equal sign between arg and its value,
+and that there aren't any trailing white spaces in the lines.
+
+Then run the checker as follows::
+
+    python ci_imaging_checker.py @args.txt
+
+Specifying the ``@`` sign in front of the file name will let the code know that you want
+to ready the arguments from a file instead of directly from the command line.
 
 Example:
 ++++++++

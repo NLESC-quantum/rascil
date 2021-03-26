@@ -46,7 +46,6 @@ For examples of the capabilities afforded by xarray see the jupyter notebooks be
 .. toctree::
    :maxdepth: 3
 
-   examples/notebooks/demo_image_xarray.rst
    examples/notebooks/demo_visibility_xarray.rst
 
 Here is a simple example of how the capabilities of xarray can be used:

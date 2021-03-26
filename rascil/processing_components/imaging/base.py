@@ -84,12 +84,12 @@ def shift_vis_to_image(
 
     nchan, npol, ny, nx = im["pixels"].data.shape
 
-    # Convert the FFT definition of the phase center to world coordinates (0 relative)
+    # Convert the FFT definition of the phase center to world coordinates (1 relative)
     # This is the only place in RASCIL where the relationship between the image and visibility
     # frames is defined.
 
     image_phasecentre = pixel_to_skycoord(
-        nx // 2, ny // 2, im.image_acc.wcs, origin=0
+        nx // 2 + 1, ny // 2 + 1, im.image_acc.wcs, origin=1
     )
     if vis.phasecentre.separation(image_phasecentre).rad > 1e-15:
         if inverse:
@@ -460,8 +460,7 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
     ]
     # The numpy definition of the phase centre of an FFT is n // 2 (0 - rel) so that's what we use for
     # the reference pixel. We have to use 0 rel everywhere.
-    # w.wcs.crpix = [npixel // 2 + 1, npixel // 2 + 1, 1.0, 1.0]
-    w.wcs.crpix = [npixel // 2, npixel // 2, 0.0, 0.0]
+    w.wcs.crpix = [npixel // 2 + 1, npixel // 2 + 1, 1.0, 1.0]
     w.wcs.ctype = ["RA---SIN", "DEC--SIN", "STOKES", "FREQ"]
     w.wcs.crval = [
         phasecentre.ra.deg,

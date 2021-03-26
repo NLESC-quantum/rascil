@@ -296,7 +296,7 @@ def create_test_image_from_s3(
 
     log.info("create_test_image_from_s3: %d sources read" % (len(fluxes)))
 
-    p = w.sub(2).wcs_world2pix(numpy.array(ras), numpy.array(decs), 0)
+    p = w.sub(2).wcs_world2pix(numpy.array(ras), numpy.array(decs), 1)
     fluxes = numpy.array(fluxes)
     total_flux = numpy.sum(fluxes)
     ip = numpy.round(p).astype("int")
@@ -1066,22 +1066,9 @@ def create_unittest_components(
     single=False,
     symmetric=False,
     angular_scale=1.0,
-    offset=(0.0, 0.0),
+        offset=[0.0, 0.0]
 ):
-    """Fill the visibility with exactly computed point sources.
-
-    :param model: Model image
-    :param flux: Flux of sources
-    :param applypb: Do we want to apply the primary
-    :param telescope: Name of primary beam
-    :param npixel: Number of pixels in image
-    :param scale: Multiplicative scale
-    :param single: Just a single source?
-    :param symmetric: Do we want a symmetric source distribution
-    :param angular_scale:
-    :param offset: Offset of components from pixels
-    :return:
-    """
+    # Fill the visibility with exactly computed point sources.
 
     if npixel is None:
         _, _, _, npixel = model["pixels"].data.shape

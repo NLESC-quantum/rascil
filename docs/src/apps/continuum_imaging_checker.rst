@@ -9,7 +9,9 @@
 continuum_imaging_checker
 =========================
 
-continuum_imaging_checker is a command line app written using RASCIL. It uses the python package PyBDSF (https://github.com/lofar-astron/PyBDSF.git) to find sources in an image and check with the original inputs. Currently it features the following:
+continuum_imaging_checker is a command line app written using RASCIL.
+It uses the python package `PyBDSF <https://github.com/lofar-astron/PyBDSF.git>`_ to find sources in an image
+and check with the original inputs. Currently it features the following:
 
   - Reads FITS images.
   - Finds sources above a certain threshold and outputs the catalogue (in CSV, FITS and skycomponents format).
@@ -80,6 +82,16 @@ If a source check is required::
     --check_source True --plot_source True\
     --input_source_format external --input_source_filename $RASCIL/data/models/GLEAM_filtered.txt
 
+Docker image
+++++++++++++
+
+A Docker image is available at ``nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker``
+which can be run with either Docker or Singularity. Instructions can be found at
+
+ .. toctree::
+    ../installation/RASCIL_docker
+
+under **Running the continuum_imaging_checker** section.
 
 Command line arguments
 ++++++++++++++++++++++

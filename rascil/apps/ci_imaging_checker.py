@@ -18,7 +18,11 @@ import pandas as pd
 import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from rascil.data_models import PolarisationFrame, import_skycomponent_from_hdf5, export_skycomponent_to_hdf5
+from rascil.data_models import (
+    PolarisationFrame,
+    import_skycomponent_from_hdf5,
+    export_skycomponent_to_hdf5,
+)
 from rascil.processing_components import create_low_test_skycomponents_from_gleam
 from rascil.processing_components.skycomponent.operations import (
     create_skycomponent,
@@ -27,6 +31,13 @@ from rascil.processing_components.skycomponent.operations import (
 )
 from rascil.processing_components.image.operations import import_image_from_fits
 from rascil.processing_components.imaging.primary_beams import create_pb
+from rascil.processing_components.skycomponent.plot_skycomponent import (
+    plot_skycomponents_positions,
+    plot_skycomponents_position_distance,
+    plot_skycomponents_flux,
+    plot_skycomponents_flux_ratio,
+    plot_skycomponents_flux_histogram,
+)
 
 
 class FileFormatError(Exception):
@@ -106,6 +117,12 @@ def cli_parser():
         help="Option to check with original input source catalogue",
     )
     parser.add_argument(
+        "--plot_source",
+        type=str,
+        default="False",
+        help="Option to plot position and flux errors for source catalogue",
+    )
+    parser.add_argument(
         "--input_source_format",
         type=str,
         default="external",
@@ -127,7 +144,10 @@ def cli_parser():
         "--source_file", type=str, default=None, help="Name of output source file"
     )
     parser.add_argument(
-        "--rascil_source_file", type=str, default=None, help="Name of output RASCIL components hdf file"
+        "--rascil_source_file",
+        type=str,
+        default=None,
+        help="Name of output RASCIL components hdf file",
     )
     parser.add_argument(
         "--logfile", type=str, default=None, help="Name of output log file"
@@ -148,9 +168,6 @@ def analyze_image(args):
 
     if args.ingest_fitsname_restored is None:
         raise FileNotFoundError("Input restored FITS file name must be specified")
-
-    if args.ingest_fitsname_residual is None:
-        raise FileNotFoundError("Input residual FITS file name must be specified")
 
     if args.logfile is None:
         logfile = args.ingest_fitsname_restored.replace(".fits", ".log")
@@ -185,7 +202,11 @@ def analyze_image(args):
     nchan = im["pixels"].shape[0]
     if nchan > 0:
         refchan = nchan // 2
-        log.info(f"Found spectral cube with {nchan} channels, using channel {refchan} for source finding")
+        log.info(
+            "Found spectral cube with {} channels, using channel {} for source finding".format(
+                nchan, refchan
+            )
+        )
     else:
         refchan = 0
 
@@ -219,11 +240,13 @@ def analyze_image(args):
         source_file,
         th_isl,
         th_pix,
-        refchan
+        refchan,
     )
 
     if args.rascil_source_file is None:
-        rascil_source_file = args.ingest_fitsname_restored.replace(".fits", ".pybdsm.srl.hdf")
+        rascil_source_file = args.ingest_fitsname_restored.replace(
+            ".fits", ".pybdsm.srl.hdf"
+        )
     else:
         rascil_source_file = args.rascil_source_file
 
@@ -257,6 +280,12 @@ def analyze_image(args):
 
         results = check_source(orig, out, args.match_sep)
         log.info("Resulting list of matched items {}".format(results))
+
+        if args.plot_source == "True":
+            plot_file = args.ingest_fitsname_restored.replace(".fits", "")
+            log.info("Plotting errors: {}".format(plot_file))
+            phasecentre = im.image_acc.phasecentre
+            plot_errors(orig, out, args.match_sep, phasecentre, plot_file)
 
     else:
         results = None
@@ -383,8 +412,13 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
 
 
 def ci_checker(
-    input_image_restored, input_image_residual, beam_info, source_file, th_isl, th_pix,
-        refchan
+    input_image_restored,
+    input_image_residual,
+    beam_info,
+    source_file,
+    th_isl,
+    th_pix,
+    refchan,
 ):
     """
     PyBDSF-based source finder
@@ -403,7 +437,10 @@ def ci_checker(
     # Process image.
     log.info("Analysing the restored image")
     img_rest = bdsf.process_image(
-        input_image_restored, beam=beam_info, thresh_isl=th_isl, thresh_pix=th_pix,
+        input_image_restored,
+        beam=beam_info,
+        thresh_isl=th_isl,
+        thresh_pix=th_pix,
         collapse_ch0=refchan,
     )
 
@@ -414,14 +451,17 @@ def ci_checker(
     img_rest.write_catalog(format="fits", catalog_type="srl", clobber=True)
     img_rest.export_image(img_type="gaus_resid", clobber=True)
 
-    log.info("Analysing the restored image")
+    log.info("Running diagnostics for the restored image")
     ci_checker_diagnostics(img_rest, input_image_restored, "restored")
 
     if input_image_residual is not None:
         log.info("Analysing the residual image")
         img_resid = bdsf.process_image(
-            input_image_residual, beam=beam_info, thresh_isl=th_isl, thresh_pix=th_pix,
-            collapse_ch0=refchan
+            input_image_residual,
+            beam=beam_info,
+            thresh_isl=th_isl,
+            thresh_pix=th_pix,
+            collapse_ch0=refchan,
         )
         ci_checker_diagnostics(img_resid, input_image_residual, "residual")
 
@@ -493,7 +533,7 @@ def check_source(orig, comp, match_sep):
     """
 
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)
-    
+
     for match in matches:
         m_comp = comp[match[0]]
         m_orig = orig[match[1]]
@@ -533,6 +573,37 @@ def read_skycomponent_from_txt(filename, freq):
         )
 
     return comp
+
+
+def plot_errors(orig, comp, match_sep, phasecentre, plot_file):
+    """
+    Plot the position and flux errors for source input and output
+
+    :param orig: Input source list in skycomponent format
+    :param comp: Output source list in skycomponent format
+    :param match_sep: The criteria for maximum separation
+    :param phasecentre: Centre of image
+    :param plot_file: prefix of the plot files
+    :return
+
+    """
+    ra_comp, dec_comp = plot_skycomponents_positions(
+        comp, orig, plot_file=plot_file, tol=match_sep
+    )
+    ra_error, dec_error = plot_skycomponents_position_distance(
+        comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
+    )
+    flux_in, flux_out = plot_skycomponents_flux(
+        comp, orig, plot_file=plot_file, tol=match_sep
+    )
+    dist, flux_ratio = plot_skycomponents_flux_ratio(
+        comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
+    )
+    fluxes = plot_skycomponents_flux_histogram(
+        comp, orig, plot_file=plot_file, tol=match_sep
+    )
+
+    return
 
 
 if __name__ == "__main__":

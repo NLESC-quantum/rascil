@@ -28,7 +28,7 @@ from rascil.processing_components.skycomponent.operations import (
 from rascil.processing_components.image.operations import import_image_from_fits, export_image_to_fits
 from rascil.processing_components.imaging.primary_beams import create_pb
 
-from ci_diadnostics import histogram, bdsf_qa_image, running_mean, source_region_mask, power_spectrum
+from ci_diadnostics import histogram, qa_image, plot_with_running_mean, source_region_mask, power_spectrum
 
 
 class FileFormatError(Exception):
@@ -284,15 +284,22 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
     :return None
     """
 
-    im_data = bdsf_image.resid_gaus_arr
+    im_resid = bdsf_image.resid_gaus_arr
 
     log.info("Performing image diagnostics")
 
-    histogram(bdsf_image, input_image, image_type)
-    bdsf_qa_image(bdsf_image.resid_gaus_arr)
-    source_region_mask(bdsf_image)
-    # running_mean(im_data)
-    # power_spectrum(image, signal_channel, noise_channel, resolution)
+    source_mask, background_mask = source_region_mask(bdsf_image)
+
+    residual_stats = qa_image(im_resid, description='residual')
+    restored_stats = qa_image(bdsf_image.image_arr[0, 0, :, :], description='restored')
+    sources_stats = qa_image(source_mask, description='sources')
+    background_stats = qa_image(background_mask, description='background')
+
+    plot_with_running_mean(bdsf_image, input_image, restored_stats, description='restored')
+
+    # power_spectrum(im_resid, signal_channel, noise_channel, resolution)
+
+    histogram(bdsf_image, input_image, description='residual')
 
     return
 

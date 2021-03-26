@@ -11,6 +11,7 @@ import astropy.constants as consts
 import matplotlib
 # matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy
 
 from rascil.processing_components import fft_image_to_griddata, import_image_from_fits, show_image
@@ -19,13 +20,14 @@ from rascil.data_models.xarray_coordinate_support import griddata_wcs
 log = logging.getLogger("rascil-logger")
 
 
-def bdsf_qa_image(im_data):
+def qa_image(im_data, description="image"):
     """Assess the quality of an image
 
     Set of statistics of an image: max, min, maxabs, rms, sum, medianabs,
     medianabsdevmedian, median and mean.
 
     :param im_data: image data
+    :param description: string describing array
     :return image_stats: statistics of the image
     """
 
@@ -42,11 +44,22 @@ def bdsf_qa_image(im_data):
         "mean": np.mean(im_data),
     }
 
-    log.info("QA of pybdsf image:")
+    log.info(f"QA of {description}:")
     for item in image_stats.items():
         log.info("    {}".format(item))
 
     return image_stats
+
+
+def plot_name(input_image, image_type):
+    """
+    """
+    return (
+        input_image.replace(".fits" if ".fits" in input_image else ".h5", "")
+        + "_"
+        + image_type
+        + "_gaus_plot"
+    )
 
 
 def gaussian(x, amplitude, mean, stddev):
@@ -63,14 +76,14 @@ def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-(((x - mean) / 4.0 / stddev) ** 2))
 
 
-def histogram(bdsf_image, input_image, image_type):
+def histogram(bdsf_image, input_image, description='image'):
     """
     Plot a histogram of the pixel counts produced with
     mean, RMS and Gaussian fit.
 
     :param bdsf_image: pybdsf image object
     :param input_image_residual: file name of input image
-    :param image_type: type of imput image; either restored or residual
+    :param description: type of imput image
 
     :return None
     """
@@ -114,30 +127,72 @@ def histogram(bdsf_image, input_image, image_type):
     ax.legend()
 
     # Create histogram file name from input image name removeing file extension.
-    save_hist = (
-        input_image.replace(".fits" if ".fits" in input_image else ".h5", "")
-        + "_"
-        + image_type
-        + "_gaus_hist"
-    )
+    save_plot = plot_name(input_image, description)
 
-    ax.set_title(image_type)
+    ax.set_title(description)
 
     plt.tight_layout()
 
-    log.info('Saving histogram to "{}.png"'.format(save_hist))
-    plt.savefig(save_hist + ".png")
+    log.info('Saving histogram to "{}.png"'.format(save_plot))
+    plt.savefig(save_plot + ".png")
     plt.close()
 
     return
 
 
-def running_mean(bdsf_image):
+def plot_with_running_mean(img, input_image, stats, description='image'):
     """
     Image plot and running mean.
     """
 
     log.info("Plotting sky image with running mean.")
+
+    image = img.image_arr[0, 0, :, :]
+
+    x_index = np.arange(0, img.image_arr.shape[-2])
+    y_index = np.arange(0, img.image_arr.shape[-1])
+
+    fig = plt.figure(figsize=(8, 8), constrained_layout=False)
+    grid = fig.add_gridspec(nrows=4, ncols=4)  # , left=0.2, right=0.8, top=0.8,
+    main_ax = fig.add_subplot(grid[:-1, 1:])
+    y_plot = fig.add_subplot(grid[:-1, 0], sharey=main_ax)
+    x_plot = fig.add_subplot(grid[-1, 1:], sharex=main_ax)
+
+    imap = main_ax.imshow(image.T, origin='lower', aspect='auto')
+    for gaussian in img.gaussians:
+        source = plt.Circle(
+            (gaussian.centre_pix[0], gaussian.centre_pix[1]),
+            color='w',
+            fill=False,
+        )
+        main_ax.add_patch(source)
+    main_ax.axis('off')
+    main_ax.title.set_text('Running mean of ' + description)
+
+    x_plot.plot(x_index, np.mean(image, axis=1))
+    y_plot.plot(np.mean(image, axis=0), y_index)
+
+    main_pos = main_ax.get_position()
+    dh = 0.008
+    ax_cbar = fig.add_axes(
+        [main_pos.x1, main_pos.y0-dh, 0.015, main_pos.y1-main_pos.y0+dh]
+    )
+    plt.colorbar(imap, cax=ax_cbar, label=r'Flux $\left( \rm{Jy} \right) $')
+
+    for i, (key, val) in enumerate(stats.items()):
+        if i == 0:
+            string = f'{key}: {val}'
+        else:
+            string = f'{key}: {val:.3e}'
+        plt.text(0.02, 0.25-i*0.025, string, fontsize=8, transform=plt.gcf().transFigure)
+
+    plt.subplots_adjust(wspace=0.0001, hspace=0.0001)
+
+    save_plot = plot_name(input_image, description)
+
+    log.info('Saving sky plot to "{}.png"'.format(save_plot))
+    plt.savefig(save_plot + ".png")
+    plt.close()
 
     return
 
@@ -174,15 +229,9 @@ def source_region_mask(img):
             + (grid[1] - gaussian.centre_pix[1])**2
         )
 
-        source_regions[source_radius < beam_radius*2.0] = 0
+        source_regions[source_radius < beam_radius] = 0
 
     background_regions[source_regions == 0] = 1
-
-    background_mask = np.ma.array(
-        image_to_be_masked,
-        mask=background_regions,
-        copy=True
-    )
 
     source_mask = np.ma.array(
         image_to_be_masked,
@@ -190,21 +239,32 @@ def source_region_mask(img):
         copy=True
     )
 
+    background_mask = np.ma.array(
+        image_to_be_masked,
+        mask=background_regions,
+        copy=True
+    )
+
     plt.imshow(image_to_be_masked)
     plt.colorbar()
-    plt.show()
+    plt.savefig('im1.png')
+    plt.close()
 
     plt.imshow(source_mask)
     plt.colorbar()
-    plt.show()
+    plt.savefig('im2.png')
+    plt.close()
+
 
     plt.imshow(background_mask)
     plt.colorbar()
-    plt.show()
+    plt.savefig('im3.png')
+    plt.close()
 
-    # histogram(im_data, input_image, image_type)
 
-    return
+    sys.exit()
+
+    return source_mask, background_mask
 
 
 def power_spectrum(image, signal_channel, noise_channel, resolution):

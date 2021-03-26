@@ -103,6 +103,18 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
 
+    def test_restore_clean_beam(self):
+        self.model["pixels"].data[0, 0, 256, 256] = 1.0
+        # The beam is specified in degrees
+        bmaj = 0.003 * 180.0 / numpy.pi
+        self.cmodel = restore_cube(self.model, self.psf,
+                                   clean_beam={"bmaj":bmaj, "bmin":bmaj, "bpa":0.0})
+        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 1.0) < 1e-7, numpy.max(
+            self.cmodel["pixels"].data
+        )
+        if self.persist:
+            export_image_to_fits(self.cmodel, "%s/test_restore_3mrad_beam.fits" % (self.dir))
+
     def test_fit_psf(self):
         clean_beam = fit_psf(self.psf)
         if self.persist:

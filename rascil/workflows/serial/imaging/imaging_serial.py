@@ -218,14 +218,14 @@ def restore_list_serial_workflow(
 
     psf_list = sum_invert_results(psf_imagelist)
     psf = normalize_sumwt(psf_list[0], psf_list[1])
-    cleanbeam = fit_psf(psf)
+    clean_beam = fit_psf(psf)
 
     if residual_imagelist is not None:
         residual_list = remove_sumwt(residual_imagelist)
         restored_list = [
             restore_cube(
                 model_imagelist[i],
-                cleanbeam=cleanbeam,
+                clean_beam=clean_beam,
                 residual=residual_list[i],
                 **kwargs
             )
@@ -234,7 +234,7 @@ def restore_list_serial_workflow(
     else:
         restored_list = [
             restore_cube(
-                model_imagelist[i], cleanbeam=cleanbeam, residual=None, **kwargs
+                model_imagelist[i], clean_beam=clean_beam, residual=None, **kwargs
             )
             for i, _ in enumerate(model_imagelist)
         ]

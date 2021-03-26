@@ -62,7 +62,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.rng = default_rng(1805550721)
 
-        rsexecute.set_client(use_dask=False)
+        rsexecute.set_client(use_dask=True)
         from rascil.data_models.parameters import rascil_path
 
         self.dir = rascil_path("test_results")

@@ -194,7 +194,7 @@ def restore_centre_skymodel_list_rsexecute_workflow(
 
     # Find the PSF by summing over all channels, fit to this psf
     psf = sum_invert_results_rsexecute(psf_imagelist)[0]
-    cleanbeam = rsexecute.execute(fit_psf, nout=1)(psf)
+    clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
 
     # Add the model over all channels
     centre = len(skymodel_list) // 2
@@ -204,11 +204,11 @@ def restore_centre_skymodel_list_rsexecute_workflow(
         # Get residual calculated across the band
         residual = sum_invert_results_rsexecute(residual_imagelist)[0]
         restored = rsexecute.execute(restore_cube, nout=1)(
-            model, residual=residual, cleanbeam=cleanbeam, **kwargs
+            model, residual=residual, clean_beam=clean_beam, **kwargs
         )
     else:
         restored = rsexecute.execute(restore_cube, nout=1)(
-            model, cleanbeam=cleanbeam, **kwargs
+            model, clean_beam=clean_beam, **kwargs
         )
 
     return restored
@@ -231,7 +231,7 @@ def restore_skymodel_list_rsexecute_workflow(
 
     psf_list = sum_invert_results_rsexecute(psf_imagelist)
     psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
-    cleanbeam = rsexecute.execute(fit_psf)(psf)
+    clean_beam = rsexecute.execute(fit_psf)(psf)
 
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
@@ -240,7 +240,7 @@ def restore_skymodel_list_rsexecute_workflow(
         restored_list = [
             rsexecute.execute(restore_cube, nout=1)(
                 skymodel_list[i].image,
-                cleanbeam=cleanbeam,
+                clean_beam=clean_beam,
                 residual=residual_list[i],
                 **kwargs
             )
@@ -249,7 +249,7 @@ def restore_skymodel_list_rsexecute_workflow(
     else:
         restored_list = [
             rsexecute.execute(restore_cube, nout=1)(
-                skymodel_list[i].image, cleanbeam=cleanbeam, residual=None, **kwargs
+                skymodel_list[i].image, clean_beam=clean_beam, residual=None, **kwargs
             )
             for i, _ in enumerate(skymodel_list)
         ]

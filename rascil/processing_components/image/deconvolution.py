@@ -673,18 +673,17 @@ def fit_psf(psf: Image, **kwargs):
     cellsize = numpy.abs((psf["x"][0].data - psf["x"][-1].data)) / len(psf["x"])
 
     to_mm = 4.0 * numpy.log(2.0)
-    r2a = 180.0 * 3600.0 / numpy.pi
 
     if beam_pixels[1] > beam_pixels[0]:
         clean_beam = {
-            "bmaj": beam_pixels[1] * cellsize * to_mm * r2a,
-            "bmin": beam_pixels[0] * cellsize * to_mm * r2a,
+            "bmaj": numpy.rad2deg(beam_pixels[1] * cellsize * to_mm),
+            "bmin": numpy.rad2deg(beam_pixels[0] * cellsize * to_mm),
             "bpa": numpy.rad2deg(beam_pixels[2]),
         }
     else:
         clean_beam = {
-            "bmaj": beam_pixels[0] * cellsize * to_mm * r2a,
-            "bmin": beam_pixels[1] * cellsize * to_mm * r2a,
+            "bmaj": numpy.rad2deg(beam_pixels[0] * cellsize * to_mm),
+            "bmin": numpy.rad2deg(beam_pixels[1] * cellsize * to_mm),
             "bpa": numpy.rad2deg(beam_pixels[2]) + 90.0,
         }
 
@@ -700,36 +699,37 @@ def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
     :param model: Model image (i.e. deconvolved)
     :param psf: Input PSF
     :param residual: Residual image
-    :param cleanbeam: Clean beam
+    :param clean_beam: Clean beam
     :return: restored image
 
     """
     restored = model.copy(deep=True)
-    clean_beam = get_parameter(kwargs, "cleanbeam", None)
+    clean_beam = get_parameter(kwargs, "clean_beam", None)
 
     if clean_beam is None:
         if psf is not None:
             clean_beam = fit_psf(psf)
             log.info(
-                "restore_cube: Using fitted clean beam (asec, asec, deg) = {}".format(
+                "restore_cube: Using fitted clean beam (deg, deg, deg) = {}".format(
                     clean_beam
                 )
             )
         else:
-            log.error("restore_cube: Either the psf or the cleanbeam must be specified")
+            raise ValueError("restore_cube: Either the psf or the clean_beam must be specified")
     else:
         log.info(
             "restore_cube: Using clean beam  (asec, asec, deg) = {}".format(clean_beam)
         )
 
     to_mm = 4.0 * numpy.log(2.0)
-    r2a = 180.0 * 3600.0 / numpy.pi
 
+    # Cellsize in radians
     cellsize = numpy.abs((model["x"][0].data - model["x"][-1].data)) / len(model["x"])
 
+    # Beam in pixels
     beam_pixels = (
-        clean_beam["bmaj"] / (cellsize * to_mm * r2a),
-        clean_beam["bmin"] / (cellsize * to_mm * r2a),
+        numpy.deg2rad(clean_beam["bmaj"]) / (cellsize * to_mm),
+        numpy.deg2rad(clean_beam["bmin"]) / (cellsize * to_mm),
         numpy.deg2rad(clean_beam["bpa"]),
     )
 
@@ -752,4 +752,6 @@ def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
 
     restored["pixels"].data = restored["pixels"].data.astype("float")
 
+    restored.attrs["clean_beam"] = clean_beam
+    
     return restored

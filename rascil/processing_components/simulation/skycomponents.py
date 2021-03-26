@@ -51,7 +51,7 @@ def addnoise_skycomponent(
 
     comps = []
 
-    if mode is "direction":
+    if mode == "direction":
 
         ras += rng.normal(0.0, noise, len(ras))
         decs += rng.normal(0.0, noise, len(decs))
@@ -71,7 +71,7 @@ def addnoise_skycomponent(
                 )
             )
 
-    elif mode is "flux":
+    elif mode == "flux":
 
         fluxes += rng.normal(0.0, noise, len(fluxes))
         for i, flux in enumerate(fluxes):
@@ -87,7 +87,7 @@ def addnoise_skycomponent(
                 )
             )
 
-    elif mode is "both":
+    elif mode == "both":
 
         ras += rng.normal(0.0, noise, len(ras))
         decs += rng.normal(0.0, noise, len(decs))

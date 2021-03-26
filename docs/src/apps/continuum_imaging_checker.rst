@@ -31,6 +31,7 @@ and check with the original inputs. Currently it features the following:
                                  [--apply_primary APPLY_PRIMARY]
                                  [--telescope_model TELESCOPE_MODEL]
                                  [--check_source CHECK_SOURCE]
+                                 [--plot_source PLOT_SOURCE]
                                  [--input_source_format INPUT_SOURCE_FORMAT]
                                  [--input_source_filename INPUT_SOURCE_FILENAME]
                                  [--match_sep MATCH_SEP]
@@ -50,6 +51,7 @@ and check with the original inputs. Currently it features the following:
       --apply_primary APPLY_PRIMARY    Whether to apply primary beam
       --telescope_model TELESCOPE_MODEL    The telescope to generate primary beam correction
       --check_source CHECK_SOURCE       Option to check with original input source catalogue
+      --plot_source PLOT_SOURCE         Option to plot position and flux errors for source catalogue
       --input_source_format INPUT_SOURCE_FORMAT         The input format of the source catalogue
       --input_source_filename INPUT_SOURCE_FILENAME  If use external source file, the file name of source file
       --match_sep MATCH_SEP    Maximum separation in radians for the source matching
@@ -77,7 +79,7 @@ If a source check is required::
     python $RASCIL/rascil/apps/ci_imaging_checker.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
     --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits \
-    --check_source True \
+    --check_source True --plot_source True\
     --input_source_format external --input_source_filename $RASCIL/data/models/GLEAM_filtered.txt
 
 Docker image

@@ -51,9 +51,7 @@ class TestSimSkycomponents(unittest.TestCase):
         )
 
         original = copy_skycomponent(self.components)
-        result = addnoise_skycomponent(
-            self.components, noise=self.noise, mode="both"
-        )
+        result = addnoise_skycomponent(self.components, noise=self.noise, mode="both")
         ra_orig = numpy.array([comp.direction.ra.radian for comp in original])
         dec_orig = numpy.array([comp.direction.dec.radian for comp in original])
         flux_orig = numpy.array([comp.flux[0, 0] for comp in original])
@@ -63,6 +61,10 @@ class TestSimSkycomponents(unittest.TestCase):
         flux_result = numpy.array([comp.flux[0, 0] for comp in result])
 
         assert len(result) == len(original)
+
+        assert numpy.any(numpy.not_equal(ra_orig,ra_result))
+        assert numpy.any(numpy.not_equal(dec_orig,dec_result))
+        assert numpy.any(numpy.not_equal(flux_orig,flux_result))
 
         assert_almost_equal(numpy.mean(ra_orig), numpy.mean(ra_result), decimal=3)
         assert_almost_equal(numpy.mean(dec_orig), numpy.mean(dec_result), decimal=3)

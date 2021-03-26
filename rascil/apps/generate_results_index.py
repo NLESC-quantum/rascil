@@ -153,10 +153,16 @@ def sort_files(path):
         if f.strip().endswith(".fits"):
             fits_files.append(f)
 
-        if ".pybdsm" in f and (f.strip().endswith(".csv") or f.strip().endswith(".fits")):
+        if ".pybdsm" in f and (
+            f.strip().endswith(".csv") or f.strip().endswith(".fits")
+        ):
             pybdsf_source_files.append(f)
 
-        if f.strip().endswith(".hdf") or f.strip().endswith(".h5") or f.strip().endswith(".hdf5"):
+        if (
+            f.strip().endswith(".hdf")
+            or f.strip().endswith(".h5")
+            or f.strip().endswith(".hdf5")
+        ):
             rascil_hdf_files.append(f)
 
         if f.strip().endswith(".png"):

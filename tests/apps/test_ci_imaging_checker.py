@@ -170,8 +170,8 @@ def test_continuum_imaging_checker(
             f"{numpy.rad2deg(cellsize)}",
             "--check_source",
             "True",
-	        "--plot_source",
-	        "True",
+            "--plot_source",
+            "True",
             "--input_source_format",
             "external",
             "--input_source_filename",
@@ -212,4 +212,3 @@ def test_continuum_imaging_checker(
     # at the end of analyze_image()
     assert os.path.exists(rascil_path(f"test_results/index.html"))
     assert os.path.exists(rascil_path(f"test_results/index.md"))
-

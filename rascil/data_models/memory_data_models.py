@@ -472,7 +472,7 @@ class Image(xarray.Dataset):
         :param data: pixel values
         :param polarisation_frame: as a PolarisationFrame object
         :param wcs: WCS object
-        :param clean_beam: dict()
+        :param clean_beam: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are arcsec, arcsec, deg
         :return: Image (i.e. xarray.Dataset)
         """
         super().__init__()
@@ -532,8 +532,9 @@ class Image(xarray.Dataset):
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
 
-        if clean_beam is None:
-            clean_beam = dict()
+        if isinstance(clean_beam, dict):
+            for key in ["bmaj", "bmin", "bpa"]:
+                assert key in clean_beam.keys(), f"clean_beam must have key {key}"
             
         attrs = {
             "rascil_data_model": "Image",

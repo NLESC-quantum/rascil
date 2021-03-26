@@ -91,12 +91,16 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
     """
     ##assert isinstance(im, Image), im
     header = im.image_acc.wcs.to_header()
-    if "bmaj" in im.attrs["clean_beam"].keys() and \
-        "bmin" in im.attrs["clean_beam"].keys() and \
-        "bpa" in im.attrs["clean_beam"].keys():
-        header.append(fits.Card("BMAJ", im.attrs["clean_beam"]["bmaj"]))
-        header.append(fits.Card("BMIN", im.attrs["clean_beam"]["bmin"]))
-        header.append(fits.Card("BPA", im.attrs["clean_beam"]["bpa"]))
+    clean_beam = im.attrs["clean_beam"]
+    if isinstance(clean_beam, dict):
+        if "bmaj" in clean_beam.keys() and \
+            "bmin" in clean_beam.keys() and \
+            "bpa" in clean_beam.keys():
+            header.append(fits.Card("BMAJ", clean_beam["bmaj"]))
+            header.append(fits.Card("BMIN", clean_beam["bmin"]))
+            header.append(fits.Card("BPA", clean_beam["bpa"]))
+        else:
+            log.warning(f"export_image_to_fits: clean_beam is incompletely specified: {clean_beam}, not writing")
 
     if im["pixels"].data.dtype == "complex":
         return fits.writeto(filename=fitsfile, data=numpy.real(im["pixels"].data),

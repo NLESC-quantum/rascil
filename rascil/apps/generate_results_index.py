@@ -134,10 +134,7 @@ def sort_files(path):
     :param path: path to directory to check
     :return: dictionary of lists of sorted files
     """
-    print(path)
     path = rascil_path(path)
-    print(path)
-    print(os.getcwd())
 
     log_files = []
     fits_files = []

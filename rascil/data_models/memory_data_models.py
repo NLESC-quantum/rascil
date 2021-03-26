@@ -534,7 +534,8 @@ class Image(xarray.Dataset):
 
         if isinstance(clean_beam, dict):
             for key in ["bmaj", "bmin", "bpa"]:
-                log.error(f"Image: clean_beam must have key {key}")
+                if key not in clean_beam.keys():
+                    raise KeyError(f"Image: clean_beam must have key {key}")
             
         attrs = {
             "rascil_data_model": "Image",

@@ -727,7 +727,7 @@ def create_image(npixel=512,
 
 
 def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: PolarisationFrame,
-                            chunksize=None, clean_beam=None) -> Image:
+                            clean_beam=None, chunksize=None) -> Image:
     """ Create an image from an array and optional wcs
 
     The output image preserves a reference to the input array.

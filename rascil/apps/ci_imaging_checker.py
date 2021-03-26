@@ -5,6 +5,7 @@ Stand-alone application for finding sources with PyBDSF
 import argparse
 import datetime
 import logging
+import os
 import sys
 
 import matplotlib
@@ -18,6 +19,8 @@ import pandas as pd
 import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
+
+from rascil.apps.generate_results_index import create_index
 from rascil.data_models import (
     PolarisationFrame,
     import_skycomponent_from_hdf5,
@@ -299,6 +302,12 @@ def analyze_image(args):
 
     else:
         results = None
+
+    files_directory = os.path.dirname(args.ingest_fitsname_restored)
+    if not files_directory:
+        files_directory = os.getcwd()
+
+    create_index(files_directory)
 
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))

@@ -147,19 +147,19 @@ def sort_files(path):
         if os.path.isdir(f"{path}/{f}"):
             continue
 
-        if f.endswith(".log"):
+        if f.strip().endswith(".log"):
             log_files.append(f)
 
-        if f.endswith(".fits"):
+        if f.strip().endswith(".fits"):
             fits_files.append(f)
 
-        if ".pybdsm" in f and (f.endswith(".csv") or f.endswith(".fits")):
+        if ".pybdsm" in f and (f.strip().endswith(".csv") or f.strip().endswith(".fits")):
             pybdsf_source_files.append(f)
 
-        if f.endswith(".hdf") or f.endswith(".h5") or f.endswith(".hdf5"):
+        if f.strip().endswith(".hdf") or f.strip().endswith(".h5") or f.strip().endswith(".hdf5"):
             rascil_hdf_files.append(f)
 
-        if f.endswith(".png"):
+        if f.strip().endswith(".png"):
             png_files.append(f)
 
     remaining_files = [
@@ -186,7 +186,7 @@ def sort_files(path):
 
 def create_index(path):
     LOGGER.info(
-        "Generating index HTML and Markdown files " "for contents of directory: %s",
+        "Generating index HTML and Markdown files for contents of directory: %s",
         rascil_path(path),
     )
 

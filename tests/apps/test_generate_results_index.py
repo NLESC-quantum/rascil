@@ -250,9 +250,15 @@ def test_sort_files_some_files():
     open(f"{path}/firstLog.log", "w")
     open(f"{path}/secondLog.log", "w")
 
+    # even if the file name contains a trailing whitespace,
+    # we still want to categorize it with its onw type, not with "other"
+    # This is to ensure that happens (bug fix).
+    open(f"{path}/secondLog_with_wite_space.log ", "w")
+
     result = sort_files(path)
     shutil.rmtree(path)  # delete directory with files in it
 
     assert result[STATS_PNG] == ["myFig.png"]
     assert result[OTHER_FILES] == ["some_file.txt"]
-    assert sorted(result[LOG]) == sorted(["firstLog.log", "secondLog.log"])
+    assert sorted(result[LOG]) == sorted(["firstLog.log", "secondLog.log",
+                                          "secondLog_with_wite_space.log "])

@@ -38,7 +38,7 @@ def addnoise_skycomponent(
     else:
         rng = default_rng(seed)
 
-    single = not isinstance(sc, collections.abc.Iterable) and type(sc) is not "str"
+    single = not isinstance(sc, collections.abc.Iterable) or isinstance(sc, str)
 
     if single:
         sc = [sc]

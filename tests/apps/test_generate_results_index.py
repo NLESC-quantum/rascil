@@ -228,10 +228,10 @@ def test_sort_files_empty_dir():
     """
     If directory is empty, the values of the returned dictionary will be empty lists.
     """
-    path = "myFakeDirectoryForTests"
+    path = rascil_path("tests/apps/myFakeDirectoryForTests")
     os.mkdir(path)
 
-    result = sort_files(f"tests/apps/{path}")
+    result = sort_files(path)
     os.rmdir(path)
 
     assert list(result.values()) == [[], [], [], [], [], []]
@@ -242,15 +242,15 @@ def test_sort_files_some_files():
     If directory contains files, all of these files will appear under
     at least one dictionary key.
     """
-    path = "myFakeDirectoryForTests"
+    path = rascil_path("tests/apps/myFakeDirectoryForTests")
     os.mkdir(path)  # create temporary new directory
     # add files to new directory
-    open("myFakeDirectoryForTests/myFig.png", "w")
-    open("myFakeDirectoryForTests/some_file.txt", "w")
-    open("myFakeDirectoryForTests/firstLog.log", "w")
-    open("myFakeDirectoryForTests/secondLog.log", "w")
+    open(f"{path}/myFig.png", "w")
+    open(f"{path}/some_file.txt", "w")
+    open(f"{path}/firstLog.log", "w")
+    open(f"{path}/secondLog.log", "w")
 
-    result = sort_files(f"tests/apps/{path}")
+    result = sort_files(path)
     shutil.rmtree(path)  # delete directory with files in it
 
     assert result[STATS_PNG] == ["myFig.png"]

@@ -55,10 +55,10 @@ test:
     - pip3 install -r requirements.txt -r requirements-test.txt
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
-    - pip3 install git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
     - mkdir -p test_results
   script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make test
+#    - PYTHONPATH=`pwd` HOME=`pwd` make test
+    - py.test tests/apps/test_generate_results_index.py
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:

@@ -90,12 +90,20 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
 
     """
     ##assert isinstance(im, Image), im
+    header = im.image_acc.wcs.to_header()
+    if "bmaj" in im.attrs["clean_beam"].keys() and \
+        "bmin" in im.attrs["clean_beam"].keys() and \
+        "bpa" in im.attrs["clean_beam"].keys():
+        header.append(fits.Card("BMAJ", im.attrs["clean_beam"]["bmaj"]))
+        header.append(fits.Card("BMIN", im.attrs["clean_beam"]["bmin"]))
+        header.append(fits.Card("BPA", im.attrs["clean_beam"]["bpa"]))
+
     if im["pixels"].data.dtype == "complex":
         return fits.writeto(filename=fitsfile, data=numpy.real(im["pixels"].data),
-                            header=im.image_acc.wcs.to_header(), overwrite=True)
+                            header=header, overwrite=True)
     else:
         return fits.writeto(filename=fitsfile, data=im["pixels"].data,
-                            header=im.image_acc.wcs.to_header(), overwrite=True)
+                            header=header, overwrite=True)
 
 
 
@@ -113,11 +121,19 @@ def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
     warnings.simplefilter('ignore', FITSFixedWarning)
     hdulist = fits.open(fitsfile)
     data = hdulist[0].data
+    header = hdulist[0].header
+    try:
+        bmaj = header.cards["BMAJ"].value
+        bmin = header.cards["BMIN"].value
+        bpa = header.cards["BPA"].value
+        clean_beam = {"bmaj":bmaj, "bmin":bmin, "bpa":bpa}
+    except KeyError:
+        clean_beam = None
+        
     wcs = WCS(fitsfile)
     hdulist.close()
     
     polarisation_frame = PolarisationFrame('stokesI')
-    frequency = numpy.array([1e8])
     
     if len(data.shape) == 4:
         try:
@@ -133,31 +149,15 @@ def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
         except ValueError:
             polarisation_frame = PolarisationFrame('stokesI')
 
-        try:
-            w = wcs.sub(['spectral'])
-            if len(data.shape) == 4:
-                nchan = data.shape[0]
-                frequency = w.wcs_pix2world(range(nchan), 0)[0]
-            else:
-                frequency = w.wcs_pix2world([0], 0)[0]
-
-        except ValueError:
-            frequency = numpy.array([1e8])
-            
     elif len(data.shape) == 2:
         ny, nx = data.shape
         data.reshape([1, 1, ny, nx])
-
-    try:
-        phasecentre = SkyCoord(wcs.wcs.crval[0] * u.deg, wcs.wcs.crval[1] * u.deg)
-    except ValueError:
-        phasecentre = SkyCoord("0.0d", "0.0d")
 
     log.debug("import_image_from_fits: created %s image of shape %s" %
               (data.dtype, str(data.shape)))
     log.debug("import_image_from_fits: Max, min in %s = %.6f, %.6f" % (fitsfile, data.max(), data.min()))
 
-    return Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs)
+    return Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs, clean_beam=clean_beam)
 
 
 def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
@@ -668,7 +668,8 @@ def create_image(npixel=512,
                  channel_bandwidth=numpy.array([1e6]),
                  phasecentre=None,
                  nchan=None,
-                 dtype='float') -> Image:
+                 dtype='float',
+                 clean_beam=None) -> Image:
     """Create an empty  image consistent with the inputs.
 
     :param npixel: Number of pixels
@@ -679,6 +680,7 @@ def create_image(npixel=512,
     :param phasecentre: phasecentre (SkyCoord)
     :param nchan: Number of channels in image
     :param dtype: Python data type for array
+    :param clean_beam: dict holding clean beam e.g {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}
     :return: Image
 
     See also
@@ -716,11 +718,12 @@ def create_image(npixel=512,
     w.wcs.radesys = 'ICRS'
     w.wcs.equinox = 2000.0
     
-    return Image(numpy.zeros(shape, dtype=dtype), wcs=w, polarisation_frame=polarisation_frame)
+    return Image(numpy.zeros(shape, dtype=dtype), wcs=w, polarisation_frame=polarisation_frame,
+                 clean_beam=clean_beam)
 
 
 def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: PolarisationFrame,
-                            chunksize=None) -> Image:
+                            chunksize=None, clean_beam=None) -> Image:
     """ Create an image from an array and optional wcs
 
     The output image preserves a reference to the input array.
@@ -737,7 +740,7 @@ def create_image_from_array(data: numpy.array, wcs: WCS, polarisation_frame: Pol
 
     """
 
-    return Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs)
+    return Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs, clean_beam=clean_beam)
 
 def polarisation_frame_from_wcs(wcs, shape) -> PolarisationFrame:
     """Convert wcs to polarisation_frame
@@ -804,7 +807,8 @@ def create_empty_image_like(im: Image) -> Image:
     """
     return create_image_from_array(numpy.zeros_like(im["pixels"].data),
                                    wcs=im.image_acc.wcs,
-                                   polarisation_frame=im.image_acc.polarisation_frame)
+                                   polarisation_frame=im.image_acc.polarisation_frame,
+                                   clean_beam=im.attrs["clean_beam"])
 
 
 def fft_image_to_griddata(im):

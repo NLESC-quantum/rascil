@@ -107,7 +107,7 @@ class BranchManager:
         self.repo.git.add(A=True)
 
         if not commit_message:
-            self.repo.git.commit(m="Updated requirements")
+            self.repo.git.commit(m="SIM-805: Updated requirements")
         else:
             self.repo.git.commit(m=commit_message)
 
@@ -180,23 +180,30 @@ class MergeRequest:
         log.info("Merge request created.")
         return mr
 
-    def assign_to_mr(self, mr, assignees):
+    def udpate_mr_settings(self, mr, assignees, reviewers):
         """
-        Assign merge request to an assignee
+        Update merge request settings:
+            - assign MR
+            - add reviewers
 
+        :param mr: merge request object
         :param assignees: unique GitLab User ID of the person to assign to
                           to find yours, navigate to Settings --> Main Settings --> User ID
+        :param reviewers: unique GitLab User ID of the person to set as reviewer
         """
         mr.assignee_ids = assignees
+        mr.reviewer_ids = reviewers
         mr.save()
         log.info(f"Merge Request was assigned to user(s) with id(s): {assignees}")
+        log.info(f"Review request was sent to user(s) with id(s): {reviewers}")
 
 
 def main():
     private_token = os.environ["PROJECT_ACCESS_TOKEN"]
     gitlab_user = os.environ["PROJECT_TOKEN_USER"]
     assignee_ids = os.environ["GITLAB_ASSIGNEE_ID"]
-    new_branch_name = "scheduled-update-requirements"
+    reviewer_ids = os.environ["GITLAB_REVIEWER_ID"]
+    new_branch_name = "sim-805-scheduled-update-requirements"
 
     branch_manager = BranchManager(private_token, gitlab_user)
     branch_manager.set_git_config()
@@ -204,10 +211,10 @@ def main():
 
     if new_branch:
         original_branch = os.environ["CI_COMMIT_BRANCH"]
-        mr_title = "WIP: Update requirements - to be actioned before next scheduled run"
+        mr_title = "WIP: SIM-805: Update requirements - to be actioned before next scheduled run"
         mr_object = MergeRequest(private_token)
         mr = mr_object.create_merge_request(new_branch, original_branch, mr_title)
-        mr_object.assign_to_mr(mr, assignee_ids.split(","))
+        mr_object.udpate_mr_settings(mr, assignee_ids.split(","), reviewer_ids.split(","))
 
     else:
         log.info("No changes to commit.")

@@ -126,16 +126,16 @@ class TestCommitAndPushToBranch:
             - the commit message is the default message
             - git.push is called
         """
-        new_branch = "my-new-branch"
+        new_branch = "sim-805-my-new-branch"
 
         manager_fixture.commit_and_push_to_branch(new_branch)
 
         mock_delete_head.assert_not_called()
         mock_git.return_value.checkout.assert_called_with("-b", new_branch)
-        mock_git.return_value.commit.assert_called_with(m="Updated requirements")
+        mock_git.return_value.commit.assert_called_with(m="SIM-805: Updated requirements")
         mock_git.return_value.push.assert_called()
 
-    @patch.object(Repo, "heads", ["my-new-branch"])
+    @patch.object(Repo, "heads", ["sim-805-my-new-branch"])
     def test_branch_in_heads(self, mock_git, mock_delete_head, manager_fixture):
         """
         Given
@@ -149,13 +149,13 @@ class TestCommitAndPushToBranch:
             - the commit message is the default message
             - git.push is called
         """
-        new_branch = "my-new-branch"
+        new_branch = "sim-805-my-new-branch"
 
         manager_fixture.commit_and_push_to_branch(new_branch)
 
         mock_delete_head.assert_called_once()
         mock_git.return_value.checkout.assert_called_with("-b", new_branch)
-        mock_git.return_value.commit.assert_called_with(m="Updated requirements")
+        mock_git.return_value.commit.assert_called_with(m="SIM-805: Updated requirements")
         mock_git.return_value.push.assert_called()
 
     @patch.object(Repo, "heads", [])
@@ -168,8 +168,8 @@ class TestCommitAndPushToBranch:
         Then
             - the commit message is updated to be the custom message
         """
-        new_branch = "my-new-branch"
-        commit_message = "my custom message"
+        new_branch = "sim-805-my-new-branch"
+        commit_message = "SIM-805: my custom message"
 
         manager_fixture.commit_and_push_to_branch(
             new_branch, commit_message=commit_message
@@ -185,7 +185,7 @@ def test_run_branch_manager(mock_commit_push_method, manager_fixture):
     BranchManager.commit_and_push_to_branch is called when
     the branch has untracked files.
     """
-    new_branch = "active-branch-name"
+    new_branch = "sim-805-active-branch-name"
     mock_commit_push_method.return_value = Mock()
 
     manager_fixture.run_branch_manager(new_branch)
@@ -200,7 +200,7 @@ def test_run_branch_manager(mock_repo_index, mock_commit_push_method, manager_fi
     BranchManager.commit_and_push_to_branch is not called when
     the branch is clean of changes.
     """
-    new_branch = "active-branch-name"
+    new_branch = "sim-805-active-branch-name"
     mock_commit_push_method.return_value = Mock()
     mock_repo_index.return_value = Mock()
     mock_repo_index.diff = Mock(side_effect=[False])

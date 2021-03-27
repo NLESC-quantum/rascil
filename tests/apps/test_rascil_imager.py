@@ -47,7 +47,7 @@ log.setLevel(logging.INFO)
     "enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
     [
         (
-            False,
+            True,
             "invert",
             True,
             "invert",
@@ -59,7 +59,7 @@ log.setLevel(logging.INFO)
             0.0
         ),
         (
-            False,
+            True,
             "offset_component",
             True,
             "invert",
@@ -71,7 +71,7 @@ log.setLevel(logging.INFO)
             0.5
          ),
         (
-            False,
+            True,
             "ical",
             True,
             "ical",
@@ -83,7 +83,7 @@ log.setLevel(logging.INFO)
             0.0
         ),
         (
-            False,
+            True,
             "cip",
             True,
             "cip",
@@ -100,14 +100,14 @@ log.setLevel(logging.INFO)
             True,
             "cip",
             False,
-            101.11050450645843,
-            -0.09528853716120966,
+            92.8907298154679,
+            -0.45221613608505623,
             None,
             "None",
             0.5
         ),
         (
-            False,
+            True,
             "fit_component",
             True,
             "cip",
@@ -119,7 +119,7 @@ log.setLevel(logging.INFO)
             0.5
         ),
         (
-            False,
+            True,
             "pixels_component",
             True,
             "cip",

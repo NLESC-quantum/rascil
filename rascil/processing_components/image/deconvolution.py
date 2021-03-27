@@ -28,7 +28,8 @@ by gridded FFTs.
 
 """
 
-__all__ = ["deconvolve_cube", "restore_cube", "fit_psf"]
+__all__ = ["deconvolve_cube", "restore_cube", "fit_psf", "convert_clean_beam_to_pixels",
+           "convert_clean_beam_to_degrees"]
 
 import logging
 import warnings
@@ -669,11 +670,19 @@ def fit_psf(psf: Image, **kwargs):
         log.warning("fit_psf: warning in fit to psf, using 1 pixel stddev")
         beam_pixels = (1.0, 1.0, 0.0)
 
+    return convert_clean_beam_to_degrees(psf, beam_pixels)
+
+
+def convert_clean_beam_to_degrees(im, beam_pixels):
+    """ Convert clean beam in pixels to deg deg, deg
+    
+    :param im: Image
+    :param beam_pixels:
+    :return: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
+    """
     # cellsize in radians
-    cellsize = numpy.abs((psf["x"][0].data - psf["x"][-1].data)) / len(psf["x"])
-
+    cellsize = numpy.abs((im["x"][0].data - im["x"][-1].data)) / len(im["x"])
     to_mm = 4.0 * numpy.log(2.0)
-
     if beam_pixels[1] > beam_pixels[0]:
         clean_beam = {
             "bmaj": numpy.rad2deg(beam_pixels[1] * cellsize * to_mm),
@@ -686,7 +695,6 @@ def fit_psf(psf: Image, **kwargs):
             "bmin": numpy.rad2deg(beam_pixels[1] * cellsize * to_mm),
             "bpa": numpy.rad2deg(beam_pixels[2]) + 90.0,
         }
-
     return clean_beam
 
 
@@ -721,17 +729,7 @@ def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
             "restore_cube: Using clean beam  (asec, asec, deg) = {}".format(clean_beam)
         )
 
-    to_mm = 4.0 * numpy.log(2.0)
-
-    # Cellsize in radians
-    cellsize = numpy.abs((model["x"][0].data - model["x"][-1].data)) / len(model["x"])
-
-    # Beam in pixels
-    beam_pixels = (
-        numpy.deg2rad(clean_beam["bmaj"]) / (cellsize * to_mm),
-        numpy.deg2rad(clean_beam["bmin"]) / (cellsize * to_mm),
-        numpy.deg2rad(clean_beam["bpa"]),
-    )
+    beam_pixels = convert_clean_beam_to_pixels(model, clean_beam)
 
     gk = Gaussian2DKernel(
         x_stddev=beam_pixels[0], y_stddev=beam_pixels[1], theta=beam_pixels[2]
@@ -755,3 +753,16 @@ def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
     restored.attrs["clean_beam"] = clean_beam
     
     return restored
+
+
+def convert_clean_beam_to_pixels(model, clean_beam):
+    to_mm = 4.0 * numpy.log(2.0)
+    # Cellsize in radians
+    cellsize = numpy.abs((model["x"][0].data - model["x"][-1].data)) / len(model["x"])
+    # Beam in pixels
+    beam_pixels = (
+        numpy.deg2rad(clean_beam["bmin"]) / (cellsize * to_mm),
+        numpy.deg2rad(clean_beam["bmaj"]) / (cellsize * to_mm),
+        numpy.deg2rad(clean_beam["bpa"]),
+    )
+    return beam_pixels

@@ -59,6 +59,10 @@ from rascil.processing_components.util.array_functions import (
     insert_function_pswf,
     insert_array,
 )
+from rascil.processing_components.image.deconvolution import (
+    convert_clean_beam_to_degrees,
+    convert_clean_beam_to_pixels,
+)
 
 log = logging.getLogger("rascil-logger")
 
@@ -688,6 +692,74 @@ def insert_skycomponent(
     return im
 
 
+def restore_skycomponent(
+    im: Image,
+    sc: Union[Skycomponent, List[Skycomponent]],
+    clean_beam=None,
+    support=8,
+) -> Image:
+    """Restore a Skycomponent into an image
+
+    :param im: Image
+    :param sc: SkyComponent or list of SkyComponents
+    :param clean_beam: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
+    :param support: Support of kernel (7)
+    :return: Image
+    """
+
+    nchan, npol, ny, nx = im["pixels"].data.shape
+
+    if not isinstance(sc, collections.abc.Iterable):
+        sc = [sc]
+
+    image_frequency = im.frequency.data
+
+    ras = [comp.direction.ra.radian for comp in sc]
+    decs = [comp.direction.dec.radian for comp in sc]
+    skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
+    pixlocs = skycoord_to_pixel(skycoords, im.image_acc.wcs, origin=0, mode="wcs")
+
+    beam_pixels = convert_clean_beam_to_pixels(im, clean_beam)
+    
+    for icomp, comp in enumerate(sc):
+
+        if comp.shape != "Point":
+            raise ValueError(
+                "restore_skycomponent: Cannot handle shape %s" % comp.shape
+            )
+
+        pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
+        flux = numpy.zeros([nchan, npol])
+
+        if (
+            len(comp.frequency.data) == len(image_frequency)
+            and numpy.max(numpy.abs(comp.frequency.data - image_frequency)) < 1e-7
+        ):
+            flux = comp.flux
+        elif comp.flux.shape[0] > 1:
+            for pol in range(npol):
+                fint = interpolate.interp1d(
+                    comp.frequency.data, comp.flux[:, pol], kind="cubic"
+                )
+                flux[:, pol] = fint(image_frequency)
+        else:
+            flux = comp.flux
+
+        gaussian = models.Gaussian2D(
+            amplitude=1.0,
+            x_mean=pixloc[0],
+            y_mean=pixloc[1],
+            x_stddev=beam_pixels[0],
+            y_stddev=beam_pixels[1],
+            theta=beam_pixels[2],
+        )
+        xi, yi = numpy.indices(im["pixels"].data.shape[-2:])
+        im["pixels"].data[...] += flux[...,numpy.newaxis, numpy.newaxis] * gaussian(yi, xi)[numpy.newaxis, numpy.newaxis,...]
+        
+    im.attrs["clean_beam"] = clean_beam
+    return im
+
+
 def voronoi_decomposition(im, comps):
     """Construct a Voronoi decomposition of a set of components
 
@@ -782,19 +854,21 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
     :params sc: Skycomponent
     :return: Skycomponent
     """
-    pixloc = numpy.round(skycoord_to_pixel(sc.direction, im.image_acc.wcs, origin=0)).astype('int')
+    pixloc = numpy.round(
+        skycoord_to_pixel(sc.direction, im.image_acc.wcs, origin=0)
+    ).astype("int")
     sl_y = slice(pixloc[1] - 7, pixloc[1] + 8)
     sl_x = slice(pixloc[0] - 7, pixloc[0] + 8)
-    
+
     # im["pixels"].data[0,0,150,121]
     y, x = numpy.mgrid[sl_y, sl_x]
     z = im["pixels"].data[0, 0, sl_y, sl_x]
-    
+
     # isotropic at the moment!
     from scipy.optimize import minpack
-    
+
     newsc = copy_skycomponent(sc)
-    
+
     try:
         p_init = models.Gaussian2D(
             amplitude=numpy.max(z), x_mean=numpy.mean(x), y_mean=numpy.mean(y)
@@ -803,7 +877,7 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             fit = fit_p(p_init, x, y, z)
-        
+
         # Now fill in the new skycomponent values
         newsc.direction = pixel_to_skycoord(fit.x_mean, fit.y_mean, im.image_acc.wcs, 0)
         iy = round(fit.y_mean.value)
@@ -817,11 +891,11 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
             newsc.shape = "Gaussian"
             # cellsize in radians
             cellsize = numpy.abs((im["x"][0].data - im["x"][-1].data)) / len(im["x"])
-            
+
             r2a = 180.0 * 3600.0 / numpy.pi
-            
+
             gaussian_pixels = (fit.x_fwhm, fit.y_fwhm, fit.theta)
-            
+
             if gaussian_pixels[1] > gaussian_pixels[0]:
                 clean_gaussian = {
                     "bmaj": gaussian_pixels[1] * cellsize * r2a,
@@ -836,9 +910,9 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
                 }
             newsc.shape = "Gaussian"
             newsc.params = clean_gaussian
-    
+
     except (minpack.error, ValueError) as err:
         log.warning(f"fit_skycomponent: fit failed {err}")
         return sc
-    
+
     return newsc

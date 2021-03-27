@@ -195,6 +195,7 @@ class TestDataModelHelpers(unittest.TestCase):
         print(newim["y"].data[:10], im["y"].data[:10])
         assert data_model_equals(newim, im, verbose=False)
 
+    @unittest.skip("netcdf too restrictive")
     def test_readwriteimage_zarr(self):
         im = create_image(
             phasecentre=self.phasecentre,

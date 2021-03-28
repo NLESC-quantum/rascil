@@ -466,11 +466,13 @@ class Image(xarray.Dataset):
 
     __slots__ = ()
 
-    def __init__(self, data, polarisation_frame=None, wcs=None):
+    def __init__(self, data, polarisation_frame=None, wcs=None, clean_beam=None):
         """Create an Image
 
         :param data: pixel values
         :param polarisation_frame: as a PolarisationFrame object
+        :param wcs: WCS object
+        :param clean_beam: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are arcsec, arcsec, deg
         :return: Image (i.e. xarray.Dataset)
         """
         super().__init__()
@@ -530,11 +532,17 @@ class Image(xarray.Dataset):
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
 
+        if isinstance(clean_beam, dict):
+            for key in ["bmaj", "bmin", "bpa"]:
+                if key not in clean_beam.keys():
+                    raise KeyError(f"Image: clean_beam must have key {key}")
+            
         attrs = {
             "rascil_data_model": "Image",
             "_polarisation_frame": polarisation_frame.type,
             "_projection": (wcs.wcs.ctype[0], wcs.wcs.ctype[1]),
             "spectral_type": wcs.wcs.ctype[3],
+            "clean_beam": clean_beam,
         }
 
         super().__init__(data_vars, coords=coords, attrs=attrs)

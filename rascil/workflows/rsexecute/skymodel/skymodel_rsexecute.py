@@ -20,6 +20,7 @@ from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import restore_cube, fit_psf
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.visibility import copy_visibility
+from rascil.processing_components.skycomponent.operations import restore_skycomponent
 
 # ToDo - remove non-SkyModel parts
 from rascil.workflows.rsexecute import (
@@ -35,7 +36,6 @@ from rascil.workflows.serial.imaging.imaging_serial import (
     invert_list_serial_workflow,
     predict_list_serial_workflow,
 )
-from rascil.workflows.shared.imaging import remove_sumwt
 
 log = logging.getLogger("rascil-logger")
 
@@ -156,7 +156,7 @@ def invert_skymodel_list_rsexecute_workflow(
 
         if sm.image is None:
             raise ValueError("skymodel image is None")
-        
+
         result = invert_list_serial_workflow(
             [v], [sm.image], context=context, gcfcf=[g], **kwargs
         )[0]
@@ -198,18 +198,15 @@ def restore_centre_skymodel_list_rsexecute_workflow(
 
     # Add the model over all channels
     centre = len(skymodel_list) // 2
-    model = skymodel_list[centre].image
 
-    if residual_imagelist is not None:
-        # Get residual calculated across the band
-        residual = sum_invert_results_rsexecute(residual_imagelist)[0]
-        restored = rsexecute.execute(restore_cube, nout=1)(
-            model, residual=residual, clean_beam=clean_beam, **kwargs
-        )
-    else:
-        restored = rsexecute.execute(restore_cube, nout=1)(
-            model, clean_beam=clean_beam, **kwargs
-        )
+    def restore_skymodel(s, res, cb):
+        res_image = restore_cube(s.image, residual=res, clean_beam=cb)
+        return restore_skycomponent(res_image, s.components, cb)
+
+    residual = sum_invert_results_rsexecute(residual_imagelist)[0]
+    restored = rsexecute.execute(restore_skymodel, nout=1)(
+        skymodel_list[centre], residual, clean_beam
+    )
 
     return restored
 
@@ -233,26 +230,16 @@ def restore_skymodel_list_rsexecute_workflow(
     psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
     clean_beam = rsexecute.execute(fit_psf)(psf)
 
-    if residual_imagelist is not None:
-        residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
-            residual_imagelist
+    def restore_skymodel(s, res, cb):
+        res_image = restore_cube(s.image, residual=res, clean_beam=cb)
+        return restore_skycomponent(res_image, s.components, cb)
+
+    restored_list = [
+        rsexecute.execute(restore_skymodel, nout=1)(
+            sm, residual_imagelist[ism][0], clean_beam
         )
-        restored_list = [
-            rsexecute.execute(restore_cube, nout=1)(
-                skymodel_list[i].image,
-                clean_beam=clean_beam,
-                residual=residual_list[i],
-                **kwargs
-            )
-            for i, _ in enumerate(skymodel_list)
-        ]
-    else:
-        restored_list = [
-            rsexecute.execute(restore_cube, nout=1)(
-                skymodel_list[i].image, clean_beam=clean_beam, residual=None, **kwargs
-            )
-            for i, _ in enumerate(skymodel_list)
-        ]
+        for ism, sm in enumerate(skymodel_list)
+    ]
 
     return restored_list
 
@@ -301,20 +288,21 @@ def residual_skymodel_list_rsexecute_workflow(
 def deconvolve_skymodel_list_rsexecute_workflow(
     dirty_image_list, psf_list, skymodel_list, prefix="", **kwargs
 ):
-    """
+    """ Deconvolve using a skymodel
 
     :param dirty_image_list:
     :param psf_list:
-    :param skymodel_list:
+    :param skymodel_list: list of skymodels
     :param prefix:
     :param kwargs:
-    :return:
+    :return: list of skymodels
     """
-
+    
     deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
 
     deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
-        dirty_image_list, psf_list, deconvolve_model_imagelist, prefix=prefix, **kwargs
+        dirty_image_list, psf_list, deconvolve_model_imagelist, prefix=prefix,
+        **kwargs
     )
 
     # Now recreate the sky models
@@ -329,5 +317,4 @@ def deconvolve_skymodel_list_rsexecute_workflow(
         rsexecute.execute(update_skymodel, nout=1)(skymodel_list[i], m)
         for i, m in enumerate(deconvolve_model_imagelist)
     ]
-
     return skymodel_list

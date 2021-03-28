@@ -754,8 +754,11 @@ def restore_skycomponent(
             theta=beam_pixels[2],
         )
         xi, yi = numpy.indices(im["pixels"].data.shape[-2:])
-        im["pixels"].data[...] += flux[...,numpy.newaxis, numpy.newaxis] * gaussian(yi, xi)[numpy.newaxis, numpy.newaxis,...]
-        
+        im["pixels"].data[...] += (
+            flux[..., numpy.newaxis, numpy.newaxis]
+            * gaussian(yi, xi)[numpy.newaxis, numpy.newaxis, ...]
+        )
+
     im.attrs["clean_beam"] = clean_beam
     return im
 

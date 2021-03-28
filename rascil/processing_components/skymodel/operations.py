@@ -329,7 +329,7 @@ def extract_skycomponents_from_skymodel(
 
     :param sm: skymodel
     :param component_threshold: Threshold in Jy to be classified as a source
-    :param component_method: Method to extract skycomponents: pixels or fit
+    :param component_method: Method to extract skycomponents: fit
     :param kwargs: Parameters for functions
     :return: Updated skymodel
 
@@ -341,30 +341,6 @@ def extract_skycomponents_from_skymodel(
     component_method = get_parameter(kwargs, "component_method", None)
     if component_method is None:
         return sm
-    elif component_method == "pixels":
-        newsm = copy_skymodel(sm)
-        nchan, npol, _, _ = newsm.image["pixels"].shape
-        refchan = nchan // 2
-        points = numpy.where(
-            numpy.abs(newsm.image["pixels"].data[refchan, 0]) > component_threshold
-        )
-        number_points = len(points[0])
-        if number_points > 0:
-            log.info(
-                f"extract_skycomponents_from_image: Converting {number_points} sources > {component_threshold} Jy/pixel to SkyComponents"
-            )
-            
-            wcs = newsm.image.image_acc.wcs
-            for p in zip(points[0], points[1]):
-                direction = pixel_to_skycoord(p[1], p[0], wcs, 0)
-                comp = Skycomponent(
-                    direction=direction,
-                    flux=newsm.image["pixels"].data[:, :, p[0], p[1]],
-                    frequency=newsm.image.frequency,
-                    polarisation_frame=newsm.image.image_acc.polarisation_frame,
-                    shape="Point",
-                )
-                newsm.components.append(comp)
     elif component_method == "fit":
         newsm = copy_skymodel(sm)
         try:
@@ -387,7 +363,7 @@ def extract_skycomponents_from_skymodel(
             )
             return sm
     else:
-        raise ValueError(f"Unknown component extraction method{component_method}")
+        raise ValueError(f"Unknown component extraction method {component_method}")
     
     return newsm
 

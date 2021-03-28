@@ -42,12 +42,12 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
-
+default_run = True
 @pytest.mark.parametrize(
     "enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
     [
         (
-            True,
+            default_run,
             "invert",
             True,
             "invert",
@@ -55,11 +55,11 @@ log.setLevel(logging.INFO)
             98.16311144166765,
             -13.706505677100173,
             None,
-            "None",
+            None,
             0.0
         ),
         (
-            True,
+            default_run,
             "offset_component",
             True,
             "invert",
@@ -67,70 +67,57 @@ log.setLevel(logging.INFO)
             95.03547579608582,
             -13.663745360768113,
             None,
-            "None",
+            None,
             0.5
          ),
         (
-            True,
+            default_run,
             "ical",
             True,
             "ical",
             True,
-            100.01554843287282,
-            -0.4621135874655483,
+            100.01381425432604,
+            -0.4621146868706445,
             None,
-            "None",
+            None,
             0.0
         ),
         (
-            True,
+            default_run,
             "cip",
             True,
             "cip",
             False,
-            101.11050450645843,
-            -0.09528853716120966,
+            101.1102009492722,
+            -0.1011021311242418,
             None,
             "None",
             0.0
         ),
         (
-            True,
+            default_run,
             "cip_offset",
             True,
             "cip",
             False,
-            92.8907298154679,
-            -0.45221613608505623,
+            93.87847258291737,
+            -0.2321764357472446,
             None,
             "None",
             0.5
         ),
         (
-            True,
+            default_run,
             "fit_component",
             True,
             "cip",
             False,
-            1.136590153943971,
-            -1.1061578234457623,
+            95.98637719234588,
+            -0.1276295829602042,
             "0.1",
             "fit",
             0.5
         ),
-        (
-            True,
-            "pixels_component",
-            True,
-            "cip",
-            False,
-            1.8478482415510298,
-            -1.045038267173119,
-            "0.1",
-            "pixels",
-            0.5
-        )
-
     ]
 )
 def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold,
@@ -341,7 +328,7 @@ def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_
             "--clean_component_threshold",
             "1e15",
             "--clean_component_method",
-            "pixels"
+            "fit"
         ]
     
     calibration_args = [

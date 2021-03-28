@@ -707,7 +707,7 @@ def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
     :param model: Model image (i.e. deconvolved)
     :param psf: Input PSF
     :param residual: Residual image
-    :param clean_beam: Clean beam
+    :param clean_beam: Clean beam e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :return: restored image
 
     """
@@ -756,6 +756,12 @@ def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
 
 
 def convert_clean_beam_to_pixels(model, clean_beam):
+    """ Convert clean beam to pixels
+    
+    :param model:
+    :param clean_beam: e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
+    :return:
+    """
     to_mm = 4.0 * numpy.log(2.0)
     # Cellsize in radians
     cellsize = numpy.abs((model["x"][0].data - model["x"][-1].data)) / len(model["x"])

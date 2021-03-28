@@ -289,8 +289,7 @@ def write_results(imagename, result):
     show_image(restored, title=f"{imagename} Clean restored image")
     plt.savefig(imagename + "_restored.png")
     plt.show(block=False)
-    restoredname = imagename + "_restored.fits"
-    export_image_to_fits(restored, restoredname)
+
     # The residual images come as (image, weight) pairs so to get one image
     # we form a weight sum
     residual_image, sumwt = sum_invert_results(residual)

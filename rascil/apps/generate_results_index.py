@@ -100,9 +100,7 @@ def generate_html_file(path, sorted_file_dict):
         f"<b>Contents of directory: <span style='color: red'>{docker_to_local_path }</span></b></p>\n"
     )
     for k, v in sorted_file_dict.items():
-        html_string = (
-            f"{html_string}\n{generate_html_sub_string(CATEGORY_STRINGS[k], docker_to_local_path, v)}"
-        )
+        html_string = f"{html_string}\n{generate_html_sub_string(CATEGORY_STRINGS[k], docker_to_local_path, v)}"
 
     html_file = open(path + "/index.html", "w")
     html_file.write(f"{html_string}" f"{HTML_END}")
@@ -146,7 +144,9 @@ def generate_markdown_file(path, sorted_file_dict):
         f"<span style='color: red; font-size:18px'>{docker_to_local_path}</span>\n"
     )
     for k, v in sorted_file_dict.items():
-        sub_string = generate_md_sub_string(CATEGORY_STRINGS[k], docker_to_local_path, v)
+        sub_string = generate_md_sub_string(
+            CATEGORY_STRINGS[k], docker_to_local_path, v
+        )
         md_string = f"{md_string}\n{sub_string}"
 
     md_file = open(path + "/index.md", "w")

@@ -11,7 +11,8 @@ from rascil.apps.generate_results_index import (
     STATS_PNG,
     generate_markdown_file,
     sort_files,
-    OTHER_FILES, _find_path_for_index_files,
+    OTHER_FILES,
+    _find_path_for_index_files,
 )
 from rascil.data_models import rascil_path
 
@@ -268,21 +269,21 @@ def test_sort_files_some_files():
 def test_find_path_for_index_files_no_docker_path_env_var():
     """DOCKER_PATH does not exist in environment variables."""
 
-    result = _find_path_for_index_files('/Correct/Path/myFig.png')
-    assert result == '/Correct/Path/myFig.png'
+    result = _find_path_for_index_files("/Correct/Path/myFig.png")
+    assert result == "/Correct/Path/myFig.png"
 
 
 @patch.dict(os.environ, {"DOCKER_PATH": ""})
 def test_find_path_for_index_files_empty_docker_path_env_var():
     """DOCKER_PATH exists in environment variables, but doesn't hold information."""
 
-    result = _find_path_for_index_files('/Correct/Path/myFig.png')
-    assert result == '/Correct/Path/myFig.png'
+    result = _find_path_for_index_files("/Correct/Path/myFig.png")
+    assert result == "/Correct/Path/myFig.png"
 
 
 @patch.dict(os.environ, {"DOCKER_PATH": "/myLocal/path"})
 def test_find_path_for_index_files_docker_path_env_var_exists():
     """DOCKER_PATH exists in environment variables and holds path information."""
 
-    result = _find_path_for_index_files('/mountedPath/localSubDir/myFig.png')
-    assert result == '/myLocal/path/localSubDir/myFig.png'
+    result = _find_path_for_index_files("/mountedPath/localSubDir/myFig.png")
+    assert result == "/myLocal/path/localSubDir/myFig.png"

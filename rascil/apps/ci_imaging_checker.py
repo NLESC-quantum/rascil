@@ -72,19 +72,19 @@ def cli_parser():
         "--finder_beam_maj",
         type=float,
         default=1.0,
-        help="Major axis of the restoring beam (degrees)",
+        help="Major axis of the restoring beam (degrees) (usually not needed, passed in restored image)",
     )
     parser.add_argument(
         "--finder_beam_min",
         type=float,
         default=1.0,
-        help="Minor axis of the restoring beam (degrees)",
+        help="Minor axis of the restoring beam (degrees) (usually not needed, passed in restored image)",
     )
     parser.add_argument(
         "--finder_beam_pos_angle",
         type=float,
         default=0.0,
-        help="Positioning angle of the restoring beam (degrees)",
+        help="Positioning angle of the restoring beam (degrees) (usually not needed, passed in restored image)",
     )
     parser.add_argument(
         "--finder_th_isl",

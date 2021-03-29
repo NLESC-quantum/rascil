@@ -6,7 +6,7 @@ import argparse
 import datetime
 import logging
 import sys
-
+import os
 import matplotlib
 
 matplotlib.use("Agg")
@@ -242,6 +242,12 @@ def analyze_image(args):
         th_pix,
         refchan,
     )
+    
+    #check if there are sources found
+    log.info("Output csv source file:{}".format(source_file))
+    if os.path.exists(source_file) == False:
+        log.info("Error: No source found. Please refine beam parameters.")
+        return None, None
 
     if args.rascil_source_file is None:
         rascil_source_file = args.ingest_fitsname_restored.replace(

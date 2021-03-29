@@ -64,6 +64,31 @@ Then run the checker as follows::
 Specifying the ``@`` sign in front of the file name will let the code know that you want
 to ready the arguments from a file instead of directly from the command line.
 
+What happens when the image files, the argument file, and the continuum_imagin_checker code
+are not all in the same directory? Let's take the following directory structure as an example::
+
+    - rascil # this is the root directory of the RASCIL git repository
+        - rascil
+            - apps
+                ci_imaging_checker.py
+            - my_data
+                my_restored_file.fits
+                my_residual_file.fits
+            args.txt
+
+With such a setup, the best way to run the checker is from the top-level ``rascil`` directory
+(the git root directory). Your ``args.txt`` file will need to contain either the relative or
+absolute path to your FITS files. E.g.::
+
+    --ingest_fitsname_restored=rascil/my_data/test-imaging-pipeline-dask_continuum_imaging_restored.fits
+    --ingest_fitsname_residual=rascil/my_data/test-imaging-pipeline-dask_continuum_imaging_residual.fits
+    --check_source=True
+
+And you need to provide similarily the relative or absolute path both to the args file and
+the code you are running::
+
+    python rascil/apps/ci_imaging_checker.py @rascil/args.txt
+
 Docker image
 ++++++++++++
 
@@ -71,6 +96,8 @@ A Docker image is available at ``nexus.engageska-portugal.pt/rascil-docker/rasci
 which can be run with either Docker or Singularity. Instructions can be found at
 
  .. toctree::
+    :maxdepth: 1
+
     ../installation/RASCIL_docker
 
 under **Running the continuum_imaging_checker** section.

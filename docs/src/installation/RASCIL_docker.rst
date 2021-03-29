@@ -122,6 +122,32 @@ appear in the same directory. If the singularity image you downloaded is in a di
 point to that path in the above command. Update the ``CLI_ARGS`` string with the command line
 arguments of the :ref:`rascil_apps_continuum_imaging_checker` code as needed.
 
+Providing input arguments from a file
++++++++++++++++++++++++++++++++++++++
+
+You may create a file that contains the input arguments for the app. Here is an example of it,
+called ``args.txt``::
+
+    --ingest_fitsname_restored=/myData/test-imaging-pipeline-dask_continuum_imaging_restored.fits
+    --ingest_fitsname_residual=/myData/test-imaging-pipeline-dask_continuum_imaging_residual.fits
+    --check_source=True
+    --plot_source=True
+
+Make sure each line contains one argument, there is an equal sign between arg and its value,
+and that there aren't any trailing white spaces in the lines. The paths to images and other input
+files has to be the absolute path within the container. Here, we use the ``DOCKER`` example of
+mounting our data into the ``/myData`` directory.
+
+Then, calling ``docker run`` simplifies as::
+
+    docker run -v ${PWD}:/myData \
+    -e CLI_ARGS='@/myData/args.txt \
+    --rm nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
+
+Here, we assume that your custom args.txt file is also mounted together with the data into ``/myData``.
+Provide the absolute path to that file when your run the above command.
+
+You can use an args file to run the singularity version with same principles.
 
 Running RASCIL as a cluster
 ---------------------------

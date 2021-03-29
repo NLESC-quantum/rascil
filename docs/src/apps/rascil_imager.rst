@@ -22,6 +22,7 @@ Notable features:
   - Distribute processing across processors using Dask
   - Multi Frequency Synthesis Multiscale CLEAN available, also with distribution of CLEAN over facets
   - Wide field imaging using the fast and accurate nifty gridder
+  - Modelling of bright sources by fitting with sub-pixel locations
   - Selfcalibration available for atmosphere (T), complex gains (G), and bandpass (B)
 
 CLI arguments are grouped:
@@ -84,6 +85,13 @@ The clean methods support two processing speed enhancements:
        and then merged with neighbours using a taper function. This works well for fields of compact sources
        but is likely to not perform well for extended emission.
 
+Bright compact sources can optionally be represented by discrete components instead of pixels.
+
+ - :code:`--clean_component_threshold 0.5` All sources > 0.5 Jy to be fitted
+ - :code:`--clean_component_method fit` non-linear last squares algorithm to find source parameters
+
+The skymodel written at the end of processing will include both the image model and the
+skycomponents.
 
 Polarisation
 ++++++++++++

@@ -198,7 +198,6 @@ nest-asyncio==1.5.1
     # via nbclient
 networkx==2.5
     # via scikit-image
-#git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
 git+https://gitlab.mpcdf.mpg.de/mtr/ducc.git
     # via -r requirements.in
 notebook==6.2.0
@@ -279,7 +278,7 @@ ptyprocess==0.7.0
     #   pexpect
     #   terminado
 pybind11==2.6.2
-    # via nifty-gridder
+    # via ducc nifty-gridder
 pycparser==2.20
     # via cffi
 pyerfa==1.7.2

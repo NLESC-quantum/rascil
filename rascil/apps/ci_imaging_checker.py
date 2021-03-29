@@ -260,7 +260,7 @@ def analyze_image(args):
     # check if there are sources found
     log.info("Output csv source file:{}".format(source_file))
     if os.path.exists(source_file) == False:
-        log.info("Error: No source found. Please refine beam parameters.")
+        log.error("Error: No source found. Please refine beam parameters.")
         return None, None
 
     if args.rascil_source_file is None:
@@ -271,10 +271,6 @@ def analyze_image(args):
         rascil_source_file = args.rascil_source_file
 
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
-
-    if args.apply_primary == "True":
-        telescope = args.telescope_model
-        out = add_primary_beam(input_image_restored, out, telescope)
 
     if args.check_source == "True":
 
@@ -298,8 +294,12 @@ def analyze_image(args):
                 radius=0.5,
             )
 
+        # Conpensate for primary beam correction -- NEEDS UPDATE
+        if args.apply_primary == "True":
+            telescope = args.telescope_model
+            orig = add_primary_beam(input_image_restored, orig, telescope)
+
         results = check_source(orig, out, args.match_sep)
-        log.info("Resulting list of matched items {}".format(results))
 
         if args.plot_source == "True":
             plot_file = args.ingest_fitsname_restored.replace(".fits", "")
@@ -564,10 +564,12 @@ def check_source(orig, comp, match_sep):
 
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)
 
+    log.debug("Here is the complete list of matches.")
+
     for match in matches:
         m_comp = comp[match[0]]
         m_orig = orig[match[1]]
-        log.info(f"Original: {m_orig} Match {m_comp}")
+        log.debug(f"Original: {m_orig} Match {m_comp}")
 
     return matches
 

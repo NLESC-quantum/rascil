@@ -44,12 +44,13 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 default_run = True
 @pytest.mark.parametrize(
-    "enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
+    "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
     [
         (
             default_run,
             "invert",
             True,
+            0,
             "invert",
             False,
             98.16311144166765,
@@ -60,8 +61,9 @@ default_run = True
         ),
         (
             default_run,
-            "offset_component",
+            "invert_offset",
             True,
+            0,
             "invert",
             False,
             95.03547579608582,
@@ -74,6 +76,7 @@ default_run = True
             default_run,
             "ical",
             True,
+            9,
             "ical",
             True,
             100.01381425432604,
@@ -87,6 +90,7 @@ default_run = True
             "cip",
             True,
             "cip",
+            9,
             False,
             101.1102009492722,
             -0.1011021311242418,
@@ -98,6 +102,7 @@ default_run = True
             default_run,
             "cip_offset",
             True,
+            9,
             "cip",
             False,
             93.87847258291737,
@@ -108,8 +113,9 @@ default_run = True
         ),
         (
             default_run,
-            "fit_component",
+            "cip_offset_fit",
             True,
+            9,
             "cip",
             False,
             95.98637719234588,
@@ -120,8 +126,8 @@ default_run = True
         ),
     ]
 )
-def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_min, component_threshold,
-                       component_method, offset):
+def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min,
+                       component_threshold, component_method, offset):
     
     if not enabled:
         return True
@@ -296,7 +302,7 @@ def test_rascil_imager(enabled, tag, use_dask, mode, add_errors, flux_max, flux_
     
     clean_args = [
         "--clean_nmajor",
-        "9",
+        f"{nmajor}",
         "--clean_niter",
         "1000",
         "--clean_algorithm",

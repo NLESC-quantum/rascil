@@ -74,16 +74,19 @@ class TestFitSkycomponent(unittest.TestCase):
             polarisation_frame=self.image_pol,
         )
     
-    def test_fit_skycomponent_lanczos(self):
+    def test_fit_skycomponent_pswf(self):
+        """ Put a point source on a location and then try to recover by fitting
+
+        """
         self.actualSetup()
         
-        self.model = insert_skycomponent(self.model, self.sc, insert_method="Lanczos")
+        self.model = insert_skycomponent(self.model, self.sc, insert_method="PSWF")
         
         newsc = fit_skycomponent(self.model, self.sc)
 
         assert newsc.shape == "Point"
-        separation = newsc.direction.separation(self.dphasecentre).rad
-        assert separation < 5e-4, separation
+        separation = newsc.direction.separation(self.sc.direction).rad
+        assert separation < 1e-7, separation
 
 if __name__ == "__main__":
     unittest.main()

@@ -256,8 +256,8 @@ def analyze_image(args):
         refchan,
         quiet_bdsf=quiet_bdsf,
     )
-    
-    #check if there are sources found
+
+    # check if there are sources found
     log.info("Output csv source file:{}".format(source_file))
     if os.path.exists(source_file) == False:
         log.info("Error: No source found. Please refine beam parameters.")

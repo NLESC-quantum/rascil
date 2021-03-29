@@ -5,6 +5,7 @@ Stand-alone application for finding sources with PyBDSF
 import argparse
 import datetime
 import logging
+import os
 import sys
 
 import matplotlib
@@ -18,6 +19,8 @@ import pandas as pd
 import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
+
+from rascil.apps.generate_results_index import create_index
 from rascil.data_models import (
     PolarisationFrame,
     import_skycomponent_from_hdf5,
@@ -55,7 +58,9 @@ def cli_parser():
     :param parser: argparse
     :return: CLI parser argparse
     """
-    parser = argparse.ArgumentParser(description="RASCIL continuum imaging checker")
+    parser = argparse.ArgumentParser(
+        description="RASCIL continuum imaging checker", fromfile_prefix_chars="@"
+    )
     parser.add_argument(
         "--ingest_fitsname_restored",
         type=str,
@@ -139,6 +144,13 @@ def cli_parser():
         type=float,
         default=1.0e-5,
         help="Maximum separation in radians for the source matching",
+    )
+    parser.add_argument(
+        "--quiet_bdsf",
+        type=str,
+        default="False",
+        help="If True, suppress bdsf.process_image() text output to screen. "
+        "Output is still sent to the log file.",
     )
     parser.add_argument(
         "--source_file", type=str, default=None, help="Name of output source file"
@@ -232,6 +244,7 @@ def analyze_image(args):
     log.info("Use threshold: {}, {}".format(th_isl, th_pix))
 
     input_image_residual = args.ingest_fitsname_residual
+    quiet_bdsf = False if args.quiet_bdsf == "False" else True
 
     ci_checker(
         input_image_restored,
@@ -241,6 +254,7 @@ def analyze_image(args):
         th_isl,
         th_pix,
         refchan,
+        quiet_bdsf=quiet_bdsf,
     )
 
     if args.rascil_source_file is None:
@@ -289,6 +303,12 @@ def analyze_image(args):
 
     else:
         results = None
+
+    files_directory = os.path.dirname(args.ingest_fitsname_restored)
+    if not files_directory:
+        files_directory = os.getcwd()
+
+    create_index(files_directory)
 
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))
@@ -419,6 +439,7 @@ def ci_checker(
     th_isl,
     th_pix,
     refchan,
+    quiet_bdsf=False,
 ):
     """
     PyBDSF-based source finder
@@ -430,7 +451,8 @@ def ci_checker(
     :param th_isl : Island threshold
     :param th_pix: Peak threshold
     :param refchan: Reference channel for spectral cube
-
+    :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
+                       Output is still sent to the log file
     : return None
     """
 
@@ -442,6 +464,7 @@ def ci_checker(
         thresh_isl=th_isl,
         thresh_pix=th_pix,
         collapse_ch0=refchan,
+        quiet=quiet_bdsf,
     )
 
     # Write the source catalog and the residual image.
@@ -462,6 +485,7 @@ def ci_checker(
             thresh_isl=th_isl,
             thresh_pix=th_pix,
             collapse_ch0=refchan,
+            quiet=quiet_bdsf,
         )
         ci_checker_diagnostics(img_resid, input_image_residual, "residual")
 

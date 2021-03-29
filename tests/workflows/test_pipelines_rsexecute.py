@@ -598,8 +598,8 @@ class TestPipelineGraphs(unittest.TestCase):
 
         qa = qa_image(restored[centre], context="test_ical_skymodel_pipeline_empty")
 
-        assert numpy.abs(qa.data["max"] - 100.01806496946456) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06555462924333058) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.01805126741128) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.06555462924333057) < 1e-7, str(qa)
 
     def test_ical_skymodel_pipeline_exact(self):
 
@@ -667,7 +667,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
         qa = qa_image(restored[centre], context="test_ical_skymodel_pipeline_exact")
 
-        assert numpy.abs(qa.data["max"] - 0.00040934913805187054) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.00008262713021) < 1e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.0002528759240871623) < 1e-7, str(qa)
 
     def test_ical_skymodel_pipeline_partial(self):
@@ -747,8 +747,8 @@ class TestPipelineGraphs(unittest.TestCase):
         qa = qa_image(restored[centre], context="test_ical_skymodel_pipeline_partial")
         print(qa)
 
-        assert numpy.abs(qa.data["max"] - 50.007830261198485) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.033495004503792926) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.00791266972018) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.033495004503792544) < 1e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):
         self.actualSetUp()
@@ -795,8 +795,8 @@ class TestPipelineGraphs(unittest.TestCase):
             )
 
         qa = qa_image(restored[centre], context="restored")
-        assert numpy.abs(qa.data["max"] - 100.01718910094274) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06593874966691306) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.01715136926585) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.06593874966691296) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp()

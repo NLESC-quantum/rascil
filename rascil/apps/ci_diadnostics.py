@@ -4,17 +4,21 @@
 import os
 import logging
 import sys
+import warnings
 
 from scipy import optimize
 import numpy as np
 import astropy.constants as consts
-import matplotlib
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+from astropy.io import fits
+from astropy.wcs import FITSFixedWarning
+from astropy.wcs import WCS
 # matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy
 
-from rascil.processing_components import fft_image_to_griddata, import_image_from_fits, show_image
+from rascil.processing_components import fft_image_to_griddata, show_image, import_image_from_fits
 from rascil.data_models.xarray_coordinate_support import griddata_wcs
 
 log = logging.getLogger("rascil-logger")
@@ -51,14 +55,22 @@ def qa_image(im_data, description="image"):
     return image_stats
 
 
-def plot_name(input_image, image_type):
+def plot_name(input_image, image_type, plot_type):
     """
+    Create file name from input image name removeing file extension.
+
+    :param input_image: File name of input image
+    :param image_type: Type of image e.g. restored
+    :param plot_type: type of plot (e.g. hist, plot...)
+
+    :return: file name for saved plot
     """
     return (
         input_image.replace(".fits" if ".fits" in input_image else ".h5", "")
         + "_"
         + image_type
-        + "_gaus_plot"
+        + "_gaus_"
+        + plot_type
     )
 
 
@@ -126,8 +138,7 @@ def histogram(bdsf_image, input_image, description='image'):
     ax.set_xlabel("Value")
     ax.legend()
 
-    # Create histogram file name from input image name removeing file extension.
-    save_plot = plot_name(input_image, description)
+    save_plot = plot_name(input_image, description, 'hist')
 
     ax.set_title(description)
 
@@ -147,37 +158,49 @@ def plot_with_running_mean(img, input_image, stats, description='image'):
 
     log.info("Plotting sky image with running mean.")
 
-    image = img.image_arr[0, 0, :, :]
+    try:
+        image = img.image_arr[0, 0, :, :]
+    except AttributeError:
+        image = img
 
-    x_index = np.arange(0, img.image_arr.shape[-2])
-    y_index = np.arange(0, img.image_arr.shape[-1])
+    x_index = np.arange(0, image.shape[-2])
+    y_index = np.arange(0, image.shape[-1])
 
-    fig = plt.figure(figsize=(8, 8), constrained_layout=False)
-    grid = fig.add_gridspec(nrows=4, ncols=4)  # , left=0.2, right=0.8, top=0.8,
+    fig = plt.figure(figsize=(9, 8), constrained_layout=False)
+    grid = fig.add_gridspec(nrows=4, ncols=4)
+
     main_ax = fig.add_subplot(grid[:-1, 1:])
+
     y_plot = fig.add_subplot(grid[:-1, 0], sharey=main_ax)
     x_plot = fig.add_subplot(grid[-1, 1:], sharex=main_ax)
 
     imap = main_ax.imshow(image.T, origin='lower', aspect='auto')
-    for gaussian in img.gaussians:
-        source = plt.Circle(
-            (gaussian.centre_pix[0], gaussian.centre_pix[1]),
-            color='w',
-            fill=False,
-        )
-        main_ax.add_patch(source)
+
+    if description == 'restored':
+        for gaussian in img.gaussians:
+            source = plt.Circle(
+                (gaussian.centre_pix[0], gaussian.centre_pix[1]),
+                color='w',
+                fill=False,
+            )
+            main_ax.add_patch(source)
     main_ax.axis('off')
     main_ax.title.set_text('Running mean of ' + description)
 
     x_plot.plot(x_index, np.mean(image, axis=1))
+    x_plot.set_ylabel('mean')
+    x_plot.set_xlabel('pixel number')
+
     y_plot.plot(np.mean(image, axis=0), y_index)
+    y_plot.set_ylabel('pixel number')
+    y_plot.set_xlabel('mean')
 
     main_pos = main_ax.get_position()
     dh = 0.008
     ax_cbar = fig.add_axes(
         [main_pos.x1, main_pos.y0-dh, 0.015, main_pos.y1-main_pos.y0+dh]
     )
-    plt.colorbar(imap, cax=ax_cbar, label=r'Flux $\left( \rm{Jy} \right) $')
+    plt.colorbar(imap, cax=ax_cbar, label=r'Flux $\left( \rm{Jy/\rm{beam}} \right) $')
 
     for i, (key, val) in enumerate(stats.items()):
         if i == 0:
@@ -188,7 +211,7 @@ def plot_with_running_mean(img, input_image, stats, description='image'):
 
     plt.subplots_adjust(wspace=0.0001, hspace=0.0001)
 
-    save_plot = plot_name(input_image, description)
+    save_plot = plot_name(input_image, description, 'plot')
 
     log.info('Saving sky plot to "{}.png"'.format(save_plot))
     plt.savefig(save_plot + ".png")
@@ -201,7 +224,12 @@ def source_region_mask(img):
     """
     Mask pixels from an image which are within 5*beam_width of sources in the
     source catalogue.
+
+    :param img: pybdsf image object to be masked
+
+    :return source_mask, background_mask: copys of masked input array.
     """
+
     # Here the major axis of the beam is used as the beam width and the. pybdsf
     # gives the beam "IN SIGMA UNITS in pixels" so we need to convert to
     # straight pixels by multiplying by the FWHM. See init_beam() function in
@@ -210,11 +238,12 @@ def source_region_mask(img):
     beam_radius = beam_width/2.0
 
     image_to_be_masked = img.image_arr[0, 0, :, :]
-    image_shape = [img.image_arr.shape[-2], img.image_arr.shape[-1]]
+
+    image_shape = [image_to_be_masked.shape[-2], image_to_be_masked.shape[-1]]
 
     grid = np.meshgrid(
-        np.arange(0, img.image_arr.shape[-2]),
-        np.arange(0, img.image_arr.shape[-1]),
+        np.arange(0, image_to_be_masked.shape[-2]),
+        np.arange(0, image_to_be_masked.shape[-1]),
         sparse=True,
         indexing='ij'
     )
@@ -245,29 +274,19 @@ def source_region_mask(img):
         copy=True
     )
 
-    plt.imshow(image_to_be_masked)
-    plt.colorbar()
-    plt.savefig('im1.png')
-    plt.close()
-
-    plt.imshow(source_mask)
-    plt.colorbar()
-    plt.savefig('im2.png')
-    plt.close()
-
-
-    plt.imshow(background_mask)
-    plt.colorbar()
-    plt.savefig('im3.png')
-    plt.close()
-
-
-    sys.exit()
-
     return source_mask, background_mask
 
 
-def power_spectrum(image, signal_channel, noise_channel, resolution):
+def radial_profile(image, centre=None):
+    if centre is None:
+        centre = (image.shape[0] // 2, image.shape[1] // 2)
+    x, y = numpy.indices((image.shape[0:2]))
+    r = numpy.sqrt((x - centre[0]) ** 2 + (y - centre[1]) ** 2)
+    r = r.astype(numpy.int)
+    return numpy.bincount(r.ravel(), image.ravel()) / numpy.bincount(r.ravel())
+
+
+def power_spectrum(bdsf_image, signal_channel, noise_channel, resolution):
     """
     Plot power spectrum for an image.
 
@@ -283,21 +302,21 @@ def power_spectrum(image, signal_channel, noise_channel, resolution):
 
     print("Display power spectrum of an image")
 
-    im = import_image_from_fits(image)
+    im = import_image_from_fits(bdsf_image)
 
-    nchan, npol, ny, nx = im["pixels"].shape
+    nchan, npol, ny, nx = im['pixels'].shape
 
     if signal_channel is None:
         signal_channel = nchan // 2
 
     plt.clf()
     show_image(im, chan=signal_channel)
-    plt.title('Signal image %s' % (basename))
+    plt.title('Signal image')
     plt.savefig('simulation_image_channel_%d.png' % signal_channel)
     plt.show()
     plt.clf()
     show_image(im, chan=noise_channel)
-    plt.title('Noise image %s' % (basename))
+    plt.title('Noise image')
     plt.savefig('simulation_noise_channel_%d.png' % signal_channel)
     plt.show()
 
@@ -332,7 +351,7 @@ def power_spectrum(image, signal_channel, noise_channel, resolution):
     plt.gca().set_yscale('log')
     plt.gca().set_ylim(1e-6 * numpy.max(profile), 2.0 * numpy.max(profile))
     plt.tight_layout()
-    plt.savefig('power_spectrum_profile_channel_%d.png' % signal_channel)
+    plt.savefig('power_spectrum_of residual.png')
     plt.show()
 
     filename = 'power_spectrum_channel.csv'

@@ -284,22 +284,61 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
     :return None
     """
 
-    im_resid = bdsf_image.resid_gaus_arr
-
     log.info("Performing image diagnostics")
 
-    source_mask, background_mask = source_region_mask(bdsf_image)
+    if image_type == 'residual':
 
-    residual_stats = qa_image(im_resid, description='residual')
-    restored_stats = qa_image(bdsf_image.image_arr[0, 0, :, :], description='restored')
-    sources_stats = qa_image(source_mask, description='sources')
-    background_stats = qa_image(background_mask, description='background')
+        residual_stats = qa_image(
+            bdsf_image.image_arr[0, 0, :, :],
+            description='residual'
+        )
+        plot_with_running_mean(
+            bdsf_image.image_arr[0, 0, :, :],
+            input_image,
+            residual_stats,
+            description='residual'
+        )
+        histogram(
+            bdsf_image,
+            input_image,
+            description='residual'
+        )
+        power_spectrum(input_image, None, 0, 5.0e-4)
 
-    plot_with_running_mean(bdsf_image, input_image, restored_stats, description='restored')
+    elif image_type == 'restored':
 
-    # power_spectrum(im_resid, signal_channel, noise_channel, resolution)
+        source_mask, background_mask = source_region_mask(bdsf_image)
 
-    histogram(bdsf_image, input_image, description='residual')
+        sources_stats = qa_image(
+            source_mask,
+            description='sources'
+        )
+        background_stats = qa_image(
+            background_mask,
+            description='background'
+        )
+        restored_stats = qa_image(
+            bdsf_image.image_arr[0, 0, :, :],
+            description='restored'
+        )
+        plot_with_running_mean(
+            source_mask,
+            input_image,
+            sources_stats,
+            description='sources'
+        )
+        plot_with_running_mean(
+            background_mask,
+            input_image,
+            background_stats,
+            description='background'
+        )
+        plot_with_running_mean(
+            bdsf_image,
+            input_image,
+            restored_stats,
+            description='restored'
+        )
 
     return
 
@@ -335,16 +374,16 @@ def ci_checker(
         collapse_ch0=refchan,
     )
 
+    print()
+    print(img_rest.wcs_obj)
+    print()
+
     # Write the source catalog and the residual image.
     img_rest.write_catalog(
         outfile=source_file, format="csv", catalog_type="srl", clobber=True
     )
     img_rest.write_catalog(format="fits", catalog_type="srl", clobber=True)
     img_rest.export_image(img_type="gaus_resid", clobber=True)
-
-    # print()
-    # print(img_rest.mask_arr)
-    # print()
 
     log.info("Analysing the restored image")
     ci_checker_diagnostics(img_rest, input_image_restored, "restored")

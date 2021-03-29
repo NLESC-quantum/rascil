@@ -86,7 +86,7 @@ Run the image with default entrypoint will display the help interface of the con
 
 Run the image with input FITS files::
 
-    docker run -v ${PWD}:/myData \
+    docker run -v ${PWD}:/myData -e DOCKER_PATH=${PWD} \
         -e CLI_ARGS='--ingest_fitsname_restored /myData/my_restored.fits \
         --ingest_fitsname_residual /myData/my_residual.fits' \
         --rm nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
@@ -94,7 +94,14 @@ Run the image with input FITS files::
 The above command will mount your current directory int `myData` on the container filesystem.
 The code within the container will access your data files in this directory, so make sure, you
 run it from the directory where your images you want to check are. The output files will
-appear in the same directory on your local system. Update the ``CLI_ARGS`` string with the command
+appear in the same directory on your local system.
+
+It will also pass in the absolute path of your current directory to the image in the
+``DOCKER_PATH`` environment variable. This is necessary, so that the produced index files,
+which list all the output files the app produced, show the path to the output files
+in your local machine, not in the docker container.
+
+Update the ``CLI_ARGS`` string with the command
 line arguments of the :ref:`rascil_apps_continuum_imaging_checker` code as needed.
 Once the run finishes, the container will be automatically removed from the system
 because of ``--rm`` in the above command.
@@ -140,7 +147,7 @@ mounting our data into the ``/myData`` directory.
 
 Then, calling ``docker run`` simplifies as::
 
-    docker run -v ${PWD}:/myData \
+    docker run -v ${PWD}:/myData -e DOCKER_PATH=${PWD} \
     -e CLI_ARGS='@/myData/args.txt \
     --rm nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
 

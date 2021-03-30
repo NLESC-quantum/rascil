@@ -7,29 +7,38 @@ import datetime
 import logging
 import sys
 
-import matplotlib
-
 # matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
-from scipy import optimize
 import numpy as np
 import pandas as pd
 import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.wcs.wcsapi import SlicedLowLevelWCS
-from rascil.data_models import PolarisationFrame, import_skycomponent_from_hdf5, export_skycomponent_to_hdf5
+from rascil.data_models import (
+    PolarisationFrame,
+    import_skycomponent_from_hdf5,
+    export_skycomponent_to_hdf5,
+)
 from rascil.processing_components import create_low_test_skycomponents_from_gleam
 from rascil.processing_components.skycomponent.operations import (
     create_skycomponent,
     find_skycomponent_matches,
     apply_beam_to_skycomponent,
 )
-from rascil.processing_components.image.operations import import_image_from_fits, export_image_to_fits
+from rascil.processing_components.image.operations import (
+    import_image_from_fits,
+    export_image_to_fits,
+)
 from rascil.processing_components.imaging.primary_beams import create_pb
 
-from ci_diadnostics import histogram, qa_image, plot_with_running_mean, source_region_mask, power_spectrum
+from rascil.apps.ci_diadnostics import (
+    histogram,
+    qa_image,
+    plot_with_running_mean,
+    source_region_mask,
+    power_spectrum,
+)
 
 
 class FileFormatError(Exception):
@@ -130,13 +139,19 @@ def cli_parser():
         "--source_file", type=str, default=None, help="Name of output source file"
     )
     parser.add_argument(
-        "--rascil_source_file", type=str, default=None, help="Name of output RASCIL components hdf file"
+        "--rascil_source_file",
+        type=str,
+        default=None,
+        help="Name of output RASCIL components hdf file",
     )
     parser.add_argument(
         "--logfile", type=str, default=None, help="Name of output log file"
     )
     parser.add_argument(
-        "--savefits_rmsim", type=str, default="False", help="This parameter is a Boolean (default is False). If True, save background rms image as a FITS file."
+        "--savefits_rmsim",
+        type=str,
+        default="False",
+        help="This parameter is a Boolean (default is False). If True, save background rms image as a FITS file.",
     )
 
     return parser
@@ -191,7 +206,9 @@ def analyze_image(args):
     nchan = im["pixels"].shape[0]
     if nchan > 0:
         refchan = nchan // 2
-        log.info(f"Found spectral cube with {nchan} channels, using channel {refchan} for source finding")
+        log.info(
+            f"Found spectral cube with {nchan} channels, using channel {refchan} for source finding"
+        )
     else:
         refchan = 0
 
@@ -226,11 +243,13 @@ def analyze_image(args):
         source_file,
         th_isl,
         th_pix,
-        refchan
+        refchan,
     )
 
     if args.rascil_source_file is None:
-        rascil_source_file = args.ingest_fitsname_restored.replace(".fits", ".pybdsm.srl.hdf")
+        rascil_source_file = args.ingest_fitsname_restored.replace(
+            ".fits", ".pybdsm.srl.hdf"
+        )
     else:
         rascil_source_file = args.rascil_source_file
 
@@ -293,62 +312,42 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
 
     log.info("Performing image diagnostics")
 
-    if image_type == 'residual':
+    if image_type == "residual":
 
         residual_stats = qa_image(
-            bdsf_image.image_arr[0, 0, :, :],
-            description='residual'
+            bdsf_image.image_arr[0, 0, :, :], description="residual"
         )
         plot_with_running_mean(
             bdsf_image.image_arr[0, 0, :, :],
             input_image,
             residual_stats,
             subwcs,
-            description='residual'
+            description="residual",
         )
-        histogram(
-            bdsf_image,
-            input_image,
-            description='residual'
-        )
+        histogram(bdsf_image, input_image, description="residual")
         power_spectrum(input_image, None, 0, 5.0e-4)
 
-    elif image_type == 'restored':
+    elif image_type == "restored":
 
         source_mask, background_mask = source_region_mask(bdsf_image)
 
-        sources_stats = qa_image(
-            source_mask,
-            description='sources'
-        )
-        background_stats = qa_image(
-            background_mask,
-            description='background'
-        )
+        sources_stats = qa_image(source_mask, description="sources")
+        background_stats = qa_image(background_mask, description="background")
         restored_stats = qa_image(
-            bdsf_image.image_arr[0, 0, :, :],
-            description='restored'
+            bdsf_image.image_arr[0, 0, :, :], description="restored"
         )
         plot_with_running_mean(
-            source_mask,
-            input_image,
-            sources_stats,
-            subwcs,
-            description='sources'
+            source_mask, input_image, sources_stats, subwcs, description="sources"
         )
         plot_with_running_mean(
             background_mask,
             input_image,
             background_stats,
             subwcs,
-            description='background'
+            description="background",
         )
         plot_with_running_mean(
-            bdsf_image,
-            input_image,
-            restored_stats,
-            subwcs,
-            description='restored'
+            bdsf_image, input_image, restored_stats, subwcs, description="restored"
         )
 
     return
@@ -362,7 +361,7 @@ def ci_checker(
     source_file,
     th_isl,
     th_pix,
-    refchan
+    refchan,
 ):
     """
     PyBDSF-based source finder
@@ -381,7 +380,10 @@ def ci_checker(
     # Process image.
     log.info("Analysing the restored image")
     img_rest = bdsf.process_image(
-        input_image_restored, beam=beam_info, thresh_isl=th_isl, thresh_pix=th_pix,
+        input_image_restored,
+        beam=beam_info,
+        thresh_isl=th_isl,
+        thresh_pix=th_pix,
         collapse_ch0=refchan,
     )
 
@@ -403,7 +405,7 @@ def ci_checker(
             beam=beam_info,
             thresh_isl=th_isl,
             thresh_pix=th_pix,
-            collapse_ch0=refchan
+            collapse_ch0=refchan,
         )
 
         save_rms = (
@@ -414,8 +416,8 @@ def ci_checker(
             + "_rms"
         )
 
-        if args.savefits_rmsim == 'True':
-            export_image_to_fits(img_resid.rms_arr, save_rms+".fits")
+        if args.savefits_rmsim == "True":
+            export_image_to_fits(img_resid.rms_arr, save_rms + ".fits")
 
         ci_checker_diagnostics(img_resid, input_image_residual, "residual")
 

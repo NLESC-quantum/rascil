@@ -8,6 +8,7 @@ import logging
 from scipy import optimize
 import numpy as np
 import astropy.constants as consts
+
 # matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy
@@ -82,7 +83,7 @@ def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-(((x - mean) / 4.0 / stddev) ** 2))
 
 
-def histogram(bdsf_image, input_image, description='image'):
+def histogram(bdsf_image, input_image, description="image"):
     """
     Plot a histogram of the pixel counts produced with
     mean, RMS and Gaussian fit.
@@ -129,10 +130,10 @@ def histogram(bdsf_image, input_image, description='image'):
 
     ax.set_yscale("symlog")
     ax.set_ylabel("Counts")
-    ax.set_xlabel(r'Flux $\left( \rm{Jy/\rm{beam}} \right) $')
+    ax.set_xlabel(r"Flux $\left( \rm{Jy/\rm{beam}} \right) $")
     ax.legend()
 
-    save_plot = plot_name(input_image, description, 'hist')
+    save_plot = plot_name(input_image, description, "hist")
 
     ax.set_title(description)
 
@@ -145,7 +146,7 @@ def histogram(bdsf_image, input_image, description='image'):
     return
 
 
-def plot_with_running_mean(img, input_image, stats, projection, description='image'):
+def plot_with_running_mean(img, input_image, stats, projection, description="image"):
     """
     Image plot and running mean.
     """
@@ -163,66 +164,61 @@ def plot_with_running_mean(img, input_image, stats, projection, description='ima
     fig = plt.figure(figsize=(9, 8), constrained_layout=False)
     grid = fig.add_gridspec(nrows=4, ncols=4)
 
-    main_ax = fig.add_subplot(
-        grid[:-1, 1:],
-        projection=projection
-    )
+    main_ax = fig.add_subplot(grid[:-1, 1:], projection=projection)
 
-    y_plot = fig.add_subplot(
-        grid[:-1, 0],
-        sharey=main_ax,
-        projection=projection
-    )
-    y_plot.set_ylabel('DEC---SIN')
+    y_plot = fig.add_subplot(grid[:-1, 0], sharey=main_ax, projection=projection)
+    y_plot.set_ylabel("DEC---SIN")
 
     y_plot2 = y_plot.twiny()
     y_plot2.plot(np.mean(image, axis=0), y_index)
-    y_plot2.set_xlabel('mean')
+    y_plot2.set_xlabel("mean")
 
-    x_plot = fig.add_subplot(
-        grid[-1, 1:],
-        sharex=main_ax,
-        projection=projection
-    )
-    x_plot.set_xlabel('RA---SIN')
+    x_plot = fig.add_subplot(grid[-1, 1:], sharex=main_ax, projection=projection)
+    x_plot.set_xlabel("RA---SIN")
 
     x_plot2 = x_plot.twinx()
     x_plot2.plot(x_index, np.mean(image, axis=1))
-    x_plot2.set_ylabel('mean')
+    x_plot2.set_ylabel("mean")
 
-    imap = main_ax.imshow(image.T, origin='lower', aspect=1)
+    imap = main_ax.imshow(image.T, origin="lower", aspect=1)
 
-    if description == 'restored':
+    if description == "restored":
         for gaussian in img.gaussians:
             source = plt.Circle(
                 (gaussian.centre_pix[0], gaussian.centre_pix[1]),
-                color='w',
+                color="w",
                 fill=False,
             )
             main_ax.add_patch(source)
-    main_ax.title.set_text('Running mean of ' + description)
+    main_ax.title.set_text("Running mean of " + description)
 
     main_pos = main_ax.get_position()
     dh = 0.008
     ax_cbar = fig.add_axes(
-        [main_pos.x1-0.057, main_pos.y0-dh, 0.015, main_pos.y1-main_pos.y0+dh]
+        [main_pos.x1 - 0.057, main_pos.y0 - dh, 0.015, main_pos.y1 - main_pos.y0 + dh]
     )
-    plt.colorbar(imap, cax=ax_cbar, label=r'Flux $\left( \rm{Jy/\rm{beam}} \right) $')
+    plt.colorbar(imap, cax=ax_cbar, label=r"Flux $\left( \rm{Jy/\rm{beam}} \right) $")
 
     i = 0
     for key, val in stats.items():
         if i == 0:
-            string = f'{key}: {val}'
+            string = f"{key}: {val}"
         else:
-            string = f'{key}: {val:.3e}'
+            string = f"{key}: {val:.3e}"
 
         if val is not np.ma.masked:
-            plt.text(0.02, 0.25-i*0.025, string, fontsize=10, transform=plt.gcf().transFigure)
+            plt.text(
+                0.02,
+                0.25 - i * 0.025,
+                string,
+                fontsize=10,
+                transform=plt.gcf().transFigure,
+            )
             i += 1
 
     plt.subplots_adjust(wspace=0.0001, hspace=0.0001, right=0.81)
 
-    save_plot = plot_name(input_image, description, 'plot')
+    save_plot = plot_name(input_image, description, "plot")
 
     log.info('Saving sky plot to "{}.png"'.format(save_plot))
     plt.savefig(save_plot + ".png", pad_inches=-1)
@@ -241,14 +237,14 @@ def source_region_mask(img):
     :return source_mask, background_mask: copys of masked input array.
     """
 
-    log.info('Masking source and background regions.')
+    log.info("Masking source and background regions.")
 
     # Here the major axis of the beam is used as the beam width and the. pybdsf
     # gives the beam "IN SIGMA UNITS in pixels" so we need to convert to
     # straight pixels by multiplying by the FWHM. See init_beam() function in
     # pybdsf source code.
-    beam_width = img.pixel_beam()[0]*2.35482
-    beam_radius = beam_width/2.0
+    beam_width = img.pixel_beam()[0] * 2.35482
+    beam_radius = beam_width / 2.0
 
     image_to_be_masked = img.image_arr[0, 0, :, :]
 
@@ -258,7 +254,7 @@ def source_region_mask(img):
         np.arange(0, image_to_be_masked.shape[-2]),
         np.arange(0, image_to_be_masked.shape[-1]),
         sparse=True,
-        indexing='ij'
+        indexing="ij",
     )
 
     source_regions = np.ones(shape=image_shape, dtype=int)
@@ -267,24 +263,18 @@ def source_region_mask(img):
     for gaussian in img.gaussians:
 
         source_radius = np.sqrt(
-            (grid[0] - gaussian.centre_pix[0])**2
-            + (grid[1] - gaussian.centre_pix[1])**2
+            (grid[0] - gaussian.centre_pix[0]) ** 2
+            + (grid[1] - gaussian.centre_pix[1]) ** 2
         )
 
         source_regions[source_radius < beam_radius] = 0
 
     background_regions[source_regions == 0] = 1
 
-    source_mask = np.ma.array(
-        image_to_be_masked,
-        mask=source_regions,
-        copy=True
-    )
+    source_mask = np.ma.array(image_to_be_masked, mask=source_regions, copy=True)
 
     background_mask = np.ma.array(
-        image_to_be_masked,
-        mask=background_regions,
-        copy=True
+        image_to_be_masked, mask=background_regions, copy=True
     )
 
     return source_mask, background_mask
@@ -313,7 +303,7 @@ def power_spectrum(input_image, signal_channel, noise_channel, resolution):
 
     im = import_image_from_fits(input_image)
 
-    nchan, npol, ny, nx = im['pixels'].shape
+    nchan, npol, ny, nx = im["pixels"].shape
 
     if signal_channel is None:
         signal_channel = nchan // 2
@@ -338,30 +328,36 @@ def power_spectrum(input_image, signal_channel, noise_channel, resolution):
     plt.gca().set_title("Power spectrum of image residual")
     plt.gca().set_xlabel(r"$\theta$")
     plt.gca().set_ylabel(r"$K^2$")
-    plt.gca().set_xscale('log')
-    plt.gca().set_yscale('log')
+    plt.gca().set_xscale("log")
+    plt.gca().set_yscale("log")
     plt.gca().set_ylim(1e-6 * numpy.max(profile), 2.0 * numpy.max(profile))
     plt.tight_layout()
 
-    save_plot = plot_name(input_image, 'residual', 'power_spectrum')
+    save_plot = plot_name(input_image, "residual", "power_spectrum")
 
     log.info('Saving power spectrum to "{}.png"'.format(save_plot))
-    plt.savefig(save_plot + '.png')
+    plt.savefig(save_plot + ".png")
     plt.close()
 
     log.info('Saving power spectrum profile to "{}_channel.csv"'.format(save_plot))
-    filename = save_plot + '_channel.csv'
+    filename = save_plot + "_channel.csv"
     results = list()
     for row in range(len(theta_axis)):
         result = dict()
-        result['inverse_theta'] = theta_axis[row]
-        result['profile'] = profile[row]
+        result["inverse_theta"] = theta_axis[row]
+        result["profile"] = profile[row]
         results.append(result)
 
     import csv
-    with open(filename, 'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=results[0].keys(), delimiter=',', quotechar='|',
-                                quoting=csv.QUOTE_MINIMAL)
+
+    with open(filename, "w") as csvfile:
+        writer = csv.DictWriter(
+            csvfile,
+            fieldnames=results[0].keys(),
+            delimiter=",",
+            quotechar="|",
+            quoting=csv.QUOTE_MINIMAL,
+        )
         writer.writeheader()
         for result in results:
             writer.writerow(result)

@@ -10,7 +10,8 @@ import numpy as np
 import astropy.constants as consts
 
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy
 

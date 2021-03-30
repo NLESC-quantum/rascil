@@ -1089,7 +1089,7 @@ def create_unittest_components(
                 centers.append([x, -x])
     model_pol = model.image_acc.polarisation_frame
     # Make the list of components
-    rpix = model.image_acc.wcs.wcs.crpix
+    rpix = model.image_acc.wcs.wcs.crpix - 1.0
     components = []
     for center in centers:
         ix, iy = center
@@ -1111,7 +1111,7 @@ def create_unittest_components(
             )
             + offset[1],
         )
-        sc = pixel_to_skycoord(p[0], p[1], model.image_acc.wcs, origin=1)
+        sc = pixel_to_skycoord(p[0], p[1], model.image_acc.wcs, origin=0)
         log.info("Component at (%f, %f) [0-rel] %s" % (p[0], p[1], str(sc)))
 
         # Channel images

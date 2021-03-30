@@ -140,6 +140,7 @@ def ical_skymodel_list_rsexecute_workflow(
         psf_imagelist,
         skymodel_list,
         prefix=f"{pipeline_name} cycle 0",
+        fit_skymodel=True,
         **kwargs,
     )
     # Next major cycles, if nmajor>1

@@ -10,8 +10,10 @@ import numpy
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models.data_model_helpers import export_skycomponent_to_hdf5
 from rascil.processing_components import (
     create_image,
+    export_image_to_fits
 )
 from rascil.processing_components import (
     insert_skycomponent,
@@ -28,7 +30,7 @@ log.setLevel(logging.WARNING)
 class TestFitSkycomponent(unittest.TestCase):
     def setUp(self):
         
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
         
         from rascil.data_models.parameters import rascil_path
         
@@ -87,6 +89,9 @@ class TestFitSkycomponent(unittest.TestCase):
         assert newsc.shape == "Point"
         separation = newsc.direction.separation(self.sc.direction).rad
         assert separation < 1e-7, separation
-
+        
+        if self.persist:
+            export_image_to_fits(self.model, "%s/test_fit_skycomponent.fits" % (self.dir))
+            export_skycomponent_to_hdf5(newsc, "%s/test_fit_skycomponent.hdf" % (self.dir))
 if __name__ == "__main__":
     unittest.main()

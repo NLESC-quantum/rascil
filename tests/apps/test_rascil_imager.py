@@ -53,11 +53,11 @@ default_run = True
             0,
             "invert",
             False,
-            98.16311144166765,
-            -13.706505677100173,
+            97.86001353082986,
+            -13.658737888701651,
             None,
             None,
-            0.0
+            5.0
         ),
         (
             default_run,
@@ -66,11 +66,11 @@ default_run = True
             0,
             "invert",
             False,
-            95.03547579608582,
-            -13.663745360768113,
+            94.73840939270013,
+            -13.614616421597278,
             None,
             None,
-            0.5
+            5.5
          ),
         (
             default_run,
@@ -79,24 +79,24 @@ default_run = True
             9,
             "ical",
             True,
-            100.01381425432604,
-            -0.4621146868706445,
+            100.01174977456739,
+            -0.45581717661385523,
             None,
             None,
-            0.0
+            5.0
         ),
         (
             default_run,
             "cip",
             True,
-            "cip",
             9,
+            "cip",
             False,
             101.1102009492722,
             -0.1011021311242418,
             None,
             "None",
-            0.0
+            5.0
         ),
         (
             default_run,
@@ -105,24 +105,24 @@ default_run = True
             9,
             "cip",
             False,
-            93.87847258291737,
-            -0.2321764357472446,
+            97.81215219219338,
+            -2.9815884563795767,
             None,
             "None",
-            0.5
+            5.5
         ),
         (
             default_run,
             "cip_offset_fit",
-            True,
+            False,
             9,
             "cip",
             False,
-            95.98637719234588,
-            -0.1276295829602042,
-            "0.1",
+            97.65194895228312,
+            -0.7075921937946489,
+            "10",
             "fit",
-            0.5
+            5.5
         ),
     ]
 )
@@ -218,13 +218,15 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
     bvis_list = rsexecute.persist(bvis_list)
 
     if persist:
+        components_list = rsexecute.compute(components_list, sync=True)
+        
         model_imagelist = [
             rsexecute.execute(insert_skycomponent, nout=1)(
                 model_imagelist[freqwin], components_list[freqwin]
             )
             for freqwin in range(nfreqwin)
         ]
-    
+        
         model_imagelist = rsexecute.compute(model_imagelist, sync=True)
 
         model = model_imagelist[0]
@@ -232,8 +234,10 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         export_image_to_fits(model, rascil_path("test_results/test_rascil_imager_model.fits"))
         export_image_to_fits(cmodel, rascil_path("test_results/test_rascil_imager_cmodel.fits"))
         found_components = find_skycomponents(cmodel)
+        sm = SkyModel(components=components_list[3])
+        export_skymodel_to_hdf5(sm, rascil_path("test_results/test_rascil_imager_cmodel_original.hdf"))
         sm = SkyModel(components=found_components)
-        export_skymodel_to_hdf5(sm, rascil_path("test_results/test_rascil_imager_cmodel.hdf"))
+        export_skymodel_to_hdf5(sm, rascil_path("test_results/test_rascil_imager_cmodel_found.hdf"))
 
     if add_errors:
         seeds = [

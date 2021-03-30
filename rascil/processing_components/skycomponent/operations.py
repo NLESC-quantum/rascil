@@ -27,20 +27,16 @@ __all__ = [
 import collections
 import warnings
 import logging
-import copy
+import warnings
 from typing import Union, List
-from astropy.modeling import models, fitting
-from astropy.wcs.utils import pixel_to_skycoord
-from astropy.wcs.utils import skycoord_to_pixel
-
-from rascil.data_models import get_parameter
-from rascil.data_models.memory_data_models import SkyModel, Skycomponent, Image
+import copy
 
 import astropy.units as u
 import numpy
 from astropy.convolution import Gaussian2DKernel
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import match_coordinates_sky
+from astropy.modeling import models, fitting
 from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.wcs.utils import pixel_to_skycoord
 from astropy.wcs.utils import skycoord_to_pixel
@@ -52,16 +48,15 @@ from rascil.data_models import Image, Skycomponent, get_parameter
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
 from rascil.processing_components.calibration.jones import apply_jones
 from rascil.processing_components.image import create_image_from_array
+from rascil.processing_components.image.deconvolution import (
+    convert_clean_beam_to_pixels,
+)
 from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.util.array_functions import (
     insert_function_sinc,
     insert_function_L,
     insert_function_pswf,
     insert_array,
-)
-from rascil.processing_components.image.deconvolution import (
-    convert_clean_beam_to_degrees,
-    convert_clean_beam_to_pixels,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -340,8 +335,8 @@ def find_skycomponents(
         # Get flux and position. Astropy's quantities make this
         # unnecessarily complicated.
         flux = numpy.array(comp_prop(segment, "max_value"))
-        xs = u.Quantity(list(map(u.Quantity, comp_prop(segment, "xcentroid"))))
-        ys = u.Quantity(list(map(u.Quantity, comp_prop(segment, "ycentroid"))))
+        xs = u.Quantity(list(map(u.Quantity, comp_prop(segment, "maxval_xpos"))))
+        ys = u.Quantity(list(map(u.Quantity, comp_prop(segment, "maxval_ypos"))))
 
         sc = pixel_to_skycoord(xs, ys, im.image_acc.wcs, 0)
         ras = sc.ra
@@ -402,14 +397,14 @@ def apply_beam_to_skycomponent(
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
     if beam.image_acc.wcs.wcs.ctype[0] == "RA---SIN":
-        pixlocs = skycoord_to_pixel(skycoords, beam.image_acc.wcs, origin=0, mode="wcs")
+        pixlocs = skycoord_to_pixel(skycoords, beam.image_acc.wcs, origin=1, mode="wcs")
     else:
         wcs = copy.deepcopy(beam.image_acc.wcs)
         wcs.wcs.ctype[0] = "RA---SIN"
         wcs.wcs.ctype[1] = "DEC--SIN"
         wcs.wcs.crval[0] = phasecentre.ra.deg
         wcs.wcs.crval[1] = phasecentre.dec.deg
-        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=0, mode="wcs")
+        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode="wcs")
 
     newsc = []
     total_flux = numpy.zeros([nchan, npol])
@@ -487,7 +482,7 @@ def apply_voltage_pattern_to_skycomponent(
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
     if vp.image_acc.wcs.wcs.ctype[0] == "RA---SIN":
-        pixlocs = skycoord_to_pixel(skycoords, vp.image_acc.wcs, origin=0, mode="wcs")
+        pixlocs = skycoord_to_pixel(skycoords, vp.image_acc.wcs, origin=1, mode="wcs")
     else:
         assert phasecentre is not None, "Need to know the phasecentre"
         wcs = copy.deepcopy(vp.image_acc.wcs)
@@ -495,7 +490,7 @@ def apply_voltage_pattern_to_skycomponent(
         wcs.wcs.ctype[1] = "DEC--SIN"
         wcs.wcs.crval[0] = phasecentre.ra.deg
         wcs.wcs.crval[1] = phasecentre.dec.deg
-        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=0, mode="wcs")
+        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode="wcs")
 
     newsc = []
     total_flux = numpy.zeros([nchan, npol], dtype="complex")
@@ -788,7 +783,7 @@ def voronoi_decomposition(im, comps):
         [u.rad * c.direction.ra.rad for c in comps],
         [u.rad * c.direction.dec.rad for c in comps],
     )
-    x, y = skycoord_to_pixel(directions, im.image_acc.wcs, 0, "wcs")
+    x, y = skycoord_to_pixel(directions, im.image_acc.wcs, 1, "wcs")
     points = [(x[i], y[i]) for i, _ in enumerate(x)]
     vor = Voronoi(points)
 

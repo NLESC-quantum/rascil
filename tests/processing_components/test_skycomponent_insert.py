@@ -34,7 +34,7 @@ log.setLevel(logging.WARNING)
 class TestSkycomponentInsert(unittest.TestCase):
     def setUp(self):
 
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
 
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 

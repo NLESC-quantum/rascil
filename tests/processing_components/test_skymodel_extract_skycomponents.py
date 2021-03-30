@@ -54,11 +54,13 @@ def test_skymodel_update():
         phasecentre=phasecentre,
         flux_limit=0.3,
         flux_max=1.0,
-        flux_threshold=0.3,
+        flux_threshold=1.0,
     )
     # Now extract all sources > 1.0Jy
-    newsm = extract_skycomponents_from_skymodel(sm, component_threshold=0.5)
+    newsm = extract_skycomponents_from_skymodel(all_sm, component_threshold=0.3, component_method='fit')
+    assert len(newsm.components) > 0, "No components found"
 
     for i, sc in enumerate(newsm.components):
         fsc, sep = find_nearest_skycomponent(sc.direction, all_sm.components)
+        print(i, sep)
         assert sep < cellsize, "Separation {sep} exceeds cellsize {cellsize}"

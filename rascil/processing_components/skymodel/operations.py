@@ -154,7 +154,7 @@ def show_skymodel(sms, psf_width=1.75, cm="Greys", vmax=None, vmin=None):
         if components is not None:
             for sc in components:
                 x, y = skycoord_to_pixel(
-                    sc.direction, sms[ism].image.image_acc.wcs, 0, "wcs"
+                    sc.direction, sms[ism].image.image_acc.wcs, 1, "wcs"
                 )
                 plt.plot(x, y, marker="+", color="red")
         
@@ -321,13 +321,14 @@ def create_skymodel_from_skycomponents_gaintables(components, gaintables, **kwar
 
 
 def extract_skycomponents_from_skymodel(
-        sm, **kwargs
+        sm, im=None, **kwargs
 ):
     """Extract the bright components from the image in a skymodel
 
     This produces one component per frequency channel
 
     :param sm: skymodel
+    :param im: image to be searched
     :param component_threshold: Threshold in Jy to be classified as a source
     :param component_method: Method to extract skycomponents: fit
     :param kwargs: Parameters for functions
@@ -339,29 +340,37 @@ def extract_skycomponents_from_skymodel(
         return sm
     
     component_method = get_parameter(kwargs, "component_method", None)
+    if component_threshold > 1e12:
+        component_threshold = None
+        component_method = None
+        
     if component_method is None:
         return sm
     elif component_method == "fit":
         newsm = copy_skymodel(sm)
         try:
-            found_components = find_skycomponents(
-                newsm.image, 3, threshold=component_threshold
-            )
-            number_points = len(found_components)
+            if im is None:
+                found_components = find_skycomponents(
+                    newsm.image, threshold=component_threshold
+                )
+                fitted_components = [fit_skycomponent(sm.image, sc, **kwargs) for sc in found_components]
+            else:
+                found_components = find_skycomponents(
+                    im, threshold=component_threshold
+                )
+                fitted_components = [fit_skycomponent(im, sc, **kwargs) for sc in found_components]
+
+            number_points = len(fitted_components)
             if number_points > 0:
                 log.info(
                     f"extract_skycomponents_from_image: Found {number_points} sources > {component_threshold} Jy"
                 )
-                for comp in found_components:
-                    fitted_comp = fit_skycomponent(sm.image, comp)
-                    newsm.components.append(fitted_comp)
-                if newsm.image is not None:
-                    newsm.image["pixels"].data[...] = 0.0
+                newsm.components += fitted_components
+        
         except AssertionError:
-            log.warning(
+            raise ValueError(
                 f"extract_skycomponents_from_image: No sources found > > {component_threshold} Jy"
             )
-            return sm
     else:
         raise ValueError(f"Unknown component extraction method {component_method}")
     

@@ -286,7 +286,7 @@ def residual_skymodel_list_rsexecute_workflow(
 
 
 def deconvolve_skymodel_list_rsexecute_workflow(
-    dirty_image_list, psf_list, skymodel_list, prefix="", **kwargs
+        dirty_image_list, psf_list, skymodel_list, prefix="", fit_skymodel=False, **kwargs
 ):
     """ Deconvolve using a skymodel
 
@@ -298,23 +298,35 @@ def deconvolve_skymodel_list_rsexecute_workflow(
     :return: list of skymodels
     """
     
-    deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
-
-    deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
-        dirty_image_list, psf_list, deconvolve_model_imagelist, prefix=prefix,
-        **kwargs
-    )
-
-    # Now recreate the sky models
-    # Set the skymodel image and then if the model is not fixed extract skycomponents
-    def update_skymodel(sm, im):
-        sm.image = im
-        if not sm.fixed:
-            sm = extract_skycomponents_from_skymodel(sm, **kwargs)
-        return sm
-
-    skymodel_list = [
-        rsexecute.execute(update_skymodel, nout=1)(skymodel_list[i], m)
-        for i, m in enumerate(deconvolve_model_imagelist)
-    ]
-    return skymodel_list
+    if fit_skymodel:
+        # Now recreate the sky models
+        # Set the skymodel image and then if the model is not fixed extract skycomponents
+        def update_skymodel_components(sm, d):
+            if not sm.fixed:
+                sm = extract_skycomponents_from_skymodel(sm, d, **kwargs)
+            return sm
+        
+        skymodel_list = [
+            rsexecute.execute(update_skymodel_components, nout=1)(skymodel_list[i], dirty[0])
+            for i, dirty in enumerate(dirty_image_list)
+        ]
+        return skymodel_list
+    
+    else:
+        deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
+        
+        deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
+            dirty_image_list, psf_list, deconvolve_model_imagelist, prefix=prefix,
+            **kwargs
+        )
+        
+        def update_skymodel_image(sm, im):
+            if not sm.fixed:
+                sm.image = im
+            return sm
+        
+        skymodel_list = [
+            rsexecute.execute(update_skymodel_image, nout=1)(skymodel_list[i], m)
+            for i, m in enumerate(deconvolve_model_imagelist)
+        ]
+        return skymodel_list

@@ -39,8 +39,10 @@ def plot_skycomponents_positions(
     :return: [ra_error, dec_error]:
              The error array for users to check
     """
+    angle_wrap = 180.0 * u.deg
+
     if comps_ref is None:  # No comparison needed
-        ra_test = [comp.direction.ra.degree for comp in comps_test]
+        ra_test = [comp.direction.ra.wrap_at(angle_wrap).degree for comp in comps_test]
         dec_test = [comp.direction.dec.degree for comp in comps_test]
 
         plt.plot(ra_test, dec_test, "o", color="b", markersize=5, label="Components")
@@ -56,12 +58,15 @@ def plot_skycomponents_positions(
         dec_error = numpy.zeros(len(matches))
         for i, match in enumerate(matches):
             m_comp = comps_test[match[0]]
-            ra_test[i] = m_comp.direction.ra.degree
+            ra_test[i] = m_comp.direction.ra.wrap_at(angle_wrap).degree
             dec_test[i] = m_comp.direction.dec.degree
             m_ref = comps_ref[match[1]]
-            ra_ref[i] = m_ref.direction.ra.degree
+            ra_ref[i] = m_ref.direction.ra.wrap_at(angle_wrap).degree
             dec_ref[i] = m_ref.direction.dec.degree
-            ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+            ra_error[i] = (
+                m_comp.direction.ra.wrap_at(angle_wrap).degree
+                - m_ref.direction.ra.wrap_at(angle_wrap).degree
+            )
 
             dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
 

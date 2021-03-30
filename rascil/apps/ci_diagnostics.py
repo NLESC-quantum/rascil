@@ -377,11 +377,3 @@ def power_spectrum(input_image, signal_channel, noise_channel, resolution):
         csvfile.close()
 
     return
-
-
-def main():
-    return
-
-
-if __name__ == "__main__":
-    main()

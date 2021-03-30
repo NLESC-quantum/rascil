@@ -262,8 +262,6 @@ def analyze_image(args):
     input_image_residual = args.ingest_fitsname_residual
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
 
-    print(quiet_bdsf)
-
     ci_checker(
         input_image_restored,
         input_image_residual,

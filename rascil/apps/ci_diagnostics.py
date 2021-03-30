@@ -4,6 +4,7 @@ checker.
 """
 
 import logging
+import csv
 
 from scipy import optimize
 import numpy as np
@@ -54,7 +55,7 @@ def qa_image(im_data, description="image"):
 
 def plot_name(input_image, image_type, plot_type):
     """
-    Create file name from input image name removeing file extension.
+    Create file name from input image name removing file extension.
 
     :param input_image: File name of input image
     :param image_type: Type of image e.g. restored
@@ -151,6 +152,12 @@ def histogram(bdsf_image, input_image, description="image"):
 def plot_with_running_mean(img, input_image, stats, projection, description="image"):
     """
     Image plot and running mean.
+
+    :param img: pybdsf image object
+    :param input_image_residual: file name of input image
+    :param stats: statistics of image
+    :param projection: projection from World Coordinate System (WCS) object
+    :param description: string to put in png file name and plot title
     """
 
     log.info("Plotting sky image with running mean.")
@@ -283,6 +290,12 @@ def source_region_mask(img):
 
 
 def radial_profile(image, centre=None):
+    """
+    Function for calculating the radial profile of input image.
+
+    :param image: rascil image object
+    :param centre: centre of the image
+    """
     if centre is None:
         centre = (image.shape[0] // 2, image.shape[1] // 2)
     x, y = numpy.indices((image.shape[0:2]))
@@ -349,8 +362,6 @@ def power_spectrum(input_image, signal_channel, noise_channel, resolution):
         result["inverse_theta"] = theta_axis[row]
         result["profile"] = profile[row]
         results.append(result)
-
-    import csv
 
     with open(filename, "w") as csvfile:
         writer = csv.DictWriter(

@@ -44,7 +44,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux_histogram,
 )
 
-from rascil.apps.ci_diadnostics import (
+from rascil.apps.ci_diagnostics import (
     histogram,
     qa_image,
     plot_with_running_mean,

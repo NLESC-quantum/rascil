@@ -17,6 +17,7 @@ The docker images for RASCIL are on nexus.engageska-portugal.pt at::
     nexus.engageska-portugal.pt/rascil-docker/rascil-base
     nexus.engageska-portugal.pt/rascil-docker/rascil-full
     nexus.engageska-portugal.pt/rascil-docker/rascil-notebook
+    nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker
 
 The first does not have the RASCIL test data but is smaller in size (2GB vs 4GB). However, for many of the tests
 and demonstrations the test data is needed.
@@ -64,6 +65,96 @@ The juptyer server will start and output possible URLs to use::
 
 The 127.0.0.1 is the one we want. Enter this address in your local browser. You should see
 the standard jupyter directory page.
+
+Running the continuum_imaging_checker
+-------------------------------------
+
+A Docker image which runs the :ref:`rascil_apps_continuum_imaging_checker` is available at
+``nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest``. It can be run
+in both Docker and Singularity.
+
+DOCKER
+++++++
+
+Pull the image::
+
+    docker pull nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
+
+Run the image with default entrypoint will display the help interface of the continuum_imaging_checker::
+
+    docker run nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
+
+Run the image with input FITS files::
+
+    docker run -v ${PWD}:/myData -e DOCKER_PATH=${PWD} \
+        -e CLI_ARGS='--ingest_fitsname_restored /myData/my_restored.fits \
+        --ingest_fitsname_residual /myData/my_residual.fits' \
+        --rm nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
+
+The above command will mount your current directory int `myData` on the container filesystem.
+The code within the container will access your data files in this directory, so make sure, you
+run it from the directory where your images you want to check are. The output files will
+appear in the same directory on your local system.
+
+It will also pass in the absolute path of your current directory to the image in the
+``DOCKER_PATH`` environment variable. This is necessary, so that the produced index files,
+which list all the output files the app produced, show the path to the output files
+in your local machine, not in the docker container.
+
+Update the ``CLI_ARGS`` string with the command
+line arguments of the :ref:`rascil_apps_continuum_imaging_checker` code as needed.
+Once the run finishes, the container will be automatically removed from the system
+because of ``--rm`` in the above command.
+
+SINGULARITY
++++++++++++
+
+Pull the image and name it ``rascil-ci-checker.img``::
+
+    singularity pull rascil-ci-checker.img docker://nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
+
+Run the image with default entrypoint will display the help interface of the continuum_imaging_checker::
+
+    singularity run rascil-ci-checker.img
+
+Run the image with input FITS files::
+
+    singularity run \
+        --env CLI_ARGS='--ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
+            --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits' \
+        rascil-ci-checker.img
+
+Run it from the directory where your images you want to check are. The output files will
+appear in the same directory. If the singularity image you downloaded is in a different path,
+point to that path in the above command. Update the ``CLI_ARGS`` string with the command line
+arguments of the :ref:`rascil_apps_continuum_imaging_checker` code as needed.
+
+Providing input arguments from a file
++++++++++++++++++++++++++++++++++++++
+
+You may create a file that contains the input arguments for the app. Here is an example of it,
+called ``args.txt``::
+
+    --ingest_fitsname_restored=/myData/test-imaging-pipeline-dask_continuum_imaging_restored.fits
+    --ingest_fitsname_residual=/myData/test-imaging-pipeline-dask_continuum_imaging_residual.fits
+    --check_source=True
+    --plot_source=True
+
+Make sure each line contains one argument, there is an equal sign between arg and its value,
+and that there aren't any trailing white spaces in the lines. The paths to images and other input
+files has to be the absolute path within the container. Here, we use the ``DOCKER`` example of
+mounting our data into the ``/myData`` directory.
+
+Then, calling ``docker run`` simplifies as::
+
+    docker run -v ${PWD}:/myData -e DOCKER_PATH=${PWD} \
+    -e CLI_ARGS='@/myData/args.txt \
+    --rm nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
+
+Here, we assume that your custom args.txt file is also mounted together with the data into ``/myData``.
+Provide the absolute path to that file when your run the above command.
+
+You can use an args file to run the singularity version with same principles.
 
 Running RASCIL as a cluster
 ---------------------------

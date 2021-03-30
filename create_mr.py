@@ -214,7 +214,9 @@ def main():
         mr_title = "WIP: SIM-805: Update requirements - to be actioned before next scheduled run"
         mr_object = MergeRequest(private_token)
         mr = mr_object.create_merge_request(new_branch, original_branch, mr_title)
-        mr_object.udpate_mr_settings(mr, assignee_ids.split(","), reviewer_ids.split(","))
+        mr_object.udpate_mr_settings(
+            mr, assignee_ids.split(","), reviewer_ids.split(",")
+        )
 
     else:
         log.info("No changes to commit.")

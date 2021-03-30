@@ -132,7 +132,9 @@ class TestCommitAndPushToBranch:
 
         mock_delete_head.assert_not_called()
         mock_git.return_value.checkout.assert_called_with("-b", new_branch)
-        mock_git.return_value.commit.assert_called_with(m="SIM-805: Updated requirements")
+        mock_git.return_value.commit.assert_called_with(
+            m="SIM-805: Updated requirements"
+        )
         mock_git.return_value.push.assert_called()
 
     @patch.object(Repo, "heads", ["sim-805-my-new-branch"])
@@ -155,7 +157,9 @@ class TestCommitAndPushToBranch:
 
         mock_delete_head.assert_called_once()
         mock_git.return_value.checkout.assert_called_with("-b", new_branch)
-        mock_git.return_value.commit.assert_called_with(m="SIM-805: Updated requirements")
+        mock_git.return_value.commit.assert_called_with(
+            m="SIM-805: Updated requirements"
+        )
         mock_git.return_value.push.assert_called()
 
     @patch.object(Repo, "heads", [])

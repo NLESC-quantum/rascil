@@ -26,8 +26,6 @@ from numpy.random import default_rng
 from rascil.apps.ci_imaging_checker import (
     cli_parser,
     analyze_image,
-    ci_checker_diagnostics,
-    bdsf_qa_image,
 )
 from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
@@ -166,13 +164,13 @@ def test_continuum_imaging_checker(
         [
             "--ingest_fitsname_restored",
             tagged_file,
-            "--ingest_fitsname_residual",
-            tagged_file,
             "--finder_beam_maj",
             f"{numpy.rad2deg(cellsize)}",
             "--finder_beam_min",
             f"{numpy.rad2deg(cellsize)}",
             "--check_source",
+            "True",
+            "--plot_source",
             "True",
             "--input_source_format",
             "external",
@@ -209,6 +207,8 @@ def test_continuum_imaging_checker(
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_restored_gaus_hist.png")
     )
-    assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_residual_gaus_hist.png")
-    )
+
+    # test that create_index() generates the html and md files,
+    # at the end of analyze_image()
+    assert os.path.exists(rascil_path(f"test_results/index.html"))
+    assert os.path.exists(rascil_path(f"test_results/index.md"))

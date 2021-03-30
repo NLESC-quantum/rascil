@@ -329,9 +329,9 @@ def extract_skycomponents_from_skymodel(
 
     :param sm: skymodel
     :param im: image to be searched
-    :param component_threshold: Threshold in Jy to be classified as a source
-    :param component_method: Method to extract skycomponents: fit
     :param kwargs: Parameters for functions
+    :param component_threshold: (in kwargs) Threshold in Jy to be classified as a source
+    :param component_method: (in kwargs) Method to extract skycomponents: fit
     :return: Updated skymodel
 
     """
@@ -351,12 +351,12 @@ def extract_skycomponents_from_skymodel(
         try:
             if im is None:
                 found_components = find_skycomponents(
-                    newsm.image, threshold=component_threshold
+                    newsm.image, fwhm=3, threshold=component_threshold
                 )
                 fitted_components = [fit_skycomponent(sm.image, sc, **kwargs) for sc in found_components]
             else:
                 found_components = find_skycomponents(
-                    im, threshold=component_threshold
+                    im, fwhm=3, threshold=component_threshold
                 )
                 fitted_components = [fit_skycomponent(im, sc, **kwargs) for sc in found_components]
 
@@ -369,7 +369,7 @@ def extract_skycomponents_from_skymodel(
         
         except AssertionError:
             raise ValueError(
-                f"extract_skycomponents_from_image: No sources found > > {component_threshold} Jy"
+                f"extract_skycomponents_from_image: No sources found > {component_threshold} Jy"
             )
     else:
         raise ValueError(f"Unknown component extraction method {component_method}")

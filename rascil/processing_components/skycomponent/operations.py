@@ -31,6 +31,8 @@ import warnings
 from typing import Union, List
 import copy
 
+from scipy.optimize import minpack
+
 import astropy.units as u
 import numpy
 from astropy.convolution import Gaussian2DKernel
@@ -100,6 +102,8 @@ def find_nearest_skycomponent_index(home, comps) -> int:
     :param comps: list of skycomponents
     :return: index of best in comps
     """
+    if len(comps) == 0:
+        raise ValueError("find_nearest_skycomponent_index: Catalog is empty")
     catalog = SkyCoord(
         ra=[c.direction.ra for c in comps], dec=[c.direction.dec for c in comps]
     )
@@ -863,7 +867,6 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
     z = im["pixels"].data[0, 0, sl_y, sl_x]
 
     # isotropic at the moment!
-    from scipy.optimize import minpack
 
     newsc = copy_skycomponent(sc)
 
@@ -890,20 +893,18 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
             # cellsize in radians
             cellsize = numpy.abs((im["x"][0].data - im["x"][-1].data)) / len(im["x"])
 
-            r2a = 180.0 * 3600.0 / numpy.pi
-
             gaussian_pixels = (fit.x_fwhm, fit.y_fwhm, fit.theta)
 
             if gaussian_pixels[1] > gaussian_pixels[0]:
                 clean_gaussian = {
-                    "bmaj": gaussian_pixels[1] * cellsize * r2a,
-                    "bmin": gaussian_pixels[0] * cellsize * r2a,
+                    "bmaj": numpy.rad2deg(gaussian_pixels[1] * cellsize),
+                    "bmin": numpy.rad2deg(gaussian_pixels[0] * cellsize),
                     "bpa": numpy.rad2deg(gaussian_pixels[2]),
                 }
             else:
                 clean_gaussian = {
-                    "bmaj": gaussian_pixels[0] * cellsize * r2a,
-                    "bmin": gaussian_pixels[1] * cellsize * r2a,
+                    "bmaj": numpy.rad2deg(gaussian_pixels[0] * cellsize),
+                    "bmin": numpy.rad2deg(gaussian_pixels[1] * cellsize),
                     "bpa": numpy.rad2deg(gaussian_pixels[2]) + 90.0,
                 }
             newsc.shape = "Gaussian"

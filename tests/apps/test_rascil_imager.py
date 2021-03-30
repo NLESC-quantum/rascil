@@ -128,6 +128,21 @@ default_run = True
 )
 def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min,
                        component_threshold, component_method, offset):
+    """
+    
+    :param enabled: Turn this test on?
+    :param tag: Tag for files generated
+    :param use_dask: Use dask for processing. Set to False for debugging
+    :param nmajor: Number of CLEAN major cycles
+    :param mode: rqscil imager mode: invert or cip or ical
+    :param add_errors: Add calibration errors (needed for ical testing)
+    :param flux_max: Maximum flux in result (tested to 1e-7)
+    :param flux_min: Minimum flux in result (tested to 1e-7)
+    :param component_threshold: Flux above which components are searched and fitted in first deconvolution
+    :param component_method: Method to find components: fit or None
+    :param offset: Offset of test pattern in RA pizels
+    :return:
+    """
     
     if not enabled:
         return True
@@ -378,22 +393,16 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
 
     if mode == "invert":
         dirtyname = imager(args)
-        print(dirtyname)
         dirty = import_image_from_fits(dirtyname)
         qa = qa_image(dirty)
-        print(qa)
     elif mode == "cip":
         restoredname = imager(args)[2]
-        print(restoredname)
         dirty = import_image_from_fits(restoredname)
         qa = qa_image(dirty)
-        print(qa)
     elif mode == "ical":
         restoredname = imager(args)[2]
-        print(restoredname)
         dirty = import_image_from_fits(restoredname)
         qa = qa_image(dirty)
-        print(qa)
     else:
         return ValueError(f"rascil-imager: Unknown mode {mode}")
 

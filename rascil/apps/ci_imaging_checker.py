@@ -434,7 +434,7 @@ def ci_checker(
         outfile=source_file, format="csv", catalog_type="srl", clobber=True
     )
     img_rest.write_catalog(format="fits", catalog_type="srl", clobber=True)
-    img_rest.export_image(img_type="gaus_resid", clobber=True)
+    img_rest.export_image(img_type="resid", clobber=True)
 
     log.info("Running diagnostics for the restored image")
     ci_checker_diagnostics(img_rest, input_image_restored, "restored")

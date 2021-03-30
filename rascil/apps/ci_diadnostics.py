@@ -65,7 +65,7 @@ def plot_name(input_image, image_type, plot_type):
         input_image.replace(".fits" if ".fits" in input_image else ".h5", "")
         + "_"
         + image_type
-        + "_gaus_"
+        + "_"
         + plot_type
     )
 

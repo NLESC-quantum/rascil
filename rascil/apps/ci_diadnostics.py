@@ -9,7 +9,8 @@ from scipy import optimize
 import numpy as np
 import astropy.constants as consts
 
-# matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy
 

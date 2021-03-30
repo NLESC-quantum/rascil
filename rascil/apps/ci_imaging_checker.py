@@ -8,7 +8,8 @@ import logging
 import os
 import sys
 
-# matplotlib.use("Agg")
+import matplotlib
+matplotlib.use("Agg")
 
 import numpy as np
 import pandas as pd
@@ -260,8 +261,9 @@ def analyze_image(args):
     input_image_residual = args.ingest_fitsname_residual
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
 
+    print(quiet_bdsf)
+
     ci_checker(
-        args,
         input_image_restored,
         input_image_residual,
         beam_info,

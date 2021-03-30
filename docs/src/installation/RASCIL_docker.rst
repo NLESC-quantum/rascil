@@ -69,7 +69,7 @@ the standard jupyter directory page.
 Running the continuum_imaging_checker
 -------------------------------------
 
-A Docker image which runs the :ref:`rascil_apps_continuum_imaging_checker` is available at
+A Docker image, which runs the :ref:`rascil_apps_continuum_imaging_checker` is available at
 ``nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest``. It can be run
 in both Docker and Singularity.
 
@@ -80,7 +80,7 @@ Pull the image::
 
     docker pull nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
 
-Run the image with default entrypoint will display the help interface of the continuum_imaging_checker::
+Running the image with default entrypoint will display the help interface of the continuum_imaging_checker::
 
     docker run nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
 
@@ -91,7 +91,7 @@ Run the image with input FITS files::
         --ingest_fitsname_residual /myData/my_residual.fits' \
         --rm nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
 
-The above command will mount your current directory int `myData` on the container filesystem.
+The above command will mount your current directory into `/myData` on the container filesystem.
 The code within the container will access your data files in this directory, so make sure, you
 run it from the directory where your images you want to check are. The output files will
 appear in the same directory on your local system.
@@ -113,7 +113,7 @@ Pull the image and name it ``rascil-ci-checker.img``::
 
     singularity pull rascil-ci-checker.img docker://nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker:latest
 
-Run the image with default entrypoint will display the help interface of the continuum_imaging_checker::
+Running the image with default entrypoint will display the help interface of the continuum_imaging_checker::
 
     singularity run rascil-ci-checker.img
 
@@ -140,10 +140,10 @@ called ``args.txt``::
     --check_source=True
     --plot_source=True
 
-Make sure each line contains one argument, there is an equal sign between arg and its value,
-and that there aren't any trailing white spaces in the lines. The paths to images and other input
-files has to be the absolute path within the container. Here, we use the ``DOCKER`` example of
-mounting our data into the ``/myData`` directory.
+Make sure each line contains one argument, there are no empty lines, there is an equal sign between
+arg and its value, and that there aren't any trailing white spaces in the lines.
+The paths to images and other input files has to be the absolute path within the container.
+Here, we use the ``DOCKER`` example of mounting our data into the ``/myData`` directory.
 
 Then, calling ``docker run`` simplifies as::
 
@@ -154,7 +154,9 @@ Then, calling ``docker run`` simplifies as::
 Here, we assume that your custom args.txt file is also mounted together with the data into ``/myData``.
 Provide the absolute path to that file when your run the above command.
 
-You can use an args file to run the singularity version with same principles.
+You can use an args file to run the singularity version with same principles, baring in mind
+that singularity will automatically mount your filesystem into the container with paths
+matching those on your system.
 
 Running RASCIL as a cluster
 ---------------------------

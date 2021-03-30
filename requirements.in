@@ -22,7 +22,7 @@ tabulate
 xarray
 pandas
 zarr
-git+https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git#egg=nifty_gridder
+git+https://gitlab.mpcdf.mpg.de/mtr/ducc.git
 bdsf
 gitpython
 python-gitlab

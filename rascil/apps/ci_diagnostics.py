@@ -77,11 +77,11 @@ def gaussian(x, amplitude, mean, stddev):
     Gaussian fit for histogram.
 
     :param x: x-axis points
-    :param amplitude: gaussian applitude
+    :param amplitude: gaussian amplitude
     :param mean: mean on the distribution
     :param stddev: standard deviation of the distribution
 
-    :return Gaussian finction
+    :return Gaussian function
     """
     return amplitude * np.exp(-(((x - mean) / 4.0 / stddev) ** 2))
 
@@ -93,7 +93,7 @@ def histogram(bdsf_image, input_image, description="image"):
 
     :param bdsf_image: pybdsf image object
     :param input_image_residual: file name of input image
-    :param description: type of imput image
+    :param description: type of input image
 
     :return None
     """
@@ -293,7 +293,7 @@ def radial_profile(image, centre=None):
     """
     Function for calculating the radial profile of input image.
 
-    :param image: rascil image object
+    :param image: RASCIL image object
     :param centre: centre of the image
     """
     if centre is None:

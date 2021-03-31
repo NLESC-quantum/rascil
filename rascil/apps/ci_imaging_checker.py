@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import sys
-import os
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -275,7 +275,7 @@ def analyze_image(args):
 
     # check if there are sources found
     log.info("Output csv source file:{}".format(source_file))
-    if os.path.exists(source_file) == False:
+    if os.path.exists(source_file) is False:
         log.error("Error: No source found. Please refine beam parameters.")
         return None, None
 
@@ -310,7 +310,7 @@ def analyze_image(args):
                 radius=0.5,
             )
 
-        # Conpensate for primary beam correction -- NEEDS UPDATE
+        # Compensate for primary beam correction -- NEEDS UPDATE
         if args.apply_primary == "True":
             telescope = args.telescope_model
             orig = add_primary_beam(input_image_restored, orig, telescope)

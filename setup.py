@@ -25,9 +25,6 @@ reqs = [
     and line.strip() != ""
     and not line.startswith("git")
 ]
-reqs.append(
-    "ducc0 @ git+https://gitlab.mpcdf.mpg.de/mtr/ducc.git#egg=ducc"
-)
 
 # MF. This is a workaround to be able to build the library with MacOS
 if sys.platform == "darwin":

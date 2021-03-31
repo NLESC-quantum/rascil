@@ -70,6 +70,8 @@ defusedxml==0.7.1
     # via nbconvert
 distributed==2021.3.0
     # via -r requirements.in
+ducc0==0.9.0
+    # via -r requirements.in
 entrypoints==0.3
     # via nbconvert
 fasteners==0.16
@@ -198,8 +200,6 @@ nest-asyncio==1.5.1
     # via nbclient
 networkx==2.5
     # via scikit-image
-git+https://gitlab.mpcdf.mpg.de/mtr/ducc.git
-    # via -r requirements.in
 notebook==6.2.0
     # via
     #   jupyter
@@ -278,7 +278,7 @@ ptyprocess==0.7.0
     #   pexpect
     #   terminado
 pybind11==2.6.2
-    # via ducc nifty-gridder
+    # via nifty-gridder
 pycparser==2.20
     # via cffi
 pyerfa==1.7.2

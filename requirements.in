@@ -3,6 +3,7 @@ astropy
 bokeh
 dask
 distributed
+ducc0
 h5py
 jupyter
 jupyter_contrib_nbextensions
@@ -22,7 +23,6 @@ tabulate
 xarray
 pandas
 zarr
-git+https://gitlab.mpcdf.mpg.de/mtr/ducc.git
 bdsf
 gitpython
 python-gitlab

@@ -12,6 +12,7 @@ from rascil.apps.generate_results_index import (
     generate_markdown_file,
     sort_files,
     OTHER_FILES,
+    _find_path_for_index_files,
 )
 from rascil.data_models import rascil_path
 
@@ -250,9 +251,39 @@ def test_sort_files_some_files():
     open(f"{path}/firstLog.log", "w")
     open(f"{path}/secondLog.log", "w")
 
+    # even if the file name contains a trailing whitespace,
+    # we still want to categorize it with its onw type, not with "other"
+    # This is to ensure that happens (bug fix).
+    open(f"{path}/secondLog_with_white_space.log ", "w")
+
     result = sort_files(path)
     shutil.rmtree(path)  # delete directory with files in it
 
     assert result[STATS_PNG] == ["myFig.png"]
     assert result[OTHER_FILES] == ["some_file.txt"]
-    assert sorted(result[LOG]) == sorted(["firstLog.log", "secondLog.log"])
+    assert sorted(result[LOG]) == sorted(
+        ["firstLog.log", "secondLog.log", "secondLog_with_white_space.log "]
+    )
+
+
+def test_find_path_for_index_files_no_docker_path_env_var():
+    """DOCKER_PATH does not exist in environment variables."""
+
+    result = _find_path_for_index_files("/Correct/Path/myFig.png")
+    assert result == "/Correct/Path/myFig.png"
+
+
+@patch.dict(os.environ, {"DOCKER_PATH": ""})
+def test_find_path_for_index_files_empty_docker_path_env_var():
+    """DOCKER_PATH exists in environment variables, but doesn't hold information."""
+
+    result = _find_path_for_index_files("/Correct/Path/myFig.png")
+    assert result == "/Correct/Path/myFig.png"
+
+
+@patch.dict(os.environ, {"DOCKER_PATH": "/myLocal/path"})
+def test_find_path_for_index_files_docker_path_env_var_exists():
+    """DOCKER_PATH exists in environment variables and holds path information."""
+
+    result = _find_path_for_index_files("/mountedPath/localSubDir/myFig.png")
+    assert result == "/myLocal/path/localSubDir/myFig.png"

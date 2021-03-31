@@ -39,8 +39,10 @@ def plot_skycomponents_positions(
     :return: [ra_error, dec_error]:
              The error array for users to check
     """
+    angle_wrap = 180.0 * u.deg
+
     if comps_ref is None:  # No comparison needed
-        ra_test = [comp.direction.ra.degree for comp in comps_test]
+        ra_test = [comp.direction.ra.wrap_at(angle_wrap).degree for comp in comps_test]
         dec_test = [comp.direction.dec.degree for comp in comps_test]
 
         plt.plot(ra_test, dec_test, "o", color="b", markersize=5, label="Components")
@@ -56,12 +58,15 @@ def plot_skycomponents_positions(
         dec_error = numpy.zeros(len(matches))
         for i, match in enumerate(matches):
             m_comp = comps_test[match[0]]
-            ra_test[i] = m_comp.direction.ra.degree
+            ra_test[i] = m_comp.direction.ra.wrap_at(angle_wrap).degree
             dec_test[i] = m_comp.direction.dec.degree
             m_ref = comps_ref[match[1]]
-            ra_ref[i] = m_ref.direction.ra.degree
+            ra_ref[i] = m_ref.direction.ra.wrap_at(angle_wrap).degree
             dec_ref[i] = m_ref.direction.dec.degree
-            ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+            ra_error[i] = (
+                m_comp.direction.ra.wrap_at(angle_wrap).degree
+                - m_ref.direction.ra.wrap_at(angle_wrap).degree
+            )
 
             dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
 
@@ -72,6 +77,7 @@ def plot_skycomponents_positions(
             ra_ref, dec_ref, "x", color="r", markersize=8, label="Original components"
         )
 
+    plt.title("Positions of sources")
     plt.xlabel("RA (deg)")
     plt.ylabel("Dec (deg)")
     plt.legend(loc="best")
@@ -85,6 +91,10 @@ def plot_skycomponents_positions(
             log.info("Error: No reference components. No position errors are plotted.")
         else:
             plt.plot(ra_error, dec_error, "o", markersize=5)
+        err_r = max(numpy.max(ra_error), numpy.max(dec_error))
+        err_l = min(numpy.min(ra_error), numpy.min(dec_error))
+        plt.xlim([err_l, err_r])
+        plt.ylim([err_l, err_r])
         plt.xlabel(r"$\Delta\ RA\ (deg)$")
         plt.ylabel(r"$\Delta\ Dec\ (deg)$")
         plt.title("Errors in RA and Dec")
@@ -123,6 +133,9 @@ def plot_skycomponents_position_distance(
 
         dist[i] = m_comp.direction.separation(phasecentre).degree
 
+    err_r = max(numpy.max(ra_error), numpy.max(dec_error))
+    err_l = min(numpy.min(ra_error), numpy.min(dec_error))
+
     fig, (ax1, ax2) = plt.subplots(2, sharex=True)
     fig.suptitle("Position error vs. Distance")
     ax1.plot(dist, ra_error, "o", color="b", markersize=5)
@@ -131,6 +144,8 @@ def plot_skycomponents_position_distance(
     ax1.set_ylabel("RA (deg)")
     ax2.set_ylabel("Dec (deg)")
     ax2.set_xlabel("Separation To Center(deg)")
+    ax1.set_ylim([err_l, err_r])
+    ax2.set_ylim([err_l, err_r])
     if plot_file is not None:
         plt.savefig(plot_file + "_position_distance.png")
     plt.show(block=False)
@@ -161,6 +176,7 @@ def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **k
 
     plt.loglog(flux_in, flux_out, "o", color="b", markersize=5)
 
+    plt.title("Flux in vs. flux out")
     plt.xlabel("Flux in (Jy)")
     plt.ylabel("Flux out (Jy)")
     if plot_file is not None:
@@ -200,6 +216,7 @@ def plot_skycomponents_flux_ratio(
 
     plt.plot(dist, flux_ratio, "o", color="b", markersize=5)
 
+    plt.title("Flux ratio vs. distance")
     plt.xlabel("Separation to center (Deg)")
     plt.ylabel("Flux Ratio")
     if plot_file is not None:
@@ -224,8 +241,8 @@ def plot_skycomponents_flux_histogram(
     :return: hist: The flux array for users to check
     """
 
-    flux_in = numpy.array([comp.flux[0, 0] for comp in comps_test])
-    flux_out = numpy.array([comp.flux[0, 0] for comp in comps_ref])
+    flux_in = numpy.array([comp.flux[0, 0] for comp in comps_ref])
+    flux_out = numpy.array([comp.flux[0, 0] for comp in comps_test])
 
     flux_in = flux_in[flux_in > 0.0]
     flux_out = flux_out[flux_out > 0.0]
@@ -241,6 +258,7 @@ def plot_skycomponents_flux_histogram(
     fig, ax = plt.subplots()
     ax.hist(hist, bins=hist_bins, log=True, color=colors, label=labels)
 
+    ax.set_title("Flux histogram")
     ax.set_xlabel("Flux (Jy)")
     ax.set_xscale("log")
     ax.set_ylabel("Source Count")

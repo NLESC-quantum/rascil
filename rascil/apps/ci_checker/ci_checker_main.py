@@ -19,7 +19,6 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.wcs.wcsapi import SlicedLowLevelWCS
 
-from rascil.apps.ci_checker.generate_results_index import create_index
 from rascil.data_models import (
     PolarisationFrame,
     import_skycomponent_from_hdf5,
@@ -44,6 +43,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux_histogram,
 )
 
+from rascil.apps.ci_checker.generate_results_index import create_index
 from rascil.apps.ci_checker.ci_diagnostics import (
     histogram,
     qa_image_bdsf,

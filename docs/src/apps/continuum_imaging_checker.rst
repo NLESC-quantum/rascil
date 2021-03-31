@@ -15,7 +15,7 @@ and check with the original inputs. Currently it features the following:
 
   - Reads FITS images.
   - Finds sources above a certain threshold and outputs the catalogue (in CSV, FITS and skycomponents format).
-  - Produces residual image statistics and plots a histogram of the noise with Gaussian fit.
+  - Produces image statistics and diagnostic plots including: running mean plots of the residual, restored, background and sources and a histogram with fitted Gaussian and a power spectrum of the residual are also plotted.
   - Optional: apply a primary beam to the fluxes.
   - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), Flux(Jy)".
 

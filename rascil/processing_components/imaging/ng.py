@@ -1,7 +1,7 @@
 """
-Functions that implement prediction of and imaging from visibilities using the nifty gridder.
+Functions that implement prediction of and imaging from visibilities using the nifty gridder (DUCC version).
 
-https://gitlab.mpcdf.mpg.de/ift/nifty_gridder
+https://gitlab.mpcdf.mpg.de/mtr/ducc.git
 
 This performs all necessary w term corrections, to high precision.
 
@@ -16,7 +16,7 @@ import copy
 import logging
 
 import numpy
-import nifty_gridder as ng
+import ducc0.wgridder as ng
 from rascil.data_models.memory_data_models import BlockVisibility, Image
 from rascil.data_models.parameters import get_parameter
 from rascil.data_models.polarisation import convert_pol_frame
@@ -92,14 +92,13 @@ def predict_ng(bvis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility
                 fuvw.astype(float),
                 bvis.frequency.data.astype(float),
                 model["pixels"].data[0, vpol, :, :].T.astype(float),
-                pixsize_x=pixsize,
-                pixsize_y=pixsize,
-                epsilon=epsilon,
-                do_wstacking=do_wstacking,
-                nthreads=nthreads,
-                verbosity=verbosity,
+                None,
+                pixsize,
+                pixsize, 0,0,
+                epsilon, 
+                do_wstacking, 
+                nthreads
             ).T
-
     else:
         for vpol in range(vnpol):
             for vchan in range(vnchan):
@@ -108,12 +107,12 @@ def predict_ng(bvis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility
                     fuvw.astype(float),
                     numpy.array(freq[vchan : vchan + 1]).astype(float),
                     model["pixels"].data[imchan, vpol, :, :].T.astype(float),
-                    pixsize_x=pixsize,
-                    pixsize_y=pixsize,
-                    epsilon=epsilon,
-                    do_wstacking=do_wstacking,
-                    nthreads=nthreads,
-                    verbosity=verbosity,
+                    None,
+                    pixsize,
+                    pixsize, 0,0,
+                    epsilon, 
+                    do_wstacking,
+                    nthreads
                 )[:, 0]
 
     vis = convert_pol_frame(
@@ -234,11 +233,12 @@ def invert_ng(
                     npixdirty,
                     npixdirty,
                     pixsize,
-                    pixsize,
+                    pixsize, 0,0,
                     epsilon,
-                    do_wstacking=do_wstacking,
+                    do_wstacking, #=do_wstacking,
                     nthreads=nthreads,
-                    verbosity=verbosity,
+                    double_precision_accumulation=True,
+                    verbosity=verbosity
                 )
                 im["pixels"].data[0, pol] += dirty.T
             sumwt[0, pol] += numpy.sum(wgtt[pol, :, :].T)
@@ -258,11 +258,12 @@ def invert_ng(
                         npixdirty,
                         npixdirty,
                         pixsize,
-                        pixsize,
-                        epsilon,
-                        nthreads,
+                        pixsize, 0, 0,
+                        epsilon,                        
                         do_wstacking,
-                        verbosity=verbosity,
+                        nthreads=nthreads,
+                        double_precision_accumulation=True,                        
+                        verbosity=verbosity
                     )
                     im["pixels"].data[ichan, pol] += dirty.T
                 sumwt[ichan, pol] += numpy.sum(wgtt[pol, vchan, :].T, axis=0)

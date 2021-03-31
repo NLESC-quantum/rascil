@@ -224,6 +224,25 @@ def test_continuum_imaging_checker(
             )
         )
 
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_position_value.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_position_error.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_position_distance.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_flux_value.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_flux_ratio.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_flux_histogram.png")
+    )
+
     # test that create_index() generates the html and md files,
     # at the end of analyze_image()
     assert os.path.exists(rascil_path("test_results/index.html"))

@@ -18,6 +18,7 @@ and check with the original inputs. Currently it features the following:
   - Produces image statistics and diagnostic plots including: running mean plots of the residual, restored, background and sources and a histogram with fitted Gaussian and a power spectrum of the residual are also plotted.
   - Optional: apply a primary beam to the fluxes.
   - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), Flux(Jy)".
+  - Optional: plot the comparison and error of positions and fluxes for input and output source catalogue.
 
 Example:
 ++++++++

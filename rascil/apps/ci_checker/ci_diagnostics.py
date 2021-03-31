@@ -22,7 +22,7 @@ from rascil.data_models.xarray_coordinate_support import griddata_wcs
 log = logging.getLogger("rascil-logger")
 
 
-def qa_image(im_data, description="image"):
+def qa_image_bdsf(im_data, description="image"):
     """Assess the quality of an image
 
     Set of statistics of an image: max, min, maxabs, rms, sum, medianabs,

@@ -30,14 +30,14 @@ The following runs the a data set from the RASCIL test::
     # restored and residual fits files:
     # test-imaging-pipeline-dask_continuum_imaging_restored.fits
     # test-imaging-pipeline-dask_continuum_imaging_residual.fits
-    python $RASCIL/rascil/apps/ci_imaging_checker.py \
+    python $RASCIL/rascil/apps/ci_checker/ci_checker_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
     --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits
 
 If a source check is required::
 
     #!/bin/bash
-    python $RASCIL/rascil/apps/ci_imaging_checker.py \
+    python $RASCIL/rascil/apps/ci_checker/ci_checker_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
     --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits \
     --check_source True --plot_source True\
@@ -60,7 +60,7 @@ and that there aren't any trailing white spaces in the lines.
 
 Then run the checker as follows::
 
-    python ci_imaging_checker.py @args.txt
+    python ci_checker_main.py @args.txt
 
 Specifying the ``@`` sign in front of the file name will let the code know that you want
 to ready the arguments from a file instead of directly from the command line.
@@ -71,7 +71,8 @@ are not all in the same directory? Let's take the following directory structure 
     - rascil # this is the root directory of the RASCIL git repository
         - rascil
             - apps
-                ci_imaging_checker.py
+                - ci_checker
+                    ci_checker_main.py
             - my_data
                 my_restored_file.fits
                 my_residual_file.fits
@@ -88,7 +89,7 @@ absolute path to your FITS files. E.g.::
 And you need to provide similarily the relative or absolute path both to the args file and
 the code you are running::
 
-    python rascil/apps/ci_imaging_checker.py @rascil/args.txt
+    python rascil/apps/ci_checker/ci_checker_main.py @rascil/args.txt
 
 Docker image
 ++++++++++++
@@ -107,6 +108,6 @@ Command line arguments
 ++++++++++++++++++++++
 
 .. argparse::
-   :filename: ../../rascil/apps/ci_imaging_checker.py
+   :filename: ../../rascil/apps/ci_checker/ci_checker_main.py
    :func: cli_parser
-   :prog: ci_imaging_checker.py
+   :prog: ci_checker_main.py

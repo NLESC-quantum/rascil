@@ -46,7 +46,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
 
 from rascil.apps.ci_diagnostics import (
     histogram,
-    qa_image,
+    qa_image_bdsf,
     plot_with_running_mean,
     source_region_mask,
     power_spectrum,
@@ -359,7 +359,7 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
 
     if image_type == "residual":
 
-        residual_stats = qa_image(
+        residual_stats = qa_image_bdsf(
             bdsf_image.image_arr[0, 0, :, :], description="residual"
         )
         plot_with_running_mean(
@@ -376,9 +376,9 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
 
         source_mask, background_mask = source_region_mask(bdsf_image)
 
-        sources_stats = qa_image(source_mask, description="sources")
-        background_stats = qa_image(background_mask, description="background")
-        restored_stats = qa_image(
+        sources_stats = qa_image_bdsf(source_mask, description="sources")
+        background_stats = qa_image_bdsf(background_mask, description="background")
+        restored_stats = qa_image_bdsf(
             bdsf_image.image_arr[0, 0, :, :], description="restored"
         )
         plot_with_running_mean(

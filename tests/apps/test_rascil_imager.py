@@ -41,7 +41,7 @@ from rascil.processing_components.skycomponent.operations import insert_skycompo
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
 default_run = True
 @pytest.mark.parametrize(
     "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",

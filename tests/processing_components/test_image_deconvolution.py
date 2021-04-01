@@ -157,8 +157,8 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.dir))
 
-        assert numpy.abs(clean_beam["bmaj"] - 1048.7435130499214) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 1003.1945574030732) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmaj"] - 0.29131764251386705) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 0.278665154834187) < 1.0e-7, clean_beam
         assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):

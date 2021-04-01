@@ -290,7 +290,7 @@ def find_skycomponents(
     """
 
     # assert isinstance(im, Image)
-    log.info("find_skycomponents: Finding components in Image by segmentation")
+    log.debug("find_skycomponents: Finding components in Image by segmentation")
 
     # We use photutils segmentation - this first segments the image
     # into pieces that are thought to contain individual sources, then

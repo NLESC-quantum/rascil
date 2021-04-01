@@ -726,7 +726,7 @@ def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
             raise ValueError("restore_cube: Either the psf or the clean_beam must be specified")
     else:
         log.info(
-            "restore_cube: Using clean beam  (asec, asec, deg) = {}".format(clean_beam)
+            "restore_cube: Using clean beam  (deg, deg, deg) = {}".format(clean_beam)
         )
 
     beam_pixels = convert_clean_beam_to_pixels(model, clean_beam)

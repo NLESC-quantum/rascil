@@ -90,4 +90,6 @@ examples/mcve/xarray/mydask.png
 
 .git-blame-ignore-revs.txt
 
-rascil/processing_components/arrays/__pycache__/
+*.nbc
+
+*.nbi

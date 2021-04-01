@@ -411,7 +411,7 @@ def apply_beam_to_skycomponent(
         pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode="wcs")
 
     newsc = []
-    total_flux = numpy.zeros([nchan, npol])
+    total_flux = numpy.zeros_like(sc[0].flux)
     for icomp, comp in enumerate(sc):
 
         assert comp.shape == "Point", "Cannot handle shape %s" % comp.shape

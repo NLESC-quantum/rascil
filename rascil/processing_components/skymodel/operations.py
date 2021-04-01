@@ -347,6 +347,10 @@ def extract_skycomponents_from_skymodel(
     if component_method is None:
         return sm
     elif component_method == "fit":
+        log.info(
+            f"extract_skycomponents_from_image: Searching and fitting for components > {component_threshold} Jy"
+        )
+    
         newsm = copy_skymodel(sm)
         try:
             if im is None:

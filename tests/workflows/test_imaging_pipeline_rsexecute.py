@@ -44,21 +44,19 @@ log.setLevel(logging.WARNING)
 
 
 @pytest.mark.parametrize(
-    "use_dask, optimise, component_threshold, test_max, test_min",
+    "use_dask, optimise, test_max, test_min",
     [
-        (True, True, None, 4.093297359544571, -0.005846355119035153),
-        (True, False, None, 4.093297359544571, -0.005846355119035153),
-        (False, False, None, 4.093297359544571, -0.005846355119035153),
-        (True, True, 1.0, 4.093825055185321, -0.1019797392673627),
-        (True, False, 1.0, 4.093825055185321, -0.1019797392673627),
-        (False, False, 1.0, 4.093825055185321, -0.1019797392673627),
+        (True, True, 4.094169571405569, -0.005846355119035163),
+        (True, False, 4.094169571405569, -0.005846355119035163),
+        (False, False, 4.094169571405569, -0.005846355119035163),
     ],
 )
-def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, test_min):
+def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
     """Test of imaging pipeline
 
     :param use_dask: - Use dask for processing
     :param optimise: - Enable dask graph optimisation
+    :param component_method: Method to find bright components pixels or fit
     :param component_threshold: - Threshold in Jy/pixel for classifying as component
     :param test_max, test_min:: max, min in tests."""
     rsexecute.set_client(use_dask=use_dask, optim=optimise)
@@ -148,8 +146,6 @@ def test_imaging_pipeline(use_dask, optimise, component_threshold, test_max, tes
         deconvolve_taper="tukey",
         psf_support=64,
         do_wstacking=True,
-        component_threshold=component_threshold,
-        component_extraction="pixels",
     )
 
     centre = nfreqwin // 2

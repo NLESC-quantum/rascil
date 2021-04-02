@@ -118,8 +118,8 @@ class TestWeighting(unittest.TestCase):
         fit = fit_psf(psf)
         
         assert (
-                numpy.abs(fit["bmaj"] - 4607.827) < 1
-        ), "Fit should be %f, actually is %f" % (4607.827, fit["bmaj"])
+                numpy.abs(fit["bmaj"] - 1.279952050682638) < 1
+        ), "Fit should be %f, actually is %f" % (1.279952050682638, fit["bmaj"])
     
     def test_tapering_tukey(self):
         """Apply a Tukey window taper and output the psf and FT of the PSF. No quantitative check.
@@ -139,8 +139,8 @@ class TestWeighting(unittest.TestCase):
             )
         fit = fit_psf(psf)
         assert (
-                numpy.abs(fit["bmaj"] - 521.736153) < 1.0
-        ), "Fit should be %f, actually is %f" % (521.736153, fit["bmaj"])
+                numpy.abs(fit["bmaj"] - 0.14492670913355402) < 1.0
+        ), "Fit should be %f, actually is %f" % (0.14492670913355402, fit["bmaj"])
 
 
 if __name__ == "__main__":

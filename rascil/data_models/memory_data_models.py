@@ -472,7 +472,7 @@ class Image(xarray.Dataset):
         :param data: pixel values
         :param polarisation_frame: as a PolarisationFrame object
         :param wcs: WCS object
-        :param clean_beam: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are arcsec, arcsec, deg
+        :param clean_beam: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
         :return: Image (i.e. xarray.Dataset)
         """
         super().__init__()

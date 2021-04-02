@@ -45,8 +45,8 @@ from rascil.processing_components.skycomponent import (
 )
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.INFO)
-log.addHandler(logging.StreamHandler(sys.stdout))
+#log.setLevel(logging.INFO)
+#log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 @pytest.mark.parametrize(

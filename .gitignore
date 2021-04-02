@@ -89,3 +89,7 @@ tests/workflows/gaintable.png
 examples/mcve/xarray/mydask.png
 
 .git-blame-ignore-revs.txt
+
+*.nbc
+
+*.nbi

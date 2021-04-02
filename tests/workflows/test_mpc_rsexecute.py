@@ -19,8 +19,9 @@ from rascil.processing_components.skymodel.operations import (
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import (
     predict_skymodel_list_rsexecute_workflow,
     invert_skymodel_list_rsexecute_workflow,
-    crosssubtract_datamodels_skymodel_list_rsexecute_workflow,
 )
+from rascil.workflows.rsexecute.skymodel.skymodel_mpc_rsexecute import \
+    crosssubtract_datamodels_skymodel_list_rsexecute_workflow
 from rascil.workflows.shared.imaging.imaging_shared import sum_predict_results
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.processing_components.simulation import (

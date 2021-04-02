@@ -70,6 +70,9 @@ def image_raster_iter(
     """
 
     assert image_is_canonical(im)
+    
+    if im is None:
+        return im
 
     nchan, npol, ny, nx = im["pixels"].data.shape
     assert facets <= ny, "Cannot have more raster elements than pixels"

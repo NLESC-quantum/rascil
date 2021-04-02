@@ -11,9 +11,10 @@ import numpy
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models import Skycomponent
 
 from rascil.processing_components.arrays.cleaners import overlapIndices
-from rascil.processing_components.image.operations import create_image_from_array
+from rascil.processing_components.skycomponent.operations import restore_skycomponent
 
 from rascil.processing_components.image.deconvolution import (
     deconvolve_cube,
@@ -38,7 +39,7 @@ log.setLevel(logging.INFO)
 class TestImageDeconvolution(unittest.TestCase):
     def setUp(self):
 
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
 
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
@@ -103,13 +104,61 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
 
+    def test_restore_clean_beam(self):
+        """ Test restoration with specified beam beam
+        
+        :return:
+        """
+        self.model["pixels"].data[0, 0, 256, 256] = 1.0
+        # The beam is specified in degrees
+        bmaj = 0.006 * 180.0 / numpy.pi
+        self.cmodel = restore_cube(
+            self.model, self.psf, clean_beam={"bmaj": bmaj, "bmin": bmaj, "bpa": 0.0}
+        )
+        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 1.0) < 1e-7, numpy.max(
+            self.cmodel["pixels"].data
+        )
+        if self.persist:
+            export_image_to_fits(
+                self.cmodel, "%s/test_restore_6mrad_beam.fits" % (self.dir)
+            )
+
+    def test_restore_skycomponent(self):
+        """ Test restoration of single pixel and skycomponent
+        """
+        self.model["pixels"].data[0, 0, 256, 256] = 0.5
+
+        sc = Skycomponent(
+            flux=numpy.array([[1.0]]),
+            direction=SkyCoord(
+                ra=+180.0 * u.deg, dec=-61.0 * u.deg, frame="icrs", equinox="J2000"
+            ),
+            shape="Point",
+            frequency=self.frequency,
+            polarisation_frame=PolarisationFrame("stokesI")
+        )
+        bmaj = 0.012 * 180.0 / numpy.pi
+        clean_beam = {"bmaj": bmaj, "bmin": bmaj / 2.0, "bpa": 15.0}
+        self.cmodel = restore_cube(self.model, clean_beam=clean_beam)
+        self.cmodel = restore_skycomponent(
+            self.cmodel, sc, clean_beam=clean_beam
+        )
+        self.persist = True
+        if self.persist:
+            export_image_to_fits(
+                self.cmodel, "%s/test_restore_skycomponent.fits" % (self.dir)
+            )
+        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.9935351105096656) < 1e-7, numpy.max(
+            self.cmodel["pixels"].data
+        )
+
     def test_fit_psf(self):
         clean_beam = fit_psf(self.psf)
         if self.persist:
             export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.dir))
 
-        assert numpy.abs(clean_beam["bmaj"] - 1048.7435130499214) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 1003.1945574030732) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmaj"] - 0.29131764251386705) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 0.278665154834187) < 1.0e-7, clean_beam
         assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):

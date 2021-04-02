@@ -1066,6 +1066,7 @@ def create_unittest_components(
     single=False,
     symmetric=False,
     angular_scale=1.0,
+        offset=[0.0, 0.0]
 ):
     # Fill the visibility with exactly computed point sources.
 
@@ -1088,24 +1089,29 @@ def create_unittest_components(
                 centers.append([x, -x])
     model_pol = model.image_acc.polarisation_frame
     # Make the list of components
-    rpix = model.image_acc.wcs.wcs.crpix
+    rpix = model.image_acc.wcs.wcs.crpix - 1.0
     components = []
     for center in centers:
         ix, iy = center
         # The phase center in 0-relative coordinates is n // 2 so we centre the grid of
         # components on ny // 2, nx // 2. The wcs must be defined consistently.
-        p = int(
-            round(
-                rpix[0]
-                + ix * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[0])
+        p = (
+            int(
+                round(
+                    rpix[0]
+                    + ix * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[0])
+                )
             )
-        ), int(
-            round(
-                rpix[1]
-                + iy * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[1])
+            + offset[0],
+            int(
+                round(
+                    rpix[1]
+                    + iy * spacing_pixels * numpy.sign(model.image_acc.wcs.wcs.cdelt[1])
+                )
             )
+            + offset[1],
         )
-        sc = pixel_to_skycoord(p[0], p[1], model.image_acc.wcs, origin=1)
+        sc = pixel_to_skycoord(p[0], p[1], model.image_acc.wcs, origin=0)
         log.info("Component at (%f, %f) [0-rel] %s" % (p[0], p[1], str(sc)))
 
         # Channel images

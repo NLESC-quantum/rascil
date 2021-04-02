@@ -2,15 +2,15 @@
 
     The script mainly tests two things:
     1) the BDSF source finder
-    2) the matching algorithm 
+    2) the matching algorithm
 
     Input parameters:
     param cellsize: Cell size of each pixel in the image
     param npixel: Number of pixels for the generated image
     param flux_limit: Threshold for source selection
     param insert_method: Method of interpolation for inserting sources into image
-    param noise: amount of noise added onto the image 
-    param tag: Tag to keep track of the relavant files and images. 
+    param noise: amount of noise added onto the image
+    param tag: Tag to keep track of the relavant files and images.
 
 """
 import logging
@@ -23,7 +23,7 @@ import pytest
 from astropy.coordinates import SkyCoord
 from numpy.random import default_rng
 
-from rascil.apps.ci_imaging_checker import (
+from rascil.apps.ci_checker.ci_checker_main import (
     cli_parser,
     analyze_image,
 )
@@ -158,6 +158,7 @@ def test_continuum_imaging_checker(
 
     tagged_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
     export_image_to_fits(model, tagged_file)
+    tagged_file_residual = None
 
     parser = cli_parser()
     args = parser.parse_args(
@@ -205,10 +206,44 @@ def test_continuum_imaging_checker(
     numpy.testing.assert_array_almost_equal(matches_found, matches_expected)
 
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_restored_gaus_hist.png")
+        rascil_path(f"test_results/test_ci_checker_{tag}_restored_plot.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_sources_plot.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_background_plot.png")
+    )
+    if tagged_file_residual is not None:
+        assert os.path.exists(
+            rascil_path(f"test_results/test_ci_checker_{tag}_residual_hist.png")
+        )
+        assert os.path.exists(
+            rascil_path(
+                f"test_results/test_ci_checker_{tag}_residual_power_spectrum.png"
+            )
+        )
+
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_position_value.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_position_error.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_position_distance.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_flux_value.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_flux_ratio.png")
+    )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_flux_histogram.png")
     )
 
     # test that create_index() generates the html and md files,
     # at the end of analyze_image()
-    assert os.path.exists(rascil_path(f"test_results/index.html"))
-    assert os.path.exists(rascil_path(f"test_results/index.md"))
+    assert os.path.exists(rascil_path("test_results/index.html"))
+    assert os.path.exists(rascil_path("test_results/index.md"))

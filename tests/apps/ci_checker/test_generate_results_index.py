@@ -2,7 +2,7 @@ import os
 import shutil
 from unittest.mock import patch, Mock
 
-from rascil.apps.generate_results_index import (
+from rascil.apps.ci_checker.generate_results_index import (
     generate_html_sub_string,
     generate_md_sub_string,
     generate_html_file,

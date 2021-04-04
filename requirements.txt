@@ -14,7 +14,7 @@ asciitree==0.3.3
     # via zarr
 astropy-healpix==0.6
     # via reproject
-astropy==4.2
+astropy==4.2.1
     # via
     #   -r requirements.in
     #   astropy-healpix
@@ -51,14 +51,16 @@ chardet==4.0.0
 click==7.1.2
     # via distributed
 cloudpickle==1.6.0
-    # via distributed
+    # via
+    #   dask
+    #   distributed
 configparser==5.0.2
     # via -r requirements.in
-cryptography==3.4.6
+cryptography==3.4.7
     # via paramiko
 cycler==0.10.0
     # via matplotlib
-dask==2021.3.0
+dask==2021.4.0
     # via
     #   -r requirements.in
     #   distributed
@@ -68,7 +70,7 @@ decorator==4.4.2
     #   networkx
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.3.0
+distributed==2021.4.0
     # via -r requirements.in
 ducc0==0.9.0
     # via -r requirements.in
@@ -76,9 +78,11 @@ entrypoints==0.3
     # via nbconvert
 fasteners==0.16
     # via zarr
+fsspec==0.8.7
+    # via dask
 future==0.18.2
     # via python-casacore
-gitdb==4.0.5
+gitdb==4.0.7
     # via gitpython
 gitpython==3.1.14
     # via -r requirements.in
@@ -92,9 +96,11 @@ idna==2.10
     # via requests
 imageio==2.9.0
     # via scikit-image
-importlib-metadata==3.7.3
-    # via jsonschema
-ipykernel==5.5.0
+importlib-metadata==3.10.0
+    # via
+    #   fsspec
+    #   jsonschema
+ipykernel==5.5.3
     # via
     #   ipywidgets
     #   jupyter
@@ -108,7 +114,7 @@ ipython-genutils==0.2.0
     #   notebook
     #   qtconsole
     #   traitlets
-ipython==7.21.0
+ipython==7.22.0
     # via
     #   ipykernel
     #   ipywidgets
@@ -132,7 +138,7 @@ jupyter-client==6.1.12
     #   nbclient
     #   notebook
     #   qtconsole
-jupyter-console==6.3.0
+jupyter-console==6.4.0
     # via jupyter
 jupyter-contrib-core==0.3.3
     # via
@@ -167,11 +173,13 @@ kiwisolver==1.3.1
     # via matplotlib
 llvmlite==0.36.0
     # via numba
+locket==0.2.1
+    # via partd
 lxml==4.6.3
     # via jupyter-contrib-nbextensions
 markupsafe==1.1.1
     # via jinja2
-matplotlib==3.3.4
+matplotlib==3.4.1
     # via
     #   -r requirements.in
     #   aotools
@@ -190,7 +198,7 @@ nbconvert==6.0.7
     #   jupyter-contrib-nbextensions
     #   jupyter-latex-envs
     #   notebook
-nbformat==5.1.2
+nbformat==5.1.3
     # via
     #   ipywidgets
     #   nbclient
@@ -198,9 +206,9 @@ nbformat==5.1.2
     #   notebook
 nest-asyncio==1.5.1
     # via nbclient
-networkx==2.5
+networkx==2.5.1
     # via scikit-image
-notebook==6.2.0
+notebook==6.3.0
     # via
     #   jupyter
     #   jupyter-contrib-core
@@ -208,13 +216,13 @@ notebook==6.2.0
     #   jupyter-latex-envs
     #   jupyter-nbextensions-configurator
     #   widgetsnbextension
-numba==0.53.0
+numba==0.53.1
     # via
     #   -r requirements.in
     #   aotools
 numcodecs==0.7.3
     # via zarr
-numpy==1.20.1
+numpy==1.20.2
     # via
     #   -r requirements.in
     #   aotools
@@ -222,10 +230,10 @@ numpy==1.20.1
     #   astropy-healpix
     #   bdsf
     #   bokeh
+    #   ducc0
     #   h5py
     #   imageio
     #   matplotlib
-    #   nifty-gridder
     #   numba
     #   numcodecs
     #   pandas
@@ -251,23 +259,25 @@ pandocfilters==1.4.3
     # via nbconvert
 paramiko==2.7.2
     # via -r requirements.in
-parso==0.8.1
+parso==0.8.2
     # via jedi
+partd==1.1.0
+    # via dask
 pexpect==4.8.0
     # via ipython
 photutils==1.1.0
     # via -r requirements.in
 pickleshare==0.7.5
     # via ipython
-pillow==8.1.2
+pillow==8.2.0
     # via
     #   bokeh
     #   imageio
     #   matplotlib
     #   scikit-image
-prometheus-client==0.9.0
+prometheus-client==0.10.0
     # via notebook
-prompt-toolkit==3.0.17
+prompt-toolkit==3.0.18
     # via
     #   ipython
     #   jupyter-console
@@ -277,8 +287,6 @@ ptyprocess==0.7.0
     # via
     #   pexpect
     #   terminado
-pybind11==2.6.2
-    # via nifty-gridder
 pycparser==2.20
     # via cffi
 pyerfa==1.7.2
@@ -338,7 +346,7 @@ requests==2.25.1
     #   requests-toolbelt
 scikit-image==0.18.1
     # via -r requirements.in
-scipy==1.6.1
+scipy==1.6.2
     # via
     #   -r requirements.in
     #   aotools
@@ -360,7 +368,7 @@ six==1.15.0
     #   pynacl
     #   python-casacore
     #   python-dateutil
-smmap==3.0.5
+smmap==4.0.0
     # via gitdb
 sortedcontainers==2.3.0
     # via distributed
@@ -368,14 +376,17 @@ tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
     # via distributed
-terminado==0.9.3
+terminado==0.9.4
     # via notebook
 testpath==0.4.4
     # via nbconvert
-tifffile==2021.3.17
+tifffile==2021.3.31
     # via scikit-image
 toolz==0.11.1
-    # via distributed
+    # via
+    #   dask
+    #   distributed
+    #   partd
 tornado==6.1
     # via
     #   bokeh
@@ -417,7 +428,7 @@ widgetsnbextension==3.5.1
     # via ipywidgets
 xarray==0.17.0
     # via -r requirements.in
-zarr==2.6.1
+zarr==2.7.0
     # via -r requirements.in
 zict==2.0.0
     # via distributed

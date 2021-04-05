@@ -116,7 +116,7 @@ def cli_parser():
     parser.add_argument(
         "--apply_primary",
         type=str,
-        default="True",
+        default="False",
         help="Whether to apply primary beam",
     )
     parser.add_argument(

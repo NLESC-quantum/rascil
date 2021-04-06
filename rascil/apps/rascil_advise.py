@@ -25,7 +25,8 @@ def cli_parser():
     :return: CLI parser argparse
     """
 
-    parser = argparse.ArgumentParser(description="RASCIL imaging advise")
+    parser = argparse.ArgumentParser(description="RASCIL imaging advise",
+                                     fromfile_prefix_chars="@")
     parser.add_argument(
         "--ingest_msname", type=str, default=None, help="MeasurementSet to be read"
     )

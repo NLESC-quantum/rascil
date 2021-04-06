@@ -65,7 +65,8 @@ def cli_parser():
     :return: CLI parser argparse
     """
     
-    parser = argparse.ArgumentParser(description="RASCIL continuum imager")
+    parser = argparse.ArgumentParser(description="RASCIL continuum imager",
+                                     fromfile_prefix_chars="@")
     parser = apps_parser_app(parser)
     parser = apps_parser_ingest(parser)
     parser = apps_parser_imaging(parser)

@@ -45,8 +45,8 @@ from rascil.processing_components.skycomponent import (
 )
 
 log = logging.getLogger("rascil-logger")
-#log.setLevel(logging.INFO)
-#log.addHandler(logging.StreamHandler(sys.stdout))
+# log.setLevel(logging.INFO)
+# log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 @pytest.mark.parametrize(
@@ -241,6 +241,10 @@ def test_continuum_imaging_checker(
     )
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_flux_histogram.png")
+    )
+
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_position_quiver.png")
     )
 
     # test that create_index() generates the html and md files,

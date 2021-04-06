@@ -8,6 +8,7 @@ __all__ = [
     "plot_skycomponents_flux",
     "plot_skycomponents_flux_ratio",
     "plot_skycomponents_flux_histogram",
+    "plot_skycomponents_position_quiver",
 ]
 
 import collections
@@ -269,3 +270,57 @@ def plot_skycomponents_flux_histogram(
     plt.clf()
 
     return hist
+
+
+def plot_skycomponents_position_quiver(
+    comps_test, comps_ref, phasecentre, num=100, plot_file=None, tol=1e-5, **kwargs
+):
+    """Generate position error quiver diagram for two lists of skycomponents
+
+    :param comps_test: List of components to be tested
+    :param comps_ref: List of reference components
+    :param num: Number of the brightest sources to plot
+    :param plot_file: Filename of the plot
+    :param tol: Tolerance in rad
+    :param phasecentre: Centre of image in SkyCoords
+    :return: [ra_error, dec_error]:
+             The error array for users to check
+    """
+
+    angle_wrap = 180.0 * u.deg
+
+    comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
+    comps_test_filtered = comps_test_sorted[:num]
+
+    matches = find_skycomponent_matches(comps_test_filtered, comps_ref, tol)
+    ra_ref = numpy.zeros(len(matches))
+    dec_ref = numpy.zeros(len(matches))
+    ra_error = numpy.zeros(len(matches))
+    dec_error = numpy.zeros(len(matches))
+
+    for i, match in enumerate(matches):
+        m_comp = comps_test_filtered[match[0]]
+        m_ref = comps_ref[match[1]]
+
+        ra_ref[i] = m_ref.direction.ra.wrap_at(angle_wrap).degree
+        dec_ref[i] = m_ref.direction.dec.degree
+        ra_error[i] = (
+            m_comp.direction.ra.wrap_at(angle_wrap).degree
+            - m_ref.direction.ra.wrap_at(angle_wrap).degree
+        )
+
+        dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+
+    fig, ax = plt.subplots()
+    q = ax.quiver(ra_ref, dec_ref, ra_error, dec_error, color="b")
+
+    ax.scatter(ra_ref, dec_ref, color="r", s=8)
+    plt.xlabel("RA (deg)")
+    plt.ylabel("Dec (deg)")
+    plt.title(f"Brightest {num} sources")
+    if plot_file is not None:
+        plt.savefig(plot_file + "_position_quiver.png")
+    plt.show(block=False)
+    plt.clf()
+
+    return [ra_error, dec_error]

@@ -41,6 +41,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux,
     plot_skycomponents_flux_ratio,
     plot_skycomponents_flux_histogram,
+    plot_skycomponents_position_quiver
 )
 
 from rascil.apps.ci_checker.generate_results_index import create_index
@@ -593,6 +594,8 @@ def plot_errors(orig, comp, match_sep, phasecentre, plot_file):
     :return
 
     """
+    log.info("Plotting skycomponents for the results.")
+
     ra_comp, dec_comp = plot_skycomponents_positions(
         comp, orig, plot_file=plot_file, tol=match_sep
     )
@@ -608,6 +611,13 @@ def plot_errors(orig, comp, match_sep, phasecentre, plot_file):
     fluxes = plot_skycomponents_flux_histogram(
         comp, orig, plot_file=plot_file, tol=match_sep
     )
+
+    log.info("Plotting wide field plots.")
+    ra_error, dec_error = plot_skycomponents_position_quiver(
+        comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
+    )
+
+    log.info("Plotting done.")
 
     return
 

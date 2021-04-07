@@ -5,7 +5,6 @@
 import argparse
 import logging
 import sys
-import pprint
 
 from rascil.processing_components import (
     import_image_from_fits,
@@ -52,10 +51,15 @@ def cli_parser():
 
 
 def image_check(args):
-    """MS Advicer
-
-    Delivers imaging advice for an MS
-
+    """Provides a check on a named statistic of an image
+    
+    The args are:
+    
+    --image Image to be read
+    --stat Image QA field to check
+    --min Minimum value
+    --max Maximum value
+    
     :param args: argparse with appropriate arguments
     :return: None
     """

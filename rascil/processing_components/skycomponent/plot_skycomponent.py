@@ -155,13 +155,16 @@ def plot_skycomponents_position_distance(
     return [ra_error, dec_error]
 
 
-def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **kwargs):
+def plot_skycomponents_flux(
+    comps_test, comps_ref, plot_file=None, tol=1e-5, refchan=None, **kwargs
+):
     """Generate flux scatter plot for two lists of skycomponents
 
     :param comps_test: List of components to be tested
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
+    :param refchan: Reference channel for comparison, default is centre channel
     :return: [flux_in, flux_out]:
              The flux array for users to check
     """
@@ -172,8 +175,13 @@ def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **k
     for i, match in enumerate(matches):
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
-        flux_in[i] = m_ref.flux[0]
-        flux_out[i] = m_comp.flux[0]
+        if refchan is None:
+            nchan, _ = m_ref.flux.shape
+            flux_in[i] = m_ref.flux[nchan // 2]
+            flux_out[i] = m_comp.flux[0]
+        else:
+            flux_in[i] = m_ref.flux[refchan]
+            flux_out[i] = m_comp.flux[0]
 
     plt.loglog(flux_in, flux_out, "o", color="b", markersize=5)
 
@@ -189,7 +197,14 @@ def plot_skycomponents_flux(comps_test, comps_ref, plot_file=None, tol=1e-5, **k
 
 
 def plot_skycomponents_flux_ratio(
-    comps_test, comps_ref, phasecentre, plot_file=None, tol=1e-5, **kwargs
+    comps_test,
+    comps_ref,
+    phasecentre,
+    plot_file=None,
+    tol=1e-5,
+    refchan=None,
+    max_ratio=2,
+    **kwargs
 ):
 
     """Generate flux ratio plot vs distance for two lists of skycomponents
@@ -199,27 +214,37 @@ def plot_skycomponents_flux_ratio(
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
     :param phasecentre: Centre of image in SkyCoords
+    :param refchan: Reference channel for comparison, default is centre channel
+    :param max_ratio: Maximum ratio to plot (default is 2.0)
     :return: [dist, flux_ratio]:
              The flux array for users to check
     """
 
     matches = find_skycomponent_matches(comps_test, comps_ref, tol)
-    flux_ratio = numpy.zeros(len(matches))
-    dist = numpy.zeros(len(matches))
+    flux_ratio = []
+    dist = []
     for i, match in enumerate(matches):
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
-        if m_ref.flux[0] == 0.0:
-            flux_ratio[i] = 0.0
-        else:
-            flux_ratio[i] = m_comp.flux[0] / m_ref.flux[0]
-        dist[i] = m_comp.direction.separation(phasecentre).degree
+
+        if m_ref.flux[0] > 0.0:
+            if refchan is None:
+                nchan, _ = m_ref.flux.shape
+                fr = m_comp.flux[0] / m_ref.flux[nchan // 2]
+            else:
+                fr = m_comp.flux[0] / m_ref.flux[refchan]
+            if fr < max_ratio:
+                flux_ratio.append(fr)
+                dist.append(m_comp.direction.separation(phasecentre).degree)
+
+    if len(dist) == 0:
+        raise ValueError("No valid points found for flux ratio plot")
 
     plt.plot(dist, flux_ratio, "o", color="b", markersize=5)
 
     plt.title("Flux ratio vs. distance")
-    plt.xlabel("Separation to center (Deg)")
-    plt.ylabel("Flux Ratio")
+    plt.xlabel("Distance to center (Deg)")
+    plt.ylabel("Flux Ratio (Out/In)")
     if plot_file is not None:
         plt.savefig(plot_file + "_flux_ratio.png")
     plt.show(block=False)
@@ -229,7 +254,7 @@ def plot_skycomponents_flux_ratio(
 
 
 def plot_skycomponents_flux_histogram(
-    comps_test, comps_ref, plot_file=None, nbins=10, tol=1e-5, **kwargs
+    comps_test, comps_ref, plot_file=None, nbins=10, tol=1e-5, refchan=None, **kwargs
 ):
 
     """Generate flux ratio plot vs distance for two lists of skycomponents
@@ -239,11 +264,17 @@ def plot_skycomponents_flux_histogram(
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
     :param nbins: Number of bins for the histrogram
+    :param refchan: Reference channel for comparison, default is centre channel
     :return: hist: The flux array for users to check
     """
 
-    flux_in = numpy.array([comp.flux[0, 0] for comp in comps_ref])
-    flux_out = numpy.array([comp.flux[0, 0] for comp in comps_test])
+    if refchan is None:
+        nchan, _ = comps_ref[0].flux.shape
+        flux_in = numpy.array([comp.flux[nchan // 2, 0] for comp in comps_ref])
+        flux_out = numpy.array([comp.flux[0, 0] for comp in comps_test])
+    else:
+        flux_in = numpy.array([comp.flux[refchan, 0] for comp in comps_ref])
+        flux_out = numpy.array([comp.flux[0, 0] for comp in comps_test])
 
     flux_in = flux_in[flux_in > 0.0]
     flux_out = flux_out[flux_out > 0.0]

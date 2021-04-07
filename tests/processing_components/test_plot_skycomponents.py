@@ -9,6 +9,7 @@ Output files:
     test_plot_skycomponents_position_distance.png
     test_plot_skycomponents_position_error.png
     test_plot_skycomponents_position_value.png
+    test_plot_skycomponents_position_quiver.png
 """
 import logging
 import unittest
@@ -34,6 +35,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux,
     plot_skycomponents_flux_ratio,
     plot_skycomponents_flux_histogram,
+    plot_skycomponents_position_quiver,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -124,11 +126,31 @@ class TestPlotSkycomponent(unittest.TestCase):
             self.components, noise=self.noise, mode="flux"
         )
         [flux_in, flux_out] = plot_skycomponents_flux_histogram(
-            comp_test, self.components, plot_file=self.plot_file, nbins=100,
+            comp_test,
+            self.components,
+            plot_file=self.plot_file,
+            nbins=100,
         )
 
         assert len(flux_out) <= len(self.components)
         assert len(flux_in) <= len(comp_test)
+
+    def test_plot_position_quiver(self):
+
+        comp_test = addnoise_skycomponent(
+            self.components, noise=self.noise, mode="direction"
+        )
+        ra_error, dec_error = plot_skycomponents_position_quiver(
+            comp_test,
+            self.components,
+            self.phasecentre,
+            num=100,
+            plot_file=self.plot_file,
+        )
+
+        assert_array_almost_equal(ra_error, 0.0, decimal=3)
+        assert_array_almost_equal(dec_error, 0.0, decimal=3)
+        assert len(ra_error) == 100
 
 
 if __name__ == "__main__":

@@ -116,7 +116,7 @@ class TestPlotSkycomponent(unittest.TestCase):
         )
 
         assert_array_almost_equal(flux_ratio, 1.0, decimal=3)
-        assert len(flux_ratio) == len(comp_test)
+        assert len(flux_ratio) <= len(comp_test)
 
     def test_plot_flux_histogram(self):
 

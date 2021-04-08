@@ -247,6 +247,9 @@ def test_continuum_imaging_checker(
         rascil_path(f"test_results/test_ci_checker_{tag}_position_quiver.png")
     )
 
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_gaussian_beam_position.png")
+    )
     # test that create_index() generates the html and md files,
     # at the end of analyze_image()
     assert os.path.exists(rascil_path("test_results/index.html"))

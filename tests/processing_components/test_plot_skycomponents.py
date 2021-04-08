@@ -10,6 +10,7 @@ Output files:
     test_plot_skycomponents_position_error.png
     test_plot_skycomponents_position_value.png
     test_plot_skycomponents_position_quiver.png
+    test_plot_skycomponents_gaussian_beam_position.png
 """
 import logging
 import unittest
@@ -29,6 +30,8 @@ from rascil.processing_components.simulation import (
     create_low_test_skycomponents_from_gleam,
     addnoise_skycomponent,
 )
+from rascil.processing_components.image import create_image
+from rascil.processing_components.skycomponent.operations import restore_skycomponent
 from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_positions,
     plot_skycomponents_position_distance,
@@ -36,6 +39,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux_ratio,
     plot_skycomponents_flux_histogram,
     plot_skycomponents_position_quiver,
+    plot_gaussian_beam_position,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -61,6 +65,20 @@ class TestPlotSkycomponent(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesI"),
             radius=0.5,
         )
+
+        self.model = create_image(
+            npixel=256,
+            cellsize=0.0015,
+            phasecentre=self.phasecentre,
+            frequency=self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            polarisation_frame=PolarisationFrame("stokesI"),
+        )
+        self.clean_beam = {"bmaj": 0.2, "bmin": 0.1, "bpa": 0.0}
+        self.model = restore_skycomponent(
+            self.model, self.components, clean_beam=self.clean_beam
+        )
+
         self.noise = 1.0e-6
         self.plot_file = self.dir + "/test_plot_skycomponents"
 
@@ -151,6 +169,23 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert_array_almost_equal(ra_error, 0.0, decimal=3)
         assert_array_almost_equal(dec_error, 0.0, decimal=3)
         assert len(ra_error) == 100
+
+    def test_plot_gaussian_beam_position(self):
+
+        comp_test = addnoise_skycomponent(
+            self.components, noise=self.noise, mode="direction"
+        )
+        bmaj, bmin = plot_gaussian_beam_position(
+            comp_test,
+            self.components,
+            self.phasecentre,
+            self.model,
+            num=100,
+            plot_file=None,
+            tol=1e-5
+        )
+
+        assert len(bmaj) == 100
 
 
 if __name__ == "__main__":

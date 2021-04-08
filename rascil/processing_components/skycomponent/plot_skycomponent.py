@@ -9,6 +9,7 @@ __all__ = [
     "plot_skycomponents_flux_ratio",
     "plot_skycomponents_flux_histogram",
     "plot_skycomponents_position_quiver",
+    "plot_gaussian_beam_position",
 ]
 
 import collections
@@ -22,6 +23,7 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.processing_components.skycomponent.operations import (
     find_skycomponent_matches,
+    fit_skycomponent,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -204,7 +206,7 @@ def plot_skycomponents_flux_ratio(
     tol=1e-5,
     refchan=None,
     max_ratio=2,
-    **kwargs
+    **kwargs,
 ):
 
     """Generate flux ratio plot vs distance for two lists of skycomponents
@@ -310,10 +312,10 @@ def plot_skycomponents_position_quiver(
 
     :param comps_test: List of components to be tested
     :param comps_ref: List of reference components
+    :param phasecentre: Centre of image in SkyCoords
     :param num: Number of the brightest sources to plot
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
-    :param phasecentre: Centre of image in SkyCoords
     :return: [ra_error, dec_error]:
              The error array for users to check
     """
@@ -321,17 +323,16 @@ def plot_skycomponents_position_quiver(
     angle_wrap = 180.0 * u.deg
 
     comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
-    comps_test_filtered = comps_test_sorted[:num]
 
-    matches = find_skycomponent_matches(comps_test_filtered, comps_ref, tol)
-    ra_ref = numpy.zeros(len(matches))
-    dec_ref = numpy.zeros(len(matches))
-    ra_error = numpy.zeros(len(matches))
-    dec_error = numpy.zeros(len(matches))
+    matches = find_skycomponent_matches(comps_test_sorted, comps_ref, tol)
+    ra_ref = numpy.zeros(num)
+    dec_ref = numpy.zeros(num)
+    ra_error = numpy.zeros(num)
+    dec_error = numpy.zeros(num)
 
-    for i, match in enumerate(matches):
-        m_comp = comps_test_filtered[match[0]]
-        m_ref = comps_ref[match[1]]
+    for i in range(num):
+        m_comp = comps_test_sorted[matches[i][0]]
+        m_ref = comps_ref[matches[i][1]]
 
         ra_ref[i] = m_ref.direction.ra.wrap_at(angle_wrap).degree
         dec_ref[i] = m_ref.direction.dec.degree
@@ -355,3 +356,87 @@ def plot_skycomponents_position_quiver(
     plt.clf()
 
     return [ra_error, dec_error]
+
+
+def plot_gaussian_beam_position(
+    comps_test,
+    comps_ref,
+    phasecentre,
+    image,
+    num=100,
+    plot_file=None,
+    tol=1e-5,
+    **kwargs,
+):
+    """Plot the major and minor size of beams for two lists of skycomponents
+    :param comps_test: List of components to be tested
+    :param comps_ref: List of reference components
+    :param phasecentre: Centre of image in SkyCoords
+    :param image: Image to fit the skycomponents
+    :param num: Number of the brightest sources to plot
+    :param plot_file: Filename of the plot
+    :param tol: Tolerance in rad
+
+    :return: [bmaj, bmin]:
+             The beam parameters for users to check
+    """
+
+    comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
+
+    matches = find_skycomponent_matches(comps_test_sorted, comps_ref, tol)
+
+    ra_error = numpy.zeros(num)
+    dec_error = numpy.zeros(num)
+    bmaj = numpy.zeros(num)
+    bmin = numpy.zeros(num)
+
+    for i in range(num):
+        m_comp = comps_test_sorted[matches[i][0]]
+        m_ref = comps_ref[matches[i][1]]
+
+        ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+        dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+
+        log.info(f"Processing {matches[i][0]}")
+        try:
+            fitted = fit_skycomponent(image, m_comp, force_point_sources=False)
+            log.info(fitted.params)
+            bmaj[i] = fitted.params["bmaj"]
+            bmin[i] = fitted.params["bmin"]
+
+        except KeyError as err:
+            log.warning(f"Fit skycomponent failed for component number {matches[i][0]} ")
+            continue
+
+    pos_error = ra_error ** 2.0 + dec_error * 2.0
+    print(ra_error, dec_error, pos_error)
+    err_r = numpy.max(pos_error)
+    err_l = numpy.min(pos_error)
+
+    ax1 = plt.subplot(212)
+    ax1.plot(pos_error, bmaj, color="b", label="Bmaj")
+    ax1.plot(pos_error, bmin, color="r", label="Bmin")
+    ax1.legend(loc="best")
+    ax1.set_ylabel("Beam size (deg)")
+    ax1.set_xlabel(r"$\sqrt{ \Delta RA^2 + \Delta Dec^2}$")
+    ax1.set_ylim([err_l, err_r])
+
+    ax2 = plt.subplot(221)
+    ax2.plot(ra_error, bmaj, color="b", label="Bmaj")
+    ax2.plot(ra_error, bmin, color="r", label="Bmin")
+    ax2.set_ylabel("Beam size (deg)")
+    ax2.set_title("RA")
+    ax2.set_ylim([err_l, err_r])
+
+    ax3 = plt.subplot(222)
+    ax3.plot(dec_error, bmaj, color="b", label="Bmaj")
+    ax3.plot(dec_error, bmin, color="r", label="Bmin")
+    ax3.set_title("Dec")
+    ax3.set_ylim([err_l, err_r])
+
+    if plot_file is not None:
+        plt.savefig(plot_file + "_gaussian_beam_position.png")
+    plt.show(block=False)
+    plt.clf()
+
+    return [bmaj, bmin]

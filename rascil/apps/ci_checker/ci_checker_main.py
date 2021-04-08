@@ -601,11 +601,14 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
     log.info("Plotting skycomponents for the results.")
     image = import_image_from_fits(input_image, fixpol=True)
 
+    img_size = np.rad2deg(image.image_acc.wcs.wcs.cdelt[1])
+    log.info(f"Image cellsize is {img_size}")
+
     ra_comp, dec_comp = plot_skycomponents_positions(
-        comp, orig, plot_file=plot_file, tol=match_sep
+        comp, orig, img_size=img_size, plot_file=plot_file, tol=match_sep
     )
     ra_error, dec_error = plot_skycomponents_position_distance(
-        comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
+        comp, orig, phasecentre, img_size, plot_file=plot_file, tol=match_sep
     )
     flux_in, flux_out = plot_skycomponents_flux(
         comp, orig, plot_file=plot_file, tol=match_sep
@@ -622,9 +625,9 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
         comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
     )
 
-    bmaj, bmin = plot_gaussian_beam_position(
-        comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
-    )
+#    bmaj, bmin = plot_gaussian_beam_position(
+#        comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
+#    )
 
     log.info("Plotting done.")
 

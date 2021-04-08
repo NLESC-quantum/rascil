@@ -30,11 +30,18 @@ log = logging.getLogger("rascil-logger")
 
 
 def plot_skycomponents_positions(
-    comps_test, comps_ref=None, plot_file=None, tol=1e-5, plot_error=True, **kwargs
+    comps_test,
+    comps_ref=None,
+    img_size=1.0,
+    plot_file=None,
+    tol=1e-5,
+    plot_error=True,
+    **kwargs,
 ):
     """Generate position scatter plot for two lists of skycomponents
 
     :param comps_test: List of components to be tested
+    ::param img_size: Cell size of the image to compare
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
@@ -66,12 +73,25 @@ def plot_skycomponents_positions(
             m_ref = comps_ref[match[1]]
             ra_ref[i] = m_ref.direction.ra.wrap_at(angle_wrap).degree
             dec_ref[i] = m_ref.direction.dec.degree
-            ra_error[i] = (
-                m_comp.direction.ra.wrap_at(angle_wrap).degree
-                - m_ref.direction.ra.wrap_at(angle_wrap).degree
-            )
 
-            dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+            if img_size > 0.0:
+                ra_error[i] = (
+                    m_comp.direction.ra.wrap_at(angle_wrap).degree
+                    - m_ref.direction.ra.wrap_at(angle_wrap).degree
+                ) / img_size
+
+                dec_error[i] = (
+                    m_comp.direction.dec.degree - m_ref.direction.dec.degree
+                ) / img_size
+
+            else:
+                log.info("Wrong image size. Plot absolute values instead.")
+                ra_error[i] = (
+                    m_comp.direction.ra.wrap_at(angle_wrap).degree
+                    - m_ref.direction.ra.wrap_at(angle_wrap).degree
+                )
+
+                dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
 
         plt.plot(
             ra_test, dec_test, "o", color="b", markersize=5, label="Tested components"
@@ -98,8 +118,8 @@ def plot_skycomponents_positions(
         err_l = min(numpy.min(ra_error), numpy.min(dec_error))
         plt.xlim([err_l, err_r])
         plt.ylim([err_l, err_r])
-        plt.xlabel(r"$\Delta\ RA\ (deg)$")
-        plt.ylabel(r"$\Delta\ Dec\ (deg)$")
+        plt.xlabel(r"$\Delta\ RA/ \Delta x$")
+        plt.ylabel(r"$\Delta\ Dec/ \Delta x$")
         plt.title("Errors in RA and Dec")
         if plot_file is not None:
             plt.savefig(plot_file + "_position_error.png")
@@ -110,7 +130,7 @@ def plot_skycomponents_positions(
 
 
 def plot_skycomponents_position_distance(
-    comps_test, comps_ref, phasecentre, plot_file=None, tol=1e-5, **kwargs
+    comps_test, comps_ref, phasecentre, img_size, plot_file=None, tol=1e-5, **kwargs
 ):
     """Generate position error plot vs distance for two lists of skycomponents
 
@@ -119,6 +139,7 @@ def plot_skycomponents_position_distance(
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
     :param phasecentre: Centre of image in SkyCoords
+    :param img_size: Cell size of the image to compare
     :return: [ra_error, dec_error]:
              The error array for users to check
     """
@@ -131,10 +152,21 @@ def plot_skycomponents_position_distance(
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
 
-        ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
-        dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+        if img_size > 0.0:
+            ra_error[i] = (
+                m_comp.direction.ra.degree - m_ref.direction.ra.degree
+            ) / img_size
+            dec_error[i] = (
+                m_comp.direction.dec.degree - m_ref.direction.dec.degree
+            ) / img_size
 
-        dist[i] = m_comp.direction.separation(phasecentre).degree
+            dist[i] = m_comp.direction.separation(phasecentre).degree / img_size
+        else:
+            log.info("Wrong image size. Plot absolute values instead.")
+            ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+
+            dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+            dist[i] = m_comp.direction.separation(phasecentre).degree
 
     err_r = max(numpy.max(ra_error), numpy.max(dec_error))
     err_l = min(numpy.min(ra_error), numpy.min(dec_error))
@@ -144,9 +176,9 @@ def plot_skycomponents_position_distance(
     ax1.plot(dist, ra_error, "o", color="b", markersize=5)
     ax2.plot(dist, dec_error, "o", color="b", markersize=5)
 
-    ax1.set_ylabel("RA (deg)")
-    ax2.set_ylabel("Dec (deg)")
-    ax2.set_xlabel("Separation To Center(deg)")
+    ax1.set_ylabel(r"$\Delta\ RA/ \Delta x$")
+    ax2.set_ylabel(r"$\Delta\ Dec/ \Delta x$")
+    ax2.set_xlabel(r"Separation To Center($\Delta x$)")
     ax1.set_ylim([err_l, err_r])
     ax2.set_ylim([err_l, err_r])
     if plot_file is not None:
@@ -325,6 +357,7 @@ def plot_skycomponents_position_quiver(
     comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
 
     matches = find_skycomponent_matches(comps_test_sorted, comps_ref, tol)
+    num = min(num, len(matches))
     ra_ref = numpy.zeros(num)
     dec_ref = numpy.zeros(num)
     ra_error = numpy.zeros(num)
@@ -384,6 +417,7 @@ def plot_gaussian_beam_position(
     comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
 
     matches = find_skycomponent_matches(comps_test_sorted, comps_ref, tol)
+    num = min(num, len(matches))
 
     ra_error = numpy.zeros(num)
     dec_error = numpy.zeros(num)
@@ -405,7 +439,9 @@ def plot_gaussian_beam_position(
             bmin[i] = fitted.params["bmin"]
 
         except KeyError as err:
-            log.warning(f"Fit skycomponent failed for component number {matches[i][0]} ")
+            log.warning(
+                f"Fit skycomponent failed for component number {matches[i][0]} "
+            )
             continue
 
     pos_error = ra_error ** 2.0 + dec_error * 2.0

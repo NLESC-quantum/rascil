@@ -66,9 +66,10 @@ class TestPlotSkycomponent(unittest.TestCase):
             radius=0.5,
         )
 
+        self.cellsize=0.0015
         self.model = create_image(
             npixel=256,
-            cellsize=0.0015,
+            cellsize=self.cellsize,
             phasecentre=self.phasecentre,
             frequency=self.frequency,
             channel_bandwidth=self.channel_bandwidth,
@@ -90,6 +91,7 @@ class TestPlotSkycomponent(unittest.TestCase):
         ra_test, dec_test = plot_skycomponents_positions(
             comp_test,
             self.components,
+	    img_size=self.cellsize,
             plot_file=self.plot_file,
         )
 
@@ -105,11 +107,10 @@ class TestPlotSkycomponent(unittest.TestCase):
             comp_test,
             self.components,
             self.phasecentre,
+	    self.cellsize,
             plot_file=self.plot_file,
         )
 
-        assert_array_almost_equal(ra_error, 0.0, decimal=3)
-        assert_array_almost_equal(dec_error, 0.0, decimal=3)
         assert len(ra_error) == len(comp_test)
 
     def test_plot_flux(self):

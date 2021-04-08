@@ -434,7 +434,7 @@ def plot_gaussian_beam_position(
         log.info(f"Processing {matches[i][0]}")
         try:
             fitted = fit_skycomponent(image, m_comp, force_point_sources=False)
-            log.info(fitted.params)
+            log.info("{}".format(fitted.params))
             bmaj[i] = fitted.params["bmaj"]
             bmin[i] = fitted.params["bmin"]
 
@@ -444,8 +444,8 @@ def plot_gaussian_beam_position(
             )
             continue
 
-    pos_error = ra_error ** 2.0 + dec_error * 2.0
-    print(ra_error, dec_error, pos_error)
+    pos_error = numpy.sqrt(ra_error ** 2. + dec_error ** 2.)
+
     err_r = numpy.max(pos_error)
     err_l = numpy.min(pos_error)
 

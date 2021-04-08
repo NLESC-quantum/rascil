@@ -14,5 +14,6 @@ The following command line apps are available.
    rascil_imager.rst
    rascil_advise.rst
    rascil_vis_ms.rst
+   rascil_image_check.rst
    continuum_imaging_checker.rst
 

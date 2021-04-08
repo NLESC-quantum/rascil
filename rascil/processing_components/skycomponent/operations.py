@@ -719,7 +719,7 @@ def restore_skycomponent(
     pixlocs = skycoord_to_pixel(skycoords, im.image_acc.wcs, origin=0, mode="wcs")
 
     beam_pixels = convert_clean_beam_to_pixels(im, clean_beam)
-    
+
     for icomp, comp in enumerate(sc):
 
         if comp.shape != "Point":
@@ -866,6 +866,7 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
     y, x = numpy.mgrid[sl_y, sl_x]
     z = im["pixels"].data[0, 0, sl_y, sl_x]
 
+    image_shape = im["pixels"].data[0, 0].shape
     # isotropic at the moment!
 
     newsc = copy_skycomponent(sc)
@@ -874,6 +875,7 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
         p_init = models.Gaussian2D(
             amplitude=numpy.max(z), x_mean=numpy.mean(x), y_mean=numpy.mean(y)
         )
+
         fit_p = fitting.LevMarLSQFitter()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -883,8 +885,11 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
         newsc.direction = pixel_to_skycoord(fit.x_mean, fit.y_mean, im.image_acc.wcs, 0)
         iy = round(fit.y_mean.value)
         ix = round(fit.x_mean.value)
+
         # We could fit each frequency separately. For the moment, we just scale
-        newsc.flux = im["pixels"].data[:, :, iy, ix]
+        if iy < image_shape[0] and iy >= 0 and ix < image_shape[1] and ix >= 0:
+            newsc.flux = im["pixels"].data[:, :, iy, ix]
+
         force_point_sources = get_parameter(kwargs, "force_point_sources", True)
         if force_point_sources or (fit.x_fwhm <= 0.0 or fit.y_fwhm <= 0.0):
             newsc.shape = "Point"

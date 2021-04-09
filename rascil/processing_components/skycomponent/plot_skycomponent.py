@@ -414,6 +414,12 @@ def plot_gaussian_beam_position(
              The beam parameters for users to check
     """
 
+    img_size = numpy.rad2deg(image.image_acc.wcs.wcs.cdelt[1])
+
+    if img_size <= 0.0:
+        log.warning("Wrong image size, plot absolute values instead")
+        img_size = 1.0
+
     comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
     matches = find_skycomponent_matches(comps_test_sorted, comps_ref, tol)
     num = min(num, len(matches))
@@ -436,10 +442,14 @@ def plot_gaussian_beam_position(
         try:
             fitted = fit_skycomponent(image, m_comp, force_point_sources=False)
             log.info("{}".format(fitted.params))
-            ra_error[count] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
-            dec_error[count] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
-            bmaj[count] = fitted.params["bmaj"]
-            bmin[count] = fitted.params["bmin"]
+            ra_error[count] = (
+                m_comp.direction.ra.degree - m_ref.direction.ra.degree
+            ) / img_size
+            dec_error[count] = (
+                m_comp.direction.dec.degree - m_ref.direction.dec.degree
+            ) / img_size
+            bmaj[count] = fitted.params["bmaj"] / img_size
+            bmin[count] = fitted.params["bmin"] / img_size
             count = count + 1
 
         except KeyError as err:
@@ -452,26 +462,32 @@ def plot_gaussian_beam_position(
     err_r = numpy.max(pos_error)
     err_l = numpy.min(pos_error)
 
+    beam_r = max(numpy.max(bmaj), numpy.max(bmin))
+    beam_l = min(numpy.min(bmin), numpy.min(bmin))
+
     ax1 = plt.subplot(212)
     ax1.plot(pos_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
     ax1.plot(pos_error, bmin, "o", color="r", markersize=5, label="Bmin")
     ax1.legend(loc="best")
-    ax1.set_ylabel("Beam size (deg)")
+    ax1.set_ylabel(r"Beam size ($\Delta x$)")
     ax1.set_xlabel(r"$\sqrt{ \Delta RA^2 + \Delta Dec^2}$")
     ax1.set_xlim([err_l, err_r])
+    ax1.set_ylim([beam_l, beam_r])
 
     ax2 = plt.subplot(221)
     ax2.plot(ra_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
     ax2.plot(ra_error, bmin, "o", color="r", markersize=5, label="Bmin")
-    ax2.set_ylabel("Beam size (deg)")
-    ax2.set_title("RA")
+    ax2.set_ylabel(r"Beam size ($\Delta x$)")
+    ax2.set_title(r"$\Delta RA/ \Delta x$")
     ax2.set_xlim([err_l, err_r])
+    ax2.set_ylim([beam_l, beam_r])
 
     ax3 = plt.subplot(222)
     ax3.plot(dec_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
     ax3.plot(dec_error, bmin, "o", color="r", markersize=5, label="Bmin")
-    ax3.set_title("Dec")
+    ax3.set_title(r"\Delta Dec/ \Delta x$")
     ax3.set_xlim([err_l, err_r])
+    ax3.set_ylim([beam_l, beam_r])
 
     if plot_file is not None:
         plt.savefig(plot_file + "_gaussian_beam_position.png")

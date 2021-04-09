@@ -416,6 +416,7 @@ def plot_gaussian_beam_position(
 
     comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
     matches = find_skycomponent_matches(comps_test_sorted, comps_ref, tol)
+    num = min(num, len(matches))
 
     # Only put in the items that can be fitted
     ra_error = numpy.zeros(num)

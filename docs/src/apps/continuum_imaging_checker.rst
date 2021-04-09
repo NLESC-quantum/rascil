@@ -104,6 +104,39 @@ which can be run with either Docker or Singularity. Instructions can be found at
 
 under **Running the continuum_imaging_checker** section.
 
+Output plots
+++++++++++++
+A list of plots are generated to analyze the image as well as comparing the input and output source catelogues. 
+
+Plots for restored image::
+
+    ..._restored_plot.png  # Running mean of restored image
+    ..._sources_plot.png  # Running mean of residual image
+    ..._background_plot.png  # Running mean of background
+
+Plots for residual image::
+
+    ..._residual_hist.png  # Histogram and Gaussian fit of residual image
+    ..._power_spectrum.png  # Power spectrum of residual image
+
+Plots for position matching::
+
+    ..._position_value.png  # RA, Dec values of input and output sources
+    ..._position_error.png  # RA, Dec error (output-input)
+    ..._position_distance.png # RA, Dec error with respect to distance from the centre
+
+Plots for wide field accuracy::
+
+    ..._position_quiver.png  # Quiver plot of the movement of source positions
+    ..._gaussian_beam_position.png  # Gaussian fitted beam sizes for output sources
+
+Plots for flux matching::
+
+    ..._flux_value.png  # Values of output flux vs. input flux of sources
+    ..._flux_ratio.png  # Ratio of flux out/flux in
+    ..._flux_histogram.png  # Histogram of flux comparison
+ 
+
 Command line arguments
 ++++++++++++++++++++++
 

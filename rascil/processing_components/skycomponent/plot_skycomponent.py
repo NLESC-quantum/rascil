@@ -376,8 +376,21 @@ def plot_skycomponents_position_quiver(
 
         dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
 
+    ref = max(numpy.max(numpy.abs(ra_error)), numpy.max(numpy.abs(dec_error)))
+    scale_factor = 10 * ref
+    log.info(f" Scale factor is {scale_factor}")
     fig, ax = plt.subplots()
-    q = ax.quiver(ra_ref, dec_ref, ra_error, dec_error, color="b")
+    q = ax.quiver(ra_ref, dec_ref, ra_error, dec_error, color="b", scale=scale_factor)
+
+    ax.quiverkey(
+        q,
+        0.8,
+        0.9,
+        ref,
+        r"$\times$ %.3f" % (1 / scale_factor),
+        labelpos="E",
+        coordinates="figure",
+    )
 
     ax.scatter(ra_ref, dec_ref, color="r", s=8)
     plt.xlabel("RA (deg)")
@@ -470,7 +483,7 @@ def plot_gaussian_beam_position(
     ax1.plot(pos_error, bmin, "o", color="r", markersize=5, label="Bmin")
     ax1.legend(loc="best")
     ax1.set_ylabel(r"Beam size ($\Delta x$)")
-    ax1.set_xlabel(r"$\sqrt{ \Delta RA^2 + \Delta Dec^2}$")
+    ax1.set_xlabel(r"$\sqrt{ \Delta RA^2 + \Delta Dec^2}/\Delta x$")
     ax1.set_xlim([err_l, err_r])
     ax1.set_ylim([beam_l, beam_r])
 
@@ -485,7 +498,7 @@ def plot_gaussian_beam_position(
     ax3 = plt.subplot(222)
     ax3.plot(dec_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
     ax3.plot(dec_error, bmin, "o", color="r", markersize=5, label="Bmin")
-    ax3.set_title(r"\Delta Dec/ \Delta x$")
+    ax3.set_title(r"$\Delta Dec/ \Delta x$")
     ax3.set_xlim([err_l, err_r])
     ax3.set_ylim([beam_l, beam_r])
 

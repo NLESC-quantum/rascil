@@ -15,6 +15,7 @@ Output files:
 import logging
 import unittest
 import sys
+import os
 
 import astropy.units as u
 import numpy
@@ -66,7 +67,7 @@ class TestPlotSkycomponent(unittest.TestCase):
             radius=0.5,
         )
 
-        self.cellsize=0.0015
+        self.cellsize = 0.0015
         self.model = create_image(
             npixel=256,
             cellsize=self.cellsize,
@@ -91,12 +92,15 @@ class TestPlotSkycomponent(unittest.TestCase):
         ra_test, dec_test = plot_skycomponents_positions(
             comp_test,
             self.components,
-	    img_size=self.cellsize,
+            img_size=self.cellsize,
             plot_file=self.plot_file,
         )
 
         assert len(ra_test) == len(dec_test)
         assert len(ra_test) == len(comp_test)
+
+        assert os.path.exists(self.plot_file + "_position_value.png")
+        assert os.path.exists(self.plot_file + "_position_error.png")
 
     def test_plot_position_distance(self):
 
@@ -107,11 +111,12 @@ class TestPlotSkycomponent(unittest.TestCase):
             comp_test,
             self.components,
             self.phasecentre,
-	    self.cellsize,
+            self.cellsize,
             plot_file=self.plot_file,
         )
 
         assert len(ra_error) == len(comp_test)
+        assert os.path.exists(self.plot_file + "_position_distance.png")
 
     def test_plot_flux(self):
 
@@ -126,6 +131,7 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert_array_almost_equal(flux_in, flux_out, decimal=3)
         assert len(flux_in) == len(self.components)
         assert len(flux_out) == len(comp_test)
+        assert os.path.exists(self.plot_file + "_flux_value.png")
 
     def test_plot_flux_ratio(self):
 
@@ -138,6 +144,7 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         assert_array_almost_equal(flux_ratio, 1.0, decimal=3)
         assert len(flux_ratio) <= len(comp_test)
+        assert os.path.exists(self.plot_file + "_flux_ratio.png")
 
     def test_plot_flux_histogram(self):
 
@@ -153,6 +160,7 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         assert len(flux_out) <= len(self.components)
         assert len(flux_in) <= len(comp_test)
+        assert os.path.exists(self.plot_file + "_flux_histogram.png")
 
     def test_plot_position_quiver(self):
 
@@ -170,6 +178,7 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert_array_almost_equal(ra_error, 0.0, decimal=3)
         assert_array_almost_equal(dec_error, 0.0, decimal=3)
         assert len(ra_error) == 100
+        assert os.path.exists(self.plot_file + "_position_quiver.png")
 
     def test_plot_gaussian_beam_position(self):
 
@@ -181,12 +190,11 @@ class TestPlotSkycomponent(unittest.TestCase):
             self.components,
             self.phasecentre,
             self.model,
-            num=100,
-            plot_file=None,
-            tol=1e-5
+            plot_file=self.plot_file,
         )
 
-        assert len(bmaj) == 100
+        assert len(bmaj) == len(bmin)
+        assert os.path.exists(self.plot_file + "_gaussian_beam_position.png")
 
 
 if __name__ == "__main__":

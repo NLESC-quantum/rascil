@@ -625,9 +625,9 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
         comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
     )
 
-#    bmaj, bmin = plot_gaussian_beam_position(
-#        comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
-#    )
+    bmaj, bmin = plot_gaussian_beam_position(
+        comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
+    )
 
     log.info("Plotting done.")
 

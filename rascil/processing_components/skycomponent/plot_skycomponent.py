@@ -415,60 +415,62 @@ def plot_gaussian_beam_position(
     """
 
     comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
-
     matches = find_skycomponent_matches(comps_test_sorted, comps_ref, tol)
-    num = min(num, len(matches))
 
+    # Only put in the items that can be fitted
     ra_error = numpy.zeros(num)
     dec_error = numpy.zeros(num)
     bmaj = numpy.zeros(num)
     bmin = numpy.zeros(num)
 
-    for i in range(num):
-        m_comp = comps_test_sorted[matches[i][0]]
-        m_ref = comps_ref[matches[i][1]]
+    count = 0
+    i = 0
+    while count < num:
+        match = matches[i]
+        m_comp = comps_test_sorted[match[0]]
+        m_ref = comps_ref[match[1]]
 
-        ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
-        dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
-
-        log.info(f"Processing {matches[i][0]}")
+        log.info(f"Processing {match[0]}")
+        i = i + 1
         try:
             fitted = fit_skycomponent(image, m_comp, force_point_sources=False)
             log.info("{}".format(fitted.params))
-            bmaj[i] = fitted.params["bmaj"]
-            bmin[i] = fitted.params["bmin"]
+            ra_error[count] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+            dec_error[count] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+            bmaj[count] = fitted.params["bmaj"]
+            bmin[count] = fitted.params["bmin"]
+            count = count + 1
 
         except KeyError as err:
-            log.warning(
-                f"Fit skycomponent failed for component number {matches[i][0]} "
-            )
-            continue
+            log.warning(f"Fit skycomponent failed for component number {match[0]} ")
 
-    pos_error = numpy.sqrt(ra_error ** 2. + dec_error ** 2.)
+    log.info(f"Fitted {i} components, selected {num}")
+
+    pos_error = numpy.sqrt(numpy.array(ra_error) ** 2.0 + numpy.array(dec_error) ** 2.0)
 
     err_r = numpy.max(pos_error)
     err_l = numpy.min(pos_error)
 
     ax1 = plt.subplot(212)
-    ax1.plot(pos_error, bmaj, color="b", label="Bmaj")
-    ax1.plot(pos_error, bmin, color="r", label="Bmin")
+    ax1.plot(pos_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
+    ax1.plot(pos_error, bmin, "o", color="r", markersize=5, label="Bmin")
     ax1.legend(loc="best")
     ax1.set_ylabel("Beam size (deg)")
     ax1.set_xlabel(r"$\sqrt{ \Delta RA^2 + \Delta Dec^2}$")
-    ax1.set_ylim([err_l, err_r])
+    ax1.set_xlim([err_l, err_r])
 
     ax2 = plt.subplot(221)
-    ax2.plot(ra_error, bmaj, color="b", label="Bmaj")
-    ax2.plot(ra_error, bmin, color="r", label="Bmin")
+    ax2.plot(ra_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
+    ax2.plot(ra_error, bmin, "o", color="r", markersize=5, label="Bmin")
     ax2.set_ylabel("Beam size (deg)")
     ax2.set_title("RA")
-    ax2.set_ylim([err_l, err_r])
+    ax2.set_xlim([err_l, err_r])
 
     ax3 = plt.subplot(222)
-    ax3.plot(dec_error, bmaj, color="b", label="Bmaj")
-    ax3.plot(dec_error, bmin, color="r", label="Bmin")
+    ax3.plot(dec_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
+    ax3.plot(dec_error, bmin, "o", color="r", markersize=5, label="Bmin")
     ax3.set_title("Dec")
-    ax3.set_ylim([err_l, err_r])
+    ax3.set_xlim([err_l, err_r])
 
     if plot_file is not None:
         plt.savefig(plot_file + "_gaussian_beam_position.png")

@@ -78,7 +78,7 @@ def plot_skycomponents_positions(
                 ra_error[i] = (
                     m_comp.direction.ra.wrap_at(angle_wrap).degree
                     - m_ref.direction.ra.wrap_at(angle_wrap).degree
-                ) / img_size
+                ) * numpy.cos(m_ref.direction.dec.rad) / img_size
 
                 dec_error[i] = (
                     m_comp.direction.dec.degree - m_ref.direction.dec.degree
@@ -89,13 +89,17 @@ def plot_skycomponents_positions(
                 ra_error[i] = (
                     m_comp.direction.ra.wrap_at(angle_wrap).degree
                     - m_ref.direction.ra.wrap_at(angle_wrap).degree
-                )
+                )  * numpy.cos(m_ref.direction.dec.rad)
 
                 dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
 
+        ax = plt.gca()
+        ax.set_aspect(1.0)
         plt.plot(
             ra_test, dec_test, "o", color="b", markersize=5, label="Tested components"
         )
+        ax = plt.gca()
+        ax.set_aspect(1.0)
         plt.plot(
             ra_ref, dec_ref, "x", color="r", markersize=8, label="Original components"
         )
@@ -113,12 +117,14 @@ def plot_skycomponents_positions(
         if comps_ref is None:
             log.info("Error: No reference components. No position errors are plotted.")
         else:
+            ax = plt.gca()
+            ax.set_aspect(1.0)
             plt.plot(ra_error, dec_error, "o", markersize=5)
         err_r = max(numpy.max(ra_error), numpy.max(dec_error))
         err_l = min(numpy.min(ra_error), numpy.min(dec_error))
         plt.xlim([err_l, err_r])
         plt.ylim([err_l, err_r])
-        plt.xlabel(r"$\Delta\ RA/ \Delta x$")
+        plt.xlabel(r"$\Delta\ RA * cos(Dec) / \Delta x$")
         plt.ylabel(r"$\Delta\ Dec/ \Delta x$")
         plt.title("Errors in RA and Dec")
         if plot_file is not None:
@@ -155,7 +161,7 @@ def plot_skycomponents_position_distance(
         if img_size > 0.0:
             ra_error[i] = (
                 m_comp.direction.ra.degree - m_ref.direction.ra.degree
-            ) / img_size
+            )  * numpy.cos(m_ref.direction.dec.rad) / img_size
             dec_error[i] = (
                 m_comp.direction.dec.degree - m_ref.direction.dec.degree
             ) / img_size
@@ -163,7 +169,8 @@ def plot_skycomponents_position_distance(
             dist[i] = m_comp.direction.separation(phasecentre).degree / img_size
         else:
             log.info("Wrong image size. Plot absolute values instead.")
-            ra_error[i] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+            ra_error[i] = (m_comp.direction.ra.degree - m_ref.direction.ra.degree) \
+                          * numpy.cos(m_ref.direction.dec.rad)
 
             dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
             dist[i] = m_comp.direction.separation(phasecentre).degree
@@ -372,11 +379,13 @@ def plot_skycomponents_position_quiver(
         ra_error[i] = (
             m_comp.direction.ra.wrap_at(angle_wrap).degree
             - m_ref.direction.ra.wrap_at(angle_wrap).degree
-        )
+        )  * numpy.cos(m_ref.direction.dec.rad)
 
         dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
 
     fig, ax = plt.subplots()
+    if numpy.mean(numpy.deg2rad(dec_ref)) != 0.0:
+        ax.set_aspect(1.0 / numpy.cos(numpy.mean(numpy.deg2rad(dec_ref))))
     q = ax.quiver(ra_ref, dec_ref, ra_error, dec_error, color="b")
 
     ax.scatter(ra_ref, dec_ref, color="r", s=8)
@@ -423,6 +432,7 @@ def plot_gaussian_beam_position(
     dec_error = numpy.zeros(num)
     bmaj = numpy.zeros(num)
     bmin = numpy.zeros(num)
+    dist = numpy.zeros(num)
 
     count = 0
     i = 0
@@ -436,8 +446,10 @@ def plot_gaussian_beam_position(
         try:
             fitted = fit_skycomponent(image, m_comp, force_point_sources=False)
             log.info("{}".format(fitted.params))
-            ra_error[count] = m_comp.direction.ra.degree - m_ref.direction.ra.degree
+            ra_error[count] = (m_comp.direction.ra.degree - m_ref.direction.ra.degree) \
+                              * numpy.cos(m_ref.direction.dec.rad)
             dec_error[count] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+            dist[count] = m_comp.direction.separation(phasecentre).degree
             bmaj[count] = fitted.params["bmaj"]
             bmin[count] = fitted.params["bmin"]
             count = count + 1
@@ -453,12 +465,11 @@ def plot_gaussian_beam_position(
     err_l = numpy.min(pos_error)
 
     ax1 = plt.subplot(212)
-    ax1.plot(pos_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
-    ax1.plot(pos_error, bmin, "o", color="r", markersize=5, label="Bmin")
+    ax1.plot(dist, bmaj, "o", color="b", markersize=5, label="Bmaj")
+    ax1.plot(dist, bmin, "o", color="r", markersize=5, label="Bmin")
     ax1.legend(loc="best")
     ax1.set_ylabel("Beam size (deg)")
-    ax1.set_xlabel(r"$\sqrt{ \Delta RA^2 + \Delta Dec^2}$")
-    ax1.set_xlim([err_l, err_r])
+    ax1.set_xlabel(r"Distance to phase centre (deg)")
 
     ax2 = plt.subplot(221)
     ax2.plot(ra_error, bmaj, "o", color="b", markersize=5, label="Bmaj")

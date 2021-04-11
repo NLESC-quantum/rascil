@@ -172,7 +172,7 @@ def plot_skycomponents_position_distance(
                 m_comp.direction.dec.degree - m_ref.direction.dec.degree
             ) / img_size
 
-            dist[i] = m_comp.direction.separation(phasecentre).degree / img_size
+            dist[i] = m_comp.direction.separation(phasecentre).degree
         else:
             log.info("Wrong image size. Plot absolute values instead.")
             ra_error[i] = (
@@ -192,7 +192,7 @@ def plot_skycomponents_position_distance(
 
     ax1.set_ylabel(r"$\Delta\ RA/ \Delta x$")
     ax2.set_ylabel(r"$\Delta\ Dec/ \Delta x$")
-    ax2.set_xlabel(r"Separation To Center($\Delta x$)")
+    ax2.set_xlabel(r"Separation To Center (deg)")
     ax1.set_ylim([err_l, err_r])
     ax2.set_ylim([err_l, err_r])
     if plot_file is not None:
@@ -433,19 +433,15 @@ def plot_gaussian_beam_position(
              The beam parameters for users to check
     """
 
-    img_size = numpy.rad2deg(image.image_acc.wcs.wcs.cdelt[1])
-
-    if img_size <= 0.0:
-        log.warning("Wrong image size, plot absolute values instead")
-        img_size = 1.0
+    angle_wrap = 180.0 * u.deg
 
     comps_test_sorted = sorted(comps_test, key=lambda cmp: numpy.max(cmp.flux))
     matches = find_skycomponent_matches(comps_test_sorted, comps_ref, tol)
     num = min(num, len(matches))
 
     # Only put in the items that can be fitted
-    ra_error = numpy.zeros(num)
-    dec_error = numpy.zeros(num)
+    ra_dist = numpy.zeros(num)
+    dec_dist = numpy.zeros(num)
     bmaj = numpy.zeros(num)
     bmin = numpy.zeros(num)
     dist = numpy.zeros(num)
@@ -462,10 +458,10 @@ def plot_gaussian_beam_position(
         try:
             fitted = fit_skycomponent(image, m_comp, force_point_sources=False)
             log.info("{}".format(fitted.params))
-            ra_error[count] = (
-                m_comp.direction.ra.degree - m_ref.direction.ra.degree
-            ) * numpy.cos(m_ref.direction.dec.rad)
-            dec_error[count] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+            ra_dist[count] = (m_comp.direction.ra.wrap_at(angle_wrap).degree -
+                              phasecentre.ra.wrap_at(angle_wrap).deg)\
+                             * numpy.cos(m_ref.direction.dec.rad)
+            dec_dist[count] = (m_comp.direction.dec.degree - phasecentre.dec.deg)
             dist[count] = m_comp.direction.separation(phasecentre).degree
             bmaj[count] = fitted.params["bmaj"]
             bmin[count] = fitted.params["bmin"]
@@ -476,10 +472,10 @@ def plot_gaussian_beam_position(
 
     log.info(f"Fitted {i} components, selected {num}")
 
-    pos_error = numpy.sqrt(numpy.array(ra_error) ** 2.0 + numpy.array(dec_error) ** 2.0)
+    pos_dist = numpy.sqrt(numpy.array(ra_dist) ** 2.0 + numpy.array(dec_dist) ** 2.0)
 
-    err_r = numpy.max(pos_error)
-    err_l = numpy.min(pos_error)
+    dist_r = numpy.max(pos_dist)
+    dist_l = numpy.min(pos_dist)
 
     beam_r = max(numpy.max(bmaj), numpy.max(bmin))
     beam_l = min(numpy.min(bmin), numpy.min(bmin))
@@ -492,18 +488,18 @@ def plot_gaussian_beam_position(
     ax1.set_xlabel(r"Distance to phase centre (deg)")
 
     ax2 = plt.subplot(221)
-    ax2.plot(ra_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
-    ax2.plot(ra_error, bmin, "o", color="r", markersize=5, label="Bmin")
-    ax2.set_ylabel(r"Beam size ($\Delta x$)")
-    ax2.set_title(r"$\Delta RA/ \Delta x$")
-    ax2.set_xlim([err_l, err_r])
+    ax2.plot(ra_dist, bmaj, "o", color="b", markersize=5, label="Bmaj")
+    ax2.plot(ra_dist, bmin, "o", color="r", markersize=5, label="Bmin")
+    ax2.set_ylabel(r"Beam size (deg)")
+    ax2.set_title(r"$\Delta RA (deg)$")
+    ax2.set_xlim([dist_l, dist_r])
     ax2.set_ylim([beam_l, beam_r])
 
     ax3 = plt.subplot(222)
-    ax3.plot(dec_error, bmaj, "o", color="b", markersize=5, label="Bmaj")
-    ax3.plot(dec_error, bmin, "o", color="r", markersize=5, label="Bmin")
-    ax3.set_title(r"$\Delta Dec/ \Delta x$")
-    ax3.set_xlim([err_l, err_r])
+    ax3.plot(dec_dist, bmaj, "o", color="b", markersize=5, label="Bmaj")
+    ax3.plot(dec_dist, bmin, "o", color="r", markersize=5, label="Bmin")
+    ax3.set_title(r"$\Delta Dec (deg)$")
+    ax3.set_xlim([dist_l, dist_r])
     ax3.set_ylim([beam_l, beam_r])
 
     if plot_file is not None:

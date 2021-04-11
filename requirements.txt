@@ -34,7 +34,7 @@ bdsf==1.9.2
     # via -r requirements.in
 bleach==3.3.0
     # via nbconvert
-bokeh==2.3.0
+bokeh==2.3.1
     # via -r requirements.in
 cached-property==1.5.2
     # via h5py
@@ -78,7 +78,7 @@ entrypoints==0.3
     # via nbconvert
 fasteners==0.16
     # via zarr
-fsspec==0.8.7
+fsspec==0.9.0
     # via dask
 future==0.18.2
     # via python-casacore
@@ -261,7 +261,7 @@ paramiko==2.7.2
     # via -r requirements.in
 parso==0.8.2
     # via jedi
-partd==1.1.0
+partd==1.2.0
     # via dask
 pexpect==4.8.0
     # via ipython
@@ -275,7 +275,7 @@ pillow==8.2.0
     #   imageio
     #   matplotlib
     #   scikit-image
-prometheus-client==0.10.0
+prometheus-client==0.10.1
     # via notebook
 prompt-toolkit==3.0.18
     # via
@@ -380,7 +380,7 @@ terminado==0.9.4
     # via notebook
 testpath==0.4.4
     # via nbconvert
-tifffile==2021.3.31
+tifffile==2021.4.8
     # via scikit-image
 toolz==0.11.1
     # via

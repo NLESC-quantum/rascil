@@ -93,12 +93,13 @@ class TestPlotSkycomponent(unittest.TestCase):
         self.noise = 1.0e-6
         self.plot_file = self.dir + "/test_plot_skycomponents"
 
-        # clean up existing png files
-        imglist = glob.glob(self.plot_file + "*.png")
-        for f in imglist:
-            os.remove(f)
-
     def test_plot_positions(self):
+
+        try:
+            os.remove(self.plot_file + "_position_value.png")
+            os.remove(self.plot_file + "_position_error.png")
+        except OSError:
+            pass
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="direction"
@@ -118,6 +119,11 @@ class TestPlotSkycomponent(unittest.TestCase):
 
     def test_plot_position_distance(self):
 
+        try:
+            os.remove(self.plot_file + "_position_distance.png")
+        except OSError:
+            pass
+
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="direction"
         )
@@ -134,6 +140,11 @@ class TestPlotSkycomponent(unittest.TestCase):
 
     def test_plot_flux(self):
 
+        try:
+            os.remove(self.plot_file + "_flux_value.png")
+        except OSError:
+            pass
+
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="flux"
         )
@@ -149,6 +160,11 @@ class TestPlotSkycomponent(unittest.TestCase):
 
     def test_plot_flux_ratio(self):
 
+        try:
+            os.remove(self.plot_file + "_flux_ratio.png")
+        except OSError:
+            pass
+
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="flux"
         )
@@ -161,6 +177,11 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert os.path.exists(self.plot_file + "_flux_ratio.png")
 
     def test_plot_flux_histogram(self):
+
+        try:
+            os.remove(self.plot_file + "_flux_histogram.png")
+        except OSError:
+            pass
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="flux"
@@ -177,6 +198,11 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert os.path.exists(self.plot_file + "_flux_histogram.png")
 
     def test_plot_position_quiver(self):
+
+        try:
+            os.remove(self.plot_file + "_position_quiver.png")
+        except OSError:
+            pass
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="direction"
@@ -195,6 +221,11 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert os.path.exists(self.plot_file + "_position_quiver.png")
 
     def test_plot_gaussian_beam_position(self):
+
+        try:
+            os.remove(self.plot_file + "_gaussian_beam_position.png")
+        except OSError:
+            pass
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="direction"

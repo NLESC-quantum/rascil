@@ -101,6 +101,11 @@ def test_continuum_imaging_checker(
     imglist = glob.glob(rascil_path(f"test_results/test_ci_checker_{tag}*.png"))
     for f in imglist:
         os.remove(f)
+    try:
+        os.remove(rascil_path("test_results/index.html"))
+        os.remove(rascil_path("test_results/index.md"))
+    except OSError:
+        pass
 
     # set up
     frequency = 1.0e9

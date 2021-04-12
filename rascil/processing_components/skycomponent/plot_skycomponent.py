@@ -468,7 +468,7 @@ def plot_gaussian_beam_position(
             count = count + 1
 
 	#If fitting failed, no items will be found in the params dictionary
-        except KeyError as err:
+        except KeyError:
             log.warning(f"Fit skycomponent failed for component number {match[0]} ")
 
     log.info(f"Fitted {i} components, selected {num}")

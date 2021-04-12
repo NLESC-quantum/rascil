@@ -54,6 +54,8 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         self.dir = rascil_path("test_results")
 
+        self.persist = os.getenv("RASCIL_PERSIST", False)
+
         self.frequency = numpy.array([1e8])
         self.channel_bandwidth = numpy.array([1e6])
         self.phasecentre = SkyCoord(
@@ -86,20 +88,15 @@ class TestPlotSkycomponent(unittest.TestCase):
         self.model = restore_skycomponent(
             self.model, self.components, clean_beam=self.clean_beam
         )
-        export_image_to_fits(
-            self.model, self.dir + "/test_plot_skycomponents_model.fits"
-        )
+        if self.persist:
+            export_image_to_fits(
+                self.model, self.dir + "/test_plot_skycomponents_model.fits"
+            )
 
         self.noise = 1.0e-6
         self.plot_file = self.dir + "/test_plot_skycomponents"
 
     def test_plot_positions(self):
-
-        try:
-            os.remove(self.plot_file + "_position_value.png")
-            os.remove(self.plot_file + "_position_error.png")
-        except OSError:
-            pass
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="direction"
@@ -117,12 +114,11 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert os.path.exists(self.plot_file + "_position_value.png")
         assert os.path.exists(self.plot_file + "_position_error.png")
 
-    def test_plot_position_distance(self):
+        if self.persist is False:
+            os.remove(self.plot_file + "_position_value.png")
+            os.remove(self.plot_file + "_position_error.png")
 
-        try:
-            os.remove(self.plot_file + "_position_distance.png")
-        except OSError:
-            pass
+    def test_plot_position_distance(self):
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="direction"
@@ -138,12 +134,10 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert len(ra_error) == len(comp_test)
         assert os.path.exists(self.plot_file + "_position_distance.png")
 
-    def test_plot_flux(self):
+        if self.persist is False:
+            os.remove(self.plot_file + "_position_distance.png")
 
-        try:
-            os.remove(self.plot_file + "_flux_value.png")
-        except OSError:
-            pass
+    def test_plot_flux(self):
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="flux"
@@ -158,12 +152,10 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert len(flux_out) == len(comp_test)
         assert os.path.exists(self.plot_file + "_flux_value.png")
 
-    def test_plot_flux_ratio(self):
+        if self.persist is False:
+            os.remove(self.plot_file + "_flux_value.png")
 
-        try:
-            os.remove(self.plot_file + "_flux_ratio.png")
-        except OSError:
-            pass
+    def test_plot_flux_ratio(self):
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="flux"
@@ -176,12 +168,10 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert len(flux_ratio) <= len(comp_test)
         assert os.path.exists(self.plot_file + "_flux_ratio.png")
 
-    def test_plot_flux_histogram(self):
+        if self.persist is False:
+            os.remove(self.plot_file + "_flux_ratio.png")
 
-        try:
-            os.remove(self.plot_file + "_flux_histogram.png")
-        except OSError:
-            pass
+    def test_plot_flux_histogram(self):
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="flux"
@@ -197,12 +187,10 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert len(flux_in) <= len(comp_test)
         assert os.path.exists(self.plot_file + "_flux_histogram.png")
 
-    def test_plot_position_quiver(self):
+        if self.persist is False:
+            os.remove(self.plot_file + "_flux_histogram.png")
 
-        try:
-            os.remove(self.plot_file + "_position_quiver.png")
-        except OSError:
-            pass
+    def test_plot_position_quiver(self):
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="direction"
@@ -220,12 +208,10 @@ class TestPlotSkycomponent(unittest.TestCase):
         assert len(ra_error) == 27
         assert os.path.exists(self.plot_file + "_position_quiver.png")
 
-    def test_plot_gaussian_beam_position(self):
+        if self.persist is False:
+            os.remove(self.plot_file + "_position_quiver.png")
 
-        try:
-            os.remove(self.plot_file + "_gaussian_beam_position.png")
-        except OSError:
-            pass
+    def test_plot_gaussian_beam_position(self):
 
         comp_test = addnoise_skycomponent(
             self.components, noise=self.noise, mode="direction"
@@ -240,6 +226,9 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         assert len(bmaj) == len(bmin)
         assert os.path.exists(self.plot_file + "_gaussian_beam_position.png")
+
+        if self.persist is False:
+            os.remove(self.plot_file + "_gaussian_beam_position.png")
 
 
 if __name__ == "__main__":

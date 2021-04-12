@@ -97,15 +97,8 @@ def test_continuum_imaging_checker(
     cellsize, npixel, flux_limit, insert_method, noise, tag
 ):
 
-    # clean up directory
-    imglist = glob.glob(rascil_path(f"test_results/test_ci_checker_{tag}*.png"))
-    for f in imglist:
-        os.remove(f)
-    try:
-        os.remove(rascil_path("test_results/index.html"))
-        os.remove(rascil_path("test_results/index.md"))
-    except OSError:
-        pass
+    # Set true if we want to save the outputs
+    persist = os.getenv("RASCIL_PERSIST", False)
 
     # set up
     frequency = 1.0e9
@@ -265,3 +258,14 @@ def test_continuum_imaging_checker(
     # at the end of analyze_image()
     assert os.path.exists(rascil_path("test_results/index.html"))
     assert os.path.exists(rascil_path("test_results/index.md"))
+
+    # clean up directory
+    if persist is False:
+        imglist = glob.glob(rascil_path(f"test_results/test_ci_checker_{tag}*"))
+        for f in imglist:
+            os.remove(f)
+        try:
+            os.remove(rascil_path("test_results/index.html"))
+            os.remove(rascil_path("test_results/index.md"))
+        except OSError:
+            pass

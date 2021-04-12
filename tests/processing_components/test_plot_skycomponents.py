@@ -76,10 +76,12 @@ class TestPlotSkycomponent(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
-        self.clean_beam = {"bmaj": 5.0 * numpy.rad2deg(self.cellsize),
-                           "bmin": 3.0 * numpy.rad2deg(self.cellsize),
-                           "bpa": -30.0}
-        
+        self.clean_beam = {
+            "bmaj": 5.0 * numpy.rad2deg(self.cellsize),
+            "bmin": 3.0 * numpy.rad2deg(self.cellsize),
+            "bpa": -30.0,
+        }
+
         self.model = restore_skycomponent(
             self.model, self.components, clean_beam=self.clean_beam
         )
@@ -89,6 +91,11 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         self.noise = 1.0e-6
         self.plot_file = self.dir + "/test_plot_skycomponents"
+
+        # clean up existing png files
+        filelist = [f for f in os.listdir(self.dir) if f.endswith(".png")]
+        for f in filelist:
+            os.remove(os.path.join(self.dir, f))
 
     def test_plot_positions(self):
 

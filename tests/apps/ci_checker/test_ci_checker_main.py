@@ -45,9 +45,6 @@ from rascil.processing_components.skycomponent import (
 )
 
 log = logging.getLogger("rascil-logger")
-# log.setLevel(logging.INFO)
-# log.addHandler(logging.StreamHandler(sys.stdout))
-
 
 @pytest.mark.parametrize(
     "cellsize, npixel, flux_limit, insert_method, noise, tag",
@@ -97,6 +94,13 @@ log = logging.getLogger("rascil-logger")
 def test_continuum_imaging_checker(
     cellsize, npixel, flux_limit, insert_method, noise, tag
 ):
+
+    #clean up directory
+    filelist = [ f for f in os.listdir(rascil_path("test_results/")) if f.endswith(".png") ]
+    for f in filelist:
+        os.remove(os.path.join(rascil_path("test_results/"), f))
+
+    #set up
     frequency = 1.0e9
     phasecentre = SkyCoord(
         ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -254,3 +258,4 @@ def test_continuum_imaging_checker(
     # at the end of analyze_image()
     assert os.path.exists(rascil_path("test_results/index.html"))
     assert os.path.exists(rascil_path("test_results/index.md"))
+

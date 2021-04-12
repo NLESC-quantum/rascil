@@ -111,7 +111,7 @@ A list of plots are generated to analyze the image as well as comparing the inpu
 Plots for restored image::
 
     ..._restored_plot.png  # Running mean of restored image
-    ..._sources_plot.png  # Running mean of residual image
+    ..._sources_plot.png  # Running mean of the sources
     ..._background_plot.png  # Running mean of background
 
 Plots for residual image::

@@ -41,7 +41,7 @@ def plot_skycomponents_positions(
     """Generate position scatter plot for two lists of skycomponents
 
     :param comps_test: List of components to be tested
-    ::param img_size: Cell size of the image to compare
+    :param img_size: Cell size per pixel in the image to compare
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
@@ -89,7 +89,7 @@ def plot_skycomponents_positions(
                 ) / img_size
 
             else:
-                log.info("Wrong image size. Plot absolute values instead.")
+                log.info("Wrong input image resolution. Plot absolute values instead.")
                 ra_error[i] = (
                     m_comp.direction.ra.wrap_at(angle_wrap).degree
                     - m_ref.direction.ra.wrap_at(angle_wrap).degree
@@ -99,12 +99,12 @@ def plot_skycomponents_positions(
 
         ax = plt.gca()
         ax.set_aspect(1.0)
-        plt.plot(
+        ax.plot(
             ra_test, dec_test, "o", color="b", markersize=5, label="Tested components"
         )
         ax = plt.gca()
         ax.set_aspect(1.0)
-        plt.plot(
+        ax.plot(
             ra_ref, dec_ref, "x", color="r", markersize=8, label="Original components"
         )
 
@@ -123,7 +123,7 @@ def plot_skycomponents_positions(
         else:
             ax = plt.gca()
             ax.set_aspect(1.0)
-            plt.plot(ra_error, dec_error, "o", markersize=5)
+            ax.plot(ra_error, dec_error, "o", markersize=5)
         err_r = max(numpy.max(ra_error), numpy.max(dec_error))
         err_l = min(numpy.min(ra_error), numpy.min(dec_error))
         plt.xlim([err_l, err_r])
@@ -149,7 +149,7 @@ def plot_skycomponents_position_distance(
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
     :param phasecentre: Centre of image in SkyCoords
-    :param img_size: Cell size of the image to compare
+    :param img_size: Cell size per pixel in the image to compare
     :return: [ra_error, dec_error]:
              The error array for users to check
     """
@@ -174,7 +174,7 @@ def plot_skycomponents_position_distance(
 
             dist[i] = m_comp.direction.separation(phasecentre).degree
         else:
-            log.info("Wrong image size. Plot absolute values instead.")
+            log.info("Wrong input image resolution. Plot absolute values instead.")
             ra_error[i] = (
                 m_comp.direction.ra.degree - m_ref.direction.ra.degree
             ) * numpy.cos(m_ref.direction.dec.rad)
@@ -399,8 +399,8 @@ def plot_skycomponents_position_quiver(
     q = ax.quiver(ra_ref, dec_ref, ra_error, dec_error, color="b")
 
     ax.scatter(ra_ref, dec_ref, color="r", s=8)
-    plt.xlabel("RA (deg)")
-    plt.ylabel("Dec (deg)")
+    ax.set_xlabel("RA (deg)")
+    ax.set_ylabel("Dec (deg)")
     plt.title(f"Brightest {num} sources")
     if plot_file is not None:
         plt.savefig(plot_file + "_position_quiver.png")
@@ -467,6 +467,7 @@ def plot_gaussian_beam_position(
             bmin[count] = fitted.params["bmin"]
             count = count + 1
 
+	#If fitting failed, no items will be found in the params dictionary
         except KeyError as err:
             log.warning(f"Fit skycomponent failed for component number {match[0]} ")
 

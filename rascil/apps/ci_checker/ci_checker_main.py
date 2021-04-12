@@ -598,7 +598,7 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
     :return
 
     """
-    log.info("Plotting skycomponents for the results.")
+    log.info("Plotting skycomponents to check the accuracy of the source finder.")
     image = import_image_from_fits(input_image, fixpol=True)
 
     img_size = np.rad2deg(image.image_acc.wcs.wcs.cdelt[1])

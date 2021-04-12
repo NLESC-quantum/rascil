@@ -16,6 +16,7 @@
 import logging
 import sys
 import os
+import glob
 
 import astropy.units as u
 import numpy
@@ -45,6 +46,7 @@ from rascil.processing_components.skycomponent import (
 )
 
 log = logging.getLogger("rascil-logger")
+
 
 @pytest.mark.parametrize(
     "cellsize, npixel, flux_limit, insert_method, noise, tag",
@@ -95,12 +97,12 @@ def test_continuum_imaging_checker(
     cellsize, npixel, flux_limit, insert_method, noise, tag
 ):
 
-    #clean up directory
-    filelist = [ f for f in os.listdir(rascil_path("test_results/")) if f.endswith(".png") ]
-    for f in filelist:
-        os.remove(os.path.join(rascil_path("test_results/"), f))
+    # clean up directory
+    imglist = glob.glob(rascil_path(f"test_results/test_ci_checker_{tag}*.png"))
+    for f in imglist:
+        os.remove(f)
 
-    #set up
+    # set up
     frequency = 1.0e9
     phasecentre = SkyCoord(
         ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -258,4 +260,3 @@ def test_continuum_imaging_checker(
     # at the end of analyze_image()
     assert os.path.exists(rascil_path("test_results/index.html"))
     assert os.path.exists(rascil_path("test_results/index.md"))
-

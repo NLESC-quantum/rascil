@@ -16,6 +16,7 @@ import logging
 import unittest
 import sys
 import os
+import glob
 
 import astropy.units as u
 import numpy
@@ -93,9 +94,9 @@ class TestPlotSkycomponent(unittest.TestCase):
         self.plot_file = self.dir + "/test_plot_skycomponents"
 
         # clean up existing png files
-        filelist = [f for f in os.listdir(self.dir) if f.endswith(".png")]
-        for f in filelist:
-            os.remove(os.path.join(self.dir, f))
+        imglist = glob.glob(self.plot_file + "*.png")
+        for f in imglist:
+            os.remove(f)
 
     def test_plot_positions(self):
 

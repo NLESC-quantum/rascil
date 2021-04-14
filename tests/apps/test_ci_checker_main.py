@@ -24,7 +24,7 @@ import pytest
 from astropy.coordinates import SkyCoord
 from numpy.random import default_rng
 
-from rascil.apps.ci_checker.ci_checker_main import (
+from rascil.apps.ci_checker_main import (
     cli_parser,
     analyze_image,
 )

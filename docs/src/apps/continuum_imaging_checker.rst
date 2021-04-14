@@ -70,9 +70,8 @@ are not all in the same directory? Let's take the following directory structure 
 
     - rascil # this is the root directory of the RASCIL git repository
         - rascil
-            - apps
-                - ci_checker
-                    ci_checker_main.py
+            - apps   
+                ci_checker_main.py
             - my_data
                 my_restored_file.fits
                 my_residual_file.fits
@@ -89,7 +88,7 @@ absolute path to your FITS files. E.g.::
 And you need to provide similarily the relative or absolute path both to the args file and
 the code you are running::
 
-    python rascil/apps/ci_checker/ci_checker_main.py @rascil/args.txt
+    python rascil/apps/ci_checker_main.py @rascil/args.txt
 
 Docker image
 ++++++++++++
@@ -141,6 +140,6 @@ Command line arguments
 ++++++++++++++++++++++
 
 .. argparse::
-   :filename: ../../rascil/apps/ci_checker/ci_checker_main.py
+   :filename: ../../rascil/apps/ci_checker_main.py
    :func: cli_parser
    :prog: ci_checker_main.py

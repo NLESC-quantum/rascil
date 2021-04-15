@@ -11,7 +11,10 @@ from rascil.apps.ci_checker.ci_diagnostics import (
     plot_with_running_mean,
     source_region_mask,
     _radial_profile,
+    _plot_power_spectrum,
+    _save_power_spectrum_to_csv,
     power_spectrum,
+    ci_checker_diagnostics
 )
 from rascil.data_models import rascil_path
 
@@ -133,7 +136,7 @@ def test_source_region_mask():
     # is this the expected behaviour?
     # is there a bug / conversion problem when the gaussian.centre_pix values are used?
 
-    print("Done")
+    pass
 
 
 def test_radial_profile():
@@ -162,7 +165,7 @@ def test_radial_profile():
     img[0][0] = 2
     result = _radial_profile(img)
 
-    assert (result == np.array([1., 1., 17./16.])).all()
+    assert (result == np.array([1.0, 1.0, 17.0 / 16.0])).all()
 
 
 def test_radial_profile_custom_centre():
@@ -185,13 +188,14 @@ def test_radial_profile_custom_centre():
     centre = (2, 3)
     result = _radial_profile(img, centre)
 
-    assert (result == np.array([1., 1., 1., 6./5.])).all()
+    assert (result == np.array([1.0, 1.0, 1.0, 6.0 / 5.0])).all()
 
 
 def test_power_spectrum():
     """
     TODO: do we need units for the log plot of the power spectrum axes?
         what is K?
+        what is profile and what is theta_axis?
     """
     img_file = rascil_path(
         "test_results/test-imaging-pipeline-dask_continuum_imaging_residual.fits"
@@ -200,3 +204,12 @@ def test_power_spectrum():
     result = power_spectrum(img_file, 5.0e-4)
 
     print("Done")
+
+
+"""
+TODO:
+    histogram func --> it's 90% plotting, not sure it's worth testing
+    plot_with_running_mean --> 90% plotting, what isn't that's to get labels and such, not testing
+    _plot_power_spectrum --> only plotting, not testing
+    _save_power_spectrum_to_csv --> writing to csv, small amount of business logic, needs testing?
+"""

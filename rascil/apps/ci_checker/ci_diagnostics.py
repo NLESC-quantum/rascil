@@ -29,7 +29,7 @@ def qa_image_bdsf(im_data, description="image"):
     Set of statistics of an image: max, min, maxabs, rms, sum, medianabs,
     medianabsdevmedian, median and mean.
 
-    :param im_data: image data
+    :param im_data: image data, either numpy Array or numpy MaskedArray
     :param description: string describing array
     :return image_stats: statistics of the image
     """
@@ -85,7 +85,7 @@ def gaussian(x, amplitude, mean, stddev):
     :return Gaussian function
     """
 
-    gauss = amplitude * np.exp(-1./2. * ((x-mean)/stddev)**2)
+    gauss = amplitude * np.exp(-1.0 / 2.0 * ((x - mean) / stddev) ** 2)
     return gauss
 
 
@@ -97,8 +97,6 @@ def histogram(bdsf_image, input_image, description="image"):
     :param bdsf_image: pybdsf image object
     :param input_image_residual: file name of input image
     :param description: type of input image
-
-    :return None
     """
 
     im_data = bdsf_image.resid_gaus_arr
@@ -148,8 +146,6 @@ def histogram(bdsf_image, input_image, description="image"):
     log.info('Saving histogram to "{}.png"'.format(save_plot))
     plt.savefig(save_plot + ".png")
     plt.close()
-
-    return
 
 
 def plot_with_running_mean(img, input_image, stats, projection, description="image"):
@@ -236,8 +232,6 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
     plt.savefig(save_plot + ".png", pad_inches=-1)
     plt.close()
 
-    return
-
 
 def source_region_mask(img):
     """
@@ -308,40 +302,16 @@ def _radial_profile(image, centre=None):
     return np.bincount(r.ravel(), image.ravel()) / np.bincount(r.ravel())
 
 
-def power_spectrum(input_image, resolution, signal_channel=None):
+def _plot_power_spectrum(input_image, profile, theta_axis):
     """
-    Plot power spectrum for an image.
+    Plot the power spectrum and save it as PNG.
 
-    :param input_image: image object
-    :param resolution: Resolution in radians needed for conversion to K <-- what is K?
-    :param signal_channel: channel containing both signal and noise, optional
-
-    :return None
+    :param input_image: name of input image (e.g. FITS file name)
+    :param profile:
+    :param theta_axis:
     """
-
-    im = import_image_from_fits(input_image)
-
-    nchan, npol, ny, nx = im["pixels"].shape
-
-    if signal_channel is None:
-        signal_channel = nchan // 2
-
-    imfft = fft_image_to_griddata(im)
-
-    omega = numpy.pi * resolution ** 2 / (4 * numpy.log(2.0))
-    wavelength = consts.c / numpy.average(im.frequency)
-    kperjy = 1e-26 * wavelength ** 2 / (2 * consts.k_B * omega)
-
-    im_spectrum = imfft.copy()
-    im_spectrum["pixels"].data = kperjy.value * numpy.abs(imfft["pixels"].data)
-
-    profile = _radial_profile(im_spectrum["pixels"].data[signal_channel, 0])
-
     plt.clf()
-    cellsize_uv = numpy.abs(griddata_wcs(imfft).wcs.cdelt[0])
-    lambda_max = cellsize_uv * len(profile)
-    lambda_axis = numpy.linspace(cellsize_uv, lambda_max, len(profile))
-    theta_axis = 180.0 / (numpy.pi * lambda_axis)
+
     plt.plot(theta_axis, profile)
     plt.gca().set_title("Power spectrum of image residual")
     plt.gca().set_xlabel(r"$\theta$")
@@ -351,14 +321,26 @@ def power_spectrum(input_image, resolution, signal_channel=None):
     plt.gca().set_ylim(1e-6 * numpy.max(profile), 2.0 * numpy.max(profile))
     plt.tight_layout()
 
-    save_plot = plot_name(input_image, "residual", "power_spectrum")
+    power_sp_plot_name = plot_name(input_image, "residual", "power_spectrum")
 
-    log.info('Saving power spectrum to "{}.png"'.format(save_plot))
-    plt.savefig(save_plot + ".png")
+    log.info('Saving power spectrum to "{}.png"'.format(power_sp_plot_name))
+    plt.savefig(power_sp_plot_name + ".png")
     plt.close()
 
-    log.info('Saving power spectrum profile to "{}_channel.csv"'.format(save_plot))
-    filename = save_plot + "_channel.csv"
+    return power_sp_plot_name
+
+
+def _save_power_spectrum_to_csv(profile, theta_axis, file_name):
+    """
+    Save the power spectrum into CSV.
+
+    :param profile:
+    :param theta_axis:
+    :param file_name: string the csv file name should contain
+    """
+    log.info('Saving power spectrum profile to "{}_channel.csv"'.format(file_name))
+    filename = file_name + "_channel.csv"
+
     results = list()
     for row in range(len(theta_axis)):
         result = dict()
@@ -379,7 +361,42 @@ def power_spectrum(input_image, resolution, signal_channel=None):
             writer.writerow(result)
         csvfile.close()
 
-    return
+
+def power_spectrum(input_image, resolution, signal_channel=None):
+    """
+    Calculate the power spectrum of an image.
+
+    :param input_image: FITS file to read data from
+    :param resolution: Resolution in radians needed for conversion to K <-- what is K?
+    :param signal_channel: channel containing both signal and noise, optional
+
+    :return (profile, theta_axis) --> what are these?
+    """
+
+    im = import_image_from_fits(input_image)
+
+    nchan, npol, ny, nx = im["pixels"].shape
+
+    if signal_channel is None:
+        signal_channel = nchan // 2
+
+    imfft = fft_image_to_griddata(im)
+
+    omega = numpy.pi * resolution ** 2 / (4 * numpy.log(2.0))
+    wavelength = consts.c / numpy.average(im.frequency)
+    kperjy = 1e-26 * wavelength ** 2 / (2 * consts.k_B * omega)
+
+    im_spectrum = imfft.copy()
+    im_spectrum["pixels"].data = kperjy.value * numpy.abs(imfft["pixels"].data)
+
+    profile = _radial_profile(im_spectrum["pixels"].data[signal_channel, 0])
+
+    cellsize_uv = numpy.abs(griddata_wcs(imfft).wcs.cdelt[0])
+    lambda_max = cellsize_uv * len(profile)
+    lambda_axis = numpy.linspace(cellsize_uv, lambda_max, len(profile))
+    theta_axis = 180.0 / (numpy.pi * lambda_axis)
+
+    return profile, theta_axis
 
 
 def ci_checker_diagnostics(bdsf_image, input_image, image_type):
@@ -414,7 +431,13 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
             description="residual",
         )
         histogram(bdsf_image, input_image, description="residual")
-        power_spectrum(input_image, 5.0e-4)
+
+        # calculate, plot, and save power spectrum
+        profile, theta_axis = power_spectrum(input_image, 5.0e-4)
+        save_power_spectrum_plot = _plot_power_spectrum(
+            input_image, profile, theta_axis
+        )
+        _save_power_spectrum_to_csv(profile, theta_axis, save_power_spectrum_plot)
 
     elif image_type == "restored":
 

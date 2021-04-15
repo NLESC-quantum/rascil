@@ -1,3 +1,5 @@
+from unittest.mock import patch, Mock
+
 import numpy as np
 import pytest
 
@@ -14,9 +16,11 @@ from rascil.apps.ci_checker.ci_diagnostics import (
     _plot_power_spectrum,
     _save_power_spectrum_to_csv,
     power_spectrum,
-    ci_checker_diagnostics
+    ci_checker_diagnostics,
 )
-from rascil.data_models import rascil_path
+from rascil.processing_components import create_test_image
+
+BASE_PATH = "rascil.apps.ci_checker.ci_diagnostics"
 
 
 class MockGaussianObject:
@@ -31,9 +35,11 @@ class MockBDSFImage:
     """
 
     def __init__(self):
+        self.shape = (1, 1, 10, 10)
+
         # see bdsf.readimage.Op_readimage.__call__
         # 4D array: (nstokes, nchannels, imag_size_x, image_size_y)
-        self.image_arr = np.ones((1, 1, 10, 10))
+        self.image_arr = np.ones(self.shape)
 
         # list of objects of type bdsf.gausfit.Gaussian
         # couldn't decipher what units the values of .centre_pix
@@ -196,14 +202,88 @@ def test_power_spectrum():
     TODO: do we need units for the log plot of the power spectrum axes?
         what is K?
         what is profile and what is theta_axis?
+
+    TODO: (fyi)
+      Image() breaks without wcs and polarisation_frame specified, even though those are optional args
+      rascil_image = Image(np.ones((1, 1, 5, 5)))
     """
-    img_file = rascil_path(
-        "test_results/test-imaging-pipeline-dask_continuum_imaging_residual.fits"
-    )
+    test_image = create_test_image()
 
-    result = power_spectrum(img_file, 5.0e-4)
+    with patch(BASE_PATH + ".import_image_from_fits") as mock_image_file:
+        mock_image_file.return_value = test_image
+        result = power_spectrum(mock_image_file, 5.0e-4)
 
-    print("Done")
+    # is this correct? are they always the same length?
+    assert len(result[0]) == len(result[1])
+    # is there anything else that can be reasonably tested/asserted?
+
+
+@patch(BASE_PATH + ".SlicedLowLevelWCS", Mock())
+@patch(BASE_PATH + ".source_region_mask")
+@patch(BASE_PATH + ".qa_image_bdsf")
+@patch(BASE_PATH + ".plot_with_running_mean")
+@patch(BASE_PATH + ".histogram")
+class TestCICheckerDiagnostics:
+    """
+    Test that the correct functions are called, and the correct number of times,
+    depending on what "image_type" we run the ci_checker_diagnostics function with.
+
+    In these tests, we mock the functions to check if they were executed.
+    We are only interested in ci_checker_diagnostics executing correctly,
+    not the functions that are called within.
+    """
+
+    def test_restored(
+        self, mock_histogram, mock_plot_run_mean, mock_qa_image, mock_source_mask
+    ):
+        mock_image = MockBDSFImage()
+        setattr(mock_image, "wcs_obj", Mock())
+
+        mock_plot_run_mean.return_value = Mock()
+        mock_qa_image.return_value = Mock()
+        mock_histogram.return_value = Mock()
+        mock_source_mask.return_value = ("source_mask", "background_mask")
+
+        ci_checker_diagnostics(mock_image, "my_file.fits", "restored")
+
+        assert mock_qa_image.call_count == 3
+        assert mock_plot_run_mean.call_count == 3
+        mock_source_mask.assert_called_once()
+        mock_histogram.assert_not_called()  # only called when img is residual
+
+    @patch(BASE_PATH + ".power_spectrum", Mock(return_value=([], [])))
+    @patch(BASE_PATH + "._plot_power_spectrum", Mock())
+    @patch(BASE_PATH + "._save_power_spectrum_to_csv", Mock())
+    def test_residual(
+        self, mock_histogram, mock_plot_run_mean, mock_qa_image, mock_source_mask
+    ):
+        mock_image = MockBDSFImage()
+        setattr(mock_image, "wcs_obj", Mock())
+
+        mock_plot_run_mean.return_value = Mock()
+        mock_qa_image.return_value = Mock()
+        mock_histogram.return_value = Mock()
+        mock_source_mask.return_value = ("source_mask", "background_mask")
+
+        ci_checker_diagnostics(mock_image, "my_file.fits", "residual")
+
+        assert mock_qa_image.call_count == 1
+        assert mock_plot_run_mean.call_count == 1
+        mock_source_mask.assert_not_called()  # only called when img is restored
+        mock_histogram.assert_called_once()
+
+
+@patch(BASE_PATH + ".SlicedLowLevelWCS", Mock())
+def test_ci_checker_diagnostics_unknown_type():
+    """
+    If the provided image_type is neither 'restored' nor 'residual,
+    raise a ValueError.
+    """
+    mock_image = MockBDSFImage()
+    setattr(mock_image, "wcs_obj", Mock())
+
+    with pytest.raises(ValueError):
+        ci_checker_diagnostics(mock_image, "my_file.fits", "my_weird_type")
 
 
 """

@@ -4,7 +4,7 @@
 0.2.1
 -----
 * New app rascil_advise to advise on imaging parameters for a MeasurementSet
-* New app ci_imaging_checker to check sources in continuum imaging images with BDSF
+* New app ci_checker to check sources in continuum imaging images with BDSF
 * Implement using requirements*.in files for dependency management.
   Add files: requirements.in, requirements-docs.in, requirements-test.in
 * Makefile updated with requirements management commands:

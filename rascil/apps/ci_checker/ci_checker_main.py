@@ -374,7 +374,7 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
             description="residual",
         )
         histogram(bdsf_image, input_image, description="residual")
-        power_spectrum(input_image, None, 0, 5.0e-4)
+        power_spectrum(input_image, 5.0e-4)
 
     elif image_type == "restored":
 

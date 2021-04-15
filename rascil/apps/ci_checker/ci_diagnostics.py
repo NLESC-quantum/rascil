@@ -83,7 +83,9 @@ def gaussian(x, amplitude, mean, stddev):
 
     :return Gaussian function
     """
-    return amplitude * np.exp(-(((x - mean) / 4.0 / stddev) ** 2))
+
+    gauss = amplitude * np.exp(-1./2. * ((x-mean)/stddev)**2)
+    return gauss
 
 
 def histogram(bdsf_image, input_image, description="image"):
@@ -120,7 +122,7 @@ def histogram(bdsf_image, input_image, description="image"):
         popt[1], color="C2", linestyle="--", label=f"mean: {mean:.3e}", zorder=15
     )
 
-    # Add shaded region of withth 2*RMS centered on the mean.
+    # Add shaded region of width 2*RMS centered on the mean.
     rms_region = [mean - stddev, mean + stddev]
     ax.axvspan(
         rms_region[0],
@@ -243,7 +245,7 @@ def source_region_mask(img):
 
     :param img: pybdsf image object to be masked
 
-    :return source_mask, background_mask: copys of masked input array.
+    :return source_mask, background_mask: copies of masked input array.
     """
 
     log.info("Masking source and background regions.")
@@ -255,6 +257,7 @@ def source_region_mask(img):
     beam_width = img.pixel_beam()[0] * 2.35482
     beam_radius = beam_width / 2.0
 
+    # img.image_arr.shape --> (nstokes, nchannels, img_size_x, img_size_y)
     image_to_be_masked = img.image_arr[0, 0, :, :]
 
     image_shape = [image_to_be_masked.shape[-2], image_to_be_masked.shape[-1]]
@@ -289,29 +292,28 @@ def source_region_mask(img):
     return source_mask, background_mask
 
 
-def radial_profile(image, centre=None):
+def _radial_profile(image, centre=None):
     """
     Function for calculating the radial profile of input image.
 
-    :param image: RASCIL image object
+    :param image: 2D numpy array
     :param centre: centre of the image
     """
     if centre is None:
         centre = (image.shape[0] // 2, image.shape[1] // 2)
-    x, y = numpy.indices((image.shape[0:2]))
-    r = numpy.sqrt((x - centre[0]) ** 2 + (y - centre[1]) ** 2)
-    r = r.astype(numpy.int)
-    return numpy.bincount(r.ravel(), image.ravel()) / numpy.bincount(r.ravel())
+    x, y = np.indices((image.shape[0:2]))
+    r = np.sqrt((x - centre[0]) ** 2 + (y - centre[1]) ** 2)
+    r = r.astype(int)
+    return np.bincount(r.ravel(), image.ravel()) / np.bincount(r.ravel())
 
 
-def power_spectrum(input_image, signal_channel, noise_channel, resolution):
+def power_spectrum(input_image, resolution, signal_channel=None):
     """
     Plot power spectrum for an image.
 
-    :param image: image object
-    :param signal_channel: channel containing both signal and noise
-    :param noise_channel: containing noise only
-    :param resolution: Resolution in radians needed for conversion to K
+    :param input_image: image object
+    :param resolution: Resolution in radians needed for conversion to K <-- what is K?
+    :param signal_channel: channel containing both signal and noise, optional
 
     :return None
     """
@@ -332,7 +334,7 @@ def power_spectrum(input_image, signal_channel, noise_channel, resolution):
     im_spectrum = imfft.copy()
     im_spectrum["pixels"].data = kperjy.value * numpy.abs(imfft["pixels"].data)
 
-    profile = radial_profile(im_spectrum["pixels"].data[signal_channel, 0])
+    profile = _radial_profile(im_spectrum["pixels"].data[signal_channel, 0])
 
     plt.clf()
     cellsize_uv = numpy.abs(griddata_wcs(imfft).wcs.cdelt[0])

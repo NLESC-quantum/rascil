@@ -1,6 +1,7 @@
 from unittest.mock import patch, Mock
 
 import numpy as np
+import matplotlib.pyplot as plt
 import pytest
 
 from scipy.signal.windows import gaussian as scipy_gaussian
@@ -9,6 +10,7 @@ from rascil.apps.ci_checker.ci_diagnostics import (
     qa_image_bdsf,
     plot_name,
     gaussian,
+    _get_histogram_data,
     histogram,
     plot_with_running_mean,
     source_region_mask,
@@ -18,7 +20,7 @@ from rascil.apps.ci_checker.ci_diagnostics import (
     power_spectrum,
     ci_checker_diagnostics,
 )
-from rascil.processing_components import create_test_image
+from rascil.data_models import rascil_data_path
 
 BASE_PATH = "rascil.apps.ci_checker.ci_diagnostics"
 
@@ -35,11 +37,24 @@ class MockBDSFImage:
     """
 
     def __init__(self):
+        # not part of original PyBDSF image class
+        self.gauss_mean = 1.0  # mean to be used in constructing self.resid_gaus_arr
+        self.gauss_std = (
+            0.5  # standard deviation to be used in constructing self.resid_gaus_arr
+        )
+
         self.shape = (1, 1, 10, 10)
 
         # see bdsf.readimage.Op_readimage.__call__
         # 4D array: (nstokes, nchannels, imag_size_x, image_size_y)
         self.image_arr = np.ones(self.shape)
+
+        self.raw_rms = np.sqrt(np.mean(self.image_arr ** 2))
+        self.raw_mean = np.mean(self.image_arr)
+
+        # see bdsf.make_residimage.Op_make_residimage
+        # numpy array of image size --> shape: x_axis x y_axis
+        self.resid_gaus_arr = self.create_gaussian_array()
 
         # list of objects of type bdsf.gausfit.Gaussian
         # couldn't decipher what units the values of .centre_pix
@@ -58,6 +73,10 @@ class MockBDSFImage:
              bdsf.readimage.Op_readimage.init_beam.pixel_beam
         """
         return [0.5, 0.5, 0.0]
+
+    def create_gaussian_array(self):
+        gaus_arr = np.random.normal(self.gauss_mean, self.gauss_std, self.shape[2:])
+        return gaus_arr
 
 
 def test_qa_image_bdsf():
@@ -118,6 +137,23 @@ def test_gaussian():
 
     result = gaussian(data, 1.0, mean, std)
     assert (result == expected_gaussian).all()
+
+
+def test_get_histogram_data():
+    _, ax = plt.subplots()
+    my_image = MockBDSFImage()
+
+    result = _get_histogram_data(my_image, ax)
+
+    # the code creates 1000 bins; result[0] is the array of the centre of the bins
+    assert len(result[0]) == 1000
+
+    # fitted gaussian parameters
+    fitted_params = result[1]
+
+    # TODO: Are these reasonable boundaries for a fit?
+    assert my_image.gauss_mean + 0.1 > fitted_params[1] > my_image.gauss_mean - 0.1
+    assert my_image.gauss_std + 0.1 > abs(fitted_params[2]) > my_image.gauss_std - 0.1
 
 
 def test_source_region_mask():
@@ -207,13 +243,12 @@ def test_power_spectrum():
       Image() breaks without wcs and polarisation_frame specified, even though those are optional args
       rascil_image = Image(np.ones((1, 1, 5, 5)))
     """
-    test_image = create_test_image()
+    test_image = rascil_data_path("models/M31_canonical.model.fits")
 
-    with patch(BASE_PATH + ".import_image_from_fits") as mock_image_file:
-        mock_image_file.return_value = test_image
-        result = power_spectrum(mock_image_file, 5.0e-4)
+    result = power_spectrum(test_image, 5.0e-4)
 
-    # is this correct? are they always the same length?
+    expected_length = 182
+    assert len(result[0]) == expected_length
     assert len(result[0]) == len(result[1])
     # is there anything else that can be reasonably tested/asserted?
 
@@ -288,7 +323,8 @@ def test_ci_checker_diagnostics_unknown_type():
 
 """
 TODO:
-    histogram func --> it's 90% plotting, not sure it's worth testing
+    histogram func --> it's 90% plotting, not sure it's worth testing 
+            --> separated out the stuff that's worth testing; plotting part not tested
     plot_with_running_mean --> 90% plotting, what isn't that's to get labels and such, not testing
     _plot_power_spectrum --> only plotting, not testing
     _save_power_spectrum_to_csv --> writing to csv, small amount of business logic, needs testing?

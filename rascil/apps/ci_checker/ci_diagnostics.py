@@ -89,37 +89,53 @@ def gaussian(x, amplitude, mean, stddev):
     return gauss
 
 
+def _get_histogram_data(bdsf_image, ax):
+    """
+    Obtain data needed for histogram plot of a PyBDSF image
+
+    :param bdsf_image: PyBDSF image object
+    :param ax: matplotlib ax object
+
+    :return
+        mid_points: mid points of histogram bins
+        optimized_fit_params: fitted gaussian parameters: [amplitude, mean, std]
+    """
+    im_data = bdsf_image.resid_gaus_arr
+
+    counts, bins, _ = ax.hist(
+        im_data.ravel(), bins=1000, density=False, zorder=5, histtype="step"
+    )
+    # "bins" are the bin edge points, so need the mid points.
+    mid_points = bins[:-1] + 0.5 * abs(bins[1:] - bins[:-1])
+
+    # initial guess of the parameters of the fitted gaussian curve
+    initial_params = [counts.max(), bdsf_image.raw_mean, bdsf_image.raw_rms]
+    optimized_fit_params, _ = optimize.curve_fit(
+        gaussian, mid_points, counts, p0=initial_params
+    )
+
+    return mid_points, optimized_fit_params
+
+
 def histogram(bdsf_image, input_image, description="image"):
     """
     Plot a histogram of the pixel counts produced with
     mean, RMS and Gaussian fit.
 
-    :param bdsf_image: pybdsf image object
-    :param input_image_residual: file name of input image
+    :param bdsf_image: PyBDSF image object
+    :param input_image: file name of input image
     :param description: type of input image
     """
-
-    im_data = bdsf_image.resid_gaus_arr
-
     fig, ax = plt.subplots()
 
-    counts, bins, _ = ax.hist(
-        im_data.ravel(), bins=1000, density=False, zorder=5, histtype="step"
+    mid_points, gaussian_fit_params = _get_histogram_data(bdsf_image, ax)
+    mean = gaussian_fit_params[1]
+    stddev = abs(gaussian_fit_params[2])
+
+    ax.plot(
+        mid_points, gaussian(mid_points, *gaussian_fit_params), label="fit", zorder=10
     )
-
-    # "bins" are the bin edge points, so need the mid points.
-    mid_points = bins[:-1] + 0.5 * abs(bins[1:] - bins[:-1])
-
-    p0 = [counts.max(), bdsf_image.raw_mean, bdsf_image.raw_rms]
-
-    popt, pcov = optimize.curve_fit(gaussian, mid_points, counts, p0=p0)
-    mean = popt[1]
-    stddev = abs(popt[2])
-
-    ax.plot(mid_points, gaussian(mid_points, *popt), label="fit", zorder=10)
-    ax.axvline(
-        popt[1], color="C2", linestyle="--", label=f"mean: {mean:.3e}", zorder=15
-    )
+    ax.axvline(mean, color="C2", linestyle="--", label=f"mean: {mean:.3e}", zorder=15)
 
     # Add shaded region of width 2*RMS centered on the mean.
     rms_region = [mean - stddev, mean + stddev]
@@ -152,8 +168,8 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
     """
     Image plot and running mean.
 
-    :param img: pybdsf image object
-    :param input_image_residual: file name of input image
+    :param img: PyBDSF image object
+    :param input_image: file name of input image
     :param stats: statistics of image
     :param projection: projection from World Coordinate System (WCS) object
     :param description: string to put in png file name and plot title
@@ -238,7 +254,7 @@ def source_region_mask(img):
     Mask pixels from an image which are within 5*beam_width of sources in the
     source catalogue.
 
-    :param img: pybdsf image object to be masked
+    :param img: PyBDSF image object to be masked
 
     :return source_mask, background_mask: copies of masked input array.
     """
@@ -296,9 +312,11 @@ def _radial_profile(image, centre=None):
     """
     if centre is None:
         centre = (image.shape[0] // 2, image.shape[1] // 2)
+
     x, y = np.indices((image.shape[0:2]))
     r = np.sqrt((x - centre[0]) ** 2 + (y - centre[1]) ** 2)
     r = r.astype(int)
+
     return np.bincount(r.ravel(), image.ravel()) / np.bincount(r.ravel())
 
 
@@ -307,8 +325,8 @@ def _plot_power_spectrum(input_image, profile, theta_axis):
     Plot the power spectrum and save it as PNG.
 
     :param input_image: name of input image (e.g. FITS file name)
-    :param profile:
-    :param theta_axis:
+    :param profile: ??
+    :param theta_axis: ??
     """
     plt.clf()
 
@@ -334,8 +352,8 @@ def _save_power_spectrum_to_csv(profile, theta_axis, file_name):
     """
     Save the power spectrum into CSV.
 
-    :param profile:
-    :param theta_axis:
+    :param profile: ??
+    :param theta_axis: ??
     :param file_name: string the csv file name should contain
     """
     log.info('Saving power spectrum profile to "{}_channel.csv"'.format(file_name))

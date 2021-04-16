@@ -101,16 +101,19 @@ def test_continuum_imaging_checker(
     persist = os.getenv("RASCIL_PERSIST", False)
 
     # set up
-    frequency = 1.0e9
+    image_frequency = numpy.array([1.0e9])
     phasecentre = SkyCoord(
         ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
     )
     hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(
-        pbtype="MID", frequency=numpy.array([frequency])
+        pbtype="MID", frequency = image_frequency
     )
 
+    nchan = image_frequency.shape[0]
+    central_freq = image_frequency[int(nchan // 2)]
+
     hwhm = hwhm_deg * numpy.pi / 180.0
-    fov_deg = 8.0 * 1.36e9 / frequency
+    fov_deg = 8.0 * 1.36e9 / central_freq
     pb_npixel = 256
     d2r = numpy.pi / 180.0
     pb_cellsize = d2r * fov_deg / pb_npixel
@@ -119,7 +122,7 @@ def test_continuum_imaging_checker(
 
     original_components = create_mid_simulation_components(
         phasecentre,
-        numpy.array([frequency]),
+        image_frequency,
         flux_limit,
         pbradius,
         pb_npixel,
@@ -148,7 +151,7 @@ def test_continuum_imaging_checker(
         npixel=npixel,
         cellsize=cellsize,
         phasecentre=phasecentre,
-        frequency=numpy.array([frequency]),
+        frequency=image_frequency,
         polarisation_frame=PolarisationFrame("stokesI"),
     )
 

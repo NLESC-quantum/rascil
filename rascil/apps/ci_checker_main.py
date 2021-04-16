@@ -243,7 +243,13 @@ def analyze_image(args):
     th_isl = args.finder_th_isl
     th_pix = args.finder_th_pix
 
-    freq = im.frequency.data[0]
+    # If use single frequency
+    if refchan == 0:
+        freq = np.array([im.frequency.data[0]])
+
+    else:
+        freq = np.array(im.frequency.data)
+
     cellsize = im.image_acc.wcs.wcs.cdelt[1]
     beam_maj_expected = np.rad2deg(cellsize)
     beam_min_expected = np.rad2deg(cellsize)
@@ -307,7 +313,7 @@ def analyze_image(args):
             orig = create_low_test_skycomponents_from_gleam(
                 flux_limit=1.0,
                 phasecentre=im.image_acc.phasecentre,
-                frequency=np.array([freq]),
+                frequency=freq,
                 polarisation_frame=PolarisationFrame("stokesI"),
                 radius=0.5,
             )
@@ -429,16 +435,29 @@ def ci_checker(
 
     # Process image.
     log.info("Analysing the restored image")
-    img_rest = bdsf.process_image(
-        input_image_restored,
-        beam=beam_info,
-        thresh_isl=th_isl,
-        thresh_pix=th_pix,
-        collapse_ch0=refchan,
-        quiet=quiet_bdsf,
-    )
 
-    # Write the source catalog and the residual image.
+    if refchan == 0:  # single frequency
+        img_rest = bdsf.process_image(
+            input_image_restored,
+            beam=beam_info,
+            thresh_isl=th_isl,
+            thresh_pix=th_pix,
+            quiet=quiet_bdsf,
+        )
+    else:
+
+        img_rest = bdsf.process_image(
+            input_image_restored,
+            beam=beam_info,
+            thresh_isl=th_isl,
+            thresh_pix=th_pix,
+            multichan_opts=True,
+            collapse_mode="single",
+            collapse_ch0=refchan,
+            quiet=quiet_bdsf,
+        )
+
+        # Write the source catalog and the residual image.
     img_rest.write_catalog(
         outfile=source_file, format="csv", catalog_type="srl", clobber=True
     )
@@ -451,14 +470,25 @@ def ci_checker(
     if input_image_residual is not None:
         log.info("Analysing the residual image")
 
-        img_resid = bdsf.process_image(
-            input_image_residual,
-            beam=beam_info,
-            thresh_isl=th_isl,
-            thresh_pix=th_pix,
-            collapse_ch0=refchan,
-            quiet=quiet_bdsf,
-        )
+        if refchan == 0:  # single frequency
+            img_resid = bdsf.process_image(
+                input_image_residual,
+                beam=beam_info,
+                thresh_isl=th_isl,
+                thresh_pix=th_pix,
+                quiet=quiet_bdsf,
+            )
+        else:
+            img_rest = bdsf.process_image(
+                input_image_residual,
+                beam=beam_info,
+                thresh_isl=th_isl,
+                thresh_pix=th_pix,
+                multichan_opts=True,
+                collapse_mode="single",
+                collapse_ch0=refchan,
+                quiet=quiet_bdsf,
+            )
 
         save_rms = (
             input_image_residual.replace(
@@ -482,7 +512,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
 
     :param source_file: Output file name of the source list
     :param rascil_source_file: Output file name of the RASCIL skycomponents hdf file
-    :param freq: Frequency or list of frequencies in float
+    :param freq: Single frequency or list of frequencies in float
 
     :return comp: List of skycomponents
     """
@@ -500,7 +530,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
                 create_skycomponent(
                     direction=direc,
                     flux=np.array([[f]]),
-                    frequency=np.array([freq]),
+                    frequency=freq,
                     polarisation_frame=PolarisationFrame("stokesI"),
                 )
             )
@@ -577,7 +607,7 @@ def read_skycomponent_from_txt(filename, freq):
             create_skycomponent(
                 direction=direc,
                 flux=np.array([[flux[i]]]),
-                frequency=np.array([freq]),
+                frequency=freq,
                 polarisation_frame=PolarisationFrame("stokesI"),
             )
         )

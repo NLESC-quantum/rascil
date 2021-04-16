@@ -223,12 +223,12 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
     )
     plt.colorbar(imap, cax=ax_cbar, label=r"Flux $\left( \rm{Jy/\rm{beam}} \right) $")
 
-    i = 0
-    for key, val in stats.items():
-        if i == 0:
-            string = f"{key}: {val}"
-        else:
+    for i, (key, val) in enumerate(stats.items()):
+        try:
             string = f"{key}: {val:.3e}"
+        except ValueError:
+            # if val is not a numeric value, the formatter will throw a value error
+            string = f"{key}: {val}"
 
         if val is not np.ma.masked:
             plt.text(
@@ -238,7 +238,6 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
                 fontsize=10,
                 transform=plt.gcf().transFigure,
             )
-            i += 1
 
     plt.subplots_adjust(wspace=0.0001, hspace=0.0001, right=0.81)
 

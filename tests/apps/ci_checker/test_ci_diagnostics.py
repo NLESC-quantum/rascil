@@ -1,4 +1,4 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call, MagicMock
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -105,7 +105,7 @@ def test_qa_image_bdsf():
     [
         ("my_img.fits", "my_img_coloured_line"),
         ("myfig", "myfig_coloured_line"),
-        ("my_fig.bla", "my_fig.bla_coloured_line"),  # extensions is not recognized
+        ("my_fig.bla", "my_fig.bla_coloured_line"),  # extension is not recognized
     ],
 )
 def test_plot_name(image_name, expected):
@@ -154,6 +154,89 @@ def test_get_histogram_data():
     # TODO: Are these reasonable boundaries for a fit?
     assert my_image.gauss_mean + 0.1 > fitted_params[1] > my_image.gauss_mean - 0.1
     assert my_image.gauss_std + 0.1 > abs(fitted_params[2]) > my_image.gauss_std - 0.1
+
+
+@patch(BASE_PATH + ".plt")
+@patch(
+    BASE_PATH + "._get_histogram_data",
+    Mock(
+        return_value=(np.ones((10, 10)), [1.0, 0.5, 0.2])
+    ),  # [1.0, 0.5, 0.2] --> amplitude, mean, std
+)
+def test_histogram(mock_plot):
+    """
+    Test that the various plt an ax calls are executed with the correct arguments.
+    """
+    # GIVEN
+    mock_plot.return_value = Mock()
+    mock_ax = Mock()
+    mock_plot.subplots.return_value = (Mock(), mock_ax)
+
+    # WHEN
+    # the first arg doesn't have to be a real image, as the function that needs it is patched
+    histogram("some-fake-img", "my_file.fits", "my_description")
+
+    # THEN
+    mock_ax.plot.assert_called_once()
+    mock_ax.axvline.assert_called_once_with(
+        0.5, color="C2", linestyle="--", label=f"mean: {0.5:.3e}", zorder=15
+    )
+    mock_ax.axvspan.assert_called_once_with(
+        0.3, 0.7, facecolor="C2", alpha=0.3, zorder=10, label=f"stddev: {0.2:.3e}"
+    )
+    mock_ax.set_title.assert_called_once_with("my_description")
+    mock_plot.savefig.assert_called_once_with("my_file_my_description_hist.png")
+
+
+@pytest.mark.parametrize("description", ["my_description", "restored"])
+@patch(BASE_PATH + ".plt")
+def test_plot_with_running_mean(mock_plot, description):
+    mock_plot.return_value = Mock()
+    mock_fig = MagicMock()
+    mock_plot.figure.return_value = mock_fig
+    mock_fig.add_gridspec.return_value = np.zeros((4, 4))
+
+    # two strings are added to test that a string can be anywhere within the stats dictionary
+    # in a previous version, it only allowed for the 0th position
+    stats = {
+        "myString": "my string here",
+        "mean": 0.5,
+        "shape": "(5, 5)",
+        "std": 0.2,
+    }
+
+    plot_with_running_mean(
+        MockBDSFImage(),
+        "my_image.fits",
+        stats,
+        "fake-projection",
+        description=description,
+    )
+
+    assert mock_fig.add_subplot.call_count == 3
+    assert mock_plot.text.call_count == 4  # three key-value pairs in stats dict
+    mock_plot.savefig.assert_called_once_with(
+        f"my_image_{description}_plot.png", pad_inches=-1
+    )
+
+    if description == "restored":
+        assert (
+            mock_plot.Circle.call_count == 3
+        )  # MockBDSFImage.gaussians has 3 MockGaussianObject objects
+        assert (
+            mock_plot.Circle.call_args_list
+            == [
+                call(
+                    (60.0, 180.0),
+                    color="w",
+                    fill=False,
+                )
+            ]
+            * 3
+        )
+
+    else:
+        mock_plot.Circle.assert_not_called()
 
 
 def test_source_region_mask():
@@ -231,6 +314,21 @@ def test_radial_profile_custom_centre():
     result = _radial_profile(img, centre)
 
     assert (result == np.array([1.0, 1.0, 1.0, 6.0 / 5.0])).all()
+
+
+@patch(BASE_PATH + ".plt")
+def test_plot_power_spectrum(mock_plot):
+    mock_plot.return_value = Mock()
+    profile = [1.0, 5.0, 17.0]
+    theta_axis = [23.0, 44.0, 52.0]
+
+    result = _plot_power_spectrum("my_image.fits", profile, theta_axis)
+    expected_plot_name_string = "my_image_residual_power_spectrum"
+
+    assert result == expected_plot_name_string
+    assert mock_plot.gca.call_count == 6
+    mock_plot.plot.assert_called_once_with(theta_axis, profile)
+    mock_plot.savefig.assert_called_once_with(expected_plot_name_string + ".png")
 
 
 def test_power_spectrum():
@@ -323,8 +421,7 @@ def test_ci_checker_diagnostics_unknown_type():
 
 """
 TODO:
-    histogram func --> it's 90% plotting, not sure it's worth testing 
-            --> separated out the stuff that's worth testing; plotting part not tested
+    histogram func --> plt is mocked and testing that the call args are fine (some, not all)
     plot_with_running_mean --> 90% plotting, what isn't that's to get labels and such, not testing
     _plot_power_spectrum --> only plotting, not testing
     _save_power_spectrum_to_csv --> writing to csv, small amount of business logic, needs testing?

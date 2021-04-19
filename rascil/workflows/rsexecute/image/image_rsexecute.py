@@ -42,7 +42,7 @@ def image_rsexecute_map_workflow(
 
     """
 
-    facets_list = rsexecute.execute(image_scatter_facets)(
+    facets_list = rsexecute.execute(image_scatter_facets, nout=facets ** 2)(
         im, facets=facets, overlap=overlap, taper=taper
     )
     root_list = [

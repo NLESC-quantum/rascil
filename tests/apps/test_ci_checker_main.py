@@ -16,6 +16,7 @@
 import logging
 import sys
 import os
+import glob
 
 import astropy.units as u
 import numpy
@@ -23,7 +24,7 @@ import pytest
 from astropy.coordinates import SkyCoord
 from numpy.random import default_rng
 
-from rascil.apps.ci_checker.ci_checker_main import (
+from rascil.apps.ci_checker_main import (
     cli_parser,
     analyze_image,
 )
@@ -45,8 +46,6 @@ from rascil.processing_components.skycomponent import (
 )
 
 log = logging.getLogger("rascil-logger")
-#log.setLevel(logging.INFO)
-#log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 @pytest.mark.parametrize(
@@ -97,6 +96,11 @@ log = logging.getLogger("rascil-logger")
 def test_continuum_imaging_checker(
     cellsize, npixel, flux_limit, insert_method, noise, tag
 ):
+
+    # Set true if we want to save the outputs
+    persist = os.getenv("RASCIL_PERSIST", False)
+
+    # set up
     frequency = 1.0e9
     phasecentre = SkyCoord(
         ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -243,7 +247,25 @@ def test_continuum_imaging_checker(
         rascil_path(f"test_results/test_ci_checker_{tag}_flux_histogram.png")
     )
 
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_position_quiver.png")
+    )
+
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_gaussian_beam_position.png")
+    )
     # test that create_index() generates the html and md files,
     # at the end of analyze_image()
     assert os.path.exists(rascil_path("test_results/index.html"))
     assert os.path.exists(rascil_path("test_results/index.md"))
+
+    # clean up directory
+    if persist is False:
+        imglist = glob.glob(rascil_path(f"test_results/test_ci_checker_{tag}*"))
+        for f in imglist:
+            os.remove(f)
+        try:
+            os.remove(rascil_path("test_results/index.html"))
+            os.remove(rascil_path("test_results/index.md"))
+        except OSError:
+            pass

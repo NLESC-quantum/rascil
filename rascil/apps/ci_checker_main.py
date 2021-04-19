@@ -41,6 +41,8 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux,
     plot_skycomponents_flux_ratio,
     plot_skycomponents_flux_histogram,
+    plot_skycomponents_position_quiver,
+    plot_gaussian_beam_position,
 )
 
 from rascil.apps.ci_checker.generate_results_index import create_index
@@ -321,7 +323,9 @@ def analyze_image(args):
             plot_file = args.ingest_fitsname_restored.replace(".fits", "")
             log.info("Plotting errors: {}".format(plot_file))
             phasecentre = im.image_acc.phasecentre
-            plot_errors(orig, out, args.match_sep, phasecentre, plot_file)
+            plot_errors(
+                orig, out, input_image_restored, args.match_sep, phasecentre, plot_file
+            )
 
     else:
         results = None
@@ -581,23 +585,30 @@ def read_skycomponent_from_txt(filename, freq):
     return comp
 
 
-def plot_errors(orig, comp, match_sep, phasecentre, plot_file):
+def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
     """
     Plot the position and flux errors for source input and output
 
     :param orig: Input source list in skycomponent format
     :param comp: Output source list in skycomponent format
+    :param input_image: Input image for Gaussian fits
     :param match_sep: The criteria for maximum separation
     :param phasecentre: Centre of image
     :param plot_file: prefix of the plot files
     :return
 
     """
+    log.info("Plotting skycomponents to check the accuracy of the source finder.")
+    image = import_image_from_fits(input_image, fixpol=True)
+
+    img_size = np.rad2deg(image.image_acc.wcs.wcs.cdelt[1])
+    log.info(f"Image cellsize is {img_size}")
+
     ra_comp, dec_comp = plot_skycomponents_positions(
-        comp, orig, plot_file=plot_file, tol=match_sep
+        comp, orig, img_size=img_size, plot_file=plot_file, tol=match_sep
     )
     ra_error, dec_error = plot_skycomponents_position_distance(
-        comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
+        comp, orig, phasecentre, img_size, plot_file=plot_file, tol=match_sep
     )
     flux_in, flux_out = plot_skycomponents_flux(
         comp, orig, plot_file=plot_file, tol=match_sep
@@ -608,6 +619,17 @@ def plot_errors(orig, comp, match_sep, phasecentre, plot_file):
     fluxes = plot_skycomponents_flux_histogram(
         comp, orig, plot_file=plot_file, tol=match_sep
     )
+
+    log.info("Plotting wide field plots.")
+    ra_error, dec_error = plot_skycomponents_position_quiver(
+        comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
+    )
+
+    bmaj, bmin = plot_gaussian_beam_position(
+        comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
+    )
+
+    log.info("Plotting done.")
 
     return
 

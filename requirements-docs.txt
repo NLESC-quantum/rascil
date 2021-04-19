@@ -12,8 +12,10 @@ certifi==2020.12.5
     # via requests
 chardet==4.0.0
     # via requests
-docutils==0.17
-    # via sphinx
+docutils==0.16
+    # via
+    #   sphinx
+    #   sphinx-rtd-theme
 graphviz==0.16
     # via -r requirements-docs.in
 idna==2.10
@@ -40,9 +42,9 @@ sphinx-argparse==0.2.5
     # via -r requirements-docs.in
 sphinx-automodapi==0.13
     # via -r requirements-docs.in
-sphinx-rtd-theme==0.5.1
+sphinx-rtd-theme==0.5.2
     # via -r requirements-docs.in
-sphinx==3.5.3
+sphinx==3.5.4
     # via
     #   -r requirements-docs.in
     #   sphinx-argparse

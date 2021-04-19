@@ -83,16 +83,16 @@ class TestImageGatherScatters(unittest.TestCase):
             image_list = image_scatter_facets(m31model, facets=nraster, overlap=overlap)
             for patch in image_list:
                 assert patch["pixels"].data.shape[3] == (
-                    2 * overlap + m31model["pixels"].data.shape[3] // nraster
+                    m31model["pixels"].data.shape[3] // nraster
                 ), "Number of pixels in each patch: %d not as expected: %d" % (
                     patch["pixels"].data.shape[3],
-                    (2 * overlap + m31model["pixels"].data.shape[3] // nraster),
+                    (m31model["pixels"].data.shape[3] // nraster),
                 )
                 assert patch["pixels"].data.shape[2] == (
-                    2 * overlap + m31model["pixels"].data.shape[2] // nraster
+                    m31model["pixels"].data.shape[2] // nraster
                 ), "Number of pixels in each patch: %d not as expected: %d" % (
                     patch["pixels"].data.shape[2],
-                    (2 * overlap + m31model["pixels"].data.shape[2] // nraster),
+                    (m31model["pixels"].data.shape[2] // nraster),
                 )
                 patch["pixels"].data[...] = 1.0
             m31reconstructed = create_empty_image_like(m31model)
@@ -129,16 +129,16 @@ class TestImageGatherScatters(unittest.TestCase):
                 )
                 for patch in image_list:
                     assert patch["pixels"].data.shape[3] == (
-                        2 * overlap + m31model["pixels"].data.shape[3] // nraster
+                        m31model["pixels"].data.shape[3] // nraster
                     ), "Number of pixels in each patch: %d not as expected: %d" % (
                         patch.data.shape[3],
-                        (2 * overlap + m31model["pixels"].data.shape[3] // nraster),
+                        (m31model["pixels"].data.shape[3] // nraster),
                     )
                     assert patch["pixels"].data.shape[2] == (
-                        2 * overlap + m31model["pixels"].data.shape[2] // nraster
+                        m31model["pixels"].data.shape[2] // nraster
                     ), "Number of pixels in each patch: %d not as expected: %d" % (
                         patch.data.shape[2],
-                        (2 * overlap + m31model["pixels"].data.shape[2] // nraster),
+                        (m31model["pixels"].data.shape[2] // nraster),
                     )
                 m31reconstructed = create_empty_image_like(m31model)
                 m31reconstructed = image_gather_facets(

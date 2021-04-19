@@ -43,6 +43,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     residual_list_rsexecute_workflow,
     sum_invert_results_rsexecute,
     restore_list_rsexecute_workflow,
+    restore_list_singlefacet_rsexecute_workflow
 )
 from rascil.workflows.shared.imaging.imaging_shared import sum_invert_results
 
@@ -485,7 +486,7 @@ class TestImaging(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.0) < 1e-7, str(qa)
         assert numpy.abs(qa.data["min"]) < 1e-7, str(qa)
 
-    @unittest.skip("Needs overlap to work - temporarily disabled")
+    #@unittest.skip("Needs overlap to work - temporarily disabled")
     def test_restored_list_facet(self):
         self.actualSetUp(zerow=True)
 
@@ -496,49 +497,68 @@ class TestImaging(unittest.TestCase):
         residual_image_list = residual_list_rsexecute_workflow(
             self.bvis_list, self.model_list, context="2d"
         )
-        restored_4facets_image_list = restore_list_rsexecute_workflow(
-            self.model_list,
-            psf_image_list,
-            residual_image_list,
-            restore_facets=4,
-            psfwidth=3,
-        )
-        restored_4facets_image_list = rsexecute.compute(
-            restored_4facets_image_list, sync=True
-        )
 
-        restored_1facets_image_list = restore_list_rsexecute_workflow(
+        restored_1facets_image_list = restore_list_singlefacet_rsexecute_workflow(
             self.model_list,
             psf_image_list,
             residual_image_list,
-            restore_facets=1,
-            psfwidth=3,
+        )
+        restored_1facets_image_list = rsexecute.compute(
+            restored_1facets_image_list, sync=True
+        )
+        clean_beam = restored_1facets_image_list[0].attrs["clean_beam"]
+
+        self.actualSetUp(zerow=True)
+
+        restored_2facets_image_list = restore_list_rsexecute_workflow(
+            self.model_list,
+            psf_image_list,
+            residual_image_list,
+            restore_facets=2,
+            restore_overlap=32,
+            clean_beam=clean_beam
+        )
+        restored_2facets_image_list = rsexecute.compute(
+            restored_2facets_image_list, sync=True
+        )
+        clean_beam = restored_2facets_image_list[0].attrs["clean_beam"]
+
+        restored_1facets_image_list = restore_list_singlefacet_rsexecute_workflow(
+            self.model_list,
+            psf_image_list,
+            residual_image_list,
+            clean_beam=clean_beam
         )
         restored_1facets_image_list = rsexecute.compute(
             restored_1facets_image_list, sync=True
         )
 
+
         if self.persist:
             export_image_to_fits(
-                restored_4facets_image_list[0],
-                "%s/test_imaging_invert_%s_restored_4facets.fits"
+                restored_1facets_image_list[0],
+                "%s/test_imaging_invert_%s_restored_1facets.fits"
+                % (self.dir, rsexecute.type()),
+            )
+            export_image_to_fits(
+                restored_2facets_image_list[0],
+                "%s/test_imaging_invert_%s_restored_2facets.fits"
                 % (self.dir, rsexecute.type()),
             )
 
-        qa = qa_image(restored_4facets_image_list[centre])
-        assert numpy.abs(qa.data["max"] - 100.00571826154008) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.018409852770224805) < 1e-7, str(qa)
+        qa = qa_image(restored_2facets_image_list[centre])
+        assert numpy.abs(qa.data["max"] - 100.00571826154012) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.015806455831152463) < 1e-7, str(qa)
 
-        restored_4facets_image_list[centre].data -= restored_1facets_image_list[
-            centre
-        ].data
+        restored_2facets_image_list[centre]["pixels"].data \
+            -= restored_1facets_image_list[centre]["pixels"].data
         if self.persist:
             export_image_to_fits(
-                restored_4facets_image_list[centre],
-                "%s/test_imaging_invert_%s_restored_4facets_error.fits"
+                restored_2facets_image_list[centre],
+                "%s/test_imaging_invert_%s_restored_2facets_error.fits"
                 % (self.dir, rsexecute.type()),
             )
-        qa = qa_image(restored_4facets_image_list[centre])
+        qa = qa_image(restored_2facets_image_list[centre])
         assert numpy.abs(qa.data["maxabs"]) < 1e-10, str(qa)
 
     def test_sum_invert_list(self):

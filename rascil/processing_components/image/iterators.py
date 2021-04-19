@@ -89,20 +89,12 @@ def image_raster_iter(
         assert overlap < (ny // facets), "Overlap in facets is too large"
 
         # Step between facets
-        sx = nx // facets + overlap
-        sy = ny // facets + overlap
+        sx = nx // facets - overlap
+        sy = ny // facets - overlap
 
         # Size of facet
-        dx = sx + overlap
-        dy = sy + overlap
-
-        # Step between facets
-        sx = nx // facets + overlap
-        sy = ny // facets + overlap
-
-        # Size of facet
-        dx = nx // facets + 2 * overlap
-        dy = nx // facets + 2 * overlap
+        dx = nx // facets
+        dy = ny // facets
 
         def taper_linear():
             t = numpy.ones(dx)

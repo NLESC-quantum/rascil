@@ -15,10 +15,11 @@ from rascil.processing_components.griddata import apply_bounding_box_convolution
 from rascil.processing_components.griddata.kernels import (
     create_awterm_convolutionfunction,
 )
-from rascil.processing_components.image.operations import (
+from rascil.processing_components import (
     export_image_to_fits,
     smooth_image,
     qa_image,
+    fit_psf
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import create_named_configuration
@@ -489,29 +490,25 @@ class TestImaging(unittest.TestCase):
     #@unittest.skip("Needs overlap to work - temporarily disabled")
     def test_restored_list_facet(self):
         self.actualSetUp(zerow=True)
+        
+        def copy_image(im):
+            return im.copy(deep=True)
+        
+        original_model_1 = [rsexecute.execute(copy_image, nout=1)(im) for im in self.model_list]
+        original_model_2 = [rsexecute.execute(copy_image, nout=1)(im) for im in self.model_list]
 
+        residual_image_list = residual_list_rsexecute_workflow(
+            self.bvis_list, self.model_list, context="2d"
+        )
         centre = self.freqwin // 2
         psf_image_list = invert_list_rsexecute_workflow(
             self.bvis_list, self.model_list, context="2d", dopsf=True
         )
-        residual_image_list = residual_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="2d"
-        )
-
-        restored_1facets_image_list = restore_list_singlefacet_rsexecute_workflow(
-            self.model_list,
-            psf_image_list,
-            residual_image_list,
-        )
-        restored_1facets_image_list = rsexecute.compute(
-            restored_1facets_image_list, sync=True
-        )
-        clean_beam = restored_1facets_image_list[0].attrs["clean_beam"]
-
-        self.actualSetUp(zerow=True)
+        psf_image_list = rsexecute.compute(psf_image_list, sync=True)
+        clean_beam = fit_psf(psf_image_list[centre][0])
 
         restored_2facets_image_list = restore_list_rsexecute_workflow(
-            self.model_list,
+            original_model_1,
             psf_image_list,
             residual_image_list,
             restore_facets=2,
@@ -521,18 +518,19 @@ class TestImaging(unittest.TestCase):
         restored_2facets_image_list = rsexecute.compute(
             restored_2facets_image_list, sync=True
         )
-        clean_beam = restored_2facets_image_list[0].attrs["clean_beam"]
 
-        restored_1facets_image_list = restore_list_singlefacet_rsexecute_workflow(
-            self.model_list,
+        restored_1facets_image_list = restore_list_rsexecute_workflow(
+            original_model_1,
             psf_image_list,
             residual_image_list,
+            restore_facets=1,
+            restore_overlap=32,
             clean_beam=clean_beam
         )
+
         restored_1facets_image_list = rsexecute.compute(
             restored_1facets_image_list, sync=True
         )
-
 
         if self.persist:
             export_image_to_fits(

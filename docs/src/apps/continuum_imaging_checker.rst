@@ -30,18 +30,17 @@ The following runs the a data set from the RASCIL test::
     # restored and residual fits files:
     # test-imaging-pipeline-dask_continuum_imaging_restored.fits
     # test-imaging-pipeline-dask_continuum_imaging_residual.fits
-    python $RASCIL/rascil/apps/ci_checker/ci_checker_main.py \
+    python $RASCIL/rascil/apps/ci_checker_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
     --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits
 
 If a source check is required::
 
     #!/bin/bash
-    python $RASCIL/rascil/apps/ci_checker/ci_checker_main.py \
+    python $RASCIL/rascil/apps/ci_checker_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
-    --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits \
-    --check_source True --plot_source True\
-    --input_source_format external --input_source_filename $RASCIL/data/models/GLEAM_filtered.txt
+    --check_source True --plot_source True --input_source_format external \
+     --input_source_filename test-imaging-pipeline-dask_continuum_imaging_skymodel.hdf
 
 Supplying arguments from a file:
 ++++++++++++++++++++++++++++++++

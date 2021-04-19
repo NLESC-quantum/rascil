@@ -30,7 +30,7 @@ log.setLevel(logging.WARNING)
 
 class TestImageGraph(unittest.TestCase):
     def setUp(self):
-        rsexecute.set_client(use_dask=False)
+        rsexecute.set_client(use_dask=True)
 
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
@@ -49,7 +49,7 @@ class TestImageGraph(unittest.TestCase):
         assert len(self.config.names) == nants
         assert len(self.config.mount) == nants
 
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def tearDown(self):
         rsexecute.close()

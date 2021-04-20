@@ -237,26 +237,17 @@ def analyze_image(args):
     im = import_image_from_fits(args.ingest_fitsname_restored)
 
     nchan = im["pixels"].shape[0]
-    if nchan > 0:
-        refchan = nchan // 2
-        log.info(
-            "Found spectral cube with {} channels, using channel {} for source finding".format(
-                nchan, refchan
-            )
-        )
-    else:
+    if nchan == 1:
         log.info("This is a single channel image.")
-        refchan = 0
-
-    th_isl = args.finder_th_isl
-    th_pix = args.finder_th_pix
-
-    # If use single frequency
-    if refchan == 0:
         freq = np.array([im.frequency.data[0]])
 
-    else:
+    elif nchan > 1:
+        log.info("This is a multiple channel image.")
         freq = np.array(im.frequency.data)
+
+    else:
+        log.error("This image is broken. Please check the file.")
+        return None, None
 
     log.info("Frequencies of image:{} ".format(freq))
 
@@ -274,6 +265,9 @@ def analyze_image(args):
     beam_pos_angle = args.finder_beam_pos_angle
     beam_info = (beam_maj, beam_min, beam_pos_angle)
 
+    th_isl = args.finder_th_isl
+    th_pix = args.finder_th_pix
+
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(th_isl, th_pix))
 
@@ -289,7 +283,7 @@ def analyze_image(args):
         source_file,
         th_isl,
         th_pix,
-        refchan,
+        nchan,
         multichan_option,
         quiet_bdsf=quiet_bdsf,
     )
@@ -428,7 +422,7 @@ def ci_checker(
     source_file,
     th_isl,
     th_pix,
-    refchan,
+    nchan,
     multichan_option,
     quiet_bdsf=False,
 ):
@@ -441,7 +435,7 @@ def ci_checker(
     :param source_file : Output file name of the source list
     :param th_isl : Island threshold
     :param th_pix: Peak threshold
-    :param refchan: Reference channel for spectral cube
+    :param nchan: Number of channels
     :param multichan_option: Mode to perform BDSF on multi-channel images
     :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
                        Output is still sent to the log file
@@ -451,7 +445,14 @@ def ci_checker(
     # Process image.
     log.info("Analysing the restored image")
 
-    if refchan == 0:  # single frequency
+    refchan = nchan // 2
+    log.info(
+        "Found spectral cube with {} channel(s), using channel {} for source finding".format(
+            nchan, refchan
+        )
+    )
+
+    if nchan == 1:  # single frequency
         img_rest = bdsf.process_image(
             input_image_restored,
             beam=beam_info,
@@ -486,7 +487,7 @@ def ci_checker(
     if input_image_residual is not None:
         log.info("Analysing the residual image")
 
-        if refchan == 0:  # single frequency
+        if nchan == 1:  # single frequency
             img_resid = bdsf.process_image(
                 input_image_residual,
                 beam=beam_info,

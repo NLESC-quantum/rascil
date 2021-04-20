@@ -8,6 +8,9 @@ import numpy
 import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
 from rascil.data_models import export_skymodel_to_hdf5, export_skycomponent_to_hdf5

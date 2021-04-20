@@ -554,7 +554,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
         if f0 > 0:  # filter out ghost sources
             try:
                 spec_indx = row["Spec_Indx"]
-                fluxes = [f0 * (f / centre) ** spec_indx for f in freq]
+                fluxes = [f0 * (f / freq[centre]) ** spec_indx for f in freq]
                 flux_array = np.reshape(np.array(fluxes), (nchan, npol))
 
             except KeyError:
@@ -612,7 +612,7 @@ def check_source(orig, comp, match_sep):
     for match in matches:
         m_comp = comp[match[0]]
         m_orig = orig[match[1]]
-        log.debug(f"Original: {m_orig} Match {m_comp}")
+        log.info(f"Original: {m_orig} Match {m_comp}")
 
     return matches
 

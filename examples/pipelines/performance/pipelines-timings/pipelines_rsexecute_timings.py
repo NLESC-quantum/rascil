@@ -27,6 +27,7 @@ from rascil.processing_components import create_image
 from rascil.processing_components.calibration.chain_calibration import (
     create_calibration_controls,
 )
+from rascil.processing_components.util.sizeof import get_size
 from rascil.workflows import (
     invert_list_rsexecute_workflow,
     weight_list_rsexecute_workflow,
@@ -87,6 +88,9 @@ def trial_case(
     flux_limit=0.3,
     nmajor=5,
     dft_threshold=1.0,
+    deconvolve_facets=8,
+    deconvolve_overlap = 16,
+    deconvolve_taper = "tukey",
     write_fits=False,
 ):
     """Single trial for performance-timings
@@ -287,15 +291,6 @@ def trial_case(
 
     lprint("****** Setting up imaging parameters ******")
     # Now set up the imaging parameters
-    template_model = create_image(
-        npixel=npixel,
-        cellsize=cellsize,
-        frequency=[frequency[centre]],
-        phasecentre=phasecentre,
-        channel_bandwidth=[channel_bandwidth[centre]],
-        polarisation_frame=PolarisationFrame("stokesI"),
-    )
-    gcfcf = [create_pswf_convolutionfunction(template_model)]
 
     vis_slices = 1
     if context == "timeslice":
@@ -303,36 +298,11 @@ def trial_case(
         lprint("Using timeslice with %d slices" % vis_slices)
     elif context == "2d":
         vis_slices = 1
-    elif context == "wprojection":
-        wstep = advice["wstep"]
-        nw = advice["wprojection_planes"]
-        vis_slices = 1
-        support = advice["nwpixels"]
-        results["wprojection_planes"] = nw
-
-        lprint("****** Starting W projection kernel creation ******")
-        lprint(
-            "Using wprojection with %d planes with wstep %.1f wavelengths" % (nw, wstep)
-        )
-        lprint("Support of wprojection = %d pixels" % support)
-        gcfcf = [
-            create_awterm_convolutionfunction(
-                template_model,
-                nw=nw,
-                wstep=wstep,
-                oversampling=4,
-                support=support,
-                use_aaf=True,
-            )
-        ]
-        lprint("Size of W projection gcf, cf = %.2E bytes" % get_size(gcfcf))
     elif context == "ng":
         vis_slices = 1
         lprint("Using Nifty Gridder")
     else:
         log.error("wstack no longer supported")
-
-    gcfcf = rsexecute.scatter(gcfcf, broadcast=True)
 
     results["vis_slices"] = vis_slices
 
@@ -356,7 +326,7 @@ def trial_case(
     lprint("****** Starting GLEAM skymodel prediction ******")
     predicted_bvis_list = [
         predict_skymodel_list_rsexecute_workflow(
-            future_bvis_list[f], [future_skymodel_list[f]], context=context, gcfcf=gcfcf
+            future_bvis_list[f], [future_skymodel_list[f]], context=context,
         )[0]
         for f, freq in enumerate(frequency)
     ]
@@ -383,7 +353,7 @@ def trial_case(
     lprint("****** Starting dirty image calculation ******")
     start = time.time()
     dirty_list = invert_list_rsexecute_workflow(
-        future_corrupted_bvis_list, future_model_list, context=context, gcfcf=gcfcf
+        future_corrupted_bvis_list, future_model_list, context=context
     )
     results["size invert graph"] = get_size(dirty_list)
     lprint("Size of dirty graph is %.3E bytes" % (results["size invert graph"]))
@@ -398,7 +368,7 @@ def trial_case(
     lprint("Dirty image invert took %.3f seconds" % (end - start))
     lprint(
         "Maximum in dirty image is %f, sumwt is %s"
-        % (numpy.max(numpy.abs(dirty.data)), str(sumwt))
+        % (numpy.max(numpy.abs(dirty["pixels"].data)), str(sumwt))
     )
     qa = qa_image(dirty)
     results["dirty_max"] = qa.data["max"]
@@ -414,7 +384,6 @@ def trial_case(
         future_corrupted_bvis_list,
         future_model_list,
         context=context,
-        gcfcf=gcfcf,
         vis_slices=vis_slices,
     )
     result = rsexecute.compute(tmp_bvis_list, sync=True)
@@ -426,11 +395,9 @@ def trial_case(
     # Create the ICAL pipeline to run major cycles, starting selfcal at cycle 1. A global solution across all
     # frequencies (i.e. Visibilities) is performed.
 
-    print("Using subimage clean")
-    deconvolve_facets = 8
-    deconvolve_overlap = 16
-    deconvolve_taper = "tukey"
-
+    if deconvolve_facets > 1:
+        print("Using subimage clean")
+        
     lprint("****** Starting ICAL graph creation ******")
 
     controls = create_calibration_controls()
@@ -460,8 +427,7 @@ def trial_case(
         global_solution=True,
         do_selfcal=True,
         calibration_context="T",
-        controls=controls,
-        gcfcf=gcfcf,
+        controls=controls
     )
 
     results["size ICAL graph"] = get_size(ical_list)
@@ -483,7 +449,10 @@ def trial_case(
     )
     end = time.time()
 
-    rsexecute.save_statistics("pipelines_rsexecute_timings_%s_ical" % context)
+    perf = rsexecute.save_statistics("pipelines_rsexecute_timings_%s_ical" % context)
+    results["total"] = perf["total"]
+    results["duration"] = perf["duration"]
+    results["speedup"] = perf["speedup"]
 
     results["time ICAL"] = end - start
     lprint("ICAL graph execution took %.3f seconds" % (end - start))
@@ -596,6 +565,10 @@ def main(args):
 
     nmajor = args.nmajor
     results["nmajor"] = nmajor
+    
+    deconvolve_facets = args.deconvolve_facets
+    deconvolve_overlap = args.deconvolve_overlap
+    deconvolve_taper = args.deconvolve_taper
 
     results["hostname"] = socket.gethostname()
     results["epoch"] = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -616,10 +589,14 @@ def main(args):
         "context",
         "deconvolved_max",
         "deconvolved_min",
+        "deconvolve_facets",
+        "deconvolve_overlap",
+        "deconvolve_taper",
         "dft threshold",
         "dirty_max",
         "dirty_min",
         "driver",
+        "duration",
         "epoch",
         "facets",
         "flux_limit",
@@ -644,6 +621,7 @@ def main(args):
         "seed",
         "size ICAL graph",
         "size invert graph",
+        "speedup",
         "threads_per_worker",
         "time ICAL",
         "time ICAL graph",
@@ -651,6 +629,7 @@ def main(args):
         "time invert graph",
         "time predict",
         "time overall",
+        "total",
         "use_dask",
         "vis_slices",
         "wprojection_planes",
@@ -676,6 +655,9 @@ def main(args):
         flux_limit=flux_limit,
         nmajor=nmajor,
         dft_threshold=dft_threshold,
+        deconvolve_facets=deconvolve_facets,
+        deconvolve_overlap=deconvolve_overlap,
+        deconvolve_taper=deconvolve_taper,
         write_fits=write_fits,
     )
     write_results(filename, fieldnames, results)
@@ -693,10 +675,11 @@ if __name__ == "__main__":
         description="Benchmark pipelines in numpy and dask"
     )
     parser.add_argument("--use_dask", type=str, default="True", help="Use Dask?")
-    parser.add_argument("--nnodes", type=int, default=1, help="Number of nodes")
-    parser.add_argument("--nthreads", type=int, default=1, help="Number of threads")
-    parser.add_argument("--memory", type=int, default=8, help="Memory per worker")
-    parser.add_argument("--nworkers", type=int, default=16, help="Number of workers")
+    parser.add_argument("--nnodes", type=int, default=None, help="Number of nodes")
+    parser.add_argument("--nthreads", type=int, default=4, help="Number of threads")
+    parser.add_argument("--memory", type=int, default=0, help="Memory per worker")
+    parser.add_argument("--nworkers", type=int, default=4, help="Number of workers")
+
     parser.add_argument("--nmajor", type=int, default=5, help="Number of major cycles")
 
     parser.add_argument("--ntimes", type=int, default=7, help="Number of hour angles")
@@ -716,6 +699,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--flux_limit", type=float, default=0.3, help="Flux limit for components"
     )
+
+    parser.add_argument(
+        "--deconvolve_facets", type=int, default=4, help="Number of facets for deconvolution"
+    )
+    parser.add_argument(
+        "--deconvolve_overlap", type=int, default=16, help="Number of pixels overlap for deconvolution"
+    )
+    parser.add_argument(
+        "--deconvolve_taper", type=int, default=1, help="Facet taper for deconvolution"
+    )
+
     parser.add_argument(
         "--dft_threshold", type=float, default=1.0, help="Flux above which DFT is used"
     )
@@ -726,7 +720,7 @@ if __name__ == "__main__":
         help="Name of output log file",
     )
     parser.add_argument(
-        "--write_fits", type=str, default="False", help="Write FITS files??"
+        "--write_fits", type=str, default="True", help="Write FITS files??"
     )
 
     main(parser.parse_args())

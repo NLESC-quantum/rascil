@@ -418,13 +418,13 @@ class _rsexecutebase:
 
         :param name: prefix to name e.g. dask
         """
-
+    
         if self._using_dask:
             task_stream, graph = self.client.get_task_stream(
                 plot="save", filename="%s_task_stream.html" % name
             )
             self.client.profile(plot="save", filename="%s_profile.html" % name)
-
+        
             def print_ts(ts):
                 log.info("Processor time used in each function")
                 summary = {}
@@ -460,11 +460,45 @@ class _rsexecutebase:
                         total, duration, speedup
                     )
                 )
-
+                return {"total": total, "duration": duration, "speedup": speedup}
+        
             try:
-                print_ts(task_stream)
+                return print_ts(task_stream)
             except (ValueError, KeyError):
                 log.warning("Dask task stream is unintelligible")
+                return {"total": 0.0, "duration": 0.0, "speedup": 0.0}
+
+    @property
+    def client(self):
+        """Client being used
+
+        :return: client
+        """
+        return self._client
+
+    @property
+    def using_dask(self):
+        """Is dask being used?
+
+        :return:
+        """
+        return self._using_dask
+
+    @property
+    def using_dlg(self):
+        """Is daluige being used?
+
+        :return:
+        """
+        return self._using_dlg
+
+    @property
+    def optimizing(self):
+        """Is Dask optimisation being performed?
+
+        :return:
+        """
+        return self._optimize
 
     @property
     def client(self):

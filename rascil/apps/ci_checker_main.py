@@ -116,6 +116,12 @@ def cli_parser():
         help="Threshold to detect source (peak value)",
     )
     parser.add_argument(
+        "--finder_multichan_option",
+        type=str,
+        default="single",
+        help="For multi-channel images, what mode to perform PDSF on (single or average)",
+    )
+    parser.add_argument(
         "--apply_primary",
         type=str,
         default="False",
@@ -229,6 +235,7 @@ def analyze_image(args):
     input_image_restored = args.ingest_fitsname_restored
 
     im = import_image_from_fits(args.ingest_fitsname_restored)
+
     nchan = im["pixels"].shape[0]
     if nchan > 0:
         refchan = nchan // 2
@@ -238,6 +245,7 @@ def analyze_image(args):
             )
         )
     else:
+        log.info("This is a single channel image.")
         refchan = 0
 
     th_isl = args.finder_th_isl
@@ -249,6 +257,8 @@ def analyze_image(args):
 
     else:
         freq = np.array(im.frequency.data)
+
+    log.info("Frequencies of image:{} ".format(freq))
 
     cellsize = im.image_acc.wcs.wcs.cdelt[1]
     beam_maj_expected = np.rad2deg(cellsize)
@@ -270,6 +280,8 @@ def analyze_image(args):
     input_image_residual = args.ingest_fitsname_residual
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
 
+    multichan_option = args.finder_multichan_option
+
     ci_checker(
         input_image_restored,
         input_image_residual,
@@ -278,6 +290,7 @@ def analyze_image(args):
         th_isl,
         th_pix,
         refchan,
+        multichan_option,
         quiet_bdsf=quiet_bdsf,
     )
 
@@ -416,6 +429,7 @@ def ci_checker(
     th_isl,
     th_pix,
     refchan,
+    multichan_option,
     quiet_bdsf=False,
 ):
     """
@@ -428,6 +442,7 @@ def ci_checker(
     :param th_isl : Island threshold
     :param th_pix: Peak threshold
     :param refchan: Reference channel for spectral cube
+    :param multichan_option: Mode to perform BDSF on multi-channel images
     :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
                        Output is still sent to the log file
     : return None
@@ -452,9 +467,10 @@ def ci_checker(
             thresh_isl=th_isl,
             thresh_pix=th_pix,
             multichan_opts=True,
-            collapse_mode="single",
+            collapse_mode=multichan_option,
             collapse_ch0=refchan,
             quiet=quiet_bdsf,
+            spectralindex_do=True,
         )
 
         # Write the source catalog and the residual image.
@@ -485,9 +501,10 @@ def ci_checker(
                 thresh_isl=th_isl,
                 thresh_pix=th_pix,
                 multichan_opts=True,
-                collapse_mode="single",
+                collapse_mode=multichan_option,
                 collapse_ch0=refchan,
                 quiet=quiet_bdsf,
+                spectralindex_do=True,
             )
 
         save_rms = (

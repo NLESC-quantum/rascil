@@ -10,6 +10,7 @@ __all__ = [
     "plot_skycomponents_flux_histogram",
     "plot_skycomponents_position_quiver",
     "plot_gaussian_beam_position",
+    "plot_multifreq_spectral_index",
 ]
 
 import collections
@@ -19,6 +20,7 @@ import matplotlib.pyplot as plt
 
 import astropy.units as u
 import numpy
+from scipy.optimize import curve_fit
 from astropy.coordinates import SkyCoord
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.processing_components.skycomponent.operations import (
@@ -227,10 +229,10 @@ def plot_skycomponents_flux(
         if refchan is None:
             nchan, _ = m_ref.flux.shape
             flux_in[i] = m_ref.flux[nchan // 2]
-            flux_out[i] = m_comp.flux[0]
+            flux_out[i] = m_comp.flux[nchan // 2]
         else:
             flux_in[i] = m_ref.flux[refchan]
-            flux_out[i] = m_comp.flux[0]
+            flux_out[i] = m_comp.flux[refchan]
 
     plt.loglog(flux_in, flux_out, "o", color="b", markersize=5)
 
@@ -276,12 +278,12 @@ def plot_skycomponents_flux_ratio(
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
 
-        if m_ref.flux[0] > 0.0:
+        if m_ref.flux.all() > 0.0:
             if refchan is None:
                 nchan, _ = m_ref.flux.shape
-                fr = m_comp.flux[0] / m_ref.flux[nchan // 2]
+                fr = m_comp.flux[nchan // 2] / m_ref.flux[nchan // 2]
             else:
-                fr = m_comp.flux[0] / m_ref.flux[refchan]
+                fr = m_comp.flux[refchan] / m_ref.flux[refchan]
             if fr < max_ratio:
                 flux_ratio.append(fr)
                 dist.append(m_comp.direction.separation(phasecentre).degree)
@@ -320,10 +322,10 @@ def plot_skycomponents_flux_histogram(
     if refchan is None:
         nchan, _ = comps_ref[0].flux.shape
         flux_in = numpy.array([comp.flux[nchan // 2, 0] for comp in comps_ref])
-        flux_out = numpy.array([comp.flux[0, 0] for comp in comps_test])
+        flux_out = numpy.array([comp.flux[nchan // 2, 0] for comp in comps_test])
     else:
         flux_in = numpy.array([comp.flux[refchan, 0] for comp in comps_ref])
-        flux_out = numpy.array([comp.flux[0, 0] for comp in comps_test])
+        flux_out = numpy.array([comp.flux[refchan, 0] for comp in comps_test])
 
     flux_in = flux_in[flux_in > 0.0]
     flux_out = flux_out[flux_out > 0.0]
@@ -511,3 +513,55 @@ def plot_gaussian_beam_position(
     plt.clf()
 
     return [bmaj, bmin]
+
+
+def plot_multifreq_spectral_index(
+    comps_test, comps_ref, plot_file=None, tol=1e-5, **kwargs
+):
+    """Generate spectral index plot for two lists of multi-frequency skycomponents
+
+    :param comps_test: List of components to be tested
+    :param comps_ref: List of reference components
+    :param plot_file: Filename of the plot
+    :param tol: Tolerance in rad
+    :return: [spec_in, spec_out]:
+             The spectral index array for users to check
+    """
+
+    matches = find_skycomponent_matches(comps_test, comps_ref, tol)
+    spec_in = numpy.zeros(len(matches))
+    spec_out = numpy.zeros(len(matches))
+
+    power_law_func = lambda a, b, x: a * x ** b
+
+    for i, match in enumerate(matches):
+        m_comp = comps_test[match[0]]
+        m_ref = comps_ref[match[1]]
+
+        popt_ref, pcov_ref = curve_fit(
+            power_law_func,
+            m_ref.frequency / m_ref.frequency[0],
+            m_ref.flux[:, 0] / m_ref.flux[0, 0],
+        )
+        spec_in[i] = popt_ref[1]
+
+        popt_comp, pcov_comp = curve_fit(
+            power_law_func,
+            m_comp.frequency / m_comp.frequency[0],
+            m_comp.flux[:, 0] / m_comp.flux[0, 0],
+        )
+        spec_out[i] = popt_comp[1]
+
+    print(spec_in, spec_out)
+
+    plt.plot(spec_in, spec_out, "o", color="b", markersize=5)
+
+    plt.title("Spectral Indexes")
+    plt.xlabel("Spectral index in")
+    plt.ylabel("Spectral index out")
+    if plot_file is not None:
+        plt.savefig(plot_file + "_spec_index.png")
+    plt.show(block=False)
+    plt.clf()
+
+    return [spec_in, spec_out]

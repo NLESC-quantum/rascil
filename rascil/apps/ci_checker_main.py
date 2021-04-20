@@ -43,6 +43,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux_histogram,
     plot_skycomponents_position_quiver,
     plot_gaussian_beam_position,
+    plot_multifreq_spectral_index,
 )
 
 from rascil.apps.ci_checker.generate_results_index import create_index
@@ -449,8 +450,8 @@ def ci_checker(
 
     refchan = nchan // 2
     log.info(
-        "Found spectral cube with {} channel(s), using channel {} for source finding".format(
-            nchan, refchan
+        "Found spectral cube with {} channel(s), using channel {} for source finding. The multi-channel BDSF mode is {}. ".format(
+            nchan, refchan, multichan_option
         )
     )
 
@@ -476,11 +477,10 @@ def ci_checker(
             spectralindex_do=True,
         )
 
-        # Write the source catalog and the residual image.
+    # Write the source catalog and the residual image.
     img_rest.write_catalog(
         outfile=source_file, format="csv", catalog_type="srl", clobber=True
     )
-    img_rest.write_catalog(format="fits", catalog_type="srl", clobber=True)
     img_rest.export_image(img_type="gaus_resid", clobber=True)
 
     log.info("Running diagnostics for the restored image")
@@ -510,13 +510,7 @@ def ci_checker(
                 spectralindex_do=True,
             )
 
-        save_rms = (
-            input_image_residual.replace(
-                ".fits" if ".fits" in input_image_residual else ".h5", ""
-            )
-            + "_residual"
-            + "_rms"
-        )
+        save_rms = input_image_residual.replace(".fits", "_residual_rms")
 
         if args.savefits_rmsim == "True":
             export_image_to_fits(img_resid.rms_arr, save_rms + ".fits")
@@ -619,7 +613,7 @@ def check_source(orig, comp, match_sep):
 
 def read_skycomponent_from_txt(filename, freq):
     """
-    Read source input from a txt file and make the date into skycomponents
+    Read source input from a txt file and make them into skycomponents
 
     :param filename: Name of input file
     :param freq: Frequency or list of frequencies in float
@@ -718,6 +712,12 @@ def plot_errors(orig, comp, input_image, match_sep, plot_file):
     bmaj, bmin = plot_gaussian_beam_position(
         comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
     )
+
+    if nchan > 1:
+        log.info("Plotting spectral index.")
+        spec_in, spec_out = plot_multifreq_spectral_index(
+            comp, orig, plot_file=plot_file, tol=match_sep
+        )
 
     log.info("Plotting done.")
 

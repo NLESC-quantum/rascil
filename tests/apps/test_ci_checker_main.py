@@ -262,6 +262,12 @@ def test_continuum_imaging_checker(
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_gaussian_beam_position.png")
     )
+
+    if image_frequency.shape[0] > 1:
+        assert os.path.exists(
+            rascil_path(f"test_results/test_ci_checker_{tag}_spec_index.png")
+        )
+
     # test that create_index() generates the html and md files,
     # at the end of analyze_image()
     assert os.path.exists(rascil_path("test_results/index.html"))

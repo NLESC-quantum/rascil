@@ -16,7 +16,6 @@ from rascil.apps.ci_checker.ci_diagnostics import (
     source_region_mask,
     _radial_profile,
     _plot_power_spectrum,
-    _save_power_spectrum_to_csv,
     power_spectrum,
     ci_checker_diagnostics,
 )
@@ -27,7 +26,10 @@ BASE_PATH = "rascil.apps.ci_checker.ci_diagnostics"
 
 class MockGaussianObject:
     def __init__(self):
-        self.centre_pix = [60.0, 180.0]
+        # it says these are image coordinates,
+        # but I couldn't figure out if that means pixels or something else
+        # see bdsf.gausfit.Op_gausfit.fixup_gaussian (centre_pix is index 1 and 2 of np)
+        self.centre_pix = [60.0, 270.0]
 
 
 class MockBDSFImage:
@@ -36,14 +38,14 @@ class MockBDSFImage:
     and properties used in the tested functions
     """
 
-    def __init__(self):
+    def __init__(self, n_pixel):
         # not part of original PyBDSF image class
         self.gauss_mean = 1.0  # mean to be used in constructing self.resid_gaus_arr
         self.gauss_std = (
             0.5  # standard deviation to be used in constructing self.resid_gaus_arr
         )
 
-        self.shape = (1, 1, 10, 10)
+        self.shape = (1, 1, n_pixel, n_pixel)
 
         # see bdsf.readimage.Op_readimage.__call__
         # 4D array: (nstokes, nchannels, imag_size_x, image_size_y)
@@ -66,13 +68,11 @@ class MockBDSFImage:
             MockGaussianObject(),
         ]
 
-    def pixel_beam(self):
-        """
-        beam = [major beam, minor beam, position angle]
-        see: bdsf.readimage.Op_readimage.init_beam and
-             bdsf.readimage.Op_readimage.init_beam.pixel_beam
-        """
-        return [0.5, 0.5, 0.0]
+        self.wcs_obj = Mock(wcs=Mock(cdelt=[0.005, 0.005]))
+        self.beam = [0.005, 0.005]
+
+    def beam2pix(self, beam):
+        return beam
 
     def create_gaussian_array(self):
         gaus_arr = np.random.normal(self.gauss_mean, self.gauss_std, self.shape[2:])
@@ -109,7 +109,6 @@ def test_qa_image_bdsf():
     ],
 )
 def test_plot_name(image_name, expected):
-    """TODO: do we want to account for other extensions? is current behaviour acceptable?"""
     image_type = "coloured"
     plot_type = "line"
 
@@ -141,7 +140,7 @@ def test_gaussian():
 
 def test_get_histogram_data():
     _, ax = plt.subplots()
-    my_image = MockBDSFImage()
+    my_image = MockBDSFImage(4000)
 
     result = _get_histogram_data(my_image, ax)
 
@@ -152,8 +151,9 @@ def test_get_histogram_data():
     fitted_params = result[1]
 
     # TODO: Are these reasonable boundaries for a fit?
-    assert my_image.gauss_mean + 0.1 > fitted_params[1] > my_image.gauss_mean - 0.1
-    assert my_image.gauss_std + 0.1 > abs(fitted_params[2]) > my_image.gauss_std - 0.1
+    # depending on the shape of my_image.resid_gaus_arr, the precision changes
+    np.testing.assert_allclose(fitted_params[1], my_image.gauss_mean, 0.001)
+    np.testing.assert_allclose(fitted_params[2], my_image.gauss_std, 0.001)
 
 
 @patch(BASE_PATH + ".plt")
@@ -165,7 +165,7 @@ def test_get_histogram_data():
 )
 def test_histogram(mock_plot):
     """
-    Test that the various plt an ax calls are executed with the correct arguments.
+    Test that the various plt and ax calls are executed with the correct arguments.
     """
     # GIVEN
     mock_plot.return_value = Mock()
@@ -191,6 +191,13 @@ def test_histogram(mock_plot):
 @pytest.mark.parametrize("description", ["my_description", "restored"])
 @patch(BASE_PATH + ".plt")
 def test_plot_with_running_mean(mock_plot, description):
+    """
+    Test that the various plt calls are executed with the correct arguments,
+    and correct number of times.
+
+    plt.Circle is only executed when description=restored.
+    """
+    # GIVEN
     mock_plot.return_value = Mock()
     mock_fig = MagicMock()
     mock_plot.figure.return_value = mock_fig
@@ -205,16 +212,18 @@ def test_plot_with_running_mean(mock_plot, description):
         "std": 0.2,
     }
 
+    # WHEN
     plot_with_running_mean(
-        MockBDSFImage(),
+        MockBDSFImage(10),
         "my_image.fits",
         stats,
         "fake-projection",
         description=description,
     )
 
+    # THEN
     assert mock_fig.add_subplot.call_count == 3
-    assert mock_plot.text.call_count == 4  # three key-value pairs in stats dict
+    assert mock_plot.text.call_count == 4  # four key-value pairs in stats dict
     mock_plot.savefig.assert_called_once_with(
         f"my_image_{description}_plot.png", pad_inches=-1
     )
@@ -227,7 +236,7 @@ def test_plot_with_running_mean(mock_plot, description):
             mock_plot.Circle.call_args_list
             == [
                 call(
-                    (60.0, 180.0),
+                    (60.0, 270.0),
                     color="w",
                     fill=False,
                 )
@@ -239,29 +248,27 @@ def test_plot_with_running_mean(mock_plot, description):
         mock_plot.Circle.assert_not_called()
 
 
+@pytest.skip("Need to discuss this function")
 def test_source_region_mask():
-    my_image = MockBDSFImage()
+    my_image = MockBDSFImage(10)
 
     result = source_region_mask(my_image)
-    sourced_mask = result[0]
+    source_mask = result[0]
     background_mask = result[1]
 
-    # TODO:
-    # what are the above when running
-    #   tests.apps.ci_checker.test_ci_checker_main.test_continuum_imaging_checker
-    #
-    # test1: input image == source_mask.data == background_mask.data
-    # test2: same as for test1
-    # test3: same
-    # test4: same
-    # test5: same
-    #
-    # it also looks to me that for all tests the source_mask.mask is all True
-    #   and background_mask.mask is all False
-    # is this the expected behaviour?
-    # is there a bug / conversion problem when the gaussian.centre_pix values are used?
+    assert len(source_mask.mask[0][np.where(source_mask.mask[0] == False)]) == len(
+        background_mask.mask[0][np.where(background_mask.mask[0] == True)]
+    )
 
-    pass
+    assert len(source_mask.mask[0][np.where(source_mask.mask[0] == True)]) == len(
+        background_mask.mask[0][np.where(background_mask.mask[0] == False)]
+    )
+
+    # where source_mask is masked, background_mask is not masked, they're the complement of each other
+    assert (
+        np.where(source_mask.mask[0] == False)[0]
+        == np.where(background_mask.mask[0] == True)[0]
+    ).all()
 
 
 def test_radial_profile():
@@ -316,30 +323,42 @@ def test_radial_profile_custom_centre():
     assert (result == np.array([1.0, 1.0, 1.0, 6.0 / 5.0])).all()
 
 
+@pytest.mark.parametrize("img_type", ["random_type", "restored", None])
 @patch(BASE_PATH + ".plt")
-def test_plot_power_spectrum(mock_plot):
+def test_plot_power_spectrum(mock_plot, img_type):
+    """
+    Test that the various plt calls are executed with the correct arguments,
+    and correct number of times.
+    """
     mock_plot.return_value = Mock()
     profile = [1.0, 5.0, 17.0]
     theta_axis = [23.0, 44.0, 52.0]
 
-    result = _plot_power_spectrum("my_image.fits", profile, theta_axis)
-    expected_plot_name_string = "my_image_residual_power_spectrum"
+    if img_type is None:
+        # use default img_type
+        _plot_power_spectrum("my_image.fits", profile, theta_axis)
+        mock_plot.savefig.assert_called_once_with(
+            "my_image_residual_power_spectrum.png"
+        )
 
-    assert result == expected_plot_name_string
+    else:
+        # use user-defined img_types
+        result = _plot_power_spectrum(
+            "my_image.fits", profile, theta_axis, img_type=img_type
+        )
+        expected_plot_name_string = f"my_image_{img_type}_power_spectrum"
+
+        assert result == expected_plot_name_string
+        mock_plot.savefig.assert_called_once_with(expected_plot_name_string + ".png")
+
     assert mock_plot.gca.call_count == 6
     mock_plot.plot.assert_called_once_with(theta_axis, profile)
-    mock_plot.savefig.assert_called_once_with(expected_plot_name_string + ".png")
 
 
 def test_power_spectrum():
     """
-    TODO: do we need units for the log plot of the power spectrum axes?
-        what is K?
-        what is profile and what is theta_axis?
-
-    TODO: (fyi)
-      Image() breaks without wcs and polarisation_frame specified, even though those are optional args
-      rascil_image = Image(np.ones((1, 1, 5, 5)))
+    Execute the power_spectrum function on a real image of M31.
+    Test that the code runs without any errors.
     """
     test_image = rascil_data_path("models/M31_canonical.model.fits")
 
@@ -348,7 +367,7 @@ def test_power_spectrum():
     expected_length = 182
     assert len(result[0]) == expected_length
     assert len(result[0]) == len(result[1])
-    # is there anything else that can be reasonably tested/asserted?
+    # TODO: is there anything else that can be reasonably tested/asserted?
 
 
 @patch(BASE_PATH + ".SlicedLowLevelWCS", Mock())
@@ -369,7 +388,7 @@ class TestCICheckerDiagnostics:
     def test_restored(
         self, mock_histogram, mock_plot_run_mean, mock_qa_image, mock_source_mask
     ):
-        mock_image = MockBDSFImage()
+        mock_image = MockBDSFImage(10)
         setattr(mock_image, "wcs_obj", Mock())
 
         mock_plot_run_mean.return_value = Mock()
@@ -390,7 +409,7 @@ class TestCICheckerDiagnostics:
     def test_residual(
         self, mock_histogram, mock_plot_run_mean, mock_qa_image, mock_source_mask
     ):
-        mock_image = MockBDSFImage()
+        mock_image = MockBDSFImage(10)
         setattr(mock_image, "wcs_obj", Mock())
 
         mock_plot_run_mean.return_value = Mock()
@@ -412,17 +431,8 @@ def test_ci_checker_diagnostics_unknown_type():
     If the provided image_type is neither 'restored' nor 'residual,
     raise a ValueError.
     """
-    mock_image = MockBDSFImage()
+    mock_image = MockBDSFImage(10)
     setattr(mock_image, "wcs_obj", Mock())
 
     with pytest.raises(ValueError):
         ci_checker_diagnostics(mock_image, "my_file.fits", "my_weird_type")
-
-
-"""
-TODO:
-    histogram func --> plt is mocked and testing that the call args are fine (some, not all)
-    plot_with_running_mean --> 90% plotting, what isn't that's to get labels and such, not testing
-    _plot_power_spectrum --> only plotting, not testing
-    _save_power_spectrum_to_csv --> writing to csv, small amount of business logic, needs testing?
-"""

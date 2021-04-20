@@ -191,7 +191,7 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
     main_ax = fig.add_subplot(grid[:-1, 1:], projection=projection)
 
     y_plot = fig.add_subplot(grid[:-1, 0], sharey=main_ax, projection=projection)
-    y_plot.set_ylabel("DEC---SIN")
+    y_plot.set_ylabel("DEC--SIN")
 
     y_plot2 = y_plot.twiny()
     y_plot2.plot(np.mean(image, axis=0), y_index)
@@ -260,11 +260,9 @@ def source_region_mask(img):
 
     log.info("Masking source and background regions.")
 
-    # Here the major axis of the beam is used as the beam width and the. pybdsf
-    # gives the beam "IN SIGMA UNITS in pixels" so we need to convert to
-    # straight pixels by multiplying by the FWHM. See init_beam() function in
-    # pybdsf source code.
-    beam_width = img.pixel_beam()[0] * 2.35482
+    # Here the major axis of the beam is used as the beam width.
+    # See bdsf.readimage.Op_readimage.init_beam
+    beam_width = img.beam2pix(img.beam)[0]  # major axis of beam in pixels
     beam_radius = beam_width / 2.0
 
     # img.image_arr.shape --> (nstokes, nchannels, img_size_x, img_size_y)
@@ -282,11 +280,15 @@ def source_region_mask(img):
     source_regions = np.ones(shape=image_shape, dtype=int)
     background_regions = np.zeros(shape=image_shape, dtype=int)
 
+    cellsize = img.wcs_obj.wcs.cdelt[1]
     for gaussian in img.gaussians:
 
-        source_radius = np.sqrt(
-            (grid[0] - gaussian.centre_pix[0]) ** 2
-            + (grid[1] - gaussian.centre_pix[1]) ** 2
+        source_radius = (
+            np.sqrt(
+                (grid[0] - gaussian.centre_pix[0]) ** 2
+                + (grid[1] - gaussian.centre_pix[1]) ** 2
+            )
+            * cellsize
         )
 
         source_regions[source_radius < beam_radius] = 0
@@ -319,26 +321,27 @@ def _radial_profile(image, centre=None):
     return np.bincount(r.ravel(), image.ravel()) / np.bincount(r.ravel())
 
 
-def _plot_power_spectrum(input_image, profile, theta_axis):
+def _plot_power_spectrum(input_image, profile, theta, img_type="residual"):
     """
     Plot the power spectrum and save it as PNG.
 
     :param input_image: name of input image (e.g. FITS file name)
-    :param profile: ??
-    :param theta_axis: ??
+    :param profile: Brightness temperature for each angular scale in Kelvin
+    :param theta: Angular scale data in degrees
+    :param img_type: type of image, normally "residual" or "restored", default is "residual"
     """
     plt.clf()
 
-    plt.plot(theta_axis, profile)
-    plt.gca().set_title("Power spectrum of image residual")
-    plt.gca().set_xlabel(r"$\theta$")
-    plt.gca().set_ylabel(r"$K^2$")
+    plt.plot(theta, profile)
+    plt.gca().set_title(f"Power spectrum of {img_type} image")
+    plt.gca().set_xlabel("Angular scale [degrees]")
+    plt.gca().set_ylabel("Brightness temperature [K]")
     plt.gca().set_xscale("log")
     plt.gca().set_yscale("log")
     plt.gca().set_ylim(1e-6 * numpy.max(profile), 2.0 * numpy.max(profile))
     plt.tight_layout()
 
-    power_sp_plot_name = plot_name(input_image, "residual", "power_spectrum")
+    power_sp_plot_name = plot_name(input_image, img_type, "power_spectrum")
 
     log.info('Saving power spectrum to "{}.png"'.format(power_sp_plot_name))
     plt.savefig(power_sp_plot_name + ".png")
@@ -347,21 +350,21 @@ def _plot_power_spectrum(input_image, profile, theta_axis):
     return power_sp_plot_name
 
 
-def _save_power_spectrum_to_csv(profile, theta_axis, file_name):
+def _save_power_spectrum_to_csv(profile, theta, file_name):
     """
     Save the power spectrum into CSV.
 
-    :param profile: ??
-    :param theta_axis: ??
+    :param profile: Brightness temperature for each angular scale in Kelvin
+    :param theta: Angular scale data in degrees
     :param file_name: string the csv file name should contain
     """
     log.info('Saving power spectrum profile to "{}_channel.csv"'.format(file_name))
     filename = file_name + "_channel.csv"
 
     results = list()
-    for row in range(len(theta_axis)):
+    for row in range(len(theta)):
         result = dict()
-        result["inverse_theta"] = theta_axis[row]
+        result["inverse_theta"] = theta[row]
         result["profile"] = profile[row]
         results.append(result)
 
@@ -384,10 +387,12 @@ def power_spectrum(input_image, resolution, signal_channel=None):
     Calculate the power spectrum of an image.
 
     :param input_image: FITS file to read data from
-    :param resolution: Resolution in radians needed for conversion to K <-- what is K?
+    :param resolution: Resolution in radians needed for conversion from Jy to Kelvin
     :param signal_channel: channel containing both signal and noise, optional
 
-    :return (profile, theta_axis) --> what are these?
+    :return (profile, theta_axis)
+        profile: Brightness temperature for each angular scale in Kelvin
+        theta_axis: Angular scale data in degrees
     """
 
     im = import_image_from_fits(input_image)
@@ -399,17 +404,22 @@ def power_spectrum(input_image, resolution, signal_channel=None):
 
     imfft = fft_image_to_griddata(im)
 
+    # conversion factor between Jy (units of image data) and K (brightness temperature)
     omega = numpy.pi * resolution ** 2 / (4 * numpy.log(2.0))
     wavelength = consts.c / numpy.average(im.frequency)
     kperjy = 1e-26 * wavelength ** 2 / (2 * consts.k_B * omega)
 
     im_spectrum = imfft.copy()
+    # convert image data from Jy to K
     im_spectrum["pixels"].data = kperjy.value * numpy.abs(imfft["pixels"].data)
 
+    # data in units of K converted from Jy --> power-type quantity
     profile = _radial_profile(im_spectrum["pixels"].data[signal_channel, 0])
 
     cellsize_uv = numpy.abs(griddata_wcs(imfft).wcs.cdelt[0])
-    lambda_max = cellsize_uv * len(profile)
+    lambda_max = cellsize_uv * len(
+        profile
+    )  # max spacial scale that instrument is sensitive to
     lambda_axis = numpy.linspace(cellsize_uv, lambda_max, len(profile))
     theta_axis = 180.0 / (numpy.pi * lambda_axis)
 
@@ -435,7 +445,7 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
 
     # Setting the first to slices to 0 meas we are taking the first frequency
     # and first polarisation.
-    # TODO: if support for polarasation is to be added this needs to be changed.
+    # TODO: if support for polarisation is to be added this needs to be changed.
     slices = [0, 0, slice(bdsf_image.shape[-1]), slice(bdsf_image.shape[-2])]
     subwcs = SlicedLowLevelWCS(bdsf_image.wcs_obj, slices=slices)
 
@@ -458,7 +468,7 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
         # calculate, plot, and save power spectrum
         profile, theta_axis = power_spectrum(input_image, 5.0e-4)
         save_power_spectrum_plot = _plot_power_spectrum(
-            input_image, profile, theta_axis
+            input_image, profile, theta_axis, img_type=image_type
         )
         _save_power_spectrum_to_csv(profile, theta_axis, save_power_spectrum_plot)
 

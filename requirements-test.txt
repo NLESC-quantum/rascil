@@ -36,7 +36,7 @@ idna==2.10
     # via requests
 imagesize==1.2.0
     # via sphinx
-importlib-metadata==3.10.0
+importlib-metadata==4.0.0
     # via
     #   pluggy
     #   pytest
@@ -151,7 +151,7 @@ toml==0.10.2
     #   pytest-pylint
 tornado==6.1
     # via livereload
-typed-ast==1.4.2
+typed-ast==1.4.3
     # via astroid
 typing-extensions==3.7.4.3
     # via importlib-metadata

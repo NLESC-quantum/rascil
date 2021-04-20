@@ -126,6 +126,7 @@ def plot_skycomponents_positions(
             ax.plot(ra_error, dec_error, "o", markersize=5)
         err_r = max(numpy.max(ra_error), numpy.max(dec_error))
         err_l = min(numpy.min(ra_error), numpy.min(dec_error))
+
         plt.xlim([err_l, err_r])
         plt.ylim([err_l, err_r])
         plt.xlabel(r"$\Delta\ RA * cos(Dec) / \Delta x$")
@@ -458,16 +459,17 @@ def plot_gaussian_beam_position(
         try:
             fitted = fit_skycomponent(image, m_comp, force_point_sources=False)
             log.info("{}".format(fitted.params))
-            ra_dist[count] = (m_comp.direction.ra.wrap_at(angle_wrap).degree -
-                              phasecentre.ra.wrap_at(angle_wrap).deg)\
-                             * numpy.cos(m_ref.direction.dec.rad)
-            dec_dist[count] = (m_comp.direction.dec.degree - phasecentre.dec.deg)
+            ra_dist[count] = (
+                m_comp.direction.ra.wrap_at(angle_wrap).degree
+                - phasecentre.ra.wrap_at(angle_wrap).deg
+            ) * numpy.cos(m_ref.direction.dec.rad)
+            dec_dist[count] = m_comp.direction.dec.degree - phasecentre.dec.deg
             dist[count] = m_comp.direction.separation(phasecentre).degree
             bmaj[count] = fitted.params["bmaj"]
             bmin[count] = fitted.params["bmin"]
             count = count + 1
 
-	#If fitting failed, no items will be found in the params dictionary
+        # If fitting failed, no items will be found in the params dictionary
         except KeyError:
             log.warning(f"Fit skycomponent failed for component number {match[0]} ")
 

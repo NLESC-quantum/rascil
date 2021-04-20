@@ -678,6 +678,8 @@ def plot_errors(orig, comp, input_image, match_sep, plot_file):
 
     img_size = np.rad2deg(image.image_acc.wcs.wcs.cdelt[1])
     phasecentre = image.image_acc.phasecentre
+    nchan = image["pixels"].shape[0]
+    refchan = nchan // 2
 
     ra_comp, dec_comp = plot_skycomponents_positions(
         comp, orig, img_size=img_size, plot_file=plot_file, tol=match_sep
@@ -686,13 +688,26 @@ def plot_errors(orig, comp, input_image, match_sep, plot_file):
         comp, orig, phasecentre, img_size, plot_file=plot_file, tol=match_sep
     )
     flux_in, flux_out = plot_skycomponents_flux(
-        comp, orig, plot_file=plot_file, tol=match_sep
+        comp,
+        orig,
+        plot_file=plot_file,
+        tol=match_sep,
+        refchan=refchan,
     )
     dist, flux_ratio = plot_skycomponents_flux_ratio(
-        comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
+        comp,
+        orig,
+        phasecentre,
+        plot_file=plot_file,
+        tol=match_sep,
+        refchan=refchan,
     )
     fluxes = plot_skycomponents_flux_histogram(
-        comp, orig, plot_file=plot_file, tol=match_sep
+        comp,
+        orig,
+        plot_file=plot_file,
+        tol=match_sep,
+        refchan=refchan,
     )
 
     log.info("Plotting wide field plots.")

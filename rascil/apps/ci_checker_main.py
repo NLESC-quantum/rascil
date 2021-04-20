@@ -334,9 +334,13 @@ def analyze_image(args):
         results = check_source(orig, out, args.match_sep)
 
         if args.plot_source == "True":
-            plot_file = args.ingest_fitsname_restored.replace(".fits", "")
-            log.info("Plotting errors: {}".format(plot_file))
-            plot_errors(orig, out, input_image_restored, args.match_sep, plot_file)
+
+            if len(results) == 0:
+                log.info("No matches are found. Skipping plotting routines.")
+            else:
+                plot_file = args.ingest_fitsname_restored.replace(".fits", "")
+                log.info("Plotting errors: {}".format(plot_file))
+                plot_errors(orig, out, input_image_restored, args.match_sep, plot_file)
 
     else:
         results = None
@@ -639,7 +643,8 @@ def read_skycomponent_from_txt(filename, freq):
             ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
         )
         if nchan == 1:
-            flux_array = np.array([[flux[i]]])
+            flux = flux[i] * (freq[0] / ref_freq[i]) ** spec_indx[i]
+            flux_array = np.array([[flux]])
         else:
             fluxes = [flux[i] * (f / ref_freq[i]) ** spec_indx[i] for f in freq]
             flux_array = np.reshape(np.array(fluxes), (nchan, npol))

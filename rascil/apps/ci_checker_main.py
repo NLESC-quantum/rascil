@@ -301,6 +301,7 @@ def analyze_image(args):
     else:
         rascil_source_file = args.rascil_source_file
 
+    log.info("Putting sources into skycomponents format.")
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
 
     if args.check_source == "True":
@@ -335,10 +336,7 @@ def analyze_image(args):
         if args.plot_source == "True":
             plot_file = args.ingest_fitsname_restored.replace(".fits", "")
             log.info("Plotting errors: {}".format(plot_file))
-            phasecentre = im.image_acc.phasecentre
-            plot_errors(
-                orig, out, input_image_restored, args.match_sep, phasecentre, plot_file
-            )
+            plot_errors(orig, out, input_image_restored, args.match_sep, plot_file)
 
     else:
         results = None
@@ -537,17 +535,32 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
 
     data = pd.read_csv(source_file, sep=r"\s*,\s*", skiprows=5, engine="python")
     comp = []
+
+    # TODO: Change this to multiple polarizaions
+    nchan = len(freq)
+    npol = 1
+    centre = nchan // 2
+
     for i, row in data.iterrows():
 
         direc = SkyCoord(
             ra=row["RA"] * u.deg, dec=row["DEC"] * u.deg, frame="icrs", equinox="J2000"
         )
-        f = row["Total_flux"]
-        if f > 0:  # filter out ghost sources
+        f0 = row["Total_flux"]
+        if f0 > 0:  # filter out ghost sources
+            try:
+                spec_indx = row["Spec_Indx"]
+                fluxes = [f0 * (f / centre) ** spec_indx for f in freq]
+                flux_array = np.reshape(np.array(fluxes), (nchan, npol))
+
+            except KeyError:
+                # No spectral index information
+                flux_array = np.array([[f0]])
+
             comp.append(
                 create_skycomponent(
                     direction=direc,
-                    flux=np.array([[f]]),
+                    flux=flux_array,
                     frequency=freq,
                     polarisation_frame=PolarisationFrame("stokesI"),
                 )
@@ -615,16 +628,26 @@ def read_skycomponent_from_txt(filename, freq):
     ra = data[0]
     dec = data[1]
     flux = data[2]
+    ref_freq = data[6]
+    spec_indx = data[7]
 
+    nchan = len(freq)
+    npol = 1
     for i, row in enumerate(ra):
 
         direc = SkyCoord(
             ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
         )
+        if nchan == 1:
+            flux_array = np.array([[flux[i]]])
+        else:
+            fluxes = [flux[i] * (f / ref_freq[i]) ** spec_indx[i] for f in freq]
+            flux_array = np.reshape(np.array(fluxes), (nchan, npol))
+
         comp.append(
             create_skycomponent(
                 direction=direc,
-                flux=np.array([[flux[i]]]),
+                flux=flux_array,
                 frequency=freq,
                 polarisation_frame=PolarisationFrame("stokesI"),
             )
@@ -633,7 +656,7 @@ def read_skycomponent_from_txt(filename, freq):
     return comp
 
 
-def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
+def plot_errors(orig, comp, input_image, match_sep, plot_file):
     """
     Plot the position and flux errors for source input and output
 
@@ -641,7 +664,6 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
     :param comp: Output source list in skycomponent format
     :param input_image: Input image for Gaussian fits
     :param match_sep: The criteria for maximum separation
-    :param phasecentre: Centre of image
     :param plot_file: prefix of the plot files
     :return
 
@@ -650,7 +672,7 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
     image = import_image_from_fits(input_image, fixpol=True)
 
     img_size = np.rad2deg(image.image_acc.wcs.wcs.cdelt[1])
-    log.info(f"Image cellsize is {img_size}")
+    phasecentre = image.image_acc.phasecentre
 
     ra_comp, dec_comp = plot_skycomponents_positions(
         comp, orig, img_size=img_size, plot_file=plot_file, tol=match_sep

@@ -106,7 +106,7 @@ def test_continuum_imaging_checker(
         ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
     )
     hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(
-        pbtype="MID", frequency = image_frequency
+        pbtype="MID", frequency=image_frequency
     )
 
     nchan = image_frequency.shape[0]
@@ -140,11 +140,16 @@ def test_continuum_imaging_checker(
 
     txtfile = rascil_path(f"test_results/test_ci_checker_{tag}.txt")
     f = open(txtfile, "w")
-    f.write("# RA(deg), Dec(deg), Flux(Jy) \n")
+    f.write(
+        "# RA(deg), Dec(deg), I (Jy), Q (Jy), U (Jy), V (Jy), Ref. freq. (Hz), Spectral index\n"
+    )
     for cmp in components:
         coord_ra = cmp.direction.ra.degree
         coord_dec = cmp.direction.dec.degree
-        f.write("%.6f, %.6f, %10.6e \n" % (coord_ra, coord_dec, cmp.flux[0]))
+        f.write(
+            "%.6f, %.6f, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e \n"
+            % (coord_ra, coord_dec, cmp.flux[0], 0.0, 0.0, 0.0, central_freq, 0.0)
+        )
     f.close()
 
     model = create_image(

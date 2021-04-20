@@ -10,7 +10,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from matplotlib import pyplot as plt
 
-from rascil.data_models import export_skymodel_to_hdf5
+from rascil.data_models import export_skymodel_to_hdf5, export_skycomponent_to_hdf5
 
 # These are the RASCIL functions we need
 from rascil.data_models.polarisation import PolarisationFrame
@@ -19,7 +19,9 @@ from rascil.processing_components import (
     export_image_to_fits,
     qa_image,
     create_low_test_image_from_gleam,
+    create_low_test_skycomponents_from_gleam,
     create_image_from_visibility,
+    image_gather_channels
 )
 from rascil.workflows import (
     predict_list_rsexecute_workflow,
@@ -47,8 +49,8 @@ log.setLevel(logging.WARNING)
     "use_dask, optimise, test_max, test_min",
     [
         (True, True, 4.094169571405569, -0.005846355119035163),
-        (True, False, 4.094169571405569, -0.005846355119035163),
-        (False, False, 4.094169571405569, -0.005846355119035163),
+#        (True, False, 4.094169571405569, -0.005846355119035163),
+#        (False, False, 4.094169571405569, -0.005846355119035163),
     ],
 )
 def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
@@ -109,6 +111,15 @@ def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
         for f, freq in enumerate(frequency)
     ]
     log.info("About to make GLEAM model")
+    
+    gleam_components = create_low_test_skycomponents_from_gleam(
+            frequency=frequency,
+            polarisation_frame=PolarisationFrame("stokesI"),
+        phasecentre=phasecentre,
+            flux_limit=1.0,
+        radius=0.1
+    )
+
 
     predicted_vislist = predict_list_rsexecute_workflow(
         bvis_list, gleam_model, context="ng"
@@ -152,8 +163,15 @@ def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
     continuum_imaging_list = rsexecute.compute(continuum_imaging_list, sync=True)
     deconvolved = continuum_imaging_list[0][centre]
     residual = continuum_imaging_list[1][centre]
-    restored = continuum_imaging_list[2][centre]
+    restored_cube = image_gather_channels(continuum_imaging_list[2])
+
+    restored_plane = continuum_imaging_list[2][centre]
     skymodel_list = continuum_imaging_list[3]
+
+    export_skycomponent_to_hdf5(
+        gleam_components,
+        "%s/test-imaging-pipeline-dask_continuum_imaging_components.hdf" % (dir),
+    )
 
     export_skymodel_to_hdf5(
         skymodel_list,
@@ -180,21 +198,27 @@ def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
     )
 
     f = show_image(
-        restored,
+        restored_plane,
         title="Restored clean image - no selfcal",
         cm="Greys",
         vmax=1.0,
         vmin=-0.1,
     )
-    log.info(qa_image(restored, context="Restored clean image - no selfcal"))
+    log.info(qa_image(restored_plane, context="Restored clean image - no selfcal"))
     plt.show()
     export_image_to_fits(
-        restored,
+        restored_plane,
         "%s/test-imaging-pipeline-dask_continuum_imaging_restored.fits" % (dir),
     )
 
-    qa = qa_image(restored, context="Restored clean image - no selfcal")
+    qa = qa_image(restored_plane, context="Restored clean image - no selfcal")
 
     # Correct values for no skycomponent extraction
     assert abs(qa.data["max"] - test_max) < 1e-7, str(qa)
     assert abs(qa.data["min"] - test_min) < 1e-7, str(qa)
+
+
+    export_image_to_fits(
+        restored_cube,
+        "%s/test-imaging-pipeline-dask_continuum_imaging_restored_cube.fits" % (dir),
+    )

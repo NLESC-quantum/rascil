@@ -248,7 +248,7 @@ def restore_list_rsexecute_workflow(
     psf_imagelist,
     residual_imagelist=None,
     restore_facets=1,
-    restore_overlap=0,
+    restore_overlap=8,
     restore_taper="tukey",
     **kwargs
 ):
@@ -267,8 +267,8 @@ def restore_list_rsexecute_workflow(
     if residual_imagelist is not None:
         assert len(model_imagelist) == len(residual_imagelist)
         
-    if restore_overlap <= 0:
-        raise ValueError("Number of pixels for restore overlap must be > 0")
+    if restore_overlap < 0:
+        raise ValueError("Number of pixels for restore overlap must be >= 0")
 
     if restore_facets % 2 == 0 or restore_facets == 1:
         actual_number_facets = restore_facets
@@ -399,7 +399,7 @@ def restore_centre_rsexecute_workflow(
 def deconvolve_list_singlefacet_rsexecute_workflow(
     dirty_list, psf_list, model_imagelist, prefix="", mask=None, **kwargs
 ):
-    """Create a graph for deconvolution, adding to the model
+    """Create a graph for deconvolution of a single image, adding to the model
 
     :param dirty_list: list of dirty images (or graph)
     :param psf_list: list of psfs (or graph)
@@ -417,7 +417,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
                                                         dopsf=True, normalize=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
-        dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist,
+        dec_imagelist = deconvolve_list_singlefacet_rsexecute_workflow(dirty_imagelist, psf_imagelist,
                 model_imagelist, niter=1000, fractional_threshold=0.01,
                 scales=[0, 3, 10], algorithm='mmclean', nmoment=3, nchan=freqwin,
                 threshold=0.1, gain=0.7)
@@ -517,10 +517,7 @@ def deconvolve_list_rsexecute_workflow(
 
     deconvolve_overlap = get_parameter(kwargs, "deconvolve_overlap", 0)
     deconvolve_taper = get_parameter(kwargs, "deconvolve_taper", None)
-    if deconvolve_facets > 1 and deconvolve_overlap > 0:
-        deconvolve_number_facets = (deconvolve_facets - 2) ** 2
-    else:
-        deconvolve_number_facets = deconvolve_facets ** 2
+    deconvolve_number_facets = deconvolve_facets ** 2
 
     scattered_channels_facets_model_list = [
         rsexecute.execute(image_scatter_facets, nout=deconvolve_number_facets)(

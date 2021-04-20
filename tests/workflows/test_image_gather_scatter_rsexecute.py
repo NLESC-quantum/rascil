@@ -24,11 +24,8 @@ log.setLevel(logging.WARNING)
 
 class TestImageGatherScattersGraph(unittest.TestCase):
     def setUp(self):
-        from distributed import Client
 
-        client = Client(threads_per_worker=4, n_workers=4, processes=True)
-        print(client)
-        rsexecute.set_client(use_dask=True, client=client)
+        rsexecute.set_client(use_dask=True)
 
         from rascil.data_models.parameters import rascil_path
 

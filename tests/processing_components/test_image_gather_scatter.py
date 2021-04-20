@@ -27,7 +27,7 @@ log.setLevel(logging.WARNING)
 
 class TestImageGatherScatters(unittest.TestCase):
     def setUp(self):
-        from rascil.data_models.parameters import rascil_path, rascil_data_path
+        from rascil.data_models.parameters import rascil_path
 
         self.dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
@@ -119,8 +119,8 @@ class TestImageGatherScatters(unittest.TestCase):
         m31original = create_test_image(polarisation_frame=PolarisationFrame("stokesI"))
         assert numpy.max(numpy.abs(m31original["pixels"].data)), "Original is empty"
 
-        for taper in ["linear", None]:
-            for nraster, overlap in [(1, 0), (4, 8), (8, 8), (8, 16)]:
+        for taper in ["linear", "tukey", None]:
+            for nraster, overlap in [(1, 0), (2, 1), (2, 8), (4, 4), (4, 8), (8, 8), (8, 16)]:
                 m31model = create_test_image(
                     polarisation_frame=PolarisationFrame("stokesI")
                 )

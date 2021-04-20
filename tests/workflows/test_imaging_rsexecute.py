@@ -450,7 +450,7 @@ class TestImaging(unittest.TestCase):
             self.bvis_list, self.model_list, context="2d"
         )
         restored_image_list = restore_list_rsexecute_workflow(
-            self.model_list, psf_image_list, residual_image_list, psfwidth=1.0
+            self.model_list, psf_image_list, residual_image_list
         )
         restored_image_list = rsexecute.compute(restored_image_list, sync=True)
 
@@ -473,7 +473,7 @@ class TestImaging(unittest.TestCase):
             self.bvis_list, self.model_list, context="2d", dopsf=True
         )
         restored_image_list = restore_list_rsexecute_workflow(
-            self.model_list, psf_image_list, psfwidth=1.0
+            self.model_list, psf_image_list
         )
         restored_image_list = rsexecute.compute(restored_image_list, sync=True)
         if self.persist:
@@ -487,7 +487,6 @@ class TestImaging(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.0) < 1e-7, str(qa)
         assert numpy.abs(qa.data["min"]) < 1e-7, str(qa)
 
-    #@unittest.skip("Needs overlap to work - temporarily disabled")
     def test_restored_list_facet(self):
         self.actualSetUp(zerow=True)
         
@@ -505,14 +504,14 @@ class TestImaging(unittest.TestCase):
             self.bvis_list, self.model_list, context="2d", dopsf=True
         )
         psf_image_list = rsexecute.compute(psf_image_list, sync=True)
-        clean_beam = fit_psf(psf_image_list[centre][0])
+        clean_beam = {'bmaj': 0.12, 'bmin': 0.1, 'bpa': -0.8257413937065491}
 
         restored_2facets_image_list = restore_list_rsexecute_workflow(
             original_model_1,
             psf_image_list,
             residual_image_list,
-            restore_facets=2,
-            restore_overlap=32,
+            restore_facets=4,
+            restore_overlap=8,
             clean_beam=clean_beam
         )
         restored_2facets_image_list = rsexecute.compute(
@@ -520,11 +519,11 @@ class TestImaging(unittest.TestCase):
         )
 
         restored_1facets_image_list = restore_list_rsexecute_workflow(
-            original_model_1,
+            original_model_2,
             psf_image_list,
             residual_image_list,
             restore_facets=1,
-            restore_overlap=32,
+            restore_overlap=0,
             clean_beam=clean_beam
         )
 
@@ -545,8 +544,8 @@ class TestImaging(unittest.TestCase):
             )
 
         qa = qa_image(restored_2facets_image_list[centre])
-        assert numpy.abs(qa.data["max"] - 100.00571826154012) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.015806455831152463) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.0057182615401) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.041057034327480695) < 1e-7, str(qa)
 
         restored_2facets_image_list[centre]["pixels"].data \
             -= restored_1facets_image_list[centre]["pixels"].data
@@ -557,7 +556,8 @@ class TestImaging(unittest.TestCase):
                 % (self.dir, rsexecute.type()),
             )
         qa = qa_image(restored_2facets_image_list[centre])
-        assert numpy.abs(qa.data["maxabs"]) < 1e-10, str(qa)
+        assert numpy.abs(qa.data["max"] - 0.01840985277019904) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.03001185084361445) < 1e-7, str(qa)
 
     def test_sum_invert_list(self):
         self.actualSetUp(zerow=True)

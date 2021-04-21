@@ -46,7 +46,25 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import (
     get_dask_client,
 )
 
+def init_logging():
+    logging.basicConfig(
+        filename="pipelines_rsexecute_timings.log",
+        filemode="a",
+        format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
+        datefmt="%H:%M:%S",
+        level=logging.INFO,
+    )
+
+
+init_logging()
+log = logging.getLogger("rascil-logger")
+
 pp = pprint.PrettyPrinter()
+
+
+def lprint(*args):
+    s = pprint.pformat(*args)
+    log.info(s)
 
 
 def sort_dict(dc):
@@ -68,7 +86,7 @@ def git_hash():
     try:
         return subprocess.check_output(["git", "rev-parse", "HEAD"])
     except Exception as excp:
-        print(excp)
+        log.info(excp)
         return "unknown"
 
 
@@ -84,14 +102,13 @@ def trial_case(
     nfreqwin=7,
     ntimes=3,
     rmax=750.0,
-    facets=1,
     use_dask=True,
     flux_limit=0.3,
     nmajor=5,
     dft_threshold=1.0,
     deconvolve_facets=8,
-    deconvolve_overlap = 16,
-    deconvolve_taper = "tukey",
+    deconvolve_overlap=16,
+    deconvolve_taper="tukey",
     write_fits=False,
 ):
     """Single trial for performance-timings
@@ -117,7 +134,6 @@ def trial_case(
     'nfreqwin', Number of frequency windows in simulation
     'ntimes', Number of hour angles in simulation
     'rmax', Maximum radius of stations used in simulation (m)
-    'facets', Number of facets in deconvolution and imaging
     'npixel', Number of pixels in image
     'cellsize', Cellsize in radians
     'seed', Random number seed
@@ -142,8 +158,6 @@ def trial_case(
     :param nfreqwin: See simulate_list_list_rsexecute_workflow_workflowkflow
     :param ntimes: See simulate_list_list_rsexecute_workflow_workflowkflow
     :param rmax: See simulate_list_list_rsexecute_workflow_workflowkflow
-    :param facets: Number of facets to use
-    :param wprojection_planes: Number of wprojection planes to use
     :param use_dask: Use dask or immediate evaluation
     :return: results dictionary
     """
@@ -157,36 +171,20 @@ def trial_case(
             )
             rsexecute.set_client(client=client)
         else:
-        #     rsexecute.set_client(
-        #         threads_per_worker=threads_per_worker,
-        #         processes=threads_per_worker == 1,
-        #         memory_limit=memory * 1024 * 1024 * 1024,
-        #         n_workers=nworkers,
-        #     )
-        # print("Defined %d workers" % (nworkers))
+            #     rsexecute.set_client(
+            #         threads_per_worker=threads_per_worker,
+            #         processes=threads_per_worker == 1,
+            #         memory_limit=memory * 1024 * 1024 * 1024,
+            #         n_workers=nworkers,
+            #     )
+            # log.info("Defined %d workers" % (nworkers))
             rsexecute.set_client(use_dask=True)
     else:
         rsexecute.set_client(use_dask=use_dask)
         results["nnodes"] = 1
 
-    def init_logging():
-        logging.basicConfig(
-            filename="pipelines_rsexecute_timings.log",
-            filemode="a",
-            format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
-            datefmt="%H:%M:%S",
-            level=logging.INFO,
-        )
-
-    init_logging()
-    log = logging.getLogger("rascil-logger")
-
     # Initialise logging on the workers. This appears to only work using the process scheduler.
     rsexecute.run(init_logging)
-
-    def lprint(*args):
-        log.info(*args)
-        print(*args)
 
     lprint("Starting pipelines_rsexecute_timings")
 
@@ -210,7 +208,6 @@ def trial_case(
     results["nfreqwin"] = nfreqwin
     results["ntimes"] = ntimes
     results["rmax"] = rmax
-    results["facets"] = facets
     results["dft threshold"] = dft_threshold
 
     results["use_dask"] = use_dask
@@ -247,11 +244,11 @@ def trial_case(
     future_bvis_list = rsexecute.scatter(bvis_list)
 
     # Find the best imaging parameters but don't bring the vis_list back here
-    print("****** Finding wide field parameters ******")
+    lprint("****** Finding wide field parameters ******")
     future_advice = [
         rsexecute.execute(advise_wide_field)(
             v,
-            guard_band_image=6.0,
+            guard_band_image=3.0,
             delA=0.02,
             oversampling_synthesised_beam=4.0,
         )
@@ -289,19 +286,12 @@ def trial_case(
     lprint("****** Setting up imaging parameters ******")
     # Now set up the imaging parameters
 
-    vis_slices = 1
-    if context == "timeslice":
-        vis_slices = ntimes
-        lprint("Using timeslice with %d slices" % vis_slices)
-    elif context == "2d":
-        vis_slices = 1
+    if context == "2d":
+        lprint("Using RASCIL 2D gridder")
     elif context == "ng":
-        vis_slices = 1
         lprint("Using Nifty Gridder")
     else:
-        log.error("wstack no longer supported")
-
-    results["vis_slices"] = vis_slices
+        log.error(f"context {context} no longer supported")
 
     # Make a skymodel from gleam, with bright sources as components and weak sources in an image
     lprint("****** Starting GLEAM skymodel creation ******")
@@ -323,7 +313,9 @@ def trial_case(
     lprint("****** Starting GLEAM skymodel prediction ******")
     predicted_bvis_list = [
         predict_skymodel_list_rsexecute_workflow(
-            future_bvis_list[f], [future_skymodel_list[f]], context=context,
+            future_bvis_list[f],
+            [future_skymodel_list[f]],
+            context=context,
         )[0]
         for f, freq in enumerate(frequency)
     ]
@@ -381,7 +373,6 @@ def trial_case(
         future_corrupted_bvis_list,
         future_model_list,
         context=context,
-        vis_slices=vis_slices,
     )
     result = rsexecute.compute(tmp_bvis_list, sync=True)
     # rsexecute.client.cancel(tmp_bvis_list)
@@ -393,8 +384,8 @@ def trial_case(
     # frequencies (i.e. Visibilities) is performed.
 
     if deconvolve_facets > 1:
-        print("Using subimage clean")
-        
+        lprint("Using subimage clean")
+
     lprint("****** Starting ICAL graph creation ******")
 
     controls = create_calibration_controls()
@@ -407,7 +398,6 @@ def trial_case(
         future_corrupted_bvis_list,
         model_imagelist=future_model_list,
         context=context,
-        vis_slices=vis_slices,
         scales=[0, 3, 10],
         algorithm="mmclean",
         nmoment=3,
@@ -416,7 +406,7 @@ def trial_case(
         threshold=0.01,
         nmajor=nmajor,
         gain=0.25,
-        psf_support=64,
+        psf_support=128,
         deconvolve_facets=deconvolve_facets,
         deconvolve_overlap=deconvolve_overlap,
         deconvolve_taper=deconvolve_taper,
@@ -424,7 +414,7 @@ def trial_case(
         global_solution=True,
         do_selfcal=True,
         calibration_context="T",
-        controls=controls
+        controls=controls,
     )
 
     results["size ICAL graph"] = get_size(ical_list)
@@ -433,9 +423,6 @@ def trial_case(
     results["time ICAL graph"] = end - start
     lprint("Construction of ICAL graph took %.3f seconds" % (end - start))
 
-    # print("Current objects on cluster: ")
-    # pp.pprint(rsexecute.client.who_has())
-    #
     # Execute the graph
     lprint("****** Executing ICAL graph ******")
     rsexecute.init_statistics()
@@ -456,8 +443,8 @@ def trial_case(
     qa = qa_image(deconvolved[centre])
     results["deconvolved_max"] = qa.data["max"]
     results["deconvolved_min"] = qa.data["min"]
-    deconvolved_cube = image_gather_channels(deconvolved)
     if write_fits:
+        deconvolved_cube = image_gather_channels(deconvolved)
         export_image_to_fits(
             deconvolved_cube,
             "pipelines_rsexecute_timings-%s-ical_deconvolved.fits" % context,
@@ -466,9 +453,9 @@ def trial_case(
     qa = qa_image(residual[centre][0])
     results["residual_max"] = qa.data["max"]
     results["residual_min"] = qa.data["min"]
-    residual_cube = remove_sumwt(residual)
-    residual_cube = image_gather_channels(residual_cube)
     if write_fits:
+        residual_cube = remove_sumwt(residual)
+        residual_cube = image_gather_channels(residual_cube)
         export_image_to_fits(
             residual_cube, "pipelines_rsexecute_timings-%s-ical_residual.fits" % context
         )
@@ -476,8 +463,8 @@ def trial_case(
     qa = qa_image(restored[centre])
     results["restored_max"] = qa.data["max"]
     results["restored_min"] = qa.data["min"]
-    restored_cube = image_gather_channels(restored)
     if write_fits:
+        restored_cube = image_gather_channels(restored)
         export_image_to_fits(
             restored_cube, "pipelines_rsexecute_timings-%s-ical_restored.fits" % context
         )
@@ -495,6 +482,13 @@ def trial_case(
 
 
 def write_results(filename, fieldnames, results):
+    """Write results to a csv file.
+
+    :param filename: Name of existing csvfile
+    :param fieldnames: field names
+    :param results: dictionary of results
+    :return:
+    """
     with open(filename, "a") as csvfile:
         writer = csv.DictWriter(
             csvfile,
@@ -508,6 +502,12 @@ def write_results(filename, fieldnames, results):
 
 
 def write_header(filename, fieldnames):
+    """Write a header for a csvfile
+
+    :param filename: csv file to be written
+    :param fieldnames:
+    :return:
+    """
     with open(filename, "w") as csvfile:
         writer = csv.DictWriter(
             csvfile,
@@ -536,8 +536,8 @@ def process(args):
 
     threads_per_worker = args.nthreads
 
-    print("Using %s workers" % nworkers)
-    print("Using %s threads per worker" % threads_per_worker)
+    lprint("Using %s workers" % nworkers)
+    lprint("Using %s threads per worker" % threads_per_worker)
 
     nfreqwin = args.nfreqwin
     results["nfreqwin"] = nfreqwin
@@ -562,7 +562,7 @@ def process(args):
 
     nmajor = args.nmajor
     results["nmajor"] = nmajor
-    
+
     deconvolve_facets = args.deconvolve_facets
     deconvolve_overlap = args.deconvolve_overlap
     deconvolve_taper = args.deconvolve_taper
@@ -573,13 +573,13 @@ def process(args):
 
     use_dask = args.use_dask == "True"
     if use_dask:
-        print("Using Dask")
+        lprint("Using Dask")
 
     threads_per_worker = args.nthreads
 
     write_fits = args.write_fits == "True"
 
-    print("Defining %d frequency windows" % nfreqwin)
+    lprint("Defining %d frequency windows" % nfreqwin)
 
     fieldnames = [
         "cellsize",
@@ -595,12 +595,10 @@ def process(args):
         "driver",
         "duration",
         "epoch",
-        "facets",
         "flux_limit",
         "git_hash",
         "hostname",
         "jobid",
-        "log_file",
         "memory",
         "nfreqwin",
         "nmajor",
@@ -633,7 +631,7 @@ def process(args):
     filename = seqfile.findNextFile(
         prefix="%s_%s_" % (results["driver"], results["hostname"]), suffix=".csv"
     )
-    print("Saving results to %s" % filename)
+    log.info("Saving results to %s" % filename)
 
     write_header(filename, fieldnames)
 
@@ -657,10 +655,11 @@ def process(args):
     )
     write_results(filename, fieldnames, results)
 
-    print("Exiting %s" % results["driver"])
+    lprint("Exiting %s" % results["driver"])
+
 
 def main():
-    
+
     parser = argparse.ArgumentParser(
         description="Benchmark pipelines in numpy and dask"
     )
@@ -691,23 +690,23 @@ def main():
     )
 
     parser.add_argument(
-        "--deconvolve_facets", type=int, default=4, help="Number of facets for deconvolution"
+        "--deconvolve_facets",
+        type=int,
+        default=4,
+        help="Number of facets for deconvolution",
     )
     parser.add_argument(
-        "--deconvolve_overlap", type=int, default=16, help="Number of pixels overlap for deconvolution"
+        "--deconvolve_overlap",
+        type=int,
+        default=16,
+        help="Number of pixels overlap for deconvolution",
     )
     parser.add_argument(
-        "--deconvolve_taper", type=int, default=1, help="Facet taper for deconvolution"
+        "--deconvolve_taper", type=str, default="tukey", help="Facet taper for deconvolution"
     )
 
     parser.add_argument(
         "--dft_threshold", type=float, default=1.0, help="Flux above which DFT is used"
-    )
-    parser.add_argument(
-        "--log_file",
-        type=str,
-        default="pipelines_rsexecute_timings.log",
-        help="Name of output log file",
     )
     parser.add_argument(
         "--write_fits", type=str, default="True", help="Write FITS files??"
@@ -716,6 +715,7 @@ def main():
     process(parser.parse_args())
 
     exit()
+
 
 if __name__ == "__main__":
     main()

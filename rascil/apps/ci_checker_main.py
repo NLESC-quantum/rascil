@@ -472,7 +472,8 @@ def ci_checker(
             thresh_pix=th_pix,
             multichan_opts=True,
             collapse_mode=multichan_option,
-            collapse_ch0=refchan,
+            collapse_wt="rms",  # this only applies to average
+            collapse_ch0=refchan,  # this only applies to single
             quiet=quiet_bdsf,
             spectralindex_do=True,
         )
@@ -505,6 +506,7 @@ def ci_checker(
                 thresh_pix=th_pix,
                 multichan_opts=True,
                 collapse_mode=multichan_option,
+                collapse_wt="rms",
                 collapse_ch0=refchan,
                 quiet=quiet_bdsf,
                 spectralindex_do=True,
@@ -606,7 +608,7 @@ def check_source(orig, comp, match_sep):
     for match in matches:
         m_comp = comp[match[0]]
         m_orig = orig[match[1]]
-        log.info(f"Original: {m_orig} Match {m_comp}")
+        log.debug(f"Original: {m_orig} Match {m_comp}")
 
     return matches
 

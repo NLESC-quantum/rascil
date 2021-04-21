@@ -33,7 +33,6 @@ from rascil.processing_components.util.sizeof import get_size
 from rascil.workflows import (
     invert_list_rsexecute_workflow,
     weight_list_rsexecute_workflow,
-    predict_list_rsexecute_workflow,
     taper_list_rsexecute_workflow,
     remove_sumwt,
     ical_list_rsexecute_workflow,
@@ -46,7 +45,14 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import (
     get_dask_client,
 )
 
+
 def init_logging():
+    """ Initialise the logging.
+    
+    We need to run this function on all Dask workers
+    
+    :return:
+    """
     logging.basicConfig(
         filename="pipelines_rsexecute_timings.log",
         filemode="a",
@@ -119,14 +125,13 @@ def trial_case(
 
     The results are in a dictionary:
 
-    'context': input - a string describing concisely the purpose of the test
     'time overall',  overall execution time (s)
     'time predict', time to execute GLEAM prediction graph
     'time invert', time to make dirty image
     'time invert graph', time to make dirty image graph
     'time ICAL graph', time to create ICAL graph
     'time ICAL', time to execute ICAL graph
-    'context', type of imaging e.g. 'timeslice'
+    'context', type of imaging e.g. 'ng'
     'nworkers', number of workers to create
     'threads_per_worker',
     'nnodes', Number of nodes,
@@ -240,23 +245,22 @@ def trial_case(
         format="blockvis",
         rmax=rmax,
     )
-    bvis_list = rsexecute.compute(bvis_list, sync=True)
-    future_bvis_list = rsexecute.scatter(bvis_list)
+    bvis_list = rsexecute.persist(bvis_list)
 
     # Find the best imaging parameters but don't bring the vis_list back here
     lprint("****** Finding wide field parameters ******")
-    future_advice = [
+    advice = [
         rsexecute.execute(advise_wide_field)(
             v,
-            guard_band_image=3.0,
+            guard_band_image=6.0,
             delA=0.02,
             oversampling_synthesised_beam=4.0,
+            verbose=False,
         )
-        for v in future_bvis_list
+        for v in bvis_list
     ]
 
-    advice = rsexecute.compute(future_advice, sync=True)[-1]
-    # rsexecute.client.cancel(future_advice)
+    advice = rsexecute.compute(advice, sync=True)[-1]
 
     # Deconvolution via sub-images requires 2^n
     npixel = advice["npixels2"]
@@ -269,7 +273,7 @@ def trial_case(
     )
 
     # Create an empty model image
-    tmp_model_list = [
+    model_list = [
         rsexecute.execute(create_image)(
             npixel=npixel,
             cellsize=cellsize,
@@ -280,8 +284,7 @@ def trial_case(
         )
         for f, freq in enumerate(frequency)
     ]
-    model_list = rsexecute.compute(tmp_model_list, sync=True)
-    future_model_list = rsexecute.scatter(model_list)
+    model_list = rsexecute.persist(model_list)
 
     lprint("****** Setting up imaging parameters ******")
     # Now set up the imaging parameters
@@ -295,7 +298,7 @@ def trial_case(
 
     # Make a skymodel from gleam, with bright sources as components and weak sources in an image
     lprint("****** Starting GLEAM skymodel creation ******")
-    future_skymodel_list = [
+    skymodel_list = [
         rsexecute.execute(create_low_test_skymodel_from_gleam)(
             npixel=npixel,
             cellsize=cellsize,
@@ -309,12 +312,14 @@ def trial_case(
         for f, freq in enumerate(frequency)
     ]
 
+    skymodel_list = rsexecute.persist(skymodel_list)
+
     # We use predict_skymodel so that we can use skycomponents as well as images
     lprint("****** Starting GLEAM skymodel prediction ******")
     predicted_bvis_list = [
         predict_skymodel_list_rsexecute_workflow(
-            future_bvis_list[f],
-            [future_skymodel_list[f]],
+            bvis_list[f],
+            [skymodel_list[f]],
             context=context,
         )[0]
         for f, freq in enumerate(frequency)
@@ -327,22 +332,17 @@ def trial_case(
     )
     lprint("****** Weighting and tapering ******")
     corrupted_bvis_list = weight_list_rsexecute_workflow(
-        corrupted_bvis_list, future_model_list
+        corrupted_bvis_list, model_list
     )
     corrupted_bvis_list = taper_list_rsexecute_workflow(
         corrupted_bvis_list, 0.003 * 750.0 / rmax
     )
-    corrupted_bvis_list = rsexecute.compute(corrupted_bvis_list, sync=True)
+    corrupted_bvis_list = rsexecute.persist(corrupted_bvis_list)
 
-    corrupted_bvis_list = rsexecute.gather(corrupted_bvis_list)
-    future_corrupted_bvis_list = rsexecute.scatter(corrupted_bvis_list)
-
-    # At this point the only futures are of scatter'ed data so no repeated calculations should be
-    # incurred.
     lprint("****** Starting dirty image calculation ******")
     start = time.time()
     dirty_list = invert_list_rsexecute_workflow(
-        future_corrupted_bvis_list, future_model_list, context=context
+        corrupted_bvis_list, model_list, context=context
     )
     results["size invert graph"] = get_size(dirty_list)
     lprint("Size of dirty graph is %.3E bytes" % (results["size invert graph"]))
@@ -367,19 +367,6 @@ def trial_case(
             dirty, "pipelines_rsexecute_timings-%s-dirty.fits" % context
         )
 
-    lprint("****** Starting prediction ******")
-    start = time.time()
-    tmp_bvis_list = predict_list_rsexecute_workflow(
-        future_corrupted_bvis_list,
-        future_model_list,
-        context=context,
-    )
-    result = rsexecute.compute(tmp_bvis_list, sync=True)
-    # rsexecute.client.cancel(tmp_bvis_list)
-    end = time.time()
-    results["time predict"] = end - start
-    lprint("Predict took %.3f seconds" % (end - start))
-
     # Create the ICAL pipeline to run major cycles, starting selfcal at cycle 1. A global solution across all
     # frequencies (i.e. Visibilities) is performed.
 
@@ -395,8 +382,8 @@ def trial_case(
 
     start = time.time()
     ical_list = ical_list_rsexecute_workflow(
-        future_corrupted_bvis_list,
-        model_imagelist=future_model_list,
+        corrupted_bvis_list,
+        model_imagelist=model_list,
         context=context,
         scales=[0, 3, 10],
         algorithm="mmclean",
@@ -622,7 +609,6 @@ def process(args):
         "time ICAL graph",
         "time invert",
         "time invert graph",
-        "time predict",
         "time overall",
         "total",
         "use_dask",
@@ -702,7 +688,10 @@ def main():
         help="Number of pixels overlap for deconvolution",
     )
     parser.add_argument(
-        "--deconvolve_taper", type=str, default="tukey", help="Facet taper for deconvolution"
+        "--deconvolve_taper",
+        type=str,
+        default="tukey",
+        help="Facet taper for deconvolution",
     )
 
     parser.add_argument(

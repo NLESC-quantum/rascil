@@ -51,12 +51,12 @@ def image_raster_iter(
     To update the image in place::
 
         for r in image_raster_iter(im, facets=2):
-            r["pixels'].data[...] = numpy.sqrt(r["pixels'].data[...])
+            r["pixels"].data[...] = numpy.sqrt(r["pixels"].data[...])
 
     Note that some combinations of image size, facets, and overlap are invalid. In these cases,
     an exception (ValueError) is raised.
 
-    In the case where make_flat is true, the sub-images returned have tapers applied in the overlap
+    In the case where make_flat is true, the subimages returned have tapers applied in the overlap
     region. This is used by py:func:`rascil.processing_components.image.gather_scatter.image_gather_facets`
     to merge subimages into one image.
     
@@ -99,39 +99,39 @@ def image_raster_iter(
 
         # Size of facet
         dx = nx // facets
-        dy = nx // facets
+        dy = ny // facets
 
         # Step between facets
-        sx = nx // facets - 2 * overlap
-        sy = ny // facets - 2 * overlap
+        sx = dx - 2 * overlap
+        sy = dy - 2 * overlap
 
         def taper_linear(npixels, over):
-            t = numpy.ones(npixels)
+            taper1d = numpy.ones(npixels)
             ramp = numpy.arange(0, over).astype(float) / float(over)
 
-            t[:over] = ramp
-            t[(npixels - over) : npixels] = 1.0 - ramp
-            return t
+            taper1d[:over] = ramp
+            taper1d[(npixels - over) : npixels] = 1.0 - ramp
+            return taper1d
 
         def taper_quadratic(npixels, over):
-            t = numpy.ones(npixels)
+            taper1d = numpy.ones(npixels)
             ramp = numpy.arange(0, over).astype(float) / float(over)
 
             quadratic_ramp = numpy.ones(over)
             quadratic_ramp[0 : over // 2] = 2.0 * ramp[0 : over // 2] ** 2
             quadratic_ramp[over // 2 :] = 1 - 2.0 * ramp[over // 2 : 0 : -1] ** 2
 
-            t[:over] = quadratic_ramp
-            t[(npixels - over) : npixels] = 1.0 - quadratic_ramp
-            return t
+            taper1d[:over] = quadratic_ramp
+            taper1d[(npixels - over) : npixels] = 1.0 - quadratic_ramp
+            return taper1d
 
         def taper_tukey(npixels, over):
 
             xs = numpy.arange(npixels) / float(npixels)
             r = 2 * over / npixels
-            t = [tukey_filter(x, r) for x in xs]
+            taper1d = [tukey_filter(x, r) for x in xs]
 
-            return t
+            return taper1d
 
         def taper_flat(npixels, over):
             return numpy.ones([npixels])

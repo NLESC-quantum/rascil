@@ -63,14 +63,14 @@ class TestImageIterators(unittest.TestCase):
                             patch["pixels"].data *= 2.0
         
                         if  numpy.max(numpy.abs(m31model["pixels"].data)) == 0.0:
-                            print(
+                            log.warning(
                                 f"Raster is empty failed for {npixel}, {nraster}, {overlap}"
                             )
                         diff = m31model.copy(deep=True)
                         diff["pixels"].data -= 2.0 * m31original["pixels"].data
                         err = numpy.max(diff["pixels"].data)
                         if abs(err) > 0.0:
-                            print(
+                            log.warning(
                                 f"Raster set failed for {npixel}, {nraster}, {overlap}: error {err}"
                             )
                         export_image_to_fits(m31model,
@@ -78,7 +78,7 @@ class TestImageIterators(unittest.TestCase):
                         export_image_to_fits(diff,
                                              f"{testdir}/test_image_iterators_diff_{npixel}_{nraster}_{overlap}.fits")
                     except ValueError as err:
-                        print(f"Iterator failed for {npixel}, {nraster}, {overlap}, : {err}")
+                        log.error(f"Iterator failed for {npixel}, {nraster}, {overlap}, : {err}")
                         
 
     def test_raster_exception(self):

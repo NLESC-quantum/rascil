@@ -252,18 +252,18 @@ def analyze_image(args):
 
     log.info("Frequencies of image:{} ".format(freq))
 
-    cellsize = im.image_acc.wcs.wcs.cdelt[1]
-    beam_maj_expected = np.rad2deg(cellsize)
-    beam_min_expected = np.rad2deg(cellsize)
-    log.info(
-        "Suggested size of restoring beam: {}, {}".format(
-            beam_maj_expected, beam_min_expected
-        )
-    )
+    # If read restoring beam from header
+    try:
+        beam_maj = im.attrs["clean_beam"]["bmaj"]
+        beam_min = im.attrs["clean_beam"]["bmin"]
+        beam_pos_angle = im.attrs["clean_beam"]["bpa"]
 
-    beam_maj = args.finder_beam_maj
-    beam_min = args.finder_beam_min
-    beam_pos_angle = args.finder_beam_pos_angle
+    except KeyError:
+
+        beam_maj = args.finder_beam_maj
+        beam_min = args.finder_beam_min
+        beam_pos_angle = args.finder_beam_pos_angle
+
     beam_info = (beam_maj, beam_min, beam_pos_angle)
 
     th_isl = args.finder_th_isl

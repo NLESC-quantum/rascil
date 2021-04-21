@@ -13,6 +13,7 @@ __all__ = [
     "find_skycomponent_matches_atomic",
     "find_skycomponents",
     "fit_skycomponent",
+    "fit_skycomponent_spectral_index",
     "insert_skycomponent",
     "voronoi_decomposition",
     "image_voronoi_iter",
@@ -920,3 +921,30 @@ def fit_skycomponent(im: Image, sc: Skycomponent, **kwargs):
         return sc
 
     return newsc
+
+
+def fit_skycomponent_spectral_index(sc: Skycomponent):
+
+    """Fit the spectral index for a multi frequency skycomponent
+
+    :param sc: Skycomponent
+    :return: spec_indx
+    """
+    # Function after taken log
+    power_law_func = lambda a, b, x: a + b * x
+
+    nchan = sc.frequency.shape[0]
+
+    if nchan <= 1:
+        log.warning("Single frequency skycomponent, skip fitting")
+        spec_indx = 0.0
+
+    else:
+        centre = nchan // 2
+        xdata = numpy.log10(sc.frequency / sc.frequency[centre])
+        ydata = numpy.log10(sc.flux[:, 0] / sc.flux[centre, 0])
+
+        out = numpy.polyfit(xdata, ydata, 1)
+        spec_indx = out[0]
+
+    return spec_indx

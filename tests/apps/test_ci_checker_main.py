@@ -44,6 +44,7 @@ from rascil.processing_components.simulation import (
 from rascil.processing_components.skycomponent import (
     insert_skycomponent,
     find_skycomponent_matches,
+    fit_skycomponent_spectral_index,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -171,9 +172,19 @@ def test_continuum_imaging_checker(
     for cmp in components:
         coord_ra = cmp.direction.ra.degree
         coord_dec = cmp.direction.dec.degree
+        spec_indx = fit_skycomponent_spectral_index(cmp)
         f.write(
             "%.6f, %.6f, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e \n"
-            % (coord_ra, coord_dec, cmp.flux[0], 0.0, 0.0, 0.0, central_freq, 0.0)
+            % (
+                coord_ra,
+                coord_dec,
+                cmp.flux[nchan // 2],
+                0.0,
+                0.0,
+                0.0,
+                central_freq,
+                spec_indx,
+            )
         )
     f.close()
 
@@ -213,6 +224,8 @@ def test_continuum_imaging_checker(
             comp_file,  # txtfile
             "--match_sep",
             "1.0e-3",
+            # 	    "--finder_multichan_option",
+            # 	    "average",
         ]
     )
 

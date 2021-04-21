@@ -20,12 +20,12 @@ import matplotlib.pyplot as plt
 
 import astropy.units as u
 import numpy
-from scipy.optimize import curve_fit
 from astropy.coordinates import SkyCoord
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.processing_components.skycomponent.operations import (
     find_skycomponent_matches,
     fit_skycomponent,
+    fit_skycomponent_spectral_index,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -532,27 +532,12 @@ def plot_multifreq_spectral_index(
     spec_in = numpy.zeros(len(matches))
     spec_out = numpy.zeros(len(matches))
 
-    power_law_func = lambda a, b, x: a * x ** b
-
     for i, match in enumerate(matches):
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
 
-        popt_ref, pcov_ref = curve_fit(
-            power_law_func,
-            m_ref.frequency / m_ref.frequency[0],
-            m_ref.flux[:, 0] / m_ref.flux[0, 0],
-        )
-        spec_in[i] = popt_ref[1]
-
-        popt_comp, pcov_comp = curve_fit(
-            power_law_func,
-            m_comp.frequency / m_comp.frequency[0],
-            m_comp.flux[:, 0] / m_comp.flux[0, 0],
-        )
-        spec_out[i] = popt_comp[1]
-
-    print(spec_in, spec_out)
+        spec_in[i] = fit_skycomponent_spectral_index(m_ref)
+        spec_out[i] = fit_skycomponent_spectral_index(m_comp)
 
     plt.plot(spec_in, spec_out, "o", color="b", markersize=5)
 

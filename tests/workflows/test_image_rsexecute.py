@@ -74,7 +74,7 @@ class TestImageGraph(unittest.TestCase):
         """ This tests the correctness of the coordinates of the facets
 
         """
-        self.createVis(config="LOWBD2", rmax=1000.0)
+        self.createVis(config="LOWBD2", rmax=300.0)
         model = create_image_from_visibility(
             self.vis, cellsize=0.001, override_cellsize=False
         )

@@ -8,6 +8,10 @@ import os
 import pprint
 import socket
 import time
+import csv
+import seqfile
+
+import argparse
 
 import numpy
 from astropy import units as u
@@ -15,8 +19,6 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models import PolarisationFrame
 from rascil.processing_components import (
-    create_awterm_convolutionfunction,
-    create_pswf_convolutionfunction,
     image_gather_channels,
     export_image_to_fits,
     qa_image,
@@ -73,17 +75,16 @@ def git_hash():
 def trial_case(
     results,
     seed=180555,
-    context="timeslice",
-    nworkers=8,
-    threads_per_worker=1,
-    memory=8,
+    context="ng",
+    nworkers=4,
+    threads_per_worker=4,
+    memory=0,
     processes=True,
     order="frequency",
     nfreqwin=7,
     ntimes=3,
     rmax=750.0,
     facets=1,
-    wprojection_planes=1,
     use_dask=True,
     flux_limit=0.3,
     nmajor=5,
@@ -117,8 +118,6 @@ def trial_case(
     'ntimes', Number of hour angles in simulation
     'rmax', Maximum radius of stations used in simulation (m)
     'facets', Number of facets in deconvolution and imaging
-    'wprojection_planes', Number of wprojection planes
-    'vis_slices', Number of visibility slices (per Visibbility)
     'npixel', Number of pixels in image
     'cellsize', Cellsize in radians
     'seed', Random number seed
@@ -135,7 +134,7 @@ def trial_case(
     :param results: Initial state
     :param seed: Random number seed (used in gain simulations)
     :param context: imaging context
-    :param context: Type of context: '2d'|'timeslice'|'wprojection'|'ng'
+    :param context: Type of context: '2d'|'ng'
     :param nworkers: Number of dask workers to use
     :param threads_per_worker: Number of threads per worker
     :param processes: Use processes instead of threads 'processes'|'threads'
@@ -158,13 +157,14 @@ def trial_case(
             )
             rsexecute.set_client(client=client)
         else:
-            rsexecute.set_client(
-                threads_per_worker=threads_per_worker,
-                processes=threads_per_worker == 1,
-                memory_limit=memory * 1024 * 1024 * 1024,
-                n_workers=nworkers,
-            )
-        print("Defined %d workers" % (nworkers))
+        #     rsexecute.set_client(
+        #         threads_per_worker=threads_per_worker,
+        #         processes=threads_per_worker == 1,
+        #         memory_limit=memory * 1024 * 1024 * 1024,
+        #         n_workers=nworkers,
+        #     )
+        # print("Defined %d workers" % (nworkers))
+            rsexecute.set_client(use_dask=True)
     else:
         rsexecute.set_client(use_dask=use_dask)
         results["nnodes"] = 1
@@ -211,7 +211,6 @@ def trial_case(
     results["ntimes"] = ntimes
     results["rmax"] = rmax
     results["facets"] = facets
-    results["wprojection_planes"] = wprojection_planes
     results["dft threshold"] = dft_threshold
 
     results["use_dask"] = use_dask
@@ -253,9 +252,7 @@ def trial_case(
         rsexecute.execute(advise_wide_field)(
             v,
             guard_band_image=6.0,
-            delA=0.1,
-            facets=facets,
-            wprojection_planes=wprojection_planes,
+            delA=0.02,
             oversampling_synthesised_beam=4.0,
         )
         for v in future_bvis_list
@@ -523,7 +520,7 @@ def write_header(filename, fieldnames):
         csvfile.close()
 
 
-def main(args):
+def process(args):
     results = {}
 
     results["jobid"] = args.jobid
@@ -631,8 +628,6 @@ def main(args):
         "time overall",
         "total",
         "use_dask",
-        "vis_slices",
-        "wprojection_planes",
     ]
 
     filename = seqfile.findNextFile(
@@ -664,13 +659,8 @@ def main(args):
 
     print("Exiting %s" % results["driver"])
 
-
-if __name__ == "__main__":
-    import csv
-    import seqfile
-
-    import argparse
-
+def main():
+    
     parser = argparse.ArgumentParser(
         description="Benchmark pipelines in numpy and dask"
     )
@@ -690,10 +680,10 @@ if __name__ == "__main__":
         "--context",
         type=str,
         default="ng",
-        help="Imaging context: 2d|timeslice|wprojection|ng",
+        help="Imaging context: 2d|ng",
     )
     parser.add_argument(
-        "--rmax", type=float, default=300.0, help="Maximum baseline (m)"
+        "--rmax", type=float, default=750.0, help="Maximum baseline (m)"
     )
     parser.add_argument("--jobid", type=int, default=0, help="JOBID from slurm")
     parser.add_argument(
@@ -723,6 +713,9 @@ if __name__ == "__main__":
         "--write_fits", type=str, default="True", help="Write FITS files??"
     )
 
-    main(parser.parse_args())
+    process(parser.parse_args())
 
     exit()
+
+if __name__ == "__main__":
+    main()

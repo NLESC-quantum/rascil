@@ -106,7 +106,7 @@ class TestImageGraph(unittest.TestCase):
         """
         model = create_test_image()
         def imagerooter(im):
-            im["pixels"].data = numpy.sqrt(numpy.abs(im["pixels"].data))
+            im["pixels"].values = numpy.sqrt(numpy.abs(im["pixels"]).values)
             return im
         root_graph_4 = image_rsexecute_map_workflow(model, imagerooter, facets=4)
         root_image_4 = rsexecute.compute(root_graph_4, sync=True)

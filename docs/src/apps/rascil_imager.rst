@@ -21,6 +21,7 @@ Notable features:
   - Image size can be a composite of 2, 3, 5
   - Distribute processing across processors using Dask
   - Multi Frequency Synthesis Multiscale CLEAN available, also with distribution of CLEAN over facets
+  - Distribution of restoration over facets
   - Wide field imaging using the fast and accurate nifty gridder
   - Modelling of bright sources by fitting with sub-pixel locations
   - Selfcalibration available for atmosphere (T), complex gains (G), and bandpass (B)
@@ -71,7 +72,7 @@ rascil-imager supports Hogbom CLEAN, MultiScale CLEAN, and Multi-Frequency Synth
 (also known as MMCLEAN). The first two work independently on different frequency channels, while
 MMClean works jointly cross all channels using a Taylor Series expansion in frequency for the emission.
 
-The clean methods support two processing speed enhancements:
+The clean methods support a number of processing speed enhancements:
 
      - The multi-frequency-synthesis CLEAN works by fitting a Taylor series in frequency.
        The :code:`--ingest_chan_per_blockvis` argument controls the aggregation of channels
@@ -84,6 +85,8 @@ The clean methods support two processing speed enhancements:
      - The cleaning may be partitioned into overlapping facets, each of which is cleaned independently,
        and then merged with neighbours using a taper function. This works well for fields of compact sources
        but is likely to not perform well for extended emission.
+     - The restoration may be distributed via subimages. This requires that the subimages have significant
+       overlap such that the clean beam can fit within the overlap area.
 
 Bright compact sources can optionally be represented by discrete components instead of pixels.
 

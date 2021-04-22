@@ -225,7 +225,6 @@ class TestPipelineGraphs(unittest.TestCase):
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
-            restore_facets=4,
             do_wstacking=True,
         )
 
@@ -249,8 +248,8 @@ class TestPipelineGraphs(unittest.TestCase):
             )
 
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data["max"] - 100.01715136926585) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06593874966691296) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.01769418488337) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.06794255810089778) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, dopol=True)
@@ -271,7 +270,6 @@ class TestPipelineGraphs(unittest.TestCase):
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
-            restore_facets=1,
             do_wstacking=True,
         )
 
@@ -296,8 +294,8 @@ class TestPipelineGraphs(unittest.TestCase):
             )
 
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data["max"] - 100.01715136926585) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06593874966691296) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.0177363954871) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.0679466521658828) < 1.0e-7, str(qa)
 
     def test_ical_pipeline(self):
         self.actualSetUp(add_errors=True)
@@ -351,8 +349,8 @@ class TestPipelineGraphs(unittest.TestCase):
 
         qa = qa_image(restored[centre])
 
-        assert numpy.abs(qa.data["max"] - 100.01805126741128) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06555462924333057) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.01936804049437) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.06417035111227429) < 1.0e-7, str(qa)
 
     def test_ical_pipeline_pol(self):
         self.actualSetUp(add_errors=True, dopol=True)
@@ -407,8 +405,8 @@ class TestPipelineGraphs(unittest.TestCase):
             )
 
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data["max"] - 100.01770218929776) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06575395680077903) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.0192194091350) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.06556874848808145) < 1.0e-7, str(qa)
 
     def test_ical_pipeline_global(self):
         self.actualSetUp(add_errors=True)
@@ -465,8 +463,8 @@ class TestPipelineGraphs(unittest.TestCase):
 
         qa = qa_image(restored[centre])
 
-        assert numpy.abs(qa.data["max"] - 99.22397031368601) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.6084312375376673) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 99.22804709806229) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.6047443537135336) < 1.0e-7, str(qa)
 
     def test_ical_skymodel_pipeline_empty(self):
         self.actualSetUp(add_errors=True)
@@ -531,8 +529,8 @@ class TestPipelineGraphs(unittest.TestCase):
 
         qa = qa_image(restored[centre], context="test_ical_skymodel_pipeline_empty")
 
-        assert numpy.abs(qa.data["max"] - 100.01745401474113) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06606538923637026) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.01780379892237) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.06386353149766087) < 1e-7, str(qa)
 
     def test_ical_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp(add_errors=True)
@@ -598,8 +596,8 @@ class TestPipelineGraphs(unittest.TestCase):
 
         qa = qa_image(restored[centre], context="test_ical_skymodel_pipeline_empty")
 
-        assert numpy.abs(qa.data["max"] - 100.01745401474113) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06606538923637026) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.01780379892237) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.06386353149766001) < 1e-7, str(qa)
 
     def test_ical_skymodel_pipeline_exact(self):
 
@@ -667,8 +665,8 @@ class TestPipelineGraphs(unittest.TestCase):
 
         qa = qa_image(restored[centre], context="test_ical_skymodel_pipeline_exact")
 
-        assert numpy.abs(qa.data["max"] - 100.00111905442368) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.001975305147187392) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.00115397617773) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.0019000084811220301) < 1e-7, str(qa)
 
     def test_ical_skymodel_pipeline_partial(self):
         self.actualSetUp(add_errors=True)
@@ -747,8 +745,8 @@ class TestPipelineGraphs(unittest.TestCase):
         qa = qa_image(restored[centre], context="test_ical_skymodel_pipeline_partial")
         print(qa)
 
-        assert numpy.abs(qa.data["max"] - 100.00794620648615) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.033224070141875395) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.00885828854155) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.032091745655416504) < 1e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):
         self.actualSetUp()
@@ -795,8 +793,8 @@ class TestPipelineGraphs(unittest.TestCase):
             )
 
         qa = qa_image(restored[centre], context="restored")
-        assert numpy.abs(qa.data["max"] - 100.01715136926585) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.06593874966691296) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.01802926149023) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.0646695104898768) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp()

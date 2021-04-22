@@ -194,11 +194,8 @@ def residual_list_rsexecute_workflow(
     return rsexecute.optimize(result)
 
 
-def restore_list_rsexecute_workflow(
-    model_imagelist,
-    psf_imagelist,
-    residual_imagelist=None,
-    **kwargs
+def restore_list_singlefacet_rsexecute_workflow(
+    model_imagelist, psf_imagelist, residual_imagelist=None, **kwargs
 ):
     """Create a graph to calculate the restored images
 
@@ -216,9 +213,12 @@ def restore_list_rsexecute_workflow(
     if residual_imagelist is not None:
         assert len(model_imagelist) == len(residual_imagelist)
 
-    psf_list = sum_invert_results_rsexecute(psf_imagelist)
-    psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
-    clean_beam = rsexecute.execute(fit_psf)(psf)
+    clean_beam = get_parameter(kwargs, "clean_beam", None)
+    if clean_beam is None:
+        psf_list = sum_invert_results_rsexecute(psf_imagelist)
+        psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
+        clean_beam = rsexecute.execute(fit_psf)(psf)
+        kwargs["clean_beam"] = clean_beam
 
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
@@ -227,7 +227,6 @@ def restore_list_rsexecute_workflow(
         restored_list = [
             rsexecute.execute(restore_cube, nout=1)(
                 model_imagelist[i],
-                clean_beam=clean_beam,
                 residual=residual_list[i],
                 **kwargs
             )
@@ -244,11 +243,115 @@ def restore_list_rsexecute_workflow(
     return rsexecute.optimize(restored_list)
 
 
-def restore_centre_rsexecute_workflow(
+def restore_list_rsexecute_workflow(
     model_imagelist,
     psf_imagelist,
     residual_imagelist=None,
+    restore_facets=1,
+    restore_overlap=8,
+    restore_taper="tukey",
     **kwargs
+):
+    """Create a graph to calculate the restored image
+
+    :param model_imagelist: Model list (or graph)
+    :param psf_imagelist: PSF list (or graph)
+    :param residual_imagelist: Residual list (or graph)
+    :param kwargs: Parameters for functions in components
+    :param restore_facets: Number of facets used per axis (used to distribute)
+    :param restore_overlap: Overlap in pixels (0 is best)
+    :param restore_taper: Type of taper between facets
+    :return: list of restored images (or graph)
+    """
+    assert len(model_imagelist) == len(psf_imagelist)
+    if residual_imagelist is not None:
+        assert len(model_imagelist) == len(residual_imagelist)
+        
+    if restore_overlap < 0:
+        raise ValueError("Number of pixels for restore overlap must be >= 0")
+
+    if restore_facets % 2 == 0 or restore_facets == 1:
+        actual_number_facets = restore_facets
+    else:
+        actual_number_facets = max(1, (restore_facets - 1))
+
+    clean_beam = get_parameter(kwargs, "clean_beam", None)
+    if clean_beam is None:
+        clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
+        psf = rsexecute.execute(normalize_sumwt)(clean_beam_list[0], clean_beam_list[1])
+        clean_beam = rsexecute.execute(fit_psf)(psf)
+        kwargs["clean_beam"] = clean_beam
+
+        # Scatter each list element into a list. We will then run restore_cube on each
+    facet_model_list = [
+        rsexecute.execute(
+            image_scatter_facets, nout=actual_number_facets * actual_number_facets
+        )(model, facets=restore_facets, overlap=restore_overlap, taper=restore_taper)
+        for model in model_imagelist
+    ]
+
+    if residual_imagelist is not None:
+        residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
+            residual_imagelist
+        )
+        facet_residual_list = [
+            rsexecute.execute(
+                image_scatter_facets, nout=actual_number_facets * actual_number_facets
+            )(
+                residual,
+                facets=restore_facets,
+                overlap=restore_overlap,
+                taper=restore_taper,
+            )
+            for residual in residual_list
+        ]
+        facet_restored_list = [
+            [
+                rsexecute.execute(
+                    restore_cube, nout=actual_number_facets * actual_number_facets
+                )(
+                    model=facet_model_list[i][im],
+                    residual=facet_residual_list[i][im],
+                    **kwargs
+                )
+                for im, _ in enumerate(facet_model_list[i])
+            ]
+            for i, _ in enumerate(model_imagelist)
+        ]
+    else:
+        facet_restored_list = [
+            [
+                rsexecute.execute(
+                    restore_cube, nout=actual_number_facets * actual_number_facets
+                )(model=facet_model_list[i][im], **kwargs)
+                for im, _ in enumerate(facet_model_list[i])
+            ]
+            for i, _ in enumerate(model_imagelist)
+        ]
+
+    # Now we run restore_cube on each and gather the results across all facets
+    restored_imagelist = [
+        rsexecute.execute(image_gather_facets)(
+            facet_restored_list[i],
+            model_imagelist[i],
+            facets=restore_facets,
+            overlap=restore_overlap,
+            taper=restore_taper,
+        )
+        for i, _ in enumerate(model_imagelist)
+    ]
+    def set_clean_beam(r):
+        r.attrs["clean_beam"] = clean_beam
+        return r
+    restored_imagelist = [
+        rsexecute.execute(set_clean_beam, nout=1)(r)
+        for r in restored_imagelist
+    ]
+    return rsexecute.optimize(restored_imagelist)
+
+
+def restore_centre_rsexecute_workflow(
+    model_imagelist, psf_imagelist, residual_imagelist=None, **kwargs
 ):
     """Create a graph to calculate the restored image
 
@@ -296,7 +399,7 @@ def restore_centre_rsexecute_workflow(
 def deconvolve_list_singlefacet_rsexecute_workflow(
     dirty_list, psf_list, model_imagelist, prefix="", mask=None, **kwargs
 ):
-    """Create a graph for deconvolution, adding to the model
+    """Create a graph for deconvolution of a single image, adding to the model
 
     :param dirty_list: list of dirty images (or graph)
     :param psf_list: list of psfs (or graph)
@@ -314,7 +417,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
                                                         dopsf=True, normalize=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
-        dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist,
+        dec_imagelist = deconvolve_list_singlefacet_rsexecute_workflow(dirty_imagelist, psf_imagelist,
                 model_imagelist, niter=1000, fractional_threshold=0.01,
                 scales=[0, 3, 10], algorithm='mmclean', nmoment=3, nchan=freqwin,
                 threshold=0.1, gain=0.7)
@@ -414,10 +517,7 @@ def deconvolve_list_rsexecute_workflow(
 
     deconvolve_overlap = get_parameter(kwargs, "deconvolve_overlap", 0)
     deconvolve_taper = get_parameter(kwargs, "deconvolve_taper", None)
-    if deconvolve_facets > 1 and deconvolve_overlap > 0:
-        deconvolve_number_facets = (deconvolve_facets - 2) ** 2
-    else:
-        deconvolve_number_facets = deconvolve_facets ** 2
+    deconvolve_number_facets = deconvolve_facets ** 2
 
     scattered_channels_facets_model_list = [
         rsexecute.execute(image_scatter_facets, nout=deconvolve_number_facets)(

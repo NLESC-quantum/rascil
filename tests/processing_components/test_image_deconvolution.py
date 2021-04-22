@@ -148,7 +148,7 @@ class TestImageDeconvolution(unittest.TestCase):
             export_image_to_fits(
                 self.cmodel, "%s/test_restore_skycomponent.fits" % (self.dir)
             )
-        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.9935351105096656) < 1e-7, numpy.max(
+        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.993507929741906) < 1e-7, numpy.max(
             self.cmodel["pixels"].data
         )
 
@@ -157,8 +157,8 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.dir))
 
-        assert numpy.abs(clean_beam["bmaj"] - 0.29131764251386705) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 0.278665154834187) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmaj"] - 0.291887735747749) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 0.2792104878182067) < 1.0e-7, clean_beam
         assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):

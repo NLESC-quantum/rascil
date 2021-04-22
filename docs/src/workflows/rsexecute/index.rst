@@ -35,23 +35,8 @@ Dask.delayed object that can be computed subsequently. The higher level function
 continuum_imaging_list_rsexecute_workflow are built from lower level functions such as
 invert_list_rsexecute_workflow.
 
-In this example, changing use_dask to False will cause the definitions to be executed immediately. Alternatively, the
-serial version could be used::
-
-    from rascil.workflows import continuum_imaging_list_serial_workflow
-    deconvolved_list, residual_list, restored_list =
-    continuum_imaging_list = continuum_imaging_list_serial_workflow(vis_list,
-        model_imagelist=model_list,
-        context='wstack', vis_slices=51,
-        scales=[0, 3, 10], algorithm='mmclean',
-        nmoment=3, niter=1000,
-        fractional_threshold=0.1, threshold=0.1,
-        nmajor=5, gain=0.25,
-        psf_support=64)
-
-
-Most workflows are available in both serial and rsexecute versions, recognising that the optimisations for the
-two cases are different.
+In this example, changing use_dask to False will cause the definitions to be executed immediately.
+Only a few workflows are available in both serial and rsexecute versions.
 
 The rsexecute framework relies upon a singleton object called rsexecute. This is documented below
 as the class _rsexecutebase.

@@ -227,6 +227,24 @@ def apps_parser_cleaning(parser):
         help="Type of interpolation between facets in deconvolution (none or linear or tukey)",
     )
     parser.add_argument(
+        "--clean_restore_facets",
+        type=int,
+        default=1,
+        help="Number of overlapping facets in restore step (along each axis)",
+    )
+    parser.add_argument(
+        "--clean_restore_overlap",
+        type=int,
+        default=32,
+        help="Overlap of facets in restore step (pixels)",
+    )
+    parser.add_argument(
+        "--clean_restore_taper",
+        type=str,
+        default="tukey",
+        help="Type of interpolation between facets in restore step (none or linear or tukey)",
+    )
+    parser.add_argument(
         "--clean_restored_output",
         type=str,
         default="integrated",

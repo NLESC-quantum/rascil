@@ -72,9 +72,13 @@ class MockBDSFImage:
         self.beam = [0.005, 0.005]
 
     def beam2pix(self, beam):
+        # See bdsf.readimage.Op_readimage.init_beam.beam2pix
+        # this mock method just returns its input; it's used to test
+        # rascil.apps.ci_checker.ci_diagnostics.source_region_mask
         return beam
 
     def create_gaussian_array(self):
+        # not a native method of a PyBDSF image, it is only a helper function
         gaus_arr = np.random.normal(self.gauss_mean, self.gauss_std, self.shape[2:])
         return gaus_arr
 
@@ -161,7 +165,7 @@ def test_get_histogram_data():
     BASE_PATH + "._get_histogram_data",
     Mock(
         return_value=(np.ones((10, 10)), [1.0, 0.5, 0.2])
-    ),  # [1.0, 0.5, 0.2] --> amplitude, mean, std
+    ),
 )
 def test_histogram(mock_plot):
     """

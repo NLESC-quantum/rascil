@@ -327,7 +327,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     nmoment = get_parameter(kwargs, "nmoment", 1)
 
     # Now do the deconvolution for a single facet.
-    def deconvolve(dirty, psf, model, gthreshold, msk):
+    def imaging_deconvolve(dirty, psf, model, gthreshold, msk):
 
         log.info("deconvolve_list_rsexecute_workflow: Starting clean")
 
@@ -365,7 +365,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     threshold = get_parameter(kwargs, "threshold", 0.0)
     nmoment = get_parameter(kwargs, "nmoment", 1)
 
-    clean_cube = rsexecute.execute(deconvolve, nout=nchan)(
+    clean_cube = rsexecute.execute(imaging_deconvolve, nout=nchan)(
         dirty_cube, psf_cube, model_cube, threshold, msk=mask
     )
     clean_cube = rsexecute.execute(image_scatter_channels, nout=nchan)(clean_cube)
@@ -454,7 +454,7 @@ def deconvolve_list_rsexecute_workflow(
         for facet in range(deconvolve_number_facets)
     ]
 
-    def extract_psf(psf, facets):
+    def imaging_extract_psf(psf, facets):
         assert not numpy.isnan(numpy.sum(psf["pixels"].data)), "NaNs present in PSF"
         cx = psf["pixels"].shape[3] // 2
         cy = psf["pixels"].shape[2] // 2
@@ -476,7 +476,7 @@ def deconvolve_list_rsexecute_workflow(
         return spsf
 
     psf_list_trimmed = [
-        rsexecute.execute(extract_psf)(p[0], deconvolve_facets) for p in psf_list
+        rsexecute.execute(imaging_extract_psf)(p[0], deconvolve_facets) for p in psf_list
     ]
 
     psf_centre = image_gather_channels_rsexecute(
@@ -556,13 +556,13 @@ def deconvolve_list_channel_rsexecute_workflow(
     :return: list of updated models (or graphs)
     """
 
-    def deconvolve_subimage(dirty, psf):
+    def imaging_deconvolve_channel(dirty, psf):
         # assert isinstance(dirty, Image)
         # assert isinstance(psf, Image)
         comp, _ = deconvolve_cube(dirty, psf, **kwargs)
         return comp
 
-    def add_model(sum_model, model):
+    def imaging_add_comp_model(sum_model, model):
         # assert isinstance(output, Image)
         # assert isinstance(model, Image)
         sum_model.data += model.data
@@ -575,11 +575,11 @@ def deconvolve_list_channel_rsexecute_workflow(
         dirty_list[0], subimages=subimages
     )
     results = [
-        rsexecute.execute(deconvolve_subimage)(dirty_list, psf_list[0])
+        rsexecute.execute(imaging_deconvolve_channel)(dirty_list, psf_list[0])
         for dirty_list in dirty_lists
     ]
     result = image_gather_channels_rsexecute(results, output)
-    result = rsexecute.execute(add_model, nout=1, pure=True)(result, model_imagelist)
+    result = rsexecute.execute(imaging_add_comp_model, nout=1, pure=True)(result, model_imagelist)
     return rsexecute.optimize(result)
 
 
@@ -603,7 +603,7 @@ def weight_list_rsexecute_workflow(
 
     """
 
-    def grid_wt(vis, model):
+    def imaging_grid_weights(vis, model):
         if vis is not None:
             if model is not None:
                 griddata = create_griddata_from_image(
@@ -618,14 +618,14 @@ def weight_list_rsexecute_workflow(
             return None
 
     weight_list = [
-        rsexecute.execute(grid_wt, pure=True, nout=1)(vis_list[i], model_imagelist[i])
+        rsexecute.execute(imaging_grid_weights, pure=True, nout=1)(vis_list[i], model_imagelist[i])
         for i in range(len(vis_list))
     ]
 
     merged_weight_grid = rsexecute.execute(griddata_merge_weights, nout=1)(weight_list)
     merged_weight_grid = rsexecute.persist(merged_weight_grid, broadcast=True)
 
-    def re_weight(vis, model, gd, g):
+    def imaging_re_weight(vis, model, gd, g):
         if gd is not None:
             if vis is not None:
                 # Ensure that the griddata has the right axes so that the convolution
@@ -644,7 +644,7 @@ def weight_list_rsexecute_workflow(
             return vis
 
     result = [
-        rsexecute.execute(re_weight, nout=1)(
+        rsexecute.execute(imaging_re_weight, nout=1)(
             v, model_imagelist[i], merged_weight_grid, gcfcf
         )
         for i, v in enumerate(vis_list)
@@ -674,14 +674,14 @@ def zero_list_rsexecute_workflow(vis_list):
     :return: List of vis (or graph)
     """
 
-    def zero(vis):
+    def imaging_zero_vis(vis):
         if vis is not None:
             zerovis = copy_visibility(vis, zero=True)
             return zerovis
         else:
             return None
 
-    result = [rsexecute.execute(zero, pure=True, nout=1)(v) for v in vis_list]
+    result = [rsexecute.execute(imaging_zero_vis, pure=True, nout=1)(v) for v in vis_list]
     return rsexecute.optimize(result)
 
 
@@ -693,7 +693,7 @@ def subtract_list_rsexecute_workflow(vis_list, model_vislist):
     :return: List of vis or graph
     """
 
-    def subtract_vis(vis, model_vis):
+    def imaging_subtract_vis(vis, model_vis):
         if vis is not None and model_vis is not None:
             assert vis.vis.shape == model_vis.vis.shape
             subvis = copy_visibility(vis)
@@ -703,7 +703,7 @@ def subtract_list_rsexecute_workflow(vis_list, model_vislist):
             return None
 
     result = [
-        rsexecute.execute(subtract_vis, pure=True, nout=1)(
+        rsexecute.execute(imaging_subtract_vis, pure=True, nout=1)(
             vis=vis_list[i], model_vis=model_vislist[i]
         )
         for i in range(len(vis_list))

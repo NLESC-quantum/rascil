@@ -8,6 +8,8 @@ import unittest
 
 import numpy
 
+from rascil.data_models.parameters import rascil_path
+
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.image.gather_scatter import (
     image_gather_channels,
@@ -26,8 +28,6 @@ class TestImageGatherScattersGraph(unittest.TestCase):
     def setUp(self):
 
         rsexecute.set_client(use_dask=True)
-
-        from rascil.data_models.parameters import rascil_path
 
         self.dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)

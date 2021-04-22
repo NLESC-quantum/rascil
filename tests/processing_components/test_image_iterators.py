@@ -22,6 +22,7 @@ from rascil.processing_components.image.operations import (
 from rascil.processing_components.simulation import create_test_image
 
 log = logging.getLogger("rascil-logger")
+log.setLevel(logging.WARNING)
 
 log.setLevel(logging.WARNING)
 
@@ -38,7 +39,7 @@ class TestImageIterators(unittest.TestCase):
         """
 
         testdir = rascil_path("test_results")
-        for npixel in [512]:
+        for npixel in [256, 512, 1024]:
             m31original = self.get_test_image(npixel=npixel)
             assert numpy.max(numpy.abs(m31original["pixels"].data)), "Original is empty"
     

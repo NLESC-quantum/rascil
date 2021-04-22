@@ -50,6 +50,7 @@ from rascil.apps.apps_parser import (
     apps_parser_ingest,
     apps_parser_app,
     apps_parser_calibration,
+    apps_store_dict,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -429,6 +430,7 @@ def main():
     # Get command line inputs
     parser = cli_parser()
     args = parser.parse_args()
+    apps_store_dict(args)
     image = imager(args)
 
 

@@ -9,6 +9,7 @@ import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from rascil.apps import apps_store_dict
 from rascil.apps.rascil_imager import cli_parser, imager
 from rascil.data_models import SkyModel
 from rascil.data_models.parameters import rascil_path
@@ -303,6 +304,8 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         f"{mode}",
         "--use_dask",
         f"{use_dask}",
+        "--performance_file",
+        f"performance_{tag}.json",
         "--ingest_msname",
         rascil_path(f"test_results/test_rascil_imager_{tag}.ms"),
         "--ingest_vis_nchan",
@@ -390,6 +393,8 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         args = parser.parse_args(invert_args + clean_args + calibration_args)
     else:
         return ValueError(f"rascil-imager: Unknown mode {mode}")
+    
+    apps_store_dict(args.performance_file, {"cli_args":vars(args)})
 
     if mode == "invert":
         dirtyname = imager(args)

@@ -19,7 +19,7 @@ The parser can then be called to extract the relevant command line argument::
 
 import sys
 import argparse
-
+import json
 
 def apps_parser_ingest(parser):
     """Add ingest-specific command line arguments to an existing CLI parser
@@ -395,4 +395,26 @@ def apps_parser_app(parser):
         default=None,
         help="Name of logfile (default is to construct one from msname)",
     )
+    parser.add_argument(
+        "--performance_file",
+        type=str,
+        default=None,
+        help="Name of file to contain performance information",
+    )
+
     return parser
+
+
+def apps_store_dict(performance_file, s, indent=2, mode="w"):
+    """ Store dictionary in a file
+
+    :param args: Namespace oject from argparse
+    :param indent: Number of columns indent
+    :return:
+    """
+    if performance_file is not None:
+        with open(performance_file, mode) as file:
+            s=json.dumps(s, indent=indent)
+            file.write(s)
+
+

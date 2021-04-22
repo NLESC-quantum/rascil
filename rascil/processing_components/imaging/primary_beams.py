@@ -247,7 +247,7 @@ def create_pb(model, telescope="MID", pointingcentre=None, use_local=True):
     """
     beam = create_vp(model, telescope, pointingcentre, use_local=use_local)
     beam["pixels"].data = numpy.real(
-        beam["pixels"].data * numpy.conjugate(beam["pixels"].data)
+        beam["pixels"].values * numpy.conjugate(beam["pixels"].values)
     )
 
     set_pb_header(beam, use_local=use_local)

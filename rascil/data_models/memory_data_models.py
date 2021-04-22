@@ -543,6 +543,7 @@ class Image(xarray.Dataset):
             "_projection": (wcs.wcs.ctype[0], wcs.wcs.ctype[1]),
             "spectral_type": wcs.wcs.ctype[3],
             "clean_beam": clean_beam,
+            "refpixel": (wcs.wcs.crpix)
         }
 
         super().__init__(data_vars, coords=coords, attrs=attrs)

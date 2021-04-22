@@ -421,18 +421,3 @@ def apps_parser_app(parser):
     )
 
     return parser
-
-
-def apps_store_dict(performance_file, s, indent=2, mode="w"):
-    """ Store dictionary in a file
-
-    :param args: Namespace oject from argparse
-    :param indent: Number of columns indent
-    :return:
-    """
-    if performance_file is not None:
-        with open(performance_file, mode) as file:
-            s=json.dumps(s, indent=indent)
-            file.write(s)
-
-

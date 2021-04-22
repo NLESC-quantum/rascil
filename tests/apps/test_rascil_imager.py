@@ -9,7 +9,6 @@ import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from rascil.apps import apps_store_dict
 from rascil.apps.rascil_imager import cli_parser, imager
 from rascil.data_models import SkyModel
 from rascil.data_models.parameters import rascil_path
@@ -20,6 +19,7 @@ from rascil.processing_components import (
     concatenate_blockvisibility_frequency,
     find_skycomponents
 )
+from rascil.processing_components.util import performance_store_dict
 from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import (
     create_gaintable_from_blockvisibility,
@@ -394,7 +394,7 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
     else:
         return ValueError(f"rascil-imager: Unknown mode {mode}")
     
-    apps_store_dict(args.performance_file, {"cli_args":vars(args)})
+    performance_store_dict(args.performance_file, "cli_args", vars(args), mode="w")
 
     if mode == "invert":
         dirtyname = imager(args)

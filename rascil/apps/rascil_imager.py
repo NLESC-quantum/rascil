@@ -28,6 +28,8 @@ from rascil.processing_components import (
     create_calibration_controls,
 )
 
+from rascil.processing_components.util.performance import performance_store_dict
+
 from rascil.workflows import (
     weight_list_rsexecute_workflow,
     continuum_imaging_skymodel_list_rsexecute_workflow,
@@ -50,7 +52,6 @@ from rascil.apps.apps_parser import (
     apps_parser_ingest,
     apps_parser_app,
     apps_parser_calibration,
-    apps_store_dict,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -218,7 +219,9 @@ def imager(args):
         raise ValueError("Unknown mode {}".format(args.mode))
     
     # Save the processing statistics from Dask
-    rsexecute.save_statistics(logfile.replace(".log", ""))
+    dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
+    performance_store_dict(args.performance_file, "dask", dask_info, mode="a")
+
     rsexecute.close()
     
     log.info("Resulting image(s) {}".format(results))
@@ -436,8 +439,8 @@ def main():
     # Get command line inputs
     parser = cli_parser()
     args = parser.parse_args()
-    apps_store_dict(args)
-    image = imager(args)
+    performance_store_dict(args.performance_file, "cli_args", vars(args), mode="w")
+    image_name = imager(args)
 
 
 if __name__ == "__main__":

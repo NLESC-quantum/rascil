@@ -74,11 +74,20 @@ log = logging.getLogger("rascil-logger")
         (
             0.0001,
             512,
-            5,
+            64,
             0.001,
             "Nearest",
             0.00003,
-            "nearest_npixel512_nchan5_noise0.00003_flux0.001",
+            "nearest_npixel512_nchan64_noise0.00003_flux0.001",
+        ),
+        (
+            0.0001,
+            1024,
+            8,
+            0.001,
+            "Nearest",
+            0.0003,
+            "nearest_npixel1024_nchan8_noise0.0003_flux0.001",
         ),
         (
             0.0001,
@@ -123,7 +132,7 @@ def test_continuum_imaging_checker(
     if nchan == 1:
         image_frequency = numpy.array([1.0e9])
     else:
-        image_frequency = numpy.linspace(1e9, 1.2e9, nchan)
+        image_frequency = numpy.linspace(1e9, 1.5e9, nchan)
 
     central_freq = image_frequency[int(nchan // 2)]
 

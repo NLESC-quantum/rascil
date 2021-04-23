@@ -6,6 +6,7 @@ checker.
 import logging
 import csv
 
+from astropy.wcs.wcsapi import SlicedLowLevelWCS
 from scipy import optimize
 import numpy as np
 import astropy.constants as consts
@@ -28,7 +29,7 @@ def qa_image_bdsf(im_data, description="image"):
     Set of statistics of an image: max, min, maxabs, rms, sum, medianabs,
     medianabsdevmedian, median and mean.
 
-    :param im_data: image data
+    :param im_data: image data, either numpy Array or numpy MaskedArray
     :param description: string describing array
     :return image_stats: statistics of the image
     """
@@ -83,7 +84,37 @@ def gaussian(x, amplitude, mean, stddev):
 
     :return Gaussian function
     """
-    return amplitude * np.exp(-(((x - mean) / 4.0 / stddev) ** 2))
+
+    gauss = amplitude * np.exp(-1.0 / 2.0 * ((x - mean) / stddev) ** 2)
+    return gauss
+
+
+def _get_histogram_data(bdsf_image, ax):
+    """
+    Obtain data needed for histogram plot of a PyBDSF image
+
+    :param bdsf_image: PyBDSF image object
+    :param ax: matplotlib ax object
+
+    :return
+        mid_points: mid points of histogram bins
+        optimized_fit_params: fitted gaussian parameters: [amplitude, mean, std]
+    """
+    im_data = bdsf_image.resid_gaus_arr
+
+    counts, bins, _ = ax.hist(
+        im_data.ravel(), bins=1000, density=False, zorder=5, histtype="step"
+    )
+    # "bins" are the bin edge points, so need the mid points.
+    mid_points = bins[:-1] + 0.5 * abs(bins[1:] - bins[:-1])
+
+    # initial guess of the parameters of the fitted gaussian curve
+    initial_params = [counts.max(), bdsf_image.raw_mean, bdsf_image.raw_rms]
+    optimized_fit_params, _ = optimize.curve_fit(
+        gaussian, mid_points, counts, p0=initial_params
+    )
+
+    return mid_points, optimized_fit_params
 
 
 def histogram(bdsf_image, input_image, description="image"):
@@ -91,36 +122,22 @@ def histogram(bdsf_image, input_image, description="image"):
     Plot a histogram of the pixel counts produced with
     mean, RMS and Gaussian fit.
 
-    :param bdsf_image: pybdsf image object
-    :param input_image_residual: file name of input image
+    :param bdsf_image: PyBDSF image object
+    :param input_image: file name of input image
     :param description: type of input image
-
-    :return None
     """
-
-    im_data = bdsf_image.resid_gaus_arr
-
     fig, ax = plt.subplots()
 
-    counts, bins, _ = ax.hist(
-        im_data.ravel(), bins=1000, density=False, zorder=5, histtype="step"
+    mid_points, gaussian_fit_params = _get_histogram_data(bdsf_image, ax)
+    mean = gaussian_fit_params[1]
+    stddev = abs(gaussian_fit_params[2])
+
+    ax.plot(
+        mid_points, gaussian(mid_points, *gaussian_fit_params), label="fit", zorder=10
     )
+    ax.axvline(mean, color="C2", linestyle="--", label=f"mean: {mean:.3e}", zorder=15)
 
-    # "bins" are the bin edge points, so need the mid points.
-    mid_points = bins[:-1] + 0.5 * abs(bins[1:] - bins[:-1])
-
-    p0 = [counts.max(), bdsf_image.raw_mean, bdsf_image.raw_rms]
-
-    popt, pcov = optimize.curve_fit(gaussian, mid_points, counts, p0=p0)
-    mean = popt[1]
-    stddev = abs(popt[2])
-
-    ax.plot(mid_points, gaussian(mid_points, *popt), label="fit", zorder=10)
-    ax.axvline(
-        popt[1], color="C2", linestyle="--", label=f"mean: {mean:.3e}", zorder=15
-    )
-
-    # Add shaded region of withth 2*RMS centered on the mean.
+    # Add shaded region of width 2*RMS centered on the mean.
     rms_region = [mean - stddev, mean + stddev]
     ax.axvspan(
         rms_region[0],
@@ -146,15 +163,13 @@ def histogram(bdsf_image, input_image, description="image"):
     plt.savefig(save_plot + ".png")
     plt.close()
 
-    return
-
 
 def plot_with_running_mean(img, input_image, stats, projection, description="image"):
     """
     Image plot and running mean.
 
-    :param img: pybdsf image object
-    :param input_image_residual: file name of input image
+    :param img: PyBDSF image object
+    :param input_image: file name of input image
     :param stats: statistics of image
     :param projection: projection from World Coordinate System (WCS) object
     :param description: string to put in png file name and plot title
@@ -176,7 +191,7 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
     main_ax = fig.add_subplot(grid[:-1, 1:], projection=projection)
 
     y_plot = fig.add_subplot(grid[:-1, 0], sharey=main_ax, projection=projection)
-    y_plot.set_ylabel("DEC---SIN")
+    y_plot.set_ylabel("DEC--SIN")
 
     y_plot2 = y_plot.twiny()
     y_plot2.plot(np.mean(image, axis=0), y_index)
@@ -208,12 +223,12 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
     )
     plt.colorbar(imap, cax=ax_cbar, label=r"Flux $\left( \rm{Jy/\rm{beam}} \right) $")
 
-    i = 0
-    for key, val in stats.items():
-        if i == 0:
-            string = f"{key}: {val}"
-        else:
+    for i, (key, val) in enumerate(stats.items()):
+        try:
             string = f"{key}: {val:.3e}"
+        except ValueError:
+            # if val is not a numeric value, the formatter will throw a value error
+            string = f"{key}: {val}"
 
         if val is not np.ma.masked:
             plt.text(
@@ -223,7 +238,6 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
                 fontsize=10,
                 transform=plt.gcf().transFigure,
             )
-            i += 1
 
     plt.subplots_adjust(wspace=0.0001, hspace=0.0001, right=0.81)
 
@@ -233,28 +247,25 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
     plt.savefig(save_plot + ".png", pad_inches=-1)
     plt.close()
 
-    return
-
 
 def source_region_mask(img):
     """
     Mask pixels from an image which are within 5*beam_width of sources in the
     source catalogue.
 
-    :param img: pybdsf image object to be masked
+    :param img: PyBDSF image object to be masked
 
-    :return source_mask, background_mask: copys of masked input array.
+    :return source_mask, background_mask: copies of masked input array.
     """
 
     log.info("Masking source and background regions.")
 
-    # Here the major axis of the beam is used as the beam width and the. pybdsf
-    # gives the beam "IN SIGMA UNITS in pixels" so we need to convert to
-    # straight pixels by multiplying by the FWHM. See init_beam() function in
-    # pybdsf source code.
-    beam_width = img.pixel_beam()[0] * 2.35482
+    # Here the major axis of the beam is used as the beam width.
+    # See bdsf.readimage.Op_readimage.init_beam
+    beam_width = img.beam2pix(img.beam)[0]  # major axis of beam in pixels
     beam_radius = beam_width / 2.0
 
+    # img.image_arr.shape --> (nstokes, nchannels, img_size_x, img_size_y)
     image_to_be_masked = img.image_arr[0, 0, :, :]
 
     image_shape = [image_to_be_masked.shape[-2], image_to_be_masked.shape[-1]]
@@ -269,11 +280,15 @@ def source_region_mask(img):
     source_regions = np.ones(shape=image_shape, dtype=int)
     background_regions = np.zeros(shape=image_shape, dtype=int)
 
+    cell_size = img.wcs_obj.wcs.cdelt[1]
     for gaussian in img.gaussians:
 
-        source_radius = np.sqrt(
-            (grid[0] - gaussian.centre_pix[0]) ** 2
-            + (grid[1] - gaussian.centre_pix[1]) ** 2
+        source_radius = (
+            np.sqrt(
+                (grid[0] - gaussian.centre_pix[0]) ** 2
+                + (grid[1] - gaussian.centre_pix[1]) ** 2
+            )
+            * cell_size
         )
 
         source_regions[source_radius < beam_radius] = 0
@@ -289,77 +304,67 @@ def source_region_mask(img):
     return source_mask, background_mask
 
 
-def radial_profile(image, centre=None):
+def _radial_profile(image, centre=None):
     """
     Function for calculating the radial profile of input image.
 
-    :param image: RASCIL image object
+    :param image: 2D numpy array
     :param centre: centre of the image
     """
     if centre is None:
         centre = (image.shape[0] // 2, image.shape[1] // 2)
-    x, y = numpy.indices((image.shape[0:2]))
-    r = numpy.sqrt((x - centre[0]) ** 2 + (y - centre[1]) ** 2)
-    r = r.astype(numpy.int)
-    return numpy.bincount(r.ravel(), image.ravel()) / numpy.bincount(r.ravel())
+
+    x, y = np.indices((image.shape[0:2]))
+    r = np.sqrt((x - centre[0]) ** 2 + (y - centre[1]) ** 2)
+    r = r.astype(int)
+
+    return np.bincount(r.ravel(), image.ravel()) / np.bincount(r.ravel())
 
 
-def power_spectrum(input_image, signal_channel, noise_channel, resolution):
+def _plot_power_spectrum(input_image, profile, theta, img_type="residual"):
     """
-    Plot power spectrum for an image.
+    Plot the power spectrum and save it as PNG.
 
-    :param image: image object
-    :param signal_channel: channel containing both signal and noise
-    :param noise_channel: containing noise only
-    :param resolution: Resolution in radians needed for conversion to K
-
-    :return None
+    :param input_image: name of input image (e.g. FITS file name)
+    :param profile: Brightness temperature for each angular scale in Kelvin
+    :param theta: Angular scale data in degrees
+    :param img_type: type of image, normally "residual" or "restored", default is "residual"
     """
-
-    im = import_image_from_fits(input_image)
-
-    nchan, npol, ny, nx = im["pixels"].shape
-
-    if signal_channel is None:
-        signal_channel = nchan // 2
-
-    imfft = fft_image_to_griddata(im)
-
-    omega = numpy.pi * resolution ** 2 / (4 * numpy.log(2.0))
-    wavelength = consts.c / numpy.average(im.frequency)
-    kperjy = 1e-26 * wavelength ** 2 / (2 * consts.k_B * omega)
-
-    im_spectrum = imfft.copy()
-    im_spectrum["pixels"].data = kperjy.value * numpy.abs(imfft["pixels"].data)
-
-    profile = radial_profile(im_spectrum["pixels"].data[signal_channel, 0])
-
     plt.clf()
-    cellsize_uv = numpy.abs(griddata_wcs(imfft).wcs.cdelt[0])
-    lambda_max = cellsize_uv * len(profile)
-    lambda_axis = numpy.linspace(cellsize_uv, lambda_max, len(profile))
-    theta_axis = 180.0 / (numpy.pi * lambda_axis)
-    plt.plot(theta_axis, profile)
-    plt.gca().set_title("Power spectrum of image residual")
-    plt.gca().set_xlabel(r"$\theta$")
-    plt.gca().set_ylabel(r"$K^2$")
+
+    plt.plot(theta, profile)
+    plt.gca().set_title(f"Power spectrum of {img_type} image")
+    plt.gca().set_xlabel("Angular scale [degrees]")
+    plt.gca().set_ylabel("Brightness temperature [K]")
     plt.gca().set_xscale("log")
     plt.gca().set_yscale("log")
     plt.gca().set_ylim(1e-6 * numpy.max(profile), 2.0 * numpy.max(profile))
     plt.tight_layout()
 
-    save_plot = plot_name(input_image, "residual", "power_spectrum")
+    power_sp_plot_name = plot_name(input_image, img_type, "power_spectrum")
 
-    log.info('Saving power spectrum to "{}.png"'.format(save_plot))
-    plt.savefig(save_plot + ".png")
+    log.info('Saving power spectrum to "{}.png"'.format(power_sp_plot_name))
+    plt.savefig(power_sp_plot_name + ".png")
     plt.close()
 
-    log.info('Saving power spectrum profile to "{}_channel.csv"'.format(save_plot))
-    filename = save_plot + "_channel.csv"
+    return power_sp_plot_name
+
+
+def _save_power_spectrum_to_csv(profile, theta, file_name):
+    """
+    Save the power spectrum into CSV.
+
+    :param profile: Brightness temperature for each angular scale in Kelvin
+    :param theta: Angular scale data in degrees
+    :param file_name: string the csv file name should contain
+    """
+    log.info('Saving power spectrum profile to "{}_channel.csv"'.format(file_name))
+    filename = file_name + "_channel.csv"
+
     results = list()
-    for row in range(len(theta_axis)):
+    for row in range(len(theta)):
         result = dict()
-        result["inverse_theta"] = theta_axis[row]
+        result["inverse_theta"] = theta[row]
         result["profile"] = profile[row]
         results.append(result)
 
@@ -376,4 +381,116 @@ def power_spectrum(input_image, signal_channel, noise_channel, resolution):
             writer.writerow(result)
         csvfile.close()
 
-    return
+
+def power_spectrum(input_image, resolution, signal_channel=None):
+    """
+    Calculate the power spectrum of an image.
+
+    :param input_image: FITS file to read data from
+    :param resolution: Resolution in radians needed for conversion from Jy to Kelvin
+    :param signal_channel: channel containing both signal and noise, optional
+
+    :return (profile, theta_axis)
+        profile: Brightness temperature for each angular scale in Kelvin
+        theta_axis: Angular scale data in degrees
+    """
+
+    im = import_image_from_fits(input_image)
+
+    nchan, npol, ny, nx = im["pixels"].shape
+
+    if signal_channel is None:
+        signal_channel = nchan // 2
+
+    img_fft = fft_image_to_griddata(im)
+
+    # conversion factor between Jy (units of image data) and K (brightness temperature)
+    omega = numpy.pi * resolution ** 2 / (4 * numpy.log(2.0))
+    wavelength = consts.c / numpy.average(im.frequency)
+    k_per_jy = 1e-26 * wavelength ** 2 / (2 * consts.k_B * omega)
+
+    im_spectrum = img_fft.copy()
+    # convert image data from Jy to K
+    im_spectrum["pixels"].data = k_per_jy.value * numpy.abs(img_fft["pixels"].data)
+
+    # data in units of K converted from Jy --> power-type quantity
+    profile = _radial_profile(im_spectrum["pixels"].data[signal_channel, 0])
+
+    cell_size_uv = numpy.abs(griddata_wcs(img_fft).wcs.cdelt[0])
+    lambda_max = cell_size_uv * len(
+        profile
+    )  # max spacial scale that instrument is sensitive to
+    lambda_axis = numpy.linspace(cell_size_uv, lambda_max, len(profile))
+    theta_axis = 180.0 / (numpy.pi * lambda_axis)
+
+    return profile, theta_axis
+
+
+def ci_checker_diagnostics(bdsf_image, input_image, image_type):
+    """
+    Log and plot diagnostics of an image generated by PyBDSF.
+    A histogram of the pixel counts produced with mean, RMS and Gaussian fit.
+    Along with running mean. A power spectrum of the residual is also produced.
+
+    :param bdsf_image: PyBDSF image object
+    :param input_image: file name of input image
+    :param image_type: type of input image; either restored or residual
+    """
+
+    if image_type not in ["residual", "restored"]:
+        raise ValueError(
+            f"Unknown image type: {image_type}.\n "
+            f"Image type can be either 'restored' or 'residual' only."
+        )
+
+    # Setting the first to slices to 0 meas we are taking the first frequency
+    # and first polarisation.
+    # TODO: if support for polarisation is to be added this needs to be changed.
+    slices = [0, 0, slice(bdsf_image.shape[-1]), slice(bdsf_image.shape[-2])]
+    subwcs = SlicedLowLevelWCS(bdsf_image.wcs_obj, slices=slices)
+
+    log.info("Performing image diagnostics")
+
+    if image_type == "residual":
+
+        residual_stats = qa_image_bdsf(
+            bdsf_image.image_arr[0, 0, :, :], description="residual"
+        )
+        plot_with_running_mean(
+            bdsf_image.image_arr[0, 0, :, :],
+            input_image,
+            residual_stats,
+            subwcs,
+            description="residual",
+        )
+        histogram(bdsf_image, input_image, description="residual")
+
+        # calculate, plot, and save power spectrum
+        profile, theta_axis = power_spectrum(input_image, 5.0e-4)
+        save_power_spectrum_plot = _plot_power_spectrum(
+            input_image, profile, theta_axis, img_type=image_type
+        )
+        _save_power_spectrum_to_csv(profile, theta_axis, save_power_spectrum_plot)
+
+    elif image_type == "restored":
+
+        source_mask, background_mask = source_region_mask(bdsf_image)
+
+        sources_stats = qa_image_bdsf(source_mask, description="sources")
+        background_stats = qa_image_bdsf(background_mask, description="background")
+        restored_stats = qa_image_bdsf(
+            bdsf_image.image_arr[0, 0, :, :], description="restored"
+        )
+        plot_with_running_mean(
+            source_mask, input_image, sources_stats, subwcs, description="sources"
+        )
+        plot_with_running_mean(
+            background_mask,
+            input_image,
+            background_stats,
+            subwcs,
+            description="background",
+        )
+        plot_with_running_mean(
+            bdsf_image, input_image, restored_stats, subwcs, description="restored"
+        )

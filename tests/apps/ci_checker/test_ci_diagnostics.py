@@ -34,7 +34,7 @@ class MockGaussianObject:
 
 class MockBDSFImage:
     """
-    Mock class representing a BDSF image, only with methods
+    Mock class representing a PyBDSF image, only with methods
     and properties used in the tested functions
     """
 
@@ -154,7 +154,6 @@ def test_get_histogram_data():
     # fitted gaussian parameters
     fitted_params = result[1]
 
-    # TODO: Are these reasonable boundaries for a fit?
     # depending on the shape of my_image.resid_gaus_arr, the precision changes
     np.testing.assert_allclose(fitted_params[1], my_image.gauss_mean, 0.001)
     np.testing.assert_allclose(fitted_params[2], my_image.gauss_std, 0.001)
@@ -163,9 +162,7 @@ def test_get_histogram_data():
 @patch(BASE_PATH + ".plt")
 @patch(
     BASE_PATH + "._get_histogram_data",
-    Mock(
-        return_value=(np.ones((10, 10)), [1.0, 0.5, 0.2])
-    ),
+    Mock(return_value=(np.ones((10, 10)), [1.0, 0.5, 0.2])),
 )
 def test_histogram(mock_plot):
     """
@@ -252,7 +249,6 @@ def test_plot_with_running_mean(mock_plot, description):
         mock_plot.Circle.assert_not_called()
 
 
-@pytest.skip("Need to discuss this function")
 def test_source_region_mask():
     my_image = MockBDSFImage(10)
 
@@ -371,7 +367,6 @@ def test_power_spectrum():
     expected_length = 182
     assert len(result[0]) == expected_length
     assert len(result[0]) == len(result[1])
-    # TODO: is there anything else that can be reasonably tested/asserted?
 
 
 @patch(BASE_PATH + ".SlicedLowLevelWCS", Mock())

@@ -280,7 +280,7 @@ def source_region_mask(img):
     source_regions = np.ones(shape=image_shape, dtype=int)
     background_regions = np.zeros(shape=image_shape, dtype=int)
 
-    cellsize = img.wcs_obj.wcs.cdelt[1]
+    cell_size = img.wcs_obj.wcs.cdelt[1]
     for gaussian in img.gaussians:
 
         source_radius = (
@@ -288,7 +288,7 @@ def source_region_mask(img):
                 (grid[0] - gaussian.centre_pix[0]) ** 2
                 + (grid[1] - gaussian.centre_pix[1]) ** 2
             )
-            * cellsize
+            * cell_size
         )
 
         source_regions[source_radius < beam_radius] = 0
@@ -402,25 +402,25 @@ def power_spectrum(input_image, resolution, signal_channel=None):
     if signal_channel is None:
         signal_channel = nchan // 2
 
-    imfft = fft_image_to_griddata(im)
+    img_fft = fft_image_to_griddata(im)
 
     # conversion factor between Jy (units of image data) and K (brightness temperature)
     omega = numpy.pi * resolution ** 2 / (4 * numpy.log(2.0))
     wavelength = consts.c / numpy.average(im.frequency)
-    kperjy = 1e-26 * wavelength ** 2 / (2 * consts.k_B * omega)
+    k_per_jy = 1e-26 * wavelength ** 2 / (2 * consts.k_B * omega)
 
-    im_spectrum = imfft.copy()
+    im_spectrum = img_fft.copy()
     # convert image data from Jy to K
-    im_spectrum["pixels"].data = kperjy.value * numpy.abs(imfft["pixels"].data)
+    im_spectrum["pixels"].data = k_per_jy.value * numpy.abs(img_fft["pixels"].data)
 
     # data in units of K converted from Jy --> power-type quantity
     profile = _radial_profile(im_spectrum["pixels"].data[signal_channel, 0])
 
-    cellsize_uv = numpy.abs(griddata_wcs(imfft).wcs.cdelt[0])
-    lambda_max = cellsize_uv * len(
+    cell_size_uv = numpy.abs(griddata_wcs(img_fft).wcs.cdelt[0])
+    lambda_max = cell_size_uv * len(
         profile
     )  # max spacial scale that instrument is sensitive to
-    lambda_axis = numpy.linspace(cellsize_uv, lambda_max, len(profile))
+    lambda_axis = numpy.linspace(cell_size_uv, lambda_max, len(profile))
     theta_axis = 180.0 / (numpy.pi * lambda_axis)
 
     return profile, theta_axis

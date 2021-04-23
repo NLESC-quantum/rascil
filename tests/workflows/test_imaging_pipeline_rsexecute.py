@@ -46,9 +46,9 @@ log.setLevel(logging.WARNING)
 @pytest.mark.parametrize(
     "use_dask, optimise, test_max, test_min",
     [
-        (True, True, 4.094169571405569, -0.005846355119035163),
-        (True, False, 4.094169571405569, -0.005846355119035163),
-        (False, False, 4.094169571405569, -0.005846355119035163),
+        (True,  True,  4.093884731966968, -0.006771973227456045),
+        (True,  False, 4.093884731966968, -0.006771973227456045),
+        (False, False, 4.093884731966968, -0.006771973227456045),
     ],
 )
 def test_imaging_pipeline(use_dask, optimise, test_max, test_min):

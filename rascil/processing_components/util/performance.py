@@ -2,14 +2,30 @@
 
 """
 
-__all__ = ['performance_store_dict']
+__all__ = ['performance_store_dict', 'performance_qa_image']
 
 import json
 
-def performance_store_dict(performance_file, key, s, indent=2, mode="w"):
-    """ Store dictionary in a file
+from rascil.processing_components.image.operations import qa_image
 
-    :param args: Namespace oject from argparse
+def performance_qa_image(performance_file, key, im, indent=2, mode="a"):
+    """ Store image qa in a performance file
+
+    :param key: Key for s for be stored as e.g. "resroeed"
+    :param im: Image
+    :param indent: Number of columns indent
+    :return:
+    """
+
+    qa = qa_image(im)
+    performance_store_dict(performance_file, key, qa.data, indent=indent, mode=mode)
+
+
+def performance_store_dict(performance_file, key, s, indent=2, mode="a"):
+    """ Store dictionary in a file using json
+
+    :param key: Key for s for be stored as e.g. "cli_args"
+    :param s: Dictionary
     :param indent: Number of columns indent
     :return:
     """

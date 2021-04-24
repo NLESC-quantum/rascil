@@ -472,11 +472,11 @@ def ci_checker(
             thresh_pix=th_pix,
             multichan_opts=True,
             collapse_mode=multichan_option,
-            collapse_wt="rms",  # this only applies to average
             collapse_ch0=refchan,  # this only applies to single
             specind_maxchan=1,
             quiet=quiet_bdsf,
             spectralindex_do=True,
+            specind_snr=10.0,
         )
 
     # Write the source catalog and the residual image.

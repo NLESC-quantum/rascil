@@ -69,7 +69,7 @@ test-singlepass:
 	--pylint --pylint-error-types=EF --durations=30
 
 test:
-	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py tests/apps/test_*.py --verbose \
+	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py tests/apps --verbose \
 	--junitxml unit-tests-workflows.xml \
 	--cov rascil \
 	--cov-report html:coverage  \

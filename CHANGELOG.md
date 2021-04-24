@@ -1,6 +1,8 @@
 0.2.2b0
 -------
 
+* Added index files to the ci_checker, which list and point to the output files of the app
+
 0.2.1
 -----
 * New app rascil_advise to advise on imaging parameters for a MeasurementSet

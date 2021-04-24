@@ -177,9 +177,8 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
 
     log.info("Plotting sky image with running mean.")
 
-    nchan = img.image_arr.shape[1]
-
     try:
+        nchan = img.image_arr.shape[1]
         image = img.image_arr[0, nchan // 2, :, :]
     except AttributeError:
         image = img

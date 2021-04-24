@@ -45,7 +45,7 @@ class MockBDSFImage:
             0.5  # standard deviation to be used in constructing self.resid_gaus_arr
         )
 
-        self.shape = (1, 1, n_pixel, n_pixel)
+        self.shape = (1, 5, n_pixel, n_pixel)
 
         # see bdsf.readimage.Op_readimage.__call__
         # 4D array: (nstokes, nchannels, imag_size_x, image_size_y)

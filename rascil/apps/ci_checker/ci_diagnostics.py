@@ -177,8 +177,10 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
 
     log.info("Plotting sky image with running mean.")
 
+    nchan = img.image_arr.shape[1]
+
     try:
-        image = img.image_arr[0, 0, :, :]
+        image = img.image_arr[0, nchan // 2, :, :]
     except AttributeError:
         image = img
 
@@ -266,7 +268,8 @@ def source_region_mask(img):
     beam_radius = beam_width / 2.0
 
     # img.image_arr.shape --> (nstokes, nchannels, img_size_x, img_size_y)
-    image_to_be_masked = img.image_arr[0, 0, :, :]
+    nchan = img.image_arr.shape[1]
+    image_to_be_masked = img.image_arr[0, nchan // 2, :, :]
 
     image_shape = [image_to_be_masked.shape[-2], image_to_be_masked.shape[-1]]
 
@@ -443,21 +446,21 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
             f"Image type can be either 'restored' or 'residual' only."
         )
 
-    # Setting the first to slices to 0 meas we are taking the first frequency
-    # and first polarisation.
+    # Taking the central frequency and first polarisation(stokesI)
     # TODO: if support for polarisation is to be added this needs to be changed.
-    slices = [0, 0, slice(bdsf_image.shape[-1]), slice(bdsf_image.shape[-2])]
+    nchan = bdsf_image.image_arr.shape[1]
+    slices = [nchan // 2, 0, slice(bdsf_image.shape[-1]), slice(bdsf_image.shape[-2])]
     subwcs = SlicedLowLevelWCS(bdsf_image.wcs_obj, slices=slices)
 
-    log.info("Performing image diagnostics")
+    log.info("Performing image diagnostics for central channel")
 
     if image_type == "residual":
 
         residual_stats = qa_image_bdsf(
-            bdsf_image.image_arr[0, 0, :, :], description="residual"
+            bdsf_image.image_arr[0, nchan // 2, :, :], description="residual"
         )
         plot_with_running_mean(
-            bdsf_image.image_arr[0, 0, :, :],
+            bdsf_image.image_arr[0, nchan // 2, :, :],
             input_image,
             residual_stats,
             subwcs,
@@ -493,4 +496,13 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
         )
         plot_with_running_mean(
             bdsf_image, input_image, restored_stats, subwcs, description="restored"
+        )
+
+        # plot power spectrum
+        profile_rest, theta_axis_rest = power_spectrum(input_image, 5.0e-4)
+        save_power_spectrum_plot_rest = _plot_power_spectrum(
+            input_image, profile_rest, theta_axis_rest, img_type=image_type
+        )
+        _save_power_spectrum_to_csv(
+            profile_rest, theta_axis_rest, save_power_spectrum_plot_rest
         )

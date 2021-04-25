@@ -26,4 +26,7 @@ Utility
 .. automodapi::    rascil.processing_components.util.sizeof
    :no-inheritance-diagram:
 
+.. automodapi::    rascil.processing_components.util.performance
+   :no-inheritance-diagram:
+
 

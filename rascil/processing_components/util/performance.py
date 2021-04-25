@@ -11,7 +11,7 @@ from rascil.processing_components.image.operations import qa_image
 def performance_qa_image(performance_file, key, im, indent=2, mode="a"):
     """ Store image qa in a performance file
 
-    :param key: Key for s for be stored as e.g. "resroeed"
+    :param key: Key for s for be stored as e.g. "restored"
     :param im: Image
     :param indent: Number of columns indent
     :return:

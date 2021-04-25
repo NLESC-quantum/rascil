@@ -266,6 +266,7 @@ def source_region_mask(img):
     beam_width = img.beam2pix(img.beam)[0]  # major axis of beam in pixels
     beam_radius = beam_width / 2.0
 
+    log.info("The beam size in pixel is {}".format(beam_width))
     # img.image_arr.shape --> (nstokes, nchannels, img_size_x, img_size_y)
     nchan = img.image_arr.shape[1]
     image_to_be_masked = img.image_arr[0, nchan // 2, :, :]
@@ -282,15 +283,12 @@ def source_region_mask(img):
     source_regions = np.ones(shape=image_shape, dtype=int)
     background_regions = np.zeros(shape=image_shape, dtype=int)
 
-    cell_size = img.wcs_obj.wcs.cdelt[1]
+    # cell_size = img.wcs_obj.wcs.cdelt[1]
     for gaussian in img.gaussians:
 
-        source_radius = (
-            np.sqrt(
-                (grid[0] - gaussian.centre_pix[0]) ** 2
-                + (grid[1] - gaussian.centre_pix[1]) ** 2
-            )
-            * cell_size
+        source_radius = np.sqrt(
+            (grid[0] - gaussian.centre_pix[0]) ** 2
+            + (grid[1] - gaussian.centre_pix[1]) ** 2
         )
 
         source_regions[source_radius < beam_radius] = 0

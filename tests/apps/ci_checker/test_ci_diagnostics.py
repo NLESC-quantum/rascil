@@ -374,6 +374,9 @@ def test_power_spectrum():
 @patch(BASE_PATH + ".qa_image_bdsf")
 @patch(BASE_PATH + ".plot_with_running_mean")
 @patch(BASE_PATH + ".histogram")
+@patch(BASE_PATH + ".power_spectrum", Mock(return_value=([], [])))
+@patch(BASE_PATH + "._plot_power_spectrum", Mock())
+@patch(BASE_PATH + "._save_power_spectrum_to_csv", Mock())
 class TestCICheckerDiagnostics:
     """
     Test that the correct functions are called, and the correct number of times,
@@ -402,9 +405,6 @@ class TestCICheckerDiagnostics:
         mock_source_mask.assert_called_once()
         mock_histogram.assert_not_called()  # only called when img is residual
 
-    @patch(BASE_PATH + ".power_spectrum", Mock(return_value=([], [])))
-    @patch(BASE_PATH + "._plot_power_spectrum", Mock())
-    @patch(BASE_PATH + "._save_power_spectrum_to_csv", Mock())
     def test_residual(
         self, mock_histogram, mock_plot_run_mean, mock_qa_image, mock_source_mask
     ):

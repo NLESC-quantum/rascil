@@ -10,6 +10,7 @@ __all__ = [
     "plot_skycomponents_flux_histogram",
     "plot_skycomponents_position_quiver",
     "plot_gaussian_beam_position",
+    "plot_multifreq_spectral_index",
 ]
 
 import collections
@@ -24,6 +25,7 @@ from rascil.data_models.memory_data_models import Skycomponent
 from rascil.processing_components.skycomponent.operations import (
     find_skycomponent_matches,
     fit_skycomponent,
+    fit_skycomponent_spectral_index,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -126,6 +128,7 @@ def plot_skycomponents_positions(
             ax.plot(ra_error, dec_error, "o", markersize=5)
         err_r = max(numpy.max(ra_error), numpy.max(dec_error))
         err_l = min(numpy.min(ra_error), numpy.min(dec_error))
+
         plt.xlim([err_l, err_r])
         plt.ylim([err_l, err_r])
         plt.xlabel(r"$\Delta\ RA * cos(Dec) / \Delta x$")
@@ -226,10 +229,10 @@ def plot_skycomponents_flux(
         if refchan is None:
             nchan, _ = m_ref.flux.shape
             flux_in[i] = m_ref.flux[nchan // 2]
-            flux_out[i] = m_comp.flux[0]
+            flux_out[i] = m_comp.flux[nchan // 2]
         else:
             flux_in[i] = m_ref.flux[refchan]
-            flux_out[i] = m_comp.flux[0]
+            flux_out[i] = m_comp.flux[refchan]
 
     plt.loglog(flux_in, flux_out, "o", color="b", markersize=5)
 
@@ -275,12 +278,12 @@ def plot_skycomponents_flux_ratio(
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
 
-        if m_ref.flux[0] > 0.0:
+        if m_ref.flux.all() > 0.0:
             if refchan is None:
                 nchan, _ = m_ref.flux.shape
-                fr = m_comp.flux[0] / m_ref.flux[nchan // 2]
+                fr = m_comp.flux[nchan // 2] / m_ref.flux[nchan // 2]
             else:
-                fr = m_comp.flux[0] / m_ref.flux[refchan]
+                fr = m_comp.flux[refchan] / m_ref.flux[refchan]
             if fr < max_ratio:
                 flux_ratio.append(fr)
                 dist.append(m_comp.direction.separation(phasecentre).degree)
@@ -319,10 +322,10 @@ def plot_skycomponents_flux_histogram(
     if refchan is None:
         nchan, _ = comps_ref[0].flux.shape
         flux_in = numpy.array([comp.flux[nchan // 2, 0] for comp in comps_ref])
-        flux_out = numpy.array([comp.flux[0, 0] for comp in comps_test])
+        flux_out = numpy.array([comp.flux[nchan // 2, 0] for comp in comps_test])
     else:
         flux_in = numpy.array([comp.flux[refchan, 0] for comp in comps_ref])
-        flux_out = numpy.array([comp.flux[0, 0] for comp in comps_test])
+        flux_out = numpy.array([comp.flux[refchan, 0] for comp in comps_test])
 
     flux_in = flux_in[flux_in > 0.0]
     flux_out = flux_out[flux_out > 0.0]
@@ -458,16 +461,17 @@ def plot_gaussian_beam_position(
         try:
             fitted = fit_skycomponent(image, m_comp, force_point_sources=False)
             log.info("{}".format(fitted.params))
-            ra_dist[count] = (m_comp.direction.ra.wrap_at(angle_wrap).degree -
-                              phasecentre.ra.wrap_at(angle_wrap).deg)\
-                             * numpy.cos(m_ref.direction.dec.rad)
-            dec_dist[count] = (m_comp.direction.dec.degree - phasecentre.dec.deg)
+            ra_dist[count] = (
+                m_comp.direction.ra.wrap_at(angle_wrap).degree
+                - phasecentre.ra.wrap_at(angle_wrap).deg
+            ) * numpy.cos(m_ref.direction.dec.rad)
+            dec_dist[count] = m_comp.direction.dec.degree - phasecentre.dec.deg
             dist[count] = m_comp.direction.separation(phasecentre).degree
             bmaj[count] = fitted.params["bmaj"]
             bmin[count] = fitted.params["bmin"]
             count = count + 1
 
-	#If fitting failed, no items will be found in the params dictionary
+        # If fitting failed, no items will be found in the params dictionary
         except KeyError:
             log.warning(f"Fit skycomponent failed for component number {match[0]} ")
 
@@ -509,3 +513,40 @@ def plot_gaussian_beam_position(
     plt.clf()
 
     return [bmaj, bmin]
+
+
+def plot_multifreq_spectral_index(
+    comps_test, comps_ref, plot_file=None, tol=1e-5, **kwargs
+):
+    """Generate spectral index plot for two lists of multi-frequency skycomponents
+
+    :param comps_test: List of components to be tested
+    :param comps_ref: List of reference components
+    :param plot_file: Filename of the plot
+    :param tol: Tolerance in rad
+    :return: [spec_in, spec_out]:
+             The spectral index array for users to check
+    """
+
+    matches = find_skycomponent_matches(comps_test, comps_ref, tol)
+    spec_in = numpy.zeros(len(matches))
+    spec_out = numpy.zeros(len(matches))
+
+    for i, match in enumerate(matches):
+        m_comp = comps_test[match[0]]
+        m_ref = comps_ref[match[1]]
+
+        spec_in[i] = fit_skycomponent_spectral_index(m_ref)
+        spec_out[i] = fit_skycomponent_spectral_index(m_comp)
+
+    plt.plot(spec_in, spec_out, "o", color="b", markersize=5)
+
+    plt.title("Spectral Indexes")
+    plt.xlabel("Spectral index in")
+    plt.ylabel("Spectral index out")
+    if plot_file is not None:
+        plt.savefig(plot_file + "_spec_index.png")
+    plt.show(block=False)
+    plt.clf()
+
+    return [spec_in, spec_out]

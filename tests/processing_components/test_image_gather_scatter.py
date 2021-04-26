@@ -27,7 +27,7 @@ log.setLevel(logging.WARNING)
 
 class TestImageGatherScatters(unittest.TestCase):
     def setUp(self):
-        from rascil.data_models.parameters import rascil_path, rascil_data_path
+        from rascil.data_models.parameters import rascil_path
 
         self.dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
@@ -83,16 +83,16 @@ class TestImageGatherScatters(unittest.TestCase):
             image_list = image_scatter_facets(m31model, facets=nraster, overlap=overlap)
             for patch in image_list:
                 assert patch["pixels"].data.shape[3] == (
-                    2 * overlap + m31model["pixels"].data.shape[3] // nraster
+                    m31model["pixels"].data.shape[3] // nraster
                 ), "Number of pixels in each patch: %d not as expected: %d" % (
                     patch["pixels"].data.shape[3],
-                    (2 * overlap + m31model["pixels"].data.shape[3] // nraster),
+                    (m31model["pixels"].data.shape[3] // nraster),
                 )
                 assert patch["pixels"].data.shape[2] == (
-                    2 * overlap + m31model["pixels"].data.shape[2] // nraster
+                    m31model["pixels"].data.shape[2] // nraster
                 ), "Number of pixels in each patch: %d not as expected: %d" % (
                     patch["pixels"].data.shape[2],
-                    (2 * overlap + m31model["pixels"].data.shape[2] // nraster),
+                    (m31model["pixels"].data.shape[2] // nraster),
                 )
                 patch["pixels"].data[...] = 1.0
             m31reconstructed = create_empty_image_like(m31model)
@@ -119,8 +119,8 @@ class TestImageGatherScatters(unittest.TestCase):
         m31original = create_test_image(polarisation_frame=PolarisationFrame("stokesI"))
         assert numpy.max(numpy.abs(m31original["pixels"].data)), "Original is empty"
 
-        for taper in ["linear", None]:
-            for nraster, overlap in [(1, 0), (4, 8), (8, 8), (8, 16)]:
+        for taper in ["linear", "tukey", None]:
+            for nraster, overlap in [(1, 0), (2, 1), (2, 8), (4, 4), (4, 8), (8, 8), (8, 16)]:
                 m31model = create_test_image(
                     polarisation_frame=PolarisationFrame("stokesI")
                 )
@@ -129,16 +129,16 @@ class TestImageGatherScatters(unittest.TestCase):
                 )
                 for patch in image_list:
                     assert patch["pixels"].data.shape[3] == (
-                        2 * overlap + m31model["pixels"].data.shape[3] // nraster
+                        m31model["pixels"].data.shape[3] // nraster
                     ), "Number of pixels in each patch: %d not as expected: %d" % (
                         patch.data.shape[3],
-                        (2 * overlap + m31model["pixels"].data.shape[3] // nraster),
+                        (m31model["pixels"].data.shape[3] // nraster),
                     )
                     assert patch["pixels"].data.shape[2] == (
-                        2 * overlap + m31model["pixels"].data.shape[2] // nraster
+                        m31model["pixels"].data.shape[2] // nraster
                     ), "Number of pixels in each patch: %d not as expected: %d" % (
                         patch.data.shape[2],
-                        (2 * overlap + m31model["pixels"].data.shape[2] // nraster),
+                        (m31model["pixels"].data.shape[2] // nraster),
                     )
                 m31reconstructed = create_empty_image_like(m31model)
                 m31reconstructed = image_gather_facets(

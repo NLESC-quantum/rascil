@@ -681,7 +681,7 @@ def convert_clean_beam_to_degrees(im, beam_pixels):
     :return: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     """
     # cellsize in radians
-    cellsize = numpy.abs((im["x"][0].data - im["x"][-1].data)) / len(im["x"])
+    cellsize = numpy.deg2rad(im.image_acc.wcs.wcs.cdelt[1])
     to_mm = 4.0 * numpy.log(2.0)
     if beam_pixels[1] > beam_pixels[0]:
         clean_beam = {
@@ -764,7 +764,7 @@ def convert_clean_beam_to_pixels(model, clean_beam):
     """
     to_mm = 4.0 * numpy.log(2.0)
     # Cellsize in radians
-    cellsize = numpy.abs((model["x"][0].data - model["x"][-1].data)) / len(model["x"])
+    cellsize = numpy.deg2rad(model.image_acc.wcs.wcs.cdelt[1])
     # Beam in pixels
     beam_pixels = (
         numpy.deg2rad(clean_beam["bmin"]) / (cellsize * to_mm),

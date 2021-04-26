@@ -435,7 +435,7 @@ def ci_checker(
                 quiet=quiet_bdsf,
             )
         else:
-            img_rest = bdsf.process_image(
+            img_resid = bdsf.process_image(
                 input_image_residual,
                 beam=beam_info,
                 thresh_isl=th_isl,
@@ -452,6 +452,7 @@ def ci_checker(
         if args.savefits_rmsim == "True":
             export_image_to_fits(img_resid.rms_arr, save_rms + ".fits")
 
+        log.info("Running diagnostics for the residual image")
         ci_checker_diagnostics(img_resid, input_image_residual, "residual")
 
     return

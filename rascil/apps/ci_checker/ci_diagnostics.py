@@ -283,7 +283,6 @@ def source_region_mask(img):
     source_regions = np.ones(shape=image_shape, dtype=int)
     background_regions = np.zeros(shape=image_shape, dtype=int)
 
-    # cell_size = img.wcs_obj.wcs.cdelt[1]
     for gaussian in img.gaussians:
 
         source_radius = np.sqrt(

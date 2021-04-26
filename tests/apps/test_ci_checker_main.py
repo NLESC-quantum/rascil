@@ -86,8 +86,8 @@ log = logging.getLogger("rascil-logger")
             8,
             0.001,
             "Nearest",
-            0.0003,
-            "nearest_npixel1024_nchan8_noise0.0003_flux0.001",
+            0.000001,
+            "nearest_npixel1024_nchan8_noise0.000001_flux0.001",
         ),
         (
             0.0001,
@@ -137,8 +137,8 @@ def test_continuum_imaging_checker(
     central_freq = image_frequency[int(nchan // 2)]
 
     clean_beam = {
-        "bmaj": numpy.rad2deg(cellsize),
-        "bmin": numpy.rad2deg(cellsize) / 2.0,
+        "bmaj": numpy.rad2deg(5.*cellsize),
+        "bmin": numpy.rad2deg(5.*cellsize) / 2.0,
         "bpa": 0.0,
     }
 

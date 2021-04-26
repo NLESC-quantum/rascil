@@ -20,7 +20,7 @@ from rascil.processing_components import (
     find_skycomponents,
 )
 from rascil.processing_components.util.performance import (
-    performance_store_dict
+    performance_store_dict, performance_environment
 )
 from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import (
@@ -45,14 +45,14 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
-default_run = True
+default_run = False
 
 
 @pytest.mark.parametrize(
     "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
     [
         (
-            default_run,
+            not default_run,
             "invert",
             True,
             0,
@@ -412,7 +412,8 @@ def test_rascil_imager(
     else:
         return ValueError(f"rascil-imager: Unknown mode {mode}")
 
-    performance_store_dict(args.performance_file, "cli_args", vars(args), mode="w")
+    performance_environment(args.performance_file, mode="w")
+    performance_store_dict(args.performance_file, "cli_args", vars(args), mode="a")
 
     if mode == "invert":
         dirtyname = imager(args)

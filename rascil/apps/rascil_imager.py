@@ -31,6 +31,8 @@ from rascil.processing_components import (
 from rascil.processing_components.util.performance import (
     performance_store_dict,
     performance_qa_image,
+    performance_dask_configuration,
+    performance_environment
 )
 
 from rascil.workflows import (
@@ -225,7 +227,9 @@ def imager(args):
 
     # Save the processing statistics from Dask
     dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
-    performance_store_dict(args.performance_file, "dask", dask_info, mode="a")
+    performance_store_dict(args.performance_file, "dask_profile",
+                           dask_info, mode="a")
+    performance_dask_configuration(args.performance_file, mode='a')
 
     rsexecute.close()
 
@@ -448,7 +452,8 @@ def main():
     # Get command line inputs
     parser = cli_parser()
     args = parser.parse_args()
-    performance_store_dict(args.performance_file, "cli_args", vars(args), mode="w")
+    performance_environment(args.performance_file, mode="w")
+    performance_store_dict(args.performance_file, "cli_args", vars(args), mode="a")
     image_name = imager(args)
 
 

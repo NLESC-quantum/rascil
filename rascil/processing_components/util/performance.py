@@ -69,6 +69,15 @@ def performance_dask_configuration(performance_file, indent=2, mode="a"):
 
     if not rsexecute.using_dask:
         return
+    
+    if rsexecute.client is None:
+        return
+
+    if rsexecute.client.cluster is None:
+        return
+
+    if rsexecute.client.cluster.scheduler_info is None:
+        return
 
     info = {
         "nworkers": len(rsexecute.client.cluster.scheduler_info["workers"]),

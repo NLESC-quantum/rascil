@@ -445,7 +445,7 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
     # Taking the central frequency and first polarisation(stokesI)
     # TODO: if support for polarisation is to be added this needs to be changed.
     nchan = bdsf_image.image_arr.shape[1]
-    slices = [nchan // 2, 0, slice(bdsf_image.shape[-1]), slice(bdsf_image.shape[-2])]
+    slices = [0, nchan // 2, slice(bdsf_image.shape[-1]), slice(bdsf_image.shape[-2])]
     subwcs = SlicedLowLevelWCS(bdsf_image.wcs_obj, slices=slices)
 
     log.info("Performing image diagnostics for central channel")

@@ -115,7 +115,7 @@ def cli_parser():
         "--finder_multichan_option",
         type=str,
         default="single",
-        help="For multi-channel images, what mode to perform PDSF on (single or average)",
+        help="For multi-channel images, what mode to perform BDSF on (single or average)",
     )
     parser.add_argument(
         "--apply_primary",
@@ -242,8 +242,8 @@ def analyze_image(args):
         freq = np.array(im.frequency.data)
 
     else:
-        log.error("This image is broken. Please check the file.")
-        return None, None
+	raise FileFormatError("This image is broken. Please check the file.")
+
 
     log.info("Frequencies of image:{} ".format(freq))
 
@@ -407,11 +407,11 @@ def ci_checker(
             thresh_pix=th_pix,
             multichan_opts=True,
             collapse_mode=multichan_option,
-            collapse_ch0=refchan,  # this only applies to single
+            collapse_ch0=refchan,  # this only applies to single channel mode
             specind_maxchan=1,
             quiet=quiet_bdsf,
             spectralindex_do=True,
-            specind_snr=10.0,
+            specind_snr=5.0,
         )
 
     # Write the source catalog and the residual image.

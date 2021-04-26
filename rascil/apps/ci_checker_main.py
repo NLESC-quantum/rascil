@@ -42,6 +42,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux_histogram,
     plot_skycomponents_position_quiver,
     plot_gaussian_beam_position,
+    plot_multifreq_spectral_index,
 )
 
 from rascil.apps.ci_checker.generate_results_index import create_index
@@ -109,6 +110,12 @@ def cli_parser():
         type=float,
         default=10.0,
         help="Threshold to detect source (peak value)",
+    )
+    parser.add_argument(
+        "--finder_multichan_option",
+        type=str,
+        default="single",
+        help="For multi-channel images, what mode to perform PDSF on (single or average)",
     )
     parser.add_argument(
         "--apply_primary",
@@ -224,40 +231,46 @@ def analyze_image(args):
     input_image_restored = args.ingest_fitsname_restored
 
     im = import_image_from_fits(args.ingest_fitsname_restored)
+
     nchan = im["pixels"].shape[0]
-    if nchan > 0:
-        refchan = nchan // 2
-        log.info(
-            "Found spectral cube with {} channels, using channel {} for source finding".format(
-                nchan, refchan
-            )
-        )
+    if nchan == 1:
+        log.info("This is a single channel image.")
+        freq = np.array([im.frequency.data[0]])
+
+    elif nchan > 1:
+        log.info("This is a multiple channel image.")
+        freq = np.array(im.frequency.data)
+
     else:
-        refchan = 0
+        log.error("This image is broken. Please check the file.")
+        return None, None
+
+    log.info("Frequencies of image:{} ".format(freq))
+
+    # If read restoring beam from header
+    try:
+        beam_maj = im.attrs["clean_beam"]["bmaj"]
+        beam_min = im.attrs["clean_beam"]["bmin"]
+        beam_pos_angle = im.attrs["clean_beam"]["bpa"]
+
+    except KeyError:
+
+        beam_maj = args.finder_beam_maj
+        beam_min = args.finder_beam_min
+        beam_pos_angle = args.finder_beam_pos_angle
+
+    beam_info = (beam_maj, beam_min, beam_pos_angle)
 
     th_isl = args.finder_th_isl
     th_pix = args.finder_th_pix
-
-    freq = im.frequency.data[0]
-    cellsize = im.image_acc.wcs.wcs.cdelt[1]
-    beam_maj_expected = np.rad2deg(cellsize)
-    beam_min_expected = np.rad2deg(cellsize)
-    log.info(
-        "Suggested size of restoring beam: {}, {}".format(
-            beam_maj_expected, beam_min_expected
-        )
-    )
-
-    beam_maj = args.finder_beam_maj
-    beam_min = args.finder_beam_min
-    beam_pos_angle = args.finder_beam_pos_angle
-    beam_info = (beam_maj, beam_min, beam_pos_angle)
 
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(th_isl, th_pix))
 
     input_image_residual = args.ingest_fitsname_residual
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
+
+    multichan_option = args.finder_multichan_option
 
     ci_checker(
         input_image_restored,
@@ -266,7 +279,8 @@ def analyze_image(args):
         source_file,
         th_isl,
         th_pix,
-        refchan,
+        nchan,
+        multichan_option,
         quiet_bdsf=quiet_bdsf,
     )
 
@@ -283,6 +297,7 @@ def analyze_image(args):
     else:
         rascil_source_file = args.rascil_source_file
 
+    log.info("Putting sources into skycomponents format.")
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
 
     if args.check_source == "True":
@@ -302,7 +317,7 @@ def analyze_image(args):
             orig = create_low_test_skycomponents_from_gleam(
                 flux_limit=1.0,
                 phasecentre=im.image_acc.phasecentre,
-                frequency=np.array([freq]),
+                frequency=freq,
                 polarisation_frame=PolarisationFrame("stokesI"),
                 radius=0.5,
             )
@@ -315,12 +330,13 @@ def analyze_image(args):
         results = check_source(orig, out, args.match_sep)
 
         if args.plot_source == "True":
-            plot_file = args.ingest_fitsname_restored.replace(".fits", "")
-            log.info("Plotting errors: {}".format(plot_file))
-            phasecentre = im.image_acc.phasecentre
-            plot_errors(
-                orig, out, input_image_restored, args.match_sep, phasecentre, plot_file
-            )
+
+            if len(results) == 0:
+                log.info("No matches are found. Skipping plotting routines.")
+            else:
+                plot_file = args.ingest_fitsname_restored.replace(".fits", "")
+                log.info("Plotting errors: {}".format(plot_file))
+                plot_errors(orig, out, input_image_restored, args.match_sep, plot_file)
 
     else:
         results = None
@@ -344,7 +360,8 @@ def ci_checker(
     source_file,
     th_isl,
     th_pix,
-    refchan,
+    nchan,
+    multichan_option,
     quiet_bdsf=False,
 ):
     """
@@ -356,7 +373,8 @@ def ci_checker(
     :param source_file : Output file name of the source list
     :param th_isl : Island threshold
     :param th_pix: Peak threshold
-    :param refchan: Reference channel for spectral cube
+    :param nchan: Number of channels
+    :param multichan_option: Mode to perform BDSF on multi-channel images
     :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
                        Output is still sent to the log file
     : return None
@@ -364,20 +382,42 @@ def ci_checker(
 
     # Process image.
     log.info("Analysing the restored image")
-    img_rest = bdsf.process_image(
-        input_image_restored,
-        beam=beam_info,
-        thresh_isl=th_isl,
-        thresh_pix=th_pix,
-        collapse_ch0=refchan,
-        quiet=quiet_bdsf,
+
+    refchan = nchan // 2
+    log.info(
+        "Found spectral cube with {} channel(s), using channel {} for source finding. The multi-channel BDSF mode is {}. ".format(
+            nchan, refchan, multichan_option
+        )
     )
+
+    if nchan == 1:  # single frequency
+        img_rest = bdsf.process_image(
+            input_image_restored,
+            beam=beam_info,
+            thresh_isl=th_isl,
+            thresh_pix=th_pix,
+            quiet=quiet_bdsf,
+        )
+    else:
+
+        img_rest = bdsf.process_image(
+            input_image_restored,
+            beam=beam_info,
+            thresh_isl=th_isl,
+            thresh_pix=th_pix,
+            multichan_opts=True,
+            collapse_mode=multichan_option,
+            collapse_ch0=refchan,  # this only applies to single
+            specind_maxchan=1,
+            quiet=quiet_bdsf,
+            spectralindex_do=True,
+            specind_snr=10.0,
+        )
 
     # Write the source catalog and the residual image.
     img_rest.write_catalog(
         outfile=source_file, format="csv", catalog_type="srl", clobber=True
     )
-    img_rest.write_catalog(format="fits", catalog_type="srl", clobber=True)
     img_rest.export_image(img_type="gaus_resid", clobber=True)
 
     log.info("Running diagnostics for the restored image")
@@ -386,22 +426,28 @@ def ci_checker(
     if input_image_residual is not None:
         log.info("Analysing the residual image")
 
-        img_resid = bdsf.process_image(
-            input_image_residual,
-            beam=beam_info,
-            thresh_isl=th_isl,
-            thresh_pix=th_pix,
-            collapse_ch0=refchan,
-            quiet=quiet_bdsf,
-        )
-
-        save_rms = (
-            input_image_residual.replace(
-                ".fits" if ".fits" in input_image_residual else ".h5", ""
+        if nchan == 1:  # single frequency
+            img_resid = bdsf.process_image(
+                input_image_residual,
+                beam=beam_info,
+                thresh_isl=th_isl,
+                thresh_pix=th_pix,
+                quiet=quiet_bdsf,
             )
-            + "_residual"
-            + "_rms"
-        )
+        else:
+            img_rest = bdsf.process_image(
+                input_image_residual,
+                beam=beam_info,
+                thresh_isl=th_isl,
+                thresh_pix=th_pix,
+                multichan_opts=True,
+                collapse_mode=multichan_option,
+                collapse_ch0=refchan,
+                quiet=quiet_bdsf,
+                spectralindex_do=True,
+            )
+
+        save_rms = input_image_residual.replace(".fits", "_residual_rms")
 
         if args.savefits_rmsim == "True":
             export_image_to_fits(img_resid.rms_arr, save_rms + ".fits")
@@ -417,25 +463,40 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
 
     :param source_file: Output file name of the source list
     :param rascil_source_file: Output file name of the RASCIL skycomponents hdf file
-    :param freq: Frequency or list of frequencies in float
+    :param freq: Single frequency or list of frequencies in float
 
     :return comp: List of skycomponents
     """
 
     data = pd.read_csv(source_file, sep=r"\s*,\s*", skiprows=5, engine="python")
     comp = []
+
+    # TODO: Change this to multiple polarizaions
+    nchan = len(freq)
+    npol = 1
+    centre = nchan // 2
+
     for i, row in data.iterrows():
 
         direc = SkyCoord(
             ra=row["RA"] * u.deg, dec=row["DEC"] * u.deg, frame="icrs", equinox="J2000"
         )
-        f = row["Total_flux"]
-        if f > 0:  # filter out ghost sources
+        f0 = row["Total_flux"]
+        if f0 > 0:  # filter out ghost sources
+            try:
+                spec_indx = row["Spec_Indx"]
+                fluxes = [f0 * (f / freq[centre]) ** spec_indx for f in freq]
+                flux_array = np.reshape(np.array(fluxes), (nchan, npol))
+
+            except KeyError:
+                # No spectral index information
+                flux_array = np.array([[f0]])
+
             comp.append(
                 create_skycomponent(
                     direction=direc,
-                    flux=np.array([[f]]),
-                    frequency=np.array([freq]),
+                    flux=flux_array,
+                    frequency=freq,
                     polarisation_frame=PolarisationFrame("stokesI"),
                 )
             )
@@ -489,7 +550,7 @@ def check_source(orig, comp, match_sep):
 
 def read_skycomponent_from_txt(filename, freq):
     """
-    Read source input from a txt file and make the date into skycomponents
+    Read source input from a txt file and make them into skycomponents
 
     :param filename: Name of input file
     :param freq: Frequency or list of frequencies in float
@@ -502,17 +563,28 @@ def read_skycomponent_from_txt(filename, freq):
     ra = data[0]
     dec = data[1]
     flux = data[2]
+    ref_freq = data[6]
+    spec_indx = data[7]
 
+    nchan = len(freq)
+    npol = 1
     for i, row in enumerate(ra):
 
         direc = SkyCoord(
             ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
         )
+        if nchan == 1:
+            flux = flux[i] * (freq[0] / ref_freq[i]) ** spec_indx[i]
+            flux_array = np.array([[flux]])
+        else:
+            fluxes = [flux[i] * (f / ref_freq[i]) ** spec_indx[i] for f in freq]
+            flux_array = np.reshape(np.array(fluxes), (nchan, npol))
+
         comp.append(
             create_skycomponent(
                 direction=direc,
-                flux=np.array([[flux[i]]]),
-                frequency=np.array([freq]),
+                flux=flux_array,
+                frequency=freq,
                 polarisation_frame=PolarisationFrame("stokesI"),
             )
         )
@@ -520,7 +592,7 @@ def read_skycomponent_from_txt(filename, freq):
     return comp
 
 
-def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
+def plot_errors(orig, comp, input_image, match_sep, plot_file):
     """
     Plot the position and flux errors for source input and output
 
@@ -528,7 +600,6 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
     :param comp: Output source list in skycomponent format
     :param input_image: Input image for Gaussian fits
     :param match_sep: The criteria for maximum separation
-    :param phasecentre: Centre of image
     :param plot_file: prefix of the plot files
     :return
 
@@ -537,7 +608,9 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
     image = import_image_from_fits(input_image, fixpol=True)
 
     img_size = np.rad2deg(image.image_acc.wcs.wcs.cdelt[1])
-    log.info(f"Image cellsize is {img_size}")
+    phasecentre = image.image_acc.phasecentre
+    nchan = image["pixels"].shape[0]
+    refchan = nchan // 2
 
     ra_comp, dec_comp = plot_skycomponents_positions(
         comp, orig, img_size=img_size, plot_file=plot_file, tol=match_sep
@@ -546,13 +619,26 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
         comp, orig, phasecentre, img_size, plot_file=plot_file, tol=match_sep
     )
     flux_in, flux_out = plot_skycomponents_flux(
-        comp, orig, plot_file=plot_file, tol=match_sep
+        comp,
+        orig,
+        plot_file=plot_file,
+        tol=match_sep,
+        refchan=refchan,
     )
     dist, flux_ratio = plot_skycomponents_flux_ratio(
-        comp, orig, phasecentre, plot_file=plot_file, tol=match_sep
+        comp,
+        orig,
+        phasecentre,
+        plot_file=plot_file,
+        tol=match_sep,
+        refchan=refchan,
     )
     fluxes = plot_skycomponents_flux_histogram(
-        comp, orig, plot_file=plot_file, tol=match_sep
+        comp,
+        orig,
+        plot_file=plot_file,
+        tol=match_sep,
+        refchan=refchan,
     )
 
     log.info("Plotting wide field plots.")
@@ -563,6 +649,12 @@ def plot_errors(orig, comp, input_image, match_sep, phasecentre, plot_file):
     bmaj, bmin = plot_gaussian_beam_position(
         comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
     )
+
+    if nchan > 1:
+        log.info("Plotting spectral index.")
+        spec_in, spec_out = plot_multifreq_spectral_index(
+            comp, orig, plot_file=plot_file, tol=match_sep
+        )
 
     log.info("Plotting done.")
 

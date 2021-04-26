@@ -22,13 +22,16 @@ log = logging.getLogger("rascil-logger")
 
 
 def addnoise_skycomponent(
-    sc: Union[Skycomponent, List[Skycomponent]], noise=1e-3, mode="both", seed=None
+    sc: Union[Skycomponent, List[Skycomponent]],
+    noise=1e-3,
+    mode="flux_central",
+    seed=None,
 ) -> Union[Skycomponent, List[Skycomponent]]:
     """Add noise to Skycomponent
 
     :param sc: Skycomponent or list of skycomponents
     :param noise: Standard deviation of the distribution
-    :param mode: Add noise to direction, flux, or both
+    :param mode: Add noise to direction, flux_central, flux_all
     :param seed: Seed to generate noise
     :return: Skycomponent(s) with noise added
     """
@@ -42,12 +45,12 @@ def addnoise_skycomponent(
 
     if single:
         sc = [sc]
-       
+
     log.debug("addnoise_skycomponent: Processing %d components" % (len(sc)))
 
     ras = [comp.direction.ra.radian for comp in sc]
     decs = [comp.direction.dec.radian for comp in sc]
-    fluxes = [comp.flux[0, 0] for comp in sc]
+    fluxes = numpy.array([comp.flux for comp in sc])
 
     comps = []
 
@@ -71,37 +74,38 @@ def addnoise_skycomponent(
                 )
             )
 
-    elif mode == "flux":
+    elif mode == "flux_central":
 
-        fluxes += rng.normal(0.0, noise, len(fluxes))
+        # Only add to the central flux or single flux if single-frequency sc
+
         for i, flux in enumerate(fluxes):
+            nchan = sc[i].frequency.shape[0]
+            centre = nchan // 2
+            flux[centre, 0] += rng.normal(0.0, noise, 1)
             comps.append(
                 Skycomponent(
                     direction=sc[i].direction,
                     frequency=sc[i].frequency,
                     name="",
-                    flux=numpy.array([[flux]]),
+                    flux=flux,
                     shape="Point",
                     polarisation_frame=sc[i].polarisation_frame,
                     params={},
                 )
             )
 
-    elif mode == "both":
+    elif mode == "flux_all":
 
-        ras += rng.normal(0.0, noise, len(ras))
-        decs += rng.normal(0.0, noise, len(decs))
-        fluxes += rng.normal(0.0, noise, len(fluxes))
+        # add to all fluxes
+        fluxes += rng.normal(0.0, noise, fluxes.shape)
 
-        new_directions = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
-
-        for i, direction in enumerate(new_directions):
+        for i, flux in enumerate(fluxes):
             comps.append(
                 Skycomponent(
-                    direction=direction,
+                    direction=sc[i].direction,
                     frequency=sc[i].frequency,
                     name="",
-                    flux=numpy.array([[fluxes[i]]]),
+                    flux=flux,
                     shape="Point",
                     polarisation_frame=sc[i].polarisation_frame,
                     params={},

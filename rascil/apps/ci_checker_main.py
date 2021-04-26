@@ -242,8 +242,7 @@ def analyze_image(args):
         freq = np.array(im.frequency.data)
 
     else:
-	raise FileFormatError("This image is broken. Please check the file.")
-
+        raise FileFormatError("This image is broken. Please check the file.")
 
     log.info("Frequencies of image:{} ".format(freq))
 

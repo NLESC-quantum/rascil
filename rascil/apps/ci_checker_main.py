@@ -100,22 +100,22 @@ def cli_parser():
         help="Positioning angle of the restoring beam (degrees) (usually not needed, passed in restored image)",
     )
     parser.add_argument(
-        "--finder_th_isl",
+        "--finder_thresh_isl",
         type=float,
         default=5.0,
-        help="Threshold to determine the size of the islands",
+        help="Threshold to determine the size of the islands used in BDSF (Blob Detector and Source Finder)",
     )
     parser.add_argument(
-        "--finder_th_pix",
+        "--finder_thresh_pix",
         type=float,
         default=10.0,
-        help="Threshold to detect source (peak value)",
+        help="Threshold to detect source (peak value) used in BDSF",
     )
     parser.add_argument(
         "--finder_multichan_option",
         type=str,
         default="single",
-        help="For multi-channel images, what mode to perform BDSF on (single or average)",
+        help="For multi-channel images, what mode to perform source detection on (single or average)",
     )
     parser.add_argument(
         "--apply_primary",
@@ -260,11 +260,11 @@ def analyze_image(args):
 
     beam_info = (beam_maj, beam_min, beam_pos_angle)
 
-    th_isl = args.finder_th_isl
-    th_pix = args.finder_th_pix
+    thresh_isl = args.finder_thresh_isl
+    thresh_pix = args.finder_thresh_pix
 
     log.info("Use restoring beam: {}".format(beam_info))
-    log.info("Use threshold: {}, {}".format(th_isl, th_pix))
+    log.info("Use threshold: {}, {}".format(thresh_isl, thresh_pix))
 
     input_image_residual = args.ingest_fitsname_residual
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
@@ -276,8 +276,8 @@ def analyze_image(args):
         input_image_residual,
         beam_info,
         source_file,
-        th_isl,
-        th_pix,
+        thresh_isl,
+        thresh_pix,
         nchan,
         multichan_option,
         quiet_bdsf=quiet_bdsf,
@@ -357,8 +357,8 @@ def ci_checker(
     input_image_residual,
     beam_info,
     source_file,
-    th_isl,
-    th_pix,
+    thresh_isl,
+    thresh_pix,
     nchan,
     multichan_option,
     quiet_bdsf=False,
@@ -370,8 +370,8 @@ def ci_checker(
     :param input_image_residual
     :param beam_info : Size of restoring beam as (bmaj, bmin, pos_angle)
     :param source_file : Output file name of the source list
-    :param th_isl : Island threshold
-    :param th_pix: Peak threshold
+    :param thresh_isl : Island threshold
+    :param thresh_pix: Peak threshold
     :param nchan: Number of channels
     :param multichan_option: Mode to perform BDSF on multi-channel images
     :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
@@ -393,8 +393,8 @@ def ci_checker(
         img_rest = bdsf.process_image(
             input_image_restored,
             beam=beam_info,
-            thresh_isl=th_isl,
-            thresh_pix=th_pix,
+            thresh_isl=thresh_isl,
+            thresh_pix=thresh_pix,
             quiet=quiet_bdsf,
         )
     else:
@@ -402,8 +402,8 @@ def ci_checker(
         img_rest = bdsf.process_image(
             input_image_restored,
             beam=beam_info,
-            thresh_isl=th_isl,
-            thresh_pix=th_pix,
+            thresh_isl=thresh_isl,
+            thresh_pix=thresh_pix,
             multichan_opts=True,
             collapse_mode=multichan_option,
             collapse_ch0=refchan,  # this only applies to single channel mode
@@ -429,16 +429,16 @@ def ci_checker(
             img_resid = bdsf.process_image(
                 input_image_residual,
                 beam=beam_info,
-                thresh_isl=th_isl,
-                thresh_pix=th_pix,
+                thresh_isl=thresh_isl,
+                thresh_pix=thresh_pix,
                 quiet=quiet_bdsf,
             )
         else:
             img_resid = bdsf.process_image(
                 input_image_residual,
                 beam=beam_info,
-                thresh_isl=th_isl,
-                thresh_pix=th_pix,
+                thresh_isl=thresh_isl,
+                thresh_pix=thresh_pix,
                 multichan_opts=True,
                 collapse_mode=multichan_option,
                 collapse_ch0=refchan,
@@ -463,8 +463,8 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
 
     :param source_file: Output file name of the source list
     :param rascil_source_file: Output file name of the RASCIL skycomponents hdf file
-    :param freq: Single frequency or list of frequencies in float
-
+    :param freq: List of frequencies in float
+                 (if single frequency, pass it in a length one array)
     :return comp: List of skycomponents
     """
 
@@ -553,7 +553,7 @@ def read_skycomponent_from_txt(filename, freq):
     Read source input from a txt file and make them into skycomponents
 
     :param filename: Name of input file
-    :param freq: Frequency or list of frequencies in float
+    :param freq: List of frequencies in float
     :return comp: List of skycomponents
     """
 

@@ -110,9 +110,9 @@ class TestGridDataKernels(unittest.TestCase):
         gcf, cf = create_awterm_convolutionfunction(
             self.image,
             make_pb=None,
-            nw=200,
-            wstep=8.0,
-            oversampling=8,
+            nw=100,
+            wstep=16.0,
+            oversampling=4,
             support=60,
             use_aaf=True,
             polarisation_frame=PolarisationFrame("linear"),
@@ -129,7 +129,7 @@ class TestGridDataKernels(unittest.TestCase):
         peak_location = numpy.unravel_index(
             numpy.argmax(numpy.abs(cf["pixels"].data)), cf["pixels"].data.shape
         )
-        assert peak_location == (0, 0, 100, 4, 4, 30, 30), peak_location
+        assert peak_location == (0, 0, 50, 2, 2, 30, 30), peak_location
         assert (
             numpy.abs(cf["pixels"].data[peak_location] - (0.1870600903328245 - 0j))
             < 1e-7
@@ -145,7 +145,7 @@ class TestGridDataKernels(unittest.TestCase):
             numpy.argmax(numpy.abs(cf_clipped["pixels"].data)),
             cf_clipped["pixels"].data.shape,
         )
-        assert peak_location == (0, 0, 100, 4, 4, 27, 27), peak_location
+        assert peak_location == (0, 0, 50, 2, 2, 27, 27), peak_location
 
         assert (
             numpy.abs(
@@ -169,9 +169,9 @@ class TestGridDataKernels(unittest.TestCase):
         gcf, cf = create_awterm_convolutionfunction(
             self.image,
             make_pb=make_pb,
-            nw=200,
-            wstep=8,
-            oversampling=8,
+            nw=100,
+            wstep=16,
+            oversampling=4,
             support=60,
             use_aaf=True,
             polarisation_frame=PolarisationFrame("linear"),
@@ -189,7 +189,7 @@ class TestGridDataKernels(unittest.TestCase):
         peak_location = numpy.unravel_index(
             numpy.argmax(numpy.abs(cf["pixels"].data)), cf["pixels"].data.shape
         )
-        assert peak_location == (0, 0, 100, 4, 4, 30, 30), peak_location
+        assert peak_location == (0, 0, 50, 2, 2, 30, 30), peak_location
         assert (
             numpy.abs(cf["pixels"].data[peak_location] - (0.07761529943522588 - 0j))
             < 1e-7
@@ -201,21 +201,21 @@ class TestGridDataKernels(unittest.TestCase):
         assert numpy.abs(v_peak) < 1e-7, u_peak
 
         bboxes = calculate_bounding_box_convolutionfunction(cf)
-        assert len(bboxes) == 200, len(bboxes)
+        assert len(bboxes) == 100, len(bboxes)
         assert len(bboxes[0]) == 3, len(bboxes[0])
-        assert bboxes[-1][0] == 199, bboxes[-1][0]
+        assert bboxes[-1][0] == 99, bboxes[-1][0]
 
         peak_location = numpy.unravel_index(
             numpy.argmax(numpy.abs(cf["pixels"].data)), cf["pixels"].data.shape
         )
-        assert peak_location == (0, 0, 100, 4, 4, 30, 30), peak_location
+        assert peak_location == (0, 0, 50, 2, 2, 30, 30), peak_location
 
         cf_clipped = apply_bounding_box_convolutionfunction(cf, fractional_level=1e-3)
         peak_location = numpy.unravel_index(
             numpy.argmax(numpy.abs(cf_clipped["pixels"].data)),
             cf_clipped["pixels"].data.shape,
         )
-        assert peak_location == (0, 0, 100, 4, 4, 21, 21), peak_location
+        assert peak_location == (0, 0, 50, 2, 2, 20, 20), peak_location
 
     def test_fill_aterm_to_convolutionfunction(self):
         make_pb = functools.partial(

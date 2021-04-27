@@ -225,7 +225,7 @@ def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, **kwargs):
     :return: list of vis (or graph)
     """
 
-    def corrupt_vis(bvis, gt, **kwargs):
+    def simulation_corrupt_vis(bvis, gt, **kwargs):
         if gt is None:
             gt = create_gaintable_from_blockvisibility(bvis, **kwargs)
             gt = simulate_gaintable(gt, **kwargs)
@@ -234,12 +234,12 @@ def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, **kwargs):
 
     if gt_list is None:
         return [
-            rsexecute.execute(corrupt_vis, nout=1)(vis_list[ivis], None, **kwargs)
+            rsexecute.execute(simulation_corrupt_vis, nout=1)(vis_list[ivis], None, **kwargs)
             for ivis, v in enumerate(vis_list)
         ]
     else:
         return [
-            rsexecute.execute(corrupt_vis, nout=1)(
+            rsexecute.execute(simulation_corrupt_vis, nout=1)(
                 vis_list[ivis], gt_list[ivis], **kwargs
             )
             for ivis, v in enumerate(vis_list)
@@ -266,12 +266,12 @@ def calculate_residual_from_gaintables_rsexecute_workflow(
         bvis_list, components, model_list, nominal_gtl
     )
 
-    def subtract(im1, im2):
+    def simulation_image_subtract(im1, im2):
         im = im1[0].copy(deep=True)
         im["pixels"].data -= im2[0].data
         return im, im1[1]
 
-    residual_list = rsexecute.execute(subtract, nout=1)(
+    residual_list = rsexecute.execute(simulation_image_subtract, nout=1)(
         actual_dirty_list, nominal_dirty_list
     )
 
@@ -535,23 +535,23 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(
     ]
 
     # Sum all visibilities per component so we can selfcal
-    def sum_vis(bvis_list):
+    def simulation_sum_vis(bvis_list):
         bv_sum = copy_visibility(bvis_list[0], zero=True)
         for ibv, bv in enumerate(bvis_list):
             bv_sum["vis"].data += bv["vis"].data
         return bv_sum
 
     actual_bvis_list = [
-        rsexecute.execute(sum_vis)(actual_bvis_list[ibvis])
+        rsexecute.execute(simulation_sum_vis)(actual_bvis_list[ibvis])
         for ibvis, _ in enumerate(actual_bvis_list)
     ]
 
     nominal_bvis_list = [
-        rsexecute.execute(sum_vis)(nominal_bvis_list[ibvis])
+        rsexecute.execute(simulation_sum_vis)(nominal_bvis_list[ibvis])
         for ibvis, _ in enumerate(nominal_bvis_list)
     ]
 
-    def selfcal_convert(actual_bvis, nominal_bvis):
+    def simulation_selfcal_convert(actual_bvis, nominal_bvis):
         if selfcal:
             gt = solve_gaintable(
                 actual_bvis,
@@ -570,7 +570,7 @@ def calculate_selfcal_residual_from_gaintables_rsexecute_workflow(
         return actual_bvis
 
     actual_vis_list = [
-        rsexecute.execute(selfcal_convert)(
+        rsexecute.execute(simulation_selfcal_convert)(
             actual_bvis_list[ibv], nominal_bvis_list[ibv]
         )
         for ibv, _ in enumerate(actual_bvis_list)
@@ -733,7 +733,7 @@ def create_surface_errors_gaintable_rsexecute_workflow(
     :return: (list of error-free gaintables, list of error gaintables) or graph
     """
 
-    def get_band_vp(band, el):
+    def simulation_get_band_vp(band, el):
         if band == "B1":
             dir = (
                 vp_directory
@@ -785,7 +785,7 @@ def create_surface_errors_gaintable_rsexecute_workflow(
         vpa["pixels"].data = vpa["pixels"].data + 1j * vpa_imag["pixels"].data
         return vpa
 
-    def find_vp(band, vis):
+    def simulation_find_vp(band, vis):
         ha = calculate_blockvisibility_hourangles(vis).to("rad").value
         dec = vis.phasecentre.dec.rad
         latitude = vis.configuration.location.lat.rad
@@ -800,11 +800,11 @@ def create_surface_errors_gaintable_rsexecute_workflow(
                 * ((el_deg + elevation_sampling / 2.0) // elevation_sampling),
             ),
         )
-        return get_band_vp(band, el_table)
+        return simulation_get_band_vp(band, el_table)
 
-    def find_vp_nominal(band):
+    def simulation_find_vp_nominal(band):
         el_nominal_deg = 45.0
-        return get_band_vp(band, el_nominal_deg)
+        return simulation_get_band_vp(band, el_nominal_deg)
 
     actual_pt_list = [
         rsexecute.execute(create_pointingtable_from_blockvisibility)(bvis)
@@ -815,8 +815,8 @@ def create_surface_errors_gaintable_rsexecute_workflow(
         for bvis in sub_bvis_list
     ]
 
-    vp_nominal_list = [rsexecute.execute(find_vp_nominal)(band) for bv in sub_bvis_list]
-    vp_actual_list = [rsexecute.execute(find_vp)(band, bv) for bv in sub_bvis_list]
+    vp_nominal_list = [rsexecute.execute(simulation_find_vp_nominal)(band) for bv in sub_bvis_list]
+    vp_actual_list = [rsexecute.execute(simulation_find_vp)(band, bv) for bv in sub_bvis_list]
 
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [
@@ -848,7 +848,7 @@ def create_polarisation_gaintable_rsexecute_workflow(
     :return: (list of error-free gaintables, list of error gaintables) or graph
     """
 
-    def find_vp_actual(bvis, band) -> List[Image]:
+    def simulation_find_vp_actual(bvis, band) -> List[Image]:
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
@@ -858,7 +858,7 @@ def create_polarisation_gaintable_rsexecute_workflow(
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list
 
-    def find_vp_nominal(bvis, band):
+    def simulation_find_vp_nominal(bvis, band):
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
@@ -875,10 +875,10 @@ def create_polarisation_gaintable_rsexecute_workflow(
         return vp_list
 
     vp_nominal_list = [
-        rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list
+        rsexecute.execute(simulation_find_vp_nominal)(bv, band) for bv in sub_bvis_list
     ]
     vp_actual_list = [
-        rsexecute.execute(find_vp_actual)(bv, band) for bv in sub_bvis_list
+        rsexecute.execute(simulation_find_vp_actual)(bv, band) for bv in sub_bvis_list
     ]
 
     # Create the gain tables, one per Visibility and per component
@@ -911,7 +911,7 @@ def create_voltage_pattern_gaintable_rsexecute_workflow(
     :return: (list of error-free gaintables, list of error gaintables) or graph
     """
 
-    def find_vp_nominal(bvis, band):
+    def simulation_find_vp_nominal(bvis, band):
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
@@ -928,7 +928,7 @@ def create_voltage_pattern_gaintable_rsexecute_workflow(
         return vp_list
 
     vp_nominal_list = [
-        rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list
+        rsexecute.execute(simulation_find_vp_nominal)(bv, band) for bv in sub_bvis_list
     ]
 
     # Create the gain tables, one per Visibility and per component
@@ -955,7 +955,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(
     :return: (list of error-free gaintables, list of error gaintables) or graph
     """
 
-    def find_vp_actual(bvis, band) -> List[Image]:
+    def simulation_find_vp_actual(bvis, band) -> List[Image]:
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp_list = []
         for vp_type in vp_types:
@@ -965,7 +965,7 @@ def create_heterogeneous_gaintable_rsexecute_workflow(
         assert len(vp_list) == len(vp_types), "Unknown voltage patterns"
         return vp_list
 
-    def find_vp_nominal(bvis, band):
+    def simulation_find_vp_nominal(bvis, band):
         vp_types = numpy.unique(bvis.configuration.vp_type)
         vp = get_vp("{vp}_{band}".format(vp=default_vp, band=band)).copy(deep=True)
         vp = normalise_vp(vp)
@@ -974,10 +974,10 @@ def create_heterogeneous_gaintable_rsexecute_workflow(
         return vp_list
 
     vp_nominal_list = [
-        rsexecute.execute(find_vp_nominal)(bv, band) for bv in sub_bvis_list
+        rsexecute.execute(simulation_find_vp_nominal)(bv, band) for bv in sub_bvis_list
     ]
     vp_actual_list = [
-        rsexecute.execute(find_vp_actual)(bv, band) for bv in sub_bvis_list
+        rsexecute.execute(simulation_find_vp_actual)(bv, band) for bv in sub_bvis_list
     ]
 
     # Create the gain tables, one per Visibility and per component

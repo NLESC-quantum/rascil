@@ -17,7 +17,10 @@ from rascil.data_models.data_model_helpers import export_skymodel_to_hdf5
 from rascil.processing_components import (
     export_blockvisibility_to_ms,
     concatenate_blockvisibility_frequency,
-    find_skycomponents
+    find_skycomponents,
+)
+from rascil.processing_components.util.performance import (
+    performance_store_dict, performance_environment
 )
 from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import (
@@ -43,6 +46,8 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 default_run = True
+
+
 @pytest.mark.parametrize(
     "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
     [
@@ -57,7 +62,7 @@ default_run = True
             -13.658737888701651,
             None,
             None,
-            5.0
+            5.0,
         ),
         (
             default_run,
@@ -70,8 +75,8 @@ default_run = True
             -13.614616421597278,
             None,
             None,
-            5.5
-         ),
+            5.5,
+        ),
         (
             default_run,
             "ical",
@@ -79,11 +84,11 @@ default_run = True
             9,
             "ical",
             True,
-            100.01174977456739,
-            -0.45581717661385523,
+            115.71426187661086,
+            -1.408050738866888,
             None,
             None,
-            5.0
+            5.0,
         ),
         (
             default_run,
@@ -92,11 +97,11 @@ default_run = True
             9,
             "cip",
             False,
-            101.10446215420971,
-            -0.09514239316943537,
+            116.74934844229546,
+            -0.2961349090496892,
             None,
             "None",
-            5.0
+            5.0,
         ),
         (
             default_run,
@@ -105,11 +110,11 @@ default_run = True
             9,
             "cip",
             False,
-            93.82575873830761,
-            -0.2427936196361827,
+            107.79654273437849,
+            -0.6062812476137848,
             None,
             "None",
-            5.5
+            5.5,
         ),
         (
             default_run,
@@ -118,18 +123,29 @@ default_run = True
             9,
             "cip",
             False,
-            97.45535516515234,
-            -0.1693697994100334,
+            111.84507020640052,
+            -1.421622304601026,
             "10",
             "fit",
-            5.5
+            5.5,
         ),
-    ]
+    ],
 )
-def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min,
-                       component_threshold, component_method, offset):
+def test_rascil_imager(
+    enabled,
+    tag,
+    use_dask,
+    nmajor,
+    mode,
+    add_errors,
+    flux_max,
+    flux_min,
+    component_threshold,
+    component_method,
+    offset,
+):
     """
-    
+
     :param enabled: Turn this test on?
     :param tag: Tag for files generated
     :param use_dask: Use dask for processing. Set to False for debugging
@@ -143,14 +159,14 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
     :param offset: Offset of test pattern in RA pizels
     :return:
     """
-    
+
     if not enabled:
         return True
 
-    nfreqwin=7
-    dospectral=True
-    zerow=False
-    dopol=False
+    nfreqwin = 7
+    dospectral = True
+    zerow = False
+    dopol = False
     persist = True
 
     # We always want the same numbers
@@ -168,9 +184,7 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
     frequency = numpy.linspace(0.8e8, 1.2e8, freqwin)
 
     if freqwin > 1:
-        channelwidth = numpy.array(
-            freqwin * [frequency[1] - frequency[0]]
-        )
+        channelwidth = numpy.array(freqwin * [frequency[1] - frequency[0]])
     else:
         channelwidth = numpy.array([1e6])
 
@@ -184,9 +198,7 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         f = numpy.array([100.0])
 
     if dospectral:
-        flux = numpy.array(
-            [f * numpy.power(freq / 1e8, -0.7) for freq in frequency]
-        )
+        flux = numpy.array([f * numpy.power(freq / 1e8, -0.7) for freq in frequency])
     else:
         flux = numpy.array([f])
 
@@ -217,8 +229,9 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
 
     components_list = [
         rsexecute.execute(create_unittest_components)(
-            model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :],
-            offset=(offset, 0.0)
+            model_imagelist[freqwin],
+            flux[freqwin, :][numpy.newaxis, :],
+            offset=(offset, 0.0),
         )
         for freqwin, m in enumerate(model_imagelist)
     ]
@@ -234,30 +247,36 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
 
     if persist:
         components_list = rsexecute.compute(components_list, sync=True)
-        
+
         model_imagelist = [
             rsexecute.execute(insert_skycomponent, nout=1)(
                 model_imagelist[freqwin], components_list[freqwin]
             )
             for freqwin in range(nfreqwin)
         ]
-        
+
         model_imagelist = rsexecute.compute(model_imagelist, sync=True)
 
         model = model_imagelist[0]
         cmodel = smooth_image(model)
-        export_image_to_fits(model, rascil_path("test_results/test_rascil_imager_model.fits"))
-        export_image_to_fits(cmodel, rascil_path("test_results/test_rascil_imager_cmodel.fits"))
+        export_image_to_fits(
+            model, rascil_path("test_results/test_rascil_imager_model.fits")
+        )
+        export_image_to_fits(
+            cmodel, rascil_path("test_results/test_rascil_imager_cmodel.fits")
+        )
         found_components = find_skycomponents(cmodel)
         sm = SkyModel(components=components_list[3])
-        export_skymodel_to_hdf5(sm, rascil_path("test_results/test_rascil_imager_cmodel_original.hdf"))
+        export_skymodel_to_hdf5(
+            sm, rascil_path("test_results/test_rascil_imager_cmodel_original.hdf")
+        )
         sm = SkyModel(components=found_components)
-        export_skymodel_to_hdf5(sm, rascil_path("test_results/test_rascil_imager_cmodel_found.hdf"))
+        export_skymodel_to_hdf5(
+            sm, rascil_path("test_results/test_rascil_imager_cmodel_found.hdf")
+        )
 
     if add_errors:
-        seeds = [
-            rng.integers(low=1, high=2 ** 32 - 1) for i in range(nfreqwin)
-        ]
+        seeds = [rng.integers(low=1, high=2 ** 32 - 1) for i in range(nfreqwin)]
         if nfreqwin == 5:
             assert seeds == [
                 3822708302,
@@ -303,6 +322,8 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         f"{mode}",
         "--use_dask",
         f"{use_dask}",
+        "--performance_file",
+        rascil_path(f"test_results/test_rascil_imager_performance_{tag}.json"),
         "--ingest_msname",
         rascil_path(f"test_results/test_rascil_imager_{tag}.ms"),
         "--ingest_vis_nchan",
@@ -316,9 +337,9 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         "--imaging_cellsize",
         "0.0005",
         "--imaging_dft_kernel",
-        "cpu_numba",
+        "cpu_looped",
     ]
-    
+
     clean_args = [
         "--clean_nmajor",
         f"{nmajor}",
@@ -339,23 +360,23 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         "--clean_facets",
         "1",
         "--clean_restored_output",
-        "integrated"
+        "list",
     ]
     if component_threshold is not None and component_method is not None:
         clean_args += [
             "--clean_component_threshold",
             f"{component_threshold}",
             "--clean_component_method",
-            f"{component_method}"
+            f"{component_method}",
         ]
     else:
         clean_args += [
             "--clean_component_threshold",
             "1e15",
             "--clean_component_method",
-            "fit"
+            "fit",
         ]
-    
+
     calibration_args = [
         "--calibration_T_first_selfcal",
         "2",
@@ -378,7 +399,7 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         "--calibration_global_solution",
         "True",
         "--calibration_context",
-        "TG"
+        "TG",
     ]
 
     parser = cli_parser()
@@ -390,6 +411,9 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
         args = parser.parse_args(invert_args + clean_args + calibration_args)
     else:
         return ValueError(f"rascil-imager: Unknown mode {mode}")
+
+    performance_environment(args.performance_file, mode="w")
+    performance_store_dict(args.performance_file, "cli_args", vars(args), mode="a")
 
     if mode == "invert":
         dirtyname = imager(args)
@@ -406,6 +430,5 @@ def test_rascil_imager(enabled, tag, use_dask, nmajor, mode, add_errors, flux_ma
     else:
         return ValueError(f"rascil-imager: Unknown mode {mode}")
 
-    
     numpy.testing.assert_allclose(qa.data["max"], flux_max, atol=1e-7, err_msg=f"{qa}")
     numpy.testing.assert_allclose(qa.data["min"], flux_min, atol=1e-7, err_msg=f"{qa}")

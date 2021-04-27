@@ -19,7 +19,7 @@ The parser can then be called to extract the relevant command line argument::
 
 import sys
 import argparse
-
+import json
 
 def apps_parser_ingest(parser):
     """Add ingest-specific command line arguments to an existing CLI parser
@@ -247,7 +247,7 @@ def apps_parser_cleaning(parser):
     parser.add_argument(
         "--clean_restored_output",
         type=str,
-        default="integrated",
+        default="list",
         help="Type of restored image output: list or integrated",
     )
 
@@ -413,4 +413,11 @@ def apps_parser_app(parser):
         default=None,
         help="Name of logfile (default is to construct one from msname)",
     )
+    parser.add_argument(
+        "--performance_file",
+        type=str,
+        default=None,
+        help="Name of json file to contain performance information",
+    )
+
     return parser

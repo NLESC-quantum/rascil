@@ -941,10 +941,13 @@ def fit_skycomponent_spectral_index(sc: Skycomponent):
 
     else:
         centre = nchan // 2
-        xdata = numpy.log10(sc.frequency / sc.frequency[centre])
-        ydata = numpy.log10(sc.flux[:, 0] / sc.flux[centre, 0])
-
-        out = numpy.polyfit(xdata, ydata, 1)
-        spec_indx = out[0]
+        if sc.frequency[centre] > 0.0 and sc.flux[centre, 0] > 0.0:
+            xdata = numpy.log10(sc.frequency / sc.frequency[centre])
+            ydata = numpy.log10(sc.flux[:, 0] / sc.flux[centre, 0])
+            out = numpy.polyfit(xdata, ydata, 1)
+            spec_indx = out[0]
+        else:
+            log.warning("Negative values encountered, no fitting performed.")
+            spec_indx = 0.0
 
     return spec_indx

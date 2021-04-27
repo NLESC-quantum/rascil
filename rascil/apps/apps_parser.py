@@ -247,7 +247,7 @@ def apps_parser_cleaning(parser):
     parser.add_argument(
         "--clean_restored_output",
         type=str,
-        default="integrated",
+        default="list",
         help="Type of restored image output: list or integrated",
     )
 
@@ -417,7 +417,7 @@ def apps_parser_app(parser):
         "--performance_file",
         type=str,
         default=None,
-        help="Name of file to contain performance information",
+        help="Name of json file to contain performance information",
     )
 
     return parser

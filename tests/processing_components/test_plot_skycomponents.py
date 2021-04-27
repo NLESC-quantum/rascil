@@ -11,6 +11,7 @@ Output files:
     test_plot_skycomponents_position_value.png
     test_plot_skycomponents_position_quiver.png
     test_plot_skycomponents_gaussian_beam_position.png
+    test_plot_skycomponents_spec_index.png
 """
 import logging
 import unittest
@@ -42,6 +43,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_flux_histogram,
     plot_skycomponents_position_quiver,
     plot_gaussian_beam_position,
+    plot_multifreq_spectral_index,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -56,7 +58,10 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
-        self.frequency = numpy.array([1e8])
+        self.central_frequency = numpy.array([1e8])
+
+        self.frequency = numpy.linspace(0.8e8, 1.2e8, 7)
+
         self.channel_bandwidth = numpy.array([1e6])
         self.phasecentre = SkyCoord(
             ra=+0.0 * u.deg, dec=-55.0 * u.deg, frame="icrs", equinox="J2000"
@@ -140,7 +145,7 @@ class TestPlotSkycomponent(unittest.TestCase):
     def test_plot_flux(self):
 
         comp_test = addnoise_skycomponent(
-            self.components, noise=self.noise, mode="flux"
+            self.components, noise=self.noise, mode="flux_central"
         )
 
         flux_in, flux_out = plot_skycomponents_flux(
@@ -158,7 +163,7 @@ class TestPlotSkycomponent(unittest.TestCase):
     def test_plot_flux_ratio(self):
 
         comp_test = addnoise_skycomponent(
-            self.components, noise=self.noise, mode="flux"
+            self.components, noise=self.noise, mode="flux_central"
         )
         dist, flux_ratio = plot_skycomponents_flux_ratio(
             comp_test, self.components, self.phasecentre, plot_file=self.plot_file
@@ -174,7 +179,7 @@ class TestPlotSkycomponent(unittest.TestCase):
     def test_plot_flux_histogram(self):
 
         comp_test = addnoise_skycomponent(
-            self.components, noise=self.noise, mode="flux"
+            self.components, noise=self.noise, mode="flux_central"
         )
         [flux_in, flux_out] = plot_skycomponents_flux_histogram(
             comp_test,
@@ -229,6 +234,22 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         if self.persist is False:
             os.remove(self.plot_file + "_gaussian_beam_position.png")
+
+    def test_plot_spectral_index(self):
+
+        comp_test = addnoise_skycomponent(
+            self.components, noise=self.noise, mode="flux_all"
+        )
+        spec_in, spec_out = plot_multifreq_spectral_index(
+            comp_test, self.components, plot_file=self.plot_file
+        )
+
+        assert len(spec_in) == len(comp_test)
+
+        assert os.path.exists(self.plot_file + "_spec_index.png")
+
+        if self.persist is False:
+            os.remove(self.plot_file + "_spec_index.png")
 
 
 if __name__ == "__main__":

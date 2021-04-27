@@ -45,7 +45,6 @@ def performance_environment(performance_file, indent=2, mode="a"):
     :return:
     """
     info = {
-        "script": sys.argv[0],
         "git": str(git_hash()),
         "cwd": os.getcwd(),
         "hostname": socket.gethostname(),

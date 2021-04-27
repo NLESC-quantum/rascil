@@ -431,6 +431,7 @@ def invert(args, bvis_list, model_list, msname):
     imagename = msname.replace(".ms", "_invert")
 
     if args.imaging_dopsf == "True":
+        performance_qa_image(args.performance_file, "psf", dirty, mode="a")
         log.info(qa_image(dirty, context="PSF"))
         show_image(dirty, title=f"{imagename} PSF image")
         plt.savefig(imagename + "_psf.png")
@@ -439,6 +440,7 @@ def invert(args, bvis_list, model_list, msname):
         export_image_to_fits(dirty, psfname)
         return psfname
     else:
+        performance_qa_image(args.performance_file, "dirty", dirty, mode="a")
         log.info(qa_image(dirty, context="Dirty"))
         show_image(dirty, title=f"{imagename} Dirty image")
         plt.savefig(imagename + "_dirty.png")

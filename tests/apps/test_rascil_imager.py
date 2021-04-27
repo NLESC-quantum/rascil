@@ -45,14 +45,14 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
-default_run = False
+default_run = True
 
 
 @pytest.mark.parametrize(
     "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
     [
         (
-            not default_run,
+            default_run,
             "invert",
             True,
             0,
@@ -337,7 +337,7 @@ def test_rascil_imager(
         "--imaging_cellsize",
         "0.0005",
         "--imaging_dft_kernel",
-        "cpu_numba",
+        "cpu_looped",
     ]
 
     clean_args = [

@@ -50,8 +50,6 @@ def init_logging():
     """ Initialise the logging.
     
     We need to run this function on all Dask workers
-    
-    :return:
     """
     logging.basicConfig(
         filename="pipelines_rsexecute_timings.log",
@@ -176,19 +174,11 @@ def trial_case(
             )
             rsexecute.set_client(client=client)
         else:
-            #     rsexecute.set_client(
-            #         threads_per_worker=threads_per_worker,
-            #         processes=threads_per_worker == 1,
-            #         memory_limit=memory * 1024 * 1024 * 1024,
-            #         n_workers=nworkers,
-            #     )
-            # log.info("Defined %d workers" % (nworkers))
             rsexecute.set_client(use_dask=True)
     else:
         rsexecute.set_client(use_dask=use_dask)
         results["nnodes"] = 1
 
-    # Initialise logging on the workers. This appears to only work using the process scheduler.
     rsexecute.run(init_logging)
 
     lprint("Starting pipelines_rsexecute_timings")

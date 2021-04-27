@@ -227,9 +227,11 @@ def imager(args):
 
     # Save the processing statistics from Dask
     dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
-    performance_store_dict(args.performance_file, "dask_profile",
-                           dask_info, mode="a")
-    performance_dask_configuration(args.performance_file, mode='a')
+    
+    if args is not None:
+        performance_store_dict(args.performance_file, "dask_profile",
+                               dask_info, mode="a")
+        performance_dask_configuration(args.performance_file, mode='a')
 
     rsexecute.close()
 

@@ -26,8 +26,11 @@ import json
 import logging
 import os
 import socket
+import subprocess
 
 from rascil.processing_components.image.operations import qa_image
+
+from rascil.workflows.rsexecute.execution_support import rsexecute
 
 log = logging.getLogger("rascil-logger")
 
@@ -39,8 +42,6 @@ def git_hash():
 
     :return: string or "unknown"
     """
-    import subprocess
-
     try:
         return subprocess.check_output(["git", "rev-parse", "HEAD"])
     except Exception as excp:
@@ -86,7 +87,6 @@ def performance_dask_configuration(performance_file, indent=2, mode="a"):
     :param indent: Number of characters indent in performance file
     :param mode: Writing mode: 'w' or 'a' for write and append
     """
-    from rascil.workflows.rsexecute.execution_support import rsexecute
 
     if not rsexecute.using_dask:
         return

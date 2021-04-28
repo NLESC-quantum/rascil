@@ -41,12 +41,12 @@ def calibrate_list_rsexecute_workflow(
     :return: list of calibrated vis, list of dictionaries of gaintables
     """
 
-    def solve(vis, modelvis=None, gt=None):
+    def calibration_solve(vis, modelvis=None, gt=None):
         return solve_calibrate_chain(
             vis, modelvis, gt, calibration_context=calibration_context, **kwargs
         )
 
-    def apply(vis, gt):
+    def calibration_apply(vis, gt):
         assert gt is not None
         return apply_calibration_chain(
             vis, gt, calibration_context=calibration_context, **kwargs
@@ -68,31 +68,31 @@ def calibrate_list_rsexecute_workflow(
         # This is a global solution so we only compute one gain table
         if gt_list is None or len(gt_list) < 1:
             gt_list = [
-                rsexecute.execute(solve, pure=True, nout=1)(global_point_vis_list)
+                rsexecute.execute(calibration_solve, pure=True, nout=1)(global_point_vis_list)
             ]
         else:
             gt_list = [
-                rsexecute.execute(solve, pure=True, nout=1)(
+                rsexecute.execute(calibration_solve, pure=True, nout=1)(
                     global_point_vis_list, gt=gt_list[0]
                 )
             ]
 
         return [
-            rsexecute.execute(apply, nout=1)(v, gt_list[0]) for v in vis_list
+            rsexecute.execute(calibration_apply, nout=1)(v, gt_list[0]) for v in vis_list
         ], gt_list
     else:
         if gt_list is not None and len(gt_list) > 0:
             gt_list = [
-                rsexecute.execute(solve, pure=True, nout=1)(
+                rsexecute.execute(calibration_solve, pure=True, nout=1)(
                     v, model_vislist[i], gt_list[i]
                 )
                 for i, v in enumerate(vis_list)
             ]
         else:
             gt_list = [
-                rsexecute.execute(solve, pure=True, nout=1)(v, model_vislist[i])
+                rsexecute.execute(calibration_solve, pure=True, nout=1)(v, model_vislist[i])
                 for i, v in enumerate(vis_list)
             ]
         return [
-            rsexecute.execute(apply)(v, gt_list[i]) for i, v in enumerate(vis_list)
+            rsexecute.execute(calibration_apply)(v, gt_list[i]) for i, v in enumerate(vis_list)
         ], gt_list

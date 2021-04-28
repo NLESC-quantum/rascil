@@ -7,6 +7,7 @@
     Input parameters:
     param cellsize: Cell size of each pixel in the image
     param npixel: Number of pixels for the generated image
+    param nchan: Number of frequency channels in the image
     param flux_limit: Threshold for source selection
     param insert_method: Method of interpolation for inserting sources into image
     param noise: amount of noise added onto the image
@@ -43,74 +44,111 @@ from rascil.processing_components.simulation import (
 from rascil.processing_components.skycomponent import (
     insert_skycomponent,
     find_skycomponent_matches,
+    fit_skycomponent_spectral_index,
 )
 
 log = logging.getLogger("rascil-logger")
 
 
 @pytest.mark.parametrize(
-    "cellsize, npixel, flux_limit, insert_method, noise, tag",
+    "cellsize, npixel, nchan, flux_limit, insert_method, noise, tag",
     [
         (
             0.0001,
             512,
+            1,
             0.001,
             "Nearest",
             0.00003,
-            "nearest_npixel512_noise0.00003_flux0.001",
-        ),
-        (
-            0.0001,
-            512,
-            0.0001,
-            "Nearest",
-            0.00003,
-            "nearest_npixel512_noise0.00003_flux0.0001",
-        ),
-        (
-            0.0001,
-            512,
-            0.001,
-            "Nearest",
-            0.0003,
-            "nearest_npixel512_noise0.00003_flux0.001",
-        ),
-        (
-            0.0001,
-            512,
-            0.001,
-            "Lanczos",
-            0.0003,
-            "lanczos_npixel512_noise0.00003_flux0.001",
+            "nearest_npixel512_nchan1_noise0.00003_flux0.001",
         ),
         (
             0.0001,
             1024,
+            1,
             0.001,
             "Nearest",
             0.00003,
-            "nearest_npixel1024_noise0.00003_flux0.001",
+            "nearest_npixel1024_nchan1_noise0.00003_flux0.001",
+        ),
+        (
+            0.0001,
+            512,
+            64,
+            0.001,
+            "Nearest",
+            0.00003,
+            "nearest_npixel512_nchan64_noise0.00003_flux0.001",
+        ),
+        (
+            0.0001,
+            1024,
+            8,
+            0.001,
+            "Nearest",
+            0.000001,
+            "nearest_npixel1024_nchan8_noise0.000001_flux0.001",
+        ),
+        (
+            0.0001,
+            512,
+            1,
+            0.0001,
+            "Nearest",
+            0.00003,
+            "nearest_npixel512_nchan1_noise0.00003_flux0.0001",
+        ),
+        (
+            0.0001,
+            512,
+            1,
+            0.001,
+            "Lanczos",
+            0.00003,
+            "lanczos_npixel512_nchan1_noise0.00003_flux0.001",
+        ),
+        (
+            0.0001,
+            512,
+            1,
+            0.001,
+            "Nearest",
+            0.0003,
+            "nearest_npixel512_nchan1_noise0.0003_flux0.001",
         ),
     ],
 )
 def test_continuum_imaging_checker(
-    cellsize, npixel, flux_limit, insert_method, noise, tag
+    cellsize, npixel, nchan, flux_limit, insert_method, noise, tag
 ):
 
     # Set true if we want to save the outputs
-    persist = os.getenv("RASCIL_PERSIST", False)
+    persist = os.getenv("RASCIL_PERSIST", True)
 
     # set up
-    frequency = 1.0e9
     phasecentre = SkyCoord(
         ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
     )
-    hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(
-        pbtype="MID", frequency=numpy.array([frequency])
-    )
+    if nchan == 1:
+        image_frequency = numpy.array([1.0e9])
+    else:
+        image_frequency = numpy.linspace(1e9, 1.5e9, nchan)
 
+    central_freq = image_frequency[int(nchan // 2)]
+
+    clean_beam = {
+        "bmaj": numpy.rad2deg(5.*cellsize),
+        "bmin": numpy.rad2deg(5.*cellsize) / 2.0,
+        "bpa": 0.0,
+    }
+
+    # Add primary beam
+    hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(
+        pbtype="MID",
+        frequency=numpy.array([central_freq]),
+    )
     hwhm = hwhm_deg * numpy.pi / 180.0
-    fov_deg = 8.0 * 1.36e9 / frequency
+    fov_deg = 8.0 * 1.36e9 / central_freq
     pb_npixel = 256
     d2r = numpy.pi / 180.0
     pb_cellsize = d2r * fov_deg / pb_npixel
@@ -119,7 +157,7 @@ def test_continuum_imaging_checker(
 
     original_components = create_mid_simulation_components(
         phasecentre,
-        numpy.array([frequency]),
+        image_frequency,
         flux_limit,
         pbradius,
         pb_npixel,
@@ -137,18 +175,33 @@ def test_continuum_imaging_checker(
 
     txtfile = rascil_path(f"test_results/test_ci_checker_{tag}.txt")
     f = open(txtfile, "w")
-    f.write("# RA(deg), Dec(deg), Flux(Jy) \n")
+    f.write(
+        "# RA(deg), Dec(deg), I (Jy), Q (Jy), U (Jy), V (Jy), Ref. freq. (Hz), Spectral index\n"
+    )
     for cmp in components:
         coord_ra = cmp.direction.ra.degree
         coord_dec = cmp.direction.dec.degree
-        f.write("%.6f, %.6f, %10.6e \n" % (coord_ra, coord_dec, cmp.flux[0]))
+        spec_indx = fit_skycomponent_spectral_index(cmp)
+        f.write(
+            "%.6f, %.6f, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e \n"
+            % (
+                coord_ra,
+                coord_dec,
+                cmp.flux[nchan // 2],
+                0.0,
+                0.0,
+                0.0,
+                central_freq,
+                spec_indx,
+            )
+        )
     f.close()
 
     model = create_image(
         npixel=npixel,
         cellsize=cellsize,
         phasecentre=phasecentre,
-        frequency=numpy.array([frequency]),
+        frequency=image_frequency,
         polarisation_frame=PolarisationFrame("stokesI"),
     )
 
@@ -159,6 +212,7 @@ def test_continuum_imaging_checker(
         model["pixels"].data += rng.normal(0.0, noise, model["pixels"].data.shape)
 
     model = smooth_image(model, width=1.0, normalise=False)
+    model.attrs["clean_beam"] = clean_beam
 
     tagged_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
     export_image_to_fits(model, tagged_file)
@@ -169,10 +223,6 @@ def test_continuum_imaging_checker(
         [
             "--ingest_fitsname_restored",
             tagged_file,
-            "--finder_beam_maj",
-            f"{numpy.rad2deg(cellsize)}",
-            "--finder_beam_min",
-            f"{numpy.rad2deg(cellsize)}",
             "--check_source",
             "True",
             "--plot_source",
@@ -183,6 +233,8 @@ def test_continuum_imaging_checker(
             comp_file,  # txtfile
             "--match_sep",
             "1.0e-3",
+            # 	    "--finder_multichan_option",
+            # 	    "average",
         ]
     )
 
@@ -254,6 +306,12 @@ def test_continuum_imaging_checker(
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_gaussian_beam_position.png")
     )
+
+    if nchan > 1:
+        assert os.path.exists(
+            rascil_path(f"test_results/test_ci_checker_{tag}_spec_index.png")
+        )
+
     # test that create_index() generates the html and md files,
     # at the end of analyze_image()
     assert os.path.exists(rascil_path("test_results/index.html"))

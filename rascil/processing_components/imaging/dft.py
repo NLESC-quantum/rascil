@@ -117,7 +117,7 @@ def dft_kernel(
     """
 
     if dft_compute_kernel is None:
-        dft_compute_kernel = "cpu_numba"
+        dft_compute_kernel = "cpu_looped"
 
     if dft_compute_kernel == "gpu_cupy_raw":
         return dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes)

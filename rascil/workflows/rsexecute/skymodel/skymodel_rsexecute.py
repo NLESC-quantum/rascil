@@ -57,7 +57,7 @@ def predict_skymodel_list_rsexecute_workflow(
     :return: List of vis_lists
     """
 
-    def ft_cal_sm(ov, sm, g):
+    def skymodel_predict_calibrate(ov, sm, g):
         """Predict visibility for a skymodel
 
         :param sm: Skymodel
@@ -104,23 +104,23 @@ def predict_skymodel_list_rsexecute_workflow(
             raise ValueError("Obsvis and skymodel lists should have the same length")
         if gcfcf is None:
             return [
-                rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, None)
+                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis[ism], sm, None)
                 for ism, sm in enumerate(skymodel_list)
             ]
         else:
             return [
-                rsexecute.execute(ft_cal_sm, nout=1)(obsvis[ism], sm, gcfcf[ism])
+                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis[ism], sm, gcfcf[ism])
                 for ism, sm in enumerate(skymodel_list)
             ]
     else:
         if gcfcf is None:
             return [
-                rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, None)
+                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm, None)
                 for ism, sm in enumerate(skymodel_list)
             ]
         else:
             return [
-                rsexecute.execute(ft_cal_sm, nout=1)(obsvis, sm, gcfcf[ism])
+                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm, gcfcf[ism])
                 for ism, sm in enumerate(skymodel_list)
             ]
 
@@ -139,7 +139,7 @@ def invert_skymodel_list_rsexecute_workflow(
     :return: List of (image, weight) tuples)
     """
 
-    def ift_ical_sm(v, sm, g):
+    def skymodel_calibrate_invert(v, sm, g):
         """Inverse Fourier sum of visibility to image and components
 
         :param v: Visibility to be transformed
@@ -167,12 +167,12 @@ def invert_skymodel_list_rsexecute_workflow(
 
     if gcfcf is None:
         return [
-            rsexecute.execute(ift_ical_sm, nout=1)(vis_list[i], sm, None)
+            rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm, None)
             for i, sm in enumerate(skymodel_list)
         ]
     else:
         return [
-            rsexecute.execute(ift_ical_sm, nout=1)(vis_list[i], sm, gcfcf[i])
+            rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm, gcfcf[i])
             for i, sm in enumerate(skymodel_list)
         ]
 
@@ -199,12 +199,12 @@ def restore_centre_skymodel_list_rsexecute_workflow(
     # Add the model over all channels
     centre = len(skymodel_list) // 2
 
-    def restore_skymodel(s, res, cb):
+    def skymodel_restore(s, res, cb):
         res_image = restore_cube(s.image, residual=res, clean_beam=cb)
         return restore_skycomponent(res_image, s.components, cb)
 
     residual = sum_invert_results_rsexecute(residual_imagelist)[0]
-    restored = rsexecute.execute(restore_skymodel, nout=1)(
+    restored = rsexecute.execute(skymodel_restore, nout=1)(
         skymodel_list[centre], residual, clean_beam
     )
 
@@ -230,12 +230,12 @@ def restore_skymodel_list_rsexecute_workflow(
     psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
     clean_beam = rsexecute.execute(fit_psf)(psf)
 
-    def restore_skymodel(s, res, cb):
+    def skymodel_restore(s, res, cb):
         res_image = restore_cube(s.image, residual=res, clean_beam=cb)
         return restore_skycomponent(res_image, s.components, cb)
 
     restored_list = [
-        rsexecute.execute(restore_skymodel, nout=1)(
+        rsexecute.execute(skymodel_restore, nout=1)(
             sm, residual_imagelist[ism][0], clean_beam
         )
         for ism, sm in enumerate(skymodel_list)
@@ -301,13 +301,13 @@ def deconvolve_skymodel_list_rsexecute_workflow(
     if fit_skymodel:
         # Now recreate the sky models
         # Set the skymodel image and then if the model is not fixed extract skycomponents
-        def update_skymodel_components(sm, d):
+        def skymodel_update_components(sm, d):
             if not sm.fixed:
                 sm = extract_skycomponents_from_skymodel(sm, d, **kwargs)
             return sm
         
         skymodel_list = [
-            rsexecute.execute(update_skymodel_components, nout=1)(skymodel_list[i], dirty[0])
+            rsexecute.execute(skymodel_update_components, nout=1)(skymodel_list[i], dirty[0])
             for i, dirty in enumerate(dirty_image_list)
         ]
         return skymodel_list
@@ -320,13 +320,13 @@ def deconvolve_skymodel_list_rsexecute_workflow(
             **kwargs
         )
         
-        def update_skymodel_image(sm, im):
+        def skymodel_update_image(sm, im):
             if not sm.fixed:
                 sm.image = im
             return sm
         
         skymodel_list = [
-            rsexecute.execute(update_skymodel_image, nout=1)(skymodel_list[i], m)
+            rsexecute.execute(skymodel_update_image, nout=1)(skymodel_list[i], m)
             for i, m in enumerate(deconvolve_model_imagelist)
         ]
         return skymodel_list

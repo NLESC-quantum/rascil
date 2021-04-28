@@ -88,7 +88,7 @@ def ical_list_rsexecute_workflow(
             **kwargs,
         )
 
-        def zero_model_image(im):
+        def pipeline_zero_model_image(im):
             log.info(
                 "ical_list_rsexecute_workflow: setting initial model to zero after initial selfcal"
             )
@@ -96,7 +96,7 @@ def ical_list_rsexecute_workflow(
             return im
 
         model_imagelist = [
-            rsexecute.execute(zero_model_image, nout=1)(model)
+            rsexecute.execute(pipeline_zero_model_image, nout=1)(model)
             for model in model_imagelist
         ]
 

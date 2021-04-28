@@ -17,7 +17,7 @@ and check with the original inputs. Currently it features the following:
   - Finds sources above a certain threshold and outputs the catalogue (in CSV, FITS and skycomponents format).
   - Produces image statistics and diagnostic plots including: running mean plots of the residual, restored, background and sources and a histogram with fitted Gaussian and a power spectrum of the residual are also plotted.
   - Optional: apply a primary beam to the fluxes.
-  - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), Flux(Jy)".
+  - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), FluxI(Jy), FluxQ(Jy), FluxU(Jy), FluxV(Jy), Ref. Freq.(Hz), Spectral Index".
   - Optional: plot the comparison and error of positions and fluxes for input and output source catalogue.
 
 Example:
@@ -28,20 +28,18 @@ The following runs the a data set from the RASCIL test::
     #!/bin/bash
     # Run this in the directory containing both the
     # restored and residual fits files:
-    # test-imaging-pipeline-dask_continuum_imaging_restored.fits
-    # test-imaging-pipeline-dask_continuum_imaging_residual.fits
-    python $RASCIL/rascil/apps/ci_checker/ci_checker_main.py \
+    python $RASCIL/rascil/apps/ci_checker_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
     --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits
 
 If a source check is required::
 
     #!/bin/bash
-    python $RASCIL/rascil/apps/ci_checker/ci_checker_main.py \
-    --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
-    --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits \
-    --check_source True --plot_source True\
-    --input_source_format external --input_source_filename $RASCIL/data/models/GLEAM_filtered.txt
+    # This example deals with the multi-frequency image 
+    python $RASCIL/rascil/apps/ci_checker_main.py \
+    --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored_cube.fits \
+    --check_source True --plot_source True --input_source_format external \
+     --input_source_filename test-imaging-pipeline-dask_continuum_imaging_components.hdf
 
 Supplying arguments from a file:
 ++++++++++++++++++++++++++++++++
@@ -84,6 +82,7 @@ absolute path to your FITS files. E.g.::
     --ingest_fitsname_restored=rascil/my_data/test-imaging-pipeline-dask_continuum_imaging_restored.fits
     --ingest_fitsname_residual=rascil/my_data/test-imaging-pipeline-dask_continuum_imaging_residual.fits
     --check_source=True
+    --plot_source=True
 
 And you need to provide similarily the relative or absolute path both to the args file and
 the code you are running::

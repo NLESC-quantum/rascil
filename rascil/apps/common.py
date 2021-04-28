@@ -7,7 +7,6 @@ from casacore.tables import table
 
 log = logging.getLogger("rascil-logger")
 
-
 def get_directory_size(directory):
     """Returns the `directory` size in bytes."""
     total = 0

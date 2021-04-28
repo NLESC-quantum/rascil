@@ -70,7 +70,7 @@ def mpccal_skymodel_list_rsexecute_workflow(
             vdatamodel_list, theta_list, docal=True, **kwargs
         )
 
-        def diff_dirty(dcal, dconv):
+        def pipeline_mpc_diff_dirty(dcal, dconv):
             assert (
                 numpy.max(numpy.abs(dcal[0]["pixels"].data)) > 0.0
             ), "before: dcal subimage is zero"
@@ -81,11 +81,11 @@ def mpccal_skymodel_list_rsexecute_workflow(
             return dcal
 
         dirty_all_cal = [
-            rsexecute.execute(diff_dirty, nout=1)(dirty_all_cal[i], dirty_all_conv[i])
+            rsexecute.execute(pipeline_mpc_diff_dirty, nout=1)(dirty_all_cal[i], dirty_all_conv[i])
             for i in range(len(dirty_all_cal))
         ]
 
-        def make_residual(dcal, tl, it):
+        def pipeline_mpc_make_residual(dcal, tl, it):
             res = create_empty_image_like(dcal[0][0])
             for i, d in enumerate(dcal):
                 assert (
@@ -110,7 +110,7 @@ def mpccal_skymodel_list_rsexecute_workflow(
             # plt.show()
             return res
 
-        residual = rsexecute.execute(make_residual, nout=1)(
+        residual = rsexecute.execute(pipeline_mpc_make_residual, nout=1)(
             dirty_all_cal, theta_list, iteration
         )
 

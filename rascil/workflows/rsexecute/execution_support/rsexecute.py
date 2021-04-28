@@ -421,17 +421,19 @@ class _rsexecutebase:
 
         :param name: prefix to name e.g. dask
         """
-
+    
         if self._using_dask:
             task_stream, graph = self.client.get_task_stream(
                 plot="save", filename="%s_task_stream.html" % name
             )
             self.client.profile(plot="save", filename="%s_profile.html" % name)
-
+            
+        
             def print_ts(ts):
                 log.info("Processor time used in each function")
                 summary = {}
                 number = {}
+                dask_info = dict()
                 for t in ts:
                     name = t["key"].split("-")[0]
                     elapsed = t["startstops"][0]["stop"] - t["startstops"][0]["start"]
@@ -447,14 +449,16 @@ class _rsexecutebase:
                 table = []
                 headers = ["Function", "Time (s)", "Percent", "Number calls"]
                 for key in summary.keys():
+                    percent = 100.0 * summary[key] / total
                     table.append(
                         [
                             key,
                             "{0:.3f}".format(summary[key]),
-                            "{0:.3f}".format(100.0 * summary[key] / total),
+                            "{0:.3f}".format(percent),
                             number[key],
                         ]
                     )
+                    dask_info[key] = {"time": summary[key], "fraction": percent, "number_calls":number[key]}
                 log.info("\n" + tabulate(table, headers=headers))
                 duration = time.time() - self.start_time
                 speedup = total / duration
@@ -463,11 +467,46 @@ class _rsexecutebase:
                         total, duration, speedup
                     )
                 )
-
+                dask_info["summary"]={"total": total, "duration": duration, "speedup": speedup}
+                return dask_info
+        
             try:
-                print_ts(task_stream)
+                return print_ts(task_stream)
             except (ValueError, KeyError):
                 log.warning("Dask task stream is unintelligible")
+                return dict()
+
+    @property
+    def client(self):
+        """Client being used
+
+        :return: client
+        """
+        return self._client
+
+    @property
+    def using_dask(self):
+        """Is dask being used?
+
+        :return:
+        """
+        return self._using_dask
+
+    @property
+    def using_dlg(self):
+        """Is daluige being used?
+
+        :return:
+        """
+        return self._using_dlg
+
+    @property
+    def optimizing(self):
+        """Is Dask optimisation being performed?
+
+        :return:
+        """
+        return self._optimize
 
     @property
     def client(self):

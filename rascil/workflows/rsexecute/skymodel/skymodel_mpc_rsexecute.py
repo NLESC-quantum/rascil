@@ -27,7 +27,7 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
     """
 
     # Now do the meaty part. We probably want to refactor this for performance once it works.
-    def vsum(ov, mv):
+    def skymodel_mpc_vsum(ov, mv):
         # Observed vis minus the sum of all predictions
         verr = copy_visibility(ov)
         for m in mv:
@@ -41,7 +41,7 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
         assert len(result) == len(mv)
         return result
 
-    return rsexecute.execute(vsum, nout=len(modelvis_list))(obsvis, modelvis_list)
+    return rsexecute.execute(skymodel_mpc_vsum, nout=len(modelvis_list))(obsvis, modelvis_list)
 
 
 def convolve_skymodel_list_rsexecute_workflow(
@@ -60,7 +60,7 @@ def convolve_skymodel_list_rsexecute_workflow(
     :return: List of (image, weight) tuples)
     """
 
-    def ft_ift_sm(ov, sm, g):
+    def skymodel_predict_invert(ov, sm, g):
         # assert isinstance(ov, BlockVisibility), ov
         # assert isinstance(sm, SkyModel), sm
         if g is not None:
@@ -101,12 +101,12 @@ def convolve_skymodel_list_rsexecute_workflow(
 
     if gcfcf is None:
         return [
-            rsexecute.execute(ft_ift_sm, nout=len(skymodel_list))(obsvis, sm, None)
+            rsexecute.execute(skymodel_predict_invert, nout=len(skymodel_list))(obsvis, sm, None)
             for ism, sm in enumerate(skymodel_list)
         ]
     else:
         return [
-            rsexecute.execute(ft_ift_sm, nout=len(skymodel_list))(
+            rsexecute.execute(skymodel_predict_invert, nout=len(skymodel_list))(
                 obsvis, sm, gcfcf[ism]
             )
             for ism, sm in enumerate(skymodel_list)

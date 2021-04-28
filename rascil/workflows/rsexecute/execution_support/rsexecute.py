@@ -189,6 +189,9 @@ class _rsexecutebase:
             assert isinstance(
                 SkyCoord(0.0 * u.rad, 0.0 * u.rad, frame="icrs").to_string(), str
             )
+            
+            assert SkyCoord(0.0 * u.rad, 0.0 * u.rad, frame="icrs").skyoffset_frame().name \
+                   == 'skyoffseticrs'
 
     def _set_state(self, use_dask, use_dlg, client, verbose, optimize):
         self._using_dask = use_dask

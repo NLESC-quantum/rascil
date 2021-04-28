@@ -45,8 +45,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
-default_run = True
-
+default_run = False
 
 @pytest.mark.parametrize(
     "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
@@ -117,7 +116,7 @@ default_run = True
             5.5,
         ),
         (
-            default_run,
+            not default_run,
             "cip_offset_fit",
             True,
             9,
@@ -361,6 +360,10 @@ def test_rascil_imager(
         "1",
         "--clean_restored_output",
         "list",
+        "--clean_restore_facets",
+        "4",
+        "--clean_restore_overlap",
+        "8"
     ]
     if component_threshold is not None and component_method is not None:
         clean_args += [

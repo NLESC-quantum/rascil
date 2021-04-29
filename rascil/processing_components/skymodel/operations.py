@@ -372,9 +372,10 @@ def extract_skycomponents_from_skymodel(
                 newsm.components += fitted_components
         
         except AssertionError:
-            raise ValueError(
+            log.warning(
                 f"extract_skycomponents_from_image: No sources found > {component_threshold} Jy"
             )
+            return sm
     else:
         raise ValueError(f"Unknown component extraction method {component_method}")
     

@@ -413,13 +413,16 @@ def deconvolve_skymodel_list_rsexecute_workflow(
         dirty_image_list, psf_list, skymodel_list, prefix="", fit_skymodel=False, **kwargs
 ):
     """ Deconvolve using a skymodel
+    
+    This will either fit for the brightest components and add those to the
+    skymodel components or use (optionally faceted) CLEAN based deconvolution
 
-    :param dirty_image_list:
-    :param psf_list:
-    :param skymodel_list: list of skymodels
-    :param prefix:
+    :param dirty_image_list: List of dirty images (or graphs)
+    :param psf_list: List of corresponding psf images (or graphs)
+    :param skymodel_list: list of skymodels (or graph)
+    :param prefix: Informational prefix for logging messages
     :param kwargs:
-    :return: list of skymodels
+    :return: list of skymodels (or graph)
     """
     
     if fit_skymodel:
@@ -454,3 +457,39 @@ def deconvolve_skymodel_list_rsexecute_workflow(
             for i, m in enumerate(deconvolve_model_imagelist)
         ]
         return skymodel_list
+
+
+def sum_skymodels_rsexecute(sm_list):
+    """Sum a set of images, using a tree reduction
+
+    :param sm_list: List of skymodels
+    :return: graph for summed skymodel
+
+    """
+
+    def skymodels_weighted_sum(skymodel_list):
+        if len(skymodel_list) == 1:
+            return skymodel_list[0]
+        else:
+            assert len(skymodel_list) > 1, skymodel_list
+            outsm = skymodel_list[0].copy(deep=True)
+            outsm.image["pixels"].data += skymodel_list[1].mask["pixels"].data *\
+                                          skymodel_list[1].image["pixels"].data
+            outsm.mask["pixels"].data += skymodel_list[1].mask["pixels"].data**2
+            return outsm
+
+    if len(sm_list) > 2:
+        centre = len(sm_list) // 2
+        result = [
+            sum_skymodels_rsexecute(sm_list[:centre]),
+            sum_skymodels_rsexecute(sm_list[centre:]),
+        ]
+        return rsexecute.execute(skymodels_weighted_sum, nout=2)(result)
+    else:
+        sm_list = rsexecute.execute(skymodels_weighted_sum, nout=2)(sm_list)
+        def skymodel_normalise(sm):
+            if sm.mask is not None:
+                sm.image["pixels"].data /= sm.mask["pixels"].data
+                sm.mask["pixels"].data = numpy.sqrt(sm.mask["pixels"].data)
+            return sm
+        return rsexecute.execute(skymodel_normalise)(sm_list)

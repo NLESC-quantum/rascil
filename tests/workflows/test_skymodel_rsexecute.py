@@ -16,10 +16,13 @@ from rascil.processing_components import create_named_configuration
 from rascil.processing_components import (
     ingest_unittest_visibility,
     create_low_test_skymodel_from_gleam,
+    create_pb,
+    qa_image
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import (
     predict_skymodel_list_rsexecute_workflow,
+    sum_skymodels_rsexecute
 )
 
 log = logging.getLogger("rascil-logger")
@@ -195,6 +198,39 @@ class TestSkyModel(unittest.TestCase):
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
+
+    def test_sum_skymodels(self):
+        self.actualSetUp()
+
+        self.skymodel_list = [
+            rsexecute.execute(create_low_test_skymodel_from_gleam)(
+                npixel=self.npixel,
+                cellsize=self.cellsize,
+                frequency=[self.frequency[f]],
+                radius=self.radius,
+                phasecentre=self.phasecentre,
+                polarisation_frame=PolarisationFrame("stokesI"),
+                flux_limit=0.3,
+                flux_threshold=1.0,
+                flux_max=5.0,
+            )
+            for f, freq in enumerate(self.frequency)
+        ]
+        def skymodel_set_pb(sm):
+            sm.mask = create_pb(sm.image, "LOW")
+            return sm
+            
+        self.skymodel_list = [rsexecute.execute(skymodel_set_pb)(sm)
+                              for sm in self.skymodel_list]
+
+        sum_skymodel_list = sum_skymodels_rsexecute(self.skymodel_list)
+        sum_skymodel = rsexecute.compute(sum_skymodel_list, sync=True)
+        qa = qa_image(sum_skymodel.image)
+        numpy.testing.assert_allclose(qa.data["max"], 4.959490911894567, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["min"], 0.0, atol=1e-7, err_msg=f"{qa}")
+        qa = qa_image(sum_skymodel.mask)
+        numpy.testing.assert_allclose(qa.data["max"], 0.9999999999999988, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["min"], 1.716481246836587e-06, atol=1e-7, err_msg=f"{qa}")
 
 
 if __name__ == "__main__":

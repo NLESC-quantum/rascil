@@ -38,7 +38,6 @@ def ical_skymodel_list_rsexecute_workflow(
         model_imagelist,
         context,
         skymodel_list=None,
-        gcfcf=None,
         calibration_context="TG",
         do_selfcal=True,
         pipeline_name="ical",
@@ -60,7 +59,7 @@ def ical_skymodel_list_rsexecute_workflow(
     
     # Create PSFs
     psf_imagelist = invert_list_rsexecute_workflow(
-        vis_list, model_imagelist, context=context, dopsf=True, gcfcf=gcfcf, **kwargs
+        vis_list, model_imagelist, context=context, dopsf=True, **kwargs
     )
     
     # Create a list of copied input visibilities
@@ -88,7 +87,6 @@ def ical_skymodel_list_rsexecute_workflow(
             model_vislist,
             skymodel_list,
             context=context,
-            gcfcf=gcfcf,
             docal=True,
             **kwargs,
         )
@@ -118,7 +116,6 @@ def ical_skymodel_list_rsexecute_workflow(
         residual_imagelist = invert_skymodel_list_rsexecute_workflow(
             cal_vis_list,
             skymodel_list,
-            gcfcf=gcfcf,
             docal=True,
             dopsf=False,
             iteration=0,
@@ -131,7 +128,6 @@ def ical_skymodel_list_rsexecute_workflow(
             model_imagelist,
             context=context,
             skymodel_list=skymodel_list,
-            gcfcf=gcfcf,
             **kwargs,
         )
     
@@ -154,7 +150,6 @@ def ical_skymodel_list_rsexecute_workflow(
                     model_vislist,
                     skymodel_list,
                     context=context,
-                    gcfcf=gcfcf,
                     docal=True,
                     **kwargs,
                 )
@@ -178,7 +173,6 @@ def ical_skymodel_list_rsexecute_workflow(
                 residual_imagelist = invert_skymodel_list_rsexecute_workflow(
                     residual_vislist,
                     skymodel_list,
-                    gcfcf=gcfcf,
                     docal=True,
                     dopsf=False,
                     iteration=0,
@@ -191,7 +185,6 @@ def ical_skymodel_list_rsexecute_workflow(
                     skymodel_list,
                     context=context,
                     skymodel_list=skymodel_list,
-                    gcfcf=gcfcf,
                     **kwargs,
                 )
             
@@ -210,7 +203,6 @@ def ical_skymodel_list_rsexecute_workflow(
         skymodel_list,
         context=context,
         skymodel_list=skymodel_list,
-        gcfcf=gcfcf,
         **kwargs,
     )
     output = get_parameter(kwargs, "restored_output", "list")
@@ -239,7 +231,7 @@ def ical_skymodel_list_rsexecute_workflow(
 
 
 def continuum_imaging_skymodel_list_rsexecute_workflow(
-        vis_list, model_imagelist, context, skymodel_list=None, gcfcf=None, **kwargs
+        vis_list, model_imagelist, context, skymodel_list=None, **kwargs
 ):
     """Create graph for the continuum imaging pipeline.
 
@@ -264,7 +256,6 @@ def continuum_imaging_skymodel_list_rsexecute_workflow(
         model_imagelist,
         context=context,
         skymodel_list=skymodel_list,
-        gcfcf=gcfcf,
         calibration_context="",
         do_selfcal=False,
         pipeline_name="cip",
@@ -285,7 +276,6 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(
         continuum_model_imagelist=None,
         vis_slices=1,
         facets=1,
-        gcfcf=None,
         **kwargs,
 ):
     """Create graph for spectral line imaging pipeline
@@ -306,7 +296,6 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(
             vis_list,
             continuum_model_imagelist,
             context=context,
-            gcfcf=gcfcf,
             vis_slices=vis_slices,
             **kwargs,
         )
@@ -315,7 +304,6 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(
         vis_list,
         model_imagelist,
         context=context,
-        gcfcf=gcfcf,
         pipeline_name="slip",
         **kwargs,
     )

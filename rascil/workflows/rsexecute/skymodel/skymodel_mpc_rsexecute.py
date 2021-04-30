@@ -45,7 +45,7 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
 
 
 def convolve_skymodel_list_rsexecute_workflow(
-    obsvis, skymodel_list, context="ng", gcfcf=None, **kwargs
+    obsvis, skymodel_list, context="ng", **kwargs
 ):
     """Form residual image from observed visibility and a set of skymodel without calibration
 
@@ -54,20 +54,13 @@ def convolve_skymodel_list_rsexecute_workflow(
     :param vis_list: List of BlockVisibility data models
     :param skymodel_list: skymodel list
     :param context: Type of processing e.g. 2d, wstack, timeslice or facets
-    :param gcfcg: tuple containing grid correction and convolution function
     :param docal: Apply calibration table in skymodel
     :param kwargs: Parameters for functions in components
     :return: List of (image, weight) tuples)
     """
 
-    def skymodel_predict_invert(ov, sm, g):
-        # assert isinstance(ov, BlockVisibility), ov
-        # assert isinstance(sm, SkyModel), sm
-        if g is not None:
-            assert len(g) == 2, g
-            # assert isinstance(g[0], Image), g[0]
-            # assert isinstance(g[1], ConvolutionFunction), g[1]
-
+    def skymodel_predict_invert(ov, sm):
+ 
         v = copy_visibility(ov)
 
         v["vis"].data[...] = 0.0 + 0.0j
@@ -89,25 +82,17 @@ def convolve_skymodel_list_rsexecute_workflow(
                 else:
                     model = sm.image
                 v = predict_list_serial_workflow(
-                    [v], [model], context=context, gcfcf=[g], **kwargs
+                    [v], [model], context=context, **kwargs
                 )[0]
 
         result = invert_list_serial_workflow(
-            [v], [sm.image], context=context, gcfcf=[g], **kwargs
+            [v], [sm.image], context=context, **kwargs
         )[0]
         if sm.mask is not None:
             result[0]["pixels"].data *= sm.mask["pixels"].data
         return result
 
-    if gcfcf is None:
-        return [
-            rsexecute.execute(skymodel_predict_invert, nout=len(skymodel_list))(obsvis, sm, None)
-            for ism, sm in enumerate(skymodel_list)
-        ]
-    else:
-        return [
-            rsexecute.execute(skymodel_predict_invert, nout=len(skymodel_list))(
-                obsvis, sm, gcfcf[ism]
-            )
-            for ism, sm in enumerate(skymodel_list)
-        ]
+    return [
+        rsexecute.execute(skymodel_predict_invert, nout=len(skymodel_list))(obsvis, sm, None)
+        for ism, sm in enumerate(skymodel_list)
+    ]

@@ -61,7 +61,7 @@ log = logging.getLogger("rascil-logger")
 
 
 def predict_list_rsexecute_workflow(
-    vis_list, model_imagelist, context, gcfcf=None, **kwargs
+    vis_list, model_imagelist, context, **kwargs
 ):
     """Predict, iterating over both the scattered vis_list and image
 
@@ -100,7 +100,7 @@ def predict_list_rsexecute_workflow(
     assert len(model_imagelist) == len(vis_list)
     predict_results = [
         rsexecute.execute(predict, pure=True, nout=1)(
-            vis, model_imagelist[ivis], gcfcf=gcfcf, **kwargs
+            vis, model_imagelist[ivis], **kwargs
         )
         for ivis, vis in enumerate(vis_list)
     ]
@@ -114,18 +114,15 @@ def invert_list_rsexecute_workflow(
     context,
     dopsf=False,
     normalise=True,
-    gcfcf=None,
     **kwargs
 ):
     """Sum results from invert, iterating over the scattered image and vis_list
 
-    :param gcfcf:
     :param vis_list: list of vis (or graph)
     :param template_model_imagelist: list of template models (or graph)
     :param dopsf: Make the PSF instead of the dirty image
     :param normalise: normalise by sumwt
     :param context: Imaging context
-    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: List of (image, sumwt) tuples, one per vis in vis_list
 
@@ -156,7 +153,6 @@ def invert_list_rsexecute_workflow(
             template_model_imagelist[ivis],
             dopsf=dopsf,
             normalise=normalise,
-            gcfcf=gcfcf,
             **kwargs
         )
         for ivis, vis in enumerate(vis_list)
@@ -166,20 +162,19 @@ def invert_list_rsexecute_workflow(
 
 
 def residual_list_rsexecute_workflow(
-    vis, model_imagelist, context="2d", gcfcf=None, **kwargs
+    vis, model_imagelist, context="2d", **kwargs
 ):
     """Create a graph to calculate (list or graph) of residual images
 
     :param vis: List of vis (or graph)
     :param model_imagelist: Model used to determine image parameters
     :param context: Imaging context e.g. '2d', 'ng'
-    :param gcfcf: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: list of (image, sumwt) tuples or graph
     """
     model_vis = zero_list_rsexecute_workflow(vis)
     model_vis = predict_list_rsexecute_workflow(
-        model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs
+        model_vis, model_imagelist, context=context, **kwargs
     )
     residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
     result = invert_list_rsexecute_workflow(
@@ -188,7 +183,6 @@ def residual_list_rsexecute_workflow(
         context=context,
         dopsf=False,
         normalise=True,
-        gcfcf=gcfcf,
         **kwargs
     )
     return rsexecute.optimize(result)
@@ -684,7 +678,7 @@ def deconvolve_list_channel_rsexecute_workflow(
 
 
 def weight_list_rsexecute_workflow(
-    vis_list, model_imagelist, gcfcf=None, weighting="uniform", robustness=0.0, **kwargs
+    vis_list, model_imagelist, weighting="uniform", robustness=0.0, **kwargs
 ):
     """Weight the visibility data
 
@@ -725,7 +719,7 @@ def weight_list_rsexecute_workflow(
     merged_weight_grid = rsexecute.execute(griddata_merge_weights, nout=1)(weight_list)
     merged_weight_grid = rsexecute.persist(merged_weight_grid, broadcast=True)
 
-    def imaging_re_weight(vis, model, gd, g):
+    def imaging_re_weight(vis, model, gd):
         if gd is not None:
             if vis is not None:
                 # Ensure that the griddata has the right axes so that the convolution
@@ -745,7 +739,7 @@ def weight_list_rsexecute_workflow(
 
     result = [
         rsexecute.execute(imaging_re_weight, nout=1)(
-            v, model_imagelist[i], merged_weight_grid, gcfcf
+            v, model_imagelist[i], merged_weight_grid
         )
         for i, v in enumerate(vis_list)
     ]

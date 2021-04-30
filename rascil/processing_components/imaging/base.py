@@ -36,6 +36,8 @@ __all__ = [
 import logging
 from typing import List, Union
 
+import functools
+
 import astropy.units as units
 import astropy.wcs as wcs
 import numpy
@@ -141,7 +143,7 @@ def normalise_sumwt(im: Image, sumwt) -> Image:
 
 
 def predict_2d(
-    vis: BlockVisibility, model: Image, gcfcf=None, **kwargs
+    vis: BlockVisibility, model: Image, **kwargs
 ) -> BlockVisibility:
     """Predict using convolutional degridding.
 
@@ -150,7 +152,6 @@ def predict_2d(
 
     :param vis: blockvisibility to be predicted
     :param model: model image
-    :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
     :return: resulting visibility (in place works)
     """
 
@@ -165,6 +166,7 @@ def predict_2d(
 
     _, _, ny, nx = model["pixels"].data.shape
 
+    gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
         gcf, cf = create_pswf_convolutionfunction(
             model,
@@ -173,7 +175,7 @@ def predict_2d(
             polarisation_frame=vis.blockvisibility_acc.polarisation_frame,
         )
     else:
-        gcf, cf = gcfcf
+        gcf, cf = gcfcf(model)
 
     griddata = create_griddata_from_image(
         model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
@@ -195,7 +197,6 @@ def invert_2d(
     im: Image,
     dopsf: bool = False,
     normalise: bool = True,
-    gcfcf=None,
     **kwargs
 ) -> (Image, numpy.ndarray):
     """Invert using 2D convolution function, using the specified convolution function
@@ -209,7 +210,8 @@ def invert_2d(
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
     :param normalise: normalise by the sum of weights (True)
-    :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
+    :param gcfcf: A function to calculate the tuple (Grid correction function i.e. in image space, Convolution function
+    i.e. in uv space)
     :return: resulting image
 
     """
@@ -222,19 +224,18 @@ def invert_2d(
 
     svis = shift_vis_to_image(svis, im, tangent=True, inverse=False)
 
+    gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
-        gcf, cf = create_pswf_convolutionfunction(
-            im,
+        gcfcf = functools.partial(create_pswf_convolutionfunction,
             support=get_parameter(kwargs, "support", 8),
             oversampling=get_parameter(kwargs, "oversampling", 127),
             polarisation_frame=vis.blockvisibility_acc.polarisation_frame,
         )
-    else:
-        gcf, cf = gcfcf
 
     griddata = create_griddata_from_image(
         im, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
     )
+    gcf, cf = gcfcf(im)
     griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
     result = fft_griddata_to_image(griddata, im, gcf)
 
@@ -251,7 +252,7 @@ def invert_2d(
 
 
 def predict_awprojection(
-    vis: BlockVisibility, model: Image, gcfcf=None, **kwargs
+    vis: BlockVisibility, model: Image, **kwargs
 ) -> BlockVisibility:
     """Predict using convolutional degridding and an AW kernel
 
@@ -260,12 +261,12 @@ def predict_awprojection(
 
     :param vis: blockvisibility to be predicted
     :param model: model image
-    :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
     :return: resulting visibility (in place works)
     """
 
+    gcfcf = get_parameter(kwargs, "gcfcf", None)
     assert gcfcf is not None, "gcfcf is required for awprojection"
-    return predict_2d(vis, model, gcfcf, **kwargs)
+    return predict_2d(vis, model, **kwargs)
 
 
 def invert_awprojection(
@@ -288,8 +289,9 @@ def invert_awprojection(
     :return: resulting image
 
     """
+    gcfcf = get_parameter(kwargs, "gcfcf", None)
     assert gcfcf is not None, "gcfcf is required for awprojection"
-    return invert_2d(vis, im, gcfcf=gcfcf, dopsf=dopsf, normalise=normalise, **kwargs)
+    return invert_2d(vis, im, dopsf=dopsf, normalise=normalise, **kwargs)
 
 
 def fill_blockvis_for_psf(svis):

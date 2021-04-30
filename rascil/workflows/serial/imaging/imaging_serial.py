@@ -53,7 +53,7 @@ log = logging.getLogger("rascil-logger")
 
 
 def predict_list_serial_workflow(
-    vis_list, model_imagelist, context="ng", gcfcf=None, **kwargs
+    vis_list, model_imagelist, context="ng", **kwargs
 ):
     """Predict, iterating over both the scattered vis_list and image
 
@@ -79,16 +79,10 @@ def predict_list_serial_workflow(
     predict = c["predict"]
 
     # Loop over all windows
-    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
-        predict_results = [
-            predict(vis, model_imagelist[ivis], gcfcf=gcfcf[ivis], **kwargs)
-            for ivis, vis in enumerate(vis_list)
-        ]
-    else:
-        predict_results = [
-            predict(vis, model_imagelist[ivis], gcfcf=gcfcf[0], **kwargs)
-            for ivis, vis in enumerate(vis_list)
-        ]
+    predict_results = [
+        predict(vis, model_imagelist[ivis], **kwargs)
+        for ivis, vis in enumerate(vis_list)
+    ]
 
     return predict_results
 
@@ -99,7 +93,6 @@ def invert_list_serial_workflow(
     dopsf=False,
     normalise=True,
     context="ng",
-    gcfcf=None,
     **kwargs
 ):
     """Sum results from invert, iterating over the scattered image and vis_list
@@ -111,7 +104,6 @@ def invert_list_serial_workflow(
     :param normalise: normalise by sumwt
     :param vis_slices: Number of slices
     :param context: Imaging context
-    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: List of (image, sumwt) tuples, one per vis in vis_list
 
@@ -134,37 +126,22 @@ def invert_list_serial_workflow(
     invert = c["invert"]
 
     assert len(template_model_imagelist) == len(vis_list)
-    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
-        assert len(gcfcf) == len(vis_list)
-        invert_results = [
-            invert(
-                vis,
-                template_model_imagelist[ivis],
-                dopsf=dopsf,
-                normalise=normalise,
-                gcfcf=gcfcf[ivis],
-                **kwargs
-            )
-            for ivis, vis in enumerate(vis_list)
-        ]
-    else:
-        invert_results = [
-            invert(
-                vis,
-                template_model_imagelist[ivis],
-                dopsf=dopsf,
-                normalise=normalise,
-                gcfcf=gcfcf[0],
-                **kwargs
-            )
-            for ivis, vis in enumerate(vis_list)
-        ]
+    invert_results = [
+        invert(
+            vis,
+            template_model_imagelist[ivis],
+            dopsf=dopsf,
+            normalise=normalise,
+            **kwargs
+        )
+        for ivis, vis in enumerate(vis_list)
+    ]
 
     return invert_results
 
 
 def residual_list_serial_workflow(
-    vis, model_imagelist, context="2d", gcfcf=None, **kwargs
+    vis, model_imagelist, context="2d", **kwargs
 ):
     """Create a graph to calculate residual image
 
@@ -177,7 +154,7 @@ def residual_list_serial_workflow(
     """
     model_vis = zero_list_serial_workflow(vis)
     model_vis = predict_list_serial_workflow(
-        model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs
+        model_vis, model_imagelist, context=context, **kwargs
     )
     residual_vis = subtract_list_serial_workflow(vis, model_vis)
     result = invert_list_serial_workflow(
@@ -186,7 +163,6 @@ def residual_list_serial_workflow(
         dopsf=False,
         normalise=True,
         context=context,
-        gcfcf=gcfcf,
         **kwargs
     )
     return result
@@ -422,7 +398,7 @@ def deconvolve_channel_list_serial_workflow(
 
 
 def weight_list_serial_workflow(
-    vis_list, model_imagelist, gcfcf=None, weighting="uniform", **kwargs
+    vis_list, model_imagelist, weighting="uniform", **kwargs
 ):
     """Weight the visibility data
 
@@ -437,6 +413,7 @@ def weight_list_serial_workflow(
     """
     centre = len(model_imagelist) // 2
 
+    gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
         gcfcf = [
             create_pswf_convolutionfunction(

@@ -51,7 +51,6 @@ def predict_skymodel_list_rsexecute_workflow(
     obsvis,
     skymodel_list,
     context="ng",
-    gcfcf=None,
     docal=False,
     inverse=True,
     get_pb=None,
@@ -78,7 +77,7 @@ def predict_skymodel_list_rsexecute_workflow(
     :return: List of vis_lists
     """
 
-    def skymodel_predict_calibrate(ov, sm, g):
+    def skymodel_predict_calibrate(ov, sm):
         """Predict visibility for a skymodel
 
         :param sm: Skymodel
@@ -127,11 +126,11 @@ def predict_skymodel_list_rsexecute_workflow(
                         if pb is not None:
                             model["pixels"].data *= pb["pixels"].data
                         imgv = predict_list_serial_workflow(
-                            [imgv], [model], context=context, gcfcf=[g], **kwargs
+                            [imgv], [model], context=context, **kwargs
                         )[0]
                     else:
                         imgv = predict_list_serial_workflow(
-                            [imgv], [sm.image], context=context, gcfcf=[g], **kwargs
+                            [imgv], [sm.image], context=context, **kwargs
                         )[0]
                     vis_slice["vis"].data += imgv["vis"].data
 
@@ -147,40 +146,23 @@ def predict_skymodel_list_rsexecute_workflow(
     if isinstance(obsvis, list):
         if len(obsvis) != len(skymodel_list):
             raise ValueError("Obsvis and skymodel lists should have the same length")
-        if gcfcf is None:
-            return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
-                    obsvis[ism], sm, None
-                )
-                for ism, sm in enumerate(skymodel_list)
-            ]
-        else:
-            return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
-                    obsvis[ism], sm, gcfcf[ism]
-                )
-                for ism, sm in enumerate(skymodel_list)
-            ]
+        return [
+            rsexecute.execute(skymodel_predict_calibrate, nout=1)(
+                obsvis[ism], sm
+            )
+            for ism, sm in enumerate(skymodel_list)
+        ]
     else:
-        if gcfcf is None:
-            return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm, None)
-                for ism, sm in enumerate(skymodel_list)
-            ]
-        else:
-            return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
-                    obsvis, sm, gcfcf[ism]
-                )
-                for ism, sm in enumerate(skymodel_list)
-            ]
+        return [
+            rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm)
+            for ism, sm in enumerate(skymodel_list)
+        ]
 
 
 def invert_skymodel_list_rsexecute_workflow(
     vis_list,
     skymodel_list,
     context="ng",
-    gcfcf=None,
     docal=False,
     get_pb=None,
     normalise=True,
@@ -197,23 +179,18 @@ def invert_skymodel_list_rsexecute_workflow(
     :param skymodel_list: skymodel list
     :param context: Imaging context 2d or ng
     :param get_pb: Function to get a primary beam
-    :param gcfcg: tuple containing grid correction and convolution function
     :param docal: Apply calibration table in skymodel
     :param kwargs: Parameters for functions in components
     :return: List of (image, weight) tuples)
     """
 
-    def skymodel_calibrate_invert(v, sm, g):
+    def skymodel_calibrate_invert(v, sm):
         """Inverse Fourier sum of visibility to image and components
 
         :param v: Visibility to be transformed
         :param sm: Skymodel
-        :param g: Convolution function
         :return: Skymodel containing transforms
         """
-        if g is not None:
-            if len(g) != 2:
-                raise ValueError("Convolution function value incorrect")
 
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
@@ -238,7 +215,7 @@ def invert_skymodel_list_rsexecute_workflow(
             # The return value result contains the weighted image and
             # the weights as an imae (including mask and primary beam)
             result = invert_list_serial_workflow(
-                [vis_slice], [sm.image], context=context, gcfcf=[g], normalise=True,
+                [vis_slice], [sm.image], context=context, normalise=True,
                 **kwargs
             )[0]
             flat = numpy.ones_like(result[0]["pixels"].data)
@@ -261,18 +238,10 @@ def invert_skymodel_list_rsexecute_workflow(
             
         return (sum_dirtys, sum_flats)
 
-    if gcfcf is None:
-        return [
-            rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm, None)
-            for i, sm in enumerate(skymodel_list)
-        ]
-    else:
-        return [
-            rsexecute.execute(skymodel_calibrate_invert, nout=1)(
-                vis_list[i], sm, gcfcf[i]
-            )
-            for i, sm in enumerate(skymodel_list)
-        ]
+    return [
+        rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm)
+        for i, sm in enumerate(skymodel_list)
+    ]
 
 
 def restore_centre_skymodel_list_rsexecute_workflow(
@@ -465,7 +434,6 @@ def residual_skymodel_list_rsexecute_workflow(
     model_imagelist,
     context="ng",
     skymodel_list=None,
-    gcfcf=None,
     get_pb=None,
     **kwargs
 ):
@@ -474,7 +442,6 @@ def residual_skymodel_list_rsexecute_workflow(
     :param vis: List of vis (or graph)
     :param model_imagelist: Model used to determine image parameters
     :param context: Imaging context e.g. '2d', 'wstack'
-    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: list of (image, sumwt) tuples or graph
     """
@@ -485,7 +452,6 @@ def residual_skymodel_list_rsexecute_workflow(
             model_vis,
             skymodel_list,
             context=context,
-            gcfcf=gcfcf,
             docal=True,
             get_pb=get_pb,
             **kwargs
@@ -495,7 +461,6 @@ def residual_skymodel_list_rsexecute_workflow(
             model_vis,
             model_imagelist,
             context=context,
-            gcfcf=gcfcf,
             get_pb=get_pb,
             **kwargs
         )
@@ -505,7 +470,6 @@ def residual_skymodel_list_rsexecute_workflow(
         result = invert_skymodel_list_rsexecute_workflow(
             residual_vis,
             skymodel_list,
-            gcfcf=gcfcf,
             docal=True,
             dopsf=False,
             get_pb=get_pb,

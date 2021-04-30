@@ -14,19 +14,17 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import weight_visibility
-from rascil.processing_components.griddata import apply_bounding_box_convolutionfunction
 from rascil.processing_components.griddata.kernels import (
     create_awterm_convolutionfunction,
 )
 from rascil.processing_components.image.operations import (
     export_image_to_fits,
     smooth_image,
+    qa_image
 )
 from rascil.processing_components.imaging.base import (
     predict_2d,
     invert_2d,
-    predict_awprojection,
-    invert_awprojection,
 )
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 from rascil.processing_components.imaging.primary_beams import create_pb_generic
@@ -50,28 +48,28 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 class TestImaging2D(unittest.TestCase):
     def setUp(self):
-
+        
         from rascil.data_models.parameters import rascil_path
-
+        
         self.dir = rascil_path("test_results")
-
+        
         self.persist = os.getenv("RASCIL_PERSIST", False)
-
+    
     def actualSetUp(
-        self,
-        freqwin=1,
-        dospectral=True,
-        image_pol=PolarisationFrame("stokesI"),
-        zerow=False,
+            self,
+            freqwin=1,
+            dospectral=True,
+            image_pol=PolarisationFrame("stokesI"),
+            zerow=False,
     ):
-
+        
         self.npixel = 256
         self.low = create_named_configuration("LOWBD2", rmax=750.0)
         self.freqwin = freqwin
         self.vis = list()
         self.ntimes = 5
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
-
+        
         if freqwin > 1:
             self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
             self.channelwidth = numpy.array(
@@ -80,7 +78,7 @@ class TestImaging2D(unittest.TestCase):
         else:
             self.frequency = numpy.array([1e8])
             self.channelwidth = numpy.array([1e6])
-
+        
         if image_pol == PolarisationFrame("stokesIQUV"):
             self.vis_pol = PolarisationFrame("linear")
             self.image_pol = image_pol
@@ -97,14 +95,14 @@ class TestImaging2D(unittest.TestCase):
             self.vis_pol = PolarisationFrame("stokesI")
             self.image_pol = PolarisationFrame("stokesI")
             f = numpy.array([100.0])
-
+        
         if dospectral:
             flux = numpy.array(
                 [f * numpy.power(freq / 1e8, -0.7) for freq in self.frequency]
             )
         else:
             flux = numpy.array([f])
-
+        
         self.phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-45.0 * u.deg, frame="icrs", equinox="J2000"
         )
@@ -117,25 +115,25 @@ class TestImaging2D(unittest.TestCase):
             self.phasecentre,
             zerow=zerow,
         )
-
+        
         self.model = create_unittest_model(
             self.vis, self.image_pol, npixel=self.npixel, nchan=freqwin
         )
-
+        
         self.components = create_unittest_components(self.model, flux)
-
+        
         self.model = insert_skycomponent(self.model, self.components)
-
+        
         self.vis = dft_skycomponent_visibility(self.vis, self.components)
-
+        
         # Calculate the model convolved with a Gaussian.
-
+        
         self.cmodel = smooth_image(self.model)
         if self.persist:
             export_image_to_fits(self.model, "%s/test_imaging_model.fits" % self.dir)
         if self.persist:
             export_image_to_fits(self.cmodel, "%s/test_imaging_cmodel.fits" % self.dir)
-
+    
     def _checkcomponents(self, dirty, fluxthreshold=0.6, positionthreshold=0.1):
         comps = find_skycomponents(
             dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5
@@ -147,31 +145,24 @@ class TestImaging2D(unittest.TestCase):
             len(comps),
         )
         cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
-
+        
         for comp in comps:
             # Check for agreement in direction
             ocomp, separation = find_nearest_skycomponent(
                 comp.direction, self.components
             )
             assert separation / cellsize < positionthreshold, (
-                "Component differs in position %.3f pixels" % separation / cellsize
+                    "Component differs in position %.3f pixels" % separation / cellsize
             )
-
-    def _predict_base(self, fluxthreshold=1.0, name="predict_2d", gcfcf=None, **kwargs):
-
-        if gcfcf is None:
-            vis = predict_2d(self.vis, self.model, gcfcf=gcfcf, **kwargs)
-        else:
-            vis = predict_awprojection(self.vis, self.model, gcfcf=gcfcf, **kwargs)
-
+    
+    def _predict_base(self, fluxthreshold=1.0, name="predict_2d", flux_max=0.0,
+                      flux_min=0.0, **kwargs):
+        
+        vis = predict_2d(self.vis, self.model, **kwargs)
+        
         vis["vis"].data = self.vis["vis"].data - vis["vis"].data
-        if gcfcf is None:
-            dirty = invert_2d(vis, self.model, dopsf=False, normalise=True)
-        else:
-            dirty = invert_awprojection(
-                vis, self.model, dopsf=False, normalise=True, gcfcf=gcfcf
-            )
-
+        dirty = invert_2d(vis, self.model, dopsf=False, normalise=True)
+        
         if self.persist:
             export_image_to_fits(
                 dirty[0], "%s/test_imaging_%s_residual.fits" % (self.dir, name)
@@ -180,42 +171,36 @@ class TestImaging2D(unittest.TestCase):
             assert numpy.max(
                 numpy.abs(dirty[0]["pixels"].data[:, pol])
             ), "Residual image pol {} is empty".format(pol)
-
+        
         maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (
             maxabs,
             fluxthreshold,
         )
-
+        qa = qa_image(dirty[0])
+        numpy.testing.assert_allclose(qa.data["max"], flux_max, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["min"], flux_min, atol=1e-7, err_msg=f"{qa}")
+    
     def _invert_base(
-        self,
-        fluxthreshold=1.0,
-        positionthreshold=1.0,
-        check_components=True,
-        name="invert_2d",
-        gcfcf=None,
-        **kwargs
+            self,
+            fluxthreshold=1.0,
+            positionthreshold=1.0,
+            check_components=True,
+            name="invert_2d",
+            flux_max=0.0,
+            flux_min=0.0,
+            **kwargs
     ):
-
-        if gcfcf is None:
-            dirty = invert_2d(
-                self.vis, self.model, dopsf=False, normalise=True, **kwargs
-            )
-        else:
-            dirty = invert_awprojection(
-                self.vis, self.model, dopsf=False, normalise=True, gcfcf=gcfcf, **kwargs
-            )
-
+        
+        dirty = invert_2d(
+            self.vis, self.model, dopsf=False, normalise=True, **kwargs
+        )
+        
         if self.persist:
             export_image_to_fits(
                 dirty[0], "%s/test_imaging_%s_dirty.fits" % (self.dir, name)
             )
-
-        dirtymax = numpy.max(numpy.abs(dirty[0]["pixels"].data))
-        assert dirtymax < 200.0, "Dirty image peak {} is implausibly high".format(
-            dirtymax
-        )
-
+        
         for pol in range(dirty[0].image_acc.npol):
             assert numpy.max(
                 numpy.abs(dirty[0]["pixels"].data[:, pol])
@@ -224,14 +209,19 @@ class TestImaging2D(unittest.TestCase):
             assert numpy.max(
                 numpy.abs(dirty[0]["pixels"].data[chan])
             ), "Dirty image channel {} is empty".format(chan)
-
+        
         if check_components:
             self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)
-
+        
+        qa = qa_image(dirty[0])
+        numpy.testing.assert_allclose(qa.data["max"], flux_max, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["min"], flux_min, atol=1e-7, err_msg=f"{qa}")
+    
     def test_predict_2d(self):
         self.actualSetUp(zerow=True)
-        self._predict_base(name="predict_2d")
-
+        self._predict_base(name="predict_2d", flux_max=0.03039877113909005,
+                           flux_min=-0.44964697782222884)
+    
     def test_predict_2d_point(self):
         self.actualSetUp(zerow=True)
         self.model["pixels"].data[...] = 0.0
@@ -241,7 +231,7 @@ class TestImaging2D(unittest.TestCase):
         assert numpy.max(numpy.abs(vis.vis - 1.0)) < 1e-12, numpy.max(
             numpy.abs(vis.vis - 1.0)
         )
-
+    
     def test_predict_2d_point_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         self.model["pixels"].data[...] = 0.0
@@ -252,31 +242,38 @@ class TestImaging2D(unittest.TestCase):
         assert numpy.max(numpy.abs(vis.vis[..., 1])) < 1e-12
         assert numpy.max(numpy.abs(vis.vis[..., 2])) < 1e-12
         assert numpy.max(numpy.abs(vis.vis[..., 3] - 1.0)) < 1e-12
-
+    
     def test_predict_2d_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
-        self._predict_base(name="predict_2d_IQUV")
-
+        self._predict_base(name="predict_2d_IQUV",
+                           flux_max=0.04496469778222492,
+                           flux_min=-0.4496469778222473)
+    
     def test_predict_2d_IQ(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQ"))
-        self._predict_base(name="predict_2d_IQ")
-
+        self._predict_base(name="predict_2d_IQ",
+                           flux_max=0.03039877113909037,
+                           flux_min=-0.4496469778222473)
+    
     def test_predict_2d_IV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIV"))
-        self._predict_base(name="predict_2d_IV")
-
+        self._predict_base(name="predict_2d_IV",
+                           flux_max=0.03039877113909037,
+                           flux_min=-0.4496469778222473)
+    
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
         self._invert_base(
-            name="invert_2d", positionthreshold=2.0, check_components=False
-        )
+            name="invert_2d", positionthreshold=2.0, check_components=False,
+            flux_max=99.88613044417559, flux_min=-3.9859697198315946)
 
     def test_invert_2d_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         self._invert_base(
-            name="invert_2d_IQUV", positionthreshold=2.0, check_components=True
+            name="invert_2d_IQUV", positionthreshold=2.0, check_components=True,
+            flux_max=99.88613044417558, flux_min=-9.988613044417564,
         )
-
+    
     def test_invert_2d_spec_I(self):
         self.actualSetUp(
             zerow=True,
@@ -285,63 +282,66 @@ class TestImaging2D(unittest.TestCase):
             dospectral=True,
         )
         self._invert_base(
-            name="invert_2d_spec_I", positionthreshold=2.0, check_components=True
+            name="invert_2d_spec_I", positionthreshold=2.0, check_components=True,
+            flux_max=114.80218072211346, flux_min=-6.221028210656658
         )
-
+    
     def test_invert_2d_spec_IQUV(self):
         self.actualSetUp(
             zerow=True, freqwin=4, image_pol=PolarisationFrame("stokesIQUV")
         )
         self._invert_base(
-            name="invert_2d_IQUV", positionthreshold=2.0, check_components=True
+            name="invert_2d_IQUV", positionthreshold=2.0, check_components=True,
+            flux_max=114.80218072211358, flux_min=-11.480218072211347
         )
-
+    
     def test_invert_2d_IQ(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQ"))
         self._invert_base(
-            name="invert_2d_IQ", positionthreshold=2.0, check_components=True
-        )
-
+            name="invert_2d_IQ", positionthreshold=2.0, check_components=True,
+            flux_max=99.88613044417559, flux_min=-3.9859697198315946)
+        
     def test_invert_2d_IV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIV"))
         self._invert_base(
-            name="invert_2d_IV", positionthreshold=2.0, check_components=True
+            name="invert_2d_IV", positionthreshold=2.0, check_components=True,
+            flux_max=99.88613044417559, flux_min=-3.985969719835822
         )
-
+    
     def test_predict_awterm(self):
         self.actualSetUp(zerow=False)
         make_pb = functools.partial(
             create_pb_generic, diameter=35.0, blockage=0.0, use_local=False
         )
-        gcfcf = create_awterm_convolutionfunction(
-            self.model,
-            make_pb=make_pb,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
-        self._predict_base(fluxthreshold=35.0, name="predict_awterm", gcfcf=gcfcf)
-
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  make_pb=make_pb,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
+        self._predict_base(fluxthreshold=61.0, name="predict_awterm", gcfcf=gcfcf,
+                           flux_max=60.98826559182058, flux_min=-1.7924340974177628)
+    
     def test_predict_awterm_spec(self):
         self.actualSetUp(zerow=False, freqwin=5)
         make_pb = functools.partial(
             create_pb_generic, diameter=35.0, blockage=0.0, use_local=False
         )
-        gcfcf = create_awterm_convolutionfunction(
-            self.model,
-            make_pb=make_pb,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
-        self._predict_base(fluxthreshold=35.0, name="predict_awterm_spec", gcfcf=gcfcf)
-
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  make_pb=make_pb,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
+        self._predict_base(fluxthreshold=61.0, name="predict_awterm_spec", gcfcf=gcfcf,
+                           flux_max=58.538564041621974, flux_min=-2.203267830209366)
+    
     @unittest.skip("Takes too long to run regularly")
     def test_predict_awterm_spec_IQUV(self):
         self.actualSetUp(
@@ -350,64 +350,65 @@ class TestImaging2D(unittest.TestCase):
         make_pb = functools.partial(
             create_pb_generic, diameter=35.0, blockage=0.0, use_local=False
         )
-        gcfcf = create_awterm_convolutionfunction(
-            self.model,
-            make_pb=make_pb,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  make_pb=make_pb,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
         self._predict_base(
-            fluxthreshold=35.0, name="predict_awterm_spec_IQUV", gcfcf=gcfcf
+            fluxthreshold=61.0, name="predict_awterm_spec_IQUV", gcfcf=gcfcf
         )
-
+    
     def test_invert_awterm(self):
         self.actualSetUp(zerow=False)
         make_pb = functools.partial(
             create_pb_generic, diameter=35.0, blockage=0.0, use_local=False
         )
-        gcfcf = create_awterm_convolutionfunction(
-            self.model,
-            make_pb=make_pb,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  make_pb=make_pb,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
         self._invert_base(
             name="invert_awterm",
             positionthreshold=35.0,
             check_components=False,
             gcfcf=gcfcf,
+            flux_max=97.6611407915587,
+            flux_min=-2.9645838580463315,
         )
-
+    
     def test_invert_awterm_spec(self):
         self.actualSetUp(zerow=False, freqwin=5)
         make_pb = functools.partial(
             create_pb_generic, diameter=35.0, blockage=0.0, use_local=False
         )
-        gcfcf = create_awterm_convolutionfunction(
-            self.model,
-            make_pb=make_pb,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  make_pb=make_pb,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
         self._invert_base(
             name="invert_awterm_spec",
             positionthreshold=35.0,
             check_components=False,
             gcfcf=gcfcf,
+            flux_max=112.1328682483291,
+            flux_min=-4.700474530998013
         )
-
+    
     @unittest.skip("Takes too long to run regularly")
     def test_invert_awterm_spec_IQUV(self):
         self.actualSetUp(
@@ -416,97 +417,74 @@ class TestImaging2D(unittest.TestCase):
         make_pb = functools.partial(
             create_pb_generic, diameter=35.0, blockage=0.0, use_local=False
         )
-        gcfcf = create_awterm_convolutionfunction(
-            self.model,
-            make_pb=make_pb,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  make_pb=make_pb,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
         self._invert_base(
             name="invert_awterm_spec_IQUV",
             positionthreshold=35.0,
             check_components=False,
             gcfcf=gcfcf,
         )
-
+    
     def test_predict_wterm(self):
         self.actualSetUp(zerow=False)
-        gcf, cf = create_awterm_convolutionfunction(
-            self.model,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
-        cf_clipped = apply_bounding_box_convolutionfunction(cf, 1e-4)
-        gcfcf = (gcf, cf_clipped)
-        self._predict_base(fluxthreshold=5.0, name="predict_wterm", gcfcf=gcfcf)
-
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
+        self._predict_base(fluxthreshold=5.0, name="predict_wterm", gcfcf=gcfcf,
+                           flux_max=1.120420296125513, flux_min=-0.8803490916523007)
+    
     def test_invert_wterm(self):
         self.actualSetUp(zerow=False)
-        gcfcf = create_awterm_convolutionfunction(
-            self.model,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
         self._invert_base(
             name="invert_wterm",
             positionthreshold=35.0,
             check_components=False,
             gcfcf=gcfcf,
+            flux_max=99.01934338254706,
+            flux_min=-3.5815839650623804,
         )
-
-    def test_invert_wterm_clipped(self):
-        self.actualSetUp(zerow=False)
-        gcf, cf = create_awterm_convolutionfunction(
-            self.model,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
-        cf_clipped = apply_bounding_box_convolutionfunction(cf, 1e-4)
-        gcfcf = (gcf, cf_clipped)
-        self._invert_base(
-            name="invert_wterm_clipped",
-            positionthreshold=35.0,
-            check_components=False,
-            gcfcf=gcfcf,
-        )
-
+    
     def test_invert_spec_wterm(self):
-
+        
         self.actualSetUp(zerow=False, dospectral=True, freqwin=4)
-        gcf, cf = create_awterm_convolutionfunction(
-            self.model,
-            nw=50,
-            wstep=16.0,
-            oversampling=4,
-            support=100,
-            use_aaf=True,
-            polarisation_frame=self.vis_pol,
-        )
-        cf_clipped = apply_bounding_box_convolutionfunction(cf, 1e-4)
-        gcfcf = (gcf, cf_clipped)
+        gcfcf = functools.partial(create_awterm_convolutionfunction,
+                                  nw=50,
+                                  wstep=16.0,
+                                  oversampling=4,
+                                  support=100,
+                                  use_aaf=True,
+                                  polarisation_frame=self.vis_pol,
+                                  )
         self._invert_base(
             name="invert_spec_wterm",
             positionthreshold=1.0,
             check_components=False,
             gcfcf=gcfcf,
+            flux_max=113.38250379178004,
+            flux_min=-4.926171480979307
         )
-
+    
     def test_invert_psf(self):
         self.actualSetUp(zerow=False)
         psf = invert_2d(self.vis, self.model, dopsf=True)
@@ -514,9 +492,9 @@ class TestImaging2D(unittest.TestCase):
         assert abs(error) < 1.0e-12, error
         if self.persist:
             export_image_to_fits(psf[0], "%s/test_imaging_2d_psf.fits" % self.dir)
-
+        
         assert numpy.max(numpy.abs(psf[0]["pixels"].data)), "Image is empty"
-
+    
     def test_invert_psf_weighting(self):
         self.actualSetUp(zerow=False)
         for weighting in ["natural", "uniform", "robust"]:

@@ -114,24 +114,29 @@ def normalize_sumwt(im: Image, sumwt) -> Image:
     """Normalize out the sum of weights
 
     The gridding weights are accumulated as a function of channel and polarisation. This function
-    corrects for this sum of weights.
+    corrects for this sum of weights. The sum of weights can be a 2D array or an image the same
+    shape as the image (as for primary beam correction
 
     :param im: Image, im["pixels"].data has shape [nchan, npol, ny, nx]
-    :param sumwt: Sum of weights [nchan, npol]
+    :param sumwt: Sum of weights [nchan, npol] or [nchan, npol, ny, nx]
     """
     nchan, npol, _, _ = im["pixels"].data.shape
     ##assert isinstance(im, Image), im
     assert sumwt is not None
-    assert nchan == sumwt.shape[0]
-    assert npol == sumwt.shape[1]
-    for chan in range(nchan):
-        for pol in range(npol):
-            if sumwt[chan, pol] > 0.0:
-                im["pixels"].data[chan, pol, :, :] = (
-                    im["pixels"].data[chan, pol, :, :] / sumwt[chan, pol]
-                )
-            else:
-                im["pixels"].data[chan, pol, :, :] = 0.0
+    if isinstance(sumwt, numpy.ndarray):
+        assert nchan == sumwt.shape[0]
+        assert npol == sumwt.shape[1]
+        for chan in range(nchan):
+            for pol in range(npol):
+                if sumwt[chan, pol] > 0.0:
+                    im["pixels"].data[chan, pol, :, :] = (
+                        im["pixels"].data[chan, pol, :, :] / sumwt[chan, pol]
+                    )
+                else:
+                    im["pixels"].data[chan, pol, :, :] = 0.0
+    elif im["pixels"].data.shape == sumwt["pixels"].data.shape:
+        im["pixels"].data[sumwt["pixels"].data>0.0] /= sumwt["pixels"].data[sumwt["pixels"].data>0.0]
+
     return im
 
 

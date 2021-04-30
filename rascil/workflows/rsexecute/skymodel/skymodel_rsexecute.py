@@ -81,14 +81,9 @@ def predict_skymodel_list_rsexecute_workflow(
         """Predict visibility for a skymodel
 
         :param sm: Skymodel
-        :param g: Convolution function
         :param ov: Input visibility
         :return: Visibility with dft of components, fft of image, gaintable
         """
-        if g is not None:
-            if len(g) != 2:
-                raise ValueError("Convolution function value incorrect")
-
         v = copy_visibility(ov, zero=True)
 
         vis_slices = []
@@ -174,7 +169,10 @@ def invert_skymodel_list_rsexecute_workflow(
 
         get_pb(BlockVisibility, Image)
 
-    and should return the primary beam for the blockvisibility
+    and should return the primary beam for the blockvisibility.
+    
+    The return is a graph for a set of tuples of (dirty, sensitivity image)
+    
     :param vis_list: List of Visibility data models
     :param skymodel_list: skymodel list
     :param context: Imaging context 2d or ng
@@ -215,7 +213,7 @@ def invert_skymodel_list_rsexecute_workflow(
             # The return value result contains the weighted image and
             # the weights as an imae (including mask and primary beam)
             result = invert_list_serial_workflow(
-                [vis_slice], [sm.image], context=context, normalise=True,
+                [vis_slice], [sm.image], context=context, normalise=False,
                 **kwargs
             )[0]
             flat = numpy.ones_like(result[0]["pixels"].data)
@@ -223,15 +221,11 @@ def invert_skymodel_list_rsexecute_workflow(
                 flat *= sm.mask["pixels"].data
             if pb is not None:
                 flat *= pb["pixels"].data
-            # The flat should contain the weights
-            flat *= result[1][:, :, numpy.newaxis, numpy.newaxis]
 
-            # TODO: Check this equation!
+            # We need to apply the flat to the dirty image
             sum_dirtys["pixels"].data += flat * result[0]["pixels"].data
-            sum_flats["pixels"].data += flat * flat
-
-        sum_flats["pixels"].data[sum_flats["pixels"].data>0.0] = numpy.sqrt(sum_flats["pixels"].data[sum_flats["pixels"].data>0.0])
-        sum_flats["pixels"].data[sum_flats["pixels"].data<0.0][...] = 0.0
+            # The sum_flats should contain the weights and the square of the PB
+            sum_flats["pixels"].data += flat * flat * result[1][:, :, numpy.newaxis, numpy.newaxis]
 
         if normalise:
             sum_dirtys = normalise_sumwt(sum_dirtys, sum_flats)
@@ -482,7 +476,6 @@ def residual_skymodel_list_rsexecute_workflow(
             context=context,
             dopsf=False,
             normalise=True,
-            gcfcf=gcfcf,
             get_pb=get_pb,
             **kwargs
         )

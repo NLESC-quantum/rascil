@@ -14,7 +14,7 @@ from rascil.data_models import get_parameter
 from rascil.processing_components import (
     copy_skycomponent,
     apply_beam_to_skycomponent,
-    normalize_sumwt,
+    normalise_sumwt,
     extract_skycomponents_from_skymodel,
     image_scatter_facets,
     image_gather_facets,
@@ -188,9 +188,15 @@ def invert_skymodel_list_rsexecute_workflow(
 ):
     """Calibrate and invert from a skymodel, iterating over the skymodel
 
+    The function get_pb should have the signature:
+
+        get_pb(BlockVisibility, Image)
+
+    and should return the primary beam for the blockvisibility
     :param vis_list: List of Visibility data models
     :param skymodel_list: skymodel list
     :param context: Imaging context 2d or ng
+    :param get_pb: Function to get a primary beam
     :param gcfcg: tuple containing grid correction and convolution function
     :param docal: Apply calibration table in skymodel
     :param kwargs: Parameters for functions in components
@@ -232,7 +238,7 @@ def invert_skymodel_list_rsexecute_workflow(
             # The return value result contains the weighted image and
             # the weights as an imae (including mask and primary beam)
             result = invert_list_serial_workflow(
-                [vis_slice], [sm.image], context=context, gcfcf=[g], normalize=False,
+                [vis_slice], [sm.image], context=context, gcfcf=[g], normalise=True,
                 **kwargs
             )[0]
             flat = numpy.ones_like(result[0]["pixels"].data)
@@ -243,6 +249,7 @@ def invert_skymodel_list_rsexecute_workflow(
             # The flat should contain the weights
             flat *= result[1][:, :, numpy.newaxis, numpy.newaxis]
 
+            # TODO: Check this equation!
             sum_dirtys["pixels"].data += flat * result[0]["pixels"].data
             sum_flats["pixels"].data += flat * flat
 
@@ -250,7 +257,7 @@ def invert_skymodel_list_rsexecute_workflow(
         sum_flats["pixels"].data[sum_flats["pixels"].data<0.0][...] = 0.0
 
         if normalise:
-            sum_dirtys = normalize_sumwt(sum_dirtys, sum_flats)
+            sum_dirtys = normalise_sumwt(sum_dirtys, sum_flats)
             
         return (sum_dirtys, sum_flats)
 
@@ -318,7 +325,7 @@ def restore_skymodel_single_list_rsexecute_workflow(
         assert len(skymodel_list) == len(residual_imagelist)
 
     psf_list = sum_invert_results_rsexecute(psf_imagelist)
-    psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
+    psf = rsexecute.execute(normalise_sumwt)(psf_list[0], psf_list[1])
     clean_beam = rsexecute.execute(fit_psf)(psf)
 
     def skymodel_restore(s, res, cb):
@@ -370,7 +377,7 @@ def restore_skymodel_list_rsexecute_workflow(
     clean_beam = get_parameter(kwargs, "clean_beam", None)
     if clean_beam is None:
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
-        psf = rsexecute.execute(normalize_sumwt)(clean_beam_list[0], clean_beam_list[1])
+        psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
         clean_beam = rsexecute.execute(fit_psf)(psf)
         kwargs["clean_beam"] = clean_beam
 
@@ -510,7 +517,7 @@ def residual_skymodel_list_rsexecute_workflow(
             model_imagelist,
             context=context,
             dopsf=False,
-            normalize=True,
+            normalise=True,
             gcfcf=gcfcf,
             get_pb=get_pb,
             **kwargs

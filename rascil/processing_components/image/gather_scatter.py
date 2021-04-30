@@ -72,7 +72,7 @@ def image_gather_facets(
     other ring of facets are ignored. So if facets=4 and overlap > 0 then the gather expects
     (facets-2)**2 = 4 images.
 
-    To normalize the overlap we make a set of flats, gather that and divide. The flat may be optionally returned
+    To normalise the overlap we make a set of flats, gather that and divide. The flat may be optionally returned
     instead of the result
 
     :param image_list: List of subimages

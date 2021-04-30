@@ -166,10 +166,10 @@ class TestImaging2D(unittest.TestCase):
 
         vis["vis"].data = self.vis["vis"].data - vis["vis"].data
         if gcfcf is None:
-            dirty = invert_2d(vis, self.model, dopsf=False, normalize=True)
+            dirty = invert_2d(vis, self.model, dopsf=False, normalise=True)
         else:
             dirty = invert_awprojection(
-                vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf
+                vis, self.model, dopsf=False, normalise=True, gcfcf=gcfcf
             )
 
         if self.persist:
@@ -199,11 +199,11 @@ class TestImaging2D(unittest.TestCase):
 
         if gcfcf is None:
             dirty = invert_2d(
-                self.vis, self.model, dopsf=False, normalize=True, **kwargs
+                self.vis, self.model, dopsf=False, normalise=True, **kwargs
             )
         else:
             dirty = invert_awprojection(
-                self.vis, self.model, dopsf=False, normalize=True, gcfcf=gcfcf, **kwargs
+                self.vis, self.model, dopsf=False, normalise=True, gcfcf=gcfcf, **kwargs
             )
 
         if self.persist:

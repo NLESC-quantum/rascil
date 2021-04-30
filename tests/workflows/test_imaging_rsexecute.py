@@ -247,7 +247,7 @@ class TestImaging(unittest.TestCase):
             self.model_list,
             context=context,
             dopsf=False,
-            normalize=True,
+            normalise=True,
             gcfcf=gcfcf,
             **kwargs
         )
@@ -285,7 +285,7 @@ class TestImaging(unittest.TestCase):
             self.model_list,
             context=context,
             dopsf=dopsf,
-            normalize=True,
+            normalise=True,
             gcfcf=gcfcf,
             **kwargs
         )

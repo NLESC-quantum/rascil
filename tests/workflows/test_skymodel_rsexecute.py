@@ -224,14 +224,26 @@ class TestSkyModel(unittest.TestCase):
         skymodel_list = invert_skymodel_list_rsexecute_workflow(skymodel_vislist,
                                                                 self.skymodel_list,
                                                                 get_pb=get_pb,
+                                                                normalise=True
                                                                 )
-        print(skymodel_list[0])
         print(qa_image(skymodel_list[0][0]))
         if self.persist:
             export_image_to_fits(skymodel_list[0][0],
-                                 "%s/test_skymodel_invert_dirty.fits" % (self.dir))
+                                 "%s/test_skymodel_invert_getpb_dirty.fits" % (self.dir))
             export_image_to_fits(skymodel_list[0][1],
-                                 "%s/test_skymodel_invert_sensitivity.fits" % (self.dir))
+                                 "%s/test_skymodel_invert_getpb_sensitivity.fits" % (self.dir))
+            
+        # Now repeat without the getpb
+        skymodel_list = invert_skymodel_list_rsexecute_workflow(skymodel_vislist,
+                                                                self.skymodel_list,
+                                                                normalise=True
+                                                                )
+        print(qa_image(skymodel_list[0][0]))
+        if self.persist:
+            export_image_to_fits(skymodel_list[0][0],
+                                 "%s/test_skymodel_invert_nogetpb_dirty.fits" % (self.dir))
+            export_image_to_fits(skymodel_list[0][1],
+                                 "%s/test_skymodel_invert_nogetpb_sensitivity.fits" % (self.dir))
 
     def test_predict_nocomponents(self):
         self.actualSetUp()

@@ -38,7 +38,7 @@ from rascil.processing_components import (
     griddata_blockvisibility_reweight,
     griddata_merge_weights,
     fit_psf,
-    normalize_sumwt,
+    normalise_sumwt,
 )
 from rascil.processing_components import (
     image_scatter_facets,
@@ -113,7 +113,7 @@ def invert_list_rsexecute_workflow(
     template_model_imagelist,
     context,
     dopsf=False,
-    normalize=True,
+    normalise=True,
     gcfcf=None,
     **kwargs
 ):
@@ -123,7 +123,7 @@ def invert_list_rsexecute_workflow(
     :param vis_list: list of vis (or graph)
     :param template_model_imagelist: list of template models (or graph)
     :param dopsf: Make the PSF instead of the dirty image
-    :param normalize: Normalize by sumwt
+    :param normalise: normalise by sumwt
     :param context: Imaging context
     :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
@@ -155,7 +155,7 @@ def invert_list_rsexecute_workflow(
             vis,
             template_model_imagelist[ivis],
             dopsf=dopsf,
-            normalise=normalize,
+            normalise=normalise,
             gcfcf=gcfcf,
             **kwargs
         )
@@ -187,7 +187,7 @@ def residual_list_rsexecute_workflow(
         model_imagelist,
         context=context,
         dopsf=False,
-        normalize=True,
+        normalise=True,
         gcfcf=gcfcf,
         **kwargs
     )
@@ -216,7 +216,7 @@ def restore_list_singlefacet_rsexecute_workflow(
     clean_beam = get_parameter(kwargs, "clean_beam", None)
     if clean_beam is None:
         psf_list = sum_invert_results_rsexecute(psf_imagelist)
-        psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
+        psf = rsexecute.execute(normalise_sumwt)(psf_list[0], psf_list[1])
         clean_beam = rsexecute.execute(fit_psf)(psf)
         kwargs["clean_beam"] = clean_beam
 
@@ -278,7 +278,7 @@ def restore_list_rsexecute_workflow(
     clean_beam = get_parameter(kwargs, "clean_beam", None)
     if clean_beam is None:
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
-        psf = rsexecute.execute(normalize_sumwt)(clean_beam_list[0], clean_beam_list[1])
+        psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
         clean_beam = rsexecute.execute(fit_psf)(psf)
         kwargs["clean_beam"] = clean_beam
 
@@ -412,9 +412,9 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     For example::
 
         dirty_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context='2d',
-                                                          dopsf=False, normalize=True)
+                                                          dopsf=False, normalise=True)
         psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context='2d',
-                                                        dopsf=True, normalize=True)
+                                                        dopsf=True, normalise=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
         dec_imagelist = deconvolve_list_singlefacet_rsexecute_workflow(dirty_imagelist, psf_imagelist,
@@ -493,9 +493,9 @@ def deconvolve_list_rsexecute_workflow(
     For example::
 
         dirty_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context='2d',
-                                                          dopsf=False, normalize=True)
+                                                          dopsf=False, normalise=True)
         psf_imagelist = invert_list_rsexecute_workflow(vis_list, model_imagelist, context='2d',
-                                                        dopsf=True, normalize=True)
+                                                        dopsf=True, normalise=True)
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
         dec_imagelist = deconvolve_list_rsexecute_workflow(dirty_imagelist, psf_imagelist,

@@ -21,7 +21,7 @@ extra phase term in the Fourier transform cannot be ignored.
 
 __all__ = [
     "shift_vis_to_image",
-    "normalize_sumwt",
+    "normalise_sumwt",
     "predict_2d",
     "invert_2d",
     "predict_awprojection",
@@ -110,8 +110,8 @@ def shift_vis_to_image(
     return vis
 
 
-def normalize_sumwt(im: Image, sumwt) -> Image:
-    """Normalize out the sum of weights
+def normalise_sumwt(im: Image, sumwt) -> Image:
+    """normalise out the sum of weights
 
     The gridding weights are accumulated as a function of channel and polarisation. This function
     corrects for this sum of weights. The sum of weights can be a 2D array or an image the same
@@ -194,7 +194,7 @@ def invert_2d(
     vis: BlockVisibility,
     im: Image,
     dopsf: bool = False,
-    normalize: bool = True,
+    normalise: bool = True,
     gcfcf=None,
     **kwargs
 ) -> (Image, numpy.ndarray):
@@ -208,7 +208,7 @@ def invert_2d(
     :param vis: blockvisibility to be inverted
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
-    :param normalize: Normalize by the sum of weights (True)
+    :param normalise: normalise by the sum of weights (True)
     :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
     :return: resulting image
 
@@ -238,8 +238,8 @@ def invert_2d(
     griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
     result = fft_griddata_to_image(griddata, im, gcf)
 
-    if normalize:
-        result = normalize_sumwt(result, sumwt)
+    if normalise:
+        result = normalise_sumwt(result, sumwt)
 
     result = convert_polimage_to_stokes(result, **kwargs)
 
@@ -272,7 +272,7 @@ def invert_awprojection(
     vis: BlockVisibility,
     im: Image,
     dopsf: bool = False,
-    normalize: bool = True,
+    normalise: bool = True,
     gcfcf=None,
     **kwargs
 ) -> (Image, numpy.ndarray):
@@ -283,13 +283,13 @@ def invert_awprojection(
     :param vis: blockvisibility to be inverted
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
-    :param normalize: Normalize by the sum of weights (True)
+    :param normalise: normalise by the sum of weights (True)
     :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
     :return: resulting image
 
     """
     assert gcfcf is not None, "gcfcf is required for awprojection"
-    return invert_2d(vis, im, gcfcf=gcfcf, dopsf=dopsf, normalize=normalize, **kwargs)
+    return invert_2d(vis, im, gcfcf=gcfcf, dopsf=dopsf, normalise=normalise, **kwargs)
 
 
 def fill_blockvis_for_psf(svis):

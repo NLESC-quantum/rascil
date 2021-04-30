@@ -44,7 +44,7 @@ from rascil.processing_components.image import (
     image_gather_channels,
 )
 from rascil.processing_components.image import calculate_image_frequency_moments
-from rascil.processing_components.imaging import normalize_sumwt
+from rascil.processing_components.imaging import normalise_sumwt
 from rascil.processing_components.imaging import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 from rascil.processing_components import fit_psf
@@ -97,7 +97,7 @@ def invert_list_serial_workflow(
     vis_list,
     template_model_imagelist,
     dopsf=False,
-    normalize=True,
+    normalise=True,
     context="ng",
     gcfcf=None,
     **kwargs
@@ -108,7 +108,7 @@ def invert_list_serial_workflow(
     :param template_model_imagelist: list of template models
     :param dopsf: Make the PSF instead of the dirty image
     :param facets: Number of facets
-    :param normalize: Normalize by sumwt
+    :param normalise: normalise by sumwt
     :param vis_slices: Number of slices
     :param context: Imaging context
     :param gcfcg: tuple containing grid correction and convolution function
@@ -141,7 +141,7 @@ def invert_list_serial_workflow(
                 vis,
                 template_model_imagelist[ivis],
                 dopsf=dopsf,
-                normalise=normalize,
+                normalise=normalise,
                 gcfcf=gcfcf[ivis],
                 **kwargs
             )
@@ -153,7 +153,7 @@ def invert_list_serial_workflow(
                 vis,
                 template_model_imagelist[ivis],
                 dopsf=dopsf,
-                normalise=normalize,
+                normalise=normalise,
                 gcfcf=gcfcf[0],
                 **kwargs
             )
@@ -184,7 +184,7 @@ def residual_list_serial_workflow(
         residual_vis,
         model_imagelist,
         dopsf=False,
-        normalize=True,
+        normalise=True,
         context=context,
         gcfcf=gcfcf,
         **kwargs
@@ -217,7 +217,7 @@ def restore_list_serial_workflow(
         assert len(model_imagelist) == len(residual_imagelist)
 
     psf_list = sum_invert_results(psf_imagelist)
-    psf = normalize_sumwt(psf_list[0], psf_list[1])
+    psf = normalise_sumwt(psf_list[0], psf_list[1])
     clean_beam = fit_psf(psf)
 
     if residual_imagelist is not None:
@@ -257,9 +257,9 @@ def deconvolve_list_serial_workflow(
     For example::
 
         dirty_imagelist = invert_list_serial_workflow(vis_list, model_imagelist, context='2d',
-                                                          dopsf=False, normalize=True)
+                                                          dopsf=False, normalise=True)
         psf_imagelist = invert_list_serial_workflow(vis_list, model_imagelist, context='2d',
-                                                        dopsf=True, normalize=True)
+                                                        dopsf=True, normalise=True)
         dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist,
                 model_imagelist, niter=1000, fractional_threshold=0.01,
                 scales=[0, 3, 10], algorithm='mmclean', nmoment=3, nchan=freqwin,

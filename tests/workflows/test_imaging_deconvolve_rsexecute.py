@@ -168,14 +168,14 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             self.model_imagelist,
             context="2d",
             dopsf=False,
-            normalize=True,
+            normalise=True,
         )
         psf_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
             context="2d",
             dopsf=True,
-            normalize=True,
+            normalise=True,
         )
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
@@ -206,14 +206,14 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             self.model_imagelist,
             context="2d",
             dopsf=False,
-            normalize=True,
+            normalise=True,
         )
         psf_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
             context="2d",
             dopsf=True,
-            normalize=True,
+            normalise=True,
         )
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
@@ -258,14 +258,14 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             self.model_imagelist,
             context="2d",
             dopsf=False,
-            normalize=True,
+            normalise=True,
         )
         psf_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
             context="2d",
             dopsf=True,
-            normalize=True,
+            normalise=True,
         )
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)

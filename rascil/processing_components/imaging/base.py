@@ -257,7 +257,7 @@ def invert_2d(
 
 
 def predict_awprojection(
-    vis: BlockVisibility, model: Image, **kwargs
+    vis: BlockVisibility, model: Image, gcfcf=None, **kwargs
 ) -> BlockVisibility:
     """Predict using convolutional degridding and an AW kernel
 
@@ -269,7 +269,6 @@ def predict_awprojection(
     :return: resulting visibility (in place works)
     """
 
-    gcfcf = get_parameter(kwargs, "gcfcf", None)
     assert gcfcf is not None, "gcfcf is required for awprojection"
     return predict_2d(vis, model, **kwargs)
 
@@ -294,9 +293,8 @@ def invert_awprojection(
     :return: resulting image
 
     """
-    gcfcf = get_parameter(kwargs, "gcfcf", None)
     assert gcfcf is not None, "gcfcf is required for awprojection"
-    return invert_2d(vis, im, dopsf=dopsf, normalise=normalise, **kwargs)
+    return invert_2d(vis, im, dopsf=dopsf, normalise=normalise, gcfcf=gcfcf, **kwargs)
 
 
 def fill_blockvis_for_psf(svis):

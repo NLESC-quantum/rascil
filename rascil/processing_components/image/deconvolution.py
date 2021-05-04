@@ -21,10 +21,7 @@ For example to make dirty image and PSF, deconvolve, and then restore::
 
     restored = restore_cube(comp, psf, residual)
     
-All functions return an image holding clean components, residual image, and a list of skycomponents. The
-extraction of skycomponents is controlled by the argument component_threshold - any emission brighter
-than this is converted to a skycomponent and processed using direct Fourier summation instead of
-by gridded FFTs.
+All functions return an image holding clean components and residual image
 
 """
 
@@ -61,7 +58,8 @@ from rascil.processing_components.image.operations import create_image_from_arra
 log = logging.getLogger("rascil-logger")
 
 
-def deconvolve_cube(dirty: Image, psf: Image, prefix="", **kwargs) -> (Image, Image):
+def deconvolve_cube(dirty: Image, psf: Image, sensitivity: Image = None,
+                    prefix="", **kwargs) -> (Image, Image):
     """Clean using a variety of algorithms
 
     The algorithms available are:
@@ -86,6 +84,7 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix="", **kwargs) -> (Image, Im
 
     :param dirty: Image dirty image
     :param psf: Image Point Spread Function
+    :param sensitivity: Sensitivity image (i.e. inverse noise level)
     :param prefix: Informational message for logging
     :param window_shape: Window image (Bool) - clean where True
     :param mask: Window in the form of an image, overrides window_shape
@@ -113,13 +112,13 @@ def deconvolve_cube(dirty: Image, psf: Image, prefix="", **kwargs) -> (Image, Im
     algorithm = get_parameter(kwargs, "algorithm", "msclean")
     if algorithm == "msclean":
         comp_image, residual_image = msclean_kernel(
-            dirty, prefix, psf, window, **kwargs
+            dirty, prefix, psf, window, sensitivity, **kwargs
         )
     elif (
         algorithm == "msmfsclean" or algorithm == "mfsmsclean" or algorithm == "mmclean"
     ):
         comp_image, residual_image = mmclean_kernel(
-            dirty, prefix, psf, window, **kwargs
+            dirty, prefix, psf, window, sensitivity, **kwargs
         )
     elif algorithm == "hogbom":
         comp_image, residual_image = hogbom_kernel(dirty, prefix, psf, window, **kwargs)
@@ -441,7 +440,7 @@ def hogbom_kernel(dirty, prefix, psf, window, **kwargs):
     return comp_image, residual_image
 
 
-def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
+def mmclean_kernel(dirty, prefix, psf, window, sensitivity, **kwargs):
     """mfsmsclean, msmfsclean, mmclean: MultiScale Multi-Frequency CLEAN
 
     See: U. Rau and T. J. Cornwell,
@@ -452,7 +451,6 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
 
     :param dirty: Image dirty image
     :param psf: Image Point Spread Function
-    :param sc: List of sky components to be added
     :param mask: Window in the form of an image, overrides window_shape
     :param gain: loop gain (float) 0.7
     :param threshold: Clean threshold (0.0)
@@ -504,6 +502,10 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
     comp_array = numpy.zeros(dirty_taylor["pixels"].data.shape)
     residual_array = numpy.zeros(dirty_taylor["pixels"].data.shape)
     for pol in range(dirty_taylor["pixels"].data.shape[1]):
+        if sensitivity is not None:
+            sens = sensitivity["pixels"].data[:, pol, :, :]
+        else:
+            sens = None
         # Always use the Stokes I PSF
         if psf_taylor["pixels"].data[0, 0, :, :].max():
             log.info("deconvolve_cube %s: Processing pol %d" % (prefix, pol))
@@ -512,6 +514,7 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
                     dirty_taylor["pixels"].data[:, pol, :, :],
                     psf_taylor["pixels"].data[:, 0, :, :],
                     None,
+                    sens,
                     gain,
                     thresh,
                     niter,
@@ -529,6 +532,7 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
                     dirty_taylor["pixels"].data[:, pol, :, :],
                     psf_taylor["pixels"].data[:, 0, :, :],
                     window[0, pol, :, :],
+                    sens,
                     gain,
                     thresh,
                     niter,
@@ -551,7 +555,7 @@ def mmclean_kernel(dirty, prefix, psf, window, **kwargs):
     return comp_image, residual_image
 
 
-def msclean_kernel(dirty, prefix, psf, window, **kwargs):
+def msclean_kernel(dirty, prefix, psf, window, sensitivity=None, **kwargs):
     """MultiScale CLEAN
 
     See: Cornwell, T.J., Multiscale CLEAN (IEEE Journal of Selected Topics in Sig Proc,
@@ -579,11 +583,16 @@ def msclean_kernel(dirty, prefix, psf, window, **kwargs):
     fracthresh = get_parameter(kwargs, "fractional_threshold", 0.01)
     if not (0.0 < fracthresh < 1.0):
         raise ValueError("fractional_threshold should be in range 0.0 to 1.0")
+    
 
     comp_array = numpy.zeros_like(dirty["pixels"].data)
     residual_array = numpy.zeros_like(dirty["pixels"].data)
     for channel in range(dirty["pixels"].data.shape[0]):
         for pol in range(dirty["pixels"].data.shape[1]):
+            if sensitivity is not None:
+                sens = sensitivity["pixels"].data[channel, pol, :, :]
+            else:
+                sens = None
             if psf["pixels"].data[channel, pol, :, :].max():
                 log.info(
                     "deconvolve_cube %s: Processing pol %d, channel %d"
@@ -597,6 +606,7 @@ def msclean_kernel(dirty, prefix, psf, window, **kwargs):
                         dirty["pixels"].data[channel, pol, :, :],
                         psf["pixels"].data[channel, pol, :, :],
                         None,
+                        sens,
                         gain,
                         thresh,
                         niter,
@@ -612,6 +622,7 @@ def msclean_kernel(dirty, prefix, psf, window, **kwargs):
                         dirty["pixels"].data[channel, pol, :, :],
                         psf["pixels"].data[channel, pol, :, :],
                         window[channel, pol, :, :],
+                        sens,
                         gain,
                         thresh,
                         niter,

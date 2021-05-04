@@ -20,9 +20,10 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     restore_list_rsexecute_workflow,
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.processing_components.image.operations import (
+from rascil.processing_components import (
     export_image_to_fits,
     smooth_image,
+    create_pb
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import (
@@ -41,13 +42,13 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 class TestImagingDeconvolveGraph(unittest.TestCase):
     def setUp(self):
-        rsexecute.set_client(use_dask=True)
+        rsexecute.set_client(use_dask=False)
 
-        from rascil.data_models.parameters import rascil_path, rascil_data_path
+        from rascil.data_models.parameters import rascil_path
 
         self.dir = rascil_path("test_results")
 
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
 
     def tearDown(self):
         rsexecute.close()
@@ -160,6 +161,10 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         #        self.vis_list = rsexecute.compute(self.vis_list, sync=True)
         self.vis_list = rsexecute.persist(self.vis_list)
         self.model_imagelist = rsexecute.scatter(self.model_imagelist)
+        
+        self.sensitivity_list = [rsexecute.execute(create_pb)(m, "LOW")
+                                 for m in self.model_imagelist]
+        self.sensitivity_list = rsexecute.persist(self.sensitivity_list)
 
     def test_deconvolve_spectral(self):
         self.actualSetUp(add_errors=True)
@@ -248,6 +253,59 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             export_image_to_fits(
                 restored,
                 "%s/test_imaging_%s_mmclean_restored.fits"
+                % (self.dir, rsexecute.type()),
+            )
+
+    def test_deconvolve_and_restore_cube_mmclean_sensitivity(self):
+        self.actualSetUp(add_errors=True)
+        dirty_imagelist = invert_list_rsexecute_workflow(
+            self.vis_list,
+            self.model_imagelist,
+            context="2d",
+            dopsf=False,
+            normalise=True,
+        )
+        psf_imagelist = invert_list_rsexecute_workflow(
+            self.vis_list,
+            self.model_imagelist,
+            context="2d",
+            dopsf=True,
+            normalise=True,
+        )
+        dirty_imagelist = rsexecute.persist(dirty_imagelist)
+        psf_imagelist = rsexecute.persist(psf_imagelist)
+        dec_imagelist = deconvolve_list_rsexecute_workflow(
+            dirty_imagelist,
+            psf_imagelist,
+            self.model_imagelist,
+            sensitivity_list=self.sensitivity_list,
+            niter=100,
+            fractional_threshold=0.01,
+            scales=[0, 3],
+            algorithm="mmclean",
+            nmoment=1,
+            nchan=self.freqwin,
+            threshold=0.7,
+            gain=0.7,
+        )
+        dec_imagelist = rsexecute.persist(dec_imagelist)
+        residual_imagelist = residual_list_rsexecute_workflow(
+            self.vis_list, model_imagelist=dec_imagelist, context="2d"
+        )
+        residual_imagelist = rsexecute.persist(residual_imagelist)
+        restored_list = restore_list_rsexecute_workflow(
+            model_imagelist=dec_imagelist,
+            psf_imagelist=psf_imagelist,
+            residual_imagelist=residual_imagelist,
+            empty=self.model_imagelist,
+        )
+
+        restored = rsexecute.compute(restored_list, sync=True)[0]
+
+        if self.persist:
+            export_image_to_fits(
+                restored,
+                "%s/test_imaging_%s_mmclean_sensitivity_restored.fits"
                 % (self.dir, rsexecute.type()),
             )
 

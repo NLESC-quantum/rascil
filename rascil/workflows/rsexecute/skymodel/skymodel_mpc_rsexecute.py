@@ -93,6 +93,6 @@ def convolve_skymodel_list_rsexecute_workflow(
         return result
 
     return [
-        rsexecute.execute(skymodel_predict_invert, nout=len(skymodel_list))(obsvis, sm, None)
+        rsexecute.execute(skymodel_predict_invert, nout=len(skymodel_list))(obsvis, sm)
         for ism, sm in enumerate(skymodel_list)
     ]

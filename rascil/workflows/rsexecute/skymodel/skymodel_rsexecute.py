@@ -88,7 +88,6 @@ def predict_skymodel_list_rsexecute_workflow(
 
         vis_slices = []
         for time, vis_slice in v.groupby("time", squeeze=False):
-            print(time)
 
             if get_pb is not None:
                 pb = get_pb(vis_slice, sm.image)

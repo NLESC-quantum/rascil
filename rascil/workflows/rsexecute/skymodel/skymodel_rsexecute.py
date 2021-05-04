@@ -569,8 +569,8 @@ def sum_skymodels_rsexecute(sm_list):
 
         def skymodel_normalise(sm):
             if sm.mask is not None:
-                sm.image["pixels"].data /= sm.mask["pixels"].data
                 sm.mask["pixels"].data = numpy.sqrt(sm.mask["pixels"].data)
+                sm.image["pixels"].data /= sm.mask["pixels"].data
             return sm
 
         return rsexecute.execute(skymodel_normalise)(sm_list)

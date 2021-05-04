@@ -123,9 +123,9 @@ def normalise_sumwt(im: Image, sumwt) -> Image:
     :param sumwt: Sum of weights [nchan, npol] or [nchan, npol, ny, nx]
     """
     nchan, npol, _, _ = im["pixels"].data.shape
-    ##assert isinstance(im, Image), im
     assert sumwt is not None
     if isinstance(sumwt, numpy.ndarray):
+        # This is the usual case where the primary beams are not included
         assert nchan == sumwt.shape[0]
         assert npol == sumwt.shape[1]
         for chan in range(nchan):
@@ -137,7 +137,12 @@ def normalise_sumwt(im: Image, sumwt) -> Image:
                 else:
                     im["pixels"].data[chan, pol, :, :] = 0.0
     elif im["pixels"].data.shape == sumwt["pixels"].data.shape:
-        im["pixels"].data[sumwt["pixels"].data>0.0] /= sumwt["pixels"].data[sumwt["pixels"].data>0.0]
+        # This implements the RHS of equation 21 https://www.atnf.csiro.au/projects/askap/ASKAP-SW-0020.pdf
+        # with the addition of extra normalisation by the sum of weights. For the case
+        # of fixed primary beam this reduces to the standard primary beam corrected case.
+        maxsumwt = numpy.max(sumwt["pixels"].data[sumwt["pixels"].data>0.0])
+        im["pixels"].data[sumwt["pixels"].data>0.0] /= \
+            numpy.sqrt(maxsumwt * sumwt["pixels"].data[sumwt["pixels"].data>0.0])
 
     return im
 

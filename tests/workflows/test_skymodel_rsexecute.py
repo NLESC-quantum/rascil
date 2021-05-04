@@ -226,24 +226,31 @@ class TestSkyModel(unittest.TestCase):
                                                                 get_pb=get_pb,
                                                                 normalise=True
                                                                 )
-        print(qa_image(skymodel_list[0][0]))
         if self.persist:
             export_image_to_fits(skymodel_list[0][0],
                                  "%s/test_skymodel_invert_getpb_dirty.fits" % (self.dir))
             export_image_to_fits(skymodel_list[0][1],
                                  "%s/test_skymodel_invert_getpb_sensitivity.fits" % (self.dir))
-            
+        qa = qa_image(skymodel_list[0][0])
+
+        numpy.testing.assert_allclose(qa.data["max"], 4.010150907372374, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["min"], -0.25172961828674684, atol=1e-7, err_msg=f"{qa}")
+
+
         # Now repeat without the getpb
         skymodel_list = invert_skymodel_list_rsexecute_workflow(skymodel_vislist,
                                                                 self.skymodel_list,
                                                                 normalise=True
                                                                 )
-        print(qa_image(skymodel_list[0][0]))
         if self.persist:
             export_image_to_fits(skymodel_list[0][0],
                                  "%s/test_skymodel_invert_nogetpb_dirty.fits" % (self.dir))
             export_image_to_fits(skymodel_list[0][1],
                                  "%s/test_skymodel_invert_nogetpb_sensitivity.fits" % (self.dir))
+        qa = qa_image(skymodel_list[0][0])
+
+        numpy.testing.assert_allclose(qa.data["max"], 4.010150907372374, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["min"], -0.25172961828674684, atol=1e-7, err_msg=f"{qa}")
 
     def test_predict_nocomponents(self):
         self.actualSetUp()

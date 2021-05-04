@@ -112,7 +112,7 @@ ipython-genutils==0.2.0
     #   notebook
     #   qtconsole
     #   traitlets
-ipython==7.22.0
+ipython==7.23.0
     # via
     #   ipykernel
     #   ipywidgets
@@ -177,6 +177,8 @@ lxml==4.6.3
     # via jupyter-contrib-nbextensions
 markupsafe==1.1.1
     # via jinja2
+matplotlib-inline==0.1.2
+    # via ipython
 matplotlib==3.4.1
     # via
     #   -r requirements.in
@@ -312,7 +314,7 @@ python-dateutil==2.8.1
     #   jupyter-client
     #   matplotlib
     #   pandas
-python-gitlab==2.6.0
+python-gitlab==2.7.1
     # via -r requirements.in
 pytz==2021.1
     # via pandas
@@ -330,7 +332,7 @@ pyzmq==22.0.3
     #   jupyter-client
     #   notebook
     #   qtconsole
-qtconsole==5.0.3
+qtconsole==5.1.0
     # via jupyter
 qtpy==1.9.0
     # via qtconsole
@@ -344,7 +346,7 @@ requests==2.25.1
     #   requests-toolbelt
 scikit-image==0.18.1
     # via -r requirements.in
-scipy==1.6.2
+scipy==1.6.3
     # via
     #   -r requirements.in
     #   aotools
@@ -407,12 +409,13 @@ traitlets==5.0.5
     #   jupyter-core
     #   jupyter-latex-envs
     #   jupyter-nbextensions-configurator
+    #   matplotlib-inline
     #   nbclient
     #   nbconvert
     #   nbformat
     #   notebook
     #   qtconsole
-typing-extensions==3.7.4.3
+typing-extensions==3.10.0.0
     # via
     #   bokeh
     #   importlib-metadata
@@ -426,7 +429,7 @@ widgetsnbextension==3.5.1
     # via ipywidgets
 xarray==0.17.0
     # via -r requirements.in
-zarr==2.8.0
+zarr==2.8.1
     # via -r requirements.in
 zict==2.0.0
     # via distributed

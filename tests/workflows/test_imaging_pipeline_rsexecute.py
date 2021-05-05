@@ -3,6 +3,7 @@
 
 import os
 import pprint
+import functools
 
 import numpy
 import pytest
@@ -51,16 +52,18 @@ log.setLevel(logging.WARNING)
 # These tests probe whether the results depend on whether Dask is used and also whether
 # optimisation in Dask is used.
 
+default_run = True
 
 @pytest.mark.parametrize(
-    "use_dask, optimise, test_max, test_min",
+    "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag",
     [
-        (True,  True,  4.093884731966968, -0.006771973227456045),
-        (True,  False, 4.093884731966968, -0.006771973227456045),
-        (False, False, 4.093884731966968, -0.006771973227456045),
+        (default_run, True,  True,  4.100109016472557, -0.03561918204314158, False, "Dask_Optimise"),
+        (default_run, True,  True,  6.876094602759793, -0.02389653935639717, True,  "Dask_Optimise_Sensitivity"),
+        (default_run, True,  False, 4.100109016472557, -0.03561918204314158, False, "Dask_No_Optimise"),
+        (default_run, False, False, 4.100109016472557, -0.03561918204314158, False, "No_Dask"),
     ],
 )
-def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
+def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, sensitivity, tag):
     """Test of imaging pipeline
 
     :param use_dask: - Use dask for processing
@@ -68,6 +71,10 @@ def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
     :param component_method: Method to find bright components pixels or fit
     :param component_threshold: - Threshold in Jy/pixel for classifying as component
     :param test_max, test_min:: max, min in tests."""
+    
+    if not default_run:
+        return
+    
     rsexecute.set_client(use_dask=use_dask, optim=optimise)
 
     from rascil.data_models.parameters import rascil_path
@@ -136,6 +143,13 @@ def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
     )
     pb_model = create_pb(pb_model, telescope="LOW", use_local=False)
 
+    if sensitivity:
+        def create(vis, model):
+            return create_pb(model, telescope="LOW", use_local=False)
+        get_pb = functools.partial(create)
+    else:
+        get_pb = None
+        
     gleam_components = apply_beam_to_skycomponent(
         gleam_components, beam=pb_model, phasecentre=phasecentre
     )
@@ -162,14 +176,15 @@ def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
         predicted_vislist,
         model_imagelist=model_list,
         skymodel_list=None,
+        get_pb=get_pb,
         context="ng",
         algorithm="mmclean",
         scales=[0],
-        niter=100,
+        niter=1000,
         fractional_threshold=0.1,
         threshold=0.01,
         nmoment=1,
-        nmajor=5,
+        nmajor=10,
         gain=0.7,
         deconvolve_facets=4,
         deconvolve_overlap=32,
@@ -189,54 +204,64 @@ def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
 
     export_skycomponent_to_hdf5(
         gleam_components,
-        "%s/test-imaging-pipeline-dask_continuum_imaging_components.hdf" % (dir),
+        "%s/test-continuum_imaging_%s_components.hdf" % (dir, tag),
     )
 
     export_skymodel_to_hdf5(
         skymodel_list,
-        "%s/test-imaging-pipeline-dask_continuum_imaging_skymodel.hdf" % (dir),
+        "%s/test-continuum_imaging_%s_skymodel.hdf" % (dir, tag),
     )
 
     f = show_image(
-        deconvolved, title="Clean image - no selfcal", cm="Greys", vmax=0.1, vmin=-0.01
+        deconvolved, title="Clean image ", cm="Greys", vmax=0.1, vmin=-0.01
     )
-    log.info(qa_image(deconvolved, context="Clean image - no selfcal"))
+    log.info(qa_image(deconvolved, context="Clean image "))
     export_image_to_fits(
         deconvolved,
-        "%s/test-imaging-pipeline-dask_continuum_imaging_clean.fits" % (dir),
+        "%s/test-continuum_imaging_%s_clean.fits" % (dir, tag),
     )
 
     plt.show()
 
-    f = show_image(residual[0], title="Residual clean image - no selfcal", cm="Greys")
-    log.info(qa_image(residual[0], context="Residual clean image - no selfcal"))
+    f = show_image(residual[0], title="Residual clean image ", cm="Greys")
+    log.info(qa_image(residual[0], context="Residual clean image "))
     plt.show()
     export_image_to_fits(
         residual[0],
-        "%s/test-imaging-pipeline-dask_continuum_imaging_residual.fits" % (dir),
+        "%s/test-continuum_imaging_%s_residual.fits" % (dir, tag),
     )
+
+    if sensitivity:
+        f = show_image(residual[1], title="Sensitivity image ", cm="Greys")
+        log.info(qa_image(residual[1], context="Sensitivity image "))
+        plt.show()
+        export_image_to_fits(
+            residual[1],
+            "%s/test-continuum_imaging_%s_sensitivity.fits" % (dir, tag),
+        )
 
     f = show_image(
         restored_plane,
-        title="Restored clean image - no selfcal",
+        title="Restored clean image ",
         cm="Greys",
         vmax=1.0,
         vmin=-0.1,
     )
-    log.info(qa_image(restored_plane, context="Restored clean image - no selfcal"))
+    log.info(qa_image(restored_plane, context="Restored clean image "))
     plt.show()
     export_image_to_fits(
         restored_plane,
-        "%s/test-imaging-pipeline-dask_continuum_imaging_restored.fits" % (dir),
+        "%s/test-continuum_imaging_%s_restored.fits" % (dir, tag),
     )
 
-    qa = qa_image(restored_plane, context="Restored clean image - no selfcal")
+    qa = qa_image(restored_plane, context="Restored clean image ")
+
+    export_image_to_fits(
+        restored_cube,
+        "%s/test-continuum_imaging_%s_restored_cube.fits" % (dir, tag),
+    )
 
     # Correct values for no skycomponent extraction
     assert abs(qa.data["max"] - test_max) < 1e-7, str(qa)
     assert abs(qa.data["min"] - test_min) < 1e-7, str(qa)
 
-    export_image_to_fits(
-        restored_cube,
-        "%s/test-imaging-pipeline-dask_continuum_imaging_restored_cube.fits" % (dir),
-    )

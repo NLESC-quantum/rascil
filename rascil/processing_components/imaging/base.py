@@ -137,12 +137,15 @@ def normalise_sumwt(im: Image, sumwt) -> Image:
                 else:
                     im["pixels"].data[chan, pol, :, :] = 0.0
     elif im["pixels"].data.shape == sumwt["pixels"].data.shape:
-        # This implements the RHS of equation 21 https://www.atnf.csiro.au/projects/askap/ASKAP-SW-0020.pdf
-        # with the addition of extra normalisation by the sum of weights. For the case
-        # of fixed primary beam this reduces to the standard primary beam corrected case.
-        maxsumwt = numpy.max(sumwt["pixels"].data[sumwt["pixels"].data>0.0])
-        im["pixels"].data[sumwt["pixels"].data>0.0] /= \
-            numpy.sqrt(maxsumwt * sumwt["pixels"].data[sumwt["pixels"].data>0.0])
+        nchan, npol, ny, nx = sumwt["pixels"].data.shape
+        cx = nx // 2
+        cy = ny // 2
+        for chan in range(nchan):
+            for pol in range(npol):
+                if sumwt["pixels"].data[chan, pol, cy, cx] > 0.0:
+                    im["pixels"].data[chan, pol, :, :] /= sumwt["pixels"].data[chan, pol, cy, cx]
+                else:
+                    im["pixels"].data[chan, pol, :, :] = 0.0
 
     return im
 

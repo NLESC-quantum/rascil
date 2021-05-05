@@ -166,9 +166,9 @@ class TestSkyModel(unittest.TestCase):
     
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
     
-        def get_pb(bvis, model):
+        def get_pb(vis, model):
             pb = create_low_test_beam(model)
-            pa = numpy.mean(calculate_blockvisibility_parallactic_angles(bvis))
+            pa = numpy.mean(calculate_blockvisibility_parallactic_angles(vis))
             pb = convert_azelvp_to_radec(pb, model, pa)
             return pb
     
@@ -347,7 +347,7 @@ class TestSkyModel(unittest.TestCase):
         sum_skymodel_list = sum_skymodels_rsexecute(self.skymodel_list)
         sum_skymodel = rsexecute.compute(sum_skymodel_list, sync=True)
         qa = qa_image(sum_skymodel.image)
-        numpy.testing.assert_allclose(qa.data["max"], 4.959490911894567, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["max"], 1.9237908618561705, atol=1e-7, err_msg=f"{qa}")
         numpy.testing.assert_allclose(qa.data["min"], 0.0, atol=1e-7, err_msg=f"{qa}")
         qa = qa_image(sum_skymodel.mask)
         numpy.testing.assert_allclose(qa.data["max"], 0.9999999999999988, atol=1e-7, err_msg=f"{qa}")

@@ -54,10 +54,10 @@ default_run = True
 @pytest.mark.parametrize(
     "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag",
     [
-        (default_run, True,  True,  4.430448840587264, -0.05798653968181194, False, "Dask_Optimise"),
-        (default_run, False,  True,  12.916458584499388, -0.05053130807627801, True,  "Dask_Optimise_Sensitivity"),
-        (default_run, True,  False, 4.430448840587264, -0.05798653968181194, False, "Dask_No_Optimise"),
-        (default_run, False, False, 4.430448840587264, -0.05798653968181194, False, "No_Dask"),
+        (default_run, True,  True, 7.309838100759249, -0.20992679191792812, False, "Dask_Optimise"),
+        (default_run, True,  True,  12.916458584499388, -0.05053130807627801, True,  "Dask_Optimise_Sensitivity"),
+        (default_run, True,  False, 7.309838100759249, -0.20992679191792812, False, "Dask_No_Optimise"),
+        (default_run, False, False, 7.309838100759249, -0.20992679191792812, False, "No_Dask"),
     ],
 )
 def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, sensitivity, tag):

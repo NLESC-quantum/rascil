@@ -304,7 +304,6 @@ def spectral_line_imaging_list_rsexecute_workflow(
             vis_list,
             continuum_model_imagelist,
             context=context,
-            gcfcf=gcfcf,
             vis_slices=vis_slices,
             **kwargs,
         )
@@ -313,7 +312,6 @@ def spectral_line_imaging_list_rsexecute_workflow(
         vis_list,
         model_imagelist,
         context=context,
-        gcfcf=gcfcf,
         vis_slices=vis_slices,
         facets=facets,
         **kwargs,

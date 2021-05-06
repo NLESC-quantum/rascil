@@ -422,7 +422,7 @@ def weight_list_serial_workflow(
             )
         ]
 
-    def grid_wt(vis, model, g):
+    def grid_wt(vis, model):
         if vis is not None:
             if model is not None:
                 griddata = create_griddata_from_image(
@@ -436,12 +436,12 @@ def weight_list_serial_workflow(
             return None
 
     weight_list = [
-        grid_wt(vis_list[i], model_imagelist[i], gcfcf) for i in range(len(vis_list))
+        grid_wt(vis_list[i], model_imagelist[i]) for i in range(len(vis_list))
     ]
 
     merged_weight_grid = griddata_merge_weights(weight_list)
 
-    def re_weight(vis, model, gd, g):
+    def re_weight(vis, model, gd):
         if gd is not None:
             if vis is not None:
                 # Ensure that the griddata has the right axes so that the convolution
@@ -458,7 +458,7 @@ def weight_list_serial_workflow(
             return vis
 
     return [
-        re_weight(v, model_imagelist[i], merged_weight_grid, gcfcf)
+        re_weight(v, model_imagelist[i], merged_weight_grid)
         for i, v in enumerate(vis_list)
     ]
 

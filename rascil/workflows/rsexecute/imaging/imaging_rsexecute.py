@@ -664,6 +664,16 @@ def scatter_facets_gather_channels(
     model_imagelist,
     nchan,
 ):
+    """ Scatter images by facet and then gather by channels
+    
+    :param deconvolve_facets: Number of facets per axis
+    :param deconvolve_number_facets: Square of deconvolve_facets
+    :param deconvolve_overlap: Overlap in pixels
+    :param deconvolve_taper: Type of taper
+    :param model_imagelist: List of models
+    :param nchan: Numer of channels
+    :return: List of frequency image cubes (or graph), arranged by facet
+    """
     scattered_channels_facets_model_list = [
         rsexecute.execute(image_scatter_facets, nout=deconvolve_number_facets)(
             m,

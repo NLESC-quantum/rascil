@@ -26,8 +26,7 @@ from rascil.processing_components import (
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import (
     predict_skymodel_list_rsexecute_workflow,
-    invert_skymodel_list_rsexecute_workflow,
-    sum_skymodels_rsexecute
+    invert_skymodel_list_rsexecute_workflow
 )
 
 log = logging.getLogger("rascil-logger")
@@ -224,33 +223,36 @@ class TestSkyModel(unittest.TestCase):
         skymodel_list = invert_skymodel_list_rsexecute_workflow(skymodel_vislist,
                                                                 self.skymodel_list,
                                                                 get_pb=get_pb,
-                                                                normalise=True
+                                                                normalise=True,
+                                                                flat_sky=False
                                                                 )
         if self.persist:
             export_image_to_fits(skymodel_list[0][0],
-                                 "%s/test_skymodel_invert_getpb_dirty.fits" % (self.dir))
+                                 "%s/test_skymodel_invert_flat_noise_dirty.fits" % (self.dir))
             export_image_to_fits(skymodel_list[0][1],
-                                 "%s/test_skymodel_invert_getpb_sensitivity.fits" % (self.dir))
+                                 "%s/test_skymodel_invert_flat_noise_sensitivity.fits" % (self.dir))
         qa = qa_image(skymodel_list[0][0])
 
-        numpy.testing.assert_allclose(qa.data["max"], 4.010150907372374, atol=1e-7, err_msg=f"{qa}")
-        numpy.testing.assert_allclose(qa.data["min"], -0.25172961828674684, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["max"], 3.7563900102650116, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["min"], -0.24385090091180575, atol=1e-7, err_msg=f"{qa}")
 
 
-        # Now repeat without the getpb
+        # Now repeat with flat_sky=True
         skymodel_list = invert_skymodel_list_rsexecute_workflow(skymodel_vislist,
                                                                 self.skymodel_list,
-                                                                normalise=True
+                                                                get_pb=get_pb,
+                                                                normalise=True,
+                                                                flat_sky=True
                                                                 )
         if self.persist:
             export_image_to_fits(skymodel_list[0][0],
-                                 "%s/test_skymodel_invert_nogetpb_dirty.fits" % (self.dir))
-            export_image_to_fits(skymodel_list[0][1],
-                                 "%s/test_skymodel_invert_nogetpb_sensitivity.fits" % (self.dir))
+                                 "%s/test_skymodel_invert_flat_sky_dirty.fits" % (self.dir))
+            export_image_to_fits(skymodel_list[0][0],
+                                "%s/test_skymodel_invert_flat_sky_sensitivity.fits" % (self.dir))
         qa = qa_image(skymodel_list[0][0])
 
-        numpy.testing.assert_allclose(qa.data["max"], 4.010150907372374, atol=1e-7, err_msg=f"{qa}")
-        numpy.testing.assert_allclose(qa.data["min"], -0.25172961828674684, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["max"], 4.0133318595524, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(qa.data["min"], -0.2519292965274322, atol=1e-7, err_msg=f"{qa}")
 
     def test_predict_nocomponents(self):
         self.actualSetUp()
@@ -319,40 +321,6 @@ class TestSkyModel(unittest.TestCase):
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
-
-    def test_sum_skymodels(self):
-        self.actualSetUp()
-
-        self.skymodel_list = [
-            rsexecute.execute(create_low_test_skymodel_from_gleam)(
-                npixel=self.npixel,
-                cellsize=self.cellsize,
-                frequency=[self.frequency[f]],
-                radius=self.radius,
-                phasecentre=self.phasecentre,
-                polarisation_frame=PolarisationFrame("stokesI"),
-                flux_limit=0.3,
-                flux_threshold=1.0,
-                flux_max=5.0,
-            )
-            for f, freq in enumerate(self.frequency)
-        ]
-        def skymodel_set_pb(sm):
-            sm.mask = create_pb(sm.image, "LOW")
-            return sm
-            
-        self.skymodel_list = [rsexecute.execute(skymodel_set_pb)(sm)
-                              for sm in self.skymodel_list]
-
-        sum_skymodel_list = sum_skymodels_rsexecute(self.skymodel_list)
-        sum_skymodel = rsexecute.compute(sum_skymodel_list, sync=True)
-        qa = qa_image(sum_skymodel.image)
-        numpy.testing.assert_allclose(qa.data["max"], 1.9237908618561705, atol=1e-7, err_msg=f"{qa}")
-        numpy.testing.assert_allclose(qa.data["min"], 0.0, atol=1e-7, err_msg=f"{qa}")
-        qa = qa_image(sum_skymodel.mask)
-        numpy.testing.assert_allclose(qa.data["max"], 0.9999999999999988, atol=1e-7, err_msg=f"{qa}")
-        numpy.testing.assert_allclose(qa.data["min"], 1.716481246836587e-06, atol=1e-7, err_msg=f"{qa}")
-
 
 if __name__ == "__main__":
     unittest.main()

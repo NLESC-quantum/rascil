@@ -112,7 +112,7 @@ def shift_vis_to_image(
     return vis
 
 
-def normalise_sumwt(im: Image, sumwt) -> Image:
+def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
     """normalise out the sum of weights
 
     The gridding weights are accumulated as a function of channel and polarisation. This function
@@ -137,15 +137,22 @@ def normalise_sumwt(im: Image, sumwt) -> Image:
                 else:
                     im["pixels"].data[chan, pol, :, :] = 0.0
     elif im["pixels"].data.shape == sumwt["pixels"].data.shape:
+        maxwt = numpy.max(sumwt["pixels"].data)
+        minwt = min_weight * maxwt
         nchan, npol, ny, nx = sumwt["pixels"].data.shape
         cx = nx // 2
         cy = ny // 2
         for chan in range(nchan):
             for pol in range(npol):
-                if sumwt["pixels"].data[chan, pol, cy, cx] > 0.0:
-                    im["pixels"].data[chan, pol, :, :] /= sumwt["pixels"].data[chan, pol, cy, cx]
+                if flat_sky:
+                    norm = numpy.sqrt(sumwt["pixels"].data[chan, pol, cy, cx] * sumwt["pixels"].data[chan, pol, :, :])
+                    im["pixels"].data[chan, pol, :, :][norm>minwt] /= norm[norm>minwt]
+                    im["pixels"].data[chan, pol, :, :][norm<=minwt] /= maxwt
                 else:
-                    im["pixels"].data[chan, pol, :, :] = 0.0
+                    im["pixels"].data[chan, pol, :, :] /= maxwt
+                    sumwt["pixels"].data[chan, pol, :, :] /= maxwt
+                    sumwt["pixels"].data = numpy.sqrt(sumwt["pixels"].data)
+
 
     return im
 

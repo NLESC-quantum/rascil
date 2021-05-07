@@ -149,10 +149,10 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
     else:
         get_pb = None
         
-    gleam_components = apply_beam_to_skycomponent(
-        gleam_components, beam=pb_model, phasecentre=phasecentre
-    )
-
+    # gleam_components = apply_beam_to_skycomponent(
+    #     gleam_components, beam=pb_model, phasecentre=phasecentre
+    # )
+    #
     predicted_vislist = predict_list_rsexecute_workflow(
         bvis_list, gleam_model, context="ng"
     )
@@ -208,6 +208,8 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
     deconvolved = image_gather_channels([continuum_imaging_list[0][chan] for chan in range(nfreqwin)])
     residual = image_gather_channels([continuum_imaging_list[1][chan][0] for chan in range(nfreqwin)])
     restored = image_gather_channels([continuum_imaging_list[2][chan] for chan in range(nfreqwin)])
+    clean_beam = continuum_imaging_list[2][nfreqwin//2].attrs["clean_beam"]
+    restored.attrs["clean_beam"] = clean_beam
 
     log.info(qa_image(deconvolved, context="Clean image "))
     export_image_to_fits(

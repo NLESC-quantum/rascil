@@ -49,17 +49,19 @@ def cli_parser():
     )
 
     parser.add_argument(
+        "--tag",
+        type=str,
+        default="",
+        help="Informational tag used in plot titles and file names",
+    )
+
+
+    parser.add_argument(
         "--x_axis",
         type=str,
         default="imaging_npixel",
         help="Name of x axis from cli_args e.g. imaging_npixel",
     )
-
-    parser.add_argument(
-        "--top",
-        type=int,
-        default=10,
-        help="Sort in time taken and plot the top values")
 
     parser.add_argument(
         "--y_axes",
@@ -68,8 +70,10 @@ def cli_parser():
         default=["skymodel_predict_calibrate",
                  "skymodel_calibrate_invert",
                  "invert_ng",
-                 "imaging_deconvolve",
-                 "restore_cube"],
+                 "restore_cube",
+                 "image_scatter_facets",
+                 "image_gather_facets",
+                 ],
         
         help="Names of values from dask_profile to plot e.g. skymodel_predict_calibrate",
     )
@@ -77,7 +81,7 @@ def cli_parser():
     return parser
 
 
-def plot(xaxis, yaxes, top, performances, title=""):
+def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
     """
 
     :param xaxis:
@@ -86,19 +90,33 @@ def plot(xaxis, yaxes, top, performances, title=""):
     :return:
     """
     plt.clf()
+    
     xvalues = [performance["cli_args"][xaxis] for performance in performances]
 
-    for yaxis in yaxes:
-        yvalues = [performance["dask_profile"][yaxis]["time"] for performance in performances]
-        log.info(f"{yaxis}: {yvalues}")
-        plt.loglog(xvalues, yvalues, "-", label=yaxis)
+    if normalise:
+        for yaxis in yaxes:
+            yvalues = [performance["dask_profile"][yaxis]["time"] /
+                       performance["dask_profile"][yaxis]["number_calls"]
+                       for performance in performances]
+            log.info(f"{yaxis}: {yvalues}")
+            plt.loglog(xvalues, yvalues, "-", label=yaxis)
+        plt.ylabel("Processing time per call (s)")
+    else:
+        for yaxis in yaxes:
+            yvalues = [performance["dask_profile"][yaxis]["time"] for performance in performances]
+            log.info(f"{yaxis}: {yvalues}")
+            plt.loglog(xvalues, yvalues, "-", label=yaxis)
+        clock_time = [performance["dask_profile"]["summary"]["duration"] for performance in performances]
+        plt.loglog(xvalues, clock_time, "--", label="clock_time")
+        processor_time = [performance["dask_profile"]["summary"]["total"] for performance in performances]
+        plt.loglog(xvalues, processor_time, "--", label="processor_time")
+        plt.ylabel("Total processing time (s)")
 
-    plt.title(title)
+    plt.title(f"{tag} {title}")
     plt.xlabel(xaxis)
-    plt.ylabel("Processing time (s)")
     plt.legend()
-    if title is not "":
-        figure = f"{title}.png"
+    if title is not "" or tag is not "":
+        figure = f"{tag} {title}.png"
         plt.savefig(figure)
     else:
         figure = None
@@ -136,10 +154,10 @@ def analyser(args):
     y_axes = performances[0]["dask_profile"].keys()
     log.info(f"Available yaxes {y_axes}")
 
-    plot(args.x_axis, args.y_axes, args.top, performances)
-    
-    return
-
+    return [plot(args.x_axis, args.y_axes, performances, title="total_time",
+                 normalise=False, tag=args.tag),
+            plot(args.x_axis, args.y_axes, performances, title="time_per_call",
+                 normalise=True, tag=args.tag)]
 
 def main():
     # Get command line inputs

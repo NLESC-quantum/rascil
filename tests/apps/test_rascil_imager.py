@@ -20,7 +20,8 @@ from rascil.processing_components import (
     find_skycomponents,
 )
 from rascil.processing_components.util.performance import (
-    performance_store_dict, performance_environment
+    performance_store_dict,
+    performance_environment,
 )
 from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import (
@@ -47,8 +48,10 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 default_run = True
 
+
 @pytest.mark.parametrize(
-    "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
+    "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, "
+    "component_threshold, component_method, offset, flat_sky",
     [
         (
             default_run,
@@ -62,6 +65,7 @@ default_run = True
             None,
             None,
             5.0,
+            False,
         ),
         (
             default_run,
@@ -75,6 +79,7 @@ default_run = True
             None,
             None,
             5.5,
+            False,
         ),
         (
             default_run,
@@ -88,6 +93,7 @@ default_run = True
             None,
             None,
             5.0,
+            False,
         ),
         (
             default_run,
@@ -101,6 +107,7 @@ default_run = True
             None,
             "None",
             5.0,
+            False,
         ),
         (
             default_run,
@@ -114,6 +121,7 @@ default_run = True
             None,
             "None",
             5.5,
+            False,
         ),
         (
             default_run,
@@ -127,6 +135,7 @@ default_run = True
             "10",
             "fit",
             5.5,
+            False,
         ),
     ],
 )
@@ -142,6 +151,7 @@ def test_rascil_imager(
     component_threshold,
     component_method,
     offset,
+    flat_sky,
 ):
     """
 
@@ -337,6 +347,8 @@ def test_rascil_imager(
         "0.0005",
         "--imaging_dft_kernel",
         "cpu_looped",
+        "--imaging_flat_sky",
+        "False",
     ]
 
     clean_args = [
@@ -363,7 +375,7 @@ def test_rascil_imager(
         "--clean_restore_facets",
         "4",
         "--clean_restore_overlap",
-        "8"
+        "8",
     ]
     if component_threshold is not None and component_method is not None:
         clean_args += [

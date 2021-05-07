@@ -99,6 +99,12 @@ def apps_parser_imaging(parser):
         help="Use the improved w stacking method in Nifty Gridder?",
     )
     parser.add_argument(
+        "--imaging_flat_sky",
+        type=str,
+        default=False,
+        help="If using a primary beam, normalise to flat sky?",
+    )
+    parser.add_argument(
         "--imaging_npixel",
         type=int,
         default=None,

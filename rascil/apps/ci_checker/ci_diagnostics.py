@@ -478,7 +478,7 @@ def ci_checker_diagnostics(bdsf_image, input_image, image_type):
         sources_stats = qa_image_bdsf(source_mask, description="sources")
         background_stats = qa_image_bdsf(background_mask, description="background")
         restored_stats = qa_image_bdsf(
-            bdsf_image.image_arr[0, 0, :, :], description="restored"
+            bdsf_image.image_arr[0, nchan//2, :, :], description="restored"
         )
         plot_with_running_mean(
             source_mask, input_image, sources_stats, subwcs, description="sources"

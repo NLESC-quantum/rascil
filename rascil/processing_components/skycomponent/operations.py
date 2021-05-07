@@ -22,7 +22,6 @@ __all__ = [
     "select_neighbouring_components",
     "remove_neighbouring_components",
     "apply_beam_to_skycomponent",
-    "subtract_beam_to_skycomponent",
     "apply_voltage_pattern_to_skycomponent",
 ]
 
@@ -380,10 +379,15 @@ def find_skycomponents(
 
 
 def apply_beam_to_skycomponent(
-    sc: Union[Skycomponent, List[Skycomponent]], beam: Image, phasecentre=None
+    sc: Union[Skycomponent, List[Skycomponent]],
+    beam: Image,
+    phasecentre=None,
+    inverse=False,
 ) -> Union[Skycomponent, List[Skycomponent]]:
     """Apply a primary beam to a Skycomponent
 
+    if inverse==True, do an inverse where we subtract the primary beam from the skycomponents
+    if inverse==False, do a multiplication
     :param phasecentre:
     :param beam: primary beam
     :param sc: SkyComponent or list of SkyComponents
@@ -422,74 +426,10 @@ def apply_beam_to_skycomponent(
         if not numpy.isnan(pixloc).any():
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
-                comp_flux = comp.flux * beam["pixels"].data[:, :, y, x]
-                total_flux += comp_flux
-            else:
-                comp_flux = 0.0 * comp.flux
-            newsc.append(
-                Skycomponent(
-                    comp.direction,
-                    comp.frequency,
-                    comp.name,
-                    comp_flux,
-                    shape=comp.shape,
-                    polarisation_frame=comp.polarisation_frame,
-                )
-            )
-
-    log.debug(
-        "apply_beam_to_skycomponent: %d components with total flux %s"
-        % (len(newsc), total_flux)
-    )
-    if single:
-        return newsc[0]
-    else:
-        return newsc
-
-
-def subtract_beam_to_skycomponent(
-    sc: Union[Skycomponent, List[Skycomponent]], beam: Image, phasecentre=None
-) -> Union[Skycomponent, List[Skycomponent]]:
-    """Correct for a primary beam application to Skycomponent(s)
-       Same to apply_beam_to_skycomponent except divide by the beam instead
-
-    :param phasecentre:
-    :param beam: primary beam
-    :param sc: SkyComponent or list of SkyComponents
-    :return: List of skycomponents
-    """
-
-    single = not isinstance(sc, collections.abc.Iterable)
-    if single:
-        sc = [sc]
-
-    nchan, npol, ny, nx = beam["pixels"].data.shape
-    log.debug("subtract_beam_to_skycomponent: Processing %d components" % (len(sc)))
-
-    ras = [comp.direction.ra.radian for comp in sc]
-    decs = [comp.direction.dec.radian for comp in sc]
-    skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
-    if beam.image_acc.wcs.wcs.ctype[0] == "RA---SIN":
-        pixlocs = skycoord_to_pixel(skycoords, beam.image_acc.wcs, origin=1, mode="wcs")
-    else:
-        wcs = copy.deepcopy(beam.image_acc.wcs)
-        wcs.wcs.ctype[0] = "RA---SIN"
-        wcs.wcs.ctype[1] = "DEC--SIN"
-        wcs.wcs.crval[0] = phasecentre.ra.deg
-        wcs.wcs.crval[1] = phasecentre.dec.deg
-        pixlocs = skycoord_to_pixel(skycoords, wcs, origin=1, mode="wcs")
-
-    newsc = []
-    total_flux = numpy.zeros_like(sc[0].flux)
-    for icomp, comp in enumerate(sc):
-
-        assert comp.shape == "Point", "Cannot handle shape %s" % comp.shape
-
-        pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
-        if not numpy.isnan(pixloc).any():
-            x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
-            if 0 <= x < nx and 0 <= y < ny:
-                comp_flux = comp.flux / beam["pixels"].data[:, :, y, x]
+                if inverse:
+                    comp_flux = comp.flux / beam["pixels"].data[:, :, y, x]
+                else:
+                    comp_flux = comp.flux * beam["pixels"].data[:, :, y, x]
                 total_flux += comp_flux
             else:
                 comp_flux = 0.0
@@ -505,7 +445,7 @@ def subtract_beam_to_skycomponent(
             )
 
     log.debug(
-        "subtract_beam_to_skycomponent: %d components with total flux %s"
+        "apply_beam_to_skycomponent: %d components with total flux %s"
         % (len(newsc), total_flux)
     )
     if single:

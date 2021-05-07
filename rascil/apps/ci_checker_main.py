@@ -27,7 +27,7 @@ from rascil.processing_components import create_low_test_skycomponents_from_glea
 from rascil.processing_components.skycomponent.operations import (
     create_skycomponent,
     find_skycomponent_matches,
-    subtract_beam_to_skycomponent,
+    apply_beam_to_skycomponent,
 )
 from rascil.processing_components.image.operations import (
     import_image_from_fits,
@@ -538,7 +538,7 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope):
     nchan, npol, ny, nx = beam["pixels"].data.shape
     log.info("The primary beam has {} channels, {} polarizaion.".format(nchan, npol))
 
-    pbcomp = subtract_beam_to_skycomponent(comp, beam)
+    pbcomp = apply_beam_to_skycomponent(comp, beam, inverse=True)
 
     log.debug("Flux comparison after primary beam correction:")
     for i, c in enumerate(comp):

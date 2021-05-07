@@ -113,12 +113,23 @@ class TestPrimaryBeamsPol(unittest.TestCase):
             pb = create_pb(model, telescope=telescope, use_local=False)
             if apply_pb:
                 pbcomp = apply_beam_to_skycomponent(component, pb)
-                # print("After application of primary beam {}".format(str(pbcomp.flux)))
+                log.debug(
+                    "After application of primary beam {}".format(str(pbcomp.flux))
+                )
             else:
                 pbcomp = copy_skycomponent(component)
             bvis = dft_skycomponent_visibility(bvis, pbcomp)
             iquv_image = idft_visibility_skycomponent(bvis, component)[0]
-            # print("IQUV to {0} to IQUV image = {1}".format(vpol.type, iquv_image[0].flux))
+            log.debug(
+                "IQUV to {0} to IQUV image = {1}".format(vpol.type, iquv_image[0].flux)
+            )
+
+            if apply_pb:
+                inverse_comp = apply_beam_to_skycomponent(pbcomp, pb, inverse=True)
+            else:
+                inverse_comp = copy_skycomponent(pbcomp)
+
+            assert numpy.array_equal(component.flux, inverse_comp.flux)
 
     def test_apply_voltage_pattern_dft(self):
         self.createVis()

@@ -96,9 +96,9 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
         if "bmaj" in clean_beam.keys() and \
             "bmin" in clean_beam.keys() and \
             "bpa" in clean_beam.keys():
-            header.append(fits.Card("BMAJ", clean_beam["bmaj"]))
-            header.append(fits.Card("BMIN", clean_beam["bmin"]))
-            header.append(fits.Card("BPA", clean_beam["bpa"]))
+            header.append(fits.Card("BMAJ", clean_beam["bmaj"], "[deg] CLEAN beam major axis"))
+            header.append(fits.Card("BMIN", clean_beam["bmin"], "[deg] CLEAN beam minor axis"))
+            header.append(fits.Card("BPA", clean_beam["bpa"], "[deg] CLEAN beam position angle"))
         else:
             log.warning(f"export_image_to_fits: clean_beam is incompletely specified: {clean_beam}, not writing")
 

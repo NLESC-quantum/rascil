@@ -38,7 +38,10 @@ def cli_parser():
     parser = argparse.ArgumentParser(
         description="RASCIL performance analysis", fromfile_prefix_chars="@"
     )
-    parser = apps_parser_app(parser)
+    
+    parser.add_argument(
+        "--mode", type=str, default="plot", help="Processing mode: plot"
+    )
 
     parser.add_argument(
         "--performance_files",
@@ -54,7 +57,6 @@ def cli_parser():
         default="",
         help="Informational tag used in plot titles and file names",
     )
-
 
     parser.add_argument(
         "--x_axis",
@@ -116,7 +118,7 @@ def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
     plt.xlabel(xaxis)
     plt.legend()
     if title is not "" or tag is not "":
-        figure = f"{tag} {title}.png"
+        figure = f"{tag}_{title}.png"
         plt.savefig(figure)
     else:
         figure = None
@@ -150,9 +152,15 @@ def analyser(args):
     ]
     x_axes = performances[0]["cli_args"].keys()
     log.info(f"Available xaxes {x_axes}")
+    if args.x_axis not in x_axes:
+        raise ValueError(f"x axis {args.x_axis} is not in file")
     
     y_axes = performances[0]["dask_profile"].keys()
     log.info(f"Available yaxes {y_axes}")
+
+    for yaxis in args.y_axes:
+        if yaxis not in y_axes:
+            raise ValueError(f"y axis {yaxis} is not in file")
 
     return [plot(args.x_axis, args.y_axes, performances, title="total_time",
                  normalise=False, tag=args.tag),
@@ -164,6 +172,7 @@ def main():
     parser = cli_parser()
     args = parser.parse_args()
     plot_files = analyser(args)
+    log.info(f"Written plot files {plot_files}")
 
 
 if __name__ == "__main__":

@@ -203,14 +203,13 @@ def restore_list_serial_workflow(
                 model_imagelist[i],
                 clean_beam=clean_beam,
                 residual=residual_list[i],
-                **kwargs
             )
             for i, _ in enumerate(model_imagelist)
         ]
     else:
         restored_list = [
             restore_cube(
-                model_imagelist[i], clean_beam=clean_beam, residual=None, **kwargs
+                model_imagelist[i], clean_beam=clean_beam, residual=None
             )
             for i, _ in enumerate(model_imagelist)
         ]

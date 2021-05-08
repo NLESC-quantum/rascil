@@ -92,6 +92,8 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
     ##assert isinstance(im, Image), im
     header = im.image_acc.wcs.to_header()
     clean_beam = im.attrs["clean_beam"]
+    from rascil.workflows.rsexecute.execution_support import rsexecute
+    clean_beam = rsexecute.compute(clean_beam, sync=True)
     if isinstance(clean_beam, dict):
         if "bmaj" in clean_beam.keys() and \
             "bmin" in clean_beam.keys() and \
@@ -101,7 +103,6 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
             header.append(fits.Card("BPA", clean_beam["bpa"], "[deg] CLEAN beam position angle"))
         else:
             log.warning(f"export_image_to_fits: clean_beam is incompletely specified: {clean_beam}, not writing")
-
     if im["pixels"].data.dtype == "complex":
         return fits.writeto(filename=fitsfile, data=numpy.real(im["pixels"].data),
                             header=header, overwrite=True)

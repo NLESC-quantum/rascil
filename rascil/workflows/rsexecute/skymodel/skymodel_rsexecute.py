@@ -307,7 +307,7 @@ def restore_centre_skymodel_list_rsexecute_workflow(
 
     residual = sum_invert_results_rsexecute(residual_imagelist)[0]
     restored = rsexecute.execute(skymodel_restore, nout=1)(
-        skymodel_list[centre], residual, clean_beam
+        skymodel_list[centre], residual, clean_beam=clean_beam
     )
 
     return restored
@@ -330,7 +330,7 @@ def restore_skymodel_single_list_rsexecute_workflow(
 
     psf_list = sum_invert_results_rsexecute(psf_imagelist)
     psf = rsexecute.execute(normalise_sumwt)(psf_list[0], psf_list[1])
-    clean_beam = rsexecute.execute(fit_psf)(psf)
+    clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
 
     def skymodel_restore(s, res, cb):
         res_image = restore_cube(s.image, residual=res, clean_beam=cb)
@@ -382,8 +382,7 @@ def restore_skymodel_list_rsexecute_workflow(
     if clean_beam is None:
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
         psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
-        clean_beam = rsexecute.execute(fit_psf)(psf)
-        kwargs["clean_beam"] = clean_beam
+        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
 
         # Scatter each list element into a list. We will then run restore_cube on each
     facet_model_list = [
@@ -415,7 +414,7 @@ def restore_skymodel_list_rsexecute_workflow(
                 )(
                     model=facet_model_list[i][im],
                     residual=facet_residual_list[i][im],
-                    **kwargs
+                    clean_beam=clean_beam
                 )
                 for im, _ in enumerate(facet_model_list[i])
             ]
@@ -426,7 +425,7 @@ def restore_skymodel_list_rsexecute_workflow(
             [
                 rsexecute.execute(
                     restore_cube, nout=actual_number_facets * actual_number_facets
-                )(model=facet_model_list[i][im], **kwargs)
+                )(model=facet_model_list[i][im], clean_beam=clean_beam)
                 for im, _ in enumerate(facet_model_list[i])
             ]
             for i, _ in enumerate(skymodel_list)

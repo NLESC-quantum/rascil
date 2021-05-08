@@ -709,7 +709,7 @@ def convert_clean_beam_to_degrees(im, beam_pixels):
     return clean_beam
 
 
-def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
+def restore_cube(model: Image, psf=None, residual=None, clean_beam=None) -> Image:
     """Restore the model image to the residuals
 
     The clean beam can be specified as a dictionary with
@@ -722,8 +722,9 @@ def restore_cube(model: Image, psf=None, residual=None, **kwargs) -> Image:
     :return: restored image
 
     """
+    assert clean_beam is None or isinstance(clean_beam, dict)
+    
     restored = model.copy(deep=True)
-    clean_beam = get_parameter(kwargs, "clean_beam", None)
 
     if clean_beam is None:
         if psf is not None:

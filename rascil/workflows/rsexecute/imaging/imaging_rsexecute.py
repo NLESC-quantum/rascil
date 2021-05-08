@@ -180,7 +180,7 @@ def residual_list_rsexecute_workflow(vis, model_imagelist, context="2d", **kwarg
 
 
 def restore_list_singlefacet_rsexecute_workflow(
-    model_imagelist, psf_imagelist, residual_imagelist=None, **kwargs
+    model_imagelist, psf_imagelist, residual_imagelist=None, clean_beam=None, **kwargs
 ):
     """Create a graph to calculate the restored images
 
@@ -198,27 +198,25 @@ def restore_list_singlefacet_rsexecute_workflow(
     if residual_imagelist is not None:
         assert len(model_imagelist) == len(residual_imagelist)
 
-    clean_beam = get_parameter(kwargs, "clean_beam", None)
     if clean_beam is None:
         psf_list = sum_invert_results_rsexecute(psf_imagelist)
         psf = rsexecute.execute(normalise_sumwt)(psf_list[0], psf_list[1])
-        clean_beam = rsexecute.execute(fit_psf)(psf)
-        kwargs["clean_beam"] = clean_beam
-
+        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
+        
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
             residual_imagelist
         )
         restored_list = [
             rsexecute.execute(restore_cube, nout=1)(
-                model_imagelist[i], residual=residual_list[i], **kwargs
+                model_imagelist[i], residual=residual_list[i], clean_beam=clean_beam
             )
             for i, _ in enumerate(model_imagelist)
         ]
     else:
         restored_list = [
             rsexecute.execute(restore_cube, nout=1)(
-                model_imagelist[i], clean_beam=clean_beam, residual=None, **kwargs
+                model_imagelist[i], residual=None, clean_beam=clean_beam,
             )
             for i, _ in enumerate(model_imagelist)
         ]
@@ -233,6 +231,7 @@ def restore_list_rsexecute_workflow(
     restore_facets=1,
     restore_overlap=8,
     restore_taper="tukey",
+        clean_beam=None,
     **kwargs
 ):
     """Create a graph to calculate the restored image
@@ -258,12 +257,10 @@ def restore_list_rsexecute_workflow(
     else:
         actual_number_facets = max(1, (restore_facets - 1))
 
-    clean_beam = get_parameter(kwargs, "clean_beam", None)
     if clean_beam is None:
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
         psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
-        clean_beam = rsexecute.execute(fit_psf)(psf)
-        kwargs["clean_beam"] = clean_beam
+        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
 
         # Scatter each list element into a list. We will then run restore_cube on each
     facet_model_list = [
@@ -295,7 +292,7 @@ def restore_list_rsexecute_workflow(
                 )(
                     model=facet_model_list[i][im],
                     residual=facet_residual_list[i][im],
-                    **kwargs
+                    clean_beam=clean_beam,
                 )
                 for im, _ in enumerate(facet_model_list[i])
             ]
@@ -306,7 +303,7 @@ def restore_list_rsexecute_workflow(
             [
                 rsexecute.execute(
                     restore_cube, nout=actual_number_facets * actual_number_facets
-                )(model=facet_model_list[i][im], **kwargs)
+                )(model=facet_model_list[i][im], clean_beam=clean_beam)
                 for im, _ in enumerate(facet_model_list[i])
             ]
             for i, _ in enumerate(model_imagelist)
@@ -370,11 +367,11 @@ def restore_centre_rsexecute_workflow(
         # Get residual calculated across the band
         residual = sum_invert_results_rsexecute(residual_imagelist)[0]
         restored = rsexecute.execute(restore_cube, nout=1)(
-            model, residual=residual, clean_beam=clean_beam, **kwargs
+            model, residual=residual, clean_beam=clean_beam,
         )
     else:
         restored = rsexecute.execute(restore_cube, nout=1)(
-            model, clean_beam=clean_beam, **kwargs
+            model, clean_beam=clean_beam,
         )
 
     return restored

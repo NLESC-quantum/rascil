@@ -26,7 +26,7 @@ from rascil.processing_components import (
     create_image_from_visibility,
     image_gather_channels,
     apply_beam_to_skycomponent,
-    create_pb
+    create_pb,
 )
 from rascil.workflows import (
     predict_list_rsexecute_workflow,
@@ -51,16 +51,55 @@ log.setLevel(logging.WARNING)
 
 default_run = True
 
+
 @pytest.mark.parametrize(
-    "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag",
+    "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax",
     [
-        (default_run, True,  True, 7.309838100759249, -0.20992679191792812, False, "Dask_Optimise"),
-        (default_run, True,  True,  12.916458584499388, -0.05053130807627801, True,  "Dask_Optimise_Sensitivity"),
-        (default_run, True,  False, 7.309838100759249, -0.20992679191792812, False, "Dask_No_Optimise"),
-        (default_run, False, False, 7.309838100759249, -0.20992679191792812, False, "No_Dask"),
+        (
+            default_run,
+            True,
+            True,
+            7.307666209712524,
+            -0.18655017769990037,
+            False,
+            "Dask_Optimise_750",
+            750.0,
+        ),
+        (
+            default_run,
+            True,
+            True,
+            12.970040643739612,
+            -0.023130101567826324,
+            True,
+            "Dask_Optimise_Sensitivity_750",
+            750.0,
+        ),
+        (
+            not default_run,
+            True,
+            False,
+            7.307666209712524,
+            -0.18655017769990037,
+            False,
+            "Dask_No_Optimise_750",
+            750.0,
+        ),
+        (
+            not default_run,
+            False,
+            False,
+            7.307666209712524,
+            -0.18655017769990037,
+            False,
+            "No_Dask_750",
+            750.0,
+        ),
     ],
 )
-def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, sensitivity, tag):
+def test_imaging_pipeline(
+    default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax
+):
     """Test of imaging pipeline
 
     :param default_run: Run this?
@@ -73,7 +112,7 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
 
     if not default_run:
         return
-    
+
     rsexecute.set_client(use_dask=use_dask, optim=optimise)
 
     from rascil.data_models.parameters import rascil_path
@@ -84,7 +123,6 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
 
     nfreqwin = 9
     ntimes = 5
-    rmax = 300.0
     frequency = numpy.linspace(0.8e8, 1.2e8, nfreqwin)
     if nfreqwin > 1:
         channel_bandwidth = numpy.array(nfreqwin * [frequency[1] - frequency[0]])
@@ -108,7 +146,7 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
     )
 
     npixel = 512
-    cellsize = 1e-3
+    cellsize = 2e-3 * 300.0 / rmax
 
     gleam_model = [
         rsexecute.execute(create_low_test_image_from_gleam, nout=1)(
@@ -123,6 +161,7 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
         )
         for f, freq in enumerate(frequency)
     ]
+    gleam_model = rsexecute.persist(gleam_model)
     log.info("About to make GLEAM model")
 
     gleam_components = create_low_test_skycomponents_from_gleam(
@@ -133,29 +172,19 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
         radius=0.1,
     )
 
-    pb_model = create_image(
-        npixel=npixel,
-        frequency=frequency,
-        cellsize=cellsize,
-        phasecentre=phasecentre,
-        polarisation_frame=PolarisationFrame("stokesI")
-    )
-    pb_model = create_pb(pb_model, telescope="LOW", use_local=False)
-
     if sensitivity:
+
         def create(vis, model):
             return create_pb(model, telescope="LOW", use_local=False)
+
         get_pb = functools.partial(create)
     else:
         get_pb = None
-        
-    # gleam_components = apply_beam_to_skycomponent(
-    #     gleam_components, beam=pb_model, phasecentre=phasecentre
-    # )
-    #
+
     predicted_vislist = predict_list_rsexecute_workflow(
         bvis_list, gleam_model, context="ng"
     )
+    predicted_vislist = rsexecute.persist(predicted_vislist)
 
     model_list = [
         rsexecute.execute(create_image_from_visibility, nout=1)(
@@ -170,6 +199,7 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
         )
         for f, freq in enumerate(frequency)
     ]
+    model_list = rsexecute.persist(model_list)
 
     continuum_imaging_list = continuum_imaging_skymodel_list_rsexecute_workflow(
         predicted_vislist,
@@ -190,11 +220,11 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
         deconvolve_taper="tukey",
         psf_support=64,
         do_wstacking=True,
-        flat_sky=False
+        flat_sky=False,
     )
 
     continuum_imaging_list = rsexecute.compute(continuum_imaging_list, sync=True)
-    
+
     skymodel_list = continuum_imaging_list[3]
     export_skycomponent_to_hdf5(
         gleam_components,
@@ -205,11 +235,15 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
         "%s/test-continuum_imaging_%s_skymodel.hdf" % (dir, tag),
     )
     # Write frequency cubes
-    deconvolved = image_gather_channels([continuum_imaging_list[0][chan] for chan in range(nfreqwin)])
-    residual = image_gather_channels([continuum_imaging_list[1][chan][0] for chan in range(nfreqwin)])
-    restored = image_gather_channels([continuum_imaging_list[2][chan] for chan in range(nfreqwin)])
-    clean_beam = continuum_imaging_list[2][nfreqwin//2].attrs["clean_beam"]
-    restored.attrs["clean_beam"] = clean_beam
+    deconvolved = image_gather_channels(
+        [continuum_imaging_list[0][chan] for chan in range(nfreqwin)]
+    )
+    residual = image_gather_channels(
+        [continuum_imaging_list[1][chan][0] for chan in range(nfreqwin)]
+    )
+    restored = image_gather_channels(
+        [continuum_imaging_list[2][chan] for chan in range(nfreqwin)]
+    )
 
     log.info(qa_image(deconvolved, context="Clean image "))
     export_image_to_fits(
@@ -223,7 +257,9 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
     )
 
     if sensitivity:
-        sens = image_gather_channels([continuum_imaging_list[1][chan][1] for chan in range(nfreqwin)])
+        sens = image_gather_channels(
+            [continuum_imaging_list[1][chan][1] for chan in range(nfreqwin)]
+        )
         log.info(qa_image(sens, context="Sensitivity image "))
         export_image_to_fits(
             sens,
@@ -240,4 +276,3 @@ def test_imaging_pipeline(default_run, use_dask, optimise, test_max, test_min, s
     # Correct values for no skycomponent extraction
     assert abs(qa.data["max"] - test_max) < 1e-7, str(qa)
     assert abs(qa.data["min"] - test_min) < 1e-7, str(qa)
-

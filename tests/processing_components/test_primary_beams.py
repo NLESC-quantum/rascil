@@ -21,6 +21,7 @@ from rascil.processing_components.imaging.primary_beams import (
     create_pb,
     create_vp,
     convert_azelvp_to_radec,
+    create_low_test_vp,
 )
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
@@ -202,6 +203,28 @@ class TestPrimaryBeams(unittest.TestCase):
                     beam_radec,
                     "%s/test_voltage_pattern_real_rotate_%s.fits"
                     % (self.dir, telescope),
+                )
+
+    def test_create_voltage_patterns_LOW(self):
+        self.persist = True
+        self.createVis(freq=1e8)
+        model = create_image_from_visibility(
+            self.vis,
+            npixel=self.npixel,
+            cellsize=self.cellsize * 10.0,
+            polarisation_frame=PolarisationFrame("stokesIQUV"),
+            override_cellsize=False,
+        )
+        for azel in [(60.0, 45.0), (-60.0, 45.0)]:
+            beam = create_low_test_vp(
+                model,
+                use_local=False,
+                azel=(numpy.deg2rad(azel[0]), numpy.deg2rad(azel[1]))
+            )
+            if self.persist:
+                export_image_to_fits(
+                    beam,
+                    f"{self.dir}/test_voltage_pattern_low_real_az{azel[0]}_el{azel[1]}.fits",
                 )
 
 

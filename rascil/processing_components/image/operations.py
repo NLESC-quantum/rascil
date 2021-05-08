@@ -92,8 +92,9 @@ def export_image_to_fits(im: Image, fitsfile: str = 'imaging.fits'):
     ##assert isinstance(im, Image), im
     header = im.image_acc.wcs.to_header()
     clean_beam = im.attrs["clean_beam"]
-    if clean_beam is not None:
-        from rascil.workflows.rsexecute.execution_support import rsexecute
+    # TODO: Remove need for this clean_beam hack
+    from rascil.workflows.rsexecute.execution_support import rsexecute
+    if clean_beam is not None and not isinstance(clean_beam, dict) and rsexecute.using_dask:
         clean_beam = rsexecute.compute(clean_beam, sync=True)
     if isinstance(clean_beam, dict):
         if "bmaj" in clean_beam.keys() and \

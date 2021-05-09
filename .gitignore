@@ -93,3 +93,5 @@ examples/mcve/xarray/mydask.png
 *.nbc
 
 *.nbi
+
+performance/

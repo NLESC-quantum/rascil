@@ -161,11 +161,16 @@ def analyser(args):
     for yaxis in args.y_axes:
         if yaxis not in y_axes:
             raise ValueError(f"y axis {yaxis} is not in file")
+        
+    tag = performances[0]["environment"]["hostname"]
+    
+    if args.tag is not "":
+        tag = f"{args.tag}: {tag}"
 
     return [plot(args.x_axis, args.y_axes, performances, title="total_time",
-                 normalise=False, tag=args.tag),
+                 normalise=False, tag=tag),
             plot(args.x_axis, args.y_axes, performances, title="time_per_call",
-                 normalise=True, tag=args.tag)]
+                 normalise=True, tag=tag)]
 
 def main():
     # Get command line inputs

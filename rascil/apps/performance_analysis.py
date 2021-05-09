@@ -7,6 +7,7 @@ import logging
 import os
 import pprint
 import sys
+import glob
 
 import matplotlib
 
@@ -48,7 +49,7 @@ def cli_parser():
         type=str,
         nargs="*",
         default=None,
-        help="Names of json performance files to analyse",
+        help="Names of json performance files to analyse: default is all json files in working directory",
     )
 
     parser.add_argument(
@@ -82,13 +83,27 @@ def cli_parser():
 
     return parser
 
+def sort_values(xvalues, yvalues):
+    """ Sort xvalues and yvalues based on xvalues
+    
+    :param xvalues:
+    :param yvalues:
+    :return:
+    """
+    values = zip(xvalues, yvalues)
+    sorted_values = sorted(values)
+    tuples = zip(*sorted_values)
+    xvalues, yvalues = [list(tuple) for tuple in tuples]
+    return xvalues, yvalues
 
 def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
-    """
+    """ Plot the set of yaxes against xaxis
 
     :param xaxis:
     :param yaxes:
     :param performance:
+    :param title: Title for plot
+    :param tag: Informational tag for file name
     :return:
     """
     plt.clf()
@@ -100,14 +115,16 @@ def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
             yvalues = [performance["dask_profile"][yaxis]["time"] /
                        performance["dask_profile"][yaxis]["number_calls"]
                        for performance in performances]
-            log.info(f"{yaxis}: {yvalues}")
-            plt.loglog(xvalues, yvalues, "-", label=yaxis)
+            sxvalues, syvalues = sort_values(xvalues, yvalues)
+            log.info(f"{list(zip(sxvalues, syvalues))}")
+            plt.loglog(sxvalues, syvalues, "-", label=yaxis)
         plt.ylabel("Processing time per call (s)")
     else:
         for yaxis in yaxes:
             yvalues = [performance["dask_profile"][yaxis]["time"] for performance in performances]
-            log.info(f"{yaxis}: {yvalues}")
-            plt.loglog(xvalues, yvalues, "-", label=yaxis)
+            sxvalues, syvalues = sort_values(xvalues, yvalues)
+            log.info(f"{list(zip(sxvalues, syvalues))}")
+            plt.loglog(sxvalues, syvalues, "-", label=yaxis)
         clock_time = [performance["dask_profile"]["summary"]["duration"] for performance in performances]
         plt.loglog(xvalues, clock_time, "--", label="clock_time")
         processor_time = [performance["dask_profile"]["summary"]["total"] for performance in performances]
@@ -146,9 +163,16 @@ def analyser(args):
 
     log.info("Current working directory is {}".format(cwd))
 
+
+    if args.performance_files is not None:
+        performance_files = args.performance_files
+    else:
+        performance_files = glob.glob("*.json")
+        print(performance_files)
+
     performances = [
         performance_read(performance_file)
-        for performance_file in args.performance_files
+        for performance_file in performance_files
     ]
     x_axes = performances[0]["cli_args"].keys()
     log.info(f"Available xaxes {x_axes}")

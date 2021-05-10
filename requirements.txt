@@ -22,7 +22,7 @@ astropy==4.2.1
     #   reproject
 async-generator==1.10
     # via nbclient
-attrs==20.3.0
+attrs==21.2.0
     # via jsonschema
 backcall==0.2.0
     # via ipython
@@ -98,7 +98,7 @@ imageio==2.9.0
     # via scikit-image
 importlib-metadata==4.0.1
     # via jsonschema
-ipykernel==5.5.3
+ipykernel==5.5.4
     # via
     #   ipywidgets
     #   jupyter
@@ -112,7 +112,7 @@ ipython-genutils==0.2.0
     #   notebook
     #   qtconsole
     #   traitlets
-ipython==7.23.0
+ipython==7.23.1
     # via
     #   ipykernel
     #   ipywidgets
@@ -179,7 +179,7 @@ markupsafe==1.1.1
     # via jinja2
 matplotlib-inline==0.1.2
     # via ipython
-matplotlib==3.4.1
+matplotlib==3.4.2
     # via
     #   -r requirements.in
     #   aotools
@@ -291,7 +291,7 @@ pycparser==2.20
     # via cffi
 pyerfa==1.7.3
     # via astropy
-pygments==2.8.1
+pygments==2.9.0
     # via
     #   ipython
     #   jupyter-console
@@ -357,7 +357,7 @@ send2trash==1.5.0
     # via notebook
 seqfile==0.2.0
     # via -r requirements.in
-six==1.15.0
+six==1.16.0
     # via
     #   argon2-cffi
     #   bcrypt
@@ -427,7 +427,7 @@ webencodings==0.5.1
     # via bleach
 widgetsnbextension==3.5.1
     # via ipywidgets
-xarray==0.17.0
+xarray==0.18.0
     # via -r requirements.in
 zarr==2.8.1
     # via -r requirements.in

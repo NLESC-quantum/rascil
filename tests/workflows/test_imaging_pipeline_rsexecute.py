@@ -28,7 +28,7 @@ from rascil.processing_components import (
     create_image_from_visibility,
     image_gather_channels,
     apply_beam_to_skycomponent,
-    create_pb
+    create_pb,
 )
 from rascil.workflows import (
     predict_list_rsexecute_workflow,
@@ -55,8 +55,8 @@ log.setLevel(logging.WARNING)
 @pytest.mark.parametrize(
     "use_dask, optimise, test_max, test_min",
     [
-        (True,  True,  4.093884731966968, -0.006771973227456045),
-        (True,  False, 4.093884731966968, -0.006771973227456045),
+        (True, True, 4.093884731966968, -0.006771973227456045),
+        (True, False, 4.093884731966968, -0.006771973227456045),
         (False, False, 4.093884731966968, -0.006771973227456045),
     ],
 )
@@ -132,7 +132,7 @@ def test_imaging_pipeline(use_dask, optimise, test_max, test_min):
         frequency=frequency,
         cellsize=cellsize,
         phasecentre=phasecentre,
-        polarisation_frame=PolarisationFrame("stokesI")
+        polarisation_frame=PolarisationFrame("stokesI"),
     )
     pb_model = create_pb(pb_model, telescope="LOW", use_local=False)
 

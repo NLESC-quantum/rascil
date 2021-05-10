@@ -137,8 +137,8 @@ def test_continuum_imaging_checker(
     central_freq = image_frequency[int(nchan // 2)]
 
     clean_beam = {
-        "bmaj": numpy.rad2deg(5.*cellsize),
-        "bmin": numpy.rad2deg(5.*cellsize) / 2.0,
+        "bmaj": numpy.rad2deg(5.0 * cellsize),
+        "bmin": numpy.rad2deg(5.0 * cellsize) / 2.0,
         "bpa": 0.0,
     }
 

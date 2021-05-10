@@ -184,10 +184,10 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
                 ]
                 vp_list = rsexecute.persist(vp_list)
                 gt_list = [
-                    rsexecute.execute(simulate_gaintable_from_voltage_pattern,
-                          nout=len(original_components))(
-                        bvis, original_components, vp_list[ibv]
-                    )
+                    rsexecute.execute(
+                        simulate_gaintable_from_voltage_pattern,
+                        nout=len(original_components),
+                    )(bvis, original_components, vp_list[ibv])
                     for ibv, bvis in enumerate(bvis_graph)
                 ]
                 gt_list = rsexecute.persist(gt_list)

@@ -19,7 +19,7 @@ from rascil.processing_components import (
     export_image_to_fits,
     smooth_image,
     qa_image,
-    fit_psf
+    fit_psf,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import create_named_configuration
@@ -44,7 +44,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     residual_list_rsexecute_workflow,
     sum_invert_results_rsexecute,
     restore_list_rsexecute_workflow,
-    restore_list_singlefacet_rsexecute_workflow
+    restore_list_singlefacet_rsexecute_workflow,
 )
 from rascil.workflows.shared.imaging.imaging_shared import sum_invert_results
 
@@ -489,12 +489,16 @@ class TestImaging(unittest.TestCase):
 
     def test_restored_list_facet(self):
         self.actualSetUp(zerow=True)
-        
+
         def copy_image(im):
             return im.copy(deep=True)
-        
-        original_model_1 = [rsexecute.execute(copy_image, nout=1)(im) for im in self.model_list]
-        original_model_2 = [rsexecute.execute(copy_image, nout=1)(im) for im in self.model_list]
+
+        original_model_1 = [
+            rsexecute.execute(copy_image, nout=1)(im) for im in self.model_list
+        ]
+        original_model_2 = [
+            rsexecute.execute(copy_image, nout=1)(im) for im in self.model_list
+        ]
 
         residual_image_list = residual_list_rsexecute_workflow(
             self.bvis_list, self.model_list, context="2d"
@@ -504,7 +508,7 @@ class TestImaging(unittest.TestCase):
             self.bvis_list, self.model_list, context="2d", dopsf=True
         )
         psf_image_list = rsexecute.compute(psf_image_list, sync=True)
-        clean_beam = {'bmaj': 0.12, 'bmin': 0.1, 'bpa': -0.8257413937065491}
+        clean_beam = {"bmaj": 0.12, "bmin": 0.1, "bpa": -0.8257413937065491}
 
         restored_2facets_image_list = restore_list_rsexecute_workflow(
             original_model_1,
@@ -512,7 +516,7 @@ class TestImaging(unittest.TestCase):
             residual_image_list,
             restore_facets=4,
             restore_overlap=8,
-            clean_beam=clean_beam
+            clean_beam=clean_beam,
         )
         restored_2facets_image_list = rsexecute.compute(
             restored_2facets_image_list, sync=True
@@ -524,7 +528,7 @@ class TestImaging(unittest.TestCase):
             residual_image_list,
             restore_facets=1,
             restore_overlap=0,
-            clean_beam=clean_beam
+            clean_beam=clean_beam,
         )
 
         restored_1facets_image_list = rsexecute.compute(
@@ -547,8 +551,9 @@ class TestImaging(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.0057182615401) < 1e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.041057034327480695) < 1e-7, str(qa)
 
-        restored_2facets_image_list[centre]["pixels"].data \
-            -= restored_1facets_image_list[centre]["pixels"].data
+        restored_2facets_image_list[centre][
+            "pixels"
+        ].data -= restored_1facets_image_list[centre]["pixels"].data
         if self.persist:
             export_image_to_fits(
                 restored_2facets_image_list[centre],

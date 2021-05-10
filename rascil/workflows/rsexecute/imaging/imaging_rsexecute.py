@@ -209,9 +209,9 @@ def restore_list_singlefacet_rsexecute_workflow(
     :param kwargs: Parameters for functions in components
     :return: list of restored images (or graph)
     """
-    assert len(model_imagelist) == len(psf_imagelist)
     if residual_imagelist is not None:
-        assert len(model_imagelist) == len(residual_imagelist)
+        log.error("Model and residual list have different lengths")
+        raise ValueError("Model and residual list have different lengths")
 
     clean_beam = get_parameter(kwargs, "clean_beam", None)
     if clean_beam is None:
@@ -263,9 +263,9 @@ def restore_list_rsexecute_workflow(
     :param restore_taper: Type of taper between facets
     :return: list of restored images (or graph)
     """
-    assert len(model_imagelist) == len(psf_imagelist)
     if residual_imagelist is not None:
-        assert len(model_imagelist) == len(residual_imagelist)
+        log.error("Model and residual list have different lengths")
+        raise ValueError("Model and residual list have different lengths")
         
     if restore_overlap < 0:
         raise ValueError("Number of pixels for restore overlap must be >= 0")
@@ -370,9 +370,9 @@ def restore_centre_rsexecute_workflow(
     :param kwargs: Parameters for functions in components
     :return: list of restored images (or graphs)
     """
-    assert len(model_imagelist) == len(psf_imagelist)
     if residual_imagelist is not None:
-        assert len(model_imagelist) == len(residual_imagelist)
+        log.error("Model and residual list have different lengths")
+        raise ValueError("Model and residual list have different lengths")
 
     # Find the PSF by summing over all channels, fit to this psf
     psf = sum_invert_results_rsexecute(psf_imagelist)[0]

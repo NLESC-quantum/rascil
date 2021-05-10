@@ -192,9 +192,7 @@ def restore_centre_skymodel_list_rsexecute_workflow(
     :param kwargs: Parameters for functions in components
     :return: list of restored images (or graph)
     """
-    assert len(skymodel_list) == len(psf_imagelist)
-    if residual_imagelist is not None:
-        assert len(skymodel_list) == len(residual_imagelist)
+    _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
 
     # Find the PSF by summing over all channels, fit to this psf
     psf = sum_invert_results_rsexecute(psf_imagelist)[0]
@@ -215,6 +213,26 @@ def restore_centre_skymodel_list_rsexecute_workflow(
     return restored
 
 
+def _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list):
+    """ Check that the various image lists are congruent
+    
+    Raise ValueError when in error
+    
+    :param psf_imagelist:
+    :param residual_imagelist:
+    :param skymodel_list:
+    """
+    if len(skymodel_list) != len(psf_imagelist):
+        errmsg = "Skymodel and psf list have different lengths"
+        log.error(errmsg)
+        raise ValueError(errmsg)
+    if residual_imagelist is not None:
+        if len(skymodel_list) != len(residual_imagelist):
+            errmsg = "Skymodel and residual list have different lengths"
+            log.error(errmsg)
+            raise ValueError(errmsg)
+
+
 def restore_skymodel_single_list_rsexecute_workflow(
     skymodel_list, psf_imagelist, residual_imagelist=None, **kwargs
 ):
@@ -226,9 +244,7 @@ def restore_skymodel_single_list_rsexecute_workflow(
     :param kwargs: Parameters for functions in components
     :return: list of restored images (or graph)
     """
-    assert len(skymodel_list) == len(psf_imagelist)
-    if residual_imagelist is not None:
-        assert len(skymodel_list) == len(residual_imagelist)
+    _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
 
     psf_list = sum_invert_results_rsexecute(psf_imagelist)
     psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
@@ -268,9 +284,7 @@ def restore_skymodel_list_rsexecute_workflow(
     :param restore_taper: Type of taper between facets
     :return: list of restored images (or graph)
     """
-    assert len(skymodel_list) == len(psf_imagelist)
-    if residual_imagelist is not None:
-        assert len(skymodel_list) == len(residual_imagelist)
+    _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
     
     if restore_overlap < 0:
         raise ValueError("Number of pixels for restore overlap must be >= 0")

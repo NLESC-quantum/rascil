@@ -533,7 +533,12 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope):
     else:
         # Use internally provided telescope primary beam
         image = import_image_from_fits(input_image)
-        beam = create_pb(image, telescope=telescope, use_local=False)
+        beam = create_pb(
+            image,
+            telescope=telescope,
+            pointingcentre=image.image_acc.phasecentre,
+            use_local=False,
+        )
 
     nchan, npol, ny, nx = beam["pixels"].data.shape
     log.info("The primary beam has {} channels, {} polarizaion.".format(nchan, npol))

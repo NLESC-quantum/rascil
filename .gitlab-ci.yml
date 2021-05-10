@@ -9,6 +9,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 stages:
+  - linting
   - test
   - build
   - publish
@@ -34,9 +35,10 @@ linting:
   except:
     - schedules
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-  stage: test
+  stage: linting
   before_script:
     - pip3  install -r requirements.txt -r requirements-test.txt
+    - pip3 install black
   script:
     - make lint
   when: always

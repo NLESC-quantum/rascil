@@ -117,10 +117,15 @@ def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
 
     The gridding weights are accumulated as a function of channel and polarisation. This function
     corrects for this sum of weights. The sum of weights can be a 2D array or an image the same
-    shape as the image (as for primary beam correction
+    shape as the image (as for primary beam correction)
+    
+    The parameter flat_sky controls whether the sensitivity (sumwt) is divided out pixel by pixel
+    or instead the maximum value is divided out.
 
     :param im: Image, im["pixels"].data has shape [nchan, npol, ny, nx]
     :param sumwt: Sum of weights [nchan, npol] or [nchan, npol, ny, nx]
+    :param minwt: Minimum (fractional) weight to be used in dividing by the sumwt images
+    :param flat_sky: Make the sky flat? Or the noise flat?
     """
     nchan, npol, _, _ = im["pixels"].data.shape
     assert sumwt is not None
@@ -152,7 +157,8 @@ def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
                     im["pixels"].data[chan, pol, :, :] /= maxwt
                     sumwt["pixels"].data[chan, pol, :, :] /= maxwt
                     sumwt["pixels"].data = numpy.sqrt(sumwt["pixels"].data)
-
+    else:
+        raise ValueError("sumwt is not a 2D or 4D array - cannot perform normalisation")
 
     return im
 
@@ -164,6 +170,10 @@ def predict_2d(
 
     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
     this function. Any shifting needed is performed here.
+    
+    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+    as a partial function via the **kwargs. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
 
     :param vis: blockvisibility to be predicted
     :param model: model image
@@ -221,16 +231,17 @@ def invert_2d(
     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms
     of this function. Any shifting needed is performed here.
 
-    :param vis: blockvisibility to be inverted
+    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+    as a partial function via the **kwargs. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
+
+   :param vis: blockvisibility to be inverted
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
     :param normalise: normalise by the sum of weights (True)
-    :param gcfcf: A function to calculate the tuple (Grid correction function i.e. in image space, Convolution function
-    i.e. in uv space)
-    :return: resulting image
+    :return: (resulting image, sumof weights)
 
     """
-    # assert isinstance(vis, BlockVisibility), vis
 
     svis = copy_visibility(vis)
 
@@ -274,6 +285,10 @@ def predict_awprojection(
     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
     this function. Any shifting needed is performed here.
 
+    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+    as a partial function. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model.
+
     :param vis: blockvisibility to be predicted
     :param model: model image
     :return: resulting visibility (in place works)
@@ -294,6 +309,10 @@ def invert_awprojection(
     """Invert using convolutional degridding and an AW kernel
 
     Use the image im as a template. Do PSF in a separate call.
+
+    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+    as a partial function. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model.
 
     :param vis: blockvisibility to be inverted
     :param im: image template (not changed)

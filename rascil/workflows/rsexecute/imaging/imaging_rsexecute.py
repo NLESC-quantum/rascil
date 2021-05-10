@@ -68,8 +68,7 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, **kwargs
 
     :param vis_list: list of vis (or graph)
     :param model_imagelist: list of models (or graph)
-    :param context: Type of processing e.g. 2d, ng, facets
-    :param gcfcg: tuple containing grid correction and convolution function
+    :param context: Type of processing e.g. 2d, ng
     :param kwargs: Parameters for functions in components
     :return: List of vis_lists
 
@@ -184,13 +183,14 @@ def restore_list_singlefacet_rsexecute_workflow(
 ):
     """Create a graph to calculate the restored images
 
-    This restores each frequency plane using a clean_beam fitted from the frequency-summed PSF
+    This restores each frequency plane using a clean_beam specified or fitted from the frequency-summed PSF
     The output is an image for each frequency. Note that the noise in the residual is
     (correctly) that for each frequency.
 
     :param model_imagelist: Model list (or graph)
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
+    :param clean_beam: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :param kwargs: Parameters for functions in components
     :return: list of restored images (or graph)
     """
@@ -459,7 +459,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     else:
         sens_cube = None
 
-        # Work out the threshold. Need to find global peak over all dirty_list images
+    # Work out the threshold. Need to find global peak over all dirty_list images
     threshold = get_parameter(kwargs, "threshold", 0.0)
     nmoment = get_parameter(kwargs, "nmoment", 1)
 
@@ -668,7 +668,7 @@ def scatter_facets_gather_channels(
     :param deconvolve_overlap: Overlap in pixels
     :param deconvolve_taper: Type of taper
     :param model_imagelist: List of models
-    :param nchan: Numer of channels
+    :param nchan: Number of channels
     :return: List of frequency image cubes (or graph), arranged by facet
     """
     scattered_channels_facets_model_list = [

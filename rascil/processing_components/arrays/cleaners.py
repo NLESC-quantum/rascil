@@ -462,10 +462,11 @@ def convolve_convolve_scalestack(scalestack, img):
 
 def find_max_abs_stack(stack, sensitivity, windowstack, couplingmatrix):
     """Find the location and value of the absolute maximum in this stack
-    :param stack: stack to be searched
-    :param sensitivity: Inverse noise image
-    :param windowstack: Window for the search
-    :param couplingmatrix: Coupling matrix between difference scales
+
+    :param stack: Scale stack to be searched (a 3D array)
+    :param sensitivity: Inverse noise (an array)
+    :param windowstack: Window for the search (an array)
+    :param couplingmatrix: Coupling matrix between different scales
     :return: x, y, scale
 
     """
@@ -760,15 +761,31 @@ def msmfsclean(
 
 
 def find_global_optimum(hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity, findpeak):
-    """Find the optimum peak using one of a number of algorithms"""
+    """ Find the optimum component using one of a number of different algorithms. These
+    are discussed in detail in Urvashi/s thesis.
+    
+        # Calculate scale convolutions of moment residuals
+    smresidual = calculate_scale_moment_residual(ldirty, scalestack)
+
+    # Calculate scale scale moment moment psf, Hessian, and inverse of Hessian
+    # scale scale moment moment psf is needed for update of scale-moment residuals
+    # Hessian is needed in calculation of optimum for any iteration
+    # Inverse Hessian is needed to calculate principal solution in moment-space
+
+    
+    :param hsmmpsf: scale scale moment moment psf
+    :param ihsmmpsf: inverse of Hessian scale scale moment moment psf
+    :param smresidual: scale convolutions of frequency moment residuals
+    :param windowstack:
+    :param sensitivity: Sensitivity array: search is on sensitivity * residual images
+    :param findpeak: Algorithm: Algorithm1 or CASA or RASCIL
+    :return:
+    """
     if findpeak == "Algorithm1":
         # Calculate the principal solution in moment-moment axes. This decouples the moments
         smpsol = calculate_scale_moment_principal_solution(smresidual, ihsmmpsf)
         # Now find the location and scale
-        if sensitivity is not None:
-            mx, my, mscale = find_optimum_scale_zero_moment(smpsol, sensitivity, windowstack)
-        else:
-            mx, my, mscale = find_optimum_scale_zero_moment(smpsol, sensitivity, windowstack)
+        mx, my, mscale = find_optimum_scale_zero_moment(smpsol, sensitivity, windowstack)
         mval = smpsol[mscale, :, mx, my]
     elif findpeak == "CASA":
         # CASA 4.7 version
@@ -792,11 +809,12 @@ def find_global_optimum(hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity,
         mval = smpsol[mscale, :, mx, my]
 
     else:
+        # RASCIL (or anything else) ends up here: find the peak in the frequency moment 0
+        # residual image
         smpsol = calculate_scale_moment_principal_solution(smresidual, ihsmmpsf)
         mx, my, mscale = find_optimum_scale_zero_moment(
             smpsol, sensitivity, windowstack
         )
-
         mval = smpsol[mscale, :, mx, my]
 
     return mscale, mx, my, mval

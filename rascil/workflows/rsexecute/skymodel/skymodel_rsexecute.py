@@ -143,8 +143,7 @@ def predict_skymodel_list_rsexecute_workflow(
             if len(sm.components) > 0:
                 if sm.mask is not None:
                     comps = copy_skycomponent(sm.components)
-                    if sm.mask is not None:
-                        comps = apply_beam_to_skycomponent(comps, sm.mask)
+                    comps = apply_beam_to_skycomponent(comps, sm.mask)
                     v = dft_skycomponent_visibility(v, comps, **kwargs)
                 else:
                     v = dft_skycomponent_visibility(v, sm.components, **kwargs)
@@ -156,8 +155,7 @@ def predict_skymodel_list_rsexecute_workflow(
                     imgv = copy_visibility(v, zero=True)
                     if sm.mask is not None:
                         model = sm.image.copy(deep=True)
-                        if sm.mask is not None:
-                            model["pixels"].data *= sm.mask["pixels"].data
+                        model["pixels"].data *= sm.mask["pixels"].data
                         imgv = predict_list_serial_workflow(
                             [imgv], [model], context=context, **kwargs
                         )[0]
@@ -468,9 +466,17 @@ def residual_skymodel_list_rsexecute_workflow(
 ):
     """Create a graph to calculate residual image for a skymodel_list
 
+    The function get_pb should have the signature:
+
+        get_pb(BlockVisibility, Image)
+
+    and should return the primary beam for the blockvisibility e.g. using average
+    parallactic angle
+
     :param vis: List of vis (or graph)
-    :param model_imagelist: Model used to determine image parameters
+    :param model_imagelist: Model used to determine image parameters (or graph)
     :param context: Imaging context e.g. '2d', 'wstack'
+    :param skymodel_list: List of skymodels (or graph)
     :param kwargs: Parameters for functions in components
     :return: list of (image, sumwt) tuples or graph
     """

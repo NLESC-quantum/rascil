@@ -47,7 +47,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     def setUp(self):
         rsexecute.set_client(use_dask=True)
         self.dir = rascil_path("test_results")
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def tearDown(self):
         rsexecute.close()

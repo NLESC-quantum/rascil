@@ -355,7 +355,7 @@ def common_arguments(**kwargs):
     niter = get_parameter(kwargs, "niter", 100)
     if niter < 0:
         raise ValueError("niter must be greater than zero")
-    fracthresh = get_parameter(kwargs, "fractional_threshold", 0.1)
+    fracthresh = get_parameter(kwargs, "fractional_threshold", 0.01)
     if fracthresh < 0.0 or fracthresh > 1.0:
         raise ValueError("Fractional threshold should be in range 0.0, 1.0")
     scales = get_parameter(kwargs, "scales", [0, 3, 10, 30])
@@ -450,15 +450,22 @@ def mmclean_kernel(dirty, prefix, psf, window, sensitivity, **kwargs):
     For the MFS clean, the psf must have number of channels >= 2 * nmoment
 
     :param dirty: Image dirty image
+    :param prefix: Informational string to be used in log messages e.g. "cycle 1, subimage 42"
     :param psf: Image Point Spread Function
-    :param mask: Window in the form of an image, overrides window_shape
-    :param gain: loop gain (float) 0.7
-    :param threshold: Clean threshold (0.0)
+    :param window: Window image (Bool) - clean where True
+    :param sensitivity: sensitivity image
+    :return: component image, residual image
+
+    The following optional arguments can be passed via kwargs:
+    
     :param fractional_threshold: Fractional threshold (0.01)
+    :param gain: loop gain (float) 0.7
+    :param niter: Number of clean iterations (int) 100
+    :param threshold: Clean threshold (0.0)
     :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
     :param nmoment: Number of frequency moments (default 3)
-    :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'ASKAPSoft'|'CASA'|'RASCIL', Default is RASCIL.
-    :return: component image, residual image
+    :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'CASA'|'RASCIL', Default is RASCIL.
+
     """
 
     findpeak = get_parameter(kwargs, "findpeak", "RASCIL")
@@ -560,30 +567,31 @@ def msclean_kernel(dirty, prefix, psf, window, sensitivity=None, **kwargs):
 
     See: Cornwell, T.J., Multiscale CLEAN (IEEE Journal of Selected Topics in Sig Proc,
     2008 vol. 2 pp. 793-801)
+    
+    The clean search is performed on the product of the sensitivity image (if supplied) and
+    the residual image. This gives a way to bias against af high noise.
 
     :param dirty: Image dirty image
+    :param prefix: Informational string to be used in log messages e.g. "cycle 1, subimage 42"
     :param psf: Image Point Spread Function
     :param window: Window image (Bool) - clean where True
-    :param mask: Window in the form of an image, overrides window_shape
-    :param gain: loop gain (float) 0.7
-    :param threshold: Clean threshold (0.0)
-    :param fractional_threshold: Fractional threshold (0.01)
-    :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
+    :param sensitivity: sensitivity image
     :return: component image, residual image
 
+    The following optional arguments can be passed via kwargs:
+    
+    :param fractional_threshold: Fractional threshold (0.01)
+    :param gain: loop gain (float) 0.7
+    :param niter: Number of clean iterations (int) 100
+    :param threshold: Clean threshold (0.0)
+    :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
     """
-
     log.info(
         "deconvolve_cube %s: Starting Multi-scale clean of each polarisation and channel separately"
         % prefix
     )
 
     fracthresh, gain, niter, thresh, scales = common_arguments(**kwargs)
-
-    fracthresh = get_parameter(kwargs, "fractional_threshold", 0.01)
-    if not (0.0 < fracthresh < 1.0):
-        raise ValueError("fractional_threshold should be in range 0.0 to 1.0")
-    
 
     comp_array = numpy.zeros_like(dirty["pixels"].data)
     residual_array = numpy.zeros_like(dirty["pixels"].data)
@@ -722,8 +730,6 @@ def restore_cube(model: Image, psf=None, residual=None, clean_beam=None) -> Imag
     :return: restored image
 
     """
-    assert clean_beam is None or isinstance(clean_beam, dict)
-    
     restored = model.copy(deep=True)
 
     if clean_beam is None:

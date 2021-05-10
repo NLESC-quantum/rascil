@@ -213,8 +213,10 @@ def restore_list_serial_workflow(
     :return: list of restored images
     """
     if residual_imagelist is not None:
-        log.error("Model and residual list have different lengths")
-        raise ValueError("Model and residual list have different lengths")
+        if residual_imagelist is not None:
+            if len(residual_imagelist) != len(model_imagelist):
+                log.error("Model and residual list have different lengths")
+                raise ValueError("Model and residual list have different lengths")
 
     psf_list = sum_invert_results(psf_imagelist)
     psf = normalize_sumwt(psf_list[0], psf_list[1])

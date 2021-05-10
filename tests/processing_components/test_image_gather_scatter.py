@@ -120,7 +120,15 @@ class TestImageGatherScatters(unittest.TestCase):
         assert numpy.max(numpy.abs(m31original["pixels"].data)), "Original is empty"
 
         for taper in ["linear", "tukey", None]:
-            for nraster, overlap in [(1, 0), (2, 1), (2, 8), (4, 4), (4, 8), (8, 8), (8, 16)]:
+            for nraster, overlap in [
+                (1, 0),
+                (2, 1),
+                (2, 8),
+                (4, 4),
+                (4, 8),
+                (8, 8),
+                (8, 16),
+            ]:
                 m31model = create_test_image(
                     polarisation_frame=PolarisationFrame("stokesI")
                 )

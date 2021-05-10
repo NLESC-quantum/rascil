@@ -72,9 +72,7 @@ class TestImageGraph(unittest.TestCase):
 
     @unittest.skip("Stalls occasionally in CI - disable")
     def test_map_create_pb(self):
-        """ This tests the correctness of the coordinates of the facets
-
-        """
+        """This tests the correctness of the coordinates of the facets"""
         self.createVis(config="LOWBD2", rmax=300.0)
         model = create_image_from_visibility(
             self.vis, cellsize=0.001, override_cellsize=False
@@ -98,20 +96,19 @@ class TestImageGraph(unittest.TestCase):
 
         assert numpy.max(beam_4["pixels"].data) > 0.0
         assert numpy.max(beam_2["pixels"].data) > 0.0
-        err = numpy.max(numpy.abs(beam_4["pixels"]-beam_2["pixels"]))
+        err = numpy.max(numpy.abs(beam_4["pixels"] - beam_2["pixels"]))
         assert err < 1e-12, err
-        
-    def test_rooter(self):
-        """ This tests the correctness of the values of the facets
 
-        """
+    def test_rooter(self):
+        """This tests the correctness of the values of the facets"""
         model = create_test_image()
+
         def imagerooter(im):
             im["pixels"].values = numpy.sqrt(numpy.abs(im["pixels"]).values)
             return im
+
         root_graph_4 = image_rsexecute_map_workflow(model, imagerooter, facets=4)
         root_image_4 = rsexecute.compute(root_graph_4, sync=True)
-        
+
         err = numpy.max(numpy.abs(numpy.sqrt(model["pixels"]) - root_image_4["pixels"]))
         assert err < 1e-12, err
-        

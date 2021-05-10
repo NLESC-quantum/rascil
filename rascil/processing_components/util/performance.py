@@ -48,9 +48,10 @@ def git_hash():
         log.info(excp)
         return "unknown"
 
+
 def performance_read(performance_file):
-    """ Read the performance file
-    
+    """Read the performance file
+
     :param performance_file:
     :return: Dictionary
     """
@@ -90,7 +91,7 @@ def performance_dask_configuration(performance_file, indent=2, mode="a"):
 
     if not rsexecute.using_dask:
         return
-    
+
     if rsexecute.client is None:
         return
 

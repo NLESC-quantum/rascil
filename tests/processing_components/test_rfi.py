@@ -35,7 +35,7 @@ class TestRFISim(unittest.TestCase):
         pass
 
     def test_rfi_correlation(self):
-        """ Calculate the value of the correlated RFI using nominal attenuation, check for regression """
+        """Calculate the value of the correlated RFI using nominal attenuation, check for regression"""
         sample_freq = 3e4
         nchannels = 1000
         frequency = 170.5e6 + numpy.arange(nchannels) * sample_freq
@@ -100,7 +100,7 @@ class TestRFISim(unittest.TestCase):
         ), correlation.shape
 
     def test_rfi_propagators(self):
-        """ Calculate the value of the propagator from Perth to array, check for regression """
+        """Calculate the value of the propagator from Perth to array, check for regression"""
         sample_freq = 3e4
         nchannels = 1000
         frequency = 170.5e6 + numpy.arange(nchannels) * sample_freq

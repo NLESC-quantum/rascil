@@ -47,8 +47,8 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import (
 
 
 def init_logging():
-    """ Initialise the logging.
-    
+    """Initialise the logging.
+
     We need to run this function on all Dask workers
     """
     logging.basicConfig(

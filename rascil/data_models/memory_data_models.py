@@ -180,7 +180,7 @@ class ConfigurationAccessor(XarrayAccessorMixin):
 
     @property
     def nants(self):
-        """ Names of the dishes/stations"""
+        """Names of the dishes/stations"""
         return len(self._obj["names"])
 
 
@@ -536,14 +536,14 @@ class Image(xarray.Dataset):
             for key in ["bmaj", "bmin", "bpa"]:
                 if key not in clean_beam.keys():
                     raise KeyError(f"Image: clean_beam must have key {key}")
-            
+
         attrs = {
             "rascil_data_model": "Image",
             "_polarisation_frame": polarisation_frame.type,
             "_projection": (wcs.wcs.ctype[0], wcs.wcs.ctype[1]),
             "spectral_type": wcs.wcs.ctype[3],
             "clean_beam": clean_beam,
-            "refpixel": (wcs.wcs.crpix)
+            "refpixel": (wcs.wcs.crpix),
         }
 
         super().__init__(data_vars, coords=coords, attrs=attrs)
@@ -1452,7 +1452,7 @@ class QA:
 
 
 class ScienceDataModel:
-    """ Science Data Model: not defined yet"""
+    """Science Data Model: not defined yet"""
 
     def __init__(self):
         pass

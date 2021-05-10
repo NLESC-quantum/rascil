@@ -43,7 +43,7 @@ def test_skymodel_extract_skycomponents():
         flux_limit=3.0,
         flux_max=10.0,
         flux_threshold=3.0,
-        applybeam=False
+        applybeam=False,
     )
 
     # Create skymodel with all components in the image
@@ -57,11 +57,13 @@ def test_skymodel_extract_skycomponents():
         flux_limit=3.0,
         flux_max=10.0,
         flux_threshold=10.0,
-        applybeam=False
+        applybeam=False,
     )
-    
+
     # Now extract all sources > 1.0Jy
-    sm_found_components = extract_skycomponents_from_skymodel(sm_all_image, component_threshold=0.3, component_method='fit')
+    sm_found_components = extract_skycomponents_from_skymodel(
+        sm_all_image, component_threshold=0.3, component_method="fit"
+    )
     assert len(sm_found_components.components) > 0, "No components found"
 
     for i, sc in enumerate(sm_found_components.components):

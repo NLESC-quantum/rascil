@@ -104,12 +104,16 @@ def predict_skymodel_list_rsexecute_workflow(
             raise ValueError("Obsvis and skymodel lists should have the same length")
         if gcfcf is None:
             return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis[ism], sm, None)
+                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
+                    obsvis[ism], sm, None
+                )
                 for ism, sm in enumerate(skymodel_list)
             ]
         else:
             return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis[ism], sm, gcfcf[ism])
+                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
+                    obsvis[ism], sm, gcfcf[ism]
+                )
                 for ism, sm in enumerate(skymodel_list)
             ]
     else:
@@ -120,7 +124,9 @@ def predict_skymodel_list_rsexecute_workflow(
             ]
         else:
             return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm, gcfcf[ism])
+                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
+                    obsvis, sm, gcfcf[ism]
+                )
                 for ism, sm in enumerate(skymodel_list)
             ]
 
@@ -172,7 +178,9 @@ def invert_skymodel_list_rsexecute_workflow(
         ]
     else:
         return [
-            rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm, gcfcf[i])
+            rsexecute.execute(skymodel_calibrate_invert, nout=1)(
+                vis_list[i], sm, gcfcf[i]
+            )
             for i, sm in enumerate(skymodel_list)
         ]
 
@@ -286,9 +294,9 @@ def residual_skymodel_list_rsexecute_workflow(
 
 
 def deconvolve_skymodel_list_rsexecute_workflow(
-        dirty_image_list, psf_list, skymodel_list, prefix="", fit_skymodel=False, **kwargs
+    dirty_image_list, psf_list, skymodel_list, prefix="", fit_skymodel=False, **kwargs
 ):
-    """ Deconvolve using a skymodel
+    """Deconvolve using a skymodel
 
     :param dirty_image_list:
     :param psf_list:
@@ -297,7 +305,7 @@ def deconvolve_skymodel_list_rsexecute_workflow(
     :param kwargs:
     :return: list of skymodels
     """
-    
+
     if fit_skymodel:
         # Now recreate the sky models
         # Set the skymodel image and then if the model is not fixed extract skycomponents
@@ -305,26 +313,31 @@ def deconvolve_skymodel_list_rsexecute_workflow(
             if not sm.fixed:
                 sm = extract_skycomponents_from_skymodel(sm, d, **kwargs)
             return sm
-        
+
         skymodel_list = [
-            rsexecute.execute(skymodel_update_components, nout=1)(skymodel_list[i], dirty[0])
+            rsexecute.execute(skymodel_update_components, nout=1)(
+                skymodel_list[i], dirty[0]
+            )
             for i, dirty in enumerate(dirty_image_list)
         ]
         return skymodel_list
-    
+
     else:
         deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
-        
+
         deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
-            dirty_image_list, psf_list, deconvolve_model_imagelist, prefix=prefix,
+            dirty_image_list,
+            psf_list,
+            deconvolve_model_imagelist,
+            prefix=prefix,
             **kwargs
         )
-        
+
         def skymodel_update_image(sm, im):
             if not sm.fixed:
                 sm.image = im
             return sm
-        
+
         skymodel_list = [
             rsexecute.execute(skymodel_update_image, nout=1)(skymodel_list[i], m)
             for i, m in enumerate(deconvolve_model_imagelist)

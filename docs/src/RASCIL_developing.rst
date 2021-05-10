@@ -42,4 +42,6 @@ Submitting code
 
 RASCIL is part of the SKA telescope organisation on GitLab. https://gitlab.com/ska-telescope/rascil.git. 
 
-We welcome merge requests submitted via GitLab.
+We welcome merge requests submitted via GitLab. Please note that we use Black to keep the python
+code style in good shape. The first step in the CI pipeline checks that the code complies with
+black formatting style, and will fail if that is not the case.

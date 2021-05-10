@@ -59,7 +59,7 @@ def image_raster_iter(
     In the case where make_flat is true, the subimages returned have tapers applied in the overlap
     region. This is used by py:func:`rascil.processing_components.image.gather_scatter.image_gather_facets`
     to merge subimages into one image.
-    
+
     A taper is applied in the overlap regions. None implies a constant value, linear is a ramp,
     quadratic is parabolic at the ends, and tukey is the tukey function.
 
@@ -155,17 +155,21 @@ def image_raster_iter(
                 if overlap > 0 and make_flat:
                     flat = create_empty_image_like(subim)
                     if taper == "linear":
-                        flat["pixels"].data[..., :, :] = numpy.outer(taper_linear(dy, overlap),
-                                                                     taper_linear(dx, overlap))
+                        flat["pixels"].data[..., :, :] = numpy.outer(
+                            taper_linear(dy, overlap), taper_linear(dx, overlap)
+                        )
                     elif taper == "quadratic":
-                        flat["pixels"].data[..., :, :] = numpy.outer(taper_quadratic(dy, overlap),
-                                                                     taper_quadratic(dx, overlap))
+                        flat["pixels"].data[..., :, :] = numpy.outer(
+                            taper_quadratic(dy, overlap), taper_quadratic(dx, overlap)
+                        )
                     elif taper == "tukey":
-                        flat["pixels"].data[..., :, :] = numpy.outer(taper_tukey(dy, overlap),
-                                                                     taper_tukey(dx, overlap))
+                        flat["pixels"].data[..., :, :] = numpy.outer(
+                            taper_tukey(dy, overlap), taper_tukey(dx, overlap)
+                        )
                     else:
-                        flat["pixels"].data[..., :, :] = numpy.outer(taper_flat(dy, overlap),
-                                                                     taper_flat(dx, overlap))
+                        flat["pixels"].data[..., :, :] = numpy.outer(
+                            taper_flat(dy, overlap), taper_flat(dx, overlap)
+                        )
                     yield flat
                 else:
                     yield subim

@@ -1066,7 +1066,7 @@ def create_unittest_components(
     single=False,
     symmetric=False,
     angular_scale=1.0,
-        offset=[0.0, 0.0]
+    offset=[0.0, 0.0],
 ):
     # Fill the visibility with exactly computed point sources.
 

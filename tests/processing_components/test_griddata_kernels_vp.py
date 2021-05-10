@@ -67,7 +67,7 @@ class TestVPGridDataKernels(unittest.TestCase):
         assert (
             numpy.abs(
                 cf["pixels"].data[peak_location]
-                - (0.005285675638650635+0.0004943400102488789j)
+                - (0.005285675638650635 + 0.0004943400102488789j)
             )
             < 1e-7
         ), cf["pixels"].data[peak_location]

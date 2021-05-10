@@ -32,7 +32,7 @@ from rascil.processing_components.util.performance import (
     performance_store_dict,
     performance_qa_image,
     performance_dask_configuration,
-    performance_environment
+    performance_environment,
 )
 
 from rascil.workflows import (
@@ -227,11 +227,12 @@ def imager(args):
 
     # Save the processing statistics from Dask
     dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
-    
+
     if args is not None and args.performance_file is not None:
-        performance_store_dict(args.performance_file, "dask_profile",
-                               dask_info, mode="a")
-        performance_dask_configuration(args.performance_file, mode='a')
+        performance_store_dict(
+            args.performance_file, "dask_profile", dask_info, mode="a"
+        )
+        performance_dask_configuration(args.performance_file, mode="a")
 
     rsexecute.close()
 
@@ -403,7 +404,9 @@ def ical(args, bvis_list, model_list, msname):
     log.info("Finished compute of ICAL pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
-    return write_results(imagename, (deconvolved, residual, restored, skymodel), args.performance_file)
+    return write_results(
+        imagename, (deconvolved, residual, restored, skymodel), args.performance_file
+    )
 
 
 def invert(args, bvis_list, model_list, msname):

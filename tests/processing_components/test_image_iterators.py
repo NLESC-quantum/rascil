@@ -33,22 +33,24 @@ class TestImageIterators(unittest.TestCase):
         return pad_image(testim, [1, 1, npixel, npixel])
 
     def test_raster(self):
-        """ Test a raster iterator across an image. The test is to check that the
+        """Test a raster iterator across an image. The test is to check that the
         value of the subimages is multiplied by two.
-        
+
         """
 
         testdir = rascil_path("test_results")
         for npixel in [256, 512, 1024]:
             m31original = self.get_test_image(npixel=npixel)
             assert numpy.max(numpy.abs(m31original["pixels"].data)), "Original is empty"
-    
+
             for nraster in [1, 4, 8, 16]:
-                
+
                 for overlap in [0, 2, 4, 8, 16]:
                     try:
                         m31model = self.get_test_image(npixel=npixel)
-                        for patch in image_raster_iter(m31model, facets=nraster, overlap=overlap):
+                        for patch in image_raster_iter(
+                            m31model, facets=nraster, overlap=overlap
+                        ):
                             assert patch["pixels"].data.shape[3] == (
                                 m31model["pixels"].data.shape[3] // nraster
                             ), "Number of pixels in each patch: %d not as expected: %d" % (
@@ -62,8 +64,8 @@ class TestImageIterators(unittest.TestCase):
                                 (m31model["pixels"].data.shape[2] // nraster),
                             )
                             patch["pixels"].data *= 2.0
-        
-                        if  numpy.max(numpy.abs(m31model["pixels"].data)) == 0.0:
+
+                        if numpy.max(numpy.abs(m31model["pixels"].data)) == 0.0:
                             log.warning(
                                 f"Raster is empty failed for {npixel}, {nraster}, {overlap}"
                             )
@@ -74,13 +76,18 @@ class TestImageIterators(unittest.TestCase):
                             log.warning(
                                 f"Raster set failed for {npixel}, {nraster}, {overlap}: error {err}"
                             )
-                        export_image_to_fits(m31model,
-                                             f"{testdir}/test_image_iterators_model_{npixel}_{nraster}_{overlap}.fits")
-                        export_image_to_fits(diff,
-                                             f"{testdir}/test_image_iterators_diff_{npixel}_{nraster}_{overlap}.fits")
+                        export_image_to_fits(
+                            m31model,
+                            f"{testdir}/test_image_iterators_model_{npixel}_{nraster}_{overlap}.fits",
+                        )
+                        export_image_to_fits(
+                            diff,
+                            f"{testdir}/test_image_iterators_diff_{npixel}_{nraster}_{overlap}.fits",
+                        )
                     except ValueError as err:
-                        log.error(f"Iterator failed for {npixel}, {nraster}, {overlap}, : {err}")
-                        
+                        log.error(
+                            f"Iterator failed for {npixel}, {nraster}, {overlap}, : {err}"
+                        )
 
     def test_raster_exception(self):
 

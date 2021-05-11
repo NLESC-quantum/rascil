@@ -16,10 +16,11 @@ from rascil.data_models import Skycomponent
 from rascil.processing_components.arrays.cleaners import overlapIndices
 from rascil.processing_components.skycomponent.operations import restore_skycomponent
 
-from rascil.processing_components.image.deconvolution import (
+from rascil.processing_components import (
     deconvolve_cube,
     restore_cube,
     fit_psf,
+    create_pb,
 )
 from rascil.processing_components.image.operations import export_image_to_fits, qa_image
 from rascil.processing_components.simulation import create_test_image
@@ -39,7 +40,7 @@ log.setLevel(logging.INFO)
 class TestImageDeconvolution(unittest.TestCase):
     def setUp(self):
 
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
 
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
@@ -77,6 +78,7 @@ class TestImageDeconvolution(unittest.TestCase):
         )
         self.dirty, sumwt = invert_2d(self.vis, self.model)
         self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)
+        self.sensitivity = create_pb(self.model, "LOW")
 
     def overlaptest(self, a1, a2, s1, s2):
         #
@@ -140,7 +142,6 @@ class TestImageDeconvolution(unittest.TestCase):
         clean_beam = {"bmaj": bmaj, "bmin": bmaj / 2.0, "bpa": 15.0}
         self.cmodel = restore_cube(self.model, clean_beam=clean_beam)
         self.cmodel = restore_skycomponent(self.cmodel, sc, clean_beam=clean_beam)
-        self.persist = True
         if self.persist:
             export_image_to_fits(
                 self.cmodel, "%s/test_restore_skycomponent.fits" % (self.dir)
@@ -202,6 +203,45 @@ class TestImageDeconvolution(unittest.TestCase):
                 self.cmodel, "%s/test_deconvolve_msclean-clean.fits" % (self.dir)
             )
         assert numpy.max(self.residual["pixels"].data) < 1.2
+
+    def test_deconvolve_msclean_sensitivity(self):
+        self.comp, self.residual = deconvolve_cube(
+            self.dirty,
+            self.psf,
+            sensitivity=self.sensitivity,
+            niter=1000,
+            gain=0.7,
+            algorithm="msclean",
+            scales=[0, 3, 10, 30],
+            threshold=0.01,
+        )
+        if self.persist:
+            export_image_to_fits(
+                self.comp,
+                "%s/test_deconvolve_msclean_sensitivity-comp.fits" % (self.dir),
+            )
+        if self.persist:
+            export_image_to_fits(
+                self.residual,
+                "%s/test_deconvolve_msclean_sensitivity-residual.fits" % (self.dir),
+            )
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
+        if self.persist:
+            export_image_to_fits(
+                self.restored,
+                "%s/test_deconvolve_msclean_sensitivity-restored.fits" % (self.dir),
+            )
+            export_image_to_fits(
+                self.sensitivity,
+                "%s/test_deconvolve_msclean_sensitivity.fits" % (self.dir),
+            )
+        qa = qa_image(self.residual)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 4.277866752638536, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -2.2012918658511422, atol=1e-7, err_msg=f"{qa}"
+        )
 
     def test_deconvolve_msclean_1scale(self):
 

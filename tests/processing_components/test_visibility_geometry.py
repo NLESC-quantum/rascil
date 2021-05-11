@@ -46,7 +46,7 @@ class TestGeometry(unittest.TestCase):
         ha = calculate_blockvisibility_hourangles(self.bvis)
         numpy.testing.assert_array_almost_equal(ha[0].deg, -90.00, 3)
 
-    def test_parallatic_angle(self):
+    def test_parallactic_angle(self):
         pa = calculate_blockvisibility_parallactic_angles(self.bvis)
         numpy.testing.assert_array_almost_equal(pa[0].deg, -101.985, 3)
 

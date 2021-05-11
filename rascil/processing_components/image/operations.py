@@ -103,23 +103,40 @@ def export_image_to_fits(im: Image, fitsfile: str = "imaging.fits"):
         :py:func:`rascil.processing_components.image.operations.import_image_from_array`
 
     """
-    ##assert isinstance(im, Image), im
     header = im.image_acc.wcs.to_header()
     clean_beam = im.attrs["clean_beam"]
+
+    # TODO: Remove need for this clean_beam check. In some cases the clean beam gets to this point
+    # as a Dask.delayed object. The simplest (but inelegant) fix is to ask Dask to compute the
+    # value
+    from rascil.workflows.rsexecute.execution_support import rsexecute
+
+    if (
+        clean_beam is not None
+        and not isinstance(clean_beam, dict)
+        and rsexecute.using_dask
+    ):
+        clean_beam = rsexecute.compute(clean_beam, sync=True)
+
     if isinstance(clean_beam, dict):
         if (
             "bmaj" in clean_beam.keys()
             and "bmin" in clean_beam.keys()
             and "bpa" in clean_beam.keys()
         ):
-            header.append(fits.Card("BMAJ", clean_beam["bmaj"]))
-            header.append(fits.Card("BMIN", clean_beam["bmin"]))
-            header.append(fits.Card("BPA", clean_beam["bpa"]))
+            header.append(
+                fits.Card("BMAJ", clean_beam["bmaj"], "[deg] CLEAN beam major axis")
+            )
+            header.append(
+                fits.Card("BMIN", clean_beam["bmin"], "[deg] CLEAN beam minor axis")
+            )
+            header.append(
+                fits.Card("BPA", clean_beam["bpa"], "[deg] CLEAN beam position angle")
+            )
         else:
             log.warning(
                 f"export_image_to_fits: clean_beam is incompletely specified: {clean_beam}, not writing"
             )
-
     if im["pixels"].data.dtype == "complex":
         return fits.writeto(
             filename=fitsfile,

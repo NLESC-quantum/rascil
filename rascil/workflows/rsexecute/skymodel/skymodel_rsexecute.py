@@ -14,7 +14,7 @@ from rascil.data_models import get_parameter
 from rascil.processing_components import (
     copy_skycomponent,
     apply_beam_to_skycomponent,
-    normalize_sumwt,
+    normalise_sumwt,
     extract_skycomponents_from_skymodel,
     image_scatter_facets,
     image_gather_facets,
@@ -22,7 +22,10 @@ from rascil.processing_components import (
 from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import restore_cube, fit_psf
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.visibility import copy_visibility
+from rascil.processing_components.visibility import (
+    copy_visibility,
+    concatenate_visibility,
+)
 from rascil.processing_components.skycomponent.operations import restore_skycomponent
 
 # ToDo - remove non-SkyModel parts
@@ -45,121 +48,178 @@ log = logging.getLogger("rascil-logger")
 
 
 def predict_skymodel_list_rsexecute_workflow(
-    obsvis, skymodel_list, context="ng", gcfcf=None, docal=False, inverse=True, **kwargs
+    obsvis,
+    skymodel_list,
+    context="ng",
+    docal=False,
+    inverse=True,
+    get_pb=None,
+    **kwargs
 ):
     """Predict from a list of skymodels
 
     If obsvis is a list then we pair obsvis element and skymodel_list element and predict
     If obvis is BlockVisibility then we calculate BlockVisibility for each skymodel
 
+    The function get_pb should have the signature:
+
+        get_pb(BlockVisibility, Image)
+
+    and should return the primary beam for the blockvisibility e.g. using average
+    parallactic angle
+
     :param obsvis: Observed Block Visibility or list or graph
     :param skymodel_list: skymodel list
     :param context: Type of processing e.g. 2d, wstack, timeslice or facets
-    :param gcfcg: tuple containing grid correction and convolution function
     :param docal: Apply calibration table in skymodel
+    :param get_pb: Function to get the primary beam for a given image and vis
     :param kwargs: Parameters for functions in components
     :return: List of vis_lists
     """
 
-    def skymodel_predict_calibrate(ov, sm, g):
+    def skymodel_predict_calibrate(ov, sm):
         """Predict visibility for a skymodel
 
         :param sm: Skymodel
-        :param g: Convolution function
         :param ov: Input visibility
         :return: Visibility with dft of components, fft of image, gaintable
         """
-        if g is not None:
-            if len(g) != 2:
-                raise ValueError("Convolution function value incorrect")
-
         v = copy_visibility(ov, zero=True)
 
-        if len(sm.components) > 0:
-            if sm.mask is not None:
-                comps = copy_skycomponent(sm.components)
-                comps = apply_beam_to_skycomponent(comps, sm.mask)
-                v = dft_skycomponent_visibility(v, comps, **kwargs)
-            else:
-                v = dft_skycomponent_visibility(v, sm.components, **kwargs)
+        vis_slices = []
+        if get_pb is not None:
+            for time, vis_slice in v.groupby("time", squeeze=False):
 
-        if sm.image is not None:
-            if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
-                imgv = copy_visibility(ov, zero=True)
+                pb = get_pb(vis_slice, sm.image)
+
+                # First do the DFT or the components
+                if len(sm.components) > 0:
+                    if sm.mask is not None or pb is not None:
+                        comps = copy_skycomponent(sm.components)
+                        if sm.mask is not None:
+                            comps = apply_beam_to_skycomponent(comps, sm.mask)
+                        if pb is not None:
+                            comps = apply_beam_to_skycomponent(comps, pb)
+                        vis_slice = dft_skycomponent_visibility(
+                            vis_slice, comps, **kwargs
+                        )
+                    else:
+                        vis_slice = dft_skycomponent_visibility(
+                            vis_slice, sm.components, **kwargs
+                        )
+
+                # Now do the FFT of the image, after multiplying by the mask and primary
+                # beam
+                if sm.image is not None:
+                    if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
+                        imgv = copy_visibility(vis_slice, zero=True)
+                        if sm.mask is not None or pb is not None:
+                            model = sm.image.copy(deep=True)
+                            if sm.mask is not None:
+                                model["pixels"].data *= sm.mask["pixels"].data
+                            if pb is not None:
+                                model["pixels"].data *= pb["pixels"].data
+                            imgv = predict_list_serial_workflow(
+                                [imgv], [model], context=context, **kwargs
+                            )[0]
+                        else:
+                            imgv = predict_list_serial_workflow(
+                                [imgv], [sm.image], context=context, **kwargs
+                            )[0]
+                        vis_slice["vis"].data += imgv["vis"].data
+
+                vis_slices.append(vis_slice)
+
+            v = concatenate_visibility(vis_slices, "time")
+
+            if docal and sm.gaintable is not None:
+                v = apply_gaintable(v, sm.gaintable, inverse=inverse)
+
+            return v
+
+        else:
+
+            # First do the DFT or the components
+            if len(sm.components) > 0:
                 if sm.mask is not None:
-                    model = sm.image.copy(deep=True)
-                    model["pixels"].data *= sm.mask["pixels"].data
-                    imgv = predict_list_serial_workflow(
-                        [imgv], [model], context=context, gcfcf=[g], **kwargs
-                    )[0]
+                    comps = copy_skycomponent(sm.components)
+                    comps = apply_beam_to_skycomponent(comps, sm.mask)
+                    v = dft_skycomponent_visibility(v, comps, **kwargs)
                 else:
-                    imgv = predict_list_serial_workflow(
-                        [imgv], [sm.image], context=context, gcfcf=[g], **kwargs
-                    )[0]
-                v["vis"].data += imgv["vis"].data
+                    v = dft_skycomponent_visibility(v, sm.components, **kwargs)
 
-        if docal and sm.gaintable is not None:
-            v = apply_gaintable(v, sm.gaintable, inverse=inverse)
+            # Now do the FFT of the image, after multiplying by the mask and primary
+            # beam
+            if sm.image is not None:
+                if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
+                    imgv = copy_visibility(v, zero=True)
+                    if sm.mask is not None:
+                        model = sm.image.copy(deep=True)
+                        model["pixels"].data *= sm.mask["pixels"].data
+                        imgv = predict_list_serial_workflow(
+                            [imgv], [model], context=context, **kwargs
+                        )[0]
+                    else:
+                        imgv = predict_list_serial_workflow(
+                            [imgv], [sm.image], context=context, **kwargs
+                        )[0]
+                    v["vis"].data += imgv["vis"].data
 
-        return v
+            if docal and sm.gaintable is not None:
+                v = apply_gaintable(v, sm.gaintable, inverse=inverse)
+
+            return v
 
     if isinstance(obsvis, list):
         if len(obsvis) != len(skymodel_list):
             raise ValueError("Obsvis and skymodel lists should have the same length")
-        if gcfcf is None:
-            return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
-                    obsvis[ism], sm, None
-                )
-                for ism, sm in enumerate(skymodel_list)
-            ]
-        else:
-            return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
-                    obsvis[ism], sm, gcfcf[ism]
-                )
-                for ism, sm in enumerate(skymodel_list)
-            ]
+        return [
+            rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis[ism], sm)
+            for ism, sm in enumerate(skymodel_list)
+        ]
     else:
-        if gcfcf is None:
-            return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm, None)
-                for ism, sm in enumerate(skymodel_list)
-            ]
-        else:
-            return [
-                rsexecute.execute(skymodel_predict_calibrate, nout=1)(
-                    obsvis, sm, gcfcf[ism]
-                )
-                for ism, sm in enumerate(skymodel_list)
-            ]
+        return [
+            rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm)
+            for ism, sm in enumerate(skymodel_list)
+        ]
 
 
 def invert_skymodel_list_rsexecute_workflow(
-    vis_list, skymodel_list, context="ng", gcfcf=None, docal=False, **kwargs
+    vis_list,
+    skymodel_list,
+    context="ng",
+    docal=False,
+    get_pb=None,
+    normalise=True,
+    flat_sky=False,
+    **kwargs
 ):
     """Calibrate and invert from a skymodel, iterating over the skymodel
+
+    The function get_pb should have the signature:
+
+        get_pb(BlockVisibility, Image)
+
+    and should return the primary beam for the blockvisibility.
+
+    The return is a graph for a set of tuples of (dirty, sensitivity image)
 
     :param vis_list: List of Visibility data models
     :param skymodel_list: skymodel list
     :param context: Imaging context 2d or ng
-    :param gcfcg: tuple containing grid correction and convolution function
+    :param get_pb: Function to get a primary beam
     :param docal: Apply calibration table in skymodel
     :param kwargs: Parameters for functions in components
     :return: List of (image, weight) tuples)
     """
 
-    def skymodel_calibrate_invert(v, sm, g):
+    def skymodel_calibrate_invert(v, sm):
         """Inverse Fourier sum of visibility to image and components
 
         :param v: Visibility to be transformed
         :param sm: Skymodel
-        :param g: Convolution function
         :return: Skymodel containing transforms
         """
-        if g is not None:
-            if len(g) != 2:
-                raise ValueError("Convolution function value incorrect")
 
         if docal and sm.gaintable is not None:
             v = apply_gaintable(v, sm.gaintable)
@@ -167,26 +227,54 @@ def invert_skymodel_list_rsexecute_workflow(
         if sm.image is None:
             raise ValueError("skymodel image is None")
 
-        result = invert_list_serial_workflow(
-            [v], [sm.image], context=context, gcfcf=[g], **kwargs
-        )[0]
-        if sm.mask is not None:
-            result[0]["pixels"].data *= sm.mask["pixels"].data
+        sum_flats = sm.image.copy(deep=True)
+        sum_flats["pixels"][...] = 0.0
+        sum_dirtys = sm.image.copy(deep=True)
+        sum_dirtys["pixels"][...] = 0.0
 
-        return result
+        if get_pb is not None:
+            for time, vis_slice in v.groupby("time", squeeze=False):
 
-    if gcfcf is None:
-        return [
-            rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm, None)
-            for i, sm in enumerate(skymodel_list)
-        ]
-    else:
-        return [
-            rsexecute.execute(skymodel_calibrate_invert, nout=1)(
-                vis_list[i], sm, gcfcf[i]
-            )
-            for i, sm in enumerate(skymodel_list)
-        ]
+                pb = get_pb(vis_slice, sm.image)
+
+                # Just do a straightforward invert for just this blockvis
+                # and then apply the mask and primary beam if present
+                # The return value result contains the weighted image and
+                # the weights as an image (including mask and primary beam)
+                result = invert_list_serial_workflow(
+                    [vis_slice], [sm.image], context=context, normalise=False, **kwargs
+                )[0]
+                flat = numpy.ones_like(result[0]["pixels"].data)
+                if sm.mask is not None:
+                    flat *= sm.mask["pixels"].data
+                if pb is not None:
+                    flat *= pb["pixels"].data
+
+                # We need to apply the flat to the dirty image
+                sum_dirtys["pixels"].data += flat * result[0]["pixels"].data
+                # The sum_flats should contain the weights and the square of the PB
+                sum_flats["pixels"].data += (
+                    flat * flat * result[1][:, :, numpy.newaxis, numpy.newaxis]
+                )
+            if normalise:
+                sum_dirtys = normalise_sumwt(sum_dirtys, sum_flats, flat_sky=flat_sky)
+                sum_flats["pixels"].data = numpy.sqrt(sum_flats["pixels"].data)
+
+            return (sum_dirtys, sum_flats)
+
+        else:
+            result = invert_list_serial_workflow(
+                [v], [sm.image], context=context, **kwargs
+            )[0]
+            if sm.mask is not None:
+                result[0]["pixels"].data *= sm.mask["pixels"].data
+
+            return result
+
+    return [
+        rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm)
+        for i, sm in enumerate(skymodel_list)
+    ]
 
 
 def restore_centre_skymodel_list_rsexecute_workflow(
@@ -215,7 +303,7 @@ def restore_centre_skymodel_list_rsexecute_workflow(
 
     residual = sum_invert_results_rsexecute(residual_imagelist)[0]
     restored = rsexecute.execute(skymodel_restore, nout=1)(
-        skymodel_list[centre], residual, clean_beam
+        skymodel_list[centre], residual, clean_beam=clean_beam
     )
 
     return restored
@@ -255,8 +343,8 @@ def restore_skymodel_single_list_rsexecute_workflow(
     _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
 
     psf_list = sum_invert_results_rsexecute(psf_imagelist)
-    psf = rsexecute.execute(normalize_sumwt)(psf_list[0], psf_list[1])
-    clean_beam = rsexecute.execute(fit_psf)(psf)
+    psf = rsexecute.execute(normalise_sumwt)(psf_list[0], psf_list[1])
+    clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
 
     def skymodel_restore(s, res, cb):
         res_image = restore_cube(s.image, residual=res, clean_beam=cb)
@@ -339,7 +427,7 @@ def restore_skymodel_list_rsexecute_workflow(
                 )(
                     model=facet_model_list[i][im],
                     residual=facet_residual_list[i][im],
-                    **kwargs
+                    clean_beam=clean_beam,
                 )
                 for im, _ in enumerate(facet_model_list[i])
             ]
@@ -350,7 +438,7 @@ def restore_skymodel_list_rsexecute_workflow(
             [
                 rsexecute.execute(
                     restore_cube, nout=actual_number_facets * actual_number_facets
-                )(model=facet_model_list[i][im], **kwargs)
+                )(model=facet_model_list[i][im], clean_beam=clean_beam)
                 for im, _ in enumerate(facet_model_list[i])
             ]
             for i, _ in enumerate(skymodel_list)
@@ -389,14 +477,21 @@ def restore_skymodel_list_rsexecute_workflow(
 
 
 def residual_skymodel_list_rsexecute_workflow(
-    vis, model_imagelist, context="ng", skymodel_list=None, gcfcf=None, **kwargs
+    vis, model_imagelist, context="ng", skymodel_list=None, get_pb=None, **kwargs
 ):
     """Create a graph to calculate residual image for a skymodel_list
 
+    The function get_pb should have the signature:
+
+        get_pb(BlockVisibility, Image)
+
+    and should return the primary beam for the blockvisibility e.g. using average
+    parallactic angle
+
     :param vis: List of vis (or graph)
-    :param model_imagelist: Model used to determine image parameters
+    :param model_imagelist: Model used to determine image parameters (or graph)
     :param context: Imaging context e.g. '2d', 'wstack'
-    :param gcfcg: tuple containing grid correction and convolution function
+    :param skymodel_list: List of skymodels (or graph)
     :param kwargs: Parameters for functions in components
     :return: list of (image, sumwt) tuples or graph
     """
@@ -404,17 +499,27 @@ def residual_skymodel_list_rsexecute_workflow(
 
     if skymodel_list is not None:
         model_vis = predict_skymodel_list_rsexecute_workflow(
-            model_vis, skymodel_list, context=context, gcfcf=gcfcf, docal=True, **kwargs
+            model_vis,
+            skymodel_list,
+            context=context,
+            docal=True,
+            get_pb=get_pb,
+            **kwargs
         )
     else:
         model_vis = predict_list_rsexecute_workflow(
-            model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs
+            model_vis, model_imagelist, context=context, get_pb=get_pb, **kwargs
         )
     residual_vis = subtract_list_rsexecute_workflow(vis, model_vis)
 
     if skymodel_list is not None:
         result = invert_skymodel_list_rsexecute_workflow(
-            residual_vis, skymodel_list, gcfcf=gcfcf, docal=True, dopsf=False, **kwargs
+            residual_vis,
+            skymodel_list,
+            docal=True,
+            dopsf=False,
+            get_pb=get_pb,
+            **kwargs
         )
     else:
         result = invert_list_rsexecute_workflow(
@@ -422,8 +527,8 @@ def residual_skymodel_list_rsexecute_workflow(
             model_imagelist,
             context=context,
             dopsf=False,
-            normalize=True,
-            gcfcf=gcfcf,
+            normalise=True,
+            get_pb=get_pb,
             **kwargs
         )
     return rsexecute.optimize(result)
@@ -434,12 +539,15 @@ def deconvolve_skymodel_list_rsexecute_workflow(
 ):
     """Deconvolve using a skymodel
 
-    :param dirty_image_list:
-    :param psf_list:
-    :param skymodel_list: list of skymodels
-    :param prefix:
+    This will either fit for the brightest components and add those to the
+    skymodel components or use (optionally faceted) CLEAN based deconvolution
+
+    :param dirty_image_list: List of dirty images (or graphs)
+    :param psf_list: List of corresponding psf images (or graphs)
+    :param skymodel_list: list of skymodels (or graph)
+    :param prefix: Informational prefix for logging messages
     :param kwargs:
-    :return: list of skymodels
+    :return: list of skymodels (or graph)
     """
 
     if fit_skymodel:

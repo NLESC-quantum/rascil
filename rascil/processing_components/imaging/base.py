@@ -21,7 +21,7 @@ extra phase term in the Fourier transform cannot be ignored.
 
 __all__ = [
     "shift_vis_to_image",
-    "normalize_sumwt",
+    "normalise_sumwt",
     "predict_2d",
     "invert_2d",
     "predict_awprojection",
@@ -35,6 +35,8 @@ __all__ = [
 
 import logging
 from typing import List, Union
+
+import functools
 
 import astropy.units as units
 import astropy.wcs as wcs
@@ -110,42 +112,74 @@ def shift_vis_to_image(
     return vis
 
 
-def normalize_sumwt(im: Image, sumwt) -> Image:
-    """Normalize out the sum of weights
+def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
+    """normalise out the sum of weights
 
     The gridding weights are accumulated as a function of channel and polarisation. This function
-    corrects for this sum of weights.
+    corrects for this sum of weights. The sum of weights can be a 2D array or an image the same
+    shape as the image (as for primary beam correction)
+
+    The parameter flat_sky controls whether the sensitivity (sumwt) is divided out pixel by pixel
+    or instead the maximum value is divided out.
 
     :param im: Image, im["pixels"].data has shape [nchan, npol, ny, nx]
-    :param sumwt: Sum of weights [nchan, npol]
+    :param sumwt: Sum of weights [nchan, npol] or [nchan, npol, ny, nx]
+    :param minwt: Minimum (fractional) weight to be used in dividing by the sumwt images
+    :param flat_sky: Make the sky flat? Or the noise flat?
     """
     nchan, npol, _, _ = im["pixels"].data.shape
-    ##assert isinstance(im, Image), im
     assert sumwt is not None
-    assert nchan == sumwt.shape[0]
-    assert npol == sumwt.shape[1]
-    for chan in range(nchan):
-        for pol in range(npol):
-            if sumwt[chan, pol] > 0.0:
-                im["pixels"].data[chan, pol, :, :] = (
-                    im["pixels"].data[chan, pol, :, :] / sumwt[chan, pol]
-                )
-            else:
-                im["pixels"].data[chan, pol, :, :] = 0.0
+    if isinstance(sumwt, numpy.ndarray):
+        # This is the usual case where the primary beams are not included
+        assert nchan == sumwt.shape[0]
+        assert npol == sumwt.shape[1]
+        for chan in range(nchan):
+            for pol in range(npol):
+                if sumwt[chan, pol] > 0.0:
+                    im["pixels"].data[chan, pol, :, :] = (
+                        im["pixels"].data[chan, pol, :, :] / sumwt[chan, pol]
+                    )
+                else:
+                    im["pixels"].data[chan, pol, :, :] = 0.0
+    elif im["pixels"].data.shape == sumwt["pixels"].data.shape:
+        maxwt = numpy.max(sumwt["pixels"].data)
+        minwt = min_weight * maxwt
+        nchan, npol, ny, nx = sumwt["pixels"].data.shape
+        cx = nx // 2
+        cy = ny // 2
+        for chan in range(nchan):
+            for pol in range(npol):
+                if flat_sky:
+                    norm = numpy.sqrt(
+                        sumwt["pixels"].data[chan, pol, cy, cx]
+                        * sumwt["pixels"].data[chan, pol, :, :]
+                    )
+                    im["pixels"].data[chan, pol, :, :][norm > minwt] /= norm[
+                        norm > minwt
+                    ]
+                    im["pixels"].data[chan, pol, :, :][norm <= minwt] /= maxwt
+                else:
+                    im["pixels"].data[chan, pol, :, :] /= maxwt
+                    sumwt["pixels"].data[chan, pol, :, :] /= maxwt
+                    sumwt["pixels"].data = numpy.sqrt(sumwt["pixels"].data)
+    else:
+        raise ValueError("sumwt is not a 2D or 4D array - cannot perform normalisation")
+
     return im
 
 
-def predict_2d(
-    vis: BlockVisibility, model: Image, gcfcf=None, **kwargs
-) -> BlockVisibility:
+def predict_2d(vis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
     """Predict using convolutional degridding.
 
     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
     this function. Any shifting needed is performed here.
 
+    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+    as a partial function via the **kwargs. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
+
     :param vis: blockvisibility to be predicted
     :param model: model image
-    :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
     :return: resulting visibility (in place works)
     """
 
@@ -160,6 +194,7 @@ def predict_2d(
 
     _, _, ny, nx = model["pixels"].data.shape
 
+    gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
         gcf, cf = create_pswf_convolutionfunction(
             model,
@@ -168,7 +203,7 @@ def predict_2d(
             polarisation_frame=vis.blockvisibility_acc.polarisation_frame,
         )
     else:
-        gcf, cf = gcfcf
+        gcf, cf = gcfcf(model)
 
     griddata = create_griddata_from_image(
         model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
@@ -189,26 +224,27 @@ def invert_2d(
     vis: BlockVisibility,
     im: Image,
     dopsf: bool = False,
-    normalize: bool = True,
-    gcfcf=None,
+    normalise: bool = True,
     **kwargs
 ) -> (Image, numpy.ndarray):
     """Invert using 2D convolution function, using the specified convolution function
 
-    Use the image im as a template. Do PSF in a separate call.
+     Use the image im as a template. Do PSF in a separate call.
 
-    This is at the bottom of the layering i.e. all transforms are eventually expressed in terms
-    of this function. Any shifting needed is performed here.
+     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms
+     of this function. Any shifting needed is performed here.
+
+     Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+     as a partial function via the **kwargs. So the caller must supply a partial function to
+     calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
 
     :param vis: blockvisibility to be inverted
-    :param im: image template (not changed)
-    :param dopsf: Make the psf instead of the dirty image
-    :param normalize: Normalize by the sum of weights (True)
-    :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
-    :return: resulting image
+     :param im: image template (not changed)
+     :param dopsf: Make the psf instead of the dirty image
+     :param normalise: normalise by the sum of weights (True)
+     :return: (resulting image, sumof weights)
 
     """
-    # assert isinstance(vis, BlockVisibility), vis
 
     svis = copy_visibility(vis)
 
@@ -217,24 +253,24 @@ def invert_2d(
 
     svis = shift_vis_to_image(svis, im, tangent=True, inverse=False)
 
+    gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
-        gcf, cf = create_pswf_convolutionfunction(
-            im,
+        gcfcf = functools.partial(
+            create_pswf_convolutionfunction,
             support=get_parameter(kwargs, "support", 8),
             oversampling=get_parameter(kwargs, "oversampling", 127),
             polarisation_frame=vis.blockvisibility_acc.polarisation_frame,
         )
-    else:
-        gcf, cf = gcfcf
 
     griddata = create_griddata_from_image(
         im, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
     )
+    gcf, cf = gcfcf(im)
     griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
     result = fft_griddata_to_image(griddata, im, gcf)
 
-    if normalize:
-        result = normalize_sumwt(result, sumwt)
+    if normalise:
+        result = normalise_sumwt(result, sumwt)
 
     result = convert_polimage_to_stokes(result, **kwargs)
 
@@ -253,21 +289,24 @@ def predict_awprojection(
     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
     this function. Any shifting needed is performed here.
 
+    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+    as a partial function. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model.
+
     :param vis: blockvisibility to be predicted
     :param model: model image
-    :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
     :return: resulting visibility (in place works)
     """
 
     assert gcfcf is not None, "gcfcf is required for awprojection"
-    return predict_2d(vis, model, gcfcf, **kwargs)
+    return predict_2d(vis, model, **kwargs)
 
 
 def invert_awprojection(
     vis: BlockVisibility,
     im: Image,
     dopsf: bool = False,
-    normalize: bool = True,
+    normalise: bool = True,
     gcfcf=None,
     **kwargs
 ) -> (Image, numpy.ndarray):
@@ -275,16 +314,20 @@ def invert_awprojection(
 
     Use the image im as a template. Do PSF in a separate call.
 
+    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+    as a partial function. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model.
+
     :param vis: blockvisibility to be inverted
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image
-    :param normalize: Normalize by the sum of weights (True)
+    :param normalise: normalise by the sum of weights (True)
     :param gcfcf: (Grid correction function i.e. in image space, Convolution function i.e. in uv space)
     :return: resulting image
 
     """
     assert gcfcf is not None, "gcfcf is required for awprojection"
-    return invert_2d(vis, im, gcfcf=gcfcf, dopsf=dopsf, normalize=normalize, **kwargs)
+    return invert_2d(vis, im, dopsf=dopsf, normalise=normalise, gcfcf=gcfcf, **kwargs)
 
 
 def fill_blockvis_for_psf(svis):

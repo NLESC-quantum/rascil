@@ -44,7 +44,7 @@ from rascil.processing_components.image import (
     image_gather_channels,
 )
 from rascil.processing_components.image import calculate_image_frequency_moments
-from rascil.processing_components.imaging import normalize_sumwt
+from rascil.processing_components.imaging import normalise_sumwt
 from rascil.processing_components.imaging import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 from rascil.processing_components import fit_psf
@@ -52,9 +52,7 @@ from rascil.processing_components import fit_psf
 log = logging.getLogger("rascil-logger")
 
 
-def predict_list_serial_workflow(
-    vis_list, model_imagelist, context="ng", gcfcf=None, **kwargs
-):
+def predict_list_serial_workflow(vis_list, model_imagelist, context="ng", **kwargs):
     """Predict, iterating over both the scattered vis_list and image
 
     The visibility and image are scattered, the visibility is predicted on each part, and then the
@@ -79,16 +77,10 @@ def predict_list_serial_workflow(
     predict = c["predict"]
 
     # Loop over all windows
-    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
-        predict_results = [
-            predict(vis, model_imagelist[ivis], gcfcf=gcfcf[ivis], **kwargs)
-            for ivis, vis in enumerate(vis_list)
-        ]
-    else:
-        predict_results = [
-            predict(vis, model_imagelist[ivis], gcfcf=gcfcf[0], **kwargs)
-            for ivis, vis in enumerate(vis_list)
-        ]
+    predict_results = [
+        predict(vis, model_imagelist[ivis], **kwargs)
+        for ivis, vis in enumerate(vis_list)
+    ]
 
     return predict_results
 
@@ -97,9 +89,8 @@ def invert_list_serial_workflow(
     vis_list,
     template_model_imagelist,
     dopsf=False,
-    normalize=True,
+    normalise=True,
     context="ng",
-    gcfcf=None,
     **kwargs
 ):
     """Sum results from invert, iterating over the scattered image and vis_list
@@ -108,10 +99,9 @@ def invert_list_serial_workflow(
     :param template_model_imagelist: list of template models
     :param dopsf: Make the PSF instead of the dirty image
     :param facets: Number of facets
-    :param normalize: Normalize by sumwt
+    :param normalise: normalise by sumwt
     :param vis_slices: Number of slices
     :param context: Imaging context
-    :param gcfcg: tuple containing grid correction and convolution function
     :param kwargs: Parameters for functions in components
     :return: List of (image, sumwt) tuples, one per vis in vis_list
 
@@ -134,38 +124,21 @@ def invert_list_serial_workflow(
     invert = c["invert"]
 
     assert len(template_model_imagelist) == len(vis_list)
-    if isinstance(gcfcf, collections.abc.Iterable) and len(gcfcf) > 2:
-        assert len(gcfcf) == len(vis_list)
-        invert_results = [
-            invert(
-                vis,
-                template_model_imagelist[ivis],
-                dopsf=dopsf,
-                normalise=normalize,
-                gcfcf=gcfcf[ivis],
-                **kwargs
-            )
-            for ivis, vis in enumerate(vis_list)
-        ]
-    else:
-        invert_results = [
-            invert(
-                vis,
-                template_model_imagelist[ivis],
-                dopsf=dopsf,
-                normalise=normalize,
-                gcfcf=gcfcf[0],
-                **kwargs
-            )
-            for ivis, vis in enumerate(vis_list)
-        ]
+    invert_results = [
+        invert(
+            vis,
+            template_model_imagelist[ivis],
+            dopsf=dopsf,
+            normalise=normalise,
+            **kwargs
+        )
+        for ivis, vis in enumerate(vis_list)
+    ]
 
     return invert_results
 
 
-def residual_list_serial_workflow(
-    vis, model_imagelist, context="2d", gcfcf=None, **kwargs
-):
+def residual_list_serial_workflow(vis, model_imagelist, context="2d", **kwargs):
     """Create a graph to calculate residual image
 
     :param vis: List of vis
@@ -177,16 +150,15 @@ def residual_list_serial_workflow(
     """
     model_vis = zero_list_serial_workflow(vis)
     model_vis = predict_list_serial_workflow(
-        model_vis, model_imagelist, context=context, gcfcf=gcfcf, **kwargs
+        model_vis, model_imagelist, context=context, **kwargs
     )
     residual_vis = subtract_list_serial_workflow(vis, model_vis)
     result = invert_list_serial_workflow(
         residual_vis,
         model_imagelist,
         dopsf=False,
-        normalize=True,
+        normalise=True,
         context=context,
-        gcfcf=gcfcf,
         **kwargs
     )
     return result
@@ -219,7 +191,7 @@ def restore_list_serial_workflow(
                 raise ValueError("Model and residual list have different lengths")
 
     psf_list = sum_invert_results(psf_imagelist)
-    psf = normalize_sumwt(psf_list[0], psf_list[1])
+    psf = normalise_sumwt(psf_list[0], psf_list[1])
     clean_beam = fit_psf(psf)
 
     if residual_imagelist is not None:
@@ -229,15 +201,12 @@ def restore_list_serial_workflow(
                 model_imagelist[i],
                 clean_beam=clean_beam,
                 residual=residual_list[i],
-                **kwargs
             )
             for i, _ in enumerate(model_imagelist)
         ]
     else:
         restored_list = [
-            restore_cube(
-                model_imagelist[i], clean_beam=clean_beam, residual=None, **kwargs
-            )
+            restore_cube(model_imagelist[i], clean_beam=clean_beam, residual=None)
             for i, _ in enumerate(model_imagelist)
         ]
     return restored_list
@@ -259,9 +228,9 @@ def deconvolve_list_serial_workflow(
     For example::
 
         dirty_imagelist = invert_list_serial_workflow(vis_list, model_imagelist, context='2d',
-                                                          dopsf=False, normalize=True)
+                                                          dopsf=False, normalise=True)
         psf_imagelist = invert_list_serial_workflow(vis_list, model_imagelist, context='2d',
-                                                        dopsf=True, normalize=True)
+                                                        dopsf=True, normalise=True)
         dec_imagelist = deconvolve_list_serial_workflow(dirty_imagelist, psf_imagelist,
                 model_imagelist, niter=1000, fractional_threshold=0.01,
                 scales=[0, 3, 10], algorithm='mmclean', nmoment=3, nchan=freqwin,
@@ -424,7 +393,7 @@ def deconvolve_channel_list_serial_workflow(
 
 
 def weight_list_serial_workflow(
-    vis_list, model_imagelist, gcfcf=None, weighting="uniform", **kwargs
+    vis_list, model_imagelist, weighting="uniform", **kwargs
 ):
     """Weight the visibility data
 
@@ -439,6 +408,7 @@ def weight_list_serial_workflow(
     """
     centre = len(model_imagelist) // 2
 
+    gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
         gcfcf = [
             create_pswf_convolutionfunction(
@@ -447,7 +417,7 @@ def weight_list_serial_workflow(
             )
         ]
 
-    def grid_wt(vis, model, g):
+    def grid_wt(vis, model):
         if vis is not None:
             if model is not None:
                 griddata = create_griddata_from_image(
@@ -461,12 +431,12 @@ def weight_list_serial_workflow(
             return None
 
     weight_list = [
-        grid_wt(vis_list[i], model_imagelist[i], gcfcf) for i in range(len(vis_list))
+        grid_wt(vis_list[i], model_imagelist[i]) for i in range(len(vis_list))
     ]
 
     merged_weight_grid = griddata_merge_weights(weight_list)
 
-    def re_weight(vis, model, gd, g):
+    def re_weight(vis, model, gd):
         if gd is not None:
             if vis is not None:
                 # Ensure that the griddata has the right axes so that the convolution
@@ -483,7 +453,7 @@ def weight_list_serial_workflow(
             return vis
 
     return [
-        re_weight(v, model_imagelist[i], merged_weight_grid, gcfcf)
+        re_weight(v, model_imagelist[i], merged_weight_grid)
         for i, v in enumerate(vis_list)
     ]
 

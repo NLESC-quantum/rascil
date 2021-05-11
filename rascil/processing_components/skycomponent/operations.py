@@ -432,7 +432,7 @@ def apply_beam_to_skycomponent(
                     comp_flux = comp.flux * beam["pixels"].data[:, :, y, x]
                 total_flux += comp_flux
             else:
-                comp_flux = 0.0
+                comp_flux = 0.0 * comp.flux
             newsc.append(
                 Skycomponent(
                     comp.direction,

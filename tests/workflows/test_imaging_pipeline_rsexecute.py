@@ -6,6 +6,7 @@ import os
 import pprint
 
 import numpy
+import unittest
 import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -45,9 +46,10 @@ log.setLevel(logging.WARNING)
 # These tests probe whether the results depend on whether Dask is used and also whether
 # optimisation in Dask is used.
 
-default_run = True
+default_run = False
 
 
+@unittest.skip("Too expensive for CI/CD")
 @pytest.mark.parametrize(
     "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax",
     [
@@ -72,7 +74,7 @@ default_run = True
                 600.0,
         ),
         (
-                not default_run,
+                default_run,
                 True,
                 False,
                 6.787887014253024,
@@ -82,7 +84,7 @@ default_run = True
                 600.0,
         ),
         (
-                not default_run,
+                default_run,
                 False,
                 False,
                 6.787887014253024,

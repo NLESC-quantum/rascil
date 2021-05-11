@@ -328,7 +328,7 @@ def analyze_image(args):
                 radius=0.5,
             )
 
-        # Compensate for primary beam correction -- NEEDS UPDATE
+        # Compensate for primary beam correction
         if args.apply_primary == "True":
             telescope = args.telescope_model
             orig = correct_primary_beam(

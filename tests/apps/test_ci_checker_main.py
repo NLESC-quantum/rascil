@@ -65,60 +65,60 @@ log.setLevel(logging.INFO)
             0.00003,
             "nearest_npixel512_nchan1_noise0.00003_flux0.001",
         ),
-        (
-            0.0001,
-            1024,
-            1,
-            0.001,
-            "Nearest",
-            0.00003,
-            "nearest_npixel1024_nchan1_noise0.00003_flux0.001",
-        ),
-        (
-            0.0001,
-            512,
-            64,
-            0.001,
-            "Nearest",
-            0.00003,
-            "nearest_npixel512_nchan64_noise0.00003_flux0.001",
-        ),
-        (
-            0.0001,
-            1024,
-            8,
-            0.001,
-            "Nearest",
-            0.000001,
-            "nearest_npixel1024_nchan8_noise0.000001_flux0.001",
-        ),
-        (
-            0.0001,
-            512,
-            1,
-            0.0001,
-            "Nearest",
-            0.00003,
-            "nearest_npixel512_nchan1_noise0.00003_flux0.0001",
-        ),
-        (
-            0.0001,
-            512,
-            1,
-            0.001,
-            "Lanczos",
-            0.00003,
-            "lanczos_npixel512_nchan1_noise0.00003_flux0.001",
-        ),
-        (
-            0.0001,
-            512,
-            1,
-            0.001,
-            "Nearest",
-            0.0003,
-            "nearest_npixel512_nchan1_noise0.0003_flux0.001",
-        ),
+#        (
+#            0.0001,
+#            1024,
+#            1,
+#            0.001,
+#            "Nearest",
+#            0.00003,
+#            "nearest_npixel1024_nchan1_noise0.00003_flux0.001",
+#        ),
+#        (
+#            0.0001,
+#            512,
+#            64,
+#            0.001,
+#            "Nearest",
+#            0.00003,
+#            "nearest_npixel512_nchan64_noise0.00003_flux0.001",
+#        ),
+#        (
+#            0.0001,
+#            1024,
+#            8,
+#            0.001,
+#            "Nearest",
+#            0.000001,
+#            "nearest_npixel1024_nchan8_noise0.000001_flux0.001",
+#        ),
+#        (
+#            0.0001,
+#            512,
+#            1,
+#            0.0001,
+#            "Nearest",
+#            0.00003,
+#            "nearest_npixel512_nchan1_noise0.00003_flux0.0001",
+#        ),
+#        (
+#            0.0001,
+#            512,
+#            1,
+#            0.001,
+#            "Lanczos",
+#            0.00003,
+#            "lanczos_npixel512_nchan1_noise0.00003_flux0.001",
+#        ),
+#        (
+#            0.0001,
+#            512,
+#            1,
+#            0.001,
+#            "Nearest",
+#            0.0003,
+#            "nearest_npixel512_nchan1_noise0.0003_flux0.001",
+#        ),
     ],
 )
 def test_continuum_imaging_checker(
@@ -135,7 +135,7 @@ def test_continuum_imaging_checker(
     if nchan == 1:
         image_frequency = numpy.array([1.0e9])
     else:
-        image_frequency = numpy.linspace(1e9, 1.5e9, nchan)
+        image_frequency = numpy.linspace(0.8e9, 1.2e9, nchan)
 
     central_freq = image_frequency[int(nchan // 2)]
 
@@ -155,7 +155,7 @@ def test_continuum_imaging_checker(
     pb_npixel = 256
     d2r = numpy.pi / 180.0
     pb_cellsize = d2r * fov_deg / pb_npixel
-    pbradius = 1.5
+    pbradius = 2.0
     pbradius = pbradius * hwhm
 
     original_components = create_mid_simulation_components(
@@ -179,6 +179,13 @@ def test_continuum_imaging_checker(
 
     pb = create_pb(pbmodel, "MID", pointingcentre=phasecentre, use_local=False)
     components_with_pb = apply_beam_to_skycomponent(original_components[0], pb)
+
+    # just check the beams are applied successfully
+    reversed_comp = apply_beam_to_skycomponent(components_with_pb, pb, inverse=True)
+    orig_flux = [c.flux[nchan // 2][0] for c in original_components[0]]
+    reversed_flux = [c.flux[nchan // 2][0] for c in reversed_comp]
+
+    numpy.testing.assert_array_almost_equal(orig_flux, reversed_flux, decimal=3)
 
     sensitivity_file = rascil_path(
         f"test_results/test_ci_checker_{tag}_sensitivity.fits"
@@ -225,15 +232,13 @@ def test_continuum_imaging_checker(
         polarisation_frame=PolarisationFrame("stokesI"),
     )
 
-    model = insert_skycomponent(
-        model, components_with_pb[0], insert_method=insert_method
-    )
+    model = insert_skycomponent(model, components_with_pb, insert_method=insert_method)
 
     if noise > 0.0:
         rng = default_rng(1805550721)
         model["pixels"].data += rng.normal(0.0, noise, model["pixels"].data.shape)
 
-    model = smooth_image(model, width=1.0, normalise=False)
+    model = smooth_image(model, width=3.0, normalise=False)
     model.attrs["clean_beam"] = clean_beam
 
     restored_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
@@ -258,7 +263,7 @@ def test_continuum_imaging_checker(
             "--input_source_filename",
             comp_file,  # txtfile
             "--match_sep",
-            "1.0e-3",
+            "1.0e-4",
             "--apply_primary",
             "True",
         ]

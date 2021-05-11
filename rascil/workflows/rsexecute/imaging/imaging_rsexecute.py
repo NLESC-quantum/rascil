@@ -266,7 +266,7 @@ def restore_list_rsexecute_workflow(
         if len(residual_imagelist) != len(model_imagelist):
             log.error("Model and residual list have different lengths")
             raise ValueError("Model and residual list have different lengths")
-        
+
     if restore_overlap < 0:
         raise ValueError("Number of pixels for restore overlap must be >= 0")
 

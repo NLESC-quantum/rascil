@@ -222,10 +222,10 @@ def restore_centre_skymodel_list_rsexecute_workflow(
 
 
 def _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list):
-    """ Check that the various image lists are congruent
-    
+    """Check that the various image lists are congruent
+
     Raise ValueError when in error
-    
+
     :param psf_imagelist:
     :param residual_imagelist:
     :param skymodel_list:
@@ -273,13 +273,13 @@ def restore_skymodel_single_list_rsexecute_workflow(
 
 
 def restore_skymodel_list_rsexecute_workflow(
-        skymodel_list,
-        psf_imagelist,
-        residual_imagelist=None,
-        restore_facets=1,
-        restore_overlap=8,
-        restore_taper="tukey",
-        **kwargs
+    skymodel_list,
+    psf_imagelist,
+    residual_imagelist=None,
+    restore_facets=1,
+    restore_overlap=8,
+    restore_taper="tukey",
+    **kwargs
 ):
     """Create a graph to calculate the restored image
 
@@ -293,22 +293,22 @@ def restore_skymodel_list_rsexecute_workflow(
     :return: list of restored images (or graph)
     """
     _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
-    
+
     if restore_overlap < 0:
         raise ValueError("Number of pixels for restore overlap must be >= 0")
-    
+
     if restore_facets % 2 == 0 or restore_facets == 1:
         actual_number_facets = restore_facets
     else:
         actual_number_facets = max(1, (restore_facets - 1))
-    
+
     clean_beam = get_parameter(kwargs, "clean_beam", None)
     if clean_beam is None:
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
         psf = rsexecute.execute(normalize_sumwt)(clean_beam_list[0], clean_beam_list[1])
         clean_beam = rsexecute.execute(fit_psf)(psf)
         kwargs["clean_beam"] = clean_beam
-        
+
         # Scatter each list element into a list. We will then run restore_cube on each
     facet_model_list = [
         rsexecute.execute(
@@ -316,7 +316,7 @@ def restore_skymodel_list_rsexecute_workflow(
         )(sm.image, facets=restore_facets, overlap=restore_overlap, taper=restore_taper)
         for sm in skymodel_list
     ]
-    
+
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
             residual_imagelist
@@ -355,7 +355,7 @@ def restore_skymodel_list_rsexecute_workflow(
             ]
             for i, _ in enumerate(skymodel_list)
         ]
-    
+
     # Now we gather the results across all facets
     restored_imagelist = [
         rsexecute.execute(image_gather_facets)(
@@ -367,7 +367,7 @@ def restore_skymodel_list_rsexecute_workflow(
         )
         for i, _ in enumerate(skymodel_list)
     ]
-    
+
     def skymodel_restore_component(s, restored_image, cb):
         return restore_skycomponent(restored_image, s.components, cb)
 
@@ -378,14 +378,12 @@ def restore_skymodel_list_rsexecute_workflow(
         for ism, sm in enumerate(skymodel_list)
     ]
 
-    
     def set_clean_beam(r):
         r.attrs["clean_beam"] = clean_beam
         return r
-    
+
     restored_imagelist = [
-        rsexecute.execute(set_clean_beam, nout=1)(r)
-        for r in restored_imagelist
+        rsexecute.execute(set_clean_beam, nout=1)(r) for r in restored_imagelist
     ]
     return rsexecute.optimize(restored_imagelist)
 

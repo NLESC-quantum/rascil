@@ -300,7 +300,7 @@ def cli_parser():
     parser = argparse.ArgumentParser(
         description="RASCIL performance analysis", fromfile_prefix_chars="@"
     )
-    
+
     parser.add_argument(
         "--mode", type=str, default="plot", help="Processing mode: plot"
     )
@@ -331,22 +331,23 @@ def cli_parser():
         "--y_axes",
         type=str,
         nargs="*",
-        default=["skymodel_predict_calibrate",
-                 "skymodel_calibrate_invert",
-                 "invert_ng",
-                 "restore_cube",
-                 "image_scatter_facets",
-                 "image_gather_facets",
-                 ],
-        
+        default=[
+            "skymodel_predict_calibrate",
+            "skymodel_calibrate_invert",
+            "invert_ng",
+            "restore_cube",
+            "image_scatter_facets",
+            "image_gather_facets",
+        ],
         help="Names of values from dask_profile to plot e.g. skymodel_predict_calibrate",
     )
 
     return parser
 
+
 def sort_values(xvalues, yvalues):
-    """ Sort xvalues and yvalues based on xvalues
-    
+    """Sort xvalues and yvalues based on xvalues
+
     :param xvalues: Iterable of xaxis values
     :param yvalues: Iterable of yaxis values
     :return:
@@ -357,8 +358,9 @@ def sort_values(xvalues, yvalues):
     xvalues, yvalues = [list(tuple) for tuple in tuples]
     return xvalues, yvalues
 
+
 def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
-    """ Plot the set of yaxes against xaxis
+    """Plot the set of yaxes against xaxis
 
     :param xaxis: Name of xaxis e.g. imaging_npixel
     :param yaxes: Name of yaxes to be plotted against xaxis
@@ -369,18 +371,20 @@ def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
     """
     plt.clf()
     plt.cla()
-    
+
     # The input values are in the cli_args dictionary
     xvalues = [performance["cli_args"][xaxis] for performance in performances]
-    
+
     # The profile times are in the "dask_profile" dictionary
-    
+
     if normalise:
         # Plot the time per call for each function
         for yaxis in yaxes:
-            yvalues = [performance["dask_profile"][yaxis]["time"] /
-                       performance["dask_profile"][yaxis]["number_calls"]
-                       for performance in performances]
+            yvalues = [
+                performance["dask_profile"][yaxis]["time"]
+                / performance["dask_profile"][yaxis]["number_calls"]
+                for performance in performances
+            ]
             sxvalues, syvalues = sort_values(xvalues, yvalues)
             log.info(f"{pprint.pformat(list(zip(sxvalues, syvalues)))}")
             plt.loglog(sxvalues, syvalues, "-", label=yaxis)
@@ -388,14 +392,23 @@ def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
     else:
         # Plot the total time for each function
         for yaxis in yaxes:
-            yvalues = [performance["dask_profile"][yaxis]["time"] for performance in performances]
+            yvalues = [
+                performance["dask_profile"][yaxis]["time"]
+                for performance in performances
+            ]
             sxvalues, syvalues = sort_values(xvalues, yvalues)
             log.info(f"{pprint.pformat(list(zip(sxvalues, syvalues)))}")
             plt.loglog(sxvalues, syvalues, "-", label=yaxis)
-            
-        clock_time = [performance["dask_profile"]["summary"]["duration"] for performance in performances]
+
+        clock_time = [
+            performance["dask_profile"]["summary"]["duration"]
+            for performance in performances
+        ]
         plt.loglog(xvalues, clock_time, "--", label="clock_time")
-        processor_time = [performance["dask_profile"]["summary"]["total"] for performance in performances]
+        processor_time = [
+            performance["dask_profile"]["summary"]["total"]
+            for performance in performances
+        ]
         plt.loglog(xvalues, processor_time, "--", label="processor_time")
         plt.ylabel("Total processing time (s)")
 
@@ -407,10 +420,10 @@ def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
         plt.savefig(figure)
     else:
         figure = None
-        
+
     plt.show(block=False)
     return figure
-    
+
 
 def analyser(args):
     """Analyser
@@ -430,39 +443,52 @@ def analyser(args):
 
     log.info("Current working directory is {}".format(cwd))
 
-
     if args.performance_files is not None:
         performance_files = args.performance_files
     else:
         performance_files = glob.glob("*.json")
-    
+
     log.info(f"Reading from files {pprint.pformat(performance_files)}")
 
     performances = [
-        performance_read(performance_file)
-        for performance_file in performance_files
+        performance_read(performance_file) for performance_file in performance_files
     ]
     x_axes = list(performances[0]["cli_args"].keys())
     log.info(f"Available xaxes {pprint.pformat(x_axes)}")
     if args.x_axis not in x_axes:
         raise ValueError(f"x axis {args.x_axis} is not in file")
-    
+
     y_axes = list(performances[0]["dask_profile"].keys())
     log.info(f"Available yaxes {pprint.pformat(y_axes)}")
 
     for yaxis in args.y_axes:
         if yaxis not in y_axes:
             raise ValueError(f"y axis {yaxis} is not in file")
-        
+
     tag = performances[0]["environment"]["hostname"]
-    
+
     if args.tag is not "":
         tag = f"{args.tag}: {tag}"
 
-    return [plot(args.x_axis, args.y_axes, performances, title="total_time",
-                 normalise=False, tag=tag),
-            plot(args.x_axis, args.y_axes, performances, title="time_per_call",
-                 normalise=True, tag=tag)]
+    return [
+        plot(
+            args.x_axis,
+            args.y_axes,
+            performances,
+            title="total_time",
+            normalise=False,
+            tag=tag,
+        ),
+        plot(
+            args.x_axis,
+            args.y_axes,
+            performances,
+            title="time_per_call",
+            normalise=True,
+            tag=tag,
+        ),
+    ]
+
 
 def main():
     # Get command line inputs

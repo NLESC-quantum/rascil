@@ -216,15 +216,19 @@ def imager(args):
             robustness=args.imaging_robustness,
         )
     bvis_list = rsexecute.persist(bvis_list)
-    
+
     # Now get the blockvisibility info. Do the query on the cluster to avoid
     # transferring the entire data
     if args.performance_file != "":
-        bv_info_list = [rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
-                        for bvis in bvis_list]
+        bv_info_list = [
+            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
+            for bvis in bvis_list
+        ]
         bv_info_list = rsexecute.compute(bv_info_list, sync=True)
         for ibvis, bv_info in enumerate(bv_info_list):
-            performance_store_dict(args.performance_file, f"blockvis{ibvis}", bv_info, mode="a")
+            performance_store_dict(
+                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
+            )
 
     if args.mode == "cip":
         results = cip(args, bvis_list, model_list, msname)

@@ -271,9 +271,10 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
         )
     rep = numpy.nan_to_num(rep)
     foot = numpy.nan_to_num(foot)
-    return create_image_from_array(
-        rep, newwcs, im.image_acc.polarisation_frame
-    ), create_image_from_array(foot, newwcs, im.image_acc.polarisation_frame)
+    return (
+        create_image_from_array(rep, newwcs, im.image_acc.polarisation_frame),
+        create_image_from_array(foot, newwcs, im.image_acc.polarisation_frame),
+    )
 
 
 def add_image(im1: Image, im2: Image) -> Image:

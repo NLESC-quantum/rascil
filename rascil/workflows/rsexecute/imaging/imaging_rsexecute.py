@@ -227,9 +227,7 @@ def restore_list_singlefacet_rsexecute_workflow(
         )
         restored_list = [
             rsexecute.execute(restore_cube, nout=1)(
-                model_imagelist[i],
-                residual=residual_list[i],
-                **kwargs
+                model_imagelist[i], residual=residual_list[i], **kwargs
             )
             for i, _ in enumerate(model_imagelist)
         ]
@@ -342,12 +340,13 @@ def restore_list_rsexecute_workflow(
         )
         for i, _ in enumerate(model_imagelist)
     ]
+
     def set_clean_beam(r):
         r.attrs["clean_beam"] = clean_beam
         return r
+
     restored_imagelist = [
-        rsexecute.execute(set_clean_beam, nout=1)(r)
-        for r in restored_imagelist
+        rsexecute.execute(set_clean_beam, nout=1)(r) for r in restored_imagelist
     ]
     return rsexecute.optimize(restored_imagelist)
 
@@ -579,7 +578,8 @@ def deconvolve_list_rsexecute_workflow(
         return spsf
 
     psf_list_trimmed = [
-        rsexecute.execute(imaging_extract_psf)(p[0], deconvolve_facets) for p in psf_list
+        rsexecute.execute(imaging_extract_psf)(p[0], deconvolve_facets)
+        for p in psf_list
     ]
 
     psf_centre = image_gather_channels_rsexecute(
@@ -682,7 +682,9 @@ def deconvolve_list_channel_rsexecute_workflow(
         for dirty_list in dirty_lists
     ]
     result = image_gather_channels_rsexecute(results, output)
-    result = rsexecute.execute(imaging_add_comp_model, nout=1, pure=True)(result, model_imagelist)
+    result = rsexecute.execute(imaging_add_comp_model, nout=1, pure=True)(
+        result, model_imagelist
+    )
     return rsexecute.optimize(result)
 
 
@@ -721,7 +723,9 @@ def weight_list_rsexecute_workflow(
             return None
 
     weight_list = [
-        rsexecute.execute(imaging_grid_weights, pure=True, nout=1)(vis_list[i], model_imagelist[i])
+        rsexecute.execute(imaging_grid_weights, pure=True, nout=1)(
+            vis_list[i], model_imagelist[i]
+        )
         for i in range(len(vis_list))
     ]
 
@@ -784,7 +788,9 @@ def zero_list_rsexecute_workflow(vis_list):
         else:
             return None
 
-    result = [rsexecute.execute(imaging_zero_vis, pure=True, nout=1)(v) for v in vis_list]
+    result = [
+        rsexecute.execute(imaging_zero_vis, pure=True, nout=1)(v) for v in vis_list
+    ]
     return rsexecute.optimize(result)
 
 

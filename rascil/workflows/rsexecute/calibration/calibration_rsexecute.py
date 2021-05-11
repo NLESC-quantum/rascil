@@ -68,7 +68,9 @@ def calibrate_list_rsexecute_workflow(
         # This is a global solution so we only compute one gain table
         if gt_list is None or len(gt_list) < 1:
             gt_list = [
-                rsexecute.execute(calibration_solve, pure=True, nout=1)(global_point_vis_list)
+                rsexecute.execute(calibration_solve, pure=True, nout=1)(
+                    global_point_vis_list
+                )
             ]
         else:
             gt_list = [
@@ -78,7 +80,8 @@ def calibrate_list_rsexecute_workflow(
             ]
 
         return [
-            rsexecute.execute(calibration_apply, nout=1)(v, gt_list[0]) for v in vis_list
+            rsexecute.execute(calibration_apply, nout=1)(v, gt_list[0])
+            for v in vis_list
         ], gt_list
     else:
         if gt_list is not None and len(gt_list) > 0:
@@ -90,9 +93,12 @@ def calibrate_list_rsexecute_workflow(
             ]
         else:
             gt_list = [
-                rsexecute.execute(calibration_solve, pure=True, nout=1)(v, model_vislist[i])
+                rsexecute.execute(calibration_solve, pure=True, nout=1)(
+                    v, model_vislist[i]
+                )
                 for i, v in enumerate(vis_list)
             ]
         return [
-            rsexecute.execute(calibration_apply)(v, gt_list[i]) for i, v in enumerate(vis_list)
+            rsexecute.execute(calibration_apply)(v, gt_list[i])
+            for i, v in enumerate(vis_list)
         ], gt_list

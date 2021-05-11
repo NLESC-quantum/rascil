@@ -94,10 +94,12 @@ def predict_ng(bvis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility
                 model["pixels"].data[0, vpol, :, :].T.astype(float),
                 None,
                 pixsize,
-                pixsize, 0,0,
-                epsilon, 
-                do_wstacking, 
-                nthreads
+                pixsize,
+                0,
+                0,
+                epsilon,
+                do_wstacking,
+                nthreads,
             ).T
     else:
         for vpol in range(vnpol):
@@ -109,10 +111,12 @@ def predict_ng(bvis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility
                     model["pixels"].data[imchan, vpol, :, :].T.astype(float),
                     None,
                     pixsize,
-                    pixsize, 0,0,
-                    epsilon, 
+                    pixsize,
+                    0,
+                    0,
+                    epsilon,
                     do_wstacking,
-                    nthreads
+                    nthreads,
                 )[:, 0]
 
     vis = convert_pol_frame(
@@ -233,12 +237,14 @@ def invert_ng(
                     npixdirty,
                     npixdirty,
                     pixsize,
-                    pixsize, 0,0,
+                    pixsize,
+                    0,
+                    0,
                     epsilon,
-                    do_wstacking, #=do_wstacking,
+                    do_wstacking,  # =do_wstacking,
                     nthreads=nthreads,
                     double_precision_accumulation=True,
-                    verbosity=verbosity
+                    verbosity=verbosity,
                 )
                 im["pixels"].data[0, pol] += dirty.T
             sumwt[0, pol] += numpy.sum(wgtt[pol, :, :].T)
@@ -258,12 +264,14 @@ def invert_ng(
                         npixdirty,
                         npixdirty,
                         pixsize,
-                        pixsize, 0, 0,
-                        epsilon,                        
+                        pixsize,
+                        0,
+                        0,
+                        epsilon,
                         do_wstacking,
                         nthreads=nthreads,
-                        double_precision_accumulation=True,                        
-                        verbosity=verbosity
+                        double_precision_accumulation=True,
+                        verbosity=verbosity,
                     )
                     im["pixels"].data[ichan, pol] += dirty.T
                 sumwt[ichan, pol] += numpy.sum(wgtt[pol, vchan, :].T, axis=0)

@@ -20,7 +20,8 @@ from rascil.processing_components import (
     find_skycomponents,
 )
 from rascil.processing_components.util.performance import (
-    performance_store_dict, performance_environment
+    performance_store_dict,
+    performance_environment,
 )
 from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import (

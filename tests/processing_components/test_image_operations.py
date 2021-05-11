@@ -95,31 +95,34 @@ class TestImage(unittest.TestCase):
         assert newimage.image_acc.polarisation_frame.type == "stokesIQ"
 
     def test_create_image_from_array(self):
-        clean_beam = {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}
+        clean_beam = {"bmaj": 0.1, "bmin": 0.05, "bpa": -60.0}
         m31model_by_array = create_image_from_array(
             self.m31image["pixels"],
             self.m31image.image_acc.wcs,
             self.m31image.image_acc.polarisation_frame,
-            clean_beam
+            clean_beam,
         )
         export_image_to_fits(
             m31model_by_array, fitsfile="%s/test_model.fits" % (self.dir)
         )
-        m31image_by_fits = import_image_from_fits(fitsfile="%s/test_model.fits" % (self.dir))
+        m31image_by_fits = import_image_from_fits(
+            fitsfile="%s/test_model.fits" % (self.dir)
+        )
         new_clean_beam = m31image_by_fits.attrs["clean_beam"]
         assert new_clean_beam == clean_beam, new_clean_beam
-        
+
         log.debug(qa_image(m31model_by_array, context="test_create_from_image"))
 
     def test_create_image_from_array_raises(self):
         with self.assertRaises(KeyError):
-            clean_beam = {"bmaj":0.1, "bmin":0.05}
+            clean_beam = {"bmaj": 0.1, "bmin": 0.05}
             m31model_by_array = create_image_from_array(
                 self.m31image["pixels"],
                 self.m31image.image_acc.wcs,
                 self.m31image.image_acc.polarisation_frame,
-                clean_beam
+                clean_beam,
             )
+
     def test_create_empty_image_like(self):
         emptyimage = create_empty_image_like(self.m31image)
         assert emptyimage["pixels"].shape == self.m31image["pixels"].shape
@@ -364,7 +367,6 @@ class TestImage(unittest.TestCase):
         m31image = create_test_image(cellsize=0.001, frequency=[1e8])
         sub = sub_image(m31image, [1, 1, 64, 64])
         assert sub.image_acc.shape == (1, 1, 64, 64)
-
 
     def test_scale_and_rotate(self):
 

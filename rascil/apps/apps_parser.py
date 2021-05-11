@@ -21,6 +21,7 @@ import sys
 import argparse
 import json
 
+
 def apps_parser_ingest(parser):
     """Add ingest-specific command line arguments to an existing CLI parser
 

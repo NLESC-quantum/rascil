@@ -2,8 +2,15 @@
 
 """
 
-__all__ = ['average_chunks', 'average_chunks2', 'tukey_filter', 'insert_array',
-           'insert_function_L', 'insert_function_pswf', 'insert_function_sinc']
+__all__ = [
+    "average_chunks",
+    "average_chunks2",
+    "tukey_filter",
+    "insert_array",
+    "insert_function_L",
+    "insert_function_pswf",
+    "insert_function_sinc",
+]
 
 # import numba
 import numpy
@@ -12,13 +19,13 @@ import numpy
 # @numba.jit([numba.types.Tuple((numba.float64[:], numba.float64[:]))
 #                 (numba.float64[:], numba.float64[:], numba.int64)], nopython=True)
 def average_chunks_jit(arr, wts, chunksize):
-    """ Average the array arr with weights by chunks
+    """Average the array arr with weights by chunks
 
     Array len does not have to be multiple of chunksize
-    
+
     This is a version written for numba. When used with numba.jit, it's about 25 - 30% faster than the
     numpy version without jit.
-    
+
     :param arr: 1D array of values
     :param wts: 1D array of weights
     :param chunksize: averaging size
@@ -38,12 +45,16 @@ def average_chunks_jit(arr, wts, chunksize):
 
     for place in range(nchunks):
         chunks[place] = numpy.sum(
-            wts[place * chunksize:(place + 1) * chunksize] * arr[place * chunksize:(place + 1) * chunksize])
-        weights[place] = numpy.sum(wts[place * chunksize:(place + 1) * chunksize])
+            wts[place * chunksize : (place + 1) * chunksize]
+            * arr[place * chunksize : (place + 1) * chunksize]
+        )
+        weights[place] = numpy.sum(wts[place * chunksize : (place + 1) * chunksize])
 
     if extra > 0:
-        chunks[-1] = numpy.sum(wts[(len(arr) - extra):len(arr)] * arr[(len(arr) - extra):len(arr)])
-        weights[-1] = numpy.sum(wts[(len(arr) - extra):len(arr)])
+        chunks[-1] = numpy.sum(
+            wts[(len(arr) - extra) : len(arr)] * arr[(len(arr) - extra) : len(arr)]
+        )
+        weights[-1] = numpy.sum(wts[(len(arr) - extra) : len(arr)])
 
     chunks[weights > 0.0] = chunks[weights > 0.0] / weights[weights > 0.0]
 
@@ -51,14 +62,14 @@ def average_chunks_jit(arr, wts, chunksize):
 
 
 def average_chunks(arr, wts, chunksize):
-    """ Average the array arr with weights by chunks
+    """Average the array arr with weights by chunks
 
     Array len does not have to be multiple of chunksize
-    
+
     This version is optimised for plain numpy. It is roughly ten times faster that average_chunks_jit when used
     without numba jit. It cannot (yet) be used with numba because the add.reduceat is not support in numba
     0.31
-    
+
     :param arr: 1D array of values
     :param wts: 1D array of weights
     :param chunksize: averaging size
@@ -77,7 +88,7 @@ def average_chunks(arr, wts, chunksize):
 
     mask = numpy.zeros(((len(arr) - 1) // chunksize + 1, arr.shape[0]), dtype=bool)
     for enumerate_id, i in enumerate(range(0, len(arr), chunksize)):
-        mask[enumerate_id, i:i + chunksize] = 1
+        mask[enumerate_id, i : i + chunksize] = 1
     chunks = mask.dot(wts * arr)
     weights = mask.dot(wts)
     # chunks[weights > 0.0] = chunks[weights > 0.0] / weights[weights > 0.0]
@@ -87,10 +98,10 @@ def average_chunks(arr, wts, chunksize):
 
 
 def average_chunks2(arr, wts, chunksize):
-    """ Average the two dimensional array arr with weights by chunks
+    """Average the two dimensional array arr with weights by chunks
 
     Array len does not have to be multiple of chunksize.
-    
+
     :param arr: 2D array of values
     :param wts: 2D array of weights
     :param chunksize: 2-tuple of averaging region e.g. (2,3)
@@ -123,8 +134,8 @@ def average_chunks2(arr, wts, chunksize):
 
 
 def tukey_filter(x, r):
-    """ Calculate the Tukey (tapered cosine) filter
-    
+    """Calculate the Tukey (tapered cosine) filter
+
     See e.g. https://uk.mathworks.com/help/signal/ref/tukeywin.html
 
     :param x: x coordinate (float)
@@ -140,7 +151,7 @@ def tukey_filter(x, r):
 
 
 def insert_function_sinc(x):
-    """ Insertion with Sinc function
+    """Insertion with Sinc function
 
     :param x: 1D vector
     :return: 1d vector
@@ -151,7 +162,7 @@ def insert_function_sinc(x):
 
 
 def insert_function_L(x, a=5):
-    """ Insertion with Lanczos function
+    """Insertion with Lanczos function
 
     :param x: 1D vector
     :param a: width
@@ -162,7 +173,7 @@ def insert_function_L(x, a=5):
 
 
 def insert_function_pswf(x, a=5):
-    """ Insertion with PSWF 
+    """Insertion with PSWF
 
     :param x: 1D vector
     :param a: width
@@ -170,12 +181,15 @@ def insert_function_pswf(x, a=5):
     """
 
     from rascil.processing_components.fourier_transforms.fft_coordinates import grdsf
+
     return grdsf(abs(x) / a)[1]
 
 
-def insert_array(im, x, y, flux, bandwidth=1.0, support=7, insert_function=insert_function_L):
-    """ Insert point into image using specified function
-    
+def insert_array(
+    im, x, y, flux, bandwidth=1.0, support=7, insert_function=insert_function_L
+):
+    """Insert point into image using specified function
+
     :param im: Image
     :param x: x in float pixels
     :param y: y in float pixels
@@ -193,8 +207,10 @@ def insert_array(im, x, y, flux, bandwidth=1.0, support=7, insert_function=inser
     gridx = numpy.arange(-support, support)
     gridy = numpy.arange(-support, support)
 
-    insert = numpy.outer(insert_function(bandwidth * (gridy - fracy)),
-                         insert_function(bandwidth * (gridx - fracx)))
+    insert = numpy.outer(
+        insert_function(bandwidth * (gridy - fracy)),
+        insert_function(bandwidth * (gridx - fracx)),
+    )
 
     insertsum = numpy.sum(insert)
     assert insertsum > 0, "Sum of interpolation coefficients %g" % insertsum
@@ -202,6 +218,13 @@ def insert_array(im, x, y, flux, bandwidth=1.0, support=7, insert_function=inser
 
     for chan in range(nchan):
         for pol in range(npol):
-            im[chan, pol, inty - support:inty + support, intx - support:intx + support] += flux[chan, pol] * insert
+            im[
+                chan,
+                pol,
+                inty - support : inty + support,
+                intx - support : intx + support,
+            ] += (
+                flux[chan, pol] * insert
+            )
 
     return im

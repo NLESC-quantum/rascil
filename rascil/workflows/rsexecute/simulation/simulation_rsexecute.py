@@ -234,7 +234,9 @@ def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, **kwargs):
 
     if gt_list is None:
         return [
-            rsexecute.execute(simulation_corrupt_vis, nout=1)(vis_list[ivis], None, **kwargs)
+            rsexecute.execute(simulation_corrupt_vis, nout=1)(
+                vis_list[ivis], None, **kwargs
+            )
             for ivis, v in enumerate(vis_list)
         ]
     else:
@@ -815,8 +817,12 @@ def create_surface_errors_gaintable_rsexecute_workflow(
         for bvis in sub_bvis_list
     ]
 
-    vp_nominal_list = [rsexecute.execute(simulation_find_vp_nominal)(band) for bv in sub_bvis_list]
-    vp_actual_list = [rsexecute.execute(simulation_find_vp)(band, bv) for bv in sub_bvis_list]
+    vp_nominal_list = [
+        rsexecute.execute(simulation_find_vp_nominal)(band) for bv in sub_bvis_list
+    ]
+    vp_actual_list = [
+        rsexecute.execute(simulation_find_vp)(band, bv) for bv in sub_bvis_list
+    ]
 
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [

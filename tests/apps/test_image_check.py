@@ -12,6 +12,7 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 default_run = True
 
+
 @pytest.mark.parametrize(
     "enabled, stat, stat_min, stat_max, result",
     [
@@ -22,7 +23,7 @@ default_run = True
     ],
 )
 def test_image_check(enabled, stat, stat_min, stat_max, result):
-    """ Check that the results of the check are as expected
+    """Check that the results of the check are as expected
 
     :param enabled: Turn this test on?
     :param stat: Statistic to be tested

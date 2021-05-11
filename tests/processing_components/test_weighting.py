@@ -29,22 +29,22 @@ log.setLevel(logging.WARNING)
 class TestWeighting(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
-        
+
         self.dir = rascil_path("test_results")
         self.npixel = 512
-        
+
         self.persist = os.getenv("RASCIL_PERSIST", False)
-    
+
     def actualSetUp(
-            self, time=None, dospectral=False, image_pol=PolarisationFrame("stokesI")
+        self, time=None, dospectral=False, image_pol=PolarisationFrame("stokesI")
     ):
         self.lowcore = create_named_configuration("LOWBD2", rmax=600)
         self.times = (numpy.pi / 12.0) * numpy.linspace(-3.0, 3.0, 5)
-        
+
         if time is not None:
             self.times = time
         log.info("Times are %s" % self.times)
-        
+
         if dospectral:
             self.nchan = 3
             self.frequency = numpy.array([0.9e8, 1e8, 1.1e8])
@@ -52,7 +52,7 @@ class TestWeighting(unittest.TestCase):
         else:
             self.frequency = numpy.array([1e8])
             self.channel_bandwidth = numpy.array([1e7])
-        
+
         self.image_pol = image_pol
         if image_pol == PolarisationFrame("stokesI"):
             self.vis_pol = PolarisationFrame("stokesI")
@@ -68,12 +68,12 @@ class TestWeighting(unittest.TestCase):
             f = numpy.array([100.0, 20.0])
         else:
             raise ValueError("Polarisation {} not supported".format(image_pol))
-        
+
         if dospectral:
             numpy.array([f, 0.8 * f, 0.6 * f])
         else:
             numpy.array([f])
-        
+
         self.phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
         )
@@ -86,10 +86,10 @@ class TestWeighting(unittest.TestCase):
             weight=1.0,
             polarisation_frame=self.vis_pol,
         )
-        
+
         self.uvw = self.componentvis["uvw"].data
         self.componentvis["vis"].data *= 0.0
-        
+
         # Create model
         self.model = create_image_from_visibility(
             self.componentvis,
@@ -98,7 +98,7 @@ class TestWeighting(unittest.TestCase):
             nchan=len(self.frequency),
             polarisation_frame=self.image_pol,
         )
-    
+
     def test_tapering_Gaussian(self):
         """Apply a Gaussian taper to the visibility and check to see if the PSF size is close"""
         self.actualSetUp()
@@ -116,11 +116,11 @@ class TestWeighting(unittest.TestCase):
                 "%s/test_weighting_gaussian_taper_psf.fits" % (self.dir),
             )
         fit = fit_psf(psf)
-        
+
         assert (
-                numpy.abs(fit["bmaj"] - 1.279952050682638) < 1
+            numpy.abs(fit["bmaj"] - 1.279952050682638) < 1
         ), "Fit should be %f, actually is %f" % (1.279952050682638, fit["bmaj"])
-    
+
     def test_tapering_tukey(self):
         """Apply a Tukey window taper and output the psf and FT of the PSF. No quantitative check.
 
@@ -139,7 +139,7 @@ class TestWeighting(unittest.TestCase):
             )
         fit = fit_psf(psf)
         assert (
-                numpy.abs(fit["bmaj"] - 0.14492670913355402) < 1.0
+            numpy.abs(fit["bmaj"] - 0.14492670913355402) < 1.0
         ), "Fit should be %f, actually is %f" % (0.14492670913355402, fit["bmaj"])
 
 

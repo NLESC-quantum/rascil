@@ -25,8 +25,13 @@ All functions return an image holding clean components and residual image
 
 """
 
-__all__ = ["deconvolve_cube", "restore_cube", "fit_psf", "convert_clean_beam_to_pixels",
-           "convert_clean_beam_to_degrees"]
+__all__ = [
+    "deconvolve_cube",
+    "restore_cube",
+    "fit_psf",
+    "convert_clean_beam_to_pixels",
+    "convert_clean_beam_to_degrees",
+]
 
 import logging
 import warnings
@@ -556,7 +561,10 @@ def mmclean_kernel(dirty, prefix, psf, window, sensitivity, **kwargs):
     residual_image = create_image_from_array(
         residual_array, dirty.image_acc.wcs, dirty.image_acc.polarisation_frame
     )
-    log.info("deconvolve_cube %s: calculating spectral cubes from frequency moment images" % prefix)
+    log.info(
+        "deconvolve_cube %s: calculating spectral cubes from frequency moment images"
+        % prefix
+    )
     comp_image = calculate_image_from_frequency_moments(dirty, comp_image)
     residual_image = calculate_image_from_frequency_moments(dirty, residual_image)
     return comp_image, residual_image
@@ -693,8 +701,8 @@ def fit_psf(psf: Image, **kwargs):
 
 
 def convert_clean_beam_to_degrees(im, beam_pixels):
-    """ Convert clean beam in pixels to deg deg, deg
-    
+    """Convert clean beam in pixels to deg deg, deg
+
     :param im: Image
     :param beam_pixels:
     :return: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
@@ -741,7 +749,9 @@ def restore_cube(model: Image, psf=None, residual=None, clean_beam=None) -> Imag
                 )
             )
         else:
-            raise ValueError("restore_cube: Either the psf or the clean_beam must be specified")
+            raise ValueError(
+                "restore_cube: Either the psf or the clean_beam must be specified"
+            )
     else:
         log.info(
             "restore_cube: Using clean beam  (deg, deg, deg) = {}".format(clean_beam)
@@ -769,13 +779,13 @@ def restore_cube(model: Image, psf=None, residual=None, clean_beam=None) -> Imag
     restored["pixels"].data = restored["pixels"].data.astype("float")
 
     restored.attrs["clean_beam"] = clean_beam
-    
+
     return restored
 
 
 def convert_clean_beam_to_pixels(model, clean_beam):
-    """ Convert clean beam to pixels
-    
+    """Convert clean beam to pixels
+
     :param model:
     :param clean_beam: e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :return:

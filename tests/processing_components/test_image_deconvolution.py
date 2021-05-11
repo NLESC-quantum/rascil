@@ -107,8 +107,8 @@ class TestImageDeconvolution(unittest.TestCase):
             export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
 
     def test_restore_clean_beam(self):
-        """ Test restoration with specified beam beam
-        
+        """Test restoration with specified beam beam
+
         :return:
         """
         self.model["pixels"].data[0, 0, 256, 256] = 1.0
@@ -126,8 +126,7 @@ class TestImageDeconvolution(unittest.TestCase):
             )
 
     def test_restore_skycomponent(self):
-        """ Test restoration of single pixel and skycomponent
-        """
+        """Test restoration of single pixel and skycomponent"""
         self.model["pixels"].data[0, 0, 256, 256] = 0.5
 
         sc = Skycomponent(
@@ -137,22 +136,20 @@ class TestImageDeconvolution(unittest.TestCase):
             ),
             shape="Point",
             frequency=self.frequency,
-            polarisation_frame=PolarisationFrame("stokesI")
+            polarisation_frame=PolarisationFrame("stokesI"),
         )
         bmaj = 0.012 * 180.0 / numpy.pi
         clean_beam = {"bmaj": bmaj, "bmin": bmaj / 2.0, "bpa": 15.0}
         self.cmodel = restore_cube(self.model, clean_beam=clean_beam)
-        self.cmodel = restore_skycomponent(
-            self.cmodel, sc, clean_beam=clean_beam
-        )
+        self.cmodel = restore_skycomponent(self.cmodel, sc, clean_beam=clean_beam)
         self.persist = True
         if self.persist:
             export_image_to_fits(
                 self.cmodel, "%s/test_restore_skycomponent.fits" % (self.dir)
             )
-        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.993507929741906) < 1e-7, numpy.max(
-            self.cmodel["pixels"].data
-        )
+        assert (
+            numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.993507929741906) < 1e-7
+        ), numpy.max(self.cmodel["pixels"].data)
 
     def test_fit_psf(self):
         clean_beam = fit_psf(self.psf)

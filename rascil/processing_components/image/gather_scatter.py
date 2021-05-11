@@ -49,7 +49,7 @@ def image_scatter_facets(im: Image, facets=1, overlap=0, taper=None) -> List[Ima
     """
     if im is None:
         return None
-    
+
     return [
         flat_facet
         for flat_facet in image_raster_iter(

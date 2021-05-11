@@ -607,8 +607,9 @@ class TestPipelineGraphs(unittest.TestCase):
         controls["T"]["timeslice"] = "auto"
 
         skymodel_list = [
-            rsexecute.execute(SkyModel)(components=comp_list,
-                                        image=self.model_imagelist[icomp])
+            rsexecute.execute(SkyModel)(
+                components=comp_list, image=self.model_imagelist[icomp]
+            )
             for icomp, comp_list in enumerate(self.components_list)
         ]
         skymodel_list = rsexecute.persist(skymodel_list)
@@ -686,8 +687,9 @@ class TestPipelineGraphs(unittest.TestCase):
             for comp_list in self.components_list
         ]
         skymodel_list = [
-            rsexecute.execute(SkyModel)(components=comp_list,
-                                        image=self.model_imagelist[icomp])
+            rsexecute.execute(SkyModel)(
+                components=comp_list, image=self.model_imagelist[icomp]
+            )
             for icomp, comp_list in enumerate(scaled_components_list)
         ]
         skymodel_list = rsexecute.persist(skymodel_list)
@@ -966,7 +968,7 @@ class TestPipelineGraphs(unittest.TestCase):
             )
 
         qa = qa_image(restored[centre], context="restored")
-        assert numpy.abs(qa.data["max"]- 100.0) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.0) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data["min"]) < 1.0e-12, str(qa)
 
         qa = qa_image(residual[centre][0], context="residual")

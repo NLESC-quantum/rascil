@@ -10,7 +10,10 @@ from rascil.processing_components import (
     apply_beam_to_skycomponent,
     dft_skycomponent_visibility,
 )
-from rascil.workflows.serial import predict_list_serial_workflow, invert_list_serial_workflow
+from rascil.workflows.serial import (
+    predict_list_serial_workflow,
+    invert_list_serial_workflow,
+)
 from rascil.workflows.rsexecute.execution_support import rsexecute
 
 
@@ -41,7 +44,9 @@ def crosssubtract_datamodels_skymodel_list_rsexecute_workflow(obsvis, modelvis_l
         assert len(result) == len(mv)
         return result
 
-    return rsexecute.execute(skymodel_mpc_vsum, nout=len(modelvis_list))(obsvis, modelvis_list)
+    return rsexecute.execute(skymodel_mpc_vsum, nout=len(modelvis_list))(
+        obsvis, modelvis_list
+    )
 
 
 def convolve_skymodel_list_rsexecute_workflow(

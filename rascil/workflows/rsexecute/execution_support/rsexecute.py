@@ -189,9 +189,11 @@ class _rsexecutebase:
             assert isinstance(
                 SkyCoord(0.0 * u.rad, 0.0 * u.rad, frame="icrs").to_string(), str
             )
-            
-            assert SkyCoord(0.0 * u.rad, 0.0 * u.rad, frame="icrs").skyoffset_frame().name \
-                   == 'skyoffseticrs'
+
+            assert (
+                SkyCoord(0.0 * u.rad, 0.0 * u.rad, frame="icrs").skyoffset_frame().name
+                == "skyoffseticrs"
+            )
 
     def _set_state(self, use_dask, use_dlg, client, verbose, optimize):
         self._using_dask = use_dask
@@ -421,14 +423,13 @@ class _rsexecutebase:
 
         :param name: prefix to name e.g. dask
         """
-    
+
         if self._using_dask:
             task_stream, graph = self.client.get_task_stream(
                 plot="save", filename="%s_task_stream.html" % name
             )
             self.client.profile(plot="save", filename="%s_profile.html" % name)
-            
-        
+
             def print_ts(ts):
                 log.info("Processor time used in each function")
                 summary = {}
@@ -458,7 +459,11 @@ class _rsexecutebase:
                             number[key],
                         ]
                     )
-                    dask_info[key] = {"time": summary[key], "fraction": percent, "number_calls":number[key]}
+                    dask_info[key] = {
+                        "time": summary[key],
+                        "fraction": percent,
+                        "number_calls": number[key],
+                    }
                 log.info("\n" + tabulate(table, headers=headers))
                 duration = time.time() - self.start_time
                 speedup = total / duration
@@ -467,9 +472,13 @@ class _rsexecutebase:
                         total, duration, speedup
                     )
                 )
-                dask_info["summary"]={"total": total, "duration": duration, "speedup": speedup}
+                dask_info["summary"] = {
+                    "total": total,
+                    "duration": duration,
+                    "speedup": speedup,
+                }
                 return dask_info
-        
+
             try:
                 return print_ts(task_stream)
             except (ValueError, KeyError):

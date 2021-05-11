@@ -23,8 +23,10 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import (
     predict_skymodel_list_rsexecute_workflow,
     invert_skymodel_list_rsexecute_workflow,
 )
-from rascil.workflows.rsexecute.skymodel.skymodel_mpc_rsexecute import \
-    crosssubtract_datamodels_skymodel_list_rsexecute_workflow, convolve_skymodel_list_rsexecute_workflow
+from rascil.workflows.rsexecute.skymodel.skymodel_mpc_rsexecute import (
+    crosssubtract_datamodels_skymodel_list_rsexecute_workflow,
+    convolve_skymodel_list_rsexecute_workflow,
+)
 
 log = logging.getLogger("rascil-logger")
 
@@ -81,7 +83,9 @@ def mpccal_skymodel_list_rsexecute_workflow(
             return dcal
 
         dirty_all_cal = [
-            rsexecute.execute(pipeline_mpc_diff_dirty, nout=1)(dirty_all_cal[i], dirty_all_conv[i])
+            rsexecute.execute(pipeline_mpc_diff_dirty, nout=1)(
+                dirty_all_cal[i], dirty_all_conv[i]
+            )
             for i in range(len(dirty_all_cal))
         ]
 

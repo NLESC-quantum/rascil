@@ -226,6 +226,7 @@ class TestSkyModel(unittest.TestCase):
                                                                 normalise=True,
                                                                 flat_sky=False
                                                                 )
+        skymodel_list = rsexecute.compute(skymodel_list, sync=True)
         if self.persist:
             export_image_to_fits(skymodel_list[0][0],
                                  "%s/test_skymodel_invert_flat_noise_dirty.fits" % (self.dir))
@@ -244,6 +245,7 @@ class TestSkyModel(unittest.TestCase):
                                                                 normalise=True,
                                                                 flat_sky=True
                                                                 )
+        skymodel_list = rsexecute.compute(skymodel_list, sync=True)
         if self.persist:
             export_image_to_fits(skymodel_list[0][0],
                                  "%s/test_skymodel_invert_flat_sky_dirty.fits" % (self.dir))

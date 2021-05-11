@@ -332,7 +332,7 @@ def analyze_image(args):
         if args.apply_primary == "True":
             telescope = args.telescope_model
             orig = correct_primary_beam(
-                input_image_restored, input_image_sensitivity, orig, telescope
+                input_image_restored, input_image_sensitivity, orig, telescope=telescope
             )
 
         results = check_source(orig, out, args.match_sep)
@@ -515,7 +515,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     return comp
 
 
-def correct_primary_beam(input_image, sensitivity_image, comp, telescope):
+def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
     """
     Add optional primary beam correction for fluxes.
 
@@ -530,7 +530,7 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope):
 
     if sensitivity_image is not None:
         beam = import_image_from_fits(sensitivity_image)
-    else:
+    elif input_image is not None:
         # Use internally provided telescope primary beam
         image = import_image_from_fits(input_image)
         beam = create_pb(
@@ -539,6 +539,11 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope):
             pointingcentre=image.image_acc.phasecentre,
             use_local=False,
         )
+    else:
+        log.warning(
+            "Please provide either the sensitivity image or the restored image."
+        )
+        return comp
 
     nchan, npol, ny, nx = beam["pixels"].data.shape
     log.info("The primary beam has {} channels, {} polarizaion.".format(nchan, npol))

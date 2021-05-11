@@ -387,7 +387,7 @@ def apply_beam_to_skycomponent(
     """Apply a primary beam to a Skycomponent
 
     if inverse==True, do an inverse where we subtract the primary beam from the skycomponents
-    if inverse==False, do a multiplication
+    if inverse==False, do a multiplication of beam and skycomponent fluxes
     :param phasecentre:
     :param beam: primary beam
     :param sc: SkyComponent or list of SkyComponents

@@ -393,7 +393,7 @@ def restore_skymodel_list_rsexecute_workflow(
     clean_beam = get_parameter(kwargs, "clean_beam", None)
     if clean_beam is None:
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
-        psf = rsexecute.execute(normalize_sumwt)(clean_beam_list[0], clean_beam_list[1])
+        psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
         clean_beam = rsexecute.execute(fit_psf)(psf)
         kwargs["clean_beam"] = clean_beam
 

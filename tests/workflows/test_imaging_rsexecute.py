@@ -187,7 +187,8 @@ class TestImaging(unittest.TestCase):
 
         self.components = self.components_list[centre]
 
-        self.gcfcf = functools.partial(create_awterm_convolutionfunction,
+        self.gcfcf = functools.partial(
+            create_awterm_convolutionfunction,
             nw=50,
             wstep=16.0,
             oversampling=4,
@@ -217,9 +218,7 @@ class TestImaging(unittest.TestCase):
                 "Component differs in position %.3f pixels" % separation / cellsize
             )
 
-    def _predict_base(
-        self, context="2d", extra="", fluxthreshold=1.0, **kwargs
-    ):
+    def _predict_base(self, context="2d", extra="", fluxthreshold=1.0, **kwargs):
         centre = self.freqwin // 2
 
         vis_list = zero_list_rsexecute_workflow(self.bvis_list)

@@ -118,7 +118,7 @@ def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
     The gridding weights are accumulated as a function of channel and polarisation. This function
     corrects for this sum of weights. The sum of weights can be a 2D array or an image the same
     shape as the image (as for primary beam correction)
-    
+
     The parameter flat_sky controls whether the sensitivity (sumwt) is divided out pixel by pixel
     or instead the maximum value is divided out.
 
@@ -150,9 +150,14 @@ def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
         for chan in range(nchan):
             for pol in range(npol):
                 if flat_sky:
-                    norm = numpy.sqrt(sumwt["pixels"].data[chan, pol, cy, cx] * sumwt["pixels"].data[chan, pol, :, :])
-                    im["pixels"].data[chan, pol, :, :][norm>minwt] /= norm[norm>minwt]
-                    im["pixels"].data[chan, pol, :, :][norm<=minwt] /= maxwt
+                    norm = numpy.sqrt(
+                        sumwt["pixels"].data[chan, pol, cy, cx]
+                        * sumwt["pixels"].data[chan, pol, :, :]
+                    )
+                    im["pixels"].data[chan, pol, :, :][norm > minwt] /= norm[
+                        norm > minwt
+                    ]
+                    im["pixels"].data[chan, pol, :, :][norm <= minwt] /= maxwt
                 else:
                     im["pixels"].data[chan, pol, :, :] /= maxwt
                     sumwt["pixels"].data[chan, pol, :, :] /= maxwt
@@ -163,14 +168,12 @@ def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
     return im
 
 
-def predict_2d(
-    vis: BlockVisibility, model: Image, **kwargs
-) -> BlockVisibility:
+def predict_2d(vis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
     """Predict using convolutional degridding.
 
     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
     this function. Any shifting needed is performed here.
-    
+
     Note that the gridding correction function (gcf) and convolution function (cf) can be passed
     as a partial function via the **kwargs. So the caller must supply a partial function to
     calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
@@ -226,20 +229,20 @@ def invert_2d(
 ) -> (Image, numpy.ndarray):
     """Invert using 2D convolution function, using the specified convolution function
 
-    Use the image im as a template. Do PSF in a separate call.
+     Use the image im as a template. Do PSF in a separate call.
 
-    This is at the bottom of the layering i.e. all transforms are eventually expressed in terms
-    of this function. Any shifting needed is performed here.
+     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms
+     of this function. Any shifting needed is performed here.
 
-    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
-    as a partial function via the **kwargs. So the caller must supply a partial function to
-    calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
+     Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+     as a partial function via the **kwargs. So the caller must supply a partial function to
+     calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
 
-   :param vis: blockvisibility to be inverted
-    :param im: image template (not changed)
-    :param dopsf: Make the psf instead of the dirty image
-    :param normalise: normalise by the sum of weights (True)
-    :return: (resulting image, sumof weights)
+    :param vis: blockvisibility to be inverted
+     :param im: image template (not changed)
+     :param dopsf: Make the psf instead of the dirty image
+     :param normalise: normalise by the sum of weights (True)
+     :return: (resulting image, sumof weights)
 
     """
 
@@ -252,7 +255,8 @@ def invert_2d(
 
     gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
-        gcfcf = functools.partial(create_pswf_convolutionfunction,
+        gcfcf = functools.partial(
+            create_pswf_convolutionfunction,
             support=get_parameter(kwargs, "support", 8),
             oversampling=get_parameter(kwargs, "oversampling", 127),
             polarisation_frame=vis.blockvisibility_acc.polarisation_frame,

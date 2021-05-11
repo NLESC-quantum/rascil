@@ -761,10 +761,12 @@ def msmfsclean(
     return m_model, pmax * smresidual[0, :, :, :]
 
 
-def find_global_optimum(hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity, findpeak):
-    """ Find the optimum component using one of a number of different algorithms. These
+def find_global_optimum(
+    hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity, findpeak
+):
+    """Find the optimum component using one of a number of different algorithms. These
     are discussed in detail in Urvashi/s thesis.
-    
+
         # Calculate scale convolutions of moment residuals
     smresidual = calculate_scale_moment_residual(ldirty, scalestack)
 
@@ -773,7 +775,7 @@ def find_global_optimum(hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity,
     # Hessian is needed in calculation of optimum for any iteration
     # Inverse Hessian is needed to calculate principal solution in moment-space
 
-    
+
     :param hsmmpsf: scale scale moment moment psf
     :param ihsmmpsf: inverse of Hessian scale scale moment moment psf
     :param smresidual: scale convolutions of frequency moment residuals
@@ -786,7 +788,9 @@ def find_global_optimum(hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity,
         # Calculate the principal solution in moment-moment axes. This decouples the moments
         smpsol = calculate_scale_moment_principal_solution(smresidual, ihsmmpsf)
         # Now find the location and scale
-        mx, my, mscale = find_optimum_scale_zero_moment(smpsol, sensitivity, windowstack)
+        mx, my, mscale = find_optimum_scale_zero_moment(
+            smpsol, sensitivity, windowstack
+        )
         mval = smpsol[mscale, :, mx, my]
     elif findpeak == "CASA":
         # CASA 4.7 version
@@ -806,7 +810,9 @@ def find_global_optimum(hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity,
                         * smpsol[scale, moment2, ...]
                     )
 
-        mx, my, mscale = find_optimum_scale_zero_moment(dchisq, sensitivity, windowstack)
+        mx, my, mscale = find_optimum_scale_zero_moment(
+            dchisq, sensitivity, windowstack
+        )
         mval = smpsol[mscale, :, mx, my]
 
     else:
@@ -954,7 +960,7 @@ def find_optimum_scale_zero_moment(smpsol, sensitivity, windowstack):
             resid = smpsol[scale, 0, :, :] * windowstack[scale, :, :]
         else:
             resid = smpsol[scale, 0, :, :]
-            
+
         if sensitivity is not None:
             resid = sensitivity * resid
 

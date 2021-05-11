@@ -12,6 +12,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models import export_skymodel_to_hdf5, export_skycomponent_to_hdf5
+
 # These are the RASCIL functions we need
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import (
@@ -22,12 +23,12 @@ from rascil.processing_components import (
     create_image_from_visibility,
     image_gather_channels,
     create_low_test_beam,
-    calculate_blockvisibility_azel
+    calculate_blockvisibility_azel,
 )
 from rascil.workflows import (
     predict_skymodel_list_rsexecute_workflow,
     simulate_list_rsexecute_workflow,
-    weight_list_rsexecute_workflow
+    weight_list_rsexecute_workflow,
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import (
@@ -54,49 +55,49 @@ default_run = False
     "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax",
     [
         (
-                default_run,
-                True,
-                True,
-                6.787887014253024,
-                -0.08546184846602671,
-                False,
-                "Dask_Optimise_600",
-                600.0,
+            default_run,
+            True,
+            True,
+            6.787887014253024,
+            -0.08546184846602671,
+            False,
+            "Dask_Optimise_600",
+            600.0,
         ),
         (
-                default_run,
-                True,
-                True,
-                6.535285804319266,
-                -0.058079250852478316,
-                True,
-                "Dask_Optimise_Sensitivity_600",
-                600.0,
+            default_run,
+            True,
+            True,
+            6.535285804319266,
+            -0.058079250852478316,
+            True,
+            "Dask_Optimise_Sensitivity_600",
+            600.0,
         ),
         (
-                default_run,
-                True,
-                False,
-                6.787887014253024,
-                -0.08546184846602671,
-                False,
-                "Dask_No_Optimise_600",
-                600.0,
+            default_run,
+            True,
+            False,
+            6.787887014253024,
+            -0.08546184846602671,
+            False,
+            "Dask_No_Optimise_600",
+            600.0,
         ),
         (
-                default_run,
-                False,
-                False,
-                6.787887014253024,
-                -0.08546184846602671,
-                False,
-                "No_Dask_600",
-                600.0,
+            default_run,
+            False,
+            False,
+            6.787887014253024,
+            -0.08546184846602671,
+            False,
+            "No_Dask_600",
+            600.0,
         ),
     ],
 )
 def test_imaging_pipeline(
-        default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax
+    default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax
 ):
     """Test of imaging pipeline
 
@@ -107,18 +108,18 @@ def test_imaging_pipeline(
     :param flat_sky: Normalise out the primary beam?
     :param tag: Information tag for file names
     """
-    
+
     if not default_run:
         return
-    
+
     rsexecute.set_client(use_dask=use_dask, optim=optimise)
-    
+
     from rascil.data_models.parameters import rascil_path
-    
+
     dir = rascil_path("test_results")
-    
+
     persist = os.getenv("RASCIL_PERSIST", False)
-    
+
     nfreqwin = 9
     ntimes = 5
     frequency = numpy.linspace(0.8e8, 1.2e8, nfreqwin)
@@ -130,7 +131,7 @@ def test_imaging_pipeline(
     phasecentre = SkyCoord(
         ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
     )
-    
+
     bvis_list = simulate_list_rsexecute_workflow(
         "LOWBD2",
         frequency=frequency,
@@ -143,7 +144,7 @@ def test_imaging_pipeline(
         zerow=False,
     )
     bvis_list = rsexecute.persist(bvis_list)
-    
+
     if rmax > 300.0:
         npixel = 1024
     else:
@@ -180,7 +181,7 @@ def test_imaging_pipeline(
     ]
     gleam_skymodel_list = rsexecute.persist(gleam_skymodel_list)
     log.info("About to make GLEAM model")
-    
+
     gleam_components = create_low_test_skycomponents_from_gleam(
         frequency=frequency,
         polarisation_frame=PolarisationFrame("stokesI"),
@@ -188,24 +189,27 @@ def test_imaging_pipeline(
         flux_limit=1.0,
         radius=0.1,
     )
-    
+
     if sensitivity:
-        
+
         def create(vis, model):
             az, el = calculate_blockvisibility_azel(vis)
             az = numpy.mean(az)
             el = numpy.mean(el)
             return create_low_test_beam(model, use_local=False, azel=(az, el))
-        
+
         get_pb = functools.partial(create)
     else:
         get_pb = None
-    
+
     predicted_vislist = predict_skymodel_list_rsexecute_workflow(
-        bvis_list, skymodel_list=gleam_skymodel_list, context="ng", get_pb=get_pb,
+        bvis_list,
+        skymodel_list=gleam_skymodel_list,
+        context="ng",
+        get_pb=get_pb,
     )
     predicted_vislist = rsexecute.persist(predicted_vislist)
-    
+
     continuum_imaging_list = continuum_imaging_skymodel_list_rsexecute_workflow(
         predicted_vislist,
         model_imagelist=model_list,
@@ -227,9 +231,9 @@ def test_imaging_pipeline(
         do_wstacking=True,
         flat_sky=False,
     )
-    
+
     continuum_imaging_list = rsexecute.compute(continuum_imaging_list, sync=True)
-    
+
     skymodel_list = continuum_imaging_list[3]
     export_skycomponent_to_hdf5(
         gleam_components,
@@ -249,7 +253,7 @@ def test_imaging_pipeline(
     restored = image_gather_channels(
         [continuum_imaging_list[2][chan] for chan in range(nfreqwin)]
     )
-    
+
     log.info(qa_image(deconvolved, context="Clean image "))
     export_image_to_fits(
         deconvolved,
@@ -260,7 +264,7 @@ def test_imaging_pipeline(
         residual,
         "%s/test-continuum_imaging_%s_residual.fits" % (dir, tag),
     )
-    
+
     if sensitivity:
         sens = image_gather_channels(
             [continuum_imaging_list[1][chan][1] for chan in range(nfreqwin)]
@@ -270,14 +274,14 @@ def test_imaging_pipeline(
             sens,
             "%s/test-continuum_imaging_%s_sensitivity.fits" % (dir, tag),
         )
-    
+
     qa = qa_image(restored, context="Restored image ")
     log.info(qa)
     export_image_to_fits(
         restored,
         "%s/test-continuum_imaging_%s_restored.fits" % (dir, tag),
     )
-    
+
     # Correct values for no skycomponent extraction
     assert abs(qa.data["max"] - test_max) < 1e-7, str(qa)
     assert abs(qa.data["min"] - test_min) < 1e-7, str(qa)

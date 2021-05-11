@@ -105,23 +105,38 @@ def export_image_to_fits(im: Image, fitsfile: str = "imaging.fits"):
     """
     header = im.image_acc.wcs.to_header()
     clean_beam = im.attrs["clean_beam"]
-    
+
     # TODO: Remove need for this clean_beam check. In some cases the clean beam gets to this point
     # as a Dask.delayed object. The simplest (but inelegant) fix is to ask Dask to compute the
     # value
     from rascil.workflows.rsexecute.execution_support import rsexecute
-    if clean_beam is not None and not isinstance(clean_beam, dict) and rsexecute.using_dask:
+
+    if (
+        clean_beam is not None
+        and not isinstance(clean_beam, dict)
+        and rsexecute.using_dask
+    ):
         clean_beam = rsexecute.compute(clean_beam, sync=True)
-        
+
     if isinstance(clean_beam, dict):
-        if "bmaj" in clean_beam.keys() and \
-            "bmin" in clean_beam.keys() and \
-            "bpa" in clean_beam.keys():
-            header.append(fits.Card("BMAJ", clean_beam["bmaj"], "[deg] CLEAN beam major axis"))
-            header.append(fits.Card("BMIN", clean_beam["bmin"], "[deg] CLEAN beam minor axis"))
-            header.append(fits.Card("BPA", clean_beam["bpa"], "[deg] CLEAN beam position angle"))
+        if (
+            "bmaj" in clean_beam.keys()
+            and "bmin" in clean_beam.keys()
+            and "bpa" in clean_beam.keys()
+        ):
+            header.append(
+                fits.Card("BMAJ", clean_beam["bmaj"], "[deg] CLEAN beam major axis")
+            )
+            header.append(
+                fits.Card("BMIN", clean_beam["bmin"], "[deg] CLEAN beam minor axis")
+            )
+            header.append(
+                fits.Card("BPA", clean_beam["bpa"], "[deg] CLEAN beam position angle")
+            )
         else:
-            log.warning(f"export_image_to_fits: clean_beam is incompletely specified: {clean_beam}, not writing")
+            log.warning(
+                f"export_image_to_fits: clean_beam is incompletely specified: {clean_beam}, not writing"
+            )
     if im["pixels"].data.dtype == "complex":
         return fits.writeto(
             filename=fitsfile,
@@ -273,9 +288,10 @@ def reproject_image(im: Image, newwcs: WCS, shape=None) -> (Image, Image):
         )
     rep = numpy.nan_to_num(rep)
     foot = numpy.nan_to_num(foot)
-    return create_image_from_array(
-        rep, newwcs, im.image_acc.polarisation_frame
-    ), create_image_from_array(foot, newwcs, im.image_acc.polarisation_frame)
+    return (
+        create_image_from_array(rep, newwcs, im.image_acc.polarisation_frame),
+        create_image_from_array(foot, newwcs, im.image_acc.polarisation_frame),
+    )
 
 
 def add_image(im1: Image, im2: Image) -> Image:

@@ -26,7 +26,7 @@ from rascil.processing_components import (
     export_image_to_fits,
     smooth_image,
     create_pb,
-    qa_image
+    qa_image,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import (
@@ -130,17 +130,17 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         # Calculate the model convolved with a Gaussian.
 
         if self.persist:
-    
+
             self.model_imagelist = [
                 rsexecute.execute(insert_skycomponent, nout=1)(
                     self.model_imagelist[freqwin], self.componentlist[freqwin]
                 )
                 for freqwin, _ in enumerate(self.frequency)
             ]
-    
+
             self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
             model = self.model_imagelist[0]
-    
+
             self.cmodel = smooth_image(model)
             export_image_to_fits(
                 model, "%s/test_imaging_rsexecute_deconvolved_model.fits" % self.dir
@@ -159,9 +159,10 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         #        self.vis_list = rsexecute.compute(self.vis_list, sync=True)
         self.vis_list = rsexecute.persist(self.vis_list)
         self.model_imagelist = rsexecute.scatter(self.model_imagelist)
-        
-        self.sensitivity_list = [rsexecute.execute(create_pb)(m, "LOW")
-                                 for m in self.model_imagelist]
+
+        self.sensitivity_list = [
+            rsexecute.execute(create_pb)(m, "LOW") for m in self.model_imagelist
+        ]
         self.sensitivity_list = rsexecute.persist(self.sensitivity_list)
 
         self.model_imagelist = [
@@ -213,7 +214,9 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             )
 
         qa = qa_image(deconvolved[0])
-        numpy.testing.assert_allclose(qa.data["max"], 19.522798145338943, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(
+            qa.data["max"], 19.522798145338943, atol=1e-7, err_msg=f"{qa}"
+        )
         numpy.testing.assert_allclose(qa.data["min"], 0.0, atol=1e-7, err_msg=f"{qa}")
 
     def test_deconvolve_and_restore_cube_mmclean(self):
@@ -270,8 +273,12 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             )
 
         qa = qa_image(restored)
-        numpy.testing.assert_allclose(qa.data["max"], 29.904079739467672, atol=1e-7, err_msg=f"{qa}")
-        numpy.testing.assert_allclose(qa.data["min"], -2.383588500083969, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(
+            qa.data["max"], 29.904079739467672, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -2.383588500083969, atol=1e-7, err_msg=f"{qa}"
+        )
 
     def test_deconvolve_and_restore_cube_mmclean_facets(self):
         self.actualSetUp(add_errors=True)
@@ -330,8 +337,12 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             )
 
         qa = qa_image(restored)
-        numpy.testing.assert_allclose(qa.data["max"], 29.840393345494547, atol=1e-7, err_msg=f"{qa}")
-        numpy.testing.assert_allclose(qa.data["min"], -2.4760642560915413, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(
+            qa.data["max"], 29.840393345494547, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -2.4760642560915413, atol=1e-7, err_msg=f"{qa}"
+        )
 
 
 if __name__ == "__main__":

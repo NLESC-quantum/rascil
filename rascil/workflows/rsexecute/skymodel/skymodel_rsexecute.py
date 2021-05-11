@@ -412,7 +412,7 @@ def restore_skymodel_list_rsexecute_workflow(
                 )(
                     model=facet_model_list[i][im],
                     residual=facet_residual_list[i][im],
-                    clean_beam=clean_beam
+                    clean_beam=clean_beam,
                 )
                 for im, _ in enumerate(facet_model_list[i])
             ]

@@ -11,11 +11,7 @@ import numpy
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components import (
-    deconvolve_cube,
-    restore_cube,
-    create_pb
-)
+from rascil.processing_components import deconvolve_cube, restore_cube, create_pb
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.base import (
@@ -248,10 +244,12 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         if self.persist:
             export_image_to_fits(
-                self.comp, "%s/test_deconvolve_mmclean_linear_sensitivity-comp.fits" % self.dir
+                self.comp,
+                "%s/test_deconvolve_mmclean_linear_sensitivity-comp.fits" % self.dir,
             )
             export_image_to_fits(
-                self.sensitivity, "%s/test_deconvolve_mmclean_linear_sensitivity.fits" % self.dir
+                self.sensitivity,
+                "%s/test_deconvolve_mmclean_linear_sensitivity.fits" % self.dir,
             )
         if self.persist:
             export_image_to_fits(

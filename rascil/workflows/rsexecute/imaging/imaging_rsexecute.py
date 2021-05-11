@@ -202,7 +202,7 @@ def restore_list_singlefacet_rsexecute_workflow(
         psf_list = sum_invert_results_rsexecute(psf_imagelist)
         psf = rsexecute.execute(normalise_sumwt)(psf_list[0], psf_list[1])
         clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
-        
+
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
             residual_imagelist
@@ -216,7 +216,9 @@ def restore_list_singlefacet_rsexecute_workflow(
     else:
         restored_list = [
             rsexecute.execute(restore_cube, nout=1)(
-                model_imagelist[i], residual=None, clean_beam=clean_beam,
+                model_imagelist[i],
+                residual=None,
+                clean_beam=clean_beam,
             )
             for i, _ in enumerate(model_imagelist)
         ]
@@ -231,7 +233,7 @@ def restore_list_rsexecute_workflow(
     restore_facets=1,
     restore_overlap=8,
     restore_taper="tukey",
-        clean_beam=None,
+    clean_beam=None,
     **kwargs
 ):
     """Create a graph to calculate the restored image
@@ -367,11 +369,14 @@ def restore_centre_rsexecute_workflow(
         # Get residual calculated across the band
         residual = sum_invert_results_rsexecute(residual_imagelist)[0]
         restored = rsexecute.execute(restore_cube, nout=1)(
-            model, residual=residual, clean_beam=clean_beam,
+            model,
+            residual=residual,
+            clean_beam=clean_beam,
         )
     else:
         restored = rsexecute.execute(restore_cube, nout=1)(
-            model, clean_beam=clean_beam,
+            model,
+            clean_beam=clean_beam,
         )
 
     return restored
@@ -558,7 +563,9 @@ def deconvolve_list_rsexecute_workflow(
             nchan,
         )
     else:
-        scattered_facets_sensitivity_list = [None for facet in range(deconvolve_number_facets)]
+        scattered_facets_sensitivity_list = [
+            None for facet in range(deconvolve_number_facets)
+        ]
 
     def imaging_extract_psf(psf, facets):
         assert not numpy.isnan(numpy.sum(psf["pixels"].data)), "NaNs present in PSF"
@@ -661,8 +668,8 @@ def scatter_facets_gather_channels(
     model_imagelist,
     nchan,
 ):
-    """ Scatter images by facet and then gather by channels
-    
+    """Scatter images by facet and then gather by channels
+
     :param deconvolve_facets: Number of facets per axis
     :param deconvolve_number_facets: Square of deconvolve_facets
     :param deconvolve_overlap: Overlap in pixels

@@ -74,7 +74,8 @@ class TestImaging2D(unittest.TestCase):
         make_pb = functools.partial(
             create_pb, telescope="VLA", pointingcentre=vis_list[0].phasecentre
         )
-        gcfcf = functools.partial(create_awterm_convolutionfunction,
+        gcfcf = functools.partial(
+            create_awterm_convolutionfunction,
             make_pb=make_pb,
             polarisation_frame=PolarisationFrame("circular"),
             oversampling=17,

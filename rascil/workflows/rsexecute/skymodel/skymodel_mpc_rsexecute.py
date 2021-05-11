@@ -65,7 +65,7 @@ def convolve_skymodel_list_rsexecute_workflow(
     """
 
     def skymodel_predict_invert(ov, sm):
- 
+
         v = copy_visibility(ov)
 
         v["vis"].data[...] = 0.0 + 0.0j

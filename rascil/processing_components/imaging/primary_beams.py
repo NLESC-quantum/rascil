@@ -553,16 +553,16 @@ def create_low_test_vp(model: Image, use_local=True, azel=None) -> Image:
     :param azel: Tuple (Azimuth, Elevation) radians
     :return: Image
     """
-    vp_zenith = create_vp_generic(model, diameter=38.0, blockage=0.0, use_local=use_local)
+    vp_zenith = create_vp_generic(
+        model, diameter=38.0, blockage=0.0, use_local=use_local
+    )
     vp_zenith = set_pb_header(vp_zenith, use_local=use_local)
     if azel is None:
         return vp_zenith
     else:
-        return scale_and_rotate_image(vp_zenith,
-                                  scale=[numpy.cos(azel[1]), 1.0],
-                                  angle=azel[0])
-
-
+        return scale_and_rotate_image(
+            vp_zenith, scale=[numpy.cos(azel[1]), 1.0], angle=azel[0]
+        )
 
 
 def convert_azelvp_to_radec(vp, im, pa):

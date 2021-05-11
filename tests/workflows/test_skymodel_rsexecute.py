@@ -26,7 +26,7 @@ from rascil.processing_components import (
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import (
     predict_skymodel_list_rsexecute_workflow,
-    invert_skymodel_list_rsexecute_workflow
+    invert_skymodel_list_rsexecute_workflow,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -101,7 +101,6 @@ class TestSkyModel(unittest.TestCase):
         ]
         self.vis_list = rsexecute.compute(self.vis_list)
 
-        
     def test_predict_no_pb(self):
         self.actualSetUp()
 
@@ -138,7 +137,7 @@ class TestSkyModel(unittest.TestCase):
 
     def test_predict_with_pb(self):
         self.actualSetUp()
-    
+
         self.skymodel_list = [
             rsexecute.execute(create_low_test_skymodel_from_gleam)(
                 npixel=self.npixel,
@@ -153,26 +152,28 @@ class TestSkyModel(unittest.TestCase):
             )
             for f, freq in enumerate(self.frequency)
         ]
-    
+
         self.skymodel_list = rsexecute.compute(self.skymodel_list, sync=True)
-    
+
         assert len(self.skymodel_list[0].components) == 11, len(
             self.skymodel_list[0].components
         )
         assert (
-                numpy.max(numpy.abs(self.skymodel_list[0].image["pixels"].data)) > 0.0
+            numpy.max(numpy.abs(self.skymodel_list[0].image["pixels"].data)) > 0.0
         ), "Image is empty"
-    
+
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
-    
+
         def get_pb(vis, model):
             pb = create_low_test_beam(model)
             pa = numpy.mean(calculate_blockvisibility_parallactic_angles(vis))
             pb = convert_azelvp_to_radec(pb, model, pa)
             return pb
-    
+
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(
-            self.vis_list[0], self.skymodel_list, context="ng",
+            self.vis_list[0],
+            self.skymodel_list,
+            context="ng",
             get_pb=get_pb,
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
@@ -180,7 +181,7 @@ class TestSkyModel(unittest.TestCase):
 
     def test_invert_with_pb(self):
         self.actualSetUp()
-    
+
         self.skymodel_list = [
             rsexecute.execute(create_low_test_skymodel_from_gleam)(
                 npixel=self.npixel,
@@ -195,66 +196,85 @@ class TestSkyModel(unittest.TestCase):
             )
             for f, freq in enumerate(self.frequency)
         ]
-    
+
         self.skymodel_list = rsexecute.compute(self.skymodel_list, sync=True)
-    
+
         assert len(self.skymodel_list[0].components) == 11, len(
             self.skymodel_list[0].components
         )
         assert (
-                numpy.max(numpy.abs(self.skymodel_list[0].image["pixels"].data)) > 0.0
+            numpy.max(numpy.abs(self.skymodel_list[0].image["pixels"].data)) > 0.0
         ), "Image is empty"
-    
+
         self.skymodel_list = rsexecute.scatter(self.skymodel_list)
-    
+
         def get_pb(bvis, model):
             pb = create_low_test_beam(model)
             pa = numpy.mean(calculate_blockvisibility_parallactic_angles(bvis))
             pb = convert_azelvp_to_radec(pb, model, pa)
             return pb
-    
+
         skymodel_vislist = predict_skymodel_list_rsexecute_workflow(
-            self.vis_list[0], self.skymodel_list, context="ng",
+            self.vis_list[0],
+            self.skymodel_list,
+            context="ng",
             get_pb=get_pb,
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
 
-        skymodel_list = invert_skymodel_list_rsexecute_workflow(skymodel_vislist,
-                                                                self.skymodel_list,
-                                                                get_pb=get_pb,
-                                                                normalise=True,
-                                                                flat_sky=False
-                                                                )
+        skymodel_list = invert_skymodel_list_rsexecute_workflow(
+            skymodel_vislist,
+            self.skymodel_list,
+            get_pb=get_pb,
+            normalise=True,
+            flat_sky=False,
+        )
         skymodel_list = rsexecute.compute(skymodel_list, sync=True)
         if self.persist:
-            export_image_to_fits(skymodel_list[0][0],
-                                 "%s/test_skymodel_invert_flat_noise_dirty.fits" % (self.dir))
-            export_image_to_fits(skymodel_list[0][1],
-                                 "%s/test_skymodel_invert_flat_noise_sensitivity.fits" % (self.dir))
+            export_image_to_fits(
+                skymodel_list[0][0],
+                "%s/test_skymodel_invert_flat_noise_dirty.fits" % (self.dir),
+            )
+            export_image_to_fits(
+                skymodel_list[0][1],
+                "%s/test_skymodel_invert_flat_noise_sensitivity.fits" % (self.dir),
+            )
         qa = qa_image(skymodel_list[0][0])
 
-        numpy.testing.assert_allclose(qa.data["max"], 3.7563900102650116, atol=1e-7, err_msg=f"{qa}")
-        numpy.testing.assert_allclose(qa.data["min"], -0.24385090091180575, atol=1e-7, err_msg=f"{qa}")
-
+        numpy.testing.assert_allclose(
+            qa.data["max"], 3.7563900102650116, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.24385090091180575, atol=1e-7, err_msg=f"{qa}"
+        )
 
         # Now repeat with flat_sky=True
-        skymodel_list = invert_skymodel_list_rsexecute_workflow(skymodel_vislist,
-                                                                self.skymodel_list,
-                                                                get_pb=get_pb,
-                                                                normalise=True,
-                                                                flat_sky=True
-                                                                )
+        skymodel_list = invert_skymodel_list_rsexecute_workflow(
+            skymodel_vislist,
+            self.skymodel_list,
+            get_pb=get_pb,
+            normalise=True,
+            flat_sky=True,
+        )
         skymodel_list = rsexecute.compute(skymodel_list, sync=True)
         if self.persist:
-            export_image_to_fits(skymodel_list[0][0],
-                                 "%s/test_skymodel_invert_flat_sky_dirty.fits" % (self.dir))
-            export_image_to_fits(skymodel_list[0][0],
-                                "%s/test_skymodel_invert_flat_sky_sensitivity.fits" % (self.dir))
+            export_image_to_fits(
+                skymodel_list[0][0],
+                "%s/test_skymodel_invert_flat_sky_dirty.fits" % (self.dir),
+            )
+            export_image_to_fits(
+                skymodel_list[0][0],
+                "%s/test_skymodel_invert_flat_sky_sensitivity.fits" % (self.dir),
+            )
         qa = qa_image(skymodel_list[0][0])
 
-        numpy.testing.assert_allclose(qa.data["max"], 4.0133318595524, atol=1e-7, err_msg=f"{qa}")
-        numpy.testing.assert_allclose(qa.data["min"], -0.2519292965274322, atol=1e-7, err_msg=f"{qa}")
+        numpy.testing.assert_allclose(
+            qa.data["max"], 4.0133318595524, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.2519292965274322, atol=1e-7, err_msg=f"{qa}"
+        )
 
     def test_predict_nocomponents(self):
         self.actualSetUp()
@@ -323,6 +343,7 @@ class TestSkyModel(unittest.TestCase):
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
         assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
+
 
 if __name__ == "__main__":
     unittest.main()

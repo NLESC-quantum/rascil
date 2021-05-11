@@ -34,14 +34,14 @@ log = logging.getLogger("rascil-logger")
 
 
 def ical_skymodel_list_rsexecute_workflow(
-        vis_list,
-        model_imagelist,
-        context,
-        skymodel_list=None,
-        calibration_context="TG",
-        do_selfcal=True,
-        pipeline_name="ical",
-        **kwargs,
+    vis_list,
+    model_imagelist,
+    context,
+    skymodel_list=None,
+    calibration_context="TG",
+    do_selfcal=True,
+    pipeline_name="ical",
+    **kwargs,
 ):
     """Create graph for ICAL pipeline using SkyModel
 
@@ -232,7 +232,7 @@ def ical_skymodel_list_rsexecute_workflow(
 
 
 def continuum_imaging_skymodel_list_rsexecute_workflow(
-        vis_list, model_imagelist, context, skymodel_list=None, **kwargs
+    vis_list, model_imagelist, context, skymodel_list=None, **kwargs
 ):
     """Create graph for the continuum imaging pipeline.
 
@@ -271,13 +271,13 @@ def continuum_imaging_skymodel_list_rsexecute_workflow(
 
 
 def spectral_line_imaging_skymodel_list_rsexecute_workflow(
-        vis_list,
-        model_imagelist,
-        context,
-        continuum_model_imagelist=None,
-        vis_slices=1,
-        facets=1,
-        **kwargs,
+    vis_list,
+    model_imagelist,
+    context,
+    continuum_model_imagelist=None,
+    vis_slices=1,
+    facets=1,
+    **kwargs,
 ):
     """Create graph for spectral line imaging pipeline
 

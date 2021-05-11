@@ -52,9 +52,7 @@ from rascil.processing_components import fit_psf
 log = logging.getLogger("rascil-logger")
 
 
-def predict_list_serial_workflow(
-    vis_list, model_imagelist, context="ng", **kwargs
-):
+def predict_list_serial_workflow(vis_list, model_imagelist, context="ng", **kwargs):
     """Predict, iterating over both the scattered vis_list and image
 
     The visibility and image are scattered, the visibility is predicted on each part, and then the
@@ -140,9 +138,7 @@ def invert_list_serial_workflow(
     return invert_results
 
 
-def residual_list_serial_workflow(
-    vis, model_imagelist, context="2d", **kwargs
-):
+def residual_list_serial_workflow(vis, model_imagelist, context="2d", **kwargs):
     """Create a graph to calculate residual image
 
     :param vis: List of vis
@@ -208,9 +204,7 @@ def restore_list_serial_workflow(
         ]
     else:
         restored_list = [
-            restore_cube(
-                model_imagelist[i], clean_beam=clean_beam, residual=None
-            )
+            restore_cube(model_imagelist[i], clean_beam=clean_beam, residual=None)
             for i, _ in enumerate(model_imagelist)
         ]
     return restored_list

@@ -63,8 +63,9 @@ from rascil.processing_components.image.operations import create_image_from_arra
 log = logging.getLogger("rascil-logger")
 
 
-def deconvolve_cube(dirty: Image, psf: Image, sensitivity: Image = None,
-                    prefix="", **kwargs) -> (Image, Image):
+def deconvolve_cube(
+    dirty: Image, psf: Image, sensitivity: Image = None, prefix="", **kwargs
+) -> (Image, Image):
     """Clean using a variety of algorithms
 
     The algorithms available are:
@@ -462,7 +463,7 @@ def mmclean_kernel(dirty, prefix, psf, window, sensitivity, **kwargs):
     :return: component image, residual image
 
     The following optional arguments can be passed via kwargs:
-    
+
     :param fractional_threshold: Fractional threshold (0.01)
     :param gain: loop gain (float) 0.7
     :param niter: Number of clean iterations (int) 100
@@ -575,7 +576,7 @@ def msclean_kernel(dirty, prefix, psf, window, sensitivity=None, **kwargs):
 
     See: Cornwell, T.J., Multiscale CLEAN (IEEE Journal of Selected Topics in Sig Proc,
     2008 vol. 2 pp. 793-801)
-    
+
     The clean search is performed on the product of the sensitivity image (if supplied) and
     the residual image. This gives a way to bias against high noise.
 
@@ -587,7 +588,7 @@ def msclean_kernel(dirty, prefix, psf, window, sensitivity=None, **kwargs):
     :return: component image, residual image
 
     The following optional arguments can be passed via kwargs:
-    
+
     :param fractional_threshold: Fractional threshold (0.01)
     :param gain: loop gain (float) 0.7
     :param niter: Number of clean iterations (int) 100

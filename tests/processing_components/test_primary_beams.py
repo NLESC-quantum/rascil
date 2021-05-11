@@ -133,9 +133,10 @@ class TestPrimaryBeams(unittest.TestCase):
     def test_create_voltage_patterns(self):
         self.createVis()
         for telescope, flux_max, flux_min in [
-            ("VLA", 0.9948159999999988+0j, -0.13737537430017216+0j),
-             ("ASKAP", 0.9930555555555544+0j, -0.13906616397447308+0j),
-              ("LOW", 0.9999999999999988+0j, -0.132279301631194+0j)]:
+            ("VLA", 0.9948159999999988 + 0j, -0.13737537430017216 + 0j),
+            ("ASKAP", 0.9930555555555544 + 0j, -0.13906616397447308 + 0j),
+            ("LOW", 0.9999999999999988 + 0j, -0.132279301631194 + 0j),
+        ]:
             model = create_image_from_visibility(
                 self.vis,
                 cellsize=self.cellsize,

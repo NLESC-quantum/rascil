@@ -53,6 +53,7 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
 
+
 @pytest.mark.parametrize(
     "cellsize, npixel, nchan, flux_limit, insert_method, noise, tag",
     [
@@ -101,15 +102,15 @@ logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
             0.00003,
             "nearest_npixel512_nchan1_noise0.00003_flux0.0001",
         ),
-#        (
-#            0.0001,
-#            512,
-#            1,
-#            0.001,
-#            "Lanczos",
-#            0.00003,
-#            "lanczos_npixel512_nchan1_noise0.00003_flux0.001",
-#        ),
+        #        (
+        #            0.0001,
+        #            512,
+        #            1,
+        #            0.001,
+        #            "Lanczos",
+        #            0.00003,
+        #            "lanczos_npixel512_nchan1_noise0.00003_flux0.001",
+        #        ),
         (
             0.0001,
             512,
@@ -155,7 +156,7 @@ def test_continuum_imaging_checker(
     pb_npixel = 256
     d2r = numpy.pi / 180.0
     pb_cellsize = d2r * fov_deg / pb_npixel
-    pbradius = 2.0
+    pbradius = 1.5
     pbradius = pbradius * hwhm
 
     original_components = create_mid_simulation_components(

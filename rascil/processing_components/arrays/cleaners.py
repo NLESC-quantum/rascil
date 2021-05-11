@@ -215,20 +215,23 @@ def argmax(a):
     return numpy.unravel_index(a.argmax(), a.shape)
 
 
-def msclean(dirty, psf, window, gain, thresh, niter, scales, fracthresh, prefix=""):
+def msclean(
+    dirty, psf, window, sensitivity, gain, thresh, niter, scales, fracthresh, prefix=""
+):
     """Perform multiscale clean
 
     Multiscale CLEAN (IEEE Journal of Selected Topics in Sig Proc, 2008 vol. 2 pp. 793-801)
 
     This version operates on numpy arrays.
 
-    :param prefix:
-    :param fracthresh:
+    :param prefix: Informational prefix for log messages
     :param dirty: The dirty image, i.e., the image to be deconvolved
     :param psf: The point spread-function
     :param window: Regions where clean components are allowed. If True, all of the dirty image is allowed
+    :param sensitivity: Inverse noise image, scaled to peak 1.0
     :param gain: The "loop gain", i.e., the fraction of the brightest pixel that is removed in each iteration
     :param thresh: Cleaning stops when the maximum of the absolute deviation of the residual is less than this value
+    :param fracthresh: Cleaning stops when the (maximum of the absolute deviation of the residual)/peak residual is less than this value
     :param niter: Maximum number of components to make if the threshold "thresh" is not hit
     :param scales: Scales (in pixels width) to be used
     :return: clean component image, residual image
@@ -314,7 +317,7 @@ def msclean(dirty, psf, window, gain, thresh, niter, scales, fracthresh, prefix=
         aiter = i + 1
         # Find peak over all smoothed images
         mx, my, mscale = find_max_abs_stack(
-            res_scalestack, windowstack, coupling_matrix
+            res_scalestack, sensitivity, windowstack, coupling_matrix
         )
         # Find the values to subtract, accounting for the coupling matrix
         mval = res_scalestack[mscale, mx, my] / coupling_matrix[mscale, mscale]
@@ -458,11 +461,13 @@ def convolve_convolve_scalestack(scalestack, img):
     return convolved
 
 
-def find_max_abs_stack(stack, windowstack, couplingmatrix):
+def find_max_abs_stack(stack, sensitivity, windowstack, couplingmatrix):
     """Find the location and value of the absolute maximum in this stack
-    :param stack: stack to be searched
-    :param windowstack: Window for the search
-    :param couplingmatrix: Coupling matrix between difference scales
+
+    :param stack: Scale stack to be searched (a 3D array)
+    :param sensitivity: Inverse noise (an array)
+    :param windowstack: Window for the search (an array)
+    :param couplingmatrix: Coupling matrix between different scales
     :return: x, y, scale
 
     """
@@ -483,8 +488,14 @@ def find_max_abs_stack(stack, windowstack, couplingmatrix):
         else:
             resid = stack[iscale, :, :] / couplingmatrix[iscale, iscale]
 
-        # Find the peak in the scaled residual image
-        mx, my = numpy.unravel_index(numpy.abs(resid).argmax(), pshape)
+        if sensitivity is not None:
+            resid *= sensitivity
+            mx, my = numpy.unravel_index(
+                numpy.abs(resid * sensitivity).argmax(), pshape
+            )
+        else:
+            # Find the peak in the scaled residual image
+            mx, my = numpy.unravel_index(numpy.abs(resid).argmax(), pshape)
 
         # Is this the peak over all scales?
         thisabsmax = numpy.abs(resid[mx, my])
@@ -572,6 +583,7 @@ def msmfsclean(
     dirty,
     psf,
     window,
+    sensitivity,
     gain,
     thresh,
     niter,
@@ -594,6 +606,7 @@ def msmfsclean(
     :param dirty: The dirty image, i.e., the image to be deconvolved
     :param psf: The point spread-function
     :param window: Regions where clean components are allowed. If True, all of the dirty image is allowed
+    :param sensitivity: Inverse noise image, scaled to peak 1.0
     :param gain: The "loop gain", i.e., the fraction of the brightest pixel that is removed in each iteration
     :param thresh: Cleaning stops when the maximum of the absolute deviation of the residual is less than this value
     :param niter: Maximum number of components to make if the threshold "thresh" is not hit
@@ -692,7 +705,7 @@ def msmfsclean(
 
         # Find the optimum scale and location.
         mscale, mx, my, mval = find_global_optimum(
-            hsmmpsf, ihsmmpsf, smresidual, windowstack, findpeak
+            hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity, findpeak
         )
         scale_counts[mscale] += 1
         scale_flux[mscale] += mval[0]
@@ -748,13 +761,36 @@ def msmfsclean(
     return m_model, pmax * smresidual[0, :, :, :]
 
 
-def find_global_optimum(hsmmpsf, ihsmmpsf, smresidual, windowstack, findpeak):
-    """Find the optimum peak using one of a number of algorithms"""
+def find_global_optimum(
+    hsmmpsf, ihsmmpsf, smresidual, windowstack, sensitivity, findpeak
+):
+    """Find the optimum component using one of a number of different algorithms. These
+    are discussed in detail in Urvashi/s thesis.
+
+        # Calculate scale convolutions of moment residuals
+    smresidual = calculate_scale_moment_residual(ldirty, scalestack)
+
+    # Calculate scale scale moment moment psf, Hessian, and inverse of Hessian
+    # scale scale moment moment psf is needed for update of scale-moment residuals
+    # Hessian is needed in calculation of optimum for any iteration
+    # Inverse Hessian is needed to calculate principal solution in moment-space
+
+
+    :param hsmmpsf: scale scale moment moment psf
+    :param ihsmmpsf: inverse of Hessian scale scale moment moment psf
+    :param smresidual: scale convolutions of frequency moment residuals
+    :param windowstack:
+    :param sensitivity: Sensitivity array: search is on sensitivity * residual images
+    :param findpeak: Algorithm: Algorithm1 or CASA or RASCIL
+    :return:
+    """
     if findpeak == "Algorithm1":
         # Calculate the principal solution in moment-moment axes. This decouples the moments
         smpsol = calculate_scale_moment_principal_solution(smresidual, ihsmmpsf)
         # Now find the location and scale
-        mx, my, mscale = find_optimum_scale_zero_moment(smpsol, windowstack)
+        mx, my, mscale = find_optimum_scale_zero_moment(
+            smpsol, sensitivity, windowstack
+        )
         mval = smpsol[mscale, :, mx, my]
     elif findpeak == "CASA":
         # CASA 4.7 version
@@ -774,15 +810,18 @@ def find_global_optimum(hsmmpsf, ihsmmpsf, smresidual, windowstack, findpeak):
                         * smpsol[scale, moment2, ...]
                     )
 
-        mx, my, mscale = find_optimum_scale_zero_moment(dchisq, windowstack)
+        mx, my, mscale = find_optimum_scale_zero_moment(
+            dchisq, sensitivity, windowstack
+        )
         mval = smpsol[mscale, :, mx, my]
 
     else:
+        # RASCIL (or anything else) ends up here: find the peak in the frequency moment 0
+        # residual image
         smpsol = calculate_scale_moment_principal_solution(smresidual, ihsmmpsf)
         mx, my, mscale = find_optimum_scale_zero_moment(
-            smpsol * smresidual, windowstack
+            smpsol, sensitivity, windowstack
         )
-
         mval = smpsol[mscale, :, mx, my]
 
     return mscale, mx, my, mval
@@ -900,7 +939,7 @@ def calculate_scale_moment_principal_solution(smresidual, ihsmmpsf):
     return smpsol
 
 
-def find_optimum_scale_zero_moment(smpsol, windowstack):
+def find_optimum_scale_zero_moment(smpsol, sensitivity, windowstack):
     """Find the optimum scale for moment zero
 
     Line 27 of Algorithm 1
@@ -921,6 +960,9 @@ def find_optimum_scale_zero_moment(smpsol, windowstack):
             resid = smpsol[scale, 0, :, :] * windowstack[scale, :, :]
         else:
             resid = smpsol[scale, 0, :, :]
+
+        if sensitivity is not None:
+            resid = sensitivity * resid
 
         this_max = numpy.max(numpy.abs(resid))
         if this_max > optimum:

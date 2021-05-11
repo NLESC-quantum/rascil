@@ -74,8 +74,8 @@ class TestImaging2D(unittest.TestCase):
         make_pb = functools.partial(
             create_pb, telescope="VLA", pointingcentre=vis_list[0].phasecentre
         )
-        gcfcf = create_awterm_convolutionfunction(
-            model,
+        gcfcf = functools.partial(
+            create_awterm_convolutionfunction,
             make_pb=make_pb,
             polarisation_frame=PolarisationFrame("circular"),
             oversampling=17,
@@ -96,7 +96,7 @@ class TestImaging2D(unittest.TestCase):
                 mosaic, "{}/test_mosaic_dirty.fits".format(results_dir)
             )
             export_convolutionfunction_to_fits(
-                gcfcf[1], "{}/test_mosaic_cf.fits".format(results_dir)
+                gcfcf(model)[1], "{}/test_mosaic_cf.fits".format(results_dir)
             )
 
 

@@ -11,6 +11,8 @@ import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from rascil.data_models.parameters import rascil_path
+
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
@@ -20,9 +22,11 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     restore_list_rsexecute_workflow,
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.processing_components.image.operations import (
+from rascil.processing_components import (
     export_image_to_fits,
     smooth_image,
+    create_pb,
+    qa_image,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import (
@@ -42,26 +46,22 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 class TestImagingDeconvolveGraph(unittest.TestCase):
     def setUp(self):
         rsexecute.set_client(use_dask=True)
-
-        from rascil.data_models.parameters import rascil_path, rascil_data_path
-
         self.dir = rascil_path("test_results")
-
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def tearDown(self):
         rsexecute.close()
 
     def actualSetUp(
-        self, add_errors=False, freqwin=3, dospectral=True, dopol=False, zerow=True
+        self, add_errors=False, freqwin=5, dospectral=True, dopol=False, zerow=False
     ):
 
-        self.npixel = 256
-        self.low = create_named_configuration("LOWBD2", rmax=300.0)
+        self.npixel = 512
+        self.low = create_named_configuration("LOWBD2", rmax=750.0)
         self.freqwin = freqwin
         self.vis_list = list()
-        self.ntimes = 3
-        cellsize = 0.001
+        self.ntimes = 5
+        cellsize = 0.0005
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
 
@@ -113,17 +113,9 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             )
             for freqwin, _ in enumerate(self.frequency)
         ]
-
         self.componentlist = [
             rsexecute.execute(create_unittest_components)(
                 self.model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :]
-            )
-            for freqwin, _ in enumerate(self.frequency)
-        ]
-
-        self.model_imagelist = [
-            rsexecute.execute(insert_skycomponent, nout=1)(
-                self.model_imagelist[freqwin], self.componentlist[freqwin]
             )
             for freqwin, _ in enumerate(self.frequency)
         ]
@@ -137,15 +129,22 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
 
         # Calculate the model convolved with a Gaussian.
 
-        self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
-        model = self.model_imagelist[0]
-
-        self.cmodel = smooth_image(model)
         if self.persist:
+
+            self.model_imagelist = [
+                rsexecute.execute(insert_skycomponent, nout=1)(
+                    self.model_imagelist[freqwin], self.componentlist[freqwin]
+                )
+                for freqwin, _ in enumerate(self.frequency)
+            ]
+
+            self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
+            model = self.model_imagelist[0]
+
+            self.cmodel = smooth_image(model)
             export_image_to_fits(
                 model, "%s/test_imaging_rsexecute_deconvolved_model.fits" % self.dir
             )
-        if self.persist:
             export_image_to_fits(
                 self.cmodel,
                 "%s/test_imaging_rsexecute_deconvolved_cmodel.fits" % self.dir,
@@ -161,21 +160,36 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         self.vis_list = rsexecute.persist(self.vis_list)
         self.model_imagelist = rsexecute.scatter(self.model_imagelist)
 
+        self.sensitivity_list = [
+            rsexecute.execute(create_pb)(m, "LOW") for m in self.model_imagelist
+        ]
+        self.sensitivity_list = rsexecute.persist(self.sensitivity_list)
+
+        self.model_imagelist = [
+            rsexecute.execute(create_unittest_model, nout=freqwin)(
+                self.vis_list[freqwin],
+                self.image_pol,
+                cellsize=cellsize,
+                npixel=self.npixel,
+            )
+            for freqwin, _ in enumerate(self.frequency)
+        ]
+
     def test_deconvolve_spectral(self):
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
-            context="2d",
+            context="ng",
             dopsf=False,
-            normalize=True,
+            normalise=True,
         )
         psf_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
-            context="2d",
+            context="ng",
             dopsf=True,
-            normalize=True,
+            normalise=True,
         )
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
@@ -199,21 +213,27 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                 % (self.dir, rsexecute.type()),
             )
 
+        qa = qa_image(deconvolved[0])
+        numpy.testing.assert_allclose(
+            qa.data["max"], 19.522798145338943, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(qa.data["min"], 0.0, atol=1e-7, err_msg=f"{qa}")
+
     def test_deconvolve_and_restore_cube_mmclean(self):
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
-            context="2d",
+            context="ng",
             dopsf=False,
-            normalize=True,
+            normalise=True,
         )
         psf_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
-            context="2d",
+            context="ng",
             dopsf=True,
-            normalize=True,
+            normalise=True,
         )
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
@@ -227,12 +247,12 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             algorithm="mmclean",
             nmoment=1,
             nchan=self.freqwin,
-            threshold=0.7,
+            threshold=0.01,
             gain=0.7,
         )
         dec_imagelist = rsexecute.persist(dec_imagelist)
         residual_imagelist = residual_list_rsexecute_workflow(
-            self.vis_list, model_imagelist=dec_imagelist, context="2d"
+            self.vis_list, model_imagelist=dec_imagelist, context="ng"
         )
         residual_imagelist = rsexecute.persist(residual_imagelist)
         restored_list = restore_list_rsexecute_workflow(
@@ -242,7 +262,8 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             empty=self.model_imagelist,
         )
 
-        restored = rsexecute.compute(restored_list, sync=True)[0]
+        centre = len(restored_list) // 2
+        restored = rsexecute.compute(restored_list, sync=True)[centre]
 
         if self.persist:
             export_image_to_fits(
@@ -251,21 +272,29 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                 % (self.dir, rsexecute.type()),
             )
 
+        qa = qa_image(restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 29.904079739467672, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -2.383588500083969, atol=1e-7, err_msg=f"{qa}"
+        )
+
     def test_deconvolve_and_restore_cube_mmclean_facets(self):
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
-            context="2d",
+            context="ng",
             dopsf=False,
-            normalize=True,
+            normalise=True,
         )
         psf_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
-            context="2d",
+            context="ng",
             dopsf=True,
-            normalize=True,
+            normalise=True,
         )
         dirty_imagelist = rsexecute.persist(dirty_imagelist)
         psf_imagelist = rsexecute.persist(psf_imagelist)
@@ -281,13 +310,13 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             nchan=self.freqwin,
             threshold=0.01,
             gain=0.7,
-            deconvolve_facets=8,
+            deconvolve_facets=4,
             deconvolve_overlap=8,
             deconvolve_taper="tukey",
         )
         dec_imagelist = rsexecute.persist(dec_imagelist)
         residual_imagelist = residual_list_rsexecute_workflow(
-            self.vis_list, model_imagelist=dec_imagelist, context="2d"
+            self.vis_list, model_imagelist=dec_imagelist, context="ng"
         )
         residual_imagelist = rsexecute.persist(residual_imagelist)
         restored_list = restore_list_rsexecute_workflow(
@@ -297,7 +326,8 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             empty=self.model_imagelist,
         )
 
-        restored = rsexecute.compute(restored_list, sync=True)[0]
+        centre = len(restored_list) // 2
+        restored = rsexecute.compute(restored_list, sync=True)[centre]
 
         if self.persist:
             export_image_to_fits(
@@ -305,6 +335,14 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
                 "%s/test_imaging_%s_overlap_mmclean_restored.fits"
                 % (self.dir, rsexecute.type()),
             )
+
+        qa = qa_image(restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 29.840393345494547, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -2.4760642560915413, atol=1e-7, err_msg=f"{qa}"
+        )
 
 
 if __name__ == "__main__":

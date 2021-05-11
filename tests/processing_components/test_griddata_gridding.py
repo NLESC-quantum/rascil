@@ -35,7 +35,7 @@ from rascil.processing_components.image.operations import (
 )
 from rascil.processing_components.image.operations import smooth_image
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.imaging.base import normalize_sumwt
+from rascil.processing_components.imaging.base import normalise_sumwt
 from rascil.processing_components.imaging.primary_beams import create_pb_generic
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation import (
@@ -153,7 +153,7 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         cim = fft_griddata_to_image(griddata, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, "%s/test_gridding_dirty_pswf.fits" % self.dir)
@@ -171,7 +171,7 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         cim = fft_griddata_to_image(griddata, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, "%s/test_gridding_dirty_pswf.fits" % self.dir)
@@ -205,7 +205,7 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         cim = fft_griddata_to_image(griddata, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, "%s/test_gridding_dirty_aterm.fits" % self.dir)
@@ -235,7 +235,7 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         cim = fft_griddata_to_image(griddata, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(
@@ -255,7 +255,7 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         cim = fft_griddata_to_image(griddata, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, "%s/test_gridding_dirty_box.fits" % self.dir)
@@ -285,7 +285,7 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         cim = fft_griddata_to_image(griddata, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, "%s/test_gridding_dirty_wterm.fits" % self.dir)
@@ -315,7 +315,7 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         cim = fft_griddata_to_image(griddata, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(im, "%s/test_gridding_dirty_wterm.fits" % self.dir)
@@ -448,7 +448,7 @@ class TestGridDataGridding(unittest.TestCase):
         self.vis = griddata_blockvisibility_reweight(self.vis, gd)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(
@@ -470,7 +470,7 @@ class TestGridDataGridding(unittest.TestCase):
         self.vis = griddata_blockvisibility_reweight(self.vis, gd)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(
@@ -492,7 +492,7 @@ class TestGridDataGridding(unittest.TestCase):
         self.vis = griddata_blockvisibility_reweight(self.vis, gd)
         gd, sumwt = grid_blockvisibility_to_griddata(self.vis, griddata=gd, cf=cf)
         cim = fft_griddata_to_image(gd, gcf, gcf)
-        cim = normalize_sumwt(cim, sumwt)
+        cim = normalise_sumwt(cim, sumwt)
         im = convert_polimage_to_stokes(cim)
         if self.persist:
             export_image_to_fits(

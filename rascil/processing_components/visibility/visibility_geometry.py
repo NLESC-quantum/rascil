@@ -13,7 +13,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.units import Quantity
 
-from rascil.data_models import BlockVisibility
+import numpy
 
 from rascil.processing_components.util.geometry import (
     calculate_azel,

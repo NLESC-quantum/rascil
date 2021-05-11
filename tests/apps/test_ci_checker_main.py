@@ -51,7 +51,7 @@ from rascil.processing_components.skycomponent import (
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
-
+logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
 
 @pytest.mark.parametrize(
     "cellsize, npixel, nchan, flux_limit, insert_method, noise, tag",
@@ -65,42 +65,42 @@ log.setLevel(logging.INFO)
             0.00003,
             "nearest_npixel512_nchan1_noise0.00003_flux0.001",
         ),
-#        (
-#            0.0001,
-#            1024,
-#            1,
-#            0.001,
-#            "Nearest",
-#            0.00003,
-#            "nearest_npixel1024_nchan1_noise0.00003_flux0.001",
-#        ),
-#        (
-#            0.0001,
-#            512,
-#            64,
-#            0.001,
-#            "Nearest",
-#            0.00003,
-#            "nearest_npixel512_nchan64_noise0.00003_flux0.001",
-#        ),
-#        (
-#            0.0001,
-#            1024,
-#            8,
-#            0.001,
-#            "Nearest",
-#            0.000001,
-#            "nearest_npixel1024_nchan8_noise0.000001_flux0.001",
-#        ),
-#        (
-#            0.0001,
-#            512,
-#            1,
-#            0.0001,
-#            "Nearest",
-#            0.00003,
-#            "nearest_npixel512_nchan1_noise0.00003_flux0.0001",
-#        ),
+        (
+            0.0001,
+            1024,
+            1,
+            0.001,
+            "Nearest",
+            0.00003,
+            "nearest_npixel1024_nchan1_noise0.00003_flux0.001",
+        ),
+        (
+            0.0001,
+            512,
+            64,
+            0.001,
+            "Nearest",
+            0.00003,
+            "nearest_npixel512_nchan64_noise0.00003_flux0.001",
+        ),
+        (
+            0.0001,
+            1024,
+            8,
+            0.001,
+            "Nearest",
+            0.000001,
+            "nearest_npixel1024_nchan8_noise0.000001_flux0.001",
+        ),
+        (
+            0.0001,
+            512,
+            1,
+            0.0001,
+            "Nearest",
+            0.00003,
+            "nearest_npixel512_nchan1_noise0.00003_flux0.0001",
+        ),
 #        (
 #            0.0001,
 #            512,
@@ -110,15 +110,15 @@ log.setLevel(logging.INFO)
 #            0.00003,
 #            "lanczos_npixel512_nchan1_noise0.00003_flux0.001",
 #        ),
-#        (
-#            0.0001,
-#            512,
-#            1,
-#            0.001,
-#            "Nearest",
-#            0.0003,
-#            "nearest_npixel512_nchan1_noise0.0003_flux0.001",
-#        ),
+        (
+            0.0001,
+            512,
+            1,
+            0.001,
+            "Nearest",
+            0.0003,
+            "nearest_npixel512_nchan1_noise0.0003_flux0.001",
+        ),
     ],
 )
 def test_continuum_imaging_checker(
@@ -274,22 +274,22 @@ def test_continuum_imaging_checker(
     # check results directly
 
     sorted_comp = sorted(out, key=lambda cmp: numpy.max(cmp.direction.ra))
-    log.info("Identified components:")
+    log.debug("Identified components:")
     for cmp in sorted_comp:
         coord_ra = cmp.direction.ra.degree
         coord_dec = cmp.direction.dec.degree
-        log.info("%.6f, %.6f, %10.6e \n" % (coord_ra, coord_dec, cmp.flux[0]))
+        log.debug("%.6f, %.6f, %10.6e \n" % (coord_ra, coord_dec, cmp.flux[0]))
 
     assert len(out) <= len(components)
     log.info(
         "BDSF expected to find %d sources, but found %d sources"
         % (len(components), len(out))
     )
-    matches_expected = find_skycomponent_matches(out, components, tol=1e-3)
-    log.info("Found matches as follows.")
-    log.info("BDSF Original Separation")
+    matches_expected = find_skycomponent_matches(out, components, tol=1e-4)
+    log.debug("Found matches as follows.")
+    log.debug("BDSF Original Separation")
     for match in matches_expected:
-        log.info("%d %d %10.6e" % (match[0], match[1], match[2]))
+        log.debug("%d %d %10.6e" % (match[0], match[1], match[2]))
 
     numpy.testing.assert_array_almost_equal(matches_found, matches_expected)
 

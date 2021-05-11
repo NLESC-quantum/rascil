@@ -577,7 +577,7 @@ def msclean_kernel(dirty, prefix, psf, window, sensitivity=None, **kwargs):
     2008 vol. 2 pp. 793-801)
     
     The clean search is performed on the product of the sensitivity image (if supplied) and
-    the residual image. This gives a way to bias against af high noise.
+    the residual image. This gives a way to bias against high noise.
 
     :param dirty: Image dirty image
     :param prefix: Informational string to be used in log messages e.g. "cycle 1, subimage 42"

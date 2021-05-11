@@ -142,7 +142,6 @@ class TestImageDeconvolution(unittest.TestCase):
         clean_beam = {"bmaj": bmaj, "bmin": bmaj / 2.0, "bpa": 15.0}
         self.cmodel = restore_cube(self.model, clean_beam=clean_beam)
         self.cmodel = restore_skycomponent(self.cmodel, sc, clean_beam=clean_beam)
-        self.persist = True
         if self.persist:
             export_image_to_fits(
                 self.cmodel, "%s/test_restore_skycomponent.fits" % (self.dir)
@@ -216,7 +215,6 @@ class TestImageDeconvolution(unittest.TestCase):
             scales=[0, 3, 10, 30],
             threshold=0.01,
         )
-        self.persist = True
         if self.persist:
             export_image_to_fits(
                 self.comp, "%s/test_deconvolve_msclean_sensitivity-comp.fits" % (self.dir)

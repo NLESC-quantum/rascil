@@ -237,7 +237,6 @@ class TestPrimaryBeams(unittest.TestCase):
             check_max_min(beam_radec, flux_max, flux_min, telescope)
 
     def test_create_voltage_patterns_LOW(self):
-        self.persist = True
         self.createVis(freq=1e8)
         model = create_image_from_visibility(
             self.vis,

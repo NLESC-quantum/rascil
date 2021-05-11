@@ -224,13 +224,14 @@ def msclean(
 
     This version operates on numpy arrays.
 
-    :param prefix:
-    :param fracthresh:
+    :param prefix: Informational prefix for log messages
     :param dirty: The dirty image, i.e., the image to be deconvolved
     :param psf: The point spread-function
     :param window: Regions where clean components are allowed. If True, all of the dirty image is allowed
+    :param sensitivity: Inverse noise image, scaled to peak 1.0
     :param gain: The "loop gain", i.e., the fraction of the brightest pixel that is removed in each iteration
     :param thresh: Cleaning stops when the maximum of the absolute deviation of the residual is less than this value
+    :param fracthresh: Cleaning stops when the (maximum of the absolute deviation of the residual)/peak residual is less than this value
     :param niter: Maximum number of components to make if the threshold "thresh" is not hit
     :param scales: Scales (in pixels width) to be used
     :return: clean component image, residual image
@@ -605,7 +606,7 @@ def msmfsclean(
     :param dirty: The dirty image, i.e., the image to be deconvolved
     :param psf: The point spread-function
     :param window: Regions where clean components are allowed. If True, all of the dirty image is allowed
-    :param sensitivity: Inverse noise image
+    :param sensitivity: Inverse noise image, scaled to peak 1.0
     :param gain: The "loop gain", i.e., the fraction of the brightest pixel that is removed in each iteration
     :param thresh: Cleaning stops when the maximum of the absolute deviation of the residual is less than this value
     :param niter: Maximum number of components to make if the threshold "thresh" is not hit

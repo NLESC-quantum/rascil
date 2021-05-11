@@ -239,7 +239,7 @@ def test_continuum_imaging_checker(
         rng = default_rng(1805550721)
         model["pixels"].data += rng.normal(0.0, noise, model["pixels"].data.shape)
 
-    model = smooth_image(model, width=3.0, normalise=False)
+    model = smooth_image(model, width=3.0, normalise=True)
     model.attrs["clean_beam"] = clean_beam
 
     restored_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")

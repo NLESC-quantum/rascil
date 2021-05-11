@@ -17,7 +17,7 @@ import numpy
 
 from rascil.processing_components.image import calculate_image_frequency_moments
 from rascil.processing_components.image.operations import create_empty_image_like
-from rascil.processing_components.imaging import normalize_sumwt
+from rascil.processing_components.imaging import normalise_sumwt
 from rascil.processing_components.imaging import (
     predict_2d,
     invert_2d,
@@ -58,7 +58,7 @@ def imaging_context(context="2d"):
 
 def sum_invert_results_local(image_list):
     """Sum a set of invert results with appropriate weighting
-    without normalize_sumwt at the end
+    without normalise_sumwt at the end
     :param image_list: List of [image, sum weights] pairs
     :return: image, sum of weights
     """
@@ -85,10 +85,10 @@ def sum_invert_results_local(image_list):
     return im, sumwt
 
 
-def sum_invert_results(image_list, normalize=True):
+def sum_invert_results(image_list, normalise=True):
     """Sum a set of invert results with appropriate weighting
 
-    :param normalize:
+    :param normalise:
     :param image_list: List of [image, sum weights] pairs
     :return: image, sum of weights
     """
@@ -106,8 +106,8 @@ def sum_invert_results(image_list, normalize=True):
             )
             sumwt += arg[1]
 
-    if normalize:
-        im = normalize_sumwt(im, sumwt)
+    if normalise:
+        im = normalise_sumwt(im, sumwt)
     return im, sumwt
 
 

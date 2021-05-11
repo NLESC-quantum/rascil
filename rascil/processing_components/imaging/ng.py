@@ -23,7 +23,7 @@ from rascil.data_models.polarisation import convert_pol_frame
 from rascil.processing_components.image.operations import image_is_canonical
 from rascil.processing_components.imaging.base import (
     shift_vis_to_image,
-    normalize_sumwt,
+    normalise_sumwt,
 )
 from rascil.processing_components.visibility.base import copy_visibility
 
@@ -137,7 +137,7 @@ def invert_ng(
     bvis: BlockVisibility,
     model: Image,
     dopsf: bool = False,
-    normalize: bool = True,
+    normalise: bool = True,
     **kwargs
 ) -> (Image, numpy.ndarray):
     """Invert using nifty-gridder module
@@ -151,7 +151,7 @@ def invert_ng(
     :param dopsf: Make the PSF instead of the dirty image
     :param bvis: BlockVisibility to be inverted
     :param im: image template (not changed)
-    :param normalize: Normalize by the sum of weights (True)
+    :param normalise: normalise by the sum of weights (True)
     :return: (resulting image, sum of the weights for each frequency and polarization)
 
     """
@@ -276,7 +276,7 @@ def invert_ng(
                     im["pixels"].data[ichan, pol] += dirty.T
                 sumwt[ichan, pol] += numpy.sum(wgtt[pol, vchan, :].T, axis=0)
 
-    if normalize:
-        im = normalize_sumwt(im, sumwt)
+    if normalise:
+        im = normalise_sumwt(im, sumwt)
 
     return im, sumwt

@@ -281,6 +281,7 @@ def cip(args, bvis_list, model_list, msname):
         dft_compute_kernel=args.imaging_dft_kernel,
         component_threshold=args.clean_component_threshold,
         component_method=args.clean_component_method,
+        flat_sky=args.imaging_flat_sky,
     )
     # Execute the Dask graph
     log.info("Starting compute of continuum imaging pipeline graph ")

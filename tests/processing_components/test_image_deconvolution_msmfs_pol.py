@@ -12,18 +12,17 @@ import numpy
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.processing_components import create_low_test_beam, weight_visibility
 from rascil.processing_components.image.deconvolution import (
     deconvolve_cube,
     restore_cube,
 )
-from rascil.processing_components.image.operations import create_image_from_array
-from rascil.processing_components.image.operations import export_image_to_fits
+from rascil.processing_components.image.operations import export_image_to_fits, qa_image
 from rascil.processing_components.imaging.base import (
     predict_2d,
     invert_2d,
     create_image_from_visibility,
 )
-from rascil.processing_components.imaging.primary_beams import create_low_test_beam
 from rascil.processing_components.simulation import create_low_test_image_from_gleam
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
@@ -91,6 +90,7 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
             cellsize=0.001,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
+        self.vis = weight_visibility(self.vis, self.model)
         self.dirty, sumwt = invert_2d(self.vis, self.model)
         self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)
         if self.persist:
@@ -126,14 +126,18 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 self.residual,
                 "%s/test_deconvolve_mmclean_notaylor_nowindow-residual.fits" % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_mmclean_notaylor_nowindow-clean.fits" % self.dir,
+                self.restored,
+                "%s/test_deconvolve_mmclean_notaylor_nowindow-restored.fits" % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 12.764507904255364, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.1339922774900969, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_no_taylor_pol(self):
@@ -159,13 +163,18 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 self.residual,
                 "%s/test_deconvolve_mmclean_notaylor-residual.fits" % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_mmclean_notaylor-clean.fits" % self.dir
+                self.restored,
+                "%s/test_deconvolve_mmclean_notaylor-restored.fits" % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 12.764507904255364, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.1339922774900969, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_no_taylor_edge_pol(self):
@@ -192,13 +201,18 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 self.residual,
                 "%s/test_deconvolve_mmclean_notaylor-residual.fits" % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_mmclean_notaylor-clean.fits" % self.dir
+                self.restored,
+                "%s/test_deconvolve_mmclean_notaylor-restored.fits" % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 12.764507904255364, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.1339922774900969, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_no_taylor_noscales_pol(self):
@@ -225,14 +239,18 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 self.residual,
                 "%s/test_deconvolve_mmclean_notaylor_noscales-residual.fits" % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_mmclean_notaylor_noscales-clean.fits" % self.dir,
+                self.restored,
+                "%s/test_deconvolve_mmclean_notaylor_noscales-restored.fits" % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 12.897642458685265, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.07965054815271808, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_no_taylor_noscales_nowindow_pol(self):
@@ -261,15 +279,19 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 "%s/test_deconvolve_mmclean_notaylor_noscales_nowindow-residual.fits"
                 % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_mmclean_notaylor_noscales_nowindow-clean.fits"
+                self.restored,
+                "%s/test_deconvolve_mmclean_notaylor_noscales_nowindow-restored.fits"
                 % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 12.897642458685265, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.07965054815271808, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_linear_pol(self):
@@ -295,13 +317,18 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 self.residual,
                 "%s/test_deconvolve_mmclean_linear-residual.fits" % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_mmclean_linear-clean.fits" % self.dir
+                self.restored,
+                "%s/test_deconvolve_mmclean_linear-restored.fits" % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 14.522475138484854, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.3447494472882262, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_linear_noscales_pol(self):
@@ -328,14 +355,18 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 self.residual,
                 "%s/test_deconvolve_mmclean_linear_noscales-residual.fits" % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_mmclean_linear_noscales-clean.fits" % self.dir,
+                self.restored,
+                "%s/test_deconvolve_mmclean_linear_noscales-restored.fits" % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 15.579565240063587, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.08142526048571114, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_quadratic_pol(self):
@@ -361,14 +392,18 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 self.residual,
                 "%s/test_deconvolve_mmclean_quadratic-residual.fits" % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_mmclean_quadratic-clean.fits" % self.dir,
+                self.restored,
+                "%s/test_deconvolve_mmclean_quadratic-restored.fits" % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 14.522475138484854, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.3447494472882262, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_quadratic_noscales_pol(self):
@@ -396,14 +431,19 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 "%s/test_deconvolve_mmclean_quadratic_noscales-residual.fits"
                 % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_mmclean_quadratic_noscales-clean.fits" % self.dir,
+                self.restored,
+                "%s/test_deconvolve_mmclean_quadratic_noscales-restored.fits"
+                % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 15.579565240063587, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.0814252604857111, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_mmclean_quadratic_psf_pol(self):
@@ -431,14 +471,18 @@ class TestImageDeconvolutionMSMFSPol(unittest.TestCase):
                 self.residual,
                 "%s/test_deconvolve_mmclean_quadratic_psf-residual.fits" % self.dir,
             )
-        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        self.restored = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
             export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_mmclean_quadratic_psf-clean.fits" % self.dir,
+                self.restored,
+                "%s/test_deconvolve_mmclean_quadratic_psf-restored.fits" % self.dir,
             )
-        assert numpy.max(self.residual["pixels"].data) < 0.3, numpy.max(
-            self.residual["pixels"].data
+        qa = qa_image(self.restored)
+        numpy.testing.assert_allclose(
+            qa.data["max"], 14.495282373294657, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["min"], -0.3690159389605344, atol=1e-7, err_msg=f"{qa}"
         )
 
 

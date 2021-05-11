@@ -525,15 +525,16 @@ def create_vp_generic_numeric(
     return beam
 
 
-def create_low_test_beam(model: Image, use_local=True) -> Image:
-    """Create a test power beam for LOW using an image from OSKAR
+def create_low_test_beam(model: Image, use_local=True, azel=None) -> Image:
+    """Create a test power beam for LOW
 
-    This is not fit for anything except the most basic testing. It does not include any form of elevation/pa dependence.
+    This uses an approximation that ignores the antennas
 
     :param model: Template image
-    :return: Image
+    :param use_local: Use az el coordinates instead of ra dec
+    :param azel: Tuple (Azimuth, Elevation) radians
     """
-    beam = create_low_test_vp(model, use_local=use_local)
+    beam = create_low_test_vp(model, use_local=use_local, azel=azel)
     beam["pixels"].data = numpy.real(
         beam["pixels"].data * numpy.conjugate(beam["pixels"].data)
     )
@@ -542,21 +543,32 @@ def create_low_test_beam(model: Image, use_local=True) -> Image:
     return beam
 
 
-def create_low_test_vp(model: Image, use_local=True) -> Image:
-    """Create a test power beam for LOW using an example image from OSKAR
+def create_low_test_vp(model: Image, use_local=True, azel=None) -> Image:
+    """Create a test voltage beam for LOW
 
-    This is not fit for anything except the most basic testing. It does not include any form of elevation/pa dependence.
+    This uses an approximation that ignores the antennas
 
     :param model: Template image
+    :param use_local: Use az el coordinates instead of ra dec
+    :param azel: Tuple (Azimuth, Elevation) radians
     :return: Image
     """
-    return create_vp_generic(model, diameter=38.0, blockage=0.0, use_local=use_local)
+    vp_zenith = create_vp_generic(
+        model, diameter=38.0, blockage=0.0, use_local=use_local
+    )
+    vp_zenith = set_pb_header(vp_zenith, use_local=use_local)
+    if azel is None:
+        return vp_zenith
+    else:
+        return scale_and_rotate_image(
+            vp_zenith, scale=[numpy.cos(azel[1]), 1.0], angle=azel[0]
+        )
 
 
 def convert_azelvp_to_radec(vp, im, pa):
     """Convert AZELGEO image to image coords at specific parallactic angle
 
-    :param pb: Primary beam or voltagee pattern
+    :param pb: Primary beam or voltage pattern
     :param im: Template image
     :param pa: Parallactic angle (radians)
     :return:

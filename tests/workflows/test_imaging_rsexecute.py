@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import unittest
+import functools
 
 import numpy
 from astropy import units as u
@@ -75,7 +76,6 @@ class TestImaging(unittest.TestCase):
         dospectral=True,
         dopol=False,
         zerow=False,
-        makegcfcf=False,
     ):
 
         self.npixel = 256
@@ -187,27 +187,15 @@ class TestImaging(unittest.TestCase):
 
         self.components = self.components_list[centre]
 
-        if makegcfcf:
-            self.gcfcf = create_awterm_convolutionfunction(
-                self.model,
-                nw=50,
-                wstep=16.0,
-                oversampling=4,
-                support=100,
-                use_aaf=True,
-                polarisation_frame=self.vis_pol,
-            )
-
-            self.gcfcf_clipped = (
-                self.gcfcf[0],
-                apply_bounding_box_convolutionfunction(
-                    self.gcfcf[1], fractional_level=1e-3
-                ),
-            )
-
-        else:
-            self.gcfcf = None
-            self.gcfcf_clipped = None
+        self.gcfcf = functools.partial(
+            create_awterm_convolutionfunction,
+            nw=50,
+            wstep=16.0,
+            oversampling=4,
+            support=100,
+            use_aaf=True,
+            polarisation_frame=self.vis_pol,
+        )
 
     def _checkcomponents(self, dirty, fluxthreshold=0.6, positionthreshold=1.0):
         comps = find_skycomponents(
@@ -230,14 +218,12 @@ class TestImaging(unittest.TestCase):
                 "Component differs in position %.3f pixels" % separation / cellsize
             )
 
-    def _predict_base(
-        self, context="2d", extra="", fluxthreshold=1.0, gcfcf=None, **kwargs
-    ):
+    def _predict_base(self, context="2d", extra="", fluxthreshold=1.0, **kwargs):
         centre = self.freqwin // 2
 
         vis_list = zero_list_rsexecute_workflow(self.bvis_list)
         vis_list = predict_list_rsexecute_workflow(
-            vis_list, self.model_list, context=context, gcfcf=gcfcf, **kwargs
+            vis_list, self.model_list, context=context, **kwargs
         )
         vis_list = subtract_list_rsexecute_workflow(self.bvis_list, vis_list)
         vis_list = rsexecute.compute(vis_list, sync=True)
@@ -247,8 +233,7 @@ class TestImaging(unittest.TestCase):
             self.model_list,
             context=context,
             dopsf=False,
-            normalize=True,
-            gcfcf=gcfcf,
+            normalise=True,
             **kwargs
         )
         dirty = rsexecute.compute(dirty, sync=True)[centre]
@@ -285,7 +270,7 @@ class TestImaging(unittest.TestCase):
             self.model_list,
             context=context,
             dopsf=dopsf,
-            normalize=True,
+            normalise=True,
             gcfcf=gcfcf,
             **kwargs
         )
@@ -319,18 +304,9 @@ class TestImaging(unittest.TestCase):
         self._predict_base(context="ng", fluxthreshold=0.62)
 
     def test_predict_wprojection(self):
-        self.actualSetUp(makegcfcf=True)
+        self.actualSetUp()
         self._predict_base(
             context="2d", extra="_wprojection", fluxthreshold=5.0, gcfcf=self.gcfcf
-        )
-
-    def test_predict_wprojection_clip(self):
-        self.actualSetUp(makegcfcf=True)
-        self._predict_base(
-            context="2d",
-            extra="_wprojection_clipped",
-            fluxthreshold=5.0,
-            gcfcf=self.gcfcf_clipped,
         )
 
     def test_invert_2d(self):
@@ -367,33 +343,14 @@ class TestImaging(unittest.TestCase):
             check_components=False,
         )
 
-    def test_invert_2d_uniform_nogcfcf(self):
-        self.actualSetUp(zerow=True)
-        self.bvis_list = weight_list_rsexecute_workflow(self.bvis_list, self.model_list)
-        self._invert_base(
-            context="2d",
-            extra="_uniform",
-            positionthreshold=2.0,
-            check_components=False,
-        )
-
     def test_invert_ng(self):
         self.actualSetUp()
         self._invert_base(context="ng", positionthreshold=2.0, check_components=True)
 
     def test_invert_wprojection(self):
-        self.actualSetUp(makegcfcf=True)
+        self.actualSetUp()
         self._invert_base(
             context="2d", extra="_wprojection", positionthreshold=2.0, gcfcf=self.gcfcf
-        )
-
-    def test_invert_wprojection_clip(self):
-        self.actualSetUp(makegcfcf=True)
-        self._invert_base(
-            context="2d",
-            extra="_wprojection_clipped",
-            positionthreshold=2.0,
-            gcfcf=self.gcfcf_clipped,
         )
 
     def test_zero_list(self):

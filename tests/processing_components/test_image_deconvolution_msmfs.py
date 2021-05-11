@@ -11,10 +11,7 @@ import numpy
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image.deconvolution import (
-    deconvolve_cube,
-    restore_cube,
-)
+from rascil.processing_components import deconvolve_cube, restore_cube, create_pb
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.base import (
@@ -105,6 +102,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
             self.model.image_acc.wcs,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
+        self.sensitivity = create_pb(self.model, "LOW")
 
     def test_deconvolve_mmclean_no_taylor(self):
         self.comp, self.residual = deconvolve_cube(
@@ -216,6 +214,42 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 self.comp, "%s/test_deconvolve_mmclean_linear-comp.fits" % self.dir
+            )
+        if self.persist:
+            export_image_to_fits(
+                self.residual,
+                "%s/test_deconvolve_mmclean_linear-residual.fits" % self.dir,
+            )
+        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
+        if self.persist:
+            export_image_to_fits(
+                self.cmodel, "%s/test_deconvolve_mmclean_linear-clean.fits" % self.dir
+            )
+        assert numpy.max(self.residual["pixels"].data) < 3.0
+
+    def test_deconvolve_mmclean_linear_sensitivity(self):
+        self.comp, self.residual = deconvolve_cube(
+            self.dirty,
+            self.psf,
+            sensitivity=self.sensitivity,
+            niter=self.niter,
+            gain=0.1,
+            algorithm="mmclean",
+            scales=[0, 3, 10],
+            threshold=0.01,
+            nmoment=2,
+            findpeak="RASCIL",
+            fractional_threshold=0.01,
+            window_shape="quarter",
+        )
+        if self.persist:
+            export_image_to_fits(
+                self.comp,
+                "%s/test_deconvolve_mmclean_linear_sensitivity-comp.fits" % self.dir,
+            )
+            export_image_to_fits(
+                self.sensitivity,
+                "%s/test_deconvolve_mmclean_linear_sensitivity.fits" % self.dir,
             )
         if self.persist:
             export_image_to_fits(

@@ -35,7 +35,6 @@ def ical_list_rsexecute_workflow(
     context,
     vis_slices=1,
     facets=1,
-    gcfcf=None,
     calibration_context="TG",
     do_selfcal=True,
     pipeline_name="ical",
@@ -57,7 +56,7 @@ def ical_list_rsexecute_workflow(
     gt_list = list()
 
     psf_imagelist = invert_list_rsexecute_workflow(
-        vis_list, model_imagelist, context=context, dopsf=True, gcfcf=gcfcf, **kwargs
+        vis_list, model_imagelist, context=context, dopsf=True, **kwargs
     )
 
     model_vislist = [
@@ -76,7 +75,6 @@ def ical_list_rsexecute_workflow(
             model_vislist,
             model_imagelist,
             context=context,
-            gcfcf=gcfcf,
             vis_slices=vis_slices,
             **kwargs,
         )
@@ -105,7 +103,6 @@ def ical_list_rsexecute_workflow(
             model_imagelist,
             context=context,
             dopsf=False,
-            gcfcf=gcfcf,
             iteration=0,
             **kwargs,
         )
@@ -119,7 +116,6 @@ def ical_list_rsexecute_workflow(
             context=context,
             vis_slices=vis_slices,
             facets=facets,
-            gcfcf=gcfcf,
             **kwargs,
         )
 
@@ -138,7 +134,6 @@ def ical_list_rsexecute_workflow(
                     model_vislist,
                     deconvolve_model_imagelist,
                     context=context,
-                    gcfcf=gcfcf,
                     vis_slices=vis_slices,
                     **kwargs,
                 )
@@ -158,7 +153,6 @@ def ical_list_rsexecute_workflow(
                     residual_vislist,
                     model_imagelist,
                     context=context,
-                    gcfcf=gcfcf,
                     **kwargs,
                 )
             else:
@@ -168,7 +162,6 @@ def ical_list_rsexecute_workflow(
                     context=context,
                     vis_slices=vis_slices,
                     facets=facets,
-                    gcfcf=gcfcf,
                     **kwargs,
                 )
 
@@ -185,7 +178,6 @@ def ical_list_rsexecute_workflow(
         context=context,
         vis_slices=vis_slices,
         facets=facets,
-        gcfcf=gcfcf,
         **kwargs,
     )
     output = get_parameter(kwargs, "restored_output", "list")
@@ -209,7 +201,6 @@ def continuum_imaging_list_rsexecute_workflow(
     vis_list,
     model_imagelist,
     context,
-    gcfcf=None,
     vis_slices=1,
     facets=1,
     pipeline_name="cip",
@@ -226,14 +217,13 @@ def continuum_imaging_list_rsexecute_workflow(
     :return:
     """
     psf_imagelist = invert_list_rsexecute_workflow(
-        vis_list, model_imagelist, context=context, dopsf=True, gcfcf=gcfcf, **kwargs
+        vis_list, model_imagelist, context=context, dopsf=True, **kwargs
     )
 
     residual_imagelist = residual_list_rsexecute_workflow(
         vis_list,
         model_imagelist,
         context=context,
-        gcfcf=gcfcf,
         vis_slices=vis_slices,
         facets=facets,
         **kwargs,
@@ -256,7 +246,6 @@ def continuum_imaging_list_rsexecute_workflow(
                 context=context,
                 vis_slices=vis_slices,
                 facets=facets,
-                gcfcf=gcfcf,
                 **kwargs,
             )
             deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
@@ -273,7 +262,6 @@ def continuum_imaging_list_rsexecute_workflow(
         context=context,
         vis_slices=vis_slices,
         facets=facets,
-        gcfcf=gcfcf,
         **kwargs,
     )
     output = get_parameter(kwargs, "restored_output", "list")
@@ -300,7 +288,6 @@ def spectral_line_imaging_list_rsexecute_workflow(
     continuum_model_imagelist=None,
     vis_slices=1,
     facets=1,
-    gcfcf=None,
     **kwargs,
 ):
     """Create graph for spectral line imaging pipeline
@@ -321,7 +308,6 @@ def spectral_line_imaging_list_rsexecute_workflow(
             vis_list,
             continuum_model_imagelist,
             context=context,
-            gcfcf=gcfcf,
             vis_slices=vis_slices,
             **kwargs,
         )
@@ -330,7 +316,6 @@ def spectral_line_imaging_list_rsexecute_workflow(
         vis_list,
         model_imagelist,
         context=context,
-        gcfcf=gcfcf,
         vis_slices=vis_slices,
         facets=facets,
         **kwargs,

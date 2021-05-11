@@ -50,7 +50,8 @@ default_run = True
 
 
 @pytest.mark.parametrize(
-    "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, component_threshold, component_method, offset",
+    "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, "
+    "component_threshold, component_method, offset, flat_sky",
     [
         (
             default_run,
@@ -64,6 +65,7 @@ default_run = True
             None,
             None,
             5.0,
+            False,
         ),
         (
             default_run,
@@ -77,6 +79,7 @@ default_run = True
             None,
             None,
             5.5,
+            False,
         ),
         (
             default_run,
@@ -85,11 +88,12 @@ default_run = True
             9,
             "ical",
             True,
-            115.71426187661086,
-            -1.408050738866888,
+            116.01740390541707,
+            -1.6249443528138325,
             None,
             None,
             5.0,
+            False,
         ),
         (
             default_run,
@@ -98,11 +102,12 @@ default_run = True
             9,
             "cip",
             False,
-            116.74934844229546,
-            -0.2961349090496892,
+            116.82915647003882,
+            -1.034798067250713,
             None,
             "None",
             5.0,
+            False,
         ),
         (
             default_run,
@@ -111,11 +116,12 @@ default_run = True
             9,
             "cip",
             False,
-            107.79654273437849,
-            -0.6062812476137848,
+            106.4052896677652,
+            -1.6816523606797094,
             None,
             "None",
             5.5,
+            False,
         ),
         (
             default_run,
@@ -124,11 +130,12 @@ default_run = True
             9,
             "cip",
             False,
-            111.84507020640052,
-            -1.421622304601026,
+            111.29281438355484,
+            -1.6919812258498772,
             "10",
             "fit",
             5.5,
+            False,
         ),
     ],
 )
@@ -144,6 +151,7 @@ def test_rascil_imager(
     component_threshold,
     component_method,
     offset,
+    flat_sky,
 ):
     """
 
@@ -339,6 +347,8 @@ def test_rascil_imager(
         "0.0005",
         "--imaging_dft_kernel",
         "cpu_looped",
+        "--imaging_flat_sky",
+        "False",
     ]
 
     clean_args = [
@@ -362,6 +372,10 @@ def test_rascil_imager(
         "1",
         "--clean_restored_output",
         "list",
+        "--clean_restore_facets",
+        "4",
+        "--clean_restore_overlap",
+        "8",
     ]
     if component_threshold is not None and component_method is not None:
         clean_args += [

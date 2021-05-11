@@ -166,7 +166,7 @@ class TestImagingNG(unittest.TestCase):
             vis,
             self.model,
             dopsf=False,
-            normalize=True,
+            normalise=True,
             verbosity=self.verbosity,
             **kwargs
         )
@@ -201,13 +201,13 @@ class TestImagingNG(unittest.TestCase):
         **kwargs
     ):
 
-        # dirty = invert_ng(self.blockvis, self.model, dopsf=False, normalize=True, **kwargs)
+        # dirty = invert_ng(self.blockvis, self.model, dopsf=False, normalise=True, **kwargs)
         from rascil.processing_components.imaging.ng import invert_ng
 
         dirty = invert_ng(
             self.blockvis,
             self.model,
-            normalize=True,
+            normalise=True,
             verbosity=self.verbosity,
             **kwargs
         )

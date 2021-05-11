@@ -36,7 +36,7 @@ from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.image import (
     create_image,
     export_image_to_fits,
-    smooth_image,
+    restore_cube,
 )
 from rascil.processing_components.simulation import (
     create_mid_simulation_components,
@@ -239,7 +239,7 @@ def test_continuum_imaging_checker(
         rng = default_rng(1805550721)
         model["pixels"].data += rng.normal(0.0, noise, model["pixels"].data.shape)
 
-    model = smooth_image(model, width=3.0, normalise=True)
+    model = restore_cube(model, clean_beam=clean_beam)
     model.attrs["clean_beam"] = clean_beam
 
     restored_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")

@@ -27,6 +27,7 @@ import logging
 import os
 import socket
 import subprocess
+import numpy
 
 from rascil.processing_components.image.operations import qa_image
 
@@ -60,6 +61,25 @@ def performance_read(performance_file):
             return json.load(file)
     except FileNotFoundError:
         raise FileNotFoundError(f"performance file {performance_file} does not exist")
+
+
+def performance_blockvisibility(bvis):
+    """Get info about the blockvisibility
+
+    This works on a single blockvisibility because we probably want to send this function to
+    the cluster instead of bringing the data back
+
+    :param bvis:
+    """
+    bv_info = {
+        "number_times": bvis.blockvisibility_acc.ntimes,
+        "number_baselines": len(bvis.baselines),
+        "nchan": bvis.blockvisibility_acc.nchan,
+        "npol": bvis.blockvisibility_acc.npol,
+        "polarisation_frame": bvis.blockvisibility_acc.polarisation_frame.type,
+        "shape": bvis["vis"].data.shape,
+    }
+    return bv_info
 
 
 def performance_environment(performance_file, indent=2, mode="a"):

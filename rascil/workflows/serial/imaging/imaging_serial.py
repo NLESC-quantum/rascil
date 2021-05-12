@@ -184,9 +184,11 @@ def restore_list_serial_workflow(
     :param restore_taper: Type of taper between facets
     :return: list of restored images
     """
-    assert len(model_imagelist) == len(psf_imagelist)
     if residual_imagelist is not None:
-        assert len(model_imagelist) == len(residual_imagelist)
+        if residual_imagelist is not None:
+            if len(residual_imagelist) != len(model_imagelist):
+                log.error("Model and residual list have different lengths")
+                raise ValueError("Model and residual list have different lengths")
 
     psf_list = sum_invert_results(psf_imagelist)
     psf = normalise_sumwt(psf_list[0], psf_list[1])

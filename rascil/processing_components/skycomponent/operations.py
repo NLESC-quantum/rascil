@@ -379,10 +379,15 @@ def find_skycomponents(
 
 
 def apply_beam_to_skycomponent(
-    sc: Union[Skycomponent, List[Skycomponent]], beam: Image, phasecentre=None
+    sc: Union[Skycomponent, List[Skycomponent]],
+    beam: Image,
+    phasecentre=None,
+    inverse=False,
 ) -> Union[Skycomponent, List[Skycomponent]]:
     """Apply a primary beam to a Skycomponent
 
+    if inverse==True, do an inverse where we subtract the primary beam from the skycomponents
+    if inverse==False, do a multiplication of beam and skycomponent fluxes
     :param phasecentre:
     :param beam: primary beam
     :param sc: SkyComponent or list of SkyComponents
@@ -421,7 +426,10 @@ def apply_beam_to_skycomponent(
         if not numpy.isnan(pixloc).any():
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
-                comp_flux = comp.flux * beam["pixels"].data[:, :, y, x]
+                if inverse and beam["pixels"].data[:, :, y, x] is not 0.0:
+                    comp_flux = comp.flux / beam["pixels"].data[:, :, y, x]
+                else:
+                    comp_flux = comp.flux * beam["pixels"].data[:, :, y, x]
                 total_flux += comp_flux
             else:
                 comp_flux = 0.0 * comp.flux

@@ -14,9 +14,9 @@ It uses the python package `PyBDSF <https://github.com/lofar-astron/PyBDSF.git>`
 and check with the original inputs. Currently it features the following:
 
   - Reads FITS images.
-  - Finds sources above a certain threshold and outputs the catalogue (in CSV, FITS and skycomponents format).
-  - Produces image statistics and diagnostic plots including: running mean plots of the residual, restored, background and sources and a histogram with fitted Gaussian and a power spectrum of the residual are also plotted.
-  - Optional: apply a primary beam to the fluxes.
+  - Finds sources above a certain threshold and outputs the catalogue (in CSV, FITS and skycomponents format). For multi-frequency images, the source detection can be performed on the central channel or average over all channels. 
+  - Produces image statistics and diagnostic plots including: running mean plots of the residual, restored, background and sources and a histogram with fitted Gaussian and power spectrum of the residual are also plotted.
+  - Optional: Read in the sensitivity image and apply a primary beam correction to the fluxes.
   - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), FluxI(Jy), FluxQ(Jy), FluxU(Jy), FluxV(Jy), Ref. Freq.(Hz), Spectral Index".
   - Optional: plot the comparison and error of positions and fluxes for input and output source catalogue.
 
@@ -111,11 +111,12 @@ Plots for restored image::
     ..._restored_plot.png  # Running mean of restored image
     ..._sources_plot.png  # Running mean of the sources
     ..._background_plot.png  # Running mean of background
+    ..._restored_power_spectrum.png # Power spectrum of restored image
 
 Plots for residual image::
 
     ..._residual_hist.png  # Histogram and Gaussian fit of residual image
-    ..._power_spectrum.png  # Power spectrum of residual image
+    ..._residual_power_spectrum.png  # Power spectrum of residual image
 
 Plots for position matching::
 
@@ -134,6 +135,9 @@ Plots for flux matching::
     ..._flux_ratio.png  # Ratio of flux out/flux in
     ..._flux_histogram.png  # Histogram of flux comparison
  
+Plots for spectral index::
+
+    ..._spec_index.png # Spectral index of input vs output fluxes over frequency.
 
 Command line arguments
 ++++++++++++++++++++++

@@ -82,6 +82,12 @@ def cli_parser():
         help="FITS file of the residual image to be read",
     )
     parser.add_argument(
+        "--ingest_fitsname_sensitivity",
+        type=str,
+        default=None,
+        help="FITS file of the sensitivity image to be read",
+    )
+    parser.add_argument(
         "--finder_beam_maj",
         type=float,
         default=1.0,
@@ -121,7 +127,7 @@ def cli_parser():
         "--apply_primary",
         type=str,
         default="False",
-        help="Whether to apply primary beam",
+        help="Whether to divide by primary beam after BDSF to correct source flux",
     )
     parser.add_argument(
         "--telescope_model",
@@ -246,13 +252,19 @@ def analyze_image(args):
 
     log.info("Frequencies of image:{} ".format(freq))
 
+    input_image_residual = args.ingest_fitsname_residual
+    input_image_sensitivity = args.ingest_fitsname_sensitivity
+    quiet_bdsf = False if args.quiet_bdsf == "False" else True
+
+    multichan_option = args.finder_multichan_option
+
     # If read restoring beam from header
     try:
         beam_maj = im.attrs["clean_beam"]["bmaj"]
         beam_min = im.attrs["clean_beam"]["bmin"]
         beam_pos_angle = im.attrs["clean_beam"]["bpa"]
 
-    except KeyError:
+    except TypeError:
 
         beam_maj = args.finder_beam_maj
         beam_min = args.finder_beam_min
@@ -265,11 +277,6 @@ def analyze_image(args):
 
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(thresh_isl, thresh_pix))
-
-    input_image_residual = args.ingest_fitsname_residual
-    quiet_bdsf = False if args.quiet_bdsf == "False" else True
-
-    multichan_option = args.finder_multichan_option
 
     ci_checker(
         input_image_restored,
@@ -321,10 +328,12 @@ def analyze_image(args):
                 radius=0.5,
             )
 
-        # Compensate for primary beam correction -- NEEDS UPDATE
+        # Compensate for primary beam correction
         if args.apply_primary == "True":
             telescope = args.telescope_model
-            orig = add_primary_beam(input_image_restored, orig, telescope)
+            orig = correct_primary_beam(
+                input_image_restored, input_image_sensitivity, orig, telescope=telescope
+            )
 
         results = check_source(orig, out, args.match_sep)
 
@@ -506,20 +515,48 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     return comp
 
 
-def add_primary_beam(input_image, comp, telescope):
+def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
     """
     Add optional primary beam correction for fluxes.
 
     :param input_image: Input image in FITS format
+    :param sensitivity_image: Input sensitivity image in FITS format
     :param comp: Source list in skycomponents format
     :param telescope: Telescope model to use, i.e. MID or LOW
 
     :return pbcomp: Corrected lists of skycomponents.
 
     """
-    image = import_image_from_fits(input_image, fixpol=True)
-    pb = create_pb(image, telescope=telescope, use_local=False)
-    pbcomp = apply_beam_to_skycomponent(comp, pb)
+
+    if sensitivity_image is not None:
+        beam = import_image_from_fits(sensitivity_image)
+    elif input_image is not None:
+        # Use internally provided telescope primary beam
+        image = import_image_from_fits(input_image)
+        beam = create_pb(
+            image,
+            telescope=telescope,
+            pointingcentre=image.image_acc.phasecentre,
+            use_local=False,
+        )
+    else:
+        log.warning(
+            "Please provide either the sensitivity image or the restored image."
+        )
+        return comp
+
+    nchan, npol, ny, nx = beam["pixels"].data.shape
+    log.info("The primary beam has {} channels, {} polarizaion.".format(nchan, npol))
+
+    pbcomp = apply_beam_to_skycomponent(comp, beam, inverse=True)
+
+    log.debug("Flux comparison after primary beam correction:")
+    for i, c in enumerate(comp):
+        log.debug(
+            "Original {}, corrected {} \n".format(
+                c.flux[nchan // 2][0], pbcomp[i].flux[nchan // 2][0]
+            )
+        )
 
     return pbcomp
 

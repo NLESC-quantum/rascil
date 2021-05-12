@@ -275,8 +275,6 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(
     model_imagelist,
     context,
     continuum_model_imagelist=None,
-    vis_slices=1,
-    facets=1,
     **kwargs,
 ):
     """Create graph for spectral line imaging pipeline
@@ -297,7 +295,6 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(
             vis_list,
             continuum_model_imagelist,
             context=context,
-            vis_slices=vis_slices,
             **kwargs,
         )
 

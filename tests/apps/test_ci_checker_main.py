@@ -1,4 +1,4 @@
-""" Regression for continuum imaging checker
+""" Regression/integration test for continuum imaging checker
 
     The script mainly tests two things:
     1) the BDSF source finder
@@ -15,7 +15,6 @@
 
 """
 import logging
-import sys
 import os
 import glob
 
@@ -181,13 +180,6 @@ def test_continuum_imaging_checker(
     pb = create_pb(pbmodel, "MID", pointingcentre=phasecentre, use_local=False)
     components_with_pb = apply_beam_to_skycomponent(original_components[0], pb)
 
-    # just check the beams are applied successfully
-    reversed_comp = apply_beam_to_skycomponent(components_with_pb, pb, inverse=True)
-    orig_flux = [c.flux[nchan // 2][0] for c in original_components[0]]
-    reversed_flux = [c.flux[nchan // 2][0] for c in reversed_comp]
-
-    numpy.testing.assert_array_almost_equal(orig_flux, reversed_flux, decimal=3)
-
     sensitivity_file = rascil_path(
         f"test_results/test_ci_checker_{tag}_sensitivity.fits"
     )
@@ -199,30 +191,6 @@ def test_continuum_imaging_checker(
 
     comp_file = rascil_path(f"test_results/test_ci_checker_{tag}.hdf")
     export_skycomponent_to_hdf5(components, comp_file)
-
-    txtfile = rascil_path(f"test_results/test_ci_checker_{tag}.txt")
-    f = open(txtfile, "w")
-    f.write(
-        "# RA(deg), Dec(deg), I (Jy), Q (Jy), U (Jy), V (Jy), Ref. freq. (Hz), Spectral index\n"
-    )
-    for cmp in components:
-        coord_ra = cmp.direction.ra.degree
-        coord_dec = cmp.direction.dec.degree
-        spec_indx = fit_skycomponent_spectral_index(cmp)
-        f.write(
-            "%.6f, %.6f, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e \n"
-            % (
-                coord_ra,
-                coord_dec,
-                cmp.flux[nchan // 2],
-                0.0,
-                0.0,
-                0.0,
-                central_freq,
-                spec_indx,
-            )
-        )
-    f.close()
 
     # Create restored image
     model = create_image(
@@ -262,7 +230,7 @@ def test_continuum_imaging_checker(
             "--input_source_format",
             "external",
             "--input_source_filename",
-            comp_file,  # txtfile
+            comp_file,  # hdffile
             "--match_sep",
             "1.0e-4",
             "--apply_primary",
@@ -273,7 +241,6 @@ def test_continuum_imaging_checker(
     out, matches_found = analyze_image(args)
 
     # check results directly
-
     sorted_comp = sorted(out, key=lambda cmp: numpy.max(cmp.direction.ra))
     log.debug("Identified components:")
     for cmp in sorted_comp:
@@ -294,6 +261,7 @@ def test_continuum_imaging_checker(
 
     numpy.testing.assert_array_almost_equal(matches_found, matches_expected)
 
+    # Check if the plots have been generated
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_restored_plot.png")
     )

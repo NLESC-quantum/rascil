@@ -325,12 +325,13 @@ def restore_list_rsexecute_workflow(
         for i, _ in enumerate(model_imagelist)
     ]
 
-    def set_clean_beam(r):
-        r.attrs["clean_beam"] = clean_beam
+    def set_clean_beam(r, cb):
+        r.attrs["clean_beam"] = cb
         return r
 
     restored_imagelist = [
-        rsexecute.execute(set_clean_beam, nout=1)(r) for r in restored_imagelist
+        rsexecute.execute(set_clean_beam, nout=1)(r, clean_beam)
+        for r in restored_imagelist
     ]
     return rsexecute.optimize(restored_imagelist)
 

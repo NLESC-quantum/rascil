@@ -10,7 +10,6 @@ import logging
 
 import numpy
 
-from rascil.data_models import get_parameter
 from rascil.processing_components import (
     copy_skycomponent,
     apply_beam_to_skycomponent,
@@ -22,11 +21,11 @@ from rascil.processing_components import (
 from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import restore_cube, fit_psf
 from rascil.processing_components.imaging import dft_skycomponent_visibility
+from rascil.processing_components.skycomponent.operations import restore_skycomponent
 from rascil.processing_components.visibility import (
     copy_visibility,
     concatenate_visibility,
 )
-from rascil.processing_components.skycomponent.operations import restore_skycomponent
 
 # ToDo - remove non-SkyModel parts
 from rascil.workflows.rsexecute import (
@@ -278,7 +277,7 @@ def invert_skymodel_list_rsexecute_workflow(
 
 
 def restore_centre_skymodel_list_rsexecute_workflow(
-    skymodel_list, psf_imagelist, residual_imagelist=None, **kwargs
+    skymodel_list, psf_imagelist, residual_imagelist=None, clean_beam=None, **kwargs
 ):
     """Create a graph to calculate the restored skymodel at the centre channel
 
@@ -286,6 +285,7 @@ def restore_centre_skymodel_list_rsexecute_workflow(
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
     :param kwargs: Parameters for functions in components
+    :param clean_beam: Clean beam e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :return: list of restored images (or graph)
     """
     _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
@@ -304,7 +304,7 @@ def restore_centre_skymodel_list_rsexecute_workflow(
 
     residual = sum_invert_results_rsexecute(residual_imagelist)[0]
     restored = rsexecute.execute(skymodel_restore, nout=1)(
-        skymodel_list[centre], residual, clean_beam=clean_beam
+        skymodel_list[centre], residual, clean_beam
     )
 
     return restored
@@ -338,6 +338,7 @@ def restore_skymodel_single_list_rsexecute_workflow(
     :param skymodel_list: Skymodel list (or graph)
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
+    :param clean_beam: Clean beam e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :param kwargs: Parameters for functions in components
     :return: list of restored images (or graph)
     """
@@ -377,6 +378,7 @@ def restore_skymodel_list_rsexecute_workflow(
     :param model_imagelist: Model list (or graph)
     :param psf_imagelist: PSF list (or graph)
     :param residual_imagelist: Residual list (or graph)
+    :param clean_beam: Clean beam e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :param kwargs: Parameters for functions in components
     :param restore_facets: Number of facets used per axis (used to distribute)
     :param restore_overlap: Overlap in pixels (0 is best)
@@ -397,7 +399,6 @@ def restore_skymodel_list_rsexecute_workflow(
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
         psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
         clean_beam = rsexecute.execute(fit_psf)(psf)
-        kwargs["clean_beam"] = clean_beam
 
         # Scatter each list element into a list. We will then run restore_cube on each
     facet_model_list = [
@@ -476,7 +477,7 @@ def restore_skymodel_list_rsexecute_workflow(
         rsexecute.execute(set_clean_beam, nout=1)(r, clean_beam)
         for r in restored_imagelist
     ]
-    return rsexecute.optimize((restored_imagelist, clean_beam))
+    return rsexecute.optimize(restored_imagelist)
 
 
 def residual_skymodel_list_rsexecute_workflow(

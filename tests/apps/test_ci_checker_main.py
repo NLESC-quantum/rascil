@@ -32,10 +32,11 @@ from rascil.apps.ci_checker_main import (
 from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.data_models.data_model_helpers import export_skycomponent_to_hdf5
+from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.image import (
     create_image,
     export_image_to_fits,
-    smooth_image,
+    restore_cube,
 )
 from rascil.processing_components.simulation import (
     create_mid_simulation_components,
@@ -45,9 +46,12 @@ from rascil.processing_components.skycomponent import (
     insert_skycomponent,
     find_skycomponent_matches,
     fit_skycomponent_spectral_index,
+    apply_beam_to_skycomponent,
 )
 
 log = logging.getLogger("rascil-logger")
+log.setLevel(logging.INFO)
+logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
 
 
 @pytest.mark.parametrize(
@@ -132,7 +136,7 @@ def test_continuum_imaging_checker(
     if nchan == 1:
         image_frequency = numpy.array([1.0e9])
     else:
-        image_frequency = numpy.linspace(1e9, 1.5e9, nchan)
+        image_frequency = numpy.linspace(0.8e9, 1.2e9, nchan)
 
     central_freq = image_frequency[int(nchan // 2)]
 
@@ -162,11 +166,34 @@ def test_continuum_imaging_checker(
         pbradius,
         pb_npixel,
         pb_cellsize,
-        show=False,
-        fov=10,
-        apply_pb=True,
+        apply_pb=False,
     )
 
+    # Apply primary beam and export to sensitivity image
+    pbmodel = create_image(
+        npixel=pb_npixel,
+        cellsize=pb_cellsize,
+        phasecentre=phasecentre,
+        frequency=image_frequency,
+        polarisation_frame=PolarisationFrame("stokesI"),
+    )
+
+    pb = create_pb(pbmodel, "MID", pointingcentre=phasecentre, use_local=False)
+    components_with_pb = apply_beam_to_skycomponent(original_components[0], pb)
+
+    # just check the beams are applied successfully
+    reversed_comp = apply_beam_to_skycomponent(components_with_pb, pb, inverse=True)
+    orig_flux = [c.flux[nchan // 2][0] for c in original_components[0]]
+    reversed_flux = [c.flux[nchan // 2][0] for c in reversed_comp]
+
+    numpy.testing.assert_array_almost_equal(orig_flux, reversed_flux, decimal=3)
+
+    sensitivity_file = rascil_path(
+        f"test_results/test_ci_checker_{tag}_sensitivity.fits"
+    )
+    export_image_to_fits(pb, sensitivity_file)
+
+    # Write out the original components
     components = original_components[0]
     components = sorted(components, key=lambda cmp: numpy.max(cmp.direction.ra))
 
@@ -197,6 +224,7 @@ def test_continuum_imaging_checker(
         )
     f.close()
 
+    # Create restored image
     model = create_image(
         npixel=npixel,
         cellsize=cellsize,
@@ -205,24 +233,28 @@ def test_continuum_imaging_checker(
         polarisation_frame=PolarisationFrame("stokesI"),
     )
 
-    model = insert_skycomponent(model, components, insert_method=insert_method)
+    model = insert_skycomponent(model, components_with_pb, insert_method=insert_method)
 
     if noise > 0.0:
         rng = default_rng(1805550721)
         model["pixels"].data += rng.normal(0.0, noise, model["pixels"].data.shape)
 
-    model = smooth_image(model, width=1.0, normalise=False)
+    model = restore_cube(model, clean_beam=clean_beam)
     model.attrs["clean_beam"] = clean_beam
 
-    tagged_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
-    export_image_to_fits(model, tagged_file)
-    tagged_file_residual = None
+    restored_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
+    export_image_to_fits(model, restored_file)
+
+    # Residual file: this part needs to further testing
+    residual_file = None
 
     parser = cli_parser()
     args = parser.parse_args(
         [
             "--ingest_fitsname_restored",
-            tagged_file,
+            restored_file,
+            "--ingest_fitsname_sensitivity",
+            sensitivity_file,
             "--check_source",
             "True",
             "--plot_source",
@@ -232,32 +264,33 @@ def test_continuum_imaging_checker(
             "--input_source_filename",
             comp_file,  # txtfile
             "--match_sep",
-            "1.0e-3",
-            # 	    "--finder_multichan_option",
-            # 	    "average",
+            "1.0e-4",
+            "--apply_primary",
+            "True",
         ]
     )
 
     out, matches_found = analyze_image(args)
 
     # check results directly
+
     sorted_comp = sorted(out, key=lambda cmp: numpy.max(cmp.direction.ra))
-    log.info("Identified components:")
+    log.debug("Identified components:")
     for cmp in sorted_comp:
         coord_ra = cmp.direction.ra.degree
         coord_dec = cmp.direction.dec.degree
-        log.info("%.6f, %.6f, %10.6e \n" % (coord_ra, coord_dec, cmp.flux[0]))
+        log.debug("%.6f, %.6f, %10.6e \n" % (coord_ra, coord_dec, cmp.flux[0]))
 
     assert len(out) <= len(components)
     log.info(
         "BDSF expected to find %d sources, but found %d sources"
         % (len(components), len(out))
     )
-    matches_expected = find_skycomponent_matches(out, components, tol=1e-3)
-    log.info("Found matches as follows.")
-    log.info("BDSF Original Separation")
+    matches_expected = find_skycomponent_matches(out, components, tol=1e-4)
+    log.debug("Found matches as follows.")
+    log.debug("BDSF Original Separation")
     for match in matches_expected:
-        log.info("%d %d %10.6e" % (match[0], match[1], match[2]))
+        log.debug("%d %d %10.6e" % (match[0], match[1], match[2]))
 
     numpy.testing.assert_array_almost_equal(matches_found, matches_expected)
 
@@ -270,7 +303,7 @@ def test_continuum_imaging_checker(
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_background_plot.png")
     )
-    if tagged_file_residual is not None:
+    if residual_file is not None:
         assert os.path.exists(
             rascil_path(f"test_results/test_ci_checker_{tag}_residual_hist.png")
         )

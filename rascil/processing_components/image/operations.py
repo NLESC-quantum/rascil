@@ -106,17 +106,8 @@ def export_image_to_fits(im: Image, fitsfile: str = "imaging.fits"):
     header = im.image_acc.wcs.to_header()
     clean_beam = im.attrs["clean_beam"]
 
-    # TODO: Remove need for this clean_beam check. In some cases the clean beam gets to this point
-    # as a Dask.delayed object. The simplest (but inelegant) fix is to ask Dask to compute the
-    # value
-    from rascil.workflows.rsexecute.execution_support import rsexecute
-
-    if (
-        clean_beam is not None
-        and not isinstance(clean_beam, dict)
-        and rsexecute.using_dask
-    ):
-        clean_beam = rsexecute.compute(clean_beam, sync=True)
+    if clean_beam is not None and not isinstance(clean_beam, dict):
+        raise ValueError(f"clean_beam is not a dict or None: {clean_beam}")
 
     if isinstance(clean_beam, dict):
         if (

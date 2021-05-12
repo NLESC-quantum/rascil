@@ -171,6 +171,7 @@ def restore_list_serial_workflow(
     restore_facets=1,
     restore_overlap=0,
     restore_taper="tukey",
+    clean_beam=None,
     **kwargs
 ):
     """Create a graph to calculate the restored image
@@ -192,7 +193,8 @@ def restore_list_serial_workflow(
 
     psf_list = sum_invert_results(psf_imagelist)
     psf = normalise_sumwt(psf_list[0], psf_list[1])
-    clean_beam = fit_psf(psf)
+    if clean_beam is None:
+        clean_beam = fit_psf(psf)
 
     if residual_imagelist is not None:
         residual_list = remove_sumwt(residual_imagelist)

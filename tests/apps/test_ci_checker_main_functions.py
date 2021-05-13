@@ -4,6 +4,7 @@
 
 import logging
 import unittest
+import os
 
 import numpy
 from astropy import units as u
@@ -26,6 +27,7 @@ from rascil.processing_components.image import (
 from rascil.processing_components.simulation import (
     create_mid_simulation_components,
     find_pb_width_null,
+    create_test_image,
 )
 from rascil.processing_components.skycomponent import (
     apply_beam_to_skycomponent,
@@ -42,12 +44,17 @@ class TestCIChecker(unittest.TestCase):
 
         self.dir = rascil_path("test_results")
 
+        self.persist = os.getenv("RASCIL_PERSIST", False)
+
         self.nchan = 8
         self.central_frequency = numpy.array([1e9])
         self.component_frequency = numpy.linspace(0.8e9, 1.2e9, self.nchan)
         self.phasecentre = SkyCoord(
             ra=+30.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
         )
+        self.npixel = 512
+        self.cellsize = 0.0001
+        self.channel_bandwidth = numpy.array([1e7])
 
         hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(
             pbtype="MID", frequency=numpy.array([self.central_frequency])
@@ -72,14 +79,40 @@ class TestCIChecker(unittest.TestCase):
             apply_pb=False,
         )[0]
 
+        self.single_chan_image = create_image(
+            npixel=self.npixel,
+            cellsize=self.cellsize,
+            polarisation_frame=PolarisationFrame("stokesI"),
+            frequency=self.central_frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+        )
+
+        self.multi_chan_image = create_image(
+            npixel=self.npixel,
+            cellsize=self.cellsize,
+            polarisation_frame=PolarisationFrame("stokesI"),
+            frequency=self.component_frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+        )
+
+        self.restored_image_multi = (
+            self.dir + "/test_ci_checker_functions_nchan8_restored.fits"
+        )
+        export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
+
+        self.restored_image_single = (
+            self.dir + "/test_ci_checker_functions_nchan1_restored.fits"
+        )
+        export_image_to_fits(self.single_chan_image, self.restored_image_single)
+
         parser = cli_parser()
         self.args = parser.parse_args([])
 
     def test_correct_primary_beam(self):
 
-        # TODO: currently it tests sensitivity image
-        # We also need to test using the restored image
-
+        # Test using sensitivity image
         pbmodel = create_image(
             npixel=self.pb_npixel,
             cellsize=self.pb_cellsize,
@@ -102,6 +135,14 @@ class TestCIChecker(unittest.TestCase):
         reversed_flux = [c.flux[self.nchan // 2][0] for c in reversed_comp]
 
         assert_array_almost_equal(orig_flux, reversed_flux, decimal=3)
+
+        # Test using restored image
+        reversed_comp_rest = correct_primary_beam(
+            self.restored_image_multi, None, components_with_pb, telescope="MID"
+        )
+        reversed_flux_rest = [c.flux[self.nchan // 2][0] for c in reversed_comp_rest]
+
+        assert_array_almost_equal(orig_flux, reversed_flux_rest, decimal=1)
 
     def test_read_skycomponent_from_txt(self):
 
@@ -135,6 +176,15 @@ class TestCIChecker(unittest.TestCase):
         read_ra = [c.direction.ra.degree for c in components_read]
 
         assert_array_almost_equal(orig_ra, read_ra)
+
+        # Test single channel components
+        components_read_single = read_skycomponent_from_txt(
+            txtfile, self.central_frequency
+        )
+        orig_flux = [c.flux[self.nchan // 2][0] for c in self.components]
+        read_flux = [c.flux[0][0] for c in components_read_single]
+
+        assert_array_almost_equal(orig_flux, read_flux)
 
     def test_wrong_restored(self):
 

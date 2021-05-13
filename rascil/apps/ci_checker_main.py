@@ -241,9 +241,6 @@ def analyze_image(args):
         log.info("This is a multiple channel image.")
         freq = np.array(im.frequency.data)
 
-    else:
-        raise FileFormatError("This image is broken. Please check the file.")
-
     log.info("Frequencies of image:{} ".format(freq))
 
     input_image_residual = args.ingest_fitsname_residual
@@ -593,8 +590,8 @@ def read_skycomponent_from_txt(filename, freq):
             ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
         )
         if nchan == 1:
-            flux = flux[i] * (freq[0] / ref_freq[i]) ** spec_indx[i]
-            flux_array = np.array([[flux]])
+            flux_single = flux[i] * (freq[0] / ref_freq[i]) ** spec_indx[i]
+            flux_array = np.array([[flux_single]])
         else:
             fluxes = [flux[i] * (f / ref_freq[i]) ** spec_indx[i] for f in freq]
             flux_array = np.reshape(np.array(fluxes), (nchan, npol))

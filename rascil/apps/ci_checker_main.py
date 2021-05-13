@@ -148,12 +148,6 @@ def cli_parser():
         help="Option to plot position and flux errors for source catalogue",
     )
     parser.add_argument(
-        "--input_source_format",
-        type=str,
-        default="external",
-        help="The input format of the source catalogue",
-    )
-    parser.add_argument(
         "--input_source_filename",
         type=str,
         default=None,
@@ -308,25 +302,13 @@ def analyze_image(args):
 
     if args.check_source == "True":
 
-        if args.input_source_format == "external":
-            if (
-                ".h5" in args.input_source_filename
-                or ".hdf" in args.input_source_filename
-            ):
-                orig = import_skycomponent_from_hdf5(args.input_source_filename)
+        if ".h5" in args.input_source_filename or ".hdf" in args.input_source_filename:
+            orig = import_skycomponent_from_hdf5(args.input_source_filename)
 
-            elif ".txt" in args.input_source_filename:
-                orig = read_skycomponent_from_txt(args.input_source_filename, freq)
-            else:
-                raise FileFormatError("Input file must be of format: hdf5 or txt.")
-        else:  # Use internally provided GLEAM model
-            orig = create_low_test_skycomponents_from_gleam(
-                flux_limit=1.0,
-                phasecentre=im.image_acc.phasecentre,
-                frequency=freq,
-                polarisation_frame=PolarisationFrame("stokesI"),
-                radius=0.5,
-            )
+        elif ".txt" in args.input_source_filename:
+            orig = read_skycomponent_from_txt(args.input_source_filename, freq)
+        else:
+            raise FileFormatError("Input file must be of format: hdf5 or txt.")
 
         # Compensate for primary beam correction
         if args.apply_primary == "True":

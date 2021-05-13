@@ -227,8 +227,6 @@ def test_continuum_imaging_checker(
             "True",
             "--plot_source",
             "True",
-            "--input_source_format",
-            "external",
             "--input_source_filename",
             comp_file,  # hdffile
             "--match_sep",

@@ -174,19 +174,7 @@ def imager(args):
         nchan_per_blockvis=nchan_per_blockvis,
         average_channels=args.ingest_average_blockvis == "True",
     )
-    bvis_list = rsexecute.persist(bvis_list)
-    # Now get the blockvisibility info. Do the query on the cluster to avoid
-    # transferring the entire data
-    if args.performance_file != "":
-        bv_info_list = [
-            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
-            for bvis in bvis_list
-        ]
-        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
-        for ibvis, bv_info in enumerate(bv_info_list):
-            performance_store_dict(
-                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
-            )
+    # bvis_list = rsexecute.persist(bvis_list)
 
     # If the cellsize has not been specified, we compute the blockvis now and
     # run the advisor
@@ -220,7 +208,7 @@ def imager(args):
         )
         for bvis in bvis_list
     ]
-    model_list = rsexecute.persist(model_list)
+    # model_list = rsexecute.persist(model_list)
 
     # Create a graph to weight the data
     if args.imaging_weighting != "natural":
@@ -230,7 +218,6 @@ def imager(args):
             weighting=args.imaging_weighting,
             robustness=args.imaging_robustness,
         )
-    bvis_list = rsexecute.persist(bvis_list)
 
     if args.clean_beam is not None:
         clean_beam = {
@@ -249,6 +236,19 @@ def imager(args):
         results = invert(args, bvis_list, model_list, msname)
     else:
         raise ValueError("Unknown mode {}".format(args.mode))
+
+    # Now get the blockvisibility info. Do the query on the cluster to avoid
+    # transferring the entire data
+    if args.performance_file != "":
+        bv_info_list = [
+            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
+            for bvis in bvis_list
+        ]
+        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
+        for ibvis, bv_info in enumerate(bv_info_list):
+            performance_store_dict(
+                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
+            )
 
     # Save the processing statistics from Dask
     dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
@@ -310,12 +310,12 @@ def cip(args, bvis_list, model_list, msname, clean_beam=None):
         flat_sky=args.imaging_flat_sky,
         clean_beam=clean_beam,
     )
-    log.info(f"Size of cip graph = {get_size(result)} B")
+    log.info(f"rascil.imager.cip: Size of cip graph = {get_size(result)} B")
 
     # Execute the Dask graph
-    log.info("Starting compute of continuum imaging pipeline graph ")
+    log.info("rascil.imager.cip: Starting compute of continuum imaging pipeline graph ")
     result = rsexecute.compute(result, sync=True)
-    log.info("Finished compute of continuum imaging pipeline graph")
+    log.info("rascil.imager.cip: Finished compute of continuum imaging pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_cip".format(args.clean_nmoment))
     return write_results(imagename, result, args.performance_file)
@@ -440,12 +440,12 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         dft_compute_kernel=args.imaging_dft_kernel,
         clean_beam=clean_beam,
     )
-    log.info(f"Size of ical graph = {get_size(result)} B")
+    log.info(f"rascil.imager.ical: Size of ical graph = {get_size(result)} B")
 
     # Execute the Dask graph
-    log.info("Starting compute of ical pipeline graph ")
+    log.info("rascil.imager.ical: Starting compute of ical pipeline graph ")
     residual, restored, skymodel, gt_list = rsexecute.compute(result, sync=True)
-    log.info("Finished compute of ical pipeline graph")
+    log.info("rascil.imager.ical: Finished compute of ical pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
     return write_results(
@@ -474,9 +474,9 @@ def invert(args, bvis_list, model_list, msname):
     )
     result = sum_invert_results_rsexecute(result)
     # Execute the Dask graph
-    log.info("Starting compute of invert graph ")
+    log.info("rascil.imager.invert: Starting compute of invert graph ")
     dirty, sumwt = rsexecute.compute(result, sync=True)
-    log.info("Finished compute of invert graph")
+    log.info("rascil.imager.invert: Finished compute of invert graph")
     imagename = msname.replace(".ms", "_invert")
 
     if args.imaging_dopsf == "True":

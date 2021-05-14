@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 from distributed import Client
 
 from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
+from rascil.processing_components.util.sizeof import get_size
+
 from rascil.processing_components import (
     create_image_from_visibility,
     qa_image,
@@ -26,6 +28,7 @@ from rascil.processing_components import (
     export_image_to_fits,
     image_gather_channels,
     create_calibration_controls,
+    advise_wide_field,
 )
 
 from rascil.processing_components.util.performance import (
@@ -172,16 +175,29 @@ def imager(args):
         average_channels=args.ingest_average_blockvis == "True",
     )
     bvis_list = rsexecute.persist(bvis_list)
+    # Now get the blockvisibility info. Do the query on the cluster to avoid
+    # transferring the entire data
+    if args.performance_file != "":
+        bv_info_list = [
+            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
+            for bvis in bvis_list
+        ]
+        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
+        for ibvis, bv_info in enumerate(bv_info_list):
+            performance_store_dict(
+                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
+            )
 
     # If the cellsize has not been specified, we compute the blockvis now and
     # run the advisor
     cellsize = args.imaging_cellsize
     if cellsize is None:
-        bvis_list = rsexecute.compute(bvis_list, sync=True)
-        from rascil.processing_components import advise_wide_field
-
-        advice = advise_wide_field(bvis_list[0], guard_band_image=3.0)
-        cellsize = advice["cellsize"]
+        advice_list = [
+            rsexecute.execute(advise_wide_field)(bv, guard_band_image=3.0)
+            for bv in bvis_list
+        ]
+        advice_list = rsexecute.compute(advice_list, sync=True)
+        cellsize = advice_list[0]["cellsize"]
         log.info(f"Setting cellsize to {cellsize} rad")
 
     # Make only the Stokes I image so we convert the visibility to Stokes I
@@ -215,19 +231,6 @@ def imager(args):
             robustness=args.imaging_robustness,
         )
     bvis_list = rsexecute.persist(bvis_list)
-
-    # Now get the blockvisibility info. Do the query on the cluster to avoid
-    # transferring the entire data
-    if args.performance_file != "":
-        bv_info_list = [
-            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
-            for bvis in bvis_list
-        ]
-        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
-        for ibvis, bv_info in enumerate(bv_info_list):
-            performance_store_dict(
-                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
-            )
 
     if args.clean_beam is not None:
         clean_beam = {
@@ -307,6 +310,8 @@ def cip(args, bvis_list, model_list, msname, clean_beam=None):
         flat_sky=args.imaging_flat_sky,
         clean_beam=clean_beam,
     )
+    log.info(f"Size of cip graph = {get_size(result)} B")
+
     # Execute the Dask graph
     log.info("Starting compute of continuum imaging pipeline graph ")
     result = rsexecute.compute(result, sync=True)
@@ -435,10 +440,12 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         dft_compute_kernel=args.imaging_dft_kernel,
         clean_beam=clean_beam,
     )
+    log.info(f"Size of ical graph = {get_size(result)} B")
+
     # Execute the Dask graph
-    log.info("Starting compute of ICAL pipeline graph ")
+    log.info("Starting compute of ical pipeline graph ")
     residual, restored, skymodel, gt_list = rsexecute.compute(result, sync=True)
-    log.info("Finished compute of ICAL pipeline graph")
+    log.info("Finished compute of ical pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
     return write_results(

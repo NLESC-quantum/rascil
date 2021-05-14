@@ -35,8 +35,9 @@ def create_blockvisibility_from_ms_rsexecute(
     """
 
     # Read the MS into RASCIL BlockVisibility objects
+    log.info("create_blockvisibility_from_ms_rsexecute: Defining graph")
     log.info(
-        "Loading MS data descriptors {dds} into {n} BlockVisibility's of {nchan} channels".format(
+        "create_blockvisibility_from_ms_rsexecute: will load MS data descriptors {dds} into {n} BlockVisibility's of {nchan} channels".format(
             dds=dds, n=nout * len(dds), nchan=nchan_per_blockvis
         )
     )

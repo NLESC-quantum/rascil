@@ -713,7 +713,7 @@ def create_blockvisibility_from_ms(
     else:
         dds = selected_dds
 
-    log.debug(
+    log.info(
         "create_blockvisibility_from_ms: Reading unique fields %s, unique data descriptions %s"
         % (str(fields), str(dds))
     )

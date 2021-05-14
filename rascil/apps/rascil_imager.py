@@ -39,7 +39,6 @@ from rascil.processing_components.util.performance import (
 from rascil.workflows import (
     weight_list_rsexecute_workflow,
     continuum_imaging_skymodel_list_rsexecute_workflow,
-    sum_invert_results,
     remove_sumwt,
     create_blockvisibility_from_ms_rsexecute,
     ical_skymodel_list_rsexecute_workflow,
@@ -337,7 +336,6 @@ def write_results(imagename, result, performance_file):
     plt.show(block=False)
     deconvolvedname = imagename + "_deconvolved.fits"
     export_image_to_fits(deconvolved_image, deconvolvedname)
-    del deconvolved
     del deconvolved_image
 
     skymodelname = imagename + "_skymodel.hdf"

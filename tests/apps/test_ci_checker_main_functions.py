@@ -5,6 +5,7 @@
 import logging
 import unittest
 import os
+from unittest.mock import patch, Mock
 
 import numpy
 from astropy import units as u
@@ -194,6 +195,15 @@ class TestCIChecker(unittest.TestCase):
         # This part tests for the wrong arguments/exceptions
         self.args.ingest_fitsname_restored = None
         self.assertRaises(FileNotFoundError, lambda: analyze_image(self.args))
+
+    @patch("rascil.apps.ci_checker_main.ci_checker")
+    def test_analyze_image(self, mock_checker):
+        mock_checker.return_value = Mock()
+        self.args.ingest_fitsname_restored = self.restored_image_multi
+
+        analyze_image(self.args)
+
+        mock_checker.call_args_list()
 
 
 if __name__ == "__main__":

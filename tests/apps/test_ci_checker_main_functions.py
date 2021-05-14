@@ -144,6 +144,9 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_flux, reversed_flux_rest, decimal=1)
 
+        reversed_comp_none = correct_primary_beam(None, None, components_with_pb, "MID")
+        assert components_with_pb == reversed_comp_none
+
     def test_read_skycomponent_from_txt(self):
 
         txtfile = self.dir + "/test_ci_checker_functions.txt"

@@ -32,6 +32,7 @@ from rascil.processing_components.skycomponent.operations import (
 from rascil.processing_components.image.operations import (
     import_image_from_fits,
     export_image_to_fits,
+    create_image_from_array,
 )
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.plot_skycomponent import (
@@ -246,7 +247,7 @@ def analyze_image(args):
     input_image_residual = args.ingest_fitsname_residual
     input_image_sensitivity = args.ingest_fitsname_sensitivity
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
-
+    saverms = args.savefits_rmsim
     multichan_option = args.finder_multichan_option
 
     # If read restoring beam from header
@@ -279,6 +280,7 @@ def analyze_image(args):
         nchan,
         multichan_option,
         quiet_bdsf=quiet_bdsf,
+        saverms=saverms,
     )
 
     # check if there are sources found
@@ -350,6 +352,7 @@ def ci_checker(
     nchan,
     multichan_option,
     quiet_bdsf=False,
+    saverms=False,
 ):
     """
     PyBDSF-based source finder
@@ -364,6 +367,7 @@ def ci_checker(
     :param multichan_option: Mode to perform BDSF on multi-channel images
     :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
                        Output is still sent to the log file
+    :param saverms: if True, save background rms image as a FITS file
     : return None
     """
 
@@ -434,10 +438,21 @@ def ci_checker(
                 spectralindex_do=True,
             )
 
-        save_rms = input_image_residual.replace(".fits", "_residual_rms")
+        save_rms_file = input_image_residual.replace(".fits", "_residual_rms")
 
-        if args.savefits_rmsim == "True":
-            export_image_to_fits(img_resid.rms_arr, save_rms + ".fits")
+        if saverms:
+            residual_im = import_image_from_fits(input_image_residual)
+
+            resid_im_array = np.reshape(
+                img_resid.rms_arr,
+                (1, 1, img_resid.rms_arr.shape[1], img_resid.rms_arr.shape[0]),
+            )
+            rms_image = create_image_from_array(
+                resid_im_array,
+                residual_im.image_acc.wcs,
+                residual_im.image_acc.polarisation_frame,
+            )
+            export_image_to_fits(rms_image, save_rms_file + ".fits")
 
         log.info("Running diagnostics for the residual image")
         ci_checker_diagnostics(img_resid, input_image_residual, "residual")

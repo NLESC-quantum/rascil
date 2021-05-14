@@ -213,14 +213,33 @@ def test_continuum_imaging_checker(
     restored_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
     export_image_to_fits(model, restored_file)
 
-    # Residual file: this part needs to further testing
-    residual_file = None
+    # Generate residual file: No skycomponents, just noise
+    residual_model = create_image(
+        npixel=npixel,
+        cellsize=cellsize,
+        phasecentre=phasecentre,
+        frequency=image_frequency,
+        polarisation_frame=PolarisationFrame("stokesI"),
+    )
+
+    if noise > 0.0:
+        residual_model["pixels"].data += rng.normal(
+            0.0, noise, residual_model["pixels"].data.shape
+        )
+
+    residual_model = restore_cube(residual_model, clean_beam=clean_beam)
+    residual_model.attrs["clean_beam"] = clean_beam
+
+    residual_file = rascil_path(f"test_results/test_ci_checker_{tag}_residual.fits")
+    export_image_to_fits(residual_model, residual_file)
 
     parser = cli_parser()
     args = parser.parse_args(
         [
             "--ingest_fitsname_restored",
             restored_file,
+            "--ingest_fitsname_residual",
+            residual_file,
             "--ingest_fitsname_sensitivity",
             sensitivity_file,
             "--check_source",
@@ -232,6 +251,8 @@ def test_continuum_imaging_checker(
             "--match_sep",
             "1.0e-4",
             "--apply_primary",
+            "True",
+            "--savefits_rmsim",
             "True",
         ]
     )
@@ -271,11 +292,13 @@ def test_continuum_imaging_checker(
     )
     if residual_file is not None:
         assert os.path.exists(
-            rascil_path(f"test_results/test_ci_checker_{tag}_residual_hist.png")
+            rascil_path(
+                f"test_results/test_ci_checker_{tag}_residual_residual_hist.png"
+            )
         )
         assert os.path.exists(
             rascil_path(
-                f"test_results/test_ci_checker_{tag}_residual_power_spectrum.png"
+                f"test_results/test_ci_checker_{tag}_residual_residual_power_spectrum.png"
             )
         )
 

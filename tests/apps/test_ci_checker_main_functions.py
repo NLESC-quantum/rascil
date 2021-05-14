@@ -28,7 +28,6 @@ from rascil.processing_components.image import (
 from rascil.processing_components.simulation import (
     create_mid_simulation_components,
     find_pb_width_null,
-    create_test_image,
 )
 from rascil.processing_components.skycomponent import (
     apply_beam_to_skycomponent,
@@ -55,7 +54,8 @@ class TestCIChecker(unittest.TestCase):
         )
         self.npixel = 512
         self.cellsize = 0.0001
-        self.channel_bandwidth = numpy.array([1e7])
+        self.bandwidth_single = numpy.array([1e7])
+        self.bandwidth_array = numpy.full(self.nchan, 1e7)
 
         hwhm_deg, null_az_deg, null_el_deg = find_pb_width_null(
             pbtype="MID", frequency=numpy.array([self.central_frequency])
@@ -85,7 +85,7 @@ class TestCIChecker(unittest.TestCase):
             cellsize=self.cellsize,
             polarisation_frame=PolarisationFrame("stokesI"),
             frequency=self.central_frequency,
-            channel_bandwidth=self.channel_bandwidth,
+            channel_bandwidth=self.bandwidth_single,
             phasecentre=self.phasecentre,
         )
 
@@ -94,7 +94,7 @@ class TestCIChecker(unittest.TestCase):
             cellsize=self.cellsize,
             polarisation_frame=PolarisationFrame("stokesI"),
             frequency=self.component_frequency,
-            channel_bandwidth=self.channel_bandwidth,
+            channel_bandwidth=self.bandwidth_array,
             phasecentre=self.phasecentre,
         )
 
@@ -192,18 +192,23 @@ class TestCIChecker(unittest.TestCase):
 
     def test_wrong_restored(self):
 
-        # This part tests for the wrong arguments/exceptions
+        # This part tests for no image input
         self.args.ingest_fitsname_restored = None
         self.assertRaises(FileNotFoundError, lambda: analyze_image(self.args))
 
     @patch("rascil.apps.ci_checker_main.ci_checker")
-    def test_analyze_image(self, mock_checker):
+    def test_analyze_image_exceptions(self, mock_checker):
         mock_checker.return_value = Mock()
         self.args.ingest_fitsname_restored = self.restored_image_multi
 
-        analyze_image(self.args)
+        result = analyze_image(self.args)
 
-        mock_checker.call_args_list()
+        # call_args_list returns the input for function ci_checker
+        # Assert using automatic beam size
+        assert mock_checker.call_args_list[0][0][2] == (1.0, 1.0, 0.0)
+
+        # Assert returning None values
+        assert result == (None, None)
 
 
 if __name__ == "__main__":

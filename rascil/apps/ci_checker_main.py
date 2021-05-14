@@ -23,7 +23,6 @@ from rascil.data_models import (
     import_skycomponent_from_hdf5,
     export_skycomponent_to_hdf5,
 )
-from rascil.processing_components import create_low_test_skycomponents_from_gleam
 from rascil.processing_components.skycomponent.operations import (
     create_skycomponent,
     find_skycomponent_matches,

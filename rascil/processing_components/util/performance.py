@@ -77,7 +77,7 @@ def performance_blockvisibility(bvis):
         "nchan": bvis.blockvisibility_acc.nchan,
         "npol": bvis.blockvisibility_acc.npol,
         "polarisation_frame": bvis.blockvisibility_acc.polarisation_frame.type,
-        "shape": bvis["vis"].data.shape,
+        "size": bvis.nbytes,
     }
     return bv_info
 

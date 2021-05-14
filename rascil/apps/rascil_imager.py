@@ -230,10 +230,19 @@ def imager(args):
                 args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
             )
 
+    if args.clean_beam is not None:
+        clean_beam = {
+            "bmaj": args.clean_beam[0],
+            "bmin": args.clean_beam[1],
+            "bpa": args.clean_beam[2],
+        }
+    else:
+        clean_beam = None
+
     if args.mode == "cip":
-        results = cip(args, bvis_list, model_list, msname)
+        results = cip(args, bvis_list, model_list, msname, clean_beam)
     elif args.mode == "ical":
-        results = ical(args, bvis_list, model_list, msname)
+        results = ical(args, bvis_list, model_list, msname, clean_beam)
     elif args.mode == "invert":
         results = invert(args, bvis_list, model_list, msname)
     else:
@@ -258,13 +267,14 @@ def imager(args):
     return results
 
 
-def cip(args, bvis_list, model_list, msname):
+def cip(args, bvis_list, model_list, msname, clean_beam=None):
     """Run continuum imaging pipeline
 
     :param args: The parameters read from the CLI using argparse
     :param bvis_list: A list of or graph to make BlockVisibilitys
     :param model_list: A list of or graph to make model images
     :param msname: The filename of the MeasurementSet
+    :param clean_beam: None or dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :return: Names of output images (deconvolved, residual, restored)
     """
     result = continuum_imaging_skymodel_list_rsexecute_workflow(
@@ -296,6 +306,7 @@ def cip(args, bvis_list, model_list, msname):
         component_threshold=args.clean_component_threshold,
         component_method=args.clean_component_method,
         flat_sky=args.imaging_flat_sky,
+        clean_beam=clean_beam,
     )
     # Execute the Dask graph
     log.info("Starting compute of continuum imaging pipeline graph ")
@@ -307,7 +318,31 @@ def cip(args, bvis_list, model_list, msname):
 
 
 def write_results(imagename, result, performance_file):
-    deconvolved, residual, restored, skymodel = result
+    """Write the results out to files
+
+    :param imagename: Root of image names
+    :param result: Set of results i.e. deconvolved, residual, restored, skymodel
+    :param performance_file: Name of performance file
+    :return:
+    """
+    residual, restored, skymodel = result
+
+    deconvolved = [sm.image for sm in skymodel]
+    deconvolved_image = image_gather_channels(deconvolved)
+    del deconvolved
+    performance_qa_image(performance_file, "deconvolved", deconvolved_image, mode="a")
+    log.info(qa_image(deconvolved_image, context="Deconvolved"))
+    show_image(deconvolved_image, title=f"{imagename} Clean deconvolved image")
+    plt.savefig(imagename + "_deconvolved.png")
+    plt.show(block=False)
+    deconvolvedname = imagename + "_deconvolved.fits"
+    export_image_to_fits(deconvolved_image, deconvolvedname)
+    del deconvolved
+    del deconvolved_image
+
+    skymodelname = imagename + "_skymodel.hdf"
+    export_skymodel_to_hdf5(skymodel, skymodelname)
+    del skymodel
 
     if isinstance(restored, list):
         # This is the case where we have a list of restored images
@@ -326,9 +361,11 @@ def write_results(imagename, result, performance_file):
     show_image(restored, title=f"{imagename} Clean restored image")
     plt.savefig(imagename + "_restored.png")
     plt.show(block=False)
+    del restored
 
     residual = remove_sumwt(residual)
     residual_image = image_gather_channels(residual)
+    del residual
     performance_qa_image(performance_file, "residual", residual_image, mode="a")
     log.info(qa_image(residual_image, context="Residual"))
     show_image(residual_image, title=f"{imagename} Clean residual image")
@@ -336,31 +373,19 @@ def write_results(imagename, result, performance_file):
     plt.show(block=False)
     residualname = imagename + "_residual.fits"
     export_image_to_fits(residual_image, residualname)
-    # The deconvolved image is a list of channels images. We gather these into
-    # one image
-    deconvolved_image = image_gather_channels(deconvolved)
-    performance_qa_image(performance_file, "deconvolved", deconvolved_image, mode="a")
-
-    log.info(qa_image(deconvolved_image, context="Deconvolved"))
-    show_image(deconvolved_image, title=f"{imagename} Clean deconvolved image")
-    plt.savefig(imagename + "_deconvolved.png")
-    plt.show(block=False)
-    deconvolvedname = imagename + "_deconvolved.fits"
-    export_image_to_fits(deconvolved_image, deconvolvedname)
-
-    skymodelname = imagename + "_skymodel.hdf"
-    export_skymodel_to_hdf5(skymodel, skymodelname)
+    del residual_image
 
     return (deconvolvedname, residualname, restoredname, skymodelname)
 
 
-def ical(args, bvis_list, model_list, msname):
+def ical(args, bvis_list, model_list, msname, clean_beam=None):
     """Run ICAL pipeline
 
     :param args: The parameters read from the CLI using argparse
     :param bvis_list: A list of or graph to make BlockVisibilitys
     :param model_list: A list of or graph to make model images
     :param msname: The filename of the MeasurementSet
+    :param clean_beam: None or dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :return: Names of output images (deconvolved, residual, restored)
     """
     controls = create_calibration_controls()
@@ -410,17 +435,16 @@ def ical(args, bvis_list, model_list, msname):
         component_threshold=args.clean_component_threshold,
         component_method=args.clean_component_method,
         dft_compute_kernel=args.imaging_dft_kernel,
+        clean_beam=clean_beam,
     )
     # Execute the Dask graph
     log.info("Starting compute of ICAL pipeline graph ")
-    deconvolved, residual, restored, skymodel, gt_list = rsexecute.compute(
-        result, sync=True
-    )
+    residual, restored, skymodel, gt_list = rsexecute.compute(result, sync=True)
     log.info("Finished compute of ICAL pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
     return write_results(
-        imagename, (deconvolved, residual, restored, skymodel), args.performance_file
+        imagename, (residual, restored, skymodel), args.performance_file
     )
 
 

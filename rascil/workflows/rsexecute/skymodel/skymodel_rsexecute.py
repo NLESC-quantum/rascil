@@ -387,6 +387,11 @@ def restore_skymodel_list_rsexecute_workflow(
     """
     _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
 
+    if clean_beam is None:
+        clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
+        psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
+        clean_beam = rsexecute.execute(fit_psf)(psf)
+
     if restore_overlap < 0:
         raise ValueError("Number of pixels for restore overlap must be >= 0")
 
@@ -395,12 +400,7 @@ def restore_skymodel_list_rsexecute_workflow(
     else:
         actual_number_facets = max(1, (restore_facets - 1))
 
-    if clean_beam is None:
-        clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
-        psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
-        clean_beam = rsexecute.execute(fit_psf)(psf)
-
-        # Scatter each list element into a list. We will then run restore_cube on each
+    # Scatter each list element into a list. We will then run restore_cube on each
     facet_model_list = [
         rsexecute.execute(
             image_scatter_facets, nout=actual_number_facets * actual_number_facets

@@ -160,6 +160,13 @@ def apps_parser_cleaning(parser):
         help="Type of deconvolution algorithm (hogbom or msclean or mmclean)",
     )
     parser.add_argument(
+        "--clean_beam",
+        type=str,
+        nargs=3,
+        default=None,
+        help="Clean beam: major axis, minor axis, position angle (deg)",
+    )
+    parser.add_argument(
         "--clean_scales",
         type=int,
         nargs="*",

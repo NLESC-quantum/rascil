@@ -174,7 +174,20 @@ def imager(args):
         nchan_per_blockvis=nchan_per_blockvis,
         average_channels=args.ingest_average_blockvis == "True",
     )
-    # bvis_list = rsexecute.persist(bvis_list)
+    bvis_list = rsexecute.persist(bvis_list)
+
+    # Now get the blockvisibility info. Do the query on the cluster to avoid
+    # transferring the entire data
+    if args.performance_file != "":
+        bv_info_list = [
+            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
+            for bvis in bvis_list
+        ]
+        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
+        for ibvis, bv_info in enumerate(bv_info_list):
+            performance_store_dict(
+                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
+            )
 
     # If the cellsize has not been specified, we compute the blockvis now and
     # run the advisor
@@ -208,7 +221,7 @@ def imager(args):
         )
         for bvis in bvis_list
     ]
-    # model_list = rsexecute.persist(model_list)
+    model_list = rsexecute.persist(model_list)
 
     # Create a graph to weight the data
     if args.imaging_weighting != "natural":
@@ -236,19 +249,6 @@ def imager(args):
         results = invert(args, bvis_list, model_list, msname)
     else:
         raise ValueError("Unknown mode {}".format(args.mode))
-
-    # Now get the blockvisibility info. Do the query on the cluster to avoid
-    # transferring the entire data
-    if args.performance_file != "":
-        bv_info_list = [
-            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
-            for bvis in bvis_list
-        ]
-        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
-        for ibvis, bv_info in enumerate(bv_info_list):
-            performance_store_dict(
-                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
-            )
 
     # Save the processing statistics from Dask
     dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))

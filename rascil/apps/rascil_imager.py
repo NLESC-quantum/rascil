@@ -139,11 +139,6 @@ def imager(args):
 
     bvis_list, msname = get_blockvis_list(args)
     bvis_list = rsexecute.persist(bvis_list)
-    from dask.distributed import wait
-
-    log.info("Waiting for blockvis to load")
-    wait(bvis_list)
-    log.info("Blockvis successfully loaded")
 
     # Now get the blockvisibility info. Do the query on the cluster to avoid
     # transferring the entire data
@@ -164,12 +159,6 @@ def imager(args):
     bvis_list = weight_blockvis(args, bvis_list, model_list)
 
     clean_beam = get_clean_beam(args)
-
-    from dask.distributed import wait
-
-    log.info("Waiting for setup to finish")
-    wait(bvis_list)
-    log.info("Setup finished")
 
     # Now the actual processing
     if args.mode == "cip":

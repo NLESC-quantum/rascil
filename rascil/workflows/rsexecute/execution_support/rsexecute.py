@@ -161,7 +161,7 @@ class _rsexecutebase:
 
     _instance = None
 
-    def __init__(self, use_dask=True, use_dlg=False, verbose=False, optimize=True):
+    def __init__(self, use_dask=True, use_dlg=False, verbose=False, optimize=False):
         """Initialise rsexecute framework
 
         A singleton of this class is created and is available globally as rsexecute
@@ -236,7 +236,7 @@ class _rsexecutebase:
         use_dask=True,
         use_dlg=False,
         verbose=False,
-        optim=True,
+        optim=False,
         **kwargs
     ):
         """Set the Dask/DALiuGE client to be used

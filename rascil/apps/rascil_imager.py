@@ -129,6 +129,74 @@ def imager(args):
     log.info("Started : {}".format(starttime))
     log.info("Writing log to {}".format(logfile))
 
+    setup_rsexecute(args)
+
+    rsexecute.run(init_logging)
+
+    log.info(pprint.pformat(vars(args)))
+
+    log.info("Current working directory is {}".format(cwd))
+
+    bvis_list, msname = get_blockvis_list(args)
+    bvis_list = rsexecute.persist(bvis_list)
+    from dask.distributed import wait
+
+    log.info("Waiting for blockvis to load")
+    wait(bvis_list)
+    log.info("Blockvis successfully loaded")
+
+    # Now get the blockvisibility info. Do the query on the cluster to avoid
+    # transferring the entire data
+    perf_save_blockvis_info(args, bvis_list)
+
+    # If the cellsize has not been specified, we compute the blockvis now and
+    # run the advisor
+    cellsize = get_cellsize(args, bvis_list)
+
+    # Make only the Stokes I image so we convert the visibility to Stokes I
+    bvis_list = convert_to_stokesI(args, bvis_list)
+
+    npixel = args.imaging_npixel
+
+    # Define the model to be used as a template, one for each BlockVisibility
+    model_list = create_model_image_list(args, bvis_list, cellsize, npixel)
+
+    bvis_list = weight_blockvis(args, bvis_list, model_list)
+
+    clean_beam = get_clean_beam(args)
+
+    from dask.distributed import wait
+
+    log.info("Waiting for setup to finish")
+    wait(bvis_list)
+    log.info("Setup finished")
+
+    # Now the actual processing
+    if args.mode == "cip":
+        results = cip(args, bvis_list, model_list, msname, clean_beam)
+    elif args.mode == "ical":
+        results = ical(args, bvis_list, model_list, msname, clean_beam)
+    elif args.mode == "invert":
+        results = invert(args, bvis_list, model_list, msname)
+    else:
+        raise ValueError("Unknown mode {}".format(args.mode))
+
+    # Save the processing statistics from Dask
+    dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
+
+    perf_save_dask_profile(args, dask_info)
+
+    rsexecute.close()
+
+    log.info("Resulting image(s) {}".format(results))
+
+    log.info("Started  : {}".format(starttime))
+    log.info("Finished : {}".format(datetime.datetime.now()))
+
+    return results
+
+
+def setup_rsexecute(args):
     # We can run distributed (use_dask=True) or in serial (use_dask=False). Using Dask is usually recommended
     if args.use_dask == "True":
         if args.dask_scheduler is not None:
@@ -145,28 +213,17 @@ def imager(args):
     else:
         rsexecute.set_client(use_dask=False)
 
-    rsexecute.run(init_logging)
 
-    log.info(pprint.pformat(vars(args)))
-
-    log.info("Current working directory is {}".format(cwd))
-
+def get_blockvis_list(args):
     # Read in the MS into a list of BlockVisibility's
     # We start with an MS with e.g. 4 data_descriptors, each of which has e.g. 64 channels.
     # We average each dd over e.g. 2 blocks of e.g. 32 channels, giving e.g. 8 separate
     # BlockVisibility's
-
-    # rsexecute is a slightly wrapped version of Dask. rsexecute.execute is
-    # essentially the same as dask.delayed
-
-    # Create a graph to read the MS into RASCIL BlockVisibility objects
     msname = args.ingest_msname
-
     dds = args.ingest_dd
     channels_per_dd = args.ingest_vis_nchan
     nchan_per_blockvis = args.ingest_chan_per_blockvis
     nout = channels_per_dd // nchan_per_blockvis
-
     bvis_list = create_blockvisibility_from_ms_rsexecute(
         msname=args.ingest_msname,
         dds=dds,
@@ -174,43 +231,42 @@ def imager(args):
         nchan_per_blockvis=nchan_per_blockvis,
         average_channels=args.ingest_average_blockvis == "True",
     )
-    bvis_list = rsexecute.persist(bvis_list)
+    return bvis_list, msname
 
-    # Now get the blockvisibility info. Do the query on the cluster to avoid
-    # transferring the entire data
-    if args.performance_file != "":
-        bv_info_list = [
-            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
-            for bvis in bvis_list
-        ]
-        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
-        for ibvis, bv_info in enumerate(bv_info_list):
-            performance_store_dict(
-                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
-            )
 
-    # If the cellsize has not been specified, we compute the blockvis now and
-    # run the advisor
-    cellsize = args.imaging_cellsize
-    if cellsize is None:
-        advice_list = [
-            rsexecute.execute(advise_wide_field)(bv, guard_band_image=3.0)
-            for bv in bvis_list
-        ]
-        advice_list = rsexecute.compute(advice_list, sync=True)
-        cellsize = advice_list[0]["cellsize"]
-        log.info(f"Setting cellsize to {cellsize} rad")
+def perf_save_dask_profile(args, dask_info):
+    if args is not None and args.performance_file is not None:
+        performance_store_dict(
+            args.performance_file, "dask_profile", dask_info, mode="a"
+        )
+        performance_dask_configuration(args.performance_file, mode="a")
 
-    # Make only the Stokes I image so we convert the visibility to Stokes I
-    if args.imaging_pol == "stokesI":
-        bvis_list = [
-            rsexecute.execute(convert_blockvisibility_to_stokesI)(bv)
-            for bv in bvis_list
-        ]
 
-    npixel = args.imaging_npixel
+def get_clean_beam(args):
+    if args.clean_beam is not None:
+        clean_beam = {
+            "bmaj": args.clean_beam[0],
+            "bmin": args.clean_beam[1],
+            "bpa": args.clean_beam[2],
+        }
+    else:
+        clean_beam = None
+    return clean_beam
 
-    # Define the model to be used as a template, one for each BlockVisibility
+
+def weight_blockvis(args, bvis_list, model_list):
+    # Create a graph to weight the data
+    if args.imaging_weighting != "natural":
+        bvis_list = weight_list_rsexecute_workflow(
+            bvis_list,
+            model_list,
+            weighting=args.imaging_weighting,
+            robustness=args.imaging_robustness,
+        )
+    return bvis_list
+
+
+def create_model_image_list(args, bvis_list, cellsize, npixel):
     model_list = [
         rsexecute.execute(create_image_from_visibility)(
             bvis,
@@ -222,51 +278,42 @@ def imager(args):
         for bvis in bvis_list
     ]
     model_list = rsexecute.persist(model_list)
+    return model_list
 
-    # Create a graph to weight the data
-    if args.imaging_weighting != "natural":
-        bvis_list = weight_list_rsexecute_workflow(
-            bvis_list,
-            model_list,
-            weighting=args.imaging_weighting,
-            robustness=args.imaging_robustness,
-        )
 
-    if args.clean_beam is not None:
-        clean_beam = {
-            "bmaj": args.clean_beam[0],
-            "bmin": args.clean_beam[1],
-            "bpa": args.clean_beam[2],
-        }
-    else:
-        clean_beam = None
+def convert_to_stokesI(args, bvis_list):
+    if args.imaging_pol == "stokesI":
+        bvis_list = [
+            rsexecute.execute(convert_blockvisibility_to_stokesI)(bv)
+            for bv in bvis_list
+        ]
+    return bvis_list
 
-    if args.mode == "cip":
-        results = cip(args, bvis_list, model_list, msname, clean_beam)
-    elif args.mode == "ical":
-        results = ical(args, bvis_list, model_list, msname, clean_beam)
-    elif args.mode == "invert":
-        results = invert(args, bvis_list, model_list, msname)
-    else:
-        raise ValueError("Unknown mode {}".format(args.mode))
 
-    # Save the processing statistics from Dask
-    dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
+def get_cellsize(args, bvis_list):
+    cellsize = args.imaging_cellsize
+    if cellsize is None:
+        advice_list = [
+            rsexecute.execute(advise_wide_field)(bv, guard_band_image=3.0)
+            for bv in bvis_list
+        ]
+        advice_list = rsexecute.compute(advice_list, sync=True)
+        cellsize = advice_list[0]["cellsize"]
+        log.info(f"Setting cellsize to {cellsize} rad")
+    return cellsize
 
-    if args is not None and args.performance_file is not None:
-        performance_store_dict(
-            args.performance_file, "dask_profile", dask_info, mode="a"
-        )
-        performance_dask_configuration(args.performance_file, mode="a")
 
-    rsexecute.close()
-
-    log.info("Resulting image(s) {}".format(results))
-
-    log.info("Started  : {}".format(starttime))
-    log.info("Finished : {}".format(datetime.datetime.now()))
-
-    return results
+def perf_save_blockvis_info(args, bvis_list):
+    if args.performance_file != "":
+        bv_info_list = [
+            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
+            for bvis in bvis_list
+        ]
+        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
+        for ibvis, bv_info in enumerate(bv_info_list):
+            performance_store_dict(
+                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
+            )
 
 
 def cip(args, bvis_list, model_list, msname, clean_beam=None):

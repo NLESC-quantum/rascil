@@ -786,7 +786,6 @@ def weight_list_rsexecute_workflow(
     ]
 
     merged_weight_grid = rsexecute.execute(griddata_merge_weights, nout=1)(weight_list)
-    merged_weight_grid = rsexecute.persist(merged_weight_grid, broadcast=True)
 
     def imaging_re_weight(vis, model, gd):
         if gd is not None:

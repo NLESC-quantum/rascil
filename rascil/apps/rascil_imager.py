@@ -155,6 +155,7 @@ def imager(args):
 
     # Define the model to be used as a template, one for each BlockVisibility
     model_list = create_model_image_list(args, bvis_list, cellsize, npixel)
+    model_list = rsexecute.persist(model_list)
 
     bvis_list = weight_blockvis(args, bvis_list, model_list)
 
@@ -266,7 +267,6 @@ def create_model_image_list(args, bvis_list, cellsize, npixel):
         )
         for bvis in bvis_list
     ]
-    model_list = rsexecute.persist(model_list)
     return model_list
 
 

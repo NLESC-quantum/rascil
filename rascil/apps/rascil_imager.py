@@ -64,8 +64,8 @@ from rascil.apps.apps_parser import (
 )
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.INFO)
-log.addHandler(logging.StreamHandler(sys.stdout))
+log.setLevel(logging.DEBUG)
+# log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cli_parser():
@@ -138,10 +138,9 @@ def imager(args):
     log.info("Current working directory is {}".format(cwd))
 
     bvis_list, msname = get_blockvis_list(args)
-    bvis_list = rsexecute.persist(bvis_list)
 
     # Now get the blockvisibility info. Do the query on the cluster to avoid
-    # transferring the entire data
+    # transferring the entire data.
     perf_save_blockvis_info(args, bvis_list)
 
     # If the cellsize has not been specified, we compute the blockvis now and
@@ -155,7 +154,6 @@ def imager(args):
 
     # Define the model to be used as a template, one for each BlockVisibility
     model_list = create_model_image_list(args, bvis_list, cellsize, npixel)
-    model_list = rsexecute.persist(model_list)
 
     bvis_list = weight_blockvis(args, bvis_list, model_list)
 
@@ -229,7 +227,7 @@ def perf_save_dask_profile(args, dask_info):
         performance_store_dict(
             args.performance_file, "dask_profile", dask_info, mode="a"
         )
-        performance_dask_configuration(args.performance_file, mode="a")
+        performance_dask_configuration(args.performance_file, rsexecute, mode="a")
 
 
 def get_clean_beam(args):
@@ -293,15 +291,14 @@ def get_cellsize(args, bvis_list):
 
 
 def perf_save_blockvis_info(args, bvis_list):
-    if args.performance_file != "":
-        bv_info_list = [
-            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
-            for bvis in bvis_list
+    if args.performance_file is not None:
+        results = [
+            rsexecute.execute(performance_blockvisibility)(bvis) for bvis in bvis_list
         ]
-        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
-        for ibvis, bv_info in enumerate(bv_info_list):
+        results = rsexecute.compute(results, sync=True)
+        for ibvis, r in enumerate(results):
             performance_store_dict(
-                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
+                args.performance_file, f"blockvis{ibvis}", r, mode="a"
             )
 
 

@@ -1,4 +1,4 @@
-""" Regression for continuum imaging checker
+""" Regression/integration test for continuum imaging checker
 
     The script mainly tests two things:
     1) the BDSF source finder
@@ -15,7 +15,6 @@
 
 """
 import logging
-import sys
 import os
 import glob
 
@@ -181,13 +180,6 @@ def test_continuum_imaging_checker(
     pb = create_pb(pbmodel, "MID", pointingcentre=phasecentre, use_local=False)
     components_with_pb = apply_beam_to_skycomponent(original_components[0], pb)
 
-    # just check the beams are applied successfully
-    reversed_comp = apply_beam_to_skycomponent(components_with_pb, pb, inverse=True)
-    orig_flux = [c.flux[nchan // 2][0] for c in original_components[0]]
-    reversed_flux = [c.flux[nchan // 2][0] for c in reversed_comp]
-
-    numpy.testing.assert_array_almost_equal(orig_flux, reversed_flux, decimal=3)
-
     sensitivity_file = rascil_path(
         f"test_results/test_ci_checker_{tag}_sensitivity.fits"
     )
@@ -199,30 +191,6 @@ def test_continuum_imaging_checker(
 
     comp_file = rascil_path(f"test_results/test_ci_checker_{tag}.hdf")
     export_skycomponent_to_hdf5(components, comp_file)
-
-    txtfile = rascil_path(f"test_results/test_ci_checker_{tag}.txt")
-    f = open(txtfile, "w")
-    f.write(
-        "# RA(deg), Dec(deg), I (Jy), Q (Jy), U (Jy), V (Jy), Ref. freq. (Hz), Spectral index\n"
-    )
-    for cmp in components:
-        coord_ra = cmp.direction.ra.degree
-        coord_dec = cmp.direction.dec.degree
-        spec_indx = fit_skycomponent_spectral_index(cmp)
-        f.write(
-            "%.6f, %.6f, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e, %10.6e \n"
-            % (
-                coord_ra,
-                coord_dec,
-                cmp.flux[nchan // 2],
-                0.0,
-                0.0,
-                0.0,
-                central_freq,
-                spec_indx,
-            )
-        )
-    f.close()
 
     # Create restored image
     model = create_image(
@@ -245,27 +213,46 @@ def test_continuum_imaging_checker(
     restored_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
     export_image_to_fits(model, restored_file)
 
-    # Residual file: this part needs to further testing
-    residual_file = None
+    # Generate residual file: No skycomponents, just noise
+    residual_model = create_image(
+        npixel=npixel,
+        cellsize=cellsize,
+        phasecentre=phasecentre,
+        frequency=image_frequency,
+        polarisation_frame=PolarisationFrame("stokesI"),
+    )
+
+    if noise > 0.0:
+        residual_model["pixels"].data += rng.normal(
+            0.0, noise, residual_model["pixels"].data.shape
+        )
+
+    residual_model = restore_cube(residual_model, clean_beam=clean_beam)
+    residual_model.attrs["clean_beam"] = clean_beam
+
+    residual_file = rascil_path(f"test_results/test_ci_checker_{tag}_residual.fits")
+    export_image_to_fits(residual_model, residual_file)
 
     parser = cli_parser()
     args = parser.parse_args(
         [
             "--ingest_fitsname_restored",
             restored_file,
+            "--ingest_fitsname_residual",
+            residual_file,
             "--ingest_fitsname_sensitivity",
             sensitivity_file,
             "--check_source",
             "True",
             "--plot_source",
             "True",
-            "--input_source_format",
-            "external",
             "--input_source_filename",
-            comp_file,  # txtfile
+            comp_file,  # hdffile
             "--match_sep",
             "1.0e-4",
             "--apply_primary",
+            "True",
+            "--savefits_rmsim",
             "True",
         ]
     )
@@ -273,7 +260,6 @@ def test_continuum_imaging_checker(
     out, matches_found = analyze_image(args)
 
     # check results directly
-
     sorted_comp = sorted(out, key=lambda cmp: numpy.max(cmp.direction.ra))
     log.debug("Identified components:")
     for cmp in sorted_comp:
@@ -294,6 +280,7 @@ def test_continuum_imaging_checker(
 
     numpy.testing.assert_array_almost_equal(matches_found, matches_expected)
 
+    # Check if the plots have been generated
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_restored_plot.png")
     )
@@ -305,11 +292,13 @@ def test_continuum_imaging_checker(
     )
     if residual_file is not None:
         assert os.path.exists(
-            rascil_path(f"test_results/test_ci_checker_{tag}_residual_hist.png")
+            rascil_path(
+                f"test_results/test_ci_checker_{tag}_residual_residual_hist.png"
+            )
         )
         assert os.path.exists(
             rascil_path(
-                f"test_results/test_ci_checker_{tag}_residual_power_spectrum.png"
+                f"test_results/test_ci_checker_{tag}_residual_residual_power_spectrum.png"
             )
         )
 

@@ -23,7 +23,6 @@ from rascil.data_models import (
     import_skycomponent_from_hdf5,
     export_skycomponent_to_hdf5,
 )
-from rascil.processing_components import create_low_test_skycomponents_from_gleam
 from rascil.processing_components.skycomponent.operations import (
     create_skycomponent,
     find_skycomponent_matches,
@@ -32,6 +31,7 @@ from rascil.processing_components.skycomponent.operations import (
 from rascil.processing_components.image.operations import (
     import_image_from_fits,
     export_image_to_fits,
+    create_image_from_array,
 )
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.plot_skycomponent import (
@@ -148,12 +148,6 @@ def cli_parser():
         help="Option to plot position and flux errors for source catalogue",
     )
     parser.add_argument(
-        "--input_source_format",
-        type=str,
-        default="external",
-        help="The input format of the source catalogue",
-    )
-    parser.add_argument(
         "--input_source_filename",
         type=str,
         default=None,
@@ -247,15 +241,12 @@ def analyze_image(args):
         log.info("This is a multiple channel image.")
         freq = np.array(im.frequency.data)
 
-    else:
-        raise FileFormatError("This image is broken. Please check the file.")
-
     log.info("Frequencies of image:{} ".format(freq))
 
     input_image_residual = args.ingest_fitsname_residual
     input_image_sensitivity = args.ingest_fitsname_sensitivity
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
-
+    saverms = args.savefits_rmsim
     multichan_option = args.finder_multichan_option
 
     # If read restoring beam from header
@@ -288,6 +279,7 @@ def analyze_image(args):
         nchan,
         multichan_option,
         quiet_bdsf=quiet_bdsf,
+        saverms=saverms,
     )
 
     # check if there are sources found
@@ -308,25 +300,13 @@ def analyze_image(args):
 
     if args.check_source == "True":
 
-        if args.input_source_format == "external":
-            if (
-                ".h5" in args.input_source_filename
-                or ".hdf" in args.input_source_filename
-            ):
-                orig = import_skycomponent_from_hdf5(args.input_source_filename)
+        if ".h5" in args.input_source_filename or ".hdf" in args.input_source_filename:
+            orig = import_skycomponent_from_hdf5(args.input_source_filename)
 
-            elif ".txt" in args.input_source_filename:
-                orig = read_skycomponent_from_txt(args.input_source_filename, freq)
-            else:
-                raise FileFormatError("Input file must be of format: hdf5 or txt.")
-        else:  # Use internally provided GLEAM model
-            orig = create_low_test_skycomponents_from_gleam(
-                flux_limit=1.0,
-                phasecentre=im.image_acc.phasecentre,
-                frequency=freq,
-                polarisation_frame=PolarisationFrame("stokesI"),
-                radius=0.5,
-            )
+        elif ".txt" in args.input_source_filename:
+            orig = read_skycomponent_from_txt(args.input_source_filename, freq)
+        else:
+            raise FileFormatError("Input file must be of format: hdf5 or txt.")
 
         # Compensate for primary beam correction
         if args.apply_primary == "True":
@@ -371,6 +351,7 @@ def ci_checker(
     nchan,
     multichan_option,
     quiet_bdsf=False,
+    saverms=False,
 ):
     """
     PyBDSF-based source finder
@@ -385,6 +366,7 @@ def ci_checker(
     :param multichan_option: Mode to perform BDSF on multi-channel images
     :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
                        Output is still sent to the log file
+    :param saverms: if True, save background rms image as a FITS file
     : return None
     """
 
@@ -455,10 +437,21 @@ def ci_checker(
                 spectralindex_do=True,
             )
 
-        save_rms = input_image_residual.replace(".fits", "_residual_rms")
+        save_rms_file = input_image_residual.replace(".fits", "_residual_rms")
 
-        if args.savefits_rmsim == "True":
-            export_image_to_fits(img_resid.rms_arr, save_rms + ".fits")
+        if saverms:
+            residual_im = import_image_from_fits(input_image_residual)
+
+            resid_im_array = np.reshape(
+                img_resid.rms_arr,
+                (1, 1, img_resid.rms_arr.shape[1], img_resid.rms_arr.shape[0]),
+            )
+            rms_image = create_image_from_array(
+                resid_im_array,
+                residual_im.image_acc.wcs,
+                residual_im.image_acc.polarisation_frame,
+            )
+            export_image_to_fits(rms_image, save_rms_file + ".fits")
 
         log.info("Running diagnostics for the residual image")
         ci_checker_diagnostics(img_resid, input_image_residual, "residual")
@@ -611,8 +604,8 @@ def read_skycomponent_from_txt(filename, freq):
             ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
         )
         if nchan == 1:
-            flux = flux[i] * (freq[0] / ref_freq[i]) ** spec_indx[i]
-            flux_array = np.array([[flux]])
+            flux_single = flux[i] * (freq[0] / ref_freq[i]) ** spec_indx[i]
+            flux_array = np.array([[flux_single]])
         else:
             fluxes = [flux[i] * (f / ref_freq[i]) ** spec_indx[i] for f in freq]
             flux_array = np.reshape(np.array(fluxes), (nchan, npol))

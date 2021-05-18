@@ -146,7 +146,9 @@ class TestCIChecker(unittest.TestCase):
     def test_correct_primary_beam_none(self):
 
         # If we don't feed either sensitivity or restored image, should return the same components back
-        reversed_comp_none = correct_primary_beam(None, None, self.components_with_pb, "MID")
+        reversed_comp_none = correct_primary_beam(
+            None, None, self.components_with_pb, "MID"
+        )
         assert self.components_with_pb == reversed_comp_none
 
     def test_read_skycomponent_from_txt_multi(self):

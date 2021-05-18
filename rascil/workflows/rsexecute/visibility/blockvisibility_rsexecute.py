@@ -26,11 +26,11 @@ def create_blockvisibility_from_ms_rsexecute(
 ):
     """Graph for reading from a MeasurementSet into a list of blockvisibility
 
-    :param msname:
-    :param nchan_per_blockvis:
-    :param nout:
-    :param dds:
-    :param average_channels:
+    :param msname: Name of MeasurementSet
+    :param nchan_per_blockvis: Number of channels to be loaded into each blockvis
+    :param nout: Number of output BVs
+    :param dds: DataDescriptors to load e.g. [0, 1,2, 5, 9]
+    :param average_channels: Average channels in each BlockVisibility
     :return:
     """
 

@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pprint
-import sys
+import time
 
 import matplotlib
 
@@ -97,6 +97,7 @@ def imager(args):
     mode=invert: dirty image
     mode=cip: deconvolved image, residual image, restored image.
     mode=ical: deconvolved image, residual image, restored image
+    mode=load: load and list the data
 
     :param args: argparse with appropriate arguments
     :return: Names of outputs as fits files
@@ -166,6 +167,8 @@ def imager(args):
         results = ical(args, bvis_list, model_list, msname, clean_beam)
     elif args.mode == "invert":
         results = invert(args, bvis_list, model_list, msname)
+    elif args.mode == "load":
+        load(args, bvis_list, msname)
     else:
         raise ValueError("Unknown mode {}".format(args.mode))
 
@@ -302,6 +305,19 @@ def perf_save_blockvis_info(args, bvis_list):
             )
 
 
+def load(args, bvis_list, msname):
+    """Load MS data
+
+    :param args: The parameters read from the CLI using argparse
+    :param bvis_list: A list of or graph to make BlockVisibilitys
+    :param msname: The filename of the MeasurementSet
+    :return:
+    """
+    bvis_list = rsexecute.compute(bvis_list, sync=True)
+    for bvis in bvis_list:
+        log.info(str(bvis))
+
+
 def cip(args, bvis_list, model_list, msname, clean_beam=None):
     """Run continuum imaging pipeline
 
@@ -312,6 +328,7 @@ def cip(args, bvis_list, model_list, msname, clean_beam=None):
     :param clean_beam: None or dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :return: Names of output images (deconvolved, residual, restored)
     """
+    start = time.time()
     result = continuum_imaging_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
@@ -343,8 +360,7 @@ def cip(args, bvis_list, model_list, msname, clean_beam=None):
         flat_sky=args.imaging_flat_sky,
         clean_beam=clean_beam,
     )
-    log.info(f"rascil.imager.cip: Size of cip graph = {get_size(result)} B")
-
+    perf_graph(result, "cip", start, args.performance_file)
     # Execute the Dask graph
     log.info("rascil.imager.cip: Starting compute of continuum imaging pipeline graph ")
     result = rsexecute.compute(result, sync=True)
@@ -352,6 +368,16 @@ def cip(args, bvis_list, model_list, msname, clean_beam=None):
 
     imagename = msname.replace(".ms", "_nmoment{}_cip".format(args.clean_nmoment))
     return write_results(imagename, result, args.performance_file)
+
+
+def perf_graph(result, name, start, performance_file):
+    duration = time.time() - start
+    size = get_size(result)
+    graph = {"name": name, "time": duration, "size": size}
+    log.info(
+        f"rascil.imager.perf_graph: Size of {name} graph = {get_size(result)} B, time to construct {duration} s"
+    )
+    performance_store_dict(performance_file, "graph", graph)
 
 
 def write_results(imagename, result, performance_file):
@@ -440,6 +466,8 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         controls["B"]["timeslice"] = args.calibration_B_timeslice
 
     # Next we define a graph to run the continuum imaging pipeline
+    start = time.time()
+
     result = ical_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
@@ -473,7 +501,7 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         dft_compute_kernel=args.imaging_dft_kernel,
         clean_beam=clean_beam,
     )
-    log.info(f"rascil.imager.ical: Size of ical graph = {get_size(result)} B")
+    perf_graph(result, "ical", start, args.performance_file)
 
     # Execute the Dask graph
     log.info("rascil.imager.ical: Starting compute of ical pipeline graph ")
@@ -496,6 +524,7 @@ def invert(args, bvis_list, model_list, msname):
     :return: Names of output image (dirty image or psf image)
     """
     # Next we define a graph to run the continuum imaging pipeline
+    start = time.time()
     result = invert_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
@@ -506,6 +535,7 @@ def invert(args, bvis_list, model_list, msname):
         dft_compute_kernel=args.imaging_dft_kernel,
     )
     result = sum_invert_results_rsexecute(result)
+    perf_graph(result, "invert", start, args.performance_file)
     # Execute the Dask graph
     log.info("rascil.imager.invert: Starting compute of invert graph ")
     dirty, sumwt = rsexecute.compute(result, sync=True)

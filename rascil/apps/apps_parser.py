@@ -17,10 +17,6 @@ The parser can then be called to extract the relevant command line argument::
 
 """
 
-import sys
-import argparse
-import json
-
 
 def apps_parser_ingest(parser):
     """Add ingest-specific command line arguments to an existing CLI parser
@@ -419,7 +415,7 @@ def apps_parser_app(parser):
     :return: argparse
     """
     parser.add_argument(
-        "--mode", type=str, default="cip", help="Processing  cip | ical | invert"
+        "--mode", type=str, default="cip", help="Processing  cip | ical | invert | load"
     )
     parser.add_argument(
         "--logfile",

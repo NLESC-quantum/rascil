@@ -939,7 +939,7 @@ def fit_skycomponent_spectral_index(sc: Skycomponent):
     :return: spec_indx
     """
     # Function after taken log
-    power_law_func = lambda a, b, x: a + b * x
+    power_law_func = lambda a, b, x: a * x + b
 
     nchan = sc.frequency.shape[0]
 
@@ -955,7 +955,7 @@ def fit_skycomponent_spectral_index(sc: Skycomponent):
             out = numpy.polyfit(xdata, ydata, 1)
             spec_indx = out[0]
         else:
-            log.warning("Negative values encountered, no fitting performed.")
+            log.warning("Wrong values encountered, no fitting performed.")
             spec_indx = 0.0
 
     return spec_indx

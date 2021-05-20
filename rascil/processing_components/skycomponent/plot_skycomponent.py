@@ -516,7 +516,7 @@ def plot_gaussian_beam_position(
 
 
 def plot_multifreq_spectral_index(
-    comps_test, comps_ref, plot_file=None, tol=1e-5, **kwargs
+    comps_test, comps_ref, plot_file=None, tol=1e-5, plot_diagnostics=False, **kwargs
 ):
     """Generate spectral index plot for two lists of multi-frequency skycomponents
 
@@ -524,6 +524,7 @@ def plot_multifreq_spectral_index(
     :param comps_ref: List of reference components
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
+    :param plot_diagnostics: Whether to plot diagnostics plot (flux in vs. spectral index out)
     :return: [spec_in, spec_out]:
              The spectral index array for users to check
     """
@@ -531,6 +532,7 @@ def plot_multifreq_spectral_index(
     matches = find_skycomponent_matches(comps_test, comps_ref, tol)
     spec_in = numpy.zeros(len(matches))
     spec_out = numpy.zeros(len(matches))
+    flux_in = numpy.zeros(len(matches))
 
     for i, match in enumerate(matches):
         m_comp = comps_test[match[0]]
@@ -538,6 +540,13 @@ def plot_multifreq_spectral_index(
 
         spec_in[i] = fit_skycomponent_spectral_index(m_ref)
         spec_out[i] = fit_skycomponent_spectral_index(m_comp)
+        flux_in[i] = m_ref.flux[m_ref.flux.shape[0] // 2][0]
+
+    # mask out the ones that didn't get fitted properly
+    mask = (spec_in != 0.0) | (spec_out != 0.0)
+    spec_in = spec_in[mask]
+    spec_out = spec_out[mask]
+    flux_in = flux_in[mask]
 
     plt.plot(spec_in, spec_out, "o", color="b", markersize=5)
 
@@ -548,5 +557,17 @@ def plot_multifreq_spectral_index(
         plt.savefig(plot_file + "_spec_index.png")
     plt.show(block=False)
     plt.clf()
+
+    # Testing spectral index out vs flux in
+    if plot_diagnostics:
+
+        plt.plot(flux_in, spec_out, "o", color="b", markersize=5)
+
+        plt.xlabel("Flux In (Jy)")
+        plt.ylabel("Spectral index")
+        if plot_file is not None:
+            plt.savefig(plot_file + "_spec_index_diagnostics.png")
+        plt.show(block=False)
+        plt.clf()
 
     return [spec_in, spec_out]

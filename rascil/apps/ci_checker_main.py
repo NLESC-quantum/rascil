@@ -683,7 +683,12 @@ def plot_errors(orig, comp, input_image, match_sep, plot_file):
     if nchan > 1:
         log.info("Plotting spectral index.")
         spec_in, spec_out = plot_multifreq_spectral_index(
-            comp, orig, plot_file=plot_file, tol=match_sep
+            comp,
+            orig,
+            phasecentre,
+            plot_file=plot_file,
+            tol=match_sep,
+            plot_diagnostics=True,
         )
 
     log.info("Plotting done.")

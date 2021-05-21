@@ -580,10 +580,10 @@ def plot_multifreq_spectral_index(
         plt.show(block=False)
         plt.clf()
 
-        plt.plot(dist, spec_out, "o", color="b", markersize=5)
+        plt.plot(dist, spec_out - spec_in, "o", color="b", markersize=5)
 
         plt.xlabel("Distance to center (Deg)")
-        plt.ylabel("Spectral Index")
+        plt.ylabel("Spectral Index Out-In")
         if plot_file is not None:
             plt.savefig(plot_file + "_spec_index_diagnostics_dist.png")
         plt.show(block=False)

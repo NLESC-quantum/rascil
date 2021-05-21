@@ -521,6 +521,7 @@ def plot_multifreq_spectral_index(
     phasecentre,
     plot_file=None,
     tol=1e-5,
+    flux_limit=0.0,
     plot_diagnostics=False,
     **kwargs,
 ):
@@ -531,6 +532,7 @@ def plot_multifreq_spectral_index(
     :param phasecentre: Centre of image in SkyCoords
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
+    :param flux_limit: Cutoff for plot (only components with central flux larger than this are plotted)
     :param plot_diagnostics: Whether to plot diagnostics plot (flux in vs. spectral index out)
     :return: [spec_in, spec_out]:
              The spectral index array for users to check
@@ -552,11 +554,12 @@ def plot_multifreq_spectral_index(
         dist[i] = m_comp.direction.separation(phasecentre).degree
 
     # mask out the ones that didn't get fitted properly
-    mask = (spec_in != 0.0) & (spec_out != 0.0)
-    spec_in = spec_in[mask]
-    spec_out = spec_out[mask]
-    flux_in = flux_in[mask]
-    dist = dist[mask]
+    mask_spec = (spec_in != 0.0) & (spec_out != 0.0)
+    mask_cutoff = flux_in > flux_limit
+    spec_in = spec_in[mask_spec & mask_cutoff]
+    spec_out = spec_out[mask_spec & mask_cutoff]
+    flux_in = flux_in[mask_spec & mask_cutoff]
+    dist = dist[mask_spec & mask_cutoff]
 
     plt.plot(spec_in, spec_out, "o", color="b", markersize=5)
 

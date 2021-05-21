@@ -160,6 +160,12 @@ def cli_parser():
         help="Maximum separation in radians for the source matching",
     )
     parser.add_argument(
+        "--flux_limit",
+        type=float,
+        default=1.0e-3,
+        help="Mininum flux where comparison plots are generated",
+    )
+    parser.add_argument(
         "--quiet_bdsf",
         type=str,
         default="False",
@@ -183,6 +189,12 @@ def cli_parser():
         type=str,
         default="False",
         help="This parameter is a Boolean (default is False). If True, save background rms image as a FITS file.",
+    )
+    parser.add_argument(
+        "--restart",
+        type=str,
+        default="False",
+        help="Option to surpass BDSF when the output already exists. If True, directly starting from reading csv file",
     )
 
     return parser
@@ -246,6 +258,7 @@ def analyze_image(args):
     input_image_residual = args.ingest_fitsname_residual
     input_image_sensitivity = args.ingest_fitsname_sensitivity
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
+    restart = args.restart
     saverms = args.savefits_rmsim
     multichan_option = args.finder_multichan_option
 
@@ -269,20 +282,23 @@ def analyze_image(args):
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(thresh_isl, thresh_pix))
 
-    ci_checker(
-        input_image_restored,
-        input_image_residual,
-        beam_info,
-        source_file,
-        thresh_isl,
-        thresh_pix,
-        nchan,
-        multichan_option,
-        quiet_bdsf=quiet_bdsf,
-        saverms=saverms,
-    )
+    if restart is False:
+        ci_checker(
+            input_image_restored,
+            input_image_residual,
+            beam_info,
+            source_file,
+            thresh_isl,
+            thresh_pix,
+            nchan,
+            multichan_option,
+            quiet_bdsf=quiet_bdsf,
+            saverms=saverms,
+        )
+    else:
+        log.info("Restart option is on. Will directly read from the source file.")
 
-    # check if there are sources found
+        # check if there are sources found
     log.info("Output csv source file:{}".format(source_file))
     if os.path.exists(source_file) is False:
         log.error("Error: No source found. Please refine beam parameters.")
@@ -324,7 +340,14 @@ def analyze_image(args):
             else:
                 plot_file = args.ingest_fitsname_restored.replace(".fits", "")
                 log.info("Plotting errors: {}".format(plot_file))
-                plot_errors(orig, out, input_image_restored, args.match_sep, plot_file)
+                plot_errors(
+                    orig,
+                    out,
+                    input_image_restored,
+                    args.match_sep,
+                    args.flux_limit,
+                    plot_file,
+                )
 
     else:
         results = None
@@ -622,7 +645,7 @@ def read_skycomponent_from_txt(filename, freq):
     return comp
 
 
-def plot_errors(orig, comp, input_image, match_sep, plot_file):
+def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
     """
     Plot the position and flux errors for source input and output
 
@@ -630,6 +653,7 @@ def plot_errors(orig, comp, input_image, match_sep, plot_file):
     :param comp: Output source list in skycomponent format
     :param input_image: Input image for Gaussian fits
     :param match_sep: The criteria for maximum separation
+    :param flux_limit: The flux criteria for plotting cutoff
     :param plot_file: prefix of the plot files
     :return
 
@@ -688,6 +712,7 @@ def plot_errors(orig, comp, input_image, match_sep, plot_file):
             phasecentre,
             plot_file=plot_file,
             tol=match_sep,
+            flux_limit=flux_limit,
             plot_diagnostics=True,
         )
 

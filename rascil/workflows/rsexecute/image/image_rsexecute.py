@@ -83,7 +83,7 @@ def sum_images_rsexecute(image_list, split=2):
         return rsexecute.execute(sum_images, nout=2)(image_list)
 
 
-def image_gather_channels_rsexecute(image_list, split=0):
+def image_gather_channels_rsexecute(image_list, split=2):
     """Gather a set of images in frequency, using a tree reduction or directly
 
     :param image_list: List of images

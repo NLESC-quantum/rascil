@@ -571,7 +571,7 @@ def plot_multifreq_spectral_index(
     plt.show(block=False)
     plt.clf()
 
-    # Testing spectral index out vs flux in
+    # Plot diagnostics plots: spectral index out vs flux in and vs distance
     if plot_diagnostics:
 
         plt.plot(flux_in, spec_out, "o", color="b", markersize=5)
@@ -585,7 +585,7 @@ def plot_multifreq_spectral_index(
 
         plt.plot(dist, spec_out - spec_in, "o", color="b", markersize=5)
 
-        plt.xlabel("Distance to center (Deg)")
+        plt.xlabel("Distance to centre (Deg)")
         plt.ylabel("Spectral Index Out-In")
         if plot_file is not None:
             plt.savefig(plot_file + "_spec_index_diagnostics_dist.png")

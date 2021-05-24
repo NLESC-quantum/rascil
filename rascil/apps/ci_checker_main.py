@@ -163,7 +163,7 @@ def cli_parser():
         "--flux_limit",
         type=float,
         default=1.0e-3,
-        help="Mininum flux where comparison plots are generated",
+        help="Minimum flux where comparison plots are generated",
     )
     parser.add_argument(
         "--quiet_bdsf",
@@ -298,7 +298,7 @@ def analyze_image(args):
     else:
         log.info("Restart option is on. Will directly read from the source file.")
 
-        # check if there are sources found
+    # check if there are sources found
     log.info("Output csv source file:{}".format(source_file))
     if os.path.exists(source_file) is False:
         log.error("Error: No source found. Please refine beam parameters.")
@@ -630,8 +630,9 @@ def read_skycomponent_from_txt(filename, freq):
             flux_single = flux[i] * (freq[0] / ref_freq[i]) ** spec_indx[i]
             flux_array = np.array([[flux_single]])
         else:
-            fluxes = [flux[i] * (f / ref_freq[i]) ** spec_indx[i] for f in freq]
-            flux_array = np.reshape(np.array(fluxes), (nchan, npol))
+            if ref_freq[i] > 0:
+                fluxes = [flux[i] * (f / ref_freq[i]) ** spec_indx[i] for f in freq]
+                flux_array = np.reshape(np.array(fluxes), (nchan, npol))
 
         comp.append(
             create_skycomponent(
@@ -653,7 +654,7 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
     :param comp: Output source list in skycomponent format
     :param input_image: Input image for Gaussian fits
     :param match_sep: The criteria for maximum separation
-    :param flux_limit: The flux criteria for plotting cutoff
+    :param flux_limit: The flux criterion for plotting cutoff
     :param plot_file: prefix of the plot files
     :return
 

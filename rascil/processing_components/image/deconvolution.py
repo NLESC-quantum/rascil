@@ -773,7 +773,7 @@ def restore_cube(model: Image, psf=None, residual=None, clean_beam=None) -> Imag
                 gk,
                 normalize_kernel=False,
                 allow_huge=True,
-                fill="wrap",
+                boundary="wrap",
             )
     if residual is not None:
         restored["pixels"].data += residual["pixels"].data

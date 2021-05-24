@@ -77,6 +77,10 @@ def performance_blockvisibility(bvis):
         "nchan": bvis.blockvisibility_acc.nchan,
         "npol": bvis.blockvisibility_acc.npol,
         "polarisation_frame": bvis.blockvisibility_acc.polarisation_frame.type,
+        "nvis": bvis.blockvisibility_acc.ntimes
+        * len(bvis.baselines)
+        * bvis.blockvisibility_acc.nchan
+        * bvis.blockvisibility_acc.npol,
         "size": bvis.nbytes,
     }
     return bv_info
@@ -107,7 +111,6 @@ def performance_dask_configuration(performance_file, rsexec, indent=2, mode="a")
 
     :param performance_file: The (JSON) file to which the environment is to be written
     :param rsexec: rsexecute passed in to avoid dependency
-    :param key: Key to use for the configuration info e.g. "dask_configuration"
     :param indent: Number of characters indent in performance file
     :param mode: Writing mode: 'w' or 'a' for write and append
     """

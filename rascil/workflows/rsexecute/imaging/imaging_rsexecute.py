@@ -461,7 +461,11 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     model_cube = image_gather_channels_rsexecute(
         [model_imagelist[chan] for chan in range(nchan)]
     )
-    if sensitivity_list is not None:
+    # The sensitivity list can contain Nones so we need to check for that case:
+    if (
+        isinstance(sensitivity_list, collections.abc.Iterable)
+        and sensitivity_list[0] is not None
+    ):
         sens_cube = image_gather_channels_rsexecute(
             [sensitivity_list[chan] for chan in range(nchan)]
         )

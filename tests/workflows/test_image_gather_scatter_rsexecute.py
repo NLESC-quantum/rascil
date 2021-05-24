@@ -92,6 +92,24 @@ class TestImageGatherScattersGraph(unittest.TestCase):
                 "Scatter gather failed for %d" % nchan
             )
 
+    def test_gather_channel_workflow_linear(self):
+        for nchan in [128, 16]:
+            m31cube = create_test_image(
+                frequency=numpy.linspace(1e8, 1.1e8, nchan),
+                polarisation_frame=PolarisationFrame("stokesI"),
+            )
+            image_list = rsexecute.execute(image_scatter_channels, nout=nchan)(
+                m31cube, subimages=nchan
+            )
+            image_list = rsexecute.compute(image_list, sync=True)
+            m31cuberec = image_gather_channels_rsexecute(image_list, split=0)
+            m31cuberec = rsexecute.compute(m31cuberec, sync=True)
+            assert m31cube["pixels"].shape == m31cuberec["pixels"].shape
+            diff = m31cube["pixels"].data - m31cuberec["pixels"].data
+            assert numpy.max(numpy.abs(diff)) == 0.0, (
+                "Scatter gather failed for %d" % nchan
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

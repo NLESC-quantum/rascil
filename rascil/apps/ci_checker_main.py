@@ -282,7 +282,7 @@ def analyze_image(args):
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(thresh_isl, thresh_pix))
 
-    if restart is False:
+    if restart == "False":
         ci_checker(
             input_image_restored,
             input_image_residual,

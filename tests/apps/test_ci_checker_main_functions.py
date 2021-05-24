@@ -211,6 +211,7 @@ class TestCIChecker(unittest.TestCase):
     def test_analyze_image_exceptions(self, mock_checker):
         mock_checker.return_value = Mock()
         self.args.ingest_fitsname_restored = self.restored_image_multi
+        self.args.restart = False
 
         result = analyze_image(self.args)
 

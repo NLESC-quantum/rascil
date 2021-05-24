@@ -659,6 +659,8 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
 
     """
     log.info("Plotting skycomponents to check the accuracy of the source finder.")
+    log.info("Use flux cutoff:{}".format(flux_limit))
+
     image = import_image_from_fits(input_image, fixpol=True)
 
     img_size = np.rad2deg(image.image_acc.wcs.wcs.cdelt[1])

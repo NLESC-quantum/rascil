@@ -37,7 +37,8 @@ linting:
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   stage: linting
   before_script:
-    - pip3  install -r requirements.txt -r requirements-test.txt
+    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt
     - pip3 install black
   script:
     - make lint
@@ -54,7 +55,8 @@ test:
   before_script:
     - apt-get update
     - apt-get -y install rsync ca-certificates pybind11-dev
-    - pip3 install -r requirements.txt -r requirements-test.txt
+    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
     - mkdir -p test_results
@@ -75,7 +77,8 @@ docs:
   before_script:
     - apt-get update
     - apt-get -y install pandoc rsync
-    - pip install -r requirements.txt -r requirements-docs.txt
+    - pip install -r requirements.txt
+    - pip install -r requirements-docs.txt
     - mkdir -p docs/build/html
     - mkdir -p test_results
     - mkdir -p /usr/share/casacore/data/

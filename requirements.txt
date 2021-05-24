@@ -34,7 +34,7 @@ bdsf==1.9.2
     # via -r requirements.in
 bleach==3.3.0
     # via nbconvert
-bokeh==2.3.1
+bokeh==2.3.2
     # via -r requirements.in
 cached-property==1.5.2
     # via h5py
@@ -48,7 +48,7 @@ cffi==1.14.5
     #   pynacl
 chardet==4.0.0
     # via requests
-click==7.1.2
+click==8.0.1
     # via distributed
 cloudpickle==1.6.0
     # via
@@ -60,7 +60,7 @@ cryptography==3.4.7
     # via paramiko
 cycler==0.10.0
     # via matplotlib
-dask==2021.4.1
+dask==2021.05.0
     # via
     #   -r requirements.in
     #   distributed
@@ -70,21 +70,21 @@ decorator==4.4.2
     #   networkx
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.4.1
+distributed==2021.5.0
     # via -r requirements.in
-ducc0==0.9.0
+ducc0==0.11.0
     # via -r requirements.in
 entrypoints==0.3
     # via nbconvert
 fasteners==0.16
     # via zarr
-fsspec==2021.4.0
+fsspec==2021.5.0
     # via dask
 future==0.18.2
     # via python-casacore
 gitdb==4.0.7
     # via gitpython
-gitpython==3.1.14
+gitpython==3.1.17
     # via -r requirements.in
 graphviz==0.16
     # via -r requirements.in
@@ -97,8 +97,10 @@ idna==2.10
 imageio==2.9.0
     # via scikit-image
 importlib-metadata==4.0.1
-    # via jsonschema
-ipykernel==5.5.4
+    # via
+    #   click
+    #   jsonschema
+ipykernel==5.5.5
     # via
     #   ipywidgets
     #   jupyter
@@ -122,7 +124,7 @@ ipywidgets==7.6.3
     # via jupyter
 jedi==0.18.0
     # via ipython
-jinja2==2.11.3
+jinja2==3.0.1
     # via
     #   bokeh
     #   nbconvert
@@ -175,7 +177,7 @@ locket==0.2.1
     # via partd
 lxml==4.6.3
     # via jupyter-contrib-nbextensions
-markupsafe==1.1.1
+markupsafe==2.0.1
     # via jinja2
 matplotlib-inline==0.1.2
     # via ipython
@@ -208,7 +210,7 @@ nest-asyncio==1.5.1
     # via nbclient
 networkx==2.5.1
     # via scikit-image
-notebook==6.3.0
+notebook==6.4.0
     # via
     #   jupyter
     #   jupyter-contrib-core
@@ -222,7 +224,7 @@ numba==0.53.1
     #   aotools
 numcodecs==0.7.3
     # via zarr
-numpy==1.20.2
+numpy==1.20.3
     # via
     #   -r requirements.in
     #   aotools
@@ -289,7 +291,7 @@ ptyprocess==0.7.0
     #   terminado
 pycparser==2.20
     # via cffi
-pyerfa==1.7.3
+pyerfa==2.0.0
     # via astropy
 pygments==2.9.0
     # via
@@ -370,15 +372,15 @@ six==1.16.0
     #   python-dateutil
 smmap==4.0.0
     # via gitdb
-sortedcontainers==2.3.0
+sortedcontainers==2.4.0
     # via distributed
 tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
     # via distributed
-terminado==0.9.4
+terminado==0.10.0
     # via notebook
-testpath==0.4.4
+testpath==0.5.0
     # via nbconvert
 tifffile==2021.4.8
     # via scikit-image
@@ -418,6 +420,7 @@ traitlets==5.0.5
 typing-extensions==3.10.0.0
     # via
     #   bokeh
+    #   gitpython
     #   importlib-metadata
 urllib3==1.26.4
     # via requests
@@ -427,9 +430,9 @@ webencodings==0.5.1
     # via bleach
 widgetsnbextension==3.5.1
     # via ipywidgets
-xarray==0.18.0
+xarray==0.18.2
     # via -r requirements.in
-zarr==2.8.1
+zarr==2.8.3
     # via -r requirements.in
 zict==2.0.0
     # via distributed

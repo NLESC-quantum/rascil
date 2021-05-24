@@ -38,8 +38,18 @@ If a source check is required::
     # This example deals with the multi-frequency image 
     python $RASCIL/rascil/apps/ci_checker_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored_cube.fits \
-    --check_source True --plot_source True --input_source_format external \
+    --check_source True --plot_source True \
      --input_source_filename test-imaging-pipeline-dask_continuum_imaging_components.hdf
+
+If primary beam correction is required::
+
+    #!/bin/bash
+    # This example deals with the multi-frequency image 
+    python $RASCIL/rascil/apps/ci_checker_main.py \
+    --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored_cube.fits \
+    --check_source True --plot_source True --apply_primary True\
+    --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_sensitivity.fits \
+    --input_source_filename test-imaging-pipeline-dask_continuum_imaging_components.hdf
 
 Supplying arguments from a file:
 ++++++++++++++++++++++++++++++++

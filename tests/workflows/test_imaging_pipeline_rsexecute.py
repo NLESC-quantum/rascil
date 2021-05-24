@@ -50,10 +50,20 @@ log.setLevel(logging.WARNING)
 default_run = False
 
 
-# @unittest.skip("Too expensive for CI/CD")
+@unittest.skip("Too expensive for CI/CD")
 @pytest.mark.parametrize(
     "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax",
     [
+        (
+            not default_run,
+            True,
+            True,
+            6.787887014253024,
+            -0.08546184846602671,
+            False,
+            "Dask_Optimise_300",
+            300.0,
+        ),
         (
             default_run,
             True,
@@ -61,18 +71,28 @@ default_run = False
             6.787887014253024,
             -0.08546184846602671,
             False,
-            "Dask_Optimise_600",
+            "Dask_Optimise_300",
             600.0,
         ),
         (
-            not default_run,
+            default_run,
             True,
             True,
-            6.535285804319266,
-            -0.058079250852478316,
+            6.6780296123876735,
+            -0.056910264450297565,
             True,
             "Dask_Optimise_Sensitivity_600",
             600.0,
+        ),
+        (
+            default_run,
+            True,
+            True,
+            6.6780296123876735,
+            -0.056910264450297565,
+            True,
+            "Dask_Optimise_Sensitivity_1200",
+            1200.0,
         ),
         (
             default_run,
@@ -145,7 +165,9 @@ def test_imaging_pipeline(
     )
     bvis_list = rsexecute.persist(bvis_list)
 
-    if rmax > 300.0:
+    if rmax > 600.0:
+        npixel = 2048
+    elif rmax > 300.0:
         npixel = 1024
     else:
         npixel = 512
@@ -221,8 +243,8 @@ def test_imaging_pipeline(
         niter=1000,
         fractional_threshold=0.1,
         threshold=0.01,
-        nmoment=4,
-        nmajor=0,
+        nmoment=3,
+        nmajor=10,
         gain=0.7,
         deconvolve_facets=1,
         deconvolve_overlap=32,

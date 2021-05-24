@@ -332,7 +332,7 @@ def analyser(args):
     elif args.mode == "contour":
         plotfiles = plot_contour(
             args.parameters,
-            args.functions[0],
+            args.functions,
             performances,
             tag=args.tag,
             verbose=verbose,
@@ -385,8 +385,8 @@ def cli_parser():
         "--parameters",
         type=str,
         nargs="*",
-        default=["imaging_npixel", "blockvis_nvis"],
-        help="Name of parameters from cli_args e.g. imaging_npixel",
+        default=["imaging_npixel_sq", "blockvis_nvis"],
+        help="Name of parameters from cli_args e.g. imaging_npixel_sq",
     )
 
     parser.add_argument(
@@ -400,6 +400,7 @@ def cli_parser():
             "restore_cube",
             "image_scatter_facets",
             "image_gather_facets",
+            "concat_images",
         ],
         help="Names of values from dask_profile to plot e.g. skymodel_predict_calibrate",
     )
@@ -459,6 +460,7 @@ def plot_lines(parameter, functions, performances, title="", tag="", verbose=Fal
         (0, "Time per call (s)", "per_call"),
         (1, "Total (s)", "total"),
         (2, "Percentage time", "percentage"),
+        (3, "Number calls", "number_calls"),
     ]:
         plt.clf()
         plt.cla()
@@ -504,17 +506,16 @@ def plot_lines(parameter, functions, performances, title="", tag="", verbose=Fal
     return figures
 
 
-def plot_contour(parameters, func, performances, title="", tag="", verbose=False):
+def plot_contour(parameters, functions, performances, title="", tag="", verbose=False):
     """Plot the set of yaxes against xaxis
 
     :param parameters: Name of parameters e.g. imaging_npixel, blockvis_nvis
-    :param function: Name of function to be plotted against parameter
+    :param functions: Name of functions to be plotted against parameter
     :param performance: A list of dicts containing each containing the results for one test case
     :param title: Title for plot
     :param tag: Informational tag for file name
     :return:
     """
-
     log.info("Plotting contours")
 
     figures = list()
@@ -522,45 +523,60 @@ def plot_contour(parameters, func, performances, title="", tag="", verbose=False
     if title == "":
         title = "perf"
 
-    # The profile times are in the "dask_profile" dictionary
+    for func in functions:
 
+        for time_type, time_type_name, time_type_short in [
+            (0, "Time per call (s)", "per_call"),
+            (1, "Total (s)", "total"),
+            (2, "Percentage time", "percentage"),
+            (3, "Number calls", "number_calls"),
+        ]:
+            plt.clf()
+            plt.cla()
+
+            xvalues, yvalues, zvalues = get_surface_data(
+                func, parameters, performances, time_type
+            )
+
+            plt.tricontour(xvalues, yvalues, zvalues, levels=10)
+
+            plt.title(f"{title} {func} {tag} {time_type_name}")
+            plt.xlabel(parameters[0])
+            plt.ylabel(parameters[1])
+            plt.colorbar()
+            if title is not "" or tag is not "":
+                if tag == "":
+                    figure = f"{title}_{func}_{time_type_short}_contour.png"
+                else:
+                    figure = f"{title}_{func}_{tag}_{time_type_short}_contour.png"
+                plt.savefig(figure)
+            else:
+                figure = None
+
+            plt.show(block=False)
+            figures.append(figure)
+    return figures
+
+
+def get_surface_data(func, parameters, performances, time_type):
+    """Get the surface data for given parameters and function
+
+    :param func: Name of function e.g. "invert_ng"
+    :param parameters: Name of parameters e.g. "imaging_npixel", "blockvis_nvis"
+    :param performances: Performance information
+    :param time_type: Code: 0=per call, 1=total, 2=fraction
+    :return: x, y, z
+    """
     xvalues = numpy.array(
         [performance["inputs"][parameters[0]] for performance in performances]
     )
     yvalues = numpy.array(
         [performance["inputs"][parameters[1]] for performance in performances]
     )
-
-    for time_type, time_type_name, time_type_short in [
-        (0, "Time per call (s)", "per_call"),
-        (1, "Total (s)", "total"),
-        (2, "Percentage time", "percentage"),
-    ]:
-        plt.clf()
-        plt.cla()
-
-        zvalues = numpy.array(
-            [get_data(performance, func)[time_type] for performance in performances]
-        )
-
-        plt.tricontour(xvalues, yvalues, zvalues, levels=10)
-
-        plt.title(f"{title} {tag} {time_type_name}")
-        plt.xlabel(parameters[0])
-        plt.ylabel(parameters[1])
-        plt.colorbar()
-        if title is not "" or tag is not "":
-            if tag == "":
-                figure = f"{title}_{time_type_short}_contour.png"
-            else:
-                figure = f"{title}_{tag}_{time_type_short}_contour.png"
-            plt.savefig(figure)
-        else:
-            figure = None
-
-        plt.show(block=False)
-        figures.append(figure)
-    return figures
+    zvalues = numpy.array(
+        [get_data(performance, func)[time_type] for performance in performances]
+    )
+    return xvalues, yvalues, zvalues
 
 
 def plot_barchart(performance_files, performances, title="", tag="", verbose=False):
@@ -577,9 +593,13 @@ def plot_barchart(performance_files, performances, title="", tag="", verbose=Fal
 
     for ipf, performance_file in enumerate(performance_files):
         performance = performances[ipf]
-        time_per_call, total_time, fraction_time, functions = get_barchart_data(
-            performance
-        )
+        (
+            time_per_call,
+            total_time,
+            fraction_time,
+            number_calls,
+            functions,
+        ) = get_barchart_data(performance)
 
         title = performance_file.replace(".json", "")
 
@@ -588,6 +608,7 @@ def plot_barchart(performance_files, performances, title="", tag="", verbose=Fal
             (total_time, "Total (s)", "total"),
             (time_per_call, "Per call (s)", "per_call"),
             (fraction_time, "Percentage", "percentage"),
+            (number_calls, "Number calls", "number_calls"),
         ]:
             plt.clf()
             plt.cla()
@@ -615,7 +636,7 @@ def plot_barchart(performance_files, performances, title="", tag="", verbose=Fal
 
 
 def get_barchart_data(performance):
-    """Get the total time, time per call, fractional time, and allowed yaxes
+    """Get the total time, time per call, fractional time, number_calls, and allowed yaxes
 
     :param performance:
     :return:
@@ -637,15 +658,19 @@ def get_barchart_data(performance):
         / performance["dask_profile"][func]["number_calls"]
         for func in functions
     ]
-    return time_per_call, total_time, fraction_time, functions
+    number_calls = [
+        performance["dask_profile"][func]["number_calls"] for func in functions
+    ]
+
+    return time_per_call, total_time, fraction_time, number_calls, functions
 
 
 def get_data(performance, func):
-    """
+    """Get the performance data for a given function
 
-    :param performance:
-    :param func:
-    :return:
+    :param performance: Single performance dict
+    :param func: Name of function
+    :return: time_per_call, total_time, fraction_time, number_calls
     """
     """Get the total time, time per call, fractional time, and allowed yaxes
 
@@ -658,23 +683,13 @@ def get_data(performance, func):
         / performance["dask_profile"][func]["number_calls"]
     )
     fraction_time = performance["dask_profile"][func]["fraction"]
+    number_calls = performance["dask_profile"][func]["number_calls"]
 
-    return time_per_call, total_time, fraction_time
-
-
-def fit(performances, axes, z_axis):
-    """Fit surface to parameter z_axis
-
-    :param performances:
-    :param axes: e.g. imaging_npixel, blockvis_nvis
-    :param z_axis: e.g. invert_ng.time_per_call
-    :return:
-    """
-    time_per_call, total_time, fraction_time, yaxes = get_barchart_data(performances)
+    return time_per_call, total_time, fraction_time, number_calls
 
 
 def get_performance_data(args, performance_files, verbose=False):
-    """
+    """Read and normalize performance data
 
     :param args: CLI args
     :param performance_files: Names of performance files
@@ -686,7 +701,6 @@ def get_performance_data(args, performance_files, verbose=False):
     if performances is None or len(performances) == 0:
         raise ValueError("Unable to read performance data")
     # inputs are made of cli_args and blockvis information
-
     for perf in performances:
         perf["inputs"] = perf["cli_args"]
         if "blockvis0" in perf.keys():
@@ -698,6 +712,11 @@ def get_performance_data(args, performance_files, verbose=False):
             )
         else:
             perf["inputs"]["blockvis_nvis"] = args.blockvis_nvis
+
+        perf["inputs"] = {
+            **perf["inputs"],
+            "imaging_npixel_sq": perf["inputs"]["imaging_npixel"] ** 2,
+        }
 
     parameters = list(performances[0]["inputs"].keys())
     functions = list(performances[0]["dask_profile"].keys())

@@ -48,7 +48,7 @@ cffi==1.14.5
     #   pynacl
 chardet==4.0.0
     # via requests
-click==8.0.0
+click==8.0.1
     # via distributed
 cloudpickle==1.6.0
     # via
@@ -72,7 +72,7 @@ defusedxml==0.7.1
     # via nbconvert
 distributed==2021.5.0
     # via -r requirements.in
-ducc0==0.10.1
+ducc0==0.11.0
     # via -r requirements.in
 entrypoints==0.3
     # via nbconvert
@@ -97,7 +97,9 @@ idna==2.10
 imageio==2.9.0
     # via scikit-image
 importlib-metadata==4.0.1
-    # via jsonschema
+    # via
+    #   click
+    #   jsonschema
 ipykernel==5.5.5
     # via
     #   ipywidgets
@@ -122,7 +124,7 @@ ipywidgets==7.6.3
     # via jupyter
 jedi==0.18.0
     # via ipython
-jinja2==3.0.0
+jinja2==3.0.1
     # via
     #   bokeh
     #   nbconvert
@@ -175,7 +177,7 @@ locket==0.2.1
     # via partd
 lxml==4.6.3
     # via jupyter-contrib-nbextensions
-markupsafe==2.0.0
+markupsafe==2.0.1
     # via jinja2
 matplotlib-inline==0.1.2
     # via ipython
@@ -208,7 +210,7 @@ nest-asyncio==1.5.1
     # via nbclient
 networkx==2.5.1
     # via scikit-image
-notebook==6.3.0
+notebook==6.4.0
     # via
     #   jupyter
     #   jupyter-contrib-core
@@ -289,7 +291,7 @@ ptyprocess==0.7.0
     #   terminado
 pycparser==2.20
     # via cffi
-pyerfa==1.7.3
+pyerfa==2.0.0
     # via astropy
 pygments==2.9.0
     # via
@@ -376,9 +378,9 @@ tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
     # via distributed
-terminado==0.9.5
+terminado==0.10.0
     # via notebook
-testpath==0.4.4
+testpath==0.5.0
     # via nbconvert
 tifffile==2021.4.8
     # via scikit-image
@@ -428,9 +430,9 @@ webencodings==0.5.1
     # via bleach
 widgetsnbextension==3.5.1
     # via ipywidgets
-xarray==0.18.0
+xarray==0.18.2
     # via -r requirements.in
-zarr==2.8.1
+zarr==2.8.3
     # via -r requirements.in
 zict==2.0.0
     # via distributed

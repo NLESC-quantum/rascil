@@ -50,7 +50,7 @@ log.setLevel(logging.WARNING)
 default_run = False
 
 
-@unittest.skip("Too expensive for CI/CD")
+# @unittest.skip("Too expensive for CI/CD")
 @pytest.mark.parametrize(
     "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax",
     [
@@ -65,7 +65,7 @@ default_run = False
             600.0,
         ),
         (
-            default_run,
+            not default_run,
             True,
             True,
             6.535285804319266,
@@ -222,7 +222,7 @@ def test_imaging_pipeline(
         fractional_threshold=0.1,
         threshold=0.01,
         nmoment=4,
-        nmajor=10,
+        nmajor=0,
         gain=0.7,
         deconvolve_facets=1,
         deconvolve_overlap=32,
@@ -234,7 +234,7 @@ def test_imaging_pipeline(
 
     continuum_imaging_list = rsexecute.compute(continuum_imaging_list, sync=True)
 
-    skymodel_list = continuum_imaging_list[3]
+    skymodel_list = continuum_imaging_list[2]
     export_skycomponent_to_hdf5(
         gleam_components,
         "%s/test-continuum_imaging_%s_components.hdf" % (dir, tag),
@@ -245,13 +245,13 @@ def test_imaging_pipeline(
     )
     # Write frequency cubes
     deconvolved = image_gather_channels(
-        [continuum_imaging_list[0][chan] for chan in range(nfreqwin)]
+        [skymodel_list[chan].image for chan in range(nfreqwin)]
     )
     residual = image_gather_channels(
-        [continuum_imaging_list[1][chan][0] for chan in range(nfreqwin)]
+        [continuum_imaging_list[0][chan][0] for chan in range(nfreqwin)]
     )
     restored = image_gather_channels(
-        [continuum_imaging_list[2][chan] for chan in range(nfreqwin)]
+        [continuum_imaging_list[1][chan] for chan in range(nfreqwin)]
     )
 
     log.info(qa_image(deconvolved, context="Clean image "))
@@ -267,7 +267,7 @@ def test_imaging_pipeline(
 
     if sensitivity:
         sens = image_gather_channels(
-            [continuum_imaging_list[1][chan][1] for chan in range(nfreqwin)]
+            [continuum_imaging_list[0][chan][1] for chan in range(nfreqwin)]
         )
         log.info(qa_image(sens, context="Sensitivity image "))
         export_image_to_fits(

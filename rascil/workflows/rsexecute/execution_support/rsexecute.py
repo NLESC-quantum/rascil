@@ -161,7 +161,7 @@ class _rsexecutebase:
 
     _instance = None
 
-    def __init__(self, use_dask=True, use_dlg=False, verbose=False, optimize=False):
+    def __init__(self, use_dask=True, use_dlg=False, verbose=False, optimize=True):
         """Initialise rsexecute framework
 
         A singleton of this class is created and is available globally as rsexecute

@@ -64,8 +64,7 @@ from rascil.apps.apps_parser import (
 )
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.DEBUG)
-# log.addHandler(logging.StreamHandler(sys.stdout))
+log.setLevel(logging.INFO)
 
 
 def cli_parser():
@@ -168,7 +167,7 @@ def imager(args):
     elif args.mode == "invert":
         results = invert(args, bvis_list, model_list, msname)
     elif args.mode == "load":
-        load(args, bvis_list, msname)
+        results = load(args, bvis_list, msname)
     else:
         raise ValueError("Unknown mode {}".format(args.mode))
 
@@ -311,11 +310,12 @@ def load(args, bvis_list, msname):
     :param args: The parameters read from the CLI using argparse
     :param bvis_list: A list of or graph to make BlockVisibilitys
     :param msname: The filename of the MeasurementSet
-    :return:
+    :return: msname
     """
     bvis_list = rsexecute.compute(bvis_list, sync=True)
     for bvis in bvis_list:
         log.info(str(bvis))
+    return msname
 
 
 def cip(args, bvis_list, model_list, msname, clean_beam=None):

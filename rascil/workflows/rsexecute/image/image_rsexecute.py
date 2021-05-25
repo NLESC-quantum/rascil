@@ -89,25 +89,26 @@ def image_gather_channels_rsexecute(image_list, split=0):
     :param image_list: List of images
     :param split: Order of split i.e. 2 is binary, 0 is list
     :return: graph for summed image
-
     """
 
     if split == 0:
         return rsexecute.execute(image_gather_channels)(image_list)
 
-    def concat_channel_images(image_list):
-        if len(image_list) == 1:
-            return image_list[0]
-        else:
-            assert len(image_list) > 1, image_list
-            return image_gather_channels(image_list)
-
-    if len(image_list) > split:
-        centre = len(image_list) // split
-        result = [
-            image_gather_channels_rsexecute(image_list[:centre], split=split),
-            image_gather_channels_rsexecute(image_list[centre:], split=split),
-        ]
-        return rsexecute.execute(concat_channel_images, nout=2)(result)
     else:
-        return rsexecute.execute(concat_channel_images, nout=2)(image_list)
+
+        def concat_channel_images(image_list):
+            if len(image_list) == 1:
+                return image_list[0]
+            else:
+                assert len(image_list) > 1, image_list
+                return image_gather_channels(image_list)
+
+        if len(image_list) > split:
+            centre = len(image_list) // split
+            result = [
+                image_gather_channels_rsexecute(image_list[:centre], split=split),
+                image_gather_channels_rsexecute(image_list[centre:], split=split),
+            ]
+            return rsexecute.execute(concat_channel_images, nout=2)(result)
+        else:
+            return rsexecute.execute(concat_channel_images, nout=2)(image_list)

@@ -35,15 +35,15 @@ FUNCTIONS = (
             FUNCTIONS,
         ),
         ("bar", "", FUNCTIONS),
-        # ("contour", "imaging_npixel blockvis_nvis", "invert_ng"),
+        ("contour", "imaging_npixel blockvis_nvis", "invert_ng"),
     ],
 )
 def test_performance_analysis(mode, parameters, functions):
-    """
+    """This tests the different modes of operation.
+
     :param mode: Mode of processing: plot or bar or contour
-    :param x_axis:
-    :param y_axis:
-    :param z_axis:
+    :param parameters: Parameters for the test e.g. blockvis_nvis,
+    :param functions: Functions for the test e.g. invert_ng
     :return:
     """
 

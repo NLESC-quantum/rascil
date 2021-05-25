@@ -1,15 +1,20 @@
 """ RASCIL performance analysis
 
-We measure the time taken for functions run by Dask and write to a json file.
+We measure the execution statistics for functions run by Dask and write to a json file.
+The statistics are:
 
-This app allows plotting of the time:
+ - Total processor time per function
+ - Processor time per function call
+ - Number of calls per function
+ - Fraction of total processor time per function
+
+This app allows plotting of these statistics
+
 - Line plots e.g. Given functions (e.g. "invert_ng") vs parameter (e.g. "imaging_npixel")
-- Bar charts e.g. Time per function
+- Bar charts: statistics per function
 - Contour plots e.g. Given functions (e.g. "invert_ng" vs parameters
  (e.g. "imaging_npixel", "blockvis_nvis"))
  
-There are two times: total time per function, and time per function call
-
 A typical json file looks like:
 
 {
@@ -363,7 +368,7 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--mode", type=str, default="line", help="Processing mode: plot | bar | contour"
+        "--mode", type=str, default="line", help="Processing mode: line | bar | contour"
     )
 
     parser.add_argument(
@@ -386,7 +391,8 @@ def cli_parser():
         type=str,
         nargs="*",
         default=["imaging_npixel_sq", "blockvis_nvis"],
-        help="Name of parameters from cli_args e.g. imaging_npixel_sq",
+        help="Name of parameters from cli_args e.g. imaging_npixel_sq, used for line (1 parameter)"
+        " and contour plots (2 parameters)",
     )
 
     parser.add_argument(
@@ -400,7 +406,6 @@ def cli_parser():
             "restore_cube",
             "image_scatter_facets",
             "image_gather_facets",
-            "concat_images",
         ],
         help="Names of values from dask_profile to plot e.g. skymodel_predict_calibrate",
     )
@@ -582,7 +587,7 @@ def get_surface_data(func, parameters, performances, time_type):
 def plot_barchart(performance_files, performances, title="", tag="", verbose=False):
     """Plot the set of yaxes
 
-    :param performance: A list of dicts containing each containing the results for one test case
+    :param performance: A list of dicts each containing the results for one test case
     :param title: Title for plot
     :param tag: Informative tag for file name
     :return:
@@ -638,8 +643,8 @@ def plot_barchart(performance_files, performances, title="", tag="", verbose=Fal
 def get_barchart_data(performance):
     """Get the total time, time per call, fractional time, number_calls, and allowed yaxes
 
-    :param performance:
-    :return:
+    :param performance: Performance dictionary associated with one file
+    :return: time_per_call, total_time, fraction_time, number_calls, functions
     """
     # The input values are in the inputs dictionary
     functions = list()
@@ -671,11 +676,6 @@ def get_data(performance, func):
     :param performance: Single performance dict
     :param func: Name of function
     :return: time_per_call, total_time, fraction_time, number_calls
-    """
-    """Get the total time, time per call, fractional time, and allowed yaxes
-
-    :param performance:
-    :return:
     """
     total_time = performance["dask_profile"][func]["time"]
     time_per_call = (

@@ -194,7 +194,7 @@ def cli_parser():
         "--restart",
         type=str,
         default="False",
-        help="Option to surpass BDSF when the output already exists. If True, directly starting from reading csv file",
+        help="If true, surpass BDSF when the output already exists. The checker will start from reading the BDSF csv file",
     )
 
     return parser
@@ -596,7 +596,7 @@ def check_source(orig, comp, match_sep):
     for match in matches:
         m_comp = comp[match[0]]
         m_orig = orig[match[1]]
-        log.debug(f"Original: {m_orig} Match {m_comp}")
+        log.info(f"Original: {m_orig} Match {m_comp}")
 
     return matches
 

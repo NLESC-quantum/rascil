@@ -241,15 +241,23 @@ class TestPlotSkycomponent(unittest.TestCase):
             self.components, noise=self.noise, mode="flux_all"
         )
         spec_in, spec_out = plot_multifreq_spectral_index(
-            comp_test, self.components, plot_file=self.plot_file
+            comp_test,
+            self.components,
+            self.phasecentre,
+            plot_file=self.plot_file,
+            plot_diagnostics=True,
         )
 
         assert len(spec_in) == len(comp_test)
 
         assert os.path.exists(self.plot_file + "_spec_index.png")
+        assert os.path.exists(self.plot_file + "_spec_index_diagnostics_flux.png")
+        assert os.path.exists(self.plot_file + "_spec_index_diagnostics_dist.png")
 
         if self.persist is False:
             os.remove(self.plot_file + "_spec_index.png")
+            os.remove(self.plot_file + "_spec_index_diagnostics_flux.png")
+            os.remove(self.plot_file + "_spec_index_diagnostics_dist.png")
 
 
 if __name__ == "__main__":

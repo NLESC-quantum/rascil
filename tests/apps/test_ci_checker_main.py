@@ -290,6 +290,10 @@ def test_continuum_imaging_checker(
     assert os.path.exists(
         rascil_path(f"test_results/test_ci_checker_{tag}_background_plot.png")
     )
+    assert os.path.exists(
+        rascil_path(f"test_results/test_ci_checker_{tag}_restored_power_spectrum.png")
+    )
+
     if residual_file is not None:
         assert os.path.exists(
             rascil_path(
@@ -332,6 +336,16 @@ def test_continuum_imaging_checker(
     if nchan > 1:
         assert os.path.exists(
             rascil_path(f"test_results/test_ci_checker_{tag}_spec_index.png")
+        )
+        assert os.path.exists(
+            rascil_path(
+                f"test_results/test_ci_checker_{tag}_spec_index_diagnostics_flux.png"
+            )
+        )
+        assert os.path.exists(
+            rascil_path(
+                f"test_results/test_ci_checker_{tag}_spec_index_diagnostics_dist.png"
+            )
         )
 
     # test that create_index() generates the html and md files,

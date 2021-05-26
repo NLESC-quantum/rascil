@@ -332,6 +332,7 @@ def analyser(args):
             performances,
             tag=args.tag,
             verbose=verbose,
+            results=args.results,
         )
         return plotfiles
     elif args.mode == "contour":
@@ -341,6 +342,7 @@ def analyser(args):
             performances,
             tag=args.tag,
             verbose=verbose,
+            results=args.results,
         )
         return plotfiles
 
@@ -350,6 +352,7 @@ def analyser(args):
             performances,
             tag=args.tag,
             verbose=verbose,
+            results=args.results,
         )
         return plotfiles
     else:
@@ -423,6 +426,13 @@ def cli_parser():
         help="Verbose output?",
     )
 
+    parser.add_argument(
+        "--results",
+        type=str,
+        default="./",
+        help="Directory for results, default is current directory",
+    )
+
     return parser
 
 
@@ -440,7 +450,9 @@ def sort_values(xvalues, yvalues):
     return xvalues, yvalues
 
 
-def plot_lines(parameter, functions, performances, title="", tag="", verbose=False):
+def plot_lines(
+    parameter, functions, performances, title="", tag="", verbose=False, results="./"
+):
     """Plot the set of yaxes against xaxis
 
     :param parameter: Name of parameter e.g. imaging_npixel
@@ -456,7 +468,7 @@ def plot_lines(parameter, functions, performances, title="", tag="", verbose=Fal
     figures = list()
 
     if title == "":
-        title = "perf"
+        title = "performance"
 
     # The profile times are in the "dask_profile" dictionary
 
@@ -499,9 +511,9 @@ def plot_lines(parameter, functions, performances, title="", tag="", verbose=Fal
         plt.legend()
         if title is not "" or tag is not "":
             if tag == "":
-                figure = f"{title}_{time_type_short}_line.png"
+                figure = f"{results}/{title}_{time_type_short}_line.png"
             else:
-                figure = f"{title}_{tag}_{time_type_short}_line.png"
+                figure = f"{results}/{title}_{tag}_{time_type_short}_line.png"
             plt.savefig(figure)
         else:
             figure = None
@@ -511,7 +523,9 @@ def plot_lines(parameter, functions, performances, title="", tag="", verbose=Fal
     return figures
 
 
-def plot_contour(parameters, functions, performances, title="", tag="", verbose=False):
+def plot_contour(
+    parameters, functions, performances, title="", tag="", verbose=False, results="./"
+):
     """Plot the set of yaxes against xaxis
 
     :param parameters: Name of parameters e.g. imaging_npixel, blockvis_nvis
@@ -526,7 +540,7 @@ def plot_contour(parameters, functions, performances, title="", tag="", verbose=
     figures = list()
 
     if title == "":
-        title = "perf"
+        title = "performance"
 
     for func in functions:
 
@@ -551,15 +565,15 @@ def plot_contour(parameters, functions, performances, title="", tag="", verbose=
             plt.colorbar()
             if title is not "" or tag is not "":
                 if tag == "":
-                    figure = f"{title}_{func}_{time_type_short}_contour.png"
+                    figure = f"{results}/{title}_{func}_{time_type_short}_contour.png"
                 else:
-                    figure = f"{title}_{func}_{tag}_{time_type_short}_contour.png"
+                    figure = (
+                        f"{results}/{title}_{func}_{tag}_{time_type_short}_contour.png"
+                    )
                 plt.savefig(figure)
-            else:
-                figure = None
+                figures.append(figure)
 
             plt.show(block=False)
-            figures.append(figure)
     return figures
 
 
@@ -584,7 +598,9 @@ def get_surface_data(func, parameters, performances, time_type):
     return xvalues, yvalues, zvalues
 
 
-def plot_barchart(performance_files, performances, title="", tag="", verbose=False):
+def plot_barchart(
+    performance_files, performances, title="", tag="", verbose=False, results="./"
+):
     """Plot the set of yaxes
 
     :param performance: A list of dicts each containing the results for one test case
@@ -593,6 +609,9 @@ def plot_barchart(performance_files, performances, title="", tag="", verbose=Fal
     :return:
     """
     figures = list()
+
+    if title == "":
+        title = "performance"
 
     log.info("Plotting barcharts")
 
@@ -605,8 +624,6 @@ def plot_barchart(performance_files, performances, title="", tag="", verbose=Fal
             number_calls,
             functions,
         ) = get_barchart_data(performance)
-
-        title = performance_file.replace(".json", "")
 
         # The profile times are in the "dask_profile" dictionary
         for axis, time_type, time_type_short in [
@@ -628,14 +645,12 @@ def plot_barchart(performance_files, performances, title="", tag="", verbose=Fal
             plt.show(block=False)
             if title is not "" or tag is not "":
                 if tag == "":
-                    figure = f"{title}_{time_type_short}_bar.png"
+                    figure = f"{results}/{title}_{time_type_short}_bar.png"
                 else:
-                    figure = f"{title}_{tag}_{time_type_short}_bar.png"
+                    figure = f"{results}{title}_{tag}_{time_type_short}_bar.png"
 
                 plt.savefig(figure)
-            else:
-                figure = None
-            figures.append(figure)
+                figures.append(figure)
 
     return figures
 
@@ -699,7 +714,7 @@ def get_performance_data(args, performance_files, verbose=False):
         performance_read(performance_file) for performance_file in performance_files
     ]
     if performances is None or len(performances) == 0:
-        raise ValueError("Unable to read performance data")
+        raise ValueError(f"Unable to read performance data {performance_files}")
     # inputs are made of cli_args and blockvis information
     for perf in performances:
         perf["inputs"] = perf["cli_args"]

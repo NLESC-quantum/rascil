@@ -2,6 +2,7 @@ aotools
 astropy
 bokeh
 dask
+dask-memusage
 distributed
 ducc0
 h5py

@@ -486,7 +486,11 @@ class _rsexecutebase:
                 return dict()
 
     def memusage(self, memusage_file="memusage.csv"):
-        dask_memusage.install(self._client.cluster.scheduler, memusage_file)
+        if (
+            self._client.cluster is not None
+            and self._client.cluster.scheduler is not None
+        ):
+            dask_memusage.install(self._client.cluster.scheduler, memusage_file)
 
     @property
     def client(self):

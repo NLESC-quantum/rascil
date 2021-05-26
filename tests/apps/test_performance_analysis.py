@@ -11,7 +11,7 @@ from rascil.data_models.parameters import rascil_path, rascil_data_path
 from rascil.apps.performance_analysis import cli_parser, analyser
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 FUNCTIONS = (
@@ -107,7 +107,7 @@ def test_performance_analysis(mode, parameters, functions):
 
     args = parser.parse_args(pa_args)
     filesout = analyser(args)
-    print(filesout)
+    # Check that the claimed output plots actually exist
     for fileout in filesout:
         f = open(fileout)
         f.close()

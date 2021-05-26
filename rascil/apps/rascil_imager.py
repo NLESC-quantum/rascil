@@ -7,7 +7,7 @@ import datetime
 import logging
 import os
 import pprint
-import sys
+import time
 
 import matplotlib
 
@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 from distributed import Client
 
 from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
+from rascil.processing_components.util.sizeof import get_size
+
 from rascil.processing_components import (
     create_image_from_visibility,
     qa_image,
@@ -26,6 +28,7 @@ from rascil.processing_components import (
     export_image_to_fits,
     image_gather_channels,
     create_calibration_controls,
+    advise_wide_field,
 )
 
 from rascil.processing_components.util.performance import (
@@ -39,7 +42,6 @@ from rascil.processing_components.util.performance import (
 from rascil.workflows import (
     weight_list_rsexecute_workflow,
     continuum_imaging_skymodel_list_rsexecute_workflow,
-    sum_invert_results,
     remove_sumwt,
     create_blockvisibility_from_ms_rsexecute,
     ical_skymodel_list_rsexecute_workflow,
@@ -63,7 +65,6 @@ from rascil.apps.apps_parser import (
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cli_parser():
@@ -95,6 +96,7 @@ def imager(args):
     mode=invert: dirty image
     mode=cip: deconvolved image, residual image, restored image.
     mode=ical: deconvolved image, residual image, restored image
+    mode=load: load and list the data
 
     :param args: argparse with appropriate arguments
     :return: Names of outputs as fits files
@@ -127,6 +129,64 @@ def imager(args):
     log.info("Started : {}".format(starttime))
     log.info("Writing log to {}".format(logfile))
 
+    setup_rsexecute(args)
+
+    rsexecute.run(init_logging)
+
+    log.info(pprint.pformat(vars(args)))
+
+    log.info("Current working directory is {}".format(cwd))
+
+    bvis_list, msname = get_blockvis_list(args)
+
+    # Now get the blockvisibility info. Do the query on the cluster to avoid
+    # transferring the entire data.
+    perf_save_blockvis_info(args, bvis_list)
+
+    # If the cellsize has not been specified, we compute the blockvis now and
+    # run the advisor
+    cellsize = get_cellsize(args, bvis_list)
+
+    # Make only the Stokes I image so we convert the visibility to Stokes I
+    bvis_list = convert_to_stokesI(args, bvis_list)
+
+    npixel = args.imaging_npixel
+
+    # Define the model to be used as a template, one for each BlockVisibility
+    model_list = create_model_image_list(args, bvis_list, cellsize, npixel)
+
+    bvis_list = weight_blockvis(args, bvis_list, model_list)
+
+    clean_beam = get_clean_beam(args)
+
+    # Now the actual processing
+    if args.mode == "cip":
+        results = cip(args, bvis_list, model_list, msname, clean_beam)
+    elif args.mode == "ical":
+        results = ical(args, bvis_list, model_list, msname, clean_beam)
+    elif args.mode == "invert":
+        results = invert(args, bvis_list, model_list, msname)
+    elif args.mode == "load":
+        results = load(args, bvis_list, msname)
+    else:
+        raise ValueError("Unknown mode {}".format(args.mode))
+
+    # Save the processing statistics from Dask
+    dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
+
+    perf_save_dask_profile(args, dask_info)
+
+    rsexecute.close()
+
+    log.info("Resulting image(s) {}".format(results))
+
+    log.info("Started  : {}".format(starttime))
+    log.info("Finished : {}".format(datetime.datetime.now()))
+
+    return results
+
+
+def setup_rsexecute(args):
     # We can run distributed (use_dask=True) or in serial (use_dask=False). Using Dask is usually recommended
     if args.use_dask == "True":
         if args.dask_scheduler is not None:
@@ -146,28 +206,17 @@ def imager(args):
     else:
         rsexecute.set_client(use_dask=False)
 
-    rsexecute.run(init_logging)
 
-    log.info(pprint.pformat(vars(args)))
-
-    log.info("Current working directory is {}".format(cwd))
-
+def get_blockvis_list(args):
     # Read in the MS into a list of BlockVisibility's
     # We start with an MS with e.g. 4 data_descriptors, each of which has e.g. 64 channels.
     # We average each dd over e.g. 2 blocks of e.g. 32 channels, giving e.g. 8 separate
     # BlockVisibility's
-
-    # rsexecute is a slightly wrapped version of Dask. rsexecute.execute is
-    # essentially the same as dask.delayed
-
-    # Create a graph to read the MS into RASCIL BlockVisibility objects
     msname = args.ingest_msname
-
     dds = args.ingest_dd
     channels_per_dd = args.ingest_vis_nchan
     nchan_per_blockvis = args.ingest_chan_per_blockvis
     nout = channels_per_dd // nchan_per_blockvis
-
     bvis_list = create_blockvisibility_from_ms_rsexecute(
         msname=args.ingest_msname,
         dds=dds,
@@ -175,29 +224,42 @@ def imager(args):
         nchan_per_blockvis=nchan_per_blockvis,
         average_channels=args.ingest_average_blockvis == "True",
     )
-    bvis_list = rsexecute.persist(bvis_list)
+    return bvis_list, msname
 
-    # If the cellsize has not been specified, we compute the blockvis now and
-    # run the advisor
-    cellsize = args.imaging_cellsize
-    if cellsize is None:
-        bvis_list = rsexecute.compute(bvis_list, sync=True)
-        from rascil.processing_components import advise_wide_field
 
-        advice = advise_wide_field(bvis_list[0], guard_band_image=3.0)
-        cellsize = advice["cellsize"]
-        log.info(f"Setting cellsize to {cellsize} rad")
+def perf_save_dask_profile(args, dask_info):
+    if args is not None and args.performance_file is not None:
+        performance_store_dict(
+            args.performance_file, "dask_profile", dask_info, mode="a"
+        )
+        performance_dask_configuration(args.performance_file, rsexecute, mode="a")
 
-    # Make only the Stokes I image so we convert the visibility to Stokes I
-    if args.imaging_pol == "stokesI":
-        bvis_list = [
-            rsexecute.execute(convert_blockvisibility_to_stokesI)(bv)
-            for bv in bvis_list
-        ]
 
-    npixel = args.imaging_npixel
+def get_clean_beam(args):
+    if args.clean_beam is not None:
+        clean_beam = {
+            "bmaj": args.clean_beam[0],
+            "bmin": args.clean_beam[1],
+            "bpa": args.clean_beam[2],
+        }
+    else:
+        clean_beam = None
+    return clean_beam
 
-    # Define the model to be used as a template, one for each BlockVisibility
+
+def weight_blockvis(args, bvis_list, model_list):
+    # Create a graph to weight the data
+    if args.imaging_weighting != "natural":
+        bvis_list = weight_list_rsexecute_workflow(
+            bvis_list,
+            model_list,
+            weighting=args.imaging_weighting,
+            robustness=args.imaging_robustness,
+        )
+    return bvis_list
+
+
+def create_model_image_list(args, bvis_list, cellsize, npixel):
     model_list = [
         rsexecute.execute(create_image_from_visibility)(
             bvis,
@@ -208,68 +270,68 @@ def imager(args):
         )
         for bvis in bvis_list
     ]
-    model_list = rsexecute.persist(model_list)
+    return model_list
 
-    # Create a graph to weight the data
-    if args.imaging_weighting != "natural":
-        bvis_list = weight_list_rsexecute_workflow(
-            bvis_list,
-            model_list,
-            weighting=args.imaging_weighting,
-            robustness=args.imaging_robustness,
-        )
-    bvis_list = rsexecute.persist(bvis_list)
 
-    # Now get the blockvisibility info. Do the query on the cluster to avoid
-    # transferring the entire data
-    if args.performance_file != "":
-        bv_info_list = [
-            rsexecute.execute(performance_blockvisibility, nout=1)(bvis)
-            for bvis in bvis_list
+def convert_to_stokesI(args, bvis_list):
+    if args.imaging_pol == "stokesI":
+        bvis_list = [
+            rsexecute.execute(convert_blockvisibility_to_stokesI)(bv)
+            for bv in bvis_list
         ]
-        bv_info_list = rsexecute.compute(bv_info_list, sync=True)
-        for ibvis, bv_info in enumerate(bv_info_list):
+    return bvis_list
+
+
+def get_cellsize(args, bvis_list):
+    cellsize = args.imaging_cellsize
+    if cellsize is None:
+        advice_list = [
+            rsexecute.execute(advise_wide_field)(bv, guard_band_image=3.0)
+            for bv in bvis_list
+        ]
+        advice_list = rsexecute.compute(advice_list, sync=True)
+        cellsize = advice_list[0]["cellsize"]
+        log.info(f"Setting cellsize to {cellsize} rad")
+    return cellsize
+
+
+def perf_save_blockvis_info(args, bvis_list):
+    if args.performance_file is not None:
+        results = [
+            rsexecute.execute(performance_blockvisibility)(bvis) for bvis in bvis_list
+        ]
+        results = rsexecute.compute(results, sync=True)
+        for ibvis, r in enumerate(results):
             performance_store_dict(
-                args.performance_file, f"blockvis{ibvis}", bv_info, mode="a"
+                args.performance_file, f"blockvis{ibvis}", r, mode="a"
             )
 
-    if args.mode == "cip":
-        results = cip(args, bvis_list, model_list, msname)
-    elif args.mode == "ical":
-        results = ical(args, bvis_list, model_list, msname)
-    elif args.mode == "invert":
-        results = invert(args, bvis_list, model_list, msname)
-    else:
-        raise ValueError("Unknown mode {}".format(args.mode))
 
-    # Save the processing statistics from Dask
-    dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
+def load(args, bvis_list, msname):
+    """Load MS data
 
-    if args is not None and args.performance_file is not None:
-        performance_store_dict(
-            args.performance_file, "dask_profile", dask_info, mode="a"
-        )
-        performance_dask_configuration(args.performance_file, mode="a")
-
-    rsexecute.close()
-
-    log.info("Resulting image(s) {}".format(results))
-
-    log.info("Started  : {}".format(starttime))
-    log.info("Finished : {}".format(datetime.datetime.now()))
-
-    return results
+    :param args: The parameters read from the CLI using argparse
+    :param bvis_list: A list of or graph to make BlockVisibilitys
+    :param msname: The filename of the MeasurementSet
+    :return: msname
+    """
+    bvis_list = rsexecute.compute(bvis_list, sync=True)
+    for bvis in bvis_list:
+        log.info(str(bvis))
+    return msname
 
 
-def cip(args, bvis_list, model_list, msname):
+def cip(args, bvis_list, model_list, msname, clean_beam=None):
     """Run continuum imaging pipeline
 
     :param args: The parameters read from the CLI using argparse
     :param bvis_list: A list of or graph to make BlockVisibilitys
     :param model_list: A list of or graph to make model images
     :param msname: The filename of the MeasurementSet
+    :param clean_beam: None or dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :return: Names of output images (deconvolved, residual, restored)
     """
+    start = time.time()
     result = continuum_imaging_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
@@ -299,18 +361,53 @@ def cip(args, bvis_list, model_list, msname):
         component_threshold=args.clean_component_threshold,
         component_method=args.clean_component_method,
         flat_sky=args.imaging_flat_sky,
+        clean_beam=clean_beam,
     )
+    perf_graph(result, "cip", start, args.performance_file)
     # Execute the Dask graph
-    log.info("Starting compute of continuum imaging pipeline graph ")
+    log.info("rascil.imager.cip: Starting compute of continuum imaging pipeline graph ")
     result = rsexecute.compute(result, sync=True)
-    log.info("Finished compute of continuum imaging pipeline graph")
+    log.info("rascil.imager.cip: Finished compute of continuum imaging pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_cip".format(args.clean_nmoment))
     return write_results(imagename, result, args.performance_file)
 
 
+def perf_graph(result, name, start, performance_file):
+    duration = time.time() - start
+    size = get_size(result)
+    graph = {"name": name, "time": duration, "size": size}
+    log.info(
+        f"rascil.imager.perf_graph: Size of {name} graph = {get_size(result)} B, time to construct {duration} s"
+    )
+    performance_store_dict(performance_file, "graph", graph)
+
+
 def write_results(imagename, result, performance_file):
-    deconvolved, residual, restored, skymodel = result
+    """Write the results out to files
+
+    :param imagename: Root of image names
+    :param result: Set of results i.e. deconvolved, residual, restored, skymodel
+    :param performance_file: Name of performance file
+    :return:
+    """
+    residual, restored, skymodel = result
+
+    deconvolved = [sm.image for sm in skymodel]
+    deconvolved_image = image_gather_channels(deconvolved)
+    del deconvolved
+    performance_qa_image(performance_file, "deconvolved", deconvolved_image, mode="a")
+    log.info(qa_image(deconvolved_image, context="Deconvolved"))
+    show_image(deconvolved_image, title=f"{imagename} Clean deconvolved image")
+    plt.savefig(imagename + "_deconvolved.png")
+    plt.show(block=False)
+    deconvolvedname = imagename + "_deconvolved.fits"
+    export_image_to_fits(deconvolved_image, deconvolvedname)
+    del deconvolved_image
+
+    skymodelname = imagename + "_skymodel.hdf"
+    export_skymodel_to_hdf5(skymodel, skymodelname)
+    del skymodel
 
     if isinstance(restored, list):
         # This is the case where we have a list of restored images
@@ -329,9 +426,11 @@ def write_results(imagename, result, performance_file):
     show_image(restored, title=f"{imagename} Clean restored image")
     plt.savefig(imagename + "_restored.png")
     plt.show(block=False)
+    del restored
 
     residual = remove_sumwt(residual)
     residual_image = image_gather_channels(residual)
+    del residual
     performance_qa_image(performance_file, "residual", residual_image, mode="a")
     log.info(qa_image(residual_image, context="Residual"))
     show_image(residual_image, title=f"{imagename} Clean residual image")
@@ -339,31 +438,19 @@ def write_results(imagename, result, performance_file):
     plt.show(block=False)
     residualname = imagename + "_residual.fits"
     export_image_to_fits(residual_image, residualname)
-    # The deconvolved image is a list of channels images. We gather these into
-    # one image
-    deconvolved_image = image_gather_channels(deconvolved)
-    performance_qa_image(performance_file, "deconvolved", deconvolved_image, mode="a")
-
-    log.info(qa_image(deconvolved_image, context="Deconvolved"))
-    show_image(deconvolved_image, title=f"{imagename} Clean deconvolved image")
-    plt.savefig(imagename + "_deconvolved.png")
-    plt.show(block=False)
-    deconvolvedname = imagename + "_deconvolved.fits"
-    export_image_to_fits(deconvolved_image, deconvolvedname)
-
-    skymodelname = imagename + "_skymodel.hdf"
-    export_skymodel_to_hdf5(skymodel, skymodelname)
+    del residual_image
 
     return (deconvolvedname, residualname, restoredname, skymodelname)
 
 
-def ical(args, bvis_list, model_list, msname):
+def ical(args, bvis_list, model_list, msname, clean_beam=None):
     """Run ICAL pipeline
 
     :param args: The parameters read from the CLI using argparse
     :param bvis_list: A list of or graph to make BlockVisibilitys
     :param model_list: A list of or graph to make model images
     :param msname: The filename of the MeasurementSet
+    :param clean_beam: None or dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
     :return: Names of output images (deconvolved, residual, restored)
     """
     controls = create_calibration_controls()
@@ -382,6 +469,8 @@ def ical(args, bvis_list, model_list, msname):
         controls["B"]["timeslice"] = args.calibration_B_timeslice
 
     # Next we define a graph to run the continuum imaging pipeline
+    start = time.time()
+
     result = ical_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
@@ -413,17 +502,18 @@ def ical(args, bvis_list, model_list, msname):
         component_threshold=args.clean_component_threshold,
         component_method=args.clean_component_method,
         dft_compute_kernel=args.imaging_dft_kernel,
+        clean_beam=clean_beam,
     )
+    perf_graph(result, "ical", start, args.performance_file)
+
     # Execute the Dask graph
-    log.info("Starting compute of ICAL pipeline graph ")
-    deconvolved, residual, restored, skymodel, gt_list = rsexecute.compute(
-        result, sync=True
-    )
-    log.info("Finished compute of ICAL pipeline graph")
+    log.info("rascil.imager.ical: Starting compute of ical pipeline graph ")
+    residual, restored, skymodel, gt_list = rsexecute.compute(result, sync=True)
+    log.info("rascil.imager.ical: Finished compute of ical pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
     return write_results(
-        imagename, (deconvolved, residual, restored, skymodel), args.performance_file
+        imagename, (residual, restored, skymodel), args.performance_file
     )
 
 
@@ -437,6 +527,7 @@ def invert(args, bvis_list, model_list, msname):
     :return: Names of output image (dirty image or psf image)
     """
     # Next we define a graph to run the continuum imaging pipeline
+    start = time.time()
     result = invert_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
@@ -447,10 +538,11 @@ def invert(args, bvis_list, model_list, msname):
         dft_compute_kernel=args.imaging_dft_kernel,
     )
     result = sum_invert_results_rsexecute(result)
+    perf_graph(result, "invert", start, args.performance_file)
     # Execute the Dask graph
-    log.info("Starting compute of invert graph ")
+    log.info("rascil.imager.invert: Starting compute of invert graph ")
     dirty, sumwt = rsexecute.compute(result, sync=True)
-    log.info("Finished compute of invert graph")
+    log.info("rascil.imager.invert: Finished compute of invert graph")
     imagename = msname.replace(".ms", "_invert")
 
     if args.imaging_dopsf == "True":

@@ -307,10 +307,10 @@ def qa_image(im: Image, context="") -> QA:
     :param im:
     :return: QA
     """
-    ##assert isinstance(im, Image), im
     im_data = im["pixels"].data
     data = {
         "shape": str(im["pixels"].data.shape),
+        "size": im.nbytes,
         "max": numpy.max(im_data),
         "min": numpy.min(im_data),
         "maxabs": numpy.max(numpy.abs(im_data)),

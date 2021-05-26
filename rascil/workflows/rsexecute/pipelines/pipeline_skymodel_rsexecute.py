@@ -220,10 +220,7 @@ def ical_skymodel_list_rsexecute_workflow(
             f"continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output}"
         )
 
-    deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
-
     return (
-        deconvolve_model_imagelist,
         residual_imagelist,
         restored_imagelist,
         skymodel_list,
@@ -247,7 +244,6 @@ def continuum_imaging_skymodel_list_rsexecute_workflow(
     :return:
     """
     (
-        deconvolve_model_imagelist,
         residual_imagelist,
         restore_imagelist,
         skymodel_list,
@@ -263,7 +259,6 @@ def continuum_imaging_skymodel_list_rsexecute_workflow(
         **kwargs,
     )
     return (
-        deconvolve_model_imagelist,
         residual_imagelist,
         restore_imagelist,
         skymodel_list,
@@ -284,9 +279,7 @@ def spectral_line_imaging_skymodel_list_rsexecute_workflow(
     :param vis_list: List of vis (or graph)
     :param model_imagelist: List of Spectral line model (or graph)
     :param continuum_model_imagelist: Continuum model list (or graph)
-    :param context: Imaging context
-    :param vis_slices: Number of visibility slices (time or w)
-    :param facets: Number of facets on each x,y axis
+    :param context: Imaging context e.g. ng or 2d
     :param kwargs: Parameters for functions in components
     :return: list of (deconvolved model, residual, restored) or graph
     """

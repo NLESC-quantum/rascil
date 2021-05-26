@@ -1,5 +1,20 @@
 """ RASCIL performance analysis
 
+We measure the execution statistics for functions run by Dask and write to a json file.
+The statistics are:
+
+ - Total processor time per function
+ - Processor time per function call
+ - Number of calls per function
+ - Fraction of total processor time per function
+
+This app allows plotting of these statistics
+
+- Line plots e.g. Given functions (e.g. "invert_ng") vs parameter (e.g. "imaging_npixel")
+- Bar charts: statistics per function
+- Contour plots e.g. Given functions (e.g. "invert_ng" vs parameters
+ (e.g. "imaging_npixel", "blockvis_nvis"))
+ 
 A typical json file looks like:
 
 {
@@ -274,6 +289,7 @@ import os
 import pprint
 import sys
 import glob
+import numpy
 
 import matplotlib.pyplot as plt
 
@@ -281,13 +297,66 @@ from rascil.processing_components.util.performance import (
     performance_read,
 )
 
-from rascil.apps.apps_parser import (
-    apps_parser_app,
-)
-
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
+
+
+def analyser(args):
+    """Analyser
+
+    The return contains names of the plot files written to disk
+
+    :param args: argparse with appropriate arguments
+    :return: Names of output plot files
+    """
+    log.info("\nRASCIL performance analysis\n")
+
+    verbose = args.verbose == "True"
+    if verbose:
+        log.info(pprint.pformat(vars(args)))
+
+    if args.performance_files is not None:
+        performance_files = args.performance_files
+    else:
+        performance_files = glob.glob("*.json")
+
+    if verbose:
+        log.info(f"Reading from files {pprint.pformat(performance_files)}")
+    performances = get_performance_data(args, performance_files)
+
+    if args.mode == "line":
+        plotfiles = plot_lines(
+            args.parameters[0],
+            args.functions,
+            performances,
+            tag=args.tag,
+            verbose=verbose,
+            results=args.results,
+        )
+        return plotfiles
+    elif args.mode == "contour":
+        plotfiles = plot_contour(
+            args.parameters,
+            args.functions,
+            performances,
+            tag=args.tag,
+            verbose=verbose,
+            results=args.results,
+        )
+        return plotfiles
+
+    elif args.mode == "bar":
+        plotfiles = plot_barchart(
+            performance_files,
+            performances,
+            tag=args.tag,
+            verbose=verbose,
+            results=args.results,
+        )
+        return plotfiles
+    else:
+        raise ValueError(f"Unknown mode {args.mode}")
 
 
 def cli_parser():
@@ -302,7 +371,7 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--mode", type=str, default="plot", help="Processing mode: plot"
+        "--mode", type=str, default="line", help="Processing mode: line | bar | contour"
     )
 
     parser.add_argument(
@@ -321,14 +390,16 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--x_axis",
+        "--parameters",
         type=str,
-        default="imaging_npixel",
-        help="Name of x axis from cli_args e.g. imaging_npixel",
+        nargs="*",
+        default=["imaging_npixel_sq", "blockvis_nvis"],
+        help="Name of parameters from cli_args e.g. imaging_npixel_sq, used for line (1 parameter)"
+        " and contour plots (2 parameters)",
     )
 
     parser.add_argument(
-        "--y_axes",
+        "--functions",
         type=str,
         nargs="*",
         default=[
@@ -341,12 +412,32 @@ def cli_parser():
         ],
         help="Names of values from dask_profile to plot e.g. skymodel_predict_calibrate",
     )
+    parser.add_argument(
+        "--blockvis_nvis",
+        type=str,
+        default=None,
+        help="Number of visibilities for use if blockvis_nvis not in json files",
+    )
+
+    parser.add_argument(
+        "--verbose",
+        type=str,
+        default="False",
+        help="Verbose output?",
+    )
+
+    parser.add_argument(
+        "--results",
+        type=str,
+        default="./",
+        help="Directory for results, default is current directory",
+    )
 
     return parser
 
 
 def sort_values(xvalues, yvalues):
-    """Sort xvalues and yvalues based on xvalues
+    """Sort list xvalues and yvalues based on xvalues
 
     :param xvalues: Iterable of xaxis values
     :param yvalues: Iterable of yaxis values
@@ -359,135 +450,298 @@ def sort_values(xvalues, yvalues):
     return xvalues, yvalues
 
 
-def plot(xaxis, yaxes, performances, title="", normalise=True, tag=""):
+def plot_lines(
+    parameter, functions, performances, title="", tag="", verbose=False, results="./"
+):
     """Plot the set of yaxes against xaxis
 
-    :param xaxis: Name of xaxis e.g. imaging_npixel
-    :param yaxes: Name of yaxes to be plotted against xaxis
+    :param parameter: Name of parameter e.g. imaging_npixel
+    :param functions: Name of functions to be plotted against parameter
     :param performance: A list of dicts containing each containing the results for one test case
     :param title: Title for plot
     :param tag: Informational tag for file name
     :return:
     """
-    plt.clf()
-    plt.cla()
 
-    # The input values are in the cli_args dictionary
-    xvalues = [performance["cli_args"][xaxis] for performance in performances]
+    log.info("Plotting lines")
+
+    figures = list()
+
+    if title == "":
+        title = "performance"
 
     # The profile times are in the "dask_profile" dictionary
 
-    if normalise:
-        # Plot the time per call for each function
-        for yaxis in yaxes:
+    xvalues = [performance["inputs"][parameter] for performance in performances]
+    for time_type, time_type_name, time_type_short in [
+        (0, "Time per call (s)", "per_call"),
+        (1, "Total (s)", "total"),
+        (2, "Percentage time", "percentage"),
+        (3, "Number calls", "number_calls"),
+    ]:
+        plt.clf()
+        plt.cla()
+
+        for func in functions:
             yvalues = [
-                performance["dask_profile"][yaxis]["time"]
-                / performance["dask_profile"][yaxis]["number_calls"]
-                for performance in performances
+                get_data(performance, func)[time_type] for performance in performances
             ]
             sxvalues, syvalues = sort_values(xvalues, yvalues)
-            log.info(f"{pprint.pformat(list(zip(sxvalues, syvalues)))}")
-            plt.loglog(sxvalues, syvalues, "-", label=yaxis)
-        plt.ylabel("Processing time per call (s)")
-    else:
-        # Plot the total time for each function
-        for yaxis in yaxes:
-            yvalues = [
-                performance["dask_profile"][yaxis]["time"]
+            if verbose:
+                log.info(f"{pprint.pformat(list(zip(sxvalues, syvalues)))}")
+            plt.loglog(sxvalues, syvalues, "-", label=func)
+            plt.ylabel("Processing time per call (s)")
+
+        # If we are plotting total time, add the overall times
+        if time_type == 1:
+            clock_time = [
+                performance["dask_profile"]["summary"]["duration"]
                 for performance in performances
             ]
-            sxvalues, syvalues = sort_values(xvalues, yvalues)
-            log.info(f"{pprint.pformat(list(zip(sxvalues, syvalues)))}")
-            plt.loglog(sxvalues, syvalues, "-", label=yaxis)
+            plt.loglog(xvalues, clock_time, "--", label="clock_time")
+            processor_time = [
+                performance["dask_profile"]["summary"]["total"]
+                for performance in performances
+            ]
+            plt.loglog(xvalues, processor_time, "--", label="processor_time")
+            plt.ylabel("Total processing time (s)")
 
-        clock_time = [
-            performance["dask_profile"]["summary"]["duration"]
-            for performance in performances
-        ]
-        plt.loglog(xvalues, clock_time, "--", label="clock_time")
-        processor_time = [
-            performance["dask_profile"]["summary"]["total"]
-            for performance in performances
-        ]
-        plt.loglog(xvalues, processor_time, "--", label="processor_time")
-        plt.ylabel("Total processing time (s)")
+        plt.title(f"{title} {tag} {time_type_name}")
+        plt.xlabel(parameter)
+        plt.legend()
+        if title is not "" or tag is not "":
+            if tag == "":
+                figure = f"{results}/{title}_{time_type_short}_line.png"
+            else:
+                figure = f"{results}/{title}_{tag}_{time_type_short}_line.png"
+            plt.savefig(figure)
+        else:
+            figure = None
 
-    plt.title(f"{tag} {title}")
-    plt.xlabel(xaxis)
-    plt.legend()
-    if title is not "" or tag is not "":
-        figure = f"{tag}_{title}.png"
-        plt.savefig(figure)
-    else:
-        figure = None
-
-    plt.show(block=False)
-    return figure
+        plt.show(block=False)
+        figures.append(figure)
+    return figures
 
 
-def analyser(args):
-    """Analyser
+def plot_contour(
+    parameters, functions, performances, title="", tag="", verbose=False, results="./"
+):
+    """Plot the set of yaxes against xaxis
 
-    The return contains names of the plot files written to disk
-
-    :param args: argparse with appropriate arguments
-    :return: Names of output plot files
+    :param parameters: Name of parameters e.g. imaging_npixel, blockvis_nvis
+    :param functions: Name of functions to be plotted against parameter
+    :param performance: A list of dicts containing each containing the results for one test case
+    :param title: Title for plot
+    :param tag: Informational tag for file name
+    :return:
     """
+    log.info("Plotting contours")
 
-    # We need to tell all the Dask workers to use the same log
-    cwd = os.getcwd()
+    figures = list()
 
-    log.info("\nPerformance analyser\n")
+    if title == "":
+        title = "performance"
 
-    log.info(pprint.pformat(vars(args)))
+    for func in functions:
 
-    log.info("Current working directory is {}".format(cwd))
+        for time_type, time_type_name, time_type_short in [
+            (0, "Time per call (s)", "per_call"),
+            (1, "Total (s)", "total"),
+            (2, "Percentage time", "percentage"),
+            (3, "Number calls", "number_calls"),
+        ]:
+            plt.clf()
+            plt.cla()
 
-    if args.performance_files is not None:
-        performance_files = args.performance_files
-    else:
-        performance_files = glob.glob("*.json")
+            xvalues, yvalues, zvalues = get_surface_data(
+                func, parameters, performances, time_type
+            )
 
-    log.info(f"Reading from files {pprint.pformat(performance_files)}")
+            plt.tricontour(xvalues, yvalues, zvalues, levels=10)
 
+            plt.title(f"{title} {func} {tag} {time_type_name}")
+            plt.xlabel(parameters[0])
+            plt.ylabel(parameters[1])
+            plt.colorbar()
+            if title is not "" or tag is not "":
+                if tag == "":
+                    figure = f"{results}/{title}_{func}_{time_type_short}_contour.png"
+                else:
+                    figure = (
+                        f"{results}/{title}_{func}_{tag}_{time_type_short}_contour.png"
+                    )
+                plt.savefig(figure)
+                figures.append(figure)
+
+            plt.show(block=False)
+    return figures
+
+
+def get_surface_data(func, parameters, performances, time_type):
+    """Get the surface data for given parameters and function
+
+    :param func: Name of function e.g. "invert_ng"
+    :param parameters: Name of parameters e.g. "imaging_npixel", "blockvis_nvis"
+    :param performances: Performance information
+    :param time_type: Code: 0=per call, 1=total, 2=fraction
+    :return: x, y, z
+    """
+    xvalues = numpy.array(
+        [performance["inputs"][parameters[0]] for performance in performances]
+    )
+    yvalues = numpy.array(
+        [performance["inputs"][parameters[1]] for performance in performances]
+    )
+    zvalues = numpy.array(
+        [get_data(performance, func)[time_type] for performance in performances]
+    )
+    return xvalues, yvalues, zvalues
+
+
+def plot_barchart(
+    performance_files, performances, title="", tag="", verbose=False, results="./"
+):
+    """Plot the set of yaxes
+
+    :param performance: A list of dicts each containing the results for one test case
+    :param title: Title for plot
+    :param tag: Informative tag for file name
+    :return:
+    """
+    figures = list()
+
+    if title == "":
+        title = "performance"
+
+    log.info("Plotting barcharts")
+
+    for ipf, performance_file in enumerate(performance_files):
+        performance = performances[ipf]
+        (
+            time_per_call,
+            total_time,
+            fraction_time,
+            number_calls,
+            functions,
+        ) = get_barchart_data(performance)
+
+        # The profile times are in the "dask_profile" dictionary
+        for axis, time_type, time_type_short in [
+            (total_time, "Total (s)", "total"),
+            (time_per_call, "Per call (s)", "per_call"),
+            (fraction_time, "Percentage", "percentage"),
+            (number_calls, "Number calls", "number_calls"),
+        ]:
+            plt.clf()
+            plt.cla()
+            y_pos = numpy.arange(len(axis))
+            saxis, _ = sort_values(axis, axis)
+            _, syaxes = sort_values(axis, functions)
+            plt.barh(y_pos, saxis, align="center", alpha=0.5)
+            plt.yticks(y_pos, syaxes)
+            plt.xlabel(time_type)
+            plt.title(f"{title} {tag} {time_type}")
+            plt.tight_layout()
+            plt.show(block=False)
+            if title is not "" or tag is not "":
+                if tag == "":
+                    figure = f"{results}/{title}_{time_type_short}_bar.png"
+                else:
+                    figure = f"{results}{title}_{tag}_{time_type_short}_bar.png"
+
+                plt.savefig(figure)
+                figures.append(figure)
+
+    return figures
+
+
+def get_barchart_data(performance):
+    """Get the total time, time per call, fractional time, number_calls, and allowed yaxes
+
+    :param performance: Performance dictionary associated with one file
+    :return: time_per_call, total_time, fraction_time, number_calls, functions
+    """
+    # The input values are in the inputs dictionary
+    functions = list()
+    for key in performance["dask_profile"].keys():
+        if key != "summary":
+            functions.append(key)
+
+    total_time = [performance["dask_profile"][func]["time"] for func in functions]
+
+    fraction_time = [
+        performance["dask_profile"][func]["fraction"] for func in functions
+    ]
+
+    time_per_call = [
+        performance["dask_profile"][func]["time"]
+        / performance["dask_profile"][func]["number_calls"]
+        for func in functions
+    ]
+    number_calls = [
+        performance["dask_profile"][func]["number_calls"] for func in functions
+    ]
+
+    return time_per_call, total_time, fraction_time, number_calls, functions
+
+
+def get_data(performance, func):
+    """Get the performance data for a given function
+
+    :param performance: Single performance dict
+    :param func: Name of function
+    :return: time_per_call, total_time, fraction_time, number_calls
+    """
+    total_time = performance["dask_profile"][func]["time"]
+    time_per_call = (
+        performance["dask_profile"][func]["time"]
+        / performance["dask_profile"][func]["number_calls"]
+    )
+    fraction_time = performance["dask_profile"][func]["fraction"]
+    number_calls = performance["dask_profile"][func]["number_calls"]
+
+    return time_per_call, total_time, fraction_time, number_calls
+
+
+def get_performance_data(args, performance_files, verbose=False):
+    """Read and normalize performance data
+
+    :param args: CLI args
+    :param performance_files: Names of performance files
+    :return: performances dict
+    """
     performances = [
         performance_read(performance_file) for performance_file in performance_files
     ]
-    x_axes = list(performances[0]["cli_args"].keys())
-    log.info(f"Available xaxes {pprint.pformat(x_axes)}")
-    if args.x_axis not in x_axes:
-        raise ValueError(f"x axis {args.x_axis} is not in file")
+    if performances is None or len(performances) == 0:
+        raise ValueError(f"Unable to read performance data {performance_files}")
+    # inputs are made of cli_args and blockvis information
+    for perf in performances:
+        perf["inputs"] = perf["cli_args"]
+        if "blockvis0" in perf.keys():
+            perf["inputs"]["blockvis_nvis"] = (
+                perf["blockvis0"]["number_times"]
+                * perf["blockvis0"]["number_baselines"]
+                * perf["blockvis0"]["nchan"]
+                * perf["blockvis0"]["npol"]
+            )
+        else:
+            perf["inputs"]["blockvis_nvis"] = args.blockvis_nvis
 
-    y_axes = list(performances[0]["dask_profile"].keys())
-    log.info(f"Available yaxes {pprint.pformat(y_axes)}")
+        perf["inputs"] = {
+            **perf["inputs"],
+            "imaging_npixel_sq": perf["inputs"]["imaging_npixel"] ** 2,
+        }
 
-    for yaxis in args.y_axes:
-        if yaxis not in y_axes:
-            raise ValueError(f"y axis {yaxis} is not in file")
-
-    tag = performances[0]["environment"]["hostname"]
-
-    if args.tag is not "":
-        tag = f"{args.tag}: {tag}"
-
-    return [
-        plot(
-            args.x_axis,
-            args.y_axes,
-            performances,
-            title="total_time",
-            normalise=False,
-            tag=tag,
-        ),
-        plot(
-            args.x_axis,
-            args.y_axes,
-            performances,
-            title="time_per_call",
-            normalise=True,
-            tag=tag,
-        ),
-    ]
+    parameters = list(performances[0]["inputs"].keys())
+    functions = list(performances[0]["dask_profile"].keys())
+    if verbose:
+        log.info(f"Available parameters {pprint.pformat(parameters)}")
+        log.info(f"Available functions {pprint.pformat(functions)}")
+    for func in args.functions:
+        if func not in functions:
+            raise ValueError(f"Function {func} is not in file")
+    return performances
 
 
 def main():
@@ -495,7 +749,8 @@ def main():
     parser = cli_parser()
     args = parser.parse_args()
     plot_files = analyser(args)
-    log.info(f"Written plot files {plot_files}")
+    log.info("Plot files written:")
+    log.info(pprint.pformat(plot_files))
 
 
 if __name__ == "__main__":

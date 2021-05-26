@@ -236,7 +236,7 @@ class _rsexecutebase:
         use_dask=True,
         use_dlg=False,
         verbose=False,
-        optim=False,
+        optim=True,
         **kwargs
     ):
         """Set the Dask/DALiuGE client to be used

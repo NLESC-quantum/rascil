@@ -26,17 +26,18 @@ def create_blockvisibility_from_ms_rsexecute(
 ):
     """Graph for reading from a MeasurementSet into a list of blockvisibility
 
-    :param msname:
-    :param nchan_per_blockvis:
-    :param nout:
-    :param dds:
-    :param average_channels:
+    :param msname: Name of MeasurementSet
+    :param nchan_per_blockvis: Number of channels to be loaded into each blockvis
+    :param nout: Number of output BVs
+    :param dds: DataDescriptors to load e.g. [0, 1,2, 5, 9]
+    :param average_channels: Average channels in each BlockVisibility
     :return:
     """
 
     # Read the MS into RASCIL BlockVisibility objects
+    log.info("create_blockvisibility_from_ms_rsexecute: Defining graph")
     log.info(
-        "Loading MS data descriptors {dds} into {n} BlockVisibility's of {nchan} channels".format(
+        "create_blockvisibility_from_ms_rsexecute: will load MS data descriptors {dds} into {n} BlockVisibility's of {nchan} channels".format(
             dds=dds, n=nout * len(dds), nchan=nchan_per_blockvis
         )
     )

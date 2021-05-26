@@ -501,9 +501,11 @@ class TestPipelineGraphs(unittest.TestCase):
             do_selfcal=True,
             global_solution=False,
         )
-        clean, residual, restored, skymodel_list, gt_list = rsexecute.compute(
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
             ical_list, sync=True
         )
+        clean = [sm.image for sm in sky_model_list]
+
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(
@@ -568,9 +570,11 @@ class TestPipelineGraphs(unittest.TestCase):
             global_solution=False,
             component_threshold=10.0,
         )
-        clean, residual, restored, skymodel_list, gt_list = rsexecute.compute(
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
             ical_list, sync=True
         )
+        clean = [sm.image for sm in sky_model_list]
+
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(
@@ -638,9 +642,11 @@ class TestPipelineGraphs(unittest.TestCase):
             do_selfcal=True,
             global_solution=False,
         )
-        clean, residual, restored, sky_model_list, gt_list = rsexecute.compute(
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
             ical_list, sync=True
         )
+        clean = [sm.image for sm in sky_model_list]
+
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(
@@ -718,9 +724,11 @@ class TestPipelineGraphs(unittest.TestCase):
             do_selfcal=True,
             global_solution=False,
         )
-        clean, residual, restored, skymodel_list, gt_list = rsexecute.compute(
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
             ical_list, sync=True
         )
+        clean = [sm.image for sm in sky_model_list]
+
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(
@@ -772,9 +780,11 @@ class TestPipelineGraphs(unittest.TestCase):
             psf_support=64,
             restore_facets=1,
         )
-        clean, residual, restored, skymodel = rsexecute.compute(
+        residual, restored, sky_model_list = rsexecute.compute(
             continuum_imaging_list, sync=True
         )
+        clean = [sm.image for sm in sky_model_list]
+
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(
@@ -821,9 +831,11 @@ class TestPipelineGraphs(unittest.TestCase):
             restore_facets=1,
             component_threshold=10.0,
         )
-        clean, residual, restored, skymodel = rsexecute.compute(
+        residual, restored, sky_model_list = rsexecute.compute(
             continuum_imaging_list, sync=True
         )
+        clean = [sm.image for sm in sky_model_list]
+
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(
@@ -889,9 +901,11 @@ class TestPipelineGraphs(unittest.TestCase):
             psf_support=64,
             restore_facets=1,
         )
-        clean, residual, restored, skymodel = rsexecute.compute(
+        residual, restored, sky_model_list = rsexecute.compute(
             continuum_imaging_list, sync=True
         )
+        clean = [sm.image for sm in sky_model_list]
+
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(
@@ -946,9 +960,11 @@ class TestPipelineGraphs(unittest.TestCase):
             psf_support=64,
             restore_facets=1,
         )
-        clean, residual, restored, skymodel = rsexecute.compute(
+        residual, restored, sky_model_list = rsexecute.compute(
             continuum_imaging_list, sync=True
         )
+        clean = [sm.image for sm in sky_model_list]
+
         centre = len(clean) // 2
         if self.persist:
             export_image_to_fits(

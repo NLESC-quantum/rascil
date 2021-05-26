@@ -516,14 +516,24 @@ def plot_gaussian_beam_position(
 
 
 def plot_multifreq_spectral_index(
-    comps_test, comps_ref, plot_file=None, tol=1e-5, **kwargs
+    comps_test,
+    comps_ref,
+    phasecentre,
+    plot_file=None,
+    tol=1e-5,
+    flux_limit=0.0,
+    plot_diagnostics=False,
+    **kwargs,
 ):
     """Generate spectral index plot for two lists of multi-frequency skycomponents
 
     :param comps_test: List of components to be tested
     :param comps_ref: List of reference components
+    :param phasecentre: Centre of image in SkyCoords
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
+    :param flux_limit: Cutoff for plot (only components with central flux larger than this are plotted)
+    :param plot_diagnostics: Whether to plot diagnostics plot (flux in vs. spectral index out)
     :return: [spec_in, spec_out]:
              The spectral index array for users to check
     """
@@ -531,6 +541,8 @@ def plot_multifreq_spectral_index(
     matches = find_skycomponent_matches(comps_test, comps_ref, tol)
     spec_in = numpy.zeros(len(matches))
     spec_out = numpy.zeros(len(matches))
+    flux_in = numpy.zeros(len(matches))
+    dist = numpy.zeros(len(matches))
 
     for i, match in enumerate(matches):
         m_comp = comps_test[match[0]]
@@ -538,6 +550,16 @@ def plot_multifreq_spectral_index(
 
         spec_in[i] = fit_skycomponent_spectral_index(m_ref)
         spec_out[i] = fit_skycomponent_spectral_index(m_comp)
+        flux_in[i] = m_ref.flux[m_ref.flux.shape[0] // 2][0]
+        dist[i] = m_comp.direction.separation(phasecentre).degree
+
+    # mask out the ones that didn't get fitted properly
+    mask_spec = (spec_in != 0.0) & (spec_out != 0.0)
+    mask_cutoff = flux_in > flux_limit
+    spec_in = spec_in[mask_spec & mask_cutoff]
+    spec_out = spec_out[mask_spec & mask_cutoff]
+    flux_in = flux_in[mask_spec & mask_cutoff]
+    dist = dist[mask_spec & mask_cutoff]
 
     plt.plot(spec_in, spec_out, "o", color="b", markersize=5)
 
@@ -548,5 +570,26 @@ def plot_multifreq_spectral_index(
         plt.savefig(plot_file + "_spec_index.png")
     plt.show(block=False)
     plt.clf()
+
+    # Plot diagnostics plots: spectral index out vs flux in and vs distance
+    if plot_diagnostics:
+
+        plt.plot(flux_in, spec_out, "o", color="b", markersize=5)
+
+        plt.xlabel("Flux In (Jy)")
+        plt.ylabel("Spectral Index")
+        if plot_file is not None:
+            plt.savefig(plot_file + "_spec_index_diagnostics_flux.png")
+        plt.show(block=False)
+        plt.clf()
+
+        plt.plot(dist, spec_out - spec_in, "o", color="b", markersize=5)
+
+        plt.xlabel("Distance to centre (Deg)")
+        plt.ylabel("Spectral Index Out-In")
+        if plot_file is not None:
+            plt.savefig(plot_file + "_spec_index_diagnostics_dist.png")
+        plt.show(block=False)
+        plt.clf()
 
     return [spec_in, spec_out]

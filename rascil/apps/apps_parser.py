@@ -287,6 +287,12 @@ def apps_parser_dask(parser):
         help="Memory per Dask worker (GB), e.g. 5GB (None means Dask will choose)",
     )
     parser.add_argument(
+        "--dask_memory_usage_file",
+        type=str,
+        default=None,
+        help="File in which to track Dask memory use (using dask-memusage)",
+    )
+    parser.add_argument(
         "--dask_nworkers",
         type=int,
         default=None,

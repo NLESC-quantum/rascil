@@ -333,6 +333,8 @@ def test_rascil_imager(
         f"{use_dask}",
         "--performance_file",
         rascil_path(f"test_results/test_rascil_imager_performance_{tag}.json"),
+        "--dask_memory_usage_file",
+        rascil_path(f"test_results/test_rascil_imager_memory_{tag}.csv"),
         "--ingest_msname",
         rascil_path(f"test_results/test_rascil_imager_{tag}.ms"),
         "--ingest_vis_nchan",

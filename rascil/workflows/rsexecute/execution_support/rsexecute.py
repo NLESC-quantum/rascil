@@ -11,7 +11,7 @@ import time
 from tabulate import tabulate
 
 from dask import delayed, optimize, config
-
+import dask_memusage
 
 from dask.distributed import wait, Client, LocalCluster
 
@@ -484,6 +484,9 @@ class _rsexecutebase:
             except (ValueError, KeyError):
                 log.warning("Dask task stream is unintelligible")
                 return dict()
+
+    def memusage(self, memusage_file="memusage.csv"):
+        dask_memusage.install(self._client.cluster.scheduler, memusage_file)
 
     @property
     def client(self):

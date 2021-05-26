@@ -140,6 +140,9 @@ def imager(args):
             )
         rsexecute.set_client(use_dask=True, client=client)
         rsexecute.init_statistics()
+        # Sample the memory usage with a scheduler plugin
+        if args.dask_memory_usage_file is not None:
+            rsexecute.memusage(args.dask_memory_usage_file)
     else:
         rsexecute.set_client(use_dask=False)
 

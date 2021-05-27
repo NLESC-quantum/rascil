@@ -486,6 +486,20 @@ class _rsexecutebase:
                 return dict()
 
     def memusage(self, memusage_file="memusage.csv"):
+        """Install the dask-memusage plugin
+
+        https://github.com/itamarst/dask-memusage/blob/master/dask_memusage.py
+
+        Note that there can only be one dask thread per process.
+
+        This only works for the process scheduler. For the distributed schedulr, preload the
+        plugin. For example:
+
+        dask-scheduler --port=8786 --preload dask_memusage --memusage-csv ./memusage.csv
+
+        :param memusage_file:
+        :return:
+        """
         if (
             self._client.cluster is not None
             and self._client.cluster.scheduler is not None

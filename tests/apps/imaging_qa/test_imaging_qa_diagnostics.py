@@ -6,8 +6,8 @@ import pytest
 
 from scipy.signal.windows import gaussian as scipy_gaussian
 
-from rascil.apps.ci_checker.ci_diagnostics import (
-    qa_image_bdsf,
+from rascil.apps.imaging_qa.imaging_qa_diagnostics import (
+    quality_image_bdsf,
     plot_name,
     gaussian,
     _get_histogram_data,
@@ -17,11 +17,11 @@ from rascil.apps.ci_checker.ci_diagnostics import (
     _radial_profile,
     _plot_power_spectrum,
     power_spectrum,
-    ci_checker_diagnostics,
+    imaging_qa_diagnostics,
 )
 from rascil.data_models import rascil_data_path
 
-BASE_PATH = "rascil.apps.ci_checker.ci_diagnostics"
+BASE_PATH = "rascil.apps.imaging_qa.ci_diagnostics"
 
 
 class MockGaussianObject:
@@ -74,7 +74,7 @@ class MockBDSFImage:
     def beam2pix(self, beam):
         # See bdsf.readimage.Op_readimage.init_beam.beam2pix
         # this mock method just returns its input; it's used to test
-        # rascil.apps.ci_checker.ci_diagnostics.source_region_mask
+        # rascil.apps.imaging_qa.ci_diagnostics.source_region_mask
         return beam
 
     def create_gaussian_array(self):
@@ -94,7 +94,7 @@ def test_qa_image_bdsf():
         ]
     )
 
-    result = qa_image_bdsf(im_data)
+    result = quality_image_bdsf(im_data)
 
     assert result["shape"] == "(5, 5)"
     assert result["max"] == 2.0
@@ -398,7 +398,7 @@ class TestCICheckerDiagnostics:
         mock_histogram.return_value = Mock()
         mock_source_mask.return_value = ("source_mask", "background_mask")
 
-        ci_checker_diagnostics(mock_image, "my_file.fits", "restored")
+        imaging_qa_diagnostics(mock_image, "my_file.fits", "restored")
 
         assert mock_qa_image.call_count == 3
         assert mock_plot_run_mean.call_count == 3
@@ -416,7 +416,7 @@ class TestCICheckerDiagnostics:
         mock_histogram.return_value = Mock()
         mock_source_mask.return_value = ("source_mask", "background_mask")
 
-        ci_checker_diagnostics(mock_image, "my_file.fits", "residual")
+        imaging_qa_diagnostics(mock_image, "my_file.fits", "residual")
 
         assert mock_qa_image.call_count == 1
         assert mock_plot_run_mean.call_count == 1
@@ -434,4 +434,4 @@ def test_ci_checker_diagnostics_unknown_type():
     setattr(mock_image, "wcs_obj", Mock())
 
     with pytest.raises(ValueError):
-        ci_checker_diagnostics(mock_image, "my_file.fits", "my_weird_type")
+        imaging_qa_diagnostics(mock_image, "my_file.fits", "my_weird_type")

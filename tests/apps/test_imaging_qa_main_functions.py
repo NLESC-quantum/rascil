@@ -1,4 +1,4 @@
-"""Unit tests for individual functions in ci_checker_main.py
+"""Unit tests for individual functions in imaging_qa_main.py
 
 """
 
@@ -12,7 +12,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from numpy.testing import assert_array_almost_equal
 
-from rascil.apps.ci_checker_main import (
+from rascil.apps.imaging_qa_main import (
     cli_parser,
     analyze_image,
     correct_primary_beam,
@@ -42,7 +42,7 @@ log.setLevel(logging.WARNING)
 class TestCIChecker(unittest.TestCase):
     def setUp(self):
 
-        # Generate mock objects for functions in ci_checker,
+        # Generate mock objects for functions in imaging_qa,
         # including skycomponents, primary beam image, restored image
         self.dir = rascil_path("test_results")
 
@@ -207,7 +207,7 @@ class TestCIChecker(unittest.TestCase):
         self.args.ingest_fitsname_restored = None
         self.assertRaises(FileNotFoundError, lambda: analyze_image(self.args))
 
-    @patch("rascil.apps.ci_checker_main.ci_checker")
+    @patch("rascil.apps.ci_checker_main.imaging_qa")
     def test_analyze_image_exceptions(self, mock_checker):
         mock_checker.return_value = Mock()
         self.args.ingest_fitsname_restored = self.restored_image_multi
@@ -215,7 +215,7 @@ class TestCIChecker(unittest.TestCase):
 
         result = analyze_image(self.args)
 
-        # call_args_list returns the input for function ci_checker
+        # call_args_list returns the input for function imaging_qa
         # Assert using automatic beam size
         assert mock_checker.call_args_list[0][0][2] == (1.0, 1.0, 0.0)
 

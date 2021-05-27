@@ -39,11 +39,11 @@ FUNCTIONS = (
             "",
             "",
         ),
-        (
-            "memory_histogram",
-            "",
-            "",
-        ),
+        # (
+        #     "memory_histogram",
+        #     "",
+        #     "",
+        # ),
         (
             "line",
             "imaging_npixel_sq",

@@ -1,4 +1,4 @@
-.. _rascil_apps_continuum_imaging_checker:
+.. _rascil_apps_imaging_qa_checker:
 
 .. py:currentmodule:: rascil.apps
 
@@ -6,10 +6,10 @@
    :maxdepth: 3
 
 =========================
-continuum_imaging_checker
+imaging_qa_checker
 =========================
 
-continuum_imaging_checker is a command line app written using RASCIL.
+imaging_qa_checker is a command line app written using RASCIL.
 It uses the python package `PyBDSF <https://github.com/lofar-astron/PyBDSF.git>`_ to find sources in an image
 and check with the original inputs. Currently it features the following:
 
@@ -28,7 +28,7 @@ The following runs the a data set from the RASCIL test::
     #!/bin/bash
     # Run this in the directory containing both the
     # restored and residual fits files:
-    python $RASCIL/rascil/apps/ci_checker_main.py \
+    python $RASCIL/rascil/apps/imaging_qa_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored.fits \
     --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_residual.fits
 
@@ -36,7 +36,7 @@ If a source check is required::
 
     #!/bin/bash
     # This example deals with the multi-frequency image 
-    python $RASCIL/rascil/apps/ci_checker_main.py \
+    python $RASCIL/rascil/apps/imaging_qa_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored_cube.fits \
     --check_source True --plot_source True \
      --input_source_filename test-imaging-pipeline-dask_continuum_imaging_components.hdf
@@ -45,7 +45,7 @@ If primary beam correction is required::
 
     #!/bin/bash
     # This example deals with the multi-frequency image 
-    python $RASCIL/rascil/apps/ci_checker_main.py \
+    python $RASCIL/rascil/apps/imaging_qa_main.py \
     --ingest_fitsname_restored test-imaging-pipeline-dask_continuum_imaging_restored_cube.fits \
     --check_source True --plot_source True --apply_primary True\
     --ingest_fitsname_residual test-imaging-pipeline-dask_continuum_imaging_sensitivity.fits \
@@ -68,7 +68,7 @@ and that there aren't any trailing white spaces in the lines.
 
 Then run the checker as follows::
 
-    python ci_checker_main.py @args.txt
+    python imaging_qa_main.py @args.txt
 
 Specifying the ``@`` sign in front of the file name will let the code know that you want
 to ready the arguments from a file instead of directly from the command line.
@@ -79,7 +79,7 @@ are not all in the same directory? Let's take the following directory structure 
     - rascil # this is the root directory of the RASCIL git repository
         - rascil
             - apps   
-                ci_checker_main.py
+                imaging_qa_main.py
             - my_data
                 my_restored_file.fits
                 my_residual_file.fits
@@ -97,12 +97,12 @@ absolute path to your FITS files. E.g.::
 And you need to provide similarily the relative or absolute path both to the args file and
 the code you are running::
 
-    python rascil/apps/ci_checker_main.py @rascil/args.txt
+    python rascil/apps/imaging_qa_main.py @rascil/args.txt
 
 Docker image
 ++++++++++++
 
-A Docker image is available at ``nexus.engageska-portugal.pt/rascil-docker/rascil-ci-checker``
+A Docker image is available at ``nexus.engageska-portugal.pt/rascil-docker/rascil-imaging_qa``
 which can be run with either Docker or Singularity. Instructions can be found at
 
  .. toctree::
@@ -110,7 +110,7 @@ which can be run with either Docker or Singularity. Instructions can be found at
 
     ../installation/RASCIL_docker
 
-under **Running the continuum_imaging_checker** section.
+under **Running the imaging_qa_checker** section.
 
 Output plots
 ++++++++++++
@@ -153,6 +153,6 @@ Command line arguments
 ++++++++++++++++++++++
 
 .. argparse::
-   :filename: ../../rascil/apps/ci_checker_main.py
+   :filename: ../../rascil/apps/imaging_qa_main.py
    :func: cli_parser
-   :prog: ci_checker_main.py
+   :prog: imaging_qa_main.py

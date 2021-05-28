@@ -83,7 +83,7 @@ class MockBDSFImage:
         return gaus_arr
 
 
-def test_qa_image_bdsf():
+def test_quality_image_bdsf():
     im_data = np.array(
         [
             [1.0, 1.0, 1.0, 2.0, 1.0],
@@ -371,7 +371,7 @@ def test_power_spectrum():
 
 @patch(BASE_PATH + ".SlicedLowLevelWCS", Mock())
 @patch(BASE_PATH + ".source_region_mask")
-@patch(BASE_PATH + ".qa_image_bdsf")
+@patch(BASE_PATH + ".quality_image_bdsf")
 @patch(BASE_PATH + ".plot_with_running_mean")
 @patch(BASE_PATH + ".histogram")
 @patch(BASE_PATH + ".power_spectrum", Mock(return_value=([], [])))

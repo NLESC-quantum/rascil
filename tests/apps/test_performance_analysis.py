@@ -30,21 +30,6 @@ FUNCTIONS = (
     "mode, parameters, functions",
     [
         (
-            "memory_bar",
-            "",
-            "",
-        ),
-        (
-            "memory_profile",
-            "",
-            "",
-        ),
-        # (
-        #     "memory_histogram",
-        #     "",
-        #     "",
-        # ),
-        (
             "line",
             "imaging_npixel_sq",
             FUNCTIONS,
@@ -114,11 +99,6 @@ def test_performance_analysis(mode, parameters, functions):
         cli_arg = "--performance_files"
         testfiles = [
             rascil_data_path("misc/performance_rascil_imager_360_8192.json"),
-        ]
-    elif mode == "memory_profile" or mode == "memory_histogram" or mode == "memory_bar":
-        cli_arg = "--memory_file"
-        testfiles = [
-            rascil_data_path("misc/performance_rascil_imager_memory_360_8192.csv"),
         ]
     else:
         cli_arg = "--performance_files"

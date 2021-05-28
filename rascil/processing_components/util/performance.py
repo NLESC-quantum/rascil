@@ -20,12 +20,15 @@ __all__ = [
     "git_hash",
 ]
 
+import csv
 import json
 import logging
 import os
 import socket
 import subprocess
 from datetime import datetime
+
+import numpy
 
 from rascil.processing_components.image.operations import qa_image
 
@@ -57,9 +60,15 @@ def performance_read(performance_file):
 
     try:
         with open(performance_file, "r") as file:
-            return json.load(file)
+            performance = json.load(file)
     except FileNotFoundError:
         raise FileNotFoundError(f"performance file {performance_file} does not exist")
+
+    # Now read the memory file and merge into the performance data
+    mem_file = performance_file.replace(".json", ".csv")
+    mem = performance_read_memory_data(mem_file)
+    performance = performance_merge_memory(performance, mem)
+    return performance
 
 
 def performance_blockvisibility(bvis):
@@ -178,3 +187,61 @@ def performance_store_dict(performance_file, key, s, indent=2, mode="a"):
                 with open(performance_file, "w") as file:
                     s = json.dumps({key: s}, indent=indent)
                     file.write(s)
+
+
+def performance_read_memory_data(memory_file, verbose=False):
+    """Get the memusage data
+
+    :param memory_file:
+    :param verbose:
+    :return:
+    """
+    functions = list()
+    keys = list()
+    max_mem = list()
+    min_mem = list()
+
+    try:
+        with open(memory_file) as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                # task_key,min_memory_mb,max_memory_mb
+                functions.append(row["task_key"].split("-")[0])
+                keys.append(row["task_key"].split("-")[1])
+                max_mem.append(2 ** 20 * float(row["max_memory_mb"]))
+                min_mem.append(2 ** 20 * float(row["min_memory_mb"]))
+        mem = {
+            "functions": numpy.array(functions),
+            "keys": numpy.array(keys),
+            "max_memory": numpy.array(max_mem),
+            "min_memory": numpy.array(min_mem),
+        }
+    except FileNotFoundError:
+        mem = {}
+
+    return mem
+
+
+def performance_merge_memory(performance, mem):
+    """Merge memory data into performance data
+
+    Merge the memory data per function into the performance data
+
+    :param performance: Performance data dictionary
+    :param mem: Memory data dictionary
+    :return:
+    """
+
+    for func in performance["dask_profile"].keys():
+        if "functions" in mem.keys() and func in mem["functions"]:
+            performance["dask_profile"][func]["max_memory"] = numpy.mean(
+                mem["max_memory"]
+            )
+            performance["dask_profile"][func]["min_memory"] = numpy.mean(
+                mem["min_memory"]
+            )
+        else:
+            performance["dask_profile"][func]["max_memory"] = 0.0
+            performance["dask_profile"][func]["min_memory"] = 0.0
+
+    return performance

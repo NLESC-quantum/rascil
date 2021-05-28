@@ -285,15 +285,14 @@ This app supports plotting and fitting of various yaxes against an xaxis e.g. im
 
 import argparse
 import logging
-import os
 import pprint
 import sys
 import glob
 import numpy
-import csv
 
 import matplotlib.pyplot as plt
 
+from processing_components.util.performance import performance_read_memory_data
 from rascil.processing_components.util.performance import (
     performance_read,
 )
@@ -356,21 +355,9 @@ def analyser(args):
         )
         return plotfiles
     elif args.mode == "memory_histogram":
-        memory = get_memory_data(args, args.memory_file)
+        memory = performance_read_memory_data(args.memory_file)
         plotfiles = plot_memory_histogram(
             args.functions, memory, tag=args.tag, verbose=verbose, results=args.results
-        )
-        return plotfiles
-    elif args.mode == "memory_profile":
-        memory = get_memory_data(args, args.memory_file)
-        plotfiles = plot_memory_profile(
-            args.functions, memory, tag=args.tag, verbose=verbose, results=args.results
-        )
-        return plotfiles
-    elif args.mode == "memory_bar":
-        memory = get_memory_data(args, args.memory_file)
-        plotfiles = plot_memory_barchart(
-            memory, tag=args.tag, verbose=verbose, results=args.results
         )
         return plotfiles
     else:
@@ -515,7 +502,7 @@ def plot_performance_lines(
             if verbose:
                 log.info(f"{pprint.pformat(list(zip(sxvalues, syvalues)))}")
             plt.loglog(sxvalues, syvalues, "-", label=func)
-            plt.ylabel("Processing time per call (s)")
+            plt.ylabel(time_type_name)
 
         # If we are plotting total time, add the overall times
         if time_type == 1:
@@ -596,97 +583,6 @@ def plot_memory_histogram(
     return figures
 
 
-def plot_memory_profile(
-    functions, memory, title="", tag="", verbose=False, results="./"
-):
-    """Plot the memory use profiles for a set of functions
-
-    :param functions: Name of functions to be plotted
-    :param memory:
-    :param title: Title for plot
-    :param tag: Informational tag for file name
-    :return:
-    """
-
-    log.info("Plotting memory profiles")
-
-    figures = list()
-
-    if title == "":
-        title = "memory"
-
-    if functions is None or functions == "" or functions == [""]:
-        functions = numpy.unique(memory["functions"])
-
-    for function in functions:
-        max_mem = memory["max_memory"][memory["functions"] == function] * 2 ** -30
-        min_mem = memory["min_memory"][memory["functions"] == function] * 2 ** -30
-
-        plt.clf()
-        plt.cla()
-        plt.plot(max_mem, label="Maximum memory (GB)")
-        plt.plot(min_mem, label="Minimum memory (GB)")
-        plt.title(f"{function} {tag}")
-        plt.xlabel("Sample")
-        plt.legend()
-        if title is not "" or tag is not "":
-            if tag == "":
-                figure = f"{results}/{title}_{function}_memory_profile.png"
-            else:
-                figure = f"{results}/{title}_{tag}_{function}_memory_profile.png"
-            plt.savefig(figure)
-        else:
-            figure = None
-
-        plt.show(block=False)
-        figures.append(figure)
-
-    return figures
-
-
-def plot_memory_barchart(memory, title="", tag="", verbose=False, results="./"):
-    """Plot the set of yaxes
-
-    :param performance: A list of dicts each containing the results for one test case
-    :param title: Title for plot
-    :param tag: Informative tag for file name
-    :return:
-    """
-    if title == "":
-        title = "memory"
-
-    log.info("Plotting memory barcharts")
-
-    functions = numpy.unique(memory["functions"])
-    max_max = numpy.zeros([len(functions)], dtype="float")
-    for i, function in enumerate(functions):
-        max_max[i] = (
-            numpy.max(memory["max_memory"][memory["functions"] == function]) * 2 ** -30
-        )
-
-    plt.clf()
-    plt.cla()
-    y_pos = numpy.arange(len(functions))
-    saxis, _ = sort_values(max_max, max_max)
-    _, syaxes = sort_values(max_max, functions)
-    plt.barh(y_pos, saxis, align="center", alpha=0.5)
-    plt.yticks(y_pos, syaxes, fontsize="x-small")
-    plt.xlabel("Maximum memory (GB)")
-    plt.title(f"{title} {tag} Maximum memory")
-    plt.tight_layout()
-    plt.show(block=False)
-    if title is not "" or tag is not "":
-        if tag == "":
-            figure = f"{results}/{title}_memory_bar.png"
-        else:
-            figure = f"{results}/{title}_{tag}_memory_bar.png"
-        plt.savefig(figure)
-    else:
-        figure = None
-
-    return [figure]
-
-
 def plot_performance_contour(
     parameters, functions, performances, title="", tag="", verbose=False, results="./"
 ):
@@ -741,13 +637,13 @@ def plot_performance_contour(
     return figures
 
 
-def get_performance_contour_data(func, parameters, performances, time_type):
+def get_performance_contour_data(func, parameters, performances, axis_type):
     """Get the surface data for given parameters and function
 
     :param func: Name of function e.g. "invert_ng"
     :param parameters: Name of parameters e.g. "imaging_npixel", "blockvis_nvis"
     :param performances: Performance information
-    :param time_type: Code: 0=per call, 1=total, 2=fraction
+    :param axis_type: Code: 0=per call, 1=total, 2=fraction, 3=max_memory, 4=min_memory
     :return: x, y, z
     """
     xvalues = numpy.array(
@@ -757,7 +653,7 @@ def get_performance_contour_data(func, parameters, performances, time_type):
         [performance["inputs"][parameters[1]] for performance in performances]
     )
     zvalues = numpy.array(
-        [get_data(performance, func)[time_type] for performance in performances]
+        [get_data(performance, func)[axis_type] for performance in performances]
     )
     return xvalues, yvalues, zvalues
 
@@ -786,15 +682,19 @@ def plot_performance_barchart(
             total_time,
             fraction_time,
             number_calls,
+            max_memory,
+            min_memory,
             functions,
         ) = get_performance_barchart_data(performance)
 
         # The profile times are in the "dask_profile" dictionary
-        for axis, time_type, time_type_short in [
+        for axis, axis_type, axis_type_short in [
             (total_time, "Total (s)", "total"),
             (time_per_call, "Per call (s)", "per_call"),
             (fraction_time, "Percentage", "percentage"),
             (number_calls, "Number calls", "number_calls"),
+            (max_memory, "Maximum memory (GB)", "maximum_memory"),
+            (min_memory, "Minimum memory (GB)", "minimum_memory"),
         ]:
             plt.clf()
             plt.cla()
@@ -803,15 +703,15 @@ def plot_performance_barchart(
             _, syaxes = sort_values(axis, functions)
             plt.barh(y_pos, saxis, align="center", alpha=0.5)
             plt.yticks(y_pos, syaxes, fontsize="x-small")
-            plt.xlabel(time_type)
-            plt.title(f"{title} {tag} {time_type}")
+            plt.xlabel(axis_type)
+            plt.title(f"{title} {tag} {axis_type}")
             plt.tight_layout()
             plt.show(block=False)
             if title is not "" or tag is not "":
                 if tag == "":
-                    figure = f"{results}/{title}_{time_type_short}_bar.png"
+                    figure = f"{results}/{title}_{axis_type_short}_bar.png"
                 else:
-                    figure = f"{results}{title}_{tag}_{time_type_short}_bar.png"
+                    figure = f"{results}{title}_{tag}_{axis_type_short}_bar.png"
 
                 plt.savefig(figure)
                 figures.append(figure)
@@ -846,7 +746,19 @@ def get_performance_barchart_data(performance):
         performance["dask_profile"][func]["number_calls"] for func in functions
     ]
 
-    return time_per_call, total_time, fraction_time, number_calls, functions
+    max_memory = [performance["dask_profile"][func]["max_memory"] for func in functions]
+
+    min_memory = [performance["dask_profile"][func]["min_memory"] for func in functions]
+
+    return (
+        time_per_call,
+        total_time,
+        fraction_time,
+        number_calls,
+        max_memory,
+        min_memory,
+        functions,
+    )
 
 
 def get_data(performance, func):
@@ -910,36 +822,6 @@ def get_performance_data(args, performance_files, verbose=False):
         if func not in functions:
             raise ValueError(f"Function {func} is not in file")
     return performances
-
-
-def get_memory_data(args, memory_file, verbose=False):
-    """Get the memusage data
-
-    :param args:
-    :param memory_file:
-    :param verbose:
-    :return:
-    """
-    functions = list()
-    keys = list()
-    max_mem = list()
-    min_mem = list()
-
-    with open(memory_file) as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            # task_key,min_memory_mb,max_memory_mb
-            functions.append(row["task_key"].split("-")[0])
-            keys.append(row["task_key"].split("-")[1])
-            max_mem.append(2 ** 20 * float(row["max_memory_mb"]))
-            min_mem.append(2 ** 20 * float(row["min_memory_mb"]))
-    mem = {
-        "functions": numpy.array(functions),
-        "keys": numpy.array(keys),
-        "max_memory": numpy.array(max_mem),
-        "min_memory": numpy.array(min_mem),
-    }
-    return mem
 
 
 def main():

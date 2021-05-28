@@ -66,8 +66,11 @@ def performance_read(performance_file):
 
     # Now read the memory file and merge into the performance data
     mem_file = performance_file.replace(".json", ".csv")
-    mem = performance_read_memory_data(mem_file)
-    performance = performance_merge_memory(performance, mem)
+    try:
+        mem = performance_read_memory_data(mem_file)
+        performance = performance_merge_memory(performance, mem)
+    except FileNotFoundError:
+        pass
     return performance
 
 
@@ -201,23 +204,20 @@ def performance_read_memory_data(memory_file, verbose=False):
     max_mem = list()
     min_mem = list()
 
-    try:
-        with open(memory_file) as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                # task_key,min_memory_mb,max_memory_mb
-                functions.append(row["task_key"].split("-")[0])
-                keys.append(row["task_key"].split("-")[1])
-                max_mem.append(2 ** -10 * float(row["max_memory_mb"]))
-                min_mem.append(2 ** -10 * float(row["min_memory_mb"]))
-        mem = {
-            "functions": numpy.array(functions),
-            "keys": numpy.array(keys),
-            "max_memory": numpy.array(max_mem),
-            "min_memory": numpy.array(min_mem),
-        }
-    except FileNotFoundError:
-        mem = {}
+    with open(memory_file) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # task_key,min_memory_mb,max_memory_mb
+            functions.append(row["task_key"].split("-")[0])
+            keys.append(row["task_key"].split("-")[1])
+            max_mem.append(2 ** -10 * float(row["max_memory_mb"]))
+            min_mem.append(2 ** -10 * float(row["min_memory_mb"]))
+    mem = {
+        "functions": numpy.array(functions),
+        "keys": numpy.array(keys),
+        "max_memory": numpy.array(max_mem),
+        "min_memory": numpy.array(min_mem),
+    }
 
     return mem
 

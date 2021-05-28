@@ -322,6 +322,7 @@ def analyser(args):
         performance_files = glob.glob("*.json")
 
     if args.mode == "line":
+        # Performance data vs one parameter (e.g. blockvis_nvis)
         performances = get_performance_data(args, performance_files)
         plotfiles = plot_performance_lines(
             args.parameters[0],
@@ -333,6 +334,7 @@ def analyser(args):
         )
         return plotfiles
     elif args.mode == "contour":
+        # Performance data vs two parameters (e.g. blockvis_nvis, imaging_npixel_sq)
         performances = get_performance_data(args, performance_files)
         plotfiles = plot_performance_contour(
             args.parameters,
@@ -345,6 +347,7 @@ def analyser(args):
         return plotfiles
 
     elif args.mode == "bar":
+        # Bar chart of performance data versus function
         performances = get_performance_data(args, performance_files)
         plotfiles = plot_performance_barchart(
             performance_files,
@@ -355,6 +358,7 @@ def analyser(args):
         )
         return plotfiles
     elif args.mode == "memory_histogram":
+        # Histogram of memory usage throughout one run
         memory = performance_read_memory_data(args.memory_file)
         plotfiles = plot_memory_histogram(
             args.functions, memory, tag=args.tag, verbose=verbose, results=args.results
@@ -490,6 +494,8 @@ def plot_performance_lines(
         (1, "Total (s)", "total"),
         (2, "Percentage time", "percentage"),
         (3, "Number calls", "number_calls"),
+        (4, "Maximum memory (GB)", "maximum_memory"),
+        (5, "Minimum memory (GB)", "minimum_memory"),
     ]:
         plt.clf()
         plt.cla()
@@ -566,13 +572,15 @@ def plot_memory_histogram(
             plt.hist(
                 mem,
             )
-            plt.title(f"{function} {tag} {type}")
+            plt.title(f"{function} {tag}")
             plt.xlabel(type)
             if title is not "" or tag is not "":
                 if tag == "":
-                    figure = f"{results}/{title}_{short_type}_histogram.png"
+                    figure = f"{results}/{title}_{function}_{short_type}_histogram.png"
                 else:
-                    figure = f"{results}/{title}_{tag}_{short_type}_histogram.png"
+                    figure = (
+                        f"{results}/{title}_{function}_{tag}_{short_type}_histogram.png"
+                    )
                 plt.savefig(figure)
             else:
                 figure = None
@@ -609,6 +617,8 @@ def plot_performance_contour(
             (1, "Total (s)", "total"),
             (2, "Percentage time", "percentage"),
             (3, "Number calls", "number_calls"),
+            (4, "Maximum memory (GB)", "maximum_memory"),
+            (5, "Minimum memory (GB)", "minimum_memory"),
         ]:
             plt.clf()
             plt.cla()
@@ -776,7 +786,24 @@ def get_data(performance, func):
     fraction_time = performance["dask_profile"][func]["fraction"]
     number_calls = performance["dask_profile"][func]["number_calls"]
 
-    return time_per_call, total_time, fraction_time, number_calls
+    if "max_memory" in performance["dask_profile"][func].keys():
+        max_memory = performance["dask_profile"][func]["max_memory"]
+    else:
+        max_memory = numpy.zeros_like(total_time)
+
+    if "min_memory" in performance["dask_profile"][func].keys():
+        min_memory = performance["dask_profile"][func]["min_memory"]
+    else:
+        min_memory = numpy.zeros_like(total_time)
+
+    return (
+        time_per_call,
+        total_time,
+        fraction_time,
+        number_calls,
+        max_memory,
+        min_memory,
+    )
 
 
 def get_performance_data(args, performance_files, verbose=False):

@@ -292,7 +292,7 @@ import numpy
 
 import matplotlib.pyplot as plt
 
-from processing_components.util.performance import performance_read_memory_data
+from rascil.processing_components.util.performance import performance_read_memory_data
 from rascil.processing_components.util.performance import (
     performance_read,
 )

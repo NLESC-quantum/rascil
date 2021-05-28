@@ -93,11 +93,11 @@ class TestCIChecker(unittest.TestCase):
         )
 
         self.restored_image_multi = (
-            self.dir + "/test_ci_checker_functions_nchan8_restored.fits"
+            self.dir + "/test_imaging_qa_functions_nchan8_restored.fits"
         )
         export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
 
-        self.txtfile = self.dir + "/test_ci_checker_functions.txt"
+        self.txtfile = self.dir + "/test_imaging_qa_functions.txt"
 
         pbmodel = create_image(
             npixel=self.pb_npixel,
@@ -120,7 +120,7 @@ class TestCIChecker(unittest.TestCase):
         # Test using sensitivity image
         # After adding and dividing primary beam, the flux should stay roughly the same
 
-        sensitivity_image = self.dir + "/test_ci_checker_functions_sensitivity.fits"
+        sensitivity_image = self.dir + "/test_imaging_qa_functions_sensitivity.fits"
         export_image_to_fits(self.pb, sensitivity_image)
 
         reversed_comp = correct_primary_beam(
@@ -207,7 +207,7 @@ class TestCIChecker(unittest.TestCase):
         self.args.ingest_fitsname_restored = None
         self.assertRaises(FileNotFoundError, lambda: analyze_image(self.args))
 
-    @patch("rascil.apps.ci_checker_main.imaging_qa")
+    @patch("rascil.apps.imaging_qa_main.imaging_qa_bdsf")
     def test_analyze_image_exceptions(self, mock_checker):
         mock_checker.return_value = Mock()
         self.args.ingest_fitsname_restored = self.restored_image_multi

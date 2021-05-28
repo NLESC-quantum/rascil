@@ -181,7 +181,7 @@ def test_continuum_imaging_checker(
     components_with_pb = apply_beam_to_skycomponent(original_components[0], pb)
 
     sensitivity_file = rascil_path(
-        f"test_results/test_ci_checker_{tag}_sensitivity.fits"
+        f"test_results/test_imaging_qa_{tag}_sensitivity.fits"
     )
     export_image_to_fits(pb, sensitivity_file)
 
@@ -189,7 +189,7 @@ def test_continuum_imaging_checker(
     components = original_components[0]
     components = sorted(components, key=lambda cmp: numpy.max(cmp.direction.ra))
 
-    comp_file = rascil_path(f"test_results/test_ci_checker_{tag}.hdf")
+    comp_file = rascil_path(f"test_results/test_imaging_qa_{tag}.hdf")
     export_skycomponent_to_hdf5(components, comp_file)
 
     # Create restored image
@@ -210,7 +210,7 @@ def test_continuum_imaging_checker(
     model = restore_cube(model, clean_beam=clean_beam)
     model.attrs["clean_beam"] = clean_beam
 
-    restored_file = rascil_path(f"test_results/test_ci_checker_{tag}.fits")
+    restored_file = rascil_path(f"test_results/test_imaging_qa_{tag}.fits")
     export_image_to_fits(model, restored_file)
 
     # Generate residual file: No skycomponents, just noise
@@ -230,7 +230,7 @@ def test_continuum_imaging_checker(
     residual_model = restore_cube(residual_model, clean_beam=clean_beam)
     residual_model.attrs["clean_beam"] = clean_beam
 
-    residual_file = rascil_path(f"test_results/test_ci_checker_{tag}_residual.fits")
+    residual_file = rascil_path(f"test_results/test_imaging_qa_{tag}_residual.fits")
     export_image_to_fits(residual_model, residual_file)
 
     parser = cli_parser()
@@ -282,69 +282,69 @@ def test_continuum_imaging_checker(
 
     # Check if the plots have been generated
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_restored_plot.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_restored_plot.png")
     )
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_sources_plot.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_sources_plot.png")
     )
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_background_plot.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_background_plot.png")
     )
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_restored_power_spectrum.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_restored_power_spectrum.png")
     )
 
     if residual_file is not None:
         assert os.path.exists(
             rascil_path(
-                f"test_results/test_ci_checker_{tag}_residual_residual_hist.png"
+                f"test_results/test_imaging_qa_{tag}_residual_residual_hist.png"
             )
         )
         assert os.path.exists(
             rascil_path(
-                f"test_results/test_ci_checker_{tag}_residual_residual_power_spectrum.png"
+                f"test_results/test_imaging_qa_{tag}_residual_residual_power_spectrum.png"
             )
         )
 
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_position_value.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_position_value.png")
     )
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_position_error.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_position_error.png")
     )
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_position_distance.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_position_distance.png")
     )
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_flux_value.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_flux_value.png")
     )
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_flux_ratio.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_flux_ratio.png")
     )
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_flux_histogram.png")
-    )
-
-    assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_position_quiver.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_flux_histogram.png")
     )
 
     assert os.path.exists(
-        rascil_path(f"test_results/test_ci_checker_{tag}_gaussian_beam_position.png")
+        rascil_path(f"test_results/test_imaging_qa_{tag}_position_quiver.png")
+    )
+
+    assert os.path.exists(
+        rascil_path(f"test_results/test_imaging_qa_{tag}_gaussian_beam_position.png")
     )
 
     if nchan > 1:
         assert os.path.exists(
-            rascil_path(f"test_results/test_ci_checker_{tag}_spec_index.png")
+            rascil_path(f"test_results/test_imaging_qa_{tag}_spec_index.png")
         )
         assert os.path.exists(
             rascil_path(
-                f"test_results/test_ci_checker_{tag}_spec_index_diagnostics_flux.png"
+                f"test_results/test_imaging_qa_{tag}_spec_index_diagnostics_flux.png"
             )
         )
         assert os.path.exists(
             rascil_path(
-                f"test_results/test_ci_checker_{tag}_spec_index_diagnostics_dist.png"
+                f"test_results/test_imaging_qa_{tag}_spec_index_diagnostics_dist.png"
             )
         )
 
@@ -355,7 +355,7 @@ def test_continuum_imaging_checker(
 
     # clean up directory
     if persist is False:
-        imglist = glob.glob(rascil_path(f"test_results/test_ci_checker_{tag}*"))
+        imglist = glob.glob(rascil_path(f"test_results/test_imaging_qa_{tag}*"))
         for f in imglist:
             os.remove(f)
         try:

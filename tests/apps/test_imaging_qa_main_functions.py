@@ -215,7 +215,7 @@ class TestCIChecker(unittest.TestCase):
 
         result = analyze_image(self.args)
 
-        # call_args_list returns the input for function imaging_qa
+        # call_args_list returns the input for function imaging_qa_bdsf
         # Assert using automatic beam size
         assert mock_checker.call_args_list[0][0][2] == (1.0, 1.0, 0.0)
 

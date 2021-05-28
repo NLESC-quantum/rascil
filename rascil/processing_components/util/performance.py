@@ -208,8 +208,8 @@ def performance_read_memory_data(memory_file, verbose=False):
                 # task_key,min_memory_mb,max_memory_mb
                 functions.append(row["task_key"].split("-")[0])
                 keys.append(row["task_key"].split("-")[1])
-                max_mem.append(2 ** 20 * float(row["max_memory_mb"]))
-                min_mem.append(2 ** 20 * float(row["min_memory_mb"]))
+                max_mem.append(2 ** -10 * float(row["max_memory_mb"]))
+                min_mem.append(2 ** -10 * float(row["min_memory_mb"]))
         mem = {
             "functions": numpy.array(functions),
             "keys": numpy.array(keys),
@@ -235,10 +235,10 @@ def performance_merge_memory(performance, mem):
     for func in performance["dask_profile"].keys():
         if "functions" in mem.keys() and func in mem["functions"]:
             performance["dask_profile"][func]["max_memory"] = numpy.mean(
-                mem["max_memory"]
+                mem["max_memory"][mem["functions"] == func]
             )
             performance["dask_profile"][func]["min_memory"] = numpy.mean(
-                mem["min_memory"]
+                mem["min_memory"][mem["functions"] == func]
             )
         else:
             performance["dask_profile"][func]["max_memory"] = 0.0

@@ -559,7 +559,7 @@ def plot_memory_histogram(
 
     for function in functions:
         for short_type, type in [("max_memory", "Maximum memory (GB)")]:
-            mem = memory[short_type][memory["functions"] == function] * 2 ** -30
+            mem = memory[short_type][memory["functions"] == function]
 
             plt.clf()
             plt.cla()

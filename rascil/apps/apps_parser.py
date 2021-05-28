@@ -296,6 +296,13 @@ def apps_parser_dask(parser):
         help="File in which to track Dask memory use (using dask-memusage)",
     )
     parser.add_argument(
+        "--dask-nodes",
+        type=str,
+        nargs="*",
+        default=None,
+        help="Node names for SSHCluster",
+    )
+    parser.add_argument(
         "--dask_nworkers",
         type=int,
         default=None,
@@ -305,7 +312,7 @@ def apps_parser_dask(parser):
         "--dask_scheduler",
         type=str,
         default=None,
-        help="Externally defined Dask scheduler e.g. 127.0.0.1:8786",
+        help="Externally defined Dask scheduler e.g. 127.0.0.1:8786 or ssh for SSHCluster",
     )
     return parser
 

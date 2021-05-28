@@ -21,7 +21,7 @@ from rascil.apps.imaging_qa.imaging_qa_diagnostics import (
 )
 from rascil.data_models import rascil_data_path
 
-BASE_PATH = "rascil.apps.imaging_qa.ci_diagnostics"
+BASE_PATH = "rascil.apps.imaging_qa.imaging_qa_diagnostics"
 
 
 class MockGaussianObject:
@@ -74,7 +74,7 @@ class MockBDSFImage:
     def beam2pix(self, beam):
         # See bdsf.readimage.Op_readimage.init_beam.beam2pix
         # this mock method just returns its input; it's used to test
-        # rascil.apps.imaging_qa.ci_diagnostics.source_region_mask
+        # rascil.apps.imaging_qa.imaging_qa_diagnostics.source_region_mask
         return beam
 
     def create_gaussian_array(self):
@@ -380,10 +380,10 @@ def test_power_spectrum():
 class TestCICheckerDiagnostics:
     """
     Test that the correct functions are called, and the correct number of times,
-    depending on what "image_type" we run the ci_checker_diagnostics function with.
+    depending on what "image_type" we run the imaging_qa_diagnostics function with.
 
     In these tests, we mock the functions to check if they were executed.
-    We are only interested in ci_checker_diagnostics executing correctly,
+    We are only interested in imaging_qa_diagnostics executing correctly,
     not the functions that are called within.
     """
 
@@ -425,7 +425,7 @@ class TestCICheckerDiagnostics:
 
 
 @patch(BASE_PATH + ".SlicedLowLevelWCS", Mock())
-def test_ci_checker_diagnostics_unknown_type():
+def test_imaging_qa_diagnostics_unknown_type():
     """
     If the provided image_type is neither 'restored' nor 'residual,
     raise a ValueError.

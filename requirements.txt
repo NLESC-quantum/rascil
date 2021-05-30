@@ -38,7 +38,7 @@ bokeh==2.3.2
     # via -r requirements.in
 cached-property==1.5.2
     # via h5py
-certifi==2020.12.5
+certifi==2021.5.30
     # via requests
 cffi==1.14.5
     # via
@@ -60,7 +60,7 @@ cryptography==3.4.7
     # via paramiko
 cycler==0.10.0
     # via matplotlib
-dask==2021.05.0
+dask==2021.05.1
     # via
     #   -r requirements.in
     #   distributed
@@ -70,7 +70,7 @@ decorator==4.4.2
     #   networkx
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.5.0
+distributed==2021.5.1
     # via -r requirements.in
 ducc0==0.11.0
     # via -r requirements.in
@@ -96,7 +96,7 @@ idna==2.10
     # via requests
 imageio==2.9.0
     # via scikit-image
-importlib-metadata==4.0.1
+importlib-metadata==4.3.1
     # via
     #   click
     #   jsonschema
@@ -114,7 +114,7 @@ ipython-genutils==0.2.0
     #   notebook
     #   qtconsole
     #   traitlets
-ipython==7.23.1
+ipython==7.24.0
     # via
     #   ipykernel
     #   ipywidgets
@@ -329,7 +329,7 @@ pyyaml==5.4.1
     #   distributed
     #   jupyter-contrib-nbextensions
     #   jupyter-nbextensions-configurator
-pyzmq==22.0.3
+pyzmq==22.1.0
     # via
     #   jupyter-client
     #   notebook
@@ -422,7 +422,7 @@ typing-extensions==3.10.0.0
     #   bokeh
     #   gitpython
     #   importlib-metadata
-urllib3==1.26.4
+urllib3==1.26.5
     # via requests
 wcwidth==0.2.5
     # via prompt-toolkit

@@ -21,7 +21,7 @@ Imaging
    apps/rascil_vis_ms.rst
    apps/rascil_advise.rst
    apps/rascil_image_check.rst
-   apps/continuum_imaging_checker.rst
+   apps/imaging_qa.rst
 
 
 Other

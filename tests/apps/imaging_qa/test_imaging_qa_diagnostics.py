@@ -6,8 +6,8 @@ import pytest
 
 from scipy.signal.windows import gaussian as scipy_gaussian
 
-from rascil.apps.ci_checker.ci_diagnostics import (
-    qa_image_bdsf,
+from rascil.apps.imaging_qa.imaging_qa_diagnostics import (
+    quality_image_bdsf,
     plot_name,
     gaussian,
     _get_histogram_data,
@@ -17,11 +17,11 @@ from rascil.apps.ci_checker.ci_diagnostics import (
     _radial_profile,
     _plot_power_spectrum,
     power_spectrum,
-    ci_checker_diagnostics,
+    imaging_qa_diagnostics,
 )
 from rascil.data_models import rascil_data_path
 
-BASE_PATH = "rascil.apps.ci_checker.ci_diagnostics"
+BASE_PATH = "rascil.apps.imaging_qa.imaging_qa_diagnostics"
 
 
 class MockGaussianObject:
@@ -74,7 +74,7 @@ class MockBDSFImage:
     def beam2pix(self, beam):
         # See bdsf.readimage.Op_readimage.init_beam.beam2pix
         # this mock method just returns its input; it's used to test
-        # rascil.apps.ci_checker.ci_diagnostics.source_region_mask
+        # rascil.apps.imaging_qa.imaging_qa_diagnostics.source_region_mask
         return beam
 
     def create_gaussian_array(self):
@@ -83,7 +83,7 @@ class MockBDSFImage:
         return gaus_arr
 
 
-def test_qa_image_bdsf():
+def test_quality_image_bdsf():
     im_data = np.array(
         [
             [1.0, 1.0, 1.0, 2.0, 1.0],
@@ -94,7 +94,7 @@ def test_qa_image_bdsf():
         ]
     )
 
-    result = qa_image_bdsf(im_data)
+    result = quality_image_bdsf(im_data)
 
     assert result["shape"] == "(5, 5)"
     assert result["max"] == 2.0
@@ -371,7 +371,7 @@ def test_power_spectrum():
 
 @patch(BASE_PATH + ".SlicedLowLevelWCS", Mock())
 @patch(BASE_PATH + ".source_region_mask")
-@patch(BASE_PATH + ".qa_image_bdsf")
+@patch(BASE_PATH + ".quality_image_bdsf")
 @patch(BASE_PATH + ".plot_with_running_mean")
 @patch(BASE_PATH + ".histogram")
 @patch(BASE_PATH + ".power_spectrum", Mock(return_value=([], [])))
@@ -380,10 +380,10 @@ def test_power_spectrum():
 class TestCICheckerDiagnostics:
     """
     Test that the correct functions are called, and the correct number of times,
-    depending on what "image_type" we run the ci_checker_diagnostics function with.
+    depending on what "image_type" we run the imaging_qa_diagnostics function with.
 
     In these tests, we mock the functions to check if they were executed.
-    We are only interested in ci_checker_diagnostics executing correctly,
+    We are only interested in imaging_qa_diagnostics executing correctly,
     not the functions that are called within.
     """
 
@@ -398,7 +398,7 @@ class TestCICheckerDiagnostics:
         mock_histogram.return_value = Mock()
         mock_source_mask.return_value = ("source_mask", "background_mask")
 
-        ci_checker_diagnostics(mock_image, "my_file.fits", "restored")
+        imaging_qa_diagnostics(mock_image, "my_file.fits", "restored")
 
         assert mock_qa_image.call_count == 3
         assert mock_plot_run_mean.call_count == 3
@@ -416,7 +416,7 @@ class TestCICheckerDiagnostics:
         mock_histogram.return_value = Mock()
         mock_source_mask.return_value = ("source_mask", "background_mask")
 
-        ci_checker_diagnostics(mock_image, "my_file.fits", "residual")
+        imaging_qa_diagnostics(mock_image, "my_file.fits", "residual")
 
         assert mock_qa_image.call_count == 1
         assert mock_plot_run_mean.call_count == 1
@@ -425,7 +425,7 @@ class TestCICheckerDiagnostics:
 
 
 @patch(BASE_PATH + ".SlicedLowLevelWCS", Mock())
-def test_ci_checker_diagnostics_unknown_type():
+def test_imaging_qa_diagnostics_unknown_type():
     """
     If the provided image_type is neither 'restored' nor 'residual,
     raise a ValueError.
@@ -434,4 +434,4 @@ def test_ci_checker_diagnostics_unknown_type():
     setattr(mock_image, "wcs_obj", Mock())
 
     with pytest.raises(ValueError):
-        ci_checker_diagnostics(mock_image, "my_file.fits", "my_weird_type")
+        imaging_qa_diagnostics(mock_image, "my_file.fits", "my_weird_type")

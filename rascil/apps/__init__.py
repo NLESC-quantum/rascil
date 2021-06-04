@@ -1,3 +1,3 @@
-__all__ = ["rascil_imager", "rascil_vis_ms", "rascil_advise", "ci_checker_main"]
+__all__ = ["rascil_imager", "rascil_vis_ms", "rascil_advise", "imaging_qa_main.py"]
 
 from .apps_parser import *

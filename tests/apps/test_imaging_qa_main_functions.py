@@ -1,4 +1,4 @@
-"""Unit tests for individual functions in ci_checker_main.py
+"""Unit tests for individual functions in imaging_qa_main.py
 
 """
 
@@ -12,7 +12,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from numpy.testing import assert_array_almost_equal
 
-from rascil.apps.ci_checker_main import (
+from rascil.apps.imaging_qa_main import (
     cli_parser,
     analyze_image,
     correct_primary_beam,
@@ -42,7 +42,7 @@ log.setLevel(logging.WARNING)
 class TestCIChecker(unittest.TestCase):
     def setUp(self):
 
-        # Generate mock objects for functions in ci_checker,
+        # Generate mock objects for functions in imaging_qa,
         # including skycomponents, primary beam image, restored image
         self.dir = rascil_path("test_results")
 
@@ -93,11 +93,11 @@ class TestCIChecker(unittest.TestCase):
         )
 
         self.restored_image_multi = (
-            self.dir + "/test_ci_checker_functions_nchan8_restored.fits"
+            self.dir + "/test_imaging_qa_functions_nchan8_restored.fits"
         )
         export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
 
-        self.txtfile = self.dir + "/test_ci_checker_functions.txt"
+        self.txtfile = self.dir + "/test_imaging_qa_functions.txt"
 
         pbmodel = create_image(
             npixel=self.pb_npixel,
@@ -120,7 +120,7 @@ class TestCIChecker(unittest.TestCase):
         # Test using sensitivity image
         # After adding and dividing primary beam, the flux should stay roughly the same
 
-        sensitivity_image = self.dir + "/test_ci_checker_functions_sensitivity.fits"
+        sensitivity_image = self.dir + "/test_imaging_qa_functions_sensitivity.fits"
         export_image_to_fits(self.pb, sensitivity_image)
 
         reversed_comp = correct_primary_beam(
@@ -207,7 +207,7 @@ class TestCIChecker(unittest.TestCase):
         self.args.ingest_fitsname_restored = None
         self.assertRaises(FileNotFoundError, lambda: analyze_image(self.args))
 
-    @patch("rascil.apps.ci_checker_main.ci_checker")
+    @patch("rascil.apps.imaging_qa_main.imaging_qa_bdsf")
     def test_analyze_image_exceptions(self, mock_checker):
         mock_checker.return_value = Mock()
         self.args.ingest_fitsname_restored = self.restored_image_multi
@@ -215,7 +215,7 @@ class TestCIChecker(unittest.TestCase):
 
         result = analyze_image(self.args)
 
-        # call_args_list returns the input for function ci_checker
+        # call_args_list returns the input for function imaging_qa_bdsf
         # Assert using automatic beam size
         assert mock_checker.call_args_list[0][0][2] == (1.0, 1.0, 0.0)
 

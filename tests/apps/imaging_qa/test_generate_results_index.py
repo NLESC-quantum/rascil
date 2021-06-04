@@ -2,7 +2,7 @@ import os
 import shutil
 from unittest.mock import patch, Mock
 
-from rascil.apps.ci_checker.generate_results_index import (
+from rascil.apps.imaging_qa.generate_results_index import (
     generate_html_sub_string,
     generate_md_sub_string,
     generate_html_file,
@@ -120,7 +120,7 @@ def test_generate_md_sub_string_no_files():
     assert result == expected_string
 
 
-@patch("rascil.apps.ci_checker.generate_results_index.open")
+@patch("rascil.apps.imaging_qa.generate_results_index.open")
 def test_generate_html_file_headers_only(mock_open):
     """
     HTML file correctly generated, with section titles only,
@@ -143,7 +143,7 @@ def test_generate_html_file_headers_only(mock_open):
     assert expected_sub_string in call_arg_string
 
 
-@patch("rascil.apps.ci_checker.generate_results_index.open")
+@patch("rascil.apps.imaging_qa.generate_results_index.open")
 def test_generate_html_file_headers_and_content(mock_open):
     """
     HTML file correctly generated, including all of the section titles
@@ -172,7 +172,7 @@ def test_generate_html_file_headers_and_content(mock_open):
     assert expected_sub_string in call_arg_string
 
 
-@patch("rascil.apps.ci_checker.generate_results_index.open")
+@patch("rascil.apps.imaging_qa.generate_results_index.open")
 def test_generate_markdown_file_headers_only(mock_open):
     """
     Markdown file correctly generated, with section titles only,
@@ -197,7 +197,7 @@ def test_generate_markdown_file_headers_only(mock_open):
     assert expected_sub_string in call_arg_string
 
 
-@patch("rascil.apps.ci_checker.generate_results_index.open")
+@patch("rascil.apps.imaging_qa.generate_results_index.open")
 def test_generate_markdown_file_headers_and_content(mock_open):
     """
     Markdown file correctly generated, including all of the section titles

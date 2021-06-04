@@ -45,9 +45,9 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_multifreq_spectral_index,
 )
 
-from rascil.apps.ci_checker.generate_results_index import create_index
-from rascil.apps.ci_checker.ci_diagnostics import (
-    ci_checker_diagnostics,
+from rascil.apps.imaging_qa.generate_results_index import create_index
+from rascil.apps.imaging_qa.imaging_qa_diagnostics import (
+    imaging_qa_diagnostics,
 )
 
 
@@ -283,7 +283,7 @@ def analyze_image(args):
     log.info("Use threshold: {}, {}".format(thresh_isl, thresh_pix))
 
     if restart == "False":
-        ci_checker(
+        imaging_qa_bdsf(
             input_image_restored,
             input_image_residual,
             beam_info,
@@ -364,7 +364,7 @@ def analyze_image(args):
     return out, results
 
 
-def ci_checker(
+def imaging_qa_bdsf(
     input_image_restored,
     input_image_residual,
     beam_info,
@@ -434,7 +434,7 @@ def ci_checker(
     img_rest.export_image(img_type="gaus_resid", clobber=True)
 
     log.info("Running diagnostics for the restored image")
-    ci_checker_diagnostics(img_rest, input_image_restored, "restored")
+    imaging_qa_diagnostics(img_rest, input_image_restored, "restored")
 
     if input_image_residual is not None:
         log.info("Analysing the residual image")
@@ -477,7 +477,7 @@ def ci_checker(
             export_image_to_fits(rms_image, save_rms_file + ".fits")
 
         log.info("Running diagnostics for the residual image")
-        ci_checker_diagnostics(img_resid, input_image_residual, "residual")
+        imaging_qa_diagnostics(img_resid, input_image_residual, "residual")
 
     return
 

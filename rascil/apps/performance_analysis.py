@@ -289,6 +289,7 @@ import pprint
 import sys
 import glob
 import numpy
+import os
 
 import matplotlib.pyplot as plt
 
@@ -484,7 +485,7 @@ def plot_performance_lines(
     figures = list()
 
     if title == "":
-        title = "performance"
+        title = os.path.basename(os.getcwd())
 
     # The profile times are in the "dask_profile" dictionary
 
@@ -516,22 +517,26 @@ def plot_performance_lines(
                 performance["dask_profile"]["summary"]["duration"]
                 for performance in performances
             ]
-            plt.loglog(xvalues, clock_time, "--", label="clock_time")
+            sxvalues, sclock_time = sort_values(xvalues, clock_time)
+            plt.loglog(sxvalues, sclock_time, "--", label="clock_time")
             processor_time = [
                 performance["dask_profile"]["summary"]["total"]
                 for performance in performances
             ]
-            plt.loglog(xvalues, processor_time, "--", label="processor_time")
+            sxvalues, sprocessor_time = sort_values(xvalues, processor_time)
+            plt.loglog(sxvalues, sprocessor_time, "--", label="processor_time")
             plt.ylabel("Total processing time (s)")
 
-        plt.title(f"{title} {tag} {time_type_name}")
+        plt.title(f"{title} {parameter} {tag}")
         plt.xlabel(parameter)
         plt.legend()
         if title is not "" or tag is not "":
             if tag == "":
-                figure = f"{results}/{title}_{time_type_short}_line.png"
+                figure = f"{results}/{title}_{parameter}_{time_type_short}_line.png"
             else:
-                figure = f"{results}/{title}_{tag}_{time_type_short}_line.png"
+                figure = (
+                    f"{results}/{title}_{parameter}_{tag}_{time_type_short}_line.png"
+                )
             plt.savefig(figure)
         else:
             figure = None
@@ -558,7 +563,7 @@ def plot_memory_histogram(
     figures = list()
 
     if title == "":
-        title = "memory"
+        title = os.path.basename(os.getcwd())
 
     if functions is None or functions == "" or functions == [""]:
         functions = numpy.unique(memory["functions"])
@@ -608,7 +613,7 @@ def plot_performance_contour(
     figures = list()
 
     if title == "":
-        title = "performance"
+        title = os.path.basename(os.getcwd())
 
     for func in functions:
 
@@ -620,30 +625,34 @@ def plot_performance_contour(
             (4, "Maximum memory (GB)", "maximum_memory"),
             (5, "Minimum memory (GB)", "minimum_memory"),
         ]:
-            plt.clf()
-            plt.cla()
-
             xvalues, yvalues, zvalues = get_performance_contour_data(
                 func, parameters, performances, time_type
             )
 
-            plt.tricontour(xvalues, yvalues, zvalues, levels=10)
+            try:
+                plt.clf()
+                plt.cla()
 
-            plt.title(f"{title} {func} {tag} {time_type_name}")
-            plt.xlabel(parameters[0])
-            plt.ylabel(parameters[1])
-            plt.colorbar()
-            if title is not "" or tag is not "":
-                if tag == "":
-                    figure = f"{results}/{title}_{func}_{time_type_short}_contour.png"
-                else:
-                    figure = (
-                        f"{results}/{title}_{func}_{tag}_{time_type_short}_contour.png"
-                    )
-                plt.savefig(figure)
-                figures.append(figure)
+                plt.tricontour(xvalues, yvalues, zvalues, levels=10)
 
-            plt.show(block=False)
+                plt.title(f"{title} {func} {tag} {time_type_name}")
+                plt.xlabel(parameters[0])
+                plt.ylabel(parameters[1])
+                plt.colorbar()
+                if title is not "" or tag is not "":
+                    if tag == "":
+                        figure = (
+                            f"{results}/{title}_{func}_{time_type_short}_contour.png"
+                        )
+                    else:
+                        figure = f"{results}/{title}_{func}_{tag}_{time_type_short}_contour.png"
+                    plt.savefig(figure)
+                    figures.append(figure)
+
+                plt.show(block=False)
+            except IndexError:
+                pass
+
     return figures
 
 
@@ -680,9 +689,6 @@ def plot_performance_barchart(
     """
     figures = list()
 
-    if title == "":
-        title = "performance"
-
     log.info("Plotting barcharts")
 
     for ipf, performance_file in enumerate(performance_files):
@@ -696,6 +702,11 @@ def plot_performance_barchart(
             min_memory,
             functions,
         ) = get_performance_barchart_data(performance)
+
+        title = os.path.basename(performance_file.replace(".json", ""))
+        title = title.replace(
+            "performance_rascil_imager", os.path.basename(os.getcwd())
+        )
 
         # The profile times are in the "dask_profile" dictionary
         for axis, axis_type, axis_type_short in [
@@ -756,9 +767,17 @@ def get_performance_barchart_data(performance):
         performance["dask_profile"][func]["number_calls"] for func in functions
     ]
 
-    max_memory = [performance["dask_profile"][func]["max_memory"] for func in functions]
+    try:
+        max_memory = [
+            performance["dask_profile"][func]["max_memory"] for func in functions
+        ]
 
-    min_memory = [performance["dask_profile"][func]["min_memory"] for func in functions]
+        min_memory = [
+            performance["dask_profile"][func]["min_memory"] for func in functions
+        ]
+    except KeyError:
+        max_memory = numpy.zeros_like(total_time)
+        min_memory = numpy.zeros_like(total_time)
 
     return (
         time_per_call,

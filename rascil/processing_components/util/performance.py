@@ -234,12 +234,18 @@ def performance_merge_memory(performance, mem):
 
     for func in performance["dask_profile"].keys():
         if "functions" in mem.keys() and func in mem["functions"]:
-            performance["dask_profile"][func]["max_memory"] = numpy.mean(
-                mem["max_memory"][mem["functions"] == func]
-            )
-            performance["dask_profile"][func]["min_memory"] = numpy.mean(
-                mem["min_memory"][mem["functions"] == func]
-            )
+            max_mem = mem["max_memory"][mem["functions"] == func]
+            max_mem = max_mem[max_mem > 0.0]
+            if max_mem.size > 0:
+                performance["dask_profile"][func]["max_memory"] = numpy.mean(max_mem)
+            else:
+                performance["dask_profile"][func]["max_memory"] = 0.0
+            min_mem = mem["min_memory"][mem["functions"] == func]
+            min_mem = min_mem[min_mem > 0.0]
+            if min_mem.size > 0:
+                performance["dask_profile"][func]["min_memory"] = numpy.mean(min_mem)
+            else:
+                performance["dask_profile"][func]["min_memory"] = 0.0
         else:
             performance["dask_profile"][func]["max_memory"] = 0.0
             performance["dask_profile"][func]["min_memory"] = 0.0

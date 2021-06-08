@@ -29,6 +29,7 @@ FUNCTIONS = (
 @pytest.mark.parametrize(
     "mode, parameters, functions",
     [
+        ("summary", "imaging_npixel_sq blockvis_nvis", "summary"),
         (
             "line",
             "imaging_npixel_sq",
@@ -71,7 +72,7 @@ def test_performance_analysis(mode, parameters, functions):
             rascil_data_path("misc/performance_rascil_imager_360_4096.json"),
             rascil_data_path("misc/performance_rascil_imager_360_8192.json"),
         ]
-    elif mode == "contour":
+    elif mode == "contour" or mode == "summary":
         cli_arg = "--performance_files"
         testfiles = [
             rascil_data_path("misc/performance_rascil_imager_360_512.json"),

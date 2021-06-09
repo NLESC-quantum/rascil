@@ -171,9 +171,6 @@ def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
 def predict_2d(vis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
     """Predict using convolutional degridding.
 
-    This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
-    this function. Any shifting needed is performed here.
-
     Note that the gridding correction function (gcf) and convolution function (cf) can be passed
     as a partial function via the **kwargs. So the caller must supply a partial function to
     calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
@@ -189,8 +186,6 @@ def predict_2d(vis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
     assert not numpy.isnan(
         numpy.sum(model["pixels"].data)
     ), "NaNs present in input model"
-
-    # assert isinstance(vis, BlockVisibility), vis
 
     _, _, ny, nx = model["pixels"].data.shape
 
@@ -229,21 +224,17 @@ def invert_2d(
 ) -> (Image, numpy.ndarray):
     """Invert using 2D convolution function, using the specified convolution function
 
-     Use the image im as a template. Do PSF in a separate call.
+    Use the image im as a template. Do PSF in a separate call.
 
-     This is at the bottom of the layering i.e. all transforms are eventually expressed in terms
-     of this function. Any shifting needed is performed here.
-
-     Note that the gridding correction function (gcf) and convolution function (cf) can be passed
-     as a partial function via the **kwargs. So the caller must supply a partial function to
-     calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
+    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
+    as a partial function via the **kwargs. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
 
     :param vis: blockvisibility to be inverted
-     :param im: image template (not changed)
-     :param dopsf: Make the psf instead of the dirty image
-     :param normalise: normalise by the sum of weights (True)
-     :return: (resulting image, sumof weights)
-
+    :param im: image template (not changed)
+    :param dopsf: Make the psf instead of the dirty image
+    :param normalise: normalise by the sum of weights (True)
+    :return: (resulting image, sum of weights)
     """
 
     svis = copy_visibility(vis)

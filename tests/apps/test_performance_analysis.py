@@ -29,6 +29,11 @@ FUNCTIONS = (
 @pytest.mark.parametrize(
     "mode, parameters, functions",
     [
+        (
+            "memory_histogram",
+            "",
+            FUNCTIONS,
+        ),
         ("summary", "imaging_npixel_sq blockvis_nvis", "summary"),
         (
             "line",
@@ -100,6 +105,11 @@ def test_performance_analysis(mode, parameters, functions):
         cli_arg = "--performance_files"
         testfiles = [
             rascil_data_path("misc/performance_rascil_imager_360_8192.json"),
+        ]
+    elif mode == "memory_histogram":
+        cli_arg = "--memory_file"
+        testfiles = [
+            rascil_data_path("misc/performance_rascil_imager_360_8192.csv"),
         ]
     else:
         cli_arg = "--performance_files"

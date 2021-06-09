@@ -649,8 +649,8 @@ def plot_summary_contour(
                 plt.clf()
                 plt.cla()
 
-                cmap = cm.get_cmap(name="rainbow", lut=None)
-                plt.tricontour(xvalues, yvalues, zvalues, levels=10, cmap=cmap)
+                cmap = cm.get_cmap(name="tab20", lut=None)
+                plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
 
                 plt.title(f"{title} {tag} {time_type_name}")
                 plt.xlabel(parameters[0])
@@ -710,8 +710,8 @@ def plot_performance_contour(
                 plt.clf()
                 plt.cla()
 
-                cmap = cm.get_cmap(name="rainbow", lut=None)
-                plt.tricontour(xvalues, yvalues, zvalues, levels=10, cmap=cmap)
+                cmap = cm.get_cmap(name="tab20", lut=None)
+                plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
 
                 plt.title(f"{title} {func} {tag} {time_type_name}")
                 plt.xlabel(parameters[0])

@@ -492,12 +492,12 @@ class _rsexecutebase:
 
         Note that there can only be one dask thread per process.
 
-        This only works for the process scheduler. For the distributed schedulr, preload the
+        This only works for the process scheduler. For the distributed scheduler, preload the
         plugin. For example:
 
         dask-scheduler --port=8786 --preload dask_memusage --memusage-csv ./memusage.csv
 
-        :param memusage_file:
+        :param memusage_file: Name of mem-usage file produced by dask-memusage plugin
         :return:
         """
         if (

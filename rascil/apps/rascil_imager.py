@@ -189,7 +189,7 @@ def imager(args):
 def setup_rsexecute(args):
     # We can run distributed (use_dask=True) or in serial (use_dask=False). Using Dask is usually recommended
     if args.use_dask == "True":
-        if args.dask_scheduler is "ssh":
+        if args.dask_scheduler == "ssh":
             log.info("Using SSH scheduler")
             cluster = SSHCluster(
                 args.dask_nodes,

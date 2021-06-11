@@ -290,7 +290,7 @@ def cli_parser():
         "--memory_file",
         type=str,
         default=None,
-        help="Names of memusage csv files",
+        help="Name of memusage csv file",
     )
 
     parser.add_argument(
@@ -366,7 +366,7 @@ def plot_performance_lines(parameter, functions, performances, tag="", results="
 
     :param parameter: Name of parameter e.g. imaging_npixel
     :param functions: Name of functions to be plotted against parameter
-    :param performances: A list of dicts containing each containing the results for one test case
+    :param performances: A list of dicts each containing the results for one test case
     :param tag: Informational tag for file name
     :param results: Where to place results
     :return: List of plot files
@@ -486,7 +486,7 @@ def plot_summary_contour(parameters, performances, tag="", results="./"):
     """Plot the summary info as a contour
 
     :param parameters: Name of parameters e.g. imaging_npixel, blockvis_nvis
-    :param performances: A list of dicts containing each containing the results for one test case
+    :param performances: A list of dicts each containing the results for one test case
     :param tag: Informational tag for file name
     :param results: Where to place results
     :return: List of plot files
@@ -508,30 +508,27 @@ def plot_summary_contour(parameters, performances, tag="", results="./"):
             parameters, performances, value_type
         )
 
-        try:
-            plt.clf()
-            plt.cla()
+        plt.clf()
+        plt.cla()
 
-            cmap = cm.get_cmap(name="tab20", lut=None)
-            plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
+        cmap = cm.get_cmap(name="tab20", lut=None)
+        plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
 
-            plt.title(f"{title} {tag} {value_type_name}")
-            plt.xlabel(parameters[0])
-            plt.ylabel(parameters[1])
-            plt.colorbar()
-            if title is not "" or tag is not "":
-                if tag == "":
-                    figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
-                else:
-                    figure = (
-                        f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
-                    )
-                plt.savefig(figure)
-                figures.append(figure)
+        plt.title(f"{title} {tag} {value_type_name}")
+        plt.xlabel(parameters[0])
+        plt.ylabel(parameters[1])
+        plt.colorbar()
+        if title is not "" or tag is not "":
+            if tag == "":
+                figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
+            else:
+                figure = (
+                    f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
+                )
+            plt.savefig(figure)
+            figures.append(figure)
 
-            plt.show(block=False)
-        except IndexError:
-            pass
+        plt.show(block=False)
 
     return figures
 
@@ -541,7 +538,7 @@ def plot_performance_contour(parameters, functions, performances, tag="", result
 
     :param parameters: Name of parameters e.g. imaging_npixel, blockvis_nvis
     :param functions: Name of functions to be plotted against parameter
-    :param performances: A list of dicts containing each containing the results for one test case
+    :param performances: A list of dicts each containing the results for one test case
     :param tag: Informational tag for file name
     :param results: Where to place results
     :return: List of plot files
@@ -566,30 +563,27 @@ def plot_performance_contour(parameters, functions, performances, tag="", result
                 func, parameters, performances, value_type
             )
 
-            try:
-                plt.clf()
-                plt.cla()
+            plt.clf()
+            plt.cla()
 
-                cmap = cm.get_cmap(name="tab20", lut=None)
-                plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
+            cmap = cm.get_cmap(name="tab20", lut=None)
+            plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
 
-                plt.title(f"{title} {func} {tag} {value_type_name}")
-                plt.xlabel(parameters[0])
-                plt.ylabel(parameters[1])
-                plt.colorbar()
-                if title is not "" or tag is not "":
-                    if tag == "":
-                        figure = (
-                            f"{results}/{title}_{func}_{value_type_short}_contour.png"
-                        )
-                    else:
-                        figure = f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
-                    plt.savefig(figure)
-                    figures.append(figure)
+            plt.title(f"{title} {func} {tag} {value_type_name}")
+            plt.xlabel(parameters[0])
+            plt.ylabel(parameters[1])
+            plt.colorbar()
+            if title is not "" or tag is not "":
+                if tag == "":
+                    figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
+                else:
+                    figure = (
+                        f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
+                    )
+                plt.savefig(figure)
+                figures.append(figure)
 
-                plt.show(block=False)
-            except IndexError:
-                pass
+            plt.show(block=False)
 
     return figures
 
@@ -638,7 +632,7 @@ def get_summary_performance_data(parameters, performances, axis_type):
 def get_data_sizes(performance):
     """Get sizes of the visibility and final image
 
-    :param performance:
+    :param performance: Dictionary containing performance information for one run
     :return:
     """
     imagesize = performance["restored"]["size"] * 2 ** -30
@@ -653,7 +647,7 @@ def get_data_sizes(performance):
 def plot_performance_barchart(
     performance_files, performances, tag="", results="./", plot_sizes=True
 ):
-    """Plot barchart of the six types of performanc data for all functions
+    """Plot barchart of the six types of performance data for all functions
 
     :param performance_files: Names of performance files
     :param performances: Performance info for each performance file

@@ -19,10 +19,10 @@ The performance files can be obtained using a script to iterate over some parame
     results_dir=${HOME}/results/5km_resource_modelling
     for int_time in 2880 1440 720 360
       do
-        mshome=${HOME}/data//int_time${int_time}
+        mshome=${HOME}/data/int_time${int_time}
         for npixel in 512 1024 2048 4096 8192
         do
-          results_dir=${HOME}/data//int_time${int_time}_npixel${npixel}
+          results_dir=${HOME}/data/int_time${int_time}_npixel${npixel}
           mkdir -p ${results_dir}
           python3 ${RASCIL}/rascil/apps/rascil_imager.py --mode cip \
             --clean_nmoment 3 --clean_facets 4 --clean_nmajor 10 \

@@ -192,11 +192,19 @@ def performance_store_dict(performance_file, key, s, indent=2, mode="a"):
                     file.write(s)
 
 
-def performance_read_memory_data(memory_file, verbose=False):
-    """Get the memusage data
+def performance_read_memory_data(memory_file):
+    """Get the memusage data.
 
-    :param memory_file:
-    :param verbose:
+    An example of the csv file:
+    task_key,min_memory_mb,max_memory_mb
+    create_blockvisibility_from_ms-6d4df60d-244b-4a45-8dca-a7d96b676455,219.80859375,7651.37109375
+    getitem-ab6cb10a048f6d5efce69194feafa125,0,0
+    performance_blockvisibility-2dfe2b3a-e160-4724-a5e6-aed82bf0721c,0,0
+    create_blockvisibility_from_ms-724c98e9-279b-44ef-92d6-06e689b037a2,223.72265625,7642.13671875
+
+    The task_key is split into task and key. The memory values are converted to GB.
+
+    :param memory_file: Dictionary containing sequences of maximum and minimum memory for each function sampled
     :return:
     """
     functions = list()
@@ -223,9 +231,7 @@ def performance_read_memory_data(memory_file, verbose=False):
 
 
 def performance_merge_memory(performance, mem):
-    """Merge memory data into performance data
-
-    Merge the memory data per function into the performance data
+    """Merge memory data per function into performance data
 
     :param performance: Performance data dictionary
     :param mem: Memory data dictionary

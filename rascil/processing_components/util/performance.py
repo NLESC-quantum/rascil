@@ -20,12 +20,15 @@ __all__ = [
     "git_hash",
 ]
 
+import csv
 import json
 import logging
 import os
 import socket
 import subprocess
 from datetime import datetime
+
+import numpy
 
 from rascil.processing_components.image.operations import qa_image
 
@@ -57,9 +60,18 @@ def performance_read(performance_file):
 
     try:
         with open(performance_file, "r") as file:
-            return json.load(file)
+            performance = json.load(file)
     except FileNotFoundError:
         raise FileNotFoundError(f"performance file {performance_file} does not exist")
+
+    # Now read the memory file and merge into the performance data
+    mem_file = performance_file.replace(".json", ".csv")
+    try:
+        mem = performance_read_memory_data(mem_file)
+        performance = performance_merge_memory(performance, mem)
+    except FileNotFoundError:
+        pass
+    return performance
 
 
 def performance_blockvisibility(bvis):
@@ -178,3 +190,70 @@ def performance_store_dict(performance_file, key, s, indent=2, mode="a"):
                 with open(performance_file, "w") as file:
                     s = json.dumps({key: s}, indent=indent)
                     file.write(s)
+
+
+def performance_read_memory_data(memory_file):
+    """Get the memusage data.
+
+    An example of the csv file:
+    task_key,min_memory_mb,max_memory_mb
+    create_blockvisibility_from_ms-6d4df60d-244b-4a45-8dca-a7d96b676455,219.80859375,7651.37109375
+    getitem-ab6cb10a048f6d5efce69194feafa125,0,0
+    performance_blockvisibility-2dfe2b3a-e160-4724-a5e6-aed82bf0721c,0,0
+    create_blockvisibility_from_ms-724c98e9-279b-44ef-92d6-06e689b037a2,223.72265625,7642.13671875
+
+    The task_key is split into task and key. The memory values are converted to GB.
+
+    :param memory_file: Dictionary containing sequences of maximum and minimum memory for each function sampled
+    :return:
+    """
+    functions = list()
+    keys = list()
+    max_mem = list()
+    min_mem = list()
+
+    with open(memory_file) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # task_key,min_memory_mb,max_memory_mb
+            functions.append(row["task_key"].split("-")[0])
+            keys.append(row["task_key"].split("-")[1])
+            max_mem.append(2 ** -10 * float(row["max_memory_mb"]))
+            min_mem.append(2 ** -10 * float(row["min_memory_mb"]))
+    mem = {
+        "functions": numpy.array(functions),
+        "keys": numpy.array(keys),
+        "max_memory": numpy.array(max_mem),
+        "min_memory": numpy.array(min_mem),
+    }
+
+    return mem
+
+
+def performance_merge_memory(performance, mem):
+    """Merge memory data per function into performance data
+
+    :param performance: Performance data dictionary
+    :param mem: Memory data dictionary
+    :return:
+    """
+
+    for func in performance["dask_profile"].keys():
+        if "functions" in mem.keys() and func in mem["functions"]:
+            max_mem = mem["max_memory"][mem["functions"] == func]
+            max_mem = max_mem[max_mem > 0.0]
+            if max_mem.size > 0:
+                performance["dask_profile"][func]["max_memory"] = numpy.mean(max_mem)
+            else:
+                performance["dask_profile"][func]["max_memory"] = 0.0
+            min_mem = mem["min_memory"][mem["functions"] == func]
+            min_mem = min_mem[min_mem > 0.0]
+            if min_mem.size > 0:
+                performance["dask_profile"][func]["min_memory"] = numpy.mean(min_mem)
+            else:
+                performance["dask_profile"][func]["min_memory"] = 0.0
+        else:
+            performance["dask_profile"][func]["max_memory"] = 0.0
+            performance["dask_profile"][func]["min_memory"] = 0.0
+
+    return performance

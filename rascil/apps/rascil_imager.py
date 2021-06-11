@@ -15,7 +15,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 
-from distributed import Client
+from distributed import Client, SSHCluster
 
 from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
 from rascil.processing_components.util.sizeof import get_size
@@ -189,10 +189,20 @@ def imager(args):
 def setup_rsexecute(args):
     # We can run distributed (use_dask=True) or in serial (use_dask=False). Using Dask is usually recommended
     if args.use_dask == "True":
-        if args.dask_scheduler is not None:
-            log.info("Using scheduler {}".format(args.dask_scheduler))
+        if args.dask_scheduler == "ssh":
+            log.info("Using SSH scheduler")
+            cluster = SSHCluster(
+                args.dask_nodes,
+                connect_options={"known_hosts": None},
+                worker_options={"nthreads": args.nthreads},
+                scheduler_options={"port": 0, "dashboard_address": ":8787"},
+            )
+            client = Client(cluster)
+        elif args.dask_scheduler is not None:
+            log.info("Using specified scheduler {}".format(args.dask_scheduler))
             client = Client(scheduler=args.dask_scheduler)
         else:
+            log.info("Gettting client via get_dask_client")
             client = get_dask_client(
                 n_workers=args.dask_nworkers,
                 threads_per_worker=args.dask_nthreads,
@@ -200,6 +210,9 @@ def setup_rsexecute(args):
             )
         rsexecute.set_client(use_dask=True, client=client)
         rsexecute.init_statistics()
+        # Sample the memory usage with a scheduler plugin
+        if args.dask_memory_usage_file is not None:
+            rsexecute.memusage(args.dask_memory_usage_file)
     else:
         rsexecute.set_client(use_dask=False)
 

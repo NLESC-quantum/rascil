@@ -7,6 +7,8 @@ The statistics are:
  - Processor time per function call
  - Number of calls per function
  - Fraction of total processor time per function
+ - Maximum memory per task
+ - Minimum memory per task
 
 This app allows plotting of these statistics
 
@@ -132,136 +134,7 @@ A typical json file looks like:
       "fraction": 0.07084656273967438,
       "number_calls": 12
     },
-    "create_image_from_visibility": {
-      "time": 360.859938621521,
-      "fraction": 0.5945502338999434,
-      "number_calls": 12
-    },
-    "imaging_grid_weights": {
-      "time": 500.3804063796997,
-      "fraction": 0.8244231509556011,
-      "number_calls": 12
-    },
-    "griddata_merge_weights": {
-      "time": 18.455530881881714,
-      "fraction": 0.030407199658920542,
-      "number_calls": 2
-    },
-    "imaging_re_weight": {
-      "time": 154.4264853000641,
-      "fraction": 0.2544319641194542,
-      "number_calls": 12
-    },
-    "SkyModel": {
-      "time": 0.002610445022583008,
-      "fraction": 4.300950403883679e-06,
-      "number_calls": 12
-    },
-    "imaging_zero_vis": {
-      "time": 10.72262978553772,
-      "fraction": 0.017666527549073163,
-      "number_calls": 12
-    },
-    "skymodel_predict_calibrate": {
-      "time": 10259.664942264557,
-      "fraction": 16.903750010211457,
-      "number_calls": 144
-    },
-    "imaging_subtract_vis": {
-      "time": 451.71227264404297,
-      "fraction": 0.7442378845984041,
-      "number_calls": 144
-    },
-    "skymodel_calibrate_invert": {
-      "time": 25574.409220695496,
-      "fraction": 42.13621229915756,
-      "number_calls": 144
-    },
-    "skymodel_update_components": {
-      "time": 0.0013587474822998047,
-      "fraction": 2.2386625583827824e-06,
-      "number_calls": 12
-    },
-    "getattr": {
-      "time": 0.002603292465209961,
-      "fraction": 4.289165901909388e-06,
-      "number_calls": 132
-    },
-    "invert_ng": {
-      "time": 2501.930527448654,
-      "fraction": 4.122162703841055,
-      "number_calls": 12
-    },
-    "sum_invert_results": {
-      "time": 148.35386657714844,
-      "fraction": 0.2444267612812377,
-      "number_calls": 14
-    },
-    "imaging_extract_psf": {
-      "time": 297.21881437301636,
-      "fraction": 0.48969557629471366,
-      "number_calls": 120
-    },
-    "concat_images": {
-      "time": 6363.035717487335,
-      "fraction": 10.483691785232072,
-      "number_calls": 21900
-    },
-    "image_scatter_facets": {
-      "time": 7640.010337114334,
-      "fraction": 12.587625964470012,
-      "number_calls": 264
-    },
-    "normalize_sumwt": {
-      "time": 1.0463624000549316,
-      "fraction": 0.00172397914845642,
-      "number_calls": 2
-    },
-    "fit_psf": {
-      "time": 0.06091737747192383,
-      "fraction": 0.00010036703204810515,
-      "number_calls": 2
-    },
-    "threshold_list": {
-      "time": 42.18509531021118,
-      "fraction": 0.06950385897527743,
-      "number_calls": 20
-    },
-    "imaging_deconvolve": {
-      "time": 3943.7179369926453,
-      "fraction": 6.497641247823855,
-      "number_calls": 1280
-    },
-    "image_scatter_channels": {
-      "time": 1.8637990951538086,
-      "fraction": 0.0030707819554567574,
-      "number_calls": 1280
-    },
-    "image_gather_facets": {
-      "time": 392.34232544898987,
-      "fraction": 0.6464203875210465,
-      "number_calls": 132
-    },
-    "skymodel_update_image": {
-      "time": 669.1622524261475,
-      "fraction": 1.1025069039715563,
-      "number_calls": 120
-    },
-    "list": {
-      "time": 113.77707552909851,
-      "fraction": 0.1874582895698657,
-      "number_calls": 8
-    },
-    "remove_sumwt": {
-      "time": 25.487622261047363,
-      "fraction": 0.04199322272997632,
-      "number_calls": 2
-    },
-    "restore_cube": {
-      "time": 592.6391408443451,
-      "fraction": 0.9764279768855815,
-      "number_calls": 192
-    },
+    ......
     "skymodel_restore_component": {
       "time": 84.2855749130249,
       "fraction": 0.13886830572093206,
@@ -280,21 +153,37 @@ A typical json file looks like:
   }
 }
 
-This app supports plotting and fitting of various yaxes against an xaxis e.g. imaging-npixel
+In addition, we can process csv files from dask-memusage. This is currently under evaluation and is
+of limited help. The memusage.csv files contain the maximum and minimum memory of active tasks sampled
+every 10ms. For example:
+
+task_key,min_memory_mb,max_memory_mb
+create_blockvisibility_from_ms-aafef67d-c36b-4413-80bd-90516eb920b5,87.3046875,7669.02734375
+getitem-5a574568210d4ac3d72ed675dab6444a,0,0
+performance_blockvisibility-9ba1c47a-f4fd-48bc-88f5-5ff4c7f39db7,0,0
+create_blockvisibility_from_ms-e25eaa39-66ca-452c-9557-9f00d33bdcb4,90.32421875,7618.20703125
+
+The mode memory_histogram will plot histograms of these values for each specified function.
+The other plots will include memory information as appropriate.
+
+This app supports plotting of various yaxes against an xaxis e.g. imaging-npixel, contours of parameter sweeps,
+and barcharts
 """
 
 import argparse
 import logging
-import os
 import pprint
 import sys
 import glob
 import numpy
+import os
 
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 from rascil.processing_components.util.performance import (
     performance_read,
+    performance_read_memory_data,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -303,9 +192,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def analyser(args):
-    """Analyser
-
-    The return contains names of the plot files written to disk
+    """Analyser of RASCIL performance files
 
     :param args: argparse with appropriate arguments
     :return: Names of output plot files
@@ -321,38 +208,52 @@ def analyser(args):
     else:
         performance_files = glob.glob("*.json")
 
-    if verbose:
-        log.info(f"Reading from files {pprint.pformat(performance_files)}")
-    performances = get_performance_data(args, performance_files)
-
     if args.mode == "line":
-        plotfiles = plot_lines(
+        # Performance data vs one parameter (e.g. blockvis_nvis)
+        performances = get_performance_data(args, performance_files)
+        plotfiles = plot_performance_lines(
             args.parameters[0],
             args.functions,
             performances,
             tag=args.tag,
-            verbose=verbose,
             results=args.results,
         )
         return plotfiles
     elif args.mode == "contour":
-        plotfiles = plot_contour(
+        # Performance data vs two parameters (e.g. blockvis_nvis, imaging_npixel_sq)
+        performances = get_performance_data(args, performance_files)
+        plotfiles = plot_performance_contour(
             args.parameters,
             args.functions,
             performances,
             tag=args.tag,
-            verbose=verbose,
             results=args.results,
         )
         return plotfiles
 
+    elif args.mode == "summary":
+
+        # Summary vs two parameters (e.g. blockvis_nvis, imaging_npixel_sq)
+        performances = get_performance_data(args, performance_files)
+
+        plotfiles = plot_summary_contour(
+            args.parameters, performances, tag=args.tag, results=args.results
+        )
+
+        return plotfiles
+
     elif args.mode == "bar":
-        plotfiles = plot_barchart(
-            performance_files,
-            performances,
-            tag=args.tag,
-            verbose=verbose,
-            results=args.results,
+        # Bar chart of performance data versus function
+        performances = get_performance_data(args, performance_files)
+        plotfiles = plot_performance_barchart(
+            performance_files, performances, tag=args.tag, results=args.results
+        )
+        return plotfiles
+    elif args.mode == "memory_histogram":
+        # Histogram of memory usage throughout one run
+        memory = performance_read_memory_data(args.memory_file)
+        plotfiles = plot_memory_histogram(
+            args.functions, memory, tag=args.tag, results=args.results
         )
         return plotfiles
     else:
@@ -371,7 +272,10 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--mode", type=str, default="line", help="Processing mode: line | bar | contour"
+        "--mode",
+        type=str,
+        default="line",
+        help="Processing mode: line | bar | contour | summary",
     )
 
     parser.add_argument(
@@ -380,6 +284,13 @@ def cli_parser():
         nargs="*",
         default=None,
         help="Names of json performance files to analyse: default is all json files in working directory",
+    )
+
+    parser.add_argument(
+        "--memory_file",
+        type=str,
+        default=None,
+        help="Name of memusage csv file",
     )
 
     parser.add_argument(
@@ -450,70 +361,71 @@ def sort_values(xvalues, yvalues):
     return xvalues, yvalues
 
 
-def plot_lines(
-    parameter, functions, performances, title="", tag="", verbose=False, results="./"
-):
+def plot_performance_lines(parameter, functions, performances, tag="", results="./"):
     """Plot the set of yaxes against xaxis
 
     :param parameter: Name of parameter e.g. imaging_npixel
     :param functions: Name of functions to be plotted against parameter
-    :param performance: A list of dicts containing each containing the results for one test case
-    :param title: Title for plot
+    :param performances: A list of dicts each containing the results for one test case
     :param tag: Informational tag for file name
-    :return:
+    :param results: Where to place results
+    :return: List of plot files
     """
 
     log.info("Plotting lines")
 
     figures = list()
 
-    if title == "":
-        title = "performance"
+    title = os.path.basename(os.getcwd())
 
     # The profile times are in the "dask_profile" dictionary
 
     xvalues = [performance["inputs"][parameter] for performance in performances]
-    for time_type, time_type_name, time_type_short in [
+    for axis_type, axis_type_name, axis_type_short in [
         (0, "Time per call (s)", "per_call"),
         (1, "Total (s)", "total"),
         (2, "Percentage time", "percentage"),
         (3, "Number calls", "number_calls"),
+        (4, "Maximum memory (GB)", "maximum_memory"),
+        (5, "Minimum memory (GB)", "minimum_memory"),
     ]:
         plt.clf()
         plt.cla()
 
         for func in functions:
             yvalues = [
-                get_data(performance, func)[time_type] for performance in performances
+                get_data(performance, func)[axis_type] for performance in performances
             ]
             sxvalues, syvalues = sort_values(xvalues, yvalues)
-            if verbose:
-                log.info(f"{pprint.pformat(list(zip(sxvalues, syvalues)))}")
             plt.loglog(sxvalues, syvalues, "-", label=func)
-            plt.ylabel("Processing time per call (s)")
+            plt.ylabel(axis_type_name)
 
         # If we are plotting total time, add the overall times
-        if time_type == 1:
+        if axis_type == 1:
             clock_time = [
                 performance["dask_profile"]["summary"]["duration"]
                 for performance in performances
             ]
-            plt.loglog(xvalues, clock_time, "--", label="clock_time")
+            sxvalues, sclock_time = sort_values(xvalues, clock_time)
+            plt.loglog(sxvalues, sclock_time, "--", label="clock_time")
             processor_time = [
                 performance["dask_profile"]["summary"]["total"]
                 for performance in performances
             ]
-            plt.loglog(xvalues, processor_time, "--", label="processor_time")
+            sxvalues, sprocessor_time = sort_values(xvalues, processor_time)
+            plt.loglog(sxvalues, sprocessor_time, "--", label="processor_time")
             plt.ylabel("Total processing time (s)")
 
-        plt.title(f"{title} {tag} {time_type_name}")
+        plt.title(f"{title} {parameter} {tag}")
         plt.xlabel(parameter)
         plt.legend()
         if title is not "" or tag is not "":
             if tag == "":
-                figure = f"{results}/{title}_{time_type_short}_line.png"
+                figure = f"{results}/{title}_{parameter}_{axis_type_short}_line.png"
             else:
-                figure = f"{results}/{title}_{tag}_{time_type_short}_line.png"
+                figure = (
+                    f"{results}/{title}_{parameter}_{tag}_{axis_type_short}_line.png"
+                )
             plt.savefig(figure)
         else:
             figure = None
@@ -523,67 +435,186 @@ def plot_lines(
     return figures
 
 
-def plot_contour(
-    parameters, functions, performances, title="", tag="", verbose=False, results="./"
-):
-    """Plot the set of yaxes against xaxis
+def plot_memory_histogram(functions, memory, tag="", results="./"):
+    """Plot the memory use histograms for a set of functions
+
+    :param functions: Name of functions to be plotted
+    :param memory: Memory information
+    :param tag: Informational tag for file name
+    :param results: Where to place results
+    :return: List of plot files
+    """
+
+    log.info("Plotting memory histograms")
+
+    figures = list()
+
+    title = os.path.basename(os.getcwd())
+
+    if functions is None or functions == "" or functions == [""]:
+        functions = numpy.unique(memory["functions"])
+
+    for function in functions:
+        for value_short_type, value_type in [("max_memory", "Maximum memory (GB)")]:
+            mem = memory[value_short_type][memory["functions"] == function]
+
+            plt.clf()
+            plt.cla()
+            plt.hist(
+                mem,
+            )
+            plt.title(f"{function} {tag}")
+            plt.xlabel(value_type)
+            if title is not "" or tag is not "":
+                if tag == "":
+                    figure = (
+                        f"{results}/{title}_{function}_{value_short_type}_histogram.png"
+                    )
+                else:
+                    figure = f"{results}/{title}_{function}_{tag}_{value_short_type}_histogram.png"
+                plt.savefig(figure)
+            else:
+                figure = None
+
+            plt.show(block=False)
+            figures.append(figure)
+
+    return figures
+
+
+def plot_summary_contour(parameters, performances, tag="", results="./"):
+    """Plot the summary info as a contour
+
+    :param parameters: Name of parameters e.g. imaging_npixel, blockvis_nvis
+    :param performances: A list of dicts each containing the results for one test case
+    :param tag: Informational tag for file name
+    :param results: Where to place results
+    :return: List of plot files
+    """
+    log.info("Plotting summary contours")
+
+    figures = list()
+
+    func = "summary"
+
+    title = os.path.basename(os.getcwd())
+
+    for value_type, value_type_name, value_type_short in [
+        (0, "Total processor time (s)", "processor_time"),
+        (1, "Duration (s)", "duration"),
+        (2, "Speedup", "speedup"),
+    ]:
+        xvalues, yvalues, zvalues = get_summary_performance_data(
+            parameters, performances, value_type
+        )
+
+        plt.clf()
+        plt.cla()
+
+        cmap = cm.get_cmap(name="tab20", lut=None)
+        plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
+
+        plt.title(f"{title} {tag} {value_type_name}")
+        plt.xlabel(parameters[0])
+        plt.ylabel(parameters[1])
+        plt.colorbar()
+        if title is not "" or tag is not "":
+            if tag == "":
+                figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
+            else:
+                figure = (
+                    f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
+                )
+            plt.savefig(figure)
+            figures.append(figure)
+
+        plt.show(block=False)
+
+    return figures
+
+
+def plot_performance_contour(parameters, functions, performances, tag="", results="./"):
+    """Plot the performance value against two parameters for all axis types
 
     :param parameters: Name of parameters e.g. imaging_npixel, blockvis_nvis
     :param functions: Name of functions to be plotted against parameter
-    :param performance: A list of dicts containing each containing the results for one test case
-    :param title: Title for plot
+    :param performances: A list of dicts each containing the results for one test case
     :param tag: Informational tag for file name
-    :return:
+    :param results: Where to place results
+    :return: List of plot files
     """
     log.info("Plotting contours")
 
     figures = list()
 
-    if title == "":
-        title = "performance"
+    title = os.path.basename(os.getcwd())
 
     for func in functions:
 
-        for time_type, time_type_name, time_type_short in [
+        for value_type, value_type_name, value_type_short in [
             (0, "Time per call (s)", "per_call"),
             (1, "Total (s)", "total"),
             (2, "Percentage time", "percentage"),
             (3, "Number calls", "number_calls"),
+            (4, "Maximum memory (GB)", "maximum_memory"),
+            (5, "Minimum memory (GB)", "minimum_memory"),
         ]:
+            xvalues, yvalues, zvalues = get_performance_contour_data(
+                func, parameters, performances, value_type
+            )
+
             plt.clf()
             plt.cla()
 
-            xvalues, yvalues, zvalues = get_surface_data(
-                func, parameters, performances, time_type
-            )
+            cmap = cm.get_cmap(name="tab20", lut=None)
+            plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
 
-            plt.tricontour(xvalues, yvalues, zvalues, levels=10)
-
-            plt.title(f"{title} {func} {tag} {time_type_name}")
+            plt.title(f"{title} {func} {tag} {value_type_name}")
             plt.xlabel(parameters[0])
             plt.ylabel(parameters[1])
             plt.colorbar()
             if title is not "" or tag is not "":
                 if tag == "":
-                    figure = f"{results}/{title}_{func}_{time_type_short}_contour.png"
+                    figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
                 else:
                     figure = (
-                        f"{results}/{title}_{func}_{tag}_{time_type_short}_contour.png"
+                        f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
                     )
                 plt.savefig(figure)
                 figures.append(figure)
 
             plt.show(block=False)
+
     return figures
 
 
-def get_surface_data(func, parameters, performances, time_type):
-    """Get the surface data for given parameters and function
+def get_performance_contour_data(func, parameters, performances, axis_type):
+    """Get the performance info for given axis type for use in contour plots
 
     :param func: Name of function e.g. "invert_ng"
     :param parameters: Name of parameters e.g. "imaging_npixel", "blockvis_nvis"
     :param performances: Performance information
-    :param time_type: Code: 0=per call, 1=total, 2=fraction
+    :param axis_type: Code: 0=per call, 1=total, 2=fraction, 3=max_memory, 4=min_memory
+    :return: xvalues, yvalues, zvalues
+    """
+    xvalues = numpy.array(
+        [performance["inputs"][parameters[0]] for performance in performances]
+    )
+    yvalues = numpy.array(
+        [performance["inputs"][parameters[1]] for performance in performances]
+    )
+    zvalues = numpy.array(
+        [get_data(performance, func)[axis_type] for performance in performances]
+    )
+    return xvalues, yvalues, zvalues
+
+
+def get_summary_performance_data(parameters, performances, axis_type):
+    """Get the summary for given axis type
+
+    :param parameters: Name of parameters e.g. "imaging_npixel", "blockvis_nvis"
+    :param performances: Performance information
+    :param axis_type: Code: 0=total, 1=duration, 2=speedup
     :return: x, y, z
     """
     xvalues = numpy.array(
@@ -593,25 +624,39 @@ def get_surface_data(func, parameters, performances, time_type):
         [performance["inputs"][parameters[1]] for performance in performances]
     )
     zvalues = numpy.array(
-        [get_data(performance, func)[time_type] for performance in performances]
+        [get_summary_data(performance)[axis_type] for performance in performances]
     )
     return xvalues, yvalues, zvalues
 
 
-def plot_barchart(
-    performance_files, performances, title="", tag="", verbose=False, results="./"
-):
-    """Plot the set of yaxes
+def get_data_sizes(performance):
+    """Get sizes of the visibility and final image
 
-    :param performance: A list of dicts each containing the results for one test case
-    :param title: Title for plot
-    :param tag: Informative tag for file name
+    :param performance: Dictionary containing performance information for one run
     :return:
     """
-    figures = list()
+    imagesize = performance["restored"]["size"] * 2 ** -30
+    nblockvis = (
+        performance["inputs"]["ingest_vis_nchan"]
+        // performance["inputs"]["ingest_chan_per_blockvis"]
+    )
+    vissize = nblockvis * performance["blockvis0"]["size"] * 2 ** -30
+    return imagesize, vissize
 
-    if title == "":
-        title = "performance"
+
+def plot_performance_barchart(
+    performance_files, performances, tag="", results="./", plot_sizes=True
+):
+    """Plot barchart of the six types of performance data for all functions
+
+    :param performance_files: Names of performance files
+    :param performances: Performance info for each performance file
+    :param results: Where to place results
+    :param plot_sizes: Plot the total visibility size (GB) and final image size (GB)
+    :param tag: Informative tag for file name
+    :return: Names of plot files
+    """
+    figures = list()
 
     log.info("Plotting barcharts")
 
@@ -622,15 +667,26 @@ def plot_barchart(
             total_time,
             fraction_time,
             number_calls,
+            max_memory,
+            min_memory,
             functions,
-        ) = get_barchart_data(performance)
+        ) = get_performance_barchart_data(performance)
+
+        image_size, vis_size = get_data_sizes(performance)
+
+        title = os.path.basename(performance_file.replace(".json", ""))
+        title = title.replace(
+            "performance_rascil_imager", os.path.basename(os.getcwd())
+        )
 
         # The profile times are in the "dask_profile" dictionary
-        for axis, time_type, time_type_short in [
+        for axis, axis_type, axis_type_short in [
             (total_time, "Total (s)", "total"),
             (time_per_call, "Per call (s)", "per_call"),
             (fraction_time, "Percentage", "percentage"),
             (number_calls, "Number calls", "number_calls"),
+            (max_memory, "Maximum memory (GB)", "maximum_memory"),
+            (min_memory, "Minimum memory (GB)", "minimum_memory"),
         ]:
             plt.clf()
             plt.cla()
@@ -638,16 +694,25 @@ def plot_barchart(
             saxis, _ = sort_values(axis, axis)
             _, syaxes = sort_values(axis, functions)
             plt.barh(y_pos, saxis, align="center", alpha=0.5)
-            plt.yticks(y_pos, syaxes)
-            plt.xlabel(time_type)
-            plt.title(f"{title} {tag} {time_type}")
+            plt.yticks(y_pos, syaxes, fontsize="x-small")
+            plt.xlabel(axis_type)
+            plt.title(f"{title} {tag} {axis_type}")
+            if plot_sizes and axis_type_short in ["maximum_memory", "minimum_memory"]:
+                plt.axvline(
+                    x=image_size, label="final image size", color="r", linestyle="--"
+                )
+                plt.axvline(
+                    x=vis_size, label="total vis size", color="b", linestyle="--"
+                )
+                plt.legend()
+
             plt.tight_layout()
             plt.show(block=False)
             if title is not "" or tag is not "":
                 if tag == "":
-                    figure = f"{results}/{title}_{time_type_short}_bar.png"
+                    figure = f"{results}/{title}_{axis_type_short}_bar.png"
                 else:
-                    figure = f"{results}{title}_{tag}_{time_type_short}_bar.png"
+                    figure = f"{results}{title}_{tag}_{axis_type_short}_bar.png"
 
                 plt.savefig(figure)
                 figures.append(figure)
@@ -655,11 +720,13 @@ def plot_barchart(
     return figures
 
 
-def get_barchart_data(performance):
-    """Get the total time, time per call, fractional time, number_calls, and allowed yaxes
+def get_performance_barchart_data(performance):
+    """Get performance data for barchart
 
     :param performance: Performance dictionary associated with one file
-    :return: time_per_call, total_time, fraction_time, number_calls, functions
+    :return: time_per_call, total_time, fraction_time, number_calls, max_memory,
+        min_memory, functions,
+
     """
     # The input values are in the inputs dictionary
     functions = list()
@@ -682,15 +749,35 @@ def get_barchart_data(performance):
         performance["dask_profile"][func]["number_calls"] for func in functions
     ]
 
-    return time_per_call, total_time, fraction_time, number_calls, functions
+    try:
+        max_memory = [
+            performance["dask_profile"][func]["max_memory"] for func in functions
+        ]
+
+        min_memory = [
+            performance["dask_profile"][func]["min_memory"] for func in functions
+        ]
+    except KeyError:
+        max_memory = numpy.zeros_like(total_time)
+        min_memory = numpy.zeros_like(total_time)
+
+    return (
+        time_per_call,
+        total_time,
+        fraction_time,
+        number_calls,
+        max_memory,
+        min_memory,
+        functions,
+    )
 
 
 def get_data(performance, func):
-    """Get the performance data for a given function
+    """Get the dask_profile performance data for a given function
 
     :param performance: Single performance dict
     :param func: Name of function
-    :return: time_per_call, total_time, fraction_time, number_calls
+    :return: time_per_call, total_time, fraction_time, number_calls, max_memory, min_memory
     """
     total_time = performance["dask_profile"][func]["time"]
     time_per_call = (
@@ -700,7 +787,40 @@ def get_data(performance, func):
     fraction_time = performance["dask_profile"][func]["fraction"]
     number_calls = performance["dask_profile"][func]["number_calls"]
 
-    return time_per_call, total_time, fraction_time, number_calls
+    if "max_memory" in performance["dask_profile"][func].keys():
+        max_memory = performance["dask_profile"][func]["max_memory"]
+    else:
+        max_memory = numpy.zeros_like(total_time)
+
+    if "min_memory" in performance["dask_profile"][func].keys():
+        min_memory = performance["dask_profile"][func]["min_memory"]
+    else:
+        min_memory = numpy.zeros_like(total_time)
+
+    return (
+        time_per_call,
+        total_time,
+        fraction_time,
+        number_calls,
+        max_memory,
+        min_memory,
+    )
+
+
+def get_summary_data(performance):
+    """Get the dask_profile summary data
+
+    :param performance: Single performance dict
+    :return: total_time, duration, speedup
+    """
+    total_time = performance["dask_profile"]["summary"]["total"]
+    duration = performance["dask_profile"]["summary"]["duration"]
+    speedup = performance["dask_profile"]["summary"]["speedup"]
+    return (
+        total_time,
+        duration,
+        speedup,
+    )
 
 
 def get_performance_data(args, performance_files, verbose=False):
@@ -710,6 +830,10 @@ def get_performance_data(args, performance_files, verbose=False):
     :param performance_files: Names of performance files
     :return: performances dict
     """
+
+    if verbose:
+        log.info(f"Reading from files {pprint.pformat(performance_files)}")
+
     performances = [
         performance_read(performance_file) for performance_file in performance_files
     ]

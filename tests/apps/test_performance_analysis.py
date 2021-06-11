@@ -17,6 +17,8 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 FUNCTIONS = (
     "skymodel_predict_calibrate "
     "skymodel_calibrate_invert "
+    "create_blockvisibility_from_ms "
+    "imaging_deconvolve "
     "invert_ng "
     "restore_cube "
     "image_scatter_facets "
@@ -27,6 +29,12 @@ FUNCTIONS = (
 @pytest.mark.parametrize(
     "mode, parameters, functions",
     [
+        (
+            "memory_histogram",
+            "",
+            FUNCTIONS,
+        ),
+        ("summary", "imaging_npixel_sq blockvis_nvis", "summary"),
         (
             "line",
             "imaging_npixel_sq",
@@ -61,6 +69,7 @@ def test_performance_analysis(mode, parameters, functions):
     pa_args.append(rascil_path("test_results"))
 
     if mode == "line":
+        cli_arg = "--performance_files"
         testfiles = [
             rascil_data_path("misc/performance_rascil_imager_360_512.json"),
             rascil_data_path("misc/performance_rascil_imager_360_1024.json"),
@@ -68,7 +77,8 @@ def test_performance_analysis(mode, parameters, functions):
             rascil_data_path("misc/performance_rascil_imager_360_4096.json"),
             rascil_data_path("misc/performance_rascil_imager_360_8192.json"),
         ]
-    elif mode == "contour":
+    elif mode == "contour" or mode == "summary":
+        cli_arg = "--performance_files"
         testfiles = [
             rascil_data_path("misc/performance_rascil_imager_360_512.json"),
             rascil_data_path("misc/performance_rascil_imager_360_1024.json"),
@@ -92,16 +102,23 @@ def test_performance_analysis(mode, parameters, functions):
             rascil_data_path("misc/performance_rascil_imager_2880_8192.json"),
         ]
     elif mode == "bar":
+        cli_arg = "--performance_files"
         testfiles = [
             rascil_data_path("misc/performance_rascil_imager_360_8192.json"),
         ]
+    elif mode == "memory_histogram":
+        cli_arg = "--memory_file"
+        testfiles = [
+            rascil_data_path("misc/performance_rascil_imager_360_8192.csv"),
+        ]
     else:
+        cli_arg = "--performance_files"
         testfiles = [
             rascil_data_path("misc/performance_rascil_imager_360_8192.json"),
         ]
 
     parser = cli_parser()
-    pa_args.append("--performance_files")
+    pa_args.append(cli_arg)
     for testfile in testfiles:
         pa_args.append(testfile)
 

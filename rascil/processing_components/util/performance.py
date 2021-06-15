@@ -134,24 +134,25 @@ def performance_dask_configuration(performance_file, rsexec, indent=2, mode="a")
                 rsexec.client is not None
                 and rsexec.client.cluster is not None
                 and rsexec.client.cluster.scheduler_info is not None
-                and rsexec.client.cluster.scheduler_info is not None
             ):
-                info = {
-                    "client": str(rsexec.client),
-                    "nworkers": len(rsexec.client.cluster.scheduler_info["workers"]),
-                    "scheduler": rsexec.client.cluster.scheduler_info,
-                }
+                # LocalCluster or similar
+                workers = rsexec.client.cluster.workers
             else:
-                info = {
-                    "client": str(rsexec.client),
-                    "nworkers": 0,
-                    "scheduler": str(rsexec.client.scheduler),
-                }
+                # Distributed
+                workers = rsexec.client.scheduler_info()["workers"]
+
+            info = {
+                "client": str(rsexec.client),
+                "nworkers": len(workers),
+                "nthreads": int(
+                    numpy.sum([workers[worker]["nthreads"] for worker in workers])
+                ),
+            }
         else:
             info = {
                 "client": "",
                 "nworkers": 0,
-                "scheduler": "",
+                "nthreads": 0,
             }
 
         performance_store_dict(

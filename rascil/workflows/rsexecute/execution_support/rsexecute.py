@@ -400,7 +400,7 @@ class _rsexecutebase:
                 print("rsexcute.close: closed down Dask Client")
             if self._client.cluster is not None:
                 self._client.cluster.close()
-            self._client.close()
+            self._client.shutdown()
             self._client = None
 
     def init_statistics(self):
@@ -505,38 +505,6 @@ class _rsexecutebase:
             and self._client.cluster.scheduler is not None
         ):
             dask_memusage.install(self._client.cluster.scheduler, memusage_file)
-
-    @property
-    def client(self):
-        """Client being used
-
-        :return: client
-        """
-        return self._client
-
-    @property
-    def using_dask(self):
-        """Is dask being used?
-
-        :return:
-        """
-        return self._using_dask
-
-    @property
-    def using_dlg(self):
-        """Is daluige being used?
-
-        :return:
-        """
-        return self._using_dlg
-
-    @property
-    def optimizing(self):
-        """Is Dask optimisation being performed?
-
-        :return:
-        """
-        return self._optimize
 
     @property
     def client(self):

@@ -64,7 +64,7 @@ cycler==0.10.0
     # via matplotlib
 dask-memusage==1.1
     # via -r requirements.in
-dask==2021.05.1
+dask==2021.06.0
     # via
     #   -r requirements.in
     #   distributed
@@ -74,15 +74,17 @@ decorator==4.4.2
     #   networkx
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.5.1
-    # via -r requirements.in
-ducc0==0.11.0
+distributed==2021.6.0
+    # via
+    #   -r requirements.in
+    #   dask-memusage
+ducc0==0.13.0
     # via -r requirements.in
 entrypoints==0.3
     # via nbconvert
-fasteners==0.16
+fasteners==0.16.2
     # via zarr
-fsspec==2021.5.0
+fsspec==2021.6.0
     # via dask
 future==0.18.2
     # via python-casacore
@@ -100,7 +102,7 @@ idna==2.10
     # via requests
 imageio==2.9.0
     # via scikit-image
-importlib-metadata==4.3.1
+importlib-metadata==4.5.0
     # via
     #   click
     #   jsonschema
@@ -118,7 +120,7 @@ ipython-genutils==0.2.0
     #   notebook
     #   qtconsole
     #   traitlets
-ipython==7.24.0
+ipython==7.24.1
     # via
     #   ipykernel
     #   ipywidgets
@@ -281,7 +283,7 @@ pillow==8.2.0
     #   imageio
     #   matplotlib
     #   scikit-image
-prometheus-client==0.10.1
+prometheus-client==0.11.0
     # via notebook
 prompt-toolkit==3.0.18
     # via
@@ -320,7 +322,7 @@ python-dateutil==2.8.1
     #   jupyter-client
     #   matplotlib
     #   pandas
-python-gitlab==2.7.1
+python-gitlab==2.8.0
     # via -r requirements.in
 pytz==2021.1
     # via pandas
@@ -382,11 +384,11 @@ tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
     # via distributed
-terminado==0.10.0
+terminado==0.10.1
     # via notebook
 testpath==0.5.0
     # via nbconvert
-tifffile==2021.4.8
+tifffile==2021.6.6
     # via scikit-image
 toolz==0.11.1
     # via

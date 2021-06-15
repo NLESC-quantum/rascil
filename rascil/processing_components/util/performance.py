@@ -70,6 +70,7 @@ def performance_read(performance_file):
         mem = performance_read_memory_data(mem_file)
         performance = performance_merge_memory(performance, mem)
     except FileNotFoundError:
+        log.warning(f"No memory file {mem_file} found ")
         pass
     return performance
 
@@ -128,22 +129,31 @@ def performance_dask_configuration(performance_file, rsexec, indent=2, mode="a")
     """
 
     if performance_file is not None:
-        if not rsexec.using_dask:
-            return
+        if rsexec.using_dask:
+            if (
+                rsexec.client is not None
+                and rsexec.client.cluster is not None
+                and rsexec.client.cluster.scheduler_info is not None
+                and rsexec.client.cluster.scheduler_info is not None
+            ):
+                info = {
+                    "client": str(rsexec.client),
+                    "nworkers": len(rsexec.client.cluster.scheduler_info["workers"]),
+                    "scheduler": rsexec.client.cluster.scheduler_info,
+                }
+            else:
+                info = {
+                    "client": str(rsexec.client),
+                    "nworkers": 0,
+                    "scheduler": str(rsexec.client.scheduler),
+                }
+        else:
+            info = {
+                "client": "",
+                "nworkers": 0,
+                "scheduler": "",
+            }
 
-        if rsexec.client is None:
-            return
-
-        if rsexec.client.cluster is None:
-            return
-
-        if rsexec.client.cluster.scheduler_info is None:
-            return
-
-        info = {
-            "nworkers": len(rsexec.client.cluster.scheduler_info["workers"]),
-            "scheduler": rsexec.client.cluster.scheduler_info,
-        }
         performance_store_dict(
             performance_file, "dask_configuration", info, indent=indent, mode=mode
         )

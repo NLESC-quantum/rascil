@@ -137,17 +137,25 @@ def performance_dask_configuration(performance_file, rsexec, indent=2, mode="a")
             ):
                 # LocalCluster or similar
                 workers = rsexec.client.cluster.workers
+                info = {
+                    "client": str(rsexec.client),
+                    "nworkers": len(workers),
+                    "nthreads": int(
+                        numpy.sum([workers[worker].nthreads for worker in workers])
+                    ),
+                }
+
             else:
                 # Distributed
                 workers = rsexec.client.scheduler_info()["workers"]
 
-            info = {
-                "client": str(rsexec.client),
-                "nworkers": len(workers),
-                "nthreads": int(
-                    numpy.sum([workers[worker]["nthreads"] for worker in workers])
-                ),
-            }
+                info = {
+                    "client": str(rsexec.client),
+                    "nworkers": len(workers),
+                    "nthreads": int(
+                        numpy.sum([workers[worker].nthreads for worker in workers])
+                    ),
+                }
         else:
             info = {
                 "client": "",

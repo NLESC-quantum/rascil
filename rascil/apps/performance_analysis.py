@@ -390,7 +390,7 @@ def plot_performance_lines(parameter, functions, performances, tag="", results="
 
     # The profile times are in the "dask_profile" dictionary
 
-    has_memory = True
+    has_memory = "max_memory" in performances[0]["dask_profile"]["getitem"].keys()
     if has_memory:
         axis_types = [
             (0, "Time per call (s)", "per_call"),
@@ -560,9 +560,8 @@ def plot_summary_contour(parameters, performances, tag="", results="./"):
 
 def fit_2d_plane(x, y, z) -> (float, float):
     """Fit the best fitting plane p x + q y = z
-    :return: direction cosines defining plane
+    :return: parameters p, q defining plane
     """
-
     sx2 = numpy.sum(x * x)
     sy2 = numpy.sum(y * y)
     sxy = numpy.sum(x * y)
@@ -619,7 +618,7 @@ def plot_performance_contour(parameters, functions, performances, tag="", result
 
     title = os.path.basename(os.getcwd())
 
-    has_memory = False
+    has_memory = "max_memory" in performances[0]["dask_profile"]["getitem"].keys()
     if has_memory:
         axis_types = [
             (0, "Time per call (s)", "per_call"),
@@ -973,7 +972,7 @@ def main():
     parser = cli_parser()
     args = parser.parse_args()
     plot_files = analyser(args)
-    log.info("Plot files written:")
+    log.info("Results:")
     log.info(pprint.pformat(plot_files))
 
 

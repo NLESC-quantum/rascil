@@ -100,7 +100,7 @@ def performance_blockvisibility(bvis):
 
 
 def performance_environment(performance_file, indent=2, mode="a"):
-    """Write the current environment to JSON file
+    """Write the current processing environment to JSON file
 
     :param performance_file: The (JSON) file to which the environment is to be written
     :param indent: Number of characters indent in performance file
@@ -251,6 +251,9 @@ def performance_read_memory_data(memory_file):
 
 def performance_merge_memory(performance, mem):
     """Merge memory data per function into performance data
+
+    The memory usage information comes from the optional use of the dask-memusage
+    scheduler plugin
 
     :param performance: Performance data dictionary
     :param mem: Memory data dictionary

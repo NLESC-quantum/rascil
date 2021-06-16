@@ -236,9 +236,9 @@ def analyser(args):
         # Summary vs two parameters (e.g. blockvis_nvis, imaging_npixel_sq)
         performances = get_performance_data(args, performance_files)
 
-        plotfiles = fit_summary(args.parameters, performances)
+        results = fit_summary(args.parameters, performances)
 
-        return plotfiles
+        return results
 
     elif args.mode == "summary":
 
@@ -669,10 +669,6 @@ def plot_performance_contour(parameters, functions, performances, tag="", result
                         figures.append(figure)
 
                     plt.show(block=False)
-            # except IndexError as e:
-            #     log.error(f"IndexError: {value_type_short}, {func}, {e}")
-            # except TypeError as e:
-            #     log.error(f"TypeError: {value_type_short}, {func}, {e}")
             except RuntimeError as e:
                 # Probably the axes are singular i.e. one axis is all the same value
                 log.error(f"RuntimeError: {value_type_short}, {func}, {e}")

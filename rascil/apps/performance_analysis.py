@@ -231,9 +231,19 @@ def analyser(args):
         )
         return plotfiles
 
+    elif args.mode == "fit":
+
+        # Summary vs two parameters (e.g. blockvis_nvis, imaging_npixel_sq)
+        performances = get_performance_data(args, performance_files)
+
+        results = fit_summary(args.parameters, performances)
+
+        return results
+
     elif args.mode == "summary":
 
         # Summary vs two parameters (e.g. blockvis_nvis, imaging_npixel_sq)
+
         performances = get_performance_data(args, performance_files)
 
         plotfiles = plot_summary_contour(
@@ -274,8 +284,8 @@ def cli_parser():
     parser.add_argument(
         "--mode",
         type=str,
-        default="line",
-        help="Processing mode: line | bar | contour | summary",
+        default="summary",
+        help="Processing mode: line | bar | contour | summary | fit",
     )
 
     parser.add_argument(
@@ -380,15 +390,26 @@ def plot_performance_lines(parameter, functions, performances, tag="", results="
 
     # The profile times are in the "dask_profile" dictionary
 
+    has_memory = "max_memory" in performances[0]["dask_profile"]["getitem"].keys()
+    if has_memory:
+        axis_types = [
+            (0, "Time per call (s)", "per_call"),
+            (1, "Total (s)", "total"),
+            (2, "Percentage time", "percentage"),
+            (3, "Number calls", "number_calls"),
+            (4, "Maximum memory (GB)", "maximum_memory"),
+            (5, "Minimum memory (GB)", "minimum_memory"),
+        ]
+    else:
+        axis_types = [
+            (0, "Time per call (s)", "per_call"),
+            (1, "Total (s)", "total"),
+            (2, "Percentage time", "percentage"),
+            (3, "Number calls", "number_calls"),
+        ]
+
     xvalues = [performance["inputs"][parameter] for performance in performances]
-    for axis_type, axis_type_name, axis_type_short in [
-        (0, "Time per call (s)", "per_call"),
-        (1, "Total (s)", "total"),
-        (2, "Percentage time", "percentage"),
-        (3, "Number calls", "number_calls"),
-        (4, "Maximum memory (GB)", "maximum_memory"),
-        (5, "Minimum memory (GB)", "minimum_memory"),
-    ]:
+    for axis_type, axis_type_name, axis_type_short in axis_types:
         plt.clf()
         plt.cla()
 
@@ -504,33 +525,81 @@ def plot_summary_contour(parameters, performances, tag="", results="./"):
         (1, "Duration (s)", "duration"),
         (2, "Speedup", "speedup"),
     ]:
+        try:
+            xvalues, yvalues, zvalues = get_summary_performance_data(
+                parameters, performances, value_type
+            )
+
+            plt.clf()
+            plt.cla()
+
+            cmap = cm.get_cmap(name="tab20", lut=None)
+            plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
+
+            plt.title(f"{title} {tag} {value_type_name}")
+            plt.xlabel(parameters[0])
+            plt.ylabel(parameters[1])
+            plt.colorbar()
+            if title is not "" or tag is not "":
+                if tag == "":
+                    figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
+                else:
+                    figure = (
+                        f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
+                    )
+                plt.savefig(figure)
+                figures.append(figure)
+
+            plt.show(block=False)
+        except RuntimeError as e:
+            # Most common cause is that the axes are degenerate e.g. all same value on x axis
+            log.error(f"RuntimeError: {value_type_short}, {func}, {e}")
+
+    return figures
+
+
+def fit_2d_plane(x, y, z) -> (float, float):
+    """Fit the best fitting plane p x + q y = z
+    :return: parameters p, q defining plane
+    """
+    sx2 = numpy.sum(x * x)
+    sy2 = numpy.sum(y * y)
+    sxy = numpy.sum(x * y)
+    sxz = numpy.sum(x * z)
+    syz = numpy.sum(y * z)
+    mat = numpy.matrix([[sx2, sxy], [sxy, sy2]])
+    mat = numpy.linalg.inv(mat)
+    pq = numpy.matmul(mat, [sxz, syz])
+    return pq[0, 0], pq[0, 1]
+
+
+def fit_summary(parameters, performances):
+    """Fit the summary data by a 2D plane.
+
+    :param parameters: Name of parameters e.g. imaging_npixel, blockvis_nvis
+    :param performances: A list of dicts each containing the results for one test case
+    :returns: Dictionary containing fit information
+    """
+    log.info("Fitting planes to summary values")
+
+    fits = {}
+
+    for value_type, value_type_name, value_type_short in [
+        (0, "Total processor time (s)", "processor_time"),
+        (1, "Duration (s)", "duration"),
+        (2, "Speedup", "speedup"),
+    ]:
         xvalues, yvalues, zvalues = get_summary_performance_data(
             parameters, performances, value_type
         )
+        p, q = fit_2d_plane(xvalues, yvalues, zvalues)
 
-        plt.clf()
-        plt.cla()
+        log.info(
+            f"{value_type_name} =\n\t {p:g} * {parameters[0]} + {q:g} * {parameters[1]}"
+        )
+        fits[value_type_short] = {"parameters": parameters[0:2], "p": p, "q": q}
 
-        cmap = cm.get_cmap(name="tab20", lut=None)
-        plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
-
-        plt.title(f"{title} {tag} {value_type_name}")
-        plt.xlabel(parameters[0])
-        plt.ylabel(parameters[1])
-        plt.colorbar()
-        if title is not "" or tag is not "":
-            if tag == "":
-                figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
-            else:
-                figure = (
-                    f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
-                )
-            plt.savefig(figure)
-            figures.append(figure)
-
-        plt.show(block=False)
-
-    return figures
+    return fits
 
 
 def plot_performance_contour(parameters, functions, performances, tag="", results="./"):
@@ -549,41 +618,60 @@ def plot_performance_contour(parameters, functions, performances, tag="", result
 
     title = os.path.basename(os.getcwd())
 
-    for func in functions:
-
-        for value_type, value_type_name, value_type_short in [
+    has_memory = "max_memory" in performances[0]["dask_profile"]["getitem"].keys()
+    if has_memory:
+        axis_types = [
             (0, "Time per call (s)", "per_call"),
             (1, "Total (s)", "total"),
             (2, "Percentage time", "percentage"),
             (3, "Number calls", "number_calls"),
             (4, "Maximum memory (GB)", "maximum_memory"),
             (5, "Minimum memory (GB)", "minimum_memory"),
-        ]:
+        ]
+    else:
+        axis_types = [
+            (0, "Time per call (s)", "per_call"),
+            (1, "Total (s)", "total"),
+            (2, "Percentage time", "percentage"),
+            (3, "Number calls", "number_calls"),
+        ]
+
+    for func in functions:
+
+        for value_type, value_type_name, value_type_short in axis_types:
             xvalues, yvalues, zvalues = get_performance_contour_data(
                 func, parameters, performances, value_type
             )
 
-            plt.clf()
-            plt.cla()
+            try:
+                if (
+                    xvalues is not None
+                    and yvalues is not None
+                    and zvalues is not None
+                    and numpy.max(zvalues) > numpy.min(zvalues)
+                ):
+                    plt.clf()
+                    plt.cla()
 
-            cmap = cm.get_cmap(name="tab20", lut=None)
-            plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
+                    cmap = cm.get_cmap(name="tab20", lut=None)
+                    plt.tricontour(xvalues, yvalues, zvalues, levels=20, cmap=cmap)
 
-            plt.title(f"{title} {func} {tag} {value_type_name}")
-            plt.xlabel(parameters[0])
-            plt.ylabel(parameters[1])
-            plt.colorbar()
-            if title is not "" or tag is not "":
-                if tag == "":
-                    figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
-                else:
-                    figure = (
-                        f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
-                    )
-                plt.savefig(figure)
-                figures.append(figure)
+                    plt.title(f"{title} {func} {tag} {value_type_name}")
+                    plt.xlabel(parameters[0])
+                    plt.ylabel(parameters[1])
+                    plt.colorbar()
+                    if title is not "" or tag is not "":
+                        if tag == "":
+                            figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
+                        else:
+                            figure = f"{results}/{title}_{func}_{tag}_{value_type_short}_contour.png"
+                        plt.savefig(figure)
+                        figures.append(figure)
 
-            plt.show(block=False)
+                    plt.show(block=False)
+            except RuntimeError as e:
+                # Probably the axes are singular i.e. one axis is all the same value
+                log.error(f"RuntimeError: {value_type_short}, {func}, {e}")
 
     return figures
 
@@ -688,34 +776,41 @@ def plot_performance_barchart(
             (max_memory, "Maximum memory (GB)", "maximum_memory"),
             (min_memory, "Minimum memory (GB)", "minimum_memory"),
         ]:
-            plt.clf()
-            plt.cla()
-            y_pos = numpy.arange(len(axis))
-            saxis, _ = sort_values(axis, axis)
-            _, syaxes = sort_values(axis, functions)
-            plt.barh(y_pos, saxis, align="center", alpha=0.5)
-            plt.yticks(y_pos, syaxes, fontsize="x-small")
-            plt.xlabel(axis_type)
-            plt.title(f"{title} {tag} {axis_type}")
-            if plot_sizes and axis_type_short in ["maximum_memory", "minimum_memory"]:
-                plt.axvline(
-                    x=image_size, label="final image size", color="r", linestyle="--"
-                )
-                plt.axvline(
-                    x=vis_size, label="total vis size", color="b", linestyle="--"
-                )
-                plt.legend()
+            if axis is not None:
+                plt.clf()
+                plt.cla()
+                y_pos = numpy.arange(len(axis))
+                saxis, _ = sort_values(axis, axis)
+                _, syaxes = sort_values(axis, functions)
+                plt.barh(y_pos, saxis, align="center", alpha=0.5)
+                plt.yticks(y_pos, syaxes, fontsize="x-small")
+                plt.xlabel(axis_type)
+                plt.title(f"{title} {tag} {axis_type}")
+                if plot_sizes and axis_type_short in [
+                    "maximum_memory",
+                    "minimum_memory",
+                ]:
+                    plt.axvline(
+                        x=image_size,
+                        label="final image size",
+                        color="r",
+                        linestyle="--",
+                    )
+                    plt.axvline(
+                        x=vis_size, label="total vis size", color="b", linestyle="--"
+                    )
+                    plt.legend()
 
-            plt.tight_layout()
-            plt.show(block=False)
-            if title is not "" or tag is not "":
-                if tag == "":
-                    figure = f"{results}/{title}_{axis_type_short}_bar.png"
-                else:
-                    figure = f"{results}{title}_{tag}_{axis_type_short}_bar.png"
+                plt.tight_layout()
+                plt.show(block=False)
+                if title is not "" or tag is not "":
+                    if tag == "":
+                        figure = f"{results}/{title}_{axis_type_short}_bar.png"
+                    else:
+                        figure = f"{results}{title}_{tag}_{axis_type_short}_bar.png"
 
-                plt.savefig(figure)
-                figures.append(figure)
+                    plt.savefig(figure)
+                    figures.append(figure)
 
     return figures
 
@@ -758,8 +853,8 @@ def get_performance_barchart_data(performance):
             performance["dask_profile"][func]["min_memory"] for func in functions
         ]
     except KeyError:
-        max_memory = numpy.zeros_like(total_time)
-        min_memory = numpy.zeros_like(total_time)
+        max_memory = None
+        min_memory = None
 
     return (
         time_per_call,
@@ -790,12 +885,12 @@ def get_data(performance, func):
     if "max_memory" in performance["dask_profile"][func].keys():
         max_memory = performance["dask_profile"][func]["max_memory"]
     else:
-        max_memory = numpy.zeros_like(total_time)
+        max_memory = None
 
     if "min_memory" in performance["dask_profile"][func].keys():
         min_memory = performance["dask_profile"][func]["min_memory"]
     else:
-        min_memory = numpy.zeros_like(total_time)
+        min_memory = None
 
     return (
         time_per_call,
@@ -873,7 +968,7 @@ def main():
     parser = cli_parser()
     args = parser.parse_args()
     plot_files = analyser(args)
-    log.info("Plot files written:")
+    log.info("Results:")
     log.info(pprint.pformat(plot_files))
 
 

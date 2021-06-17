@@ -163,20 +163,10 @@ def test_performance_analysis(mode, parameters, functions):
 
 @pytest.mark.parametrize(
     "p, q",
-    [
-        (1.0, 2.0),
-        (0.0, 2.0),
-        (-1001.0, 2.0),
-        (-1e7, 1.0),
-    ],
+    [(1.0, 2.0), (0.0, 2.0), (-1001.0, 2.0), (-1e7, 1.0), (-1e7, 2e7)],
 )
 def test_fit_2d_plane(p, q):
-    """
-
-    :param p:
-    :param q:
-    :return:
-    """
+    """Test the fit of a 2D plane z = p * x + q + y for a range of inputs"""
 
     def sim(p_actual, q_actual):
         x = numpy.linspace(1e5, 1e6, 10)

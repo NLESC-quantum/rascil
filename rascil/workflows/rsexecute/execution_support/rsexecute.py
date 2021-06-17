@@ -538,38 +538,6 @@ class _rsexecutebase:
         """
         return self._optimize
 
-    @property
-    def client(self):
-        """Client being used
-
-        :return: client
-        """
-        return self._client
-
-    @property
-    def using_dask(self):
-        """Is dask being used?
-
-        :return:
-        """
-        return self._using_dask
-
-    @property
-    def using_dlg(self):
-        """Is daluige being used?
-
-        :return:
-        """
-        return self._using_dlg
-
-    @property
-    def optimizing(self):
-        """Is Dask optimisation being performed?
-
-        :return:
-        """
-        return self._optimize
-
 
 def rsexecutebase(*args, **kwargs):
     if _rsexecutebase._instance is None:

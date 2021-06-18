@@ -2,7 +2,7 @@
 
 Run as e.g.
 
-    python $RASCIL/rascil/apps/sensitivity.pv --imaging_cellsize 2e-7 --imaging_npixel 1024 \
+    python $RASCIL/rascil/apps/sensitivity.py --imaging_cellsize 2e-7 --imaging_npixel 1024 \
         --imaging_weighting uniform --rmax 1e5 --imaging_taper 6e-7
 """
 import logging

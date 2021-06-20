@@ -64,7 +64,7 @@ cycler==0.10.0
     # via matplotlib
 dask-memusage==1.1
     # via -r requirements.in
-dask==2021.06.0
+dask==2021.06.1
     # via
     #   -r requirements.in
     #   distributed
@@ -74,15 +74,15 @@ decorator==4.4.2
     #   networkx
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.6.0
+distributed==2021.6.1
     # via
     #   -r requirements.in
     #   dask-memusage
-ducc0==0.13.0
+ducc0==0.14.0
     # via -r requirements.in
 entrypoints==0.3
     # via nbconvert
-fasteners==0.16.2
+fasteners==0.16.3
     # via zarr
 fsspec==2021.6.0
     # via dask
@@ -90,7 +90,7 @@ future==0.18.2
     # via python-casacore
 gitdb==4.0.7
     # via gitpython
-gitpython==3.1.17
+gitpython==3.1.18
     # via -r requirements.in
 graphviz==0.16
     # via -r requirements.in
@@ -228,7 +228,7 @@ numba==0.53.1
     # via
     #   -r requirements.in
     #   aotools
-numcodecs==0.7.3
+numcodecs==0.8.0
     # via zarr
 numpy==1.20.3
     # via
@@ -285,7 +285,7 @@ pillow==8.2.0
     #   scikit-image
 prometheus-client==0.11.0
     # via notebook
-prompt-toolkit==3.0.18
+prompt-toolkit==3.0.19
     # via
     #   ipython
     #   jupyter-console
@@ -354,7 +354,7 @@ requests==2.25.1
     #   requests-toolbelt
 scikit-image==0.18.1
     # via -r requirements.in
-scipy==1.6.3
+scipy==1.7.0
     # via
     #   -r requirements.in
     #   aotools
@@ -388,7 +388,7 @@ terminado==0.10.1
     # via notebook
 testpath==0.5.0
     # via nbconvert
-tifffile==2021.6.6
+tifffile==2021.6.14
     # via scikit-image
 toolz==0.11.1
     # via

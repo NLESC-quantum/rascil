@@ -35,6 +35,9 @@ import copy
 import logging
 import warnings
 
+from typing import List, Union
+
+
 import numpy
 import xarray
 from astropy import units as u
@@ -475,7 +478,6 @@ def average_image_over_frequency(im: Image) -> Image:
     # assert isinstance(im, Image)
     assert image_is_canonical(im)
 
-    nchannels = len(im.frequency.data)
     newim_data = numpy.mean(im["pixels"].data, axis=0)[numpy.newaxis, ...]
 
     assert not numpy.isnan(numpy.sum(im["pixels"].data)), "NaNs present in image data"
@@ -557,6 +559,45 @@ def calculate_image_frequency_moments(
     return create_image_from_array(
         moment_data, moment_wcs, im.image_acc.polarisation_frame
     )
+
+
+def calculate_image_taylor_terms(
+    moment_im: Image,
+    reference_im,
+) -> List[Image]:
+    """Calculate set of Taylor terms corresponding to a moment cube
+
+    :param moment_im: Image cube
+    :param reference_im Reference image
+    :return: List of Taylor images
+    """
+    nmoment, npol, ny, nx = moment_im["pixels"].data.shape
+    reference_frequency = numpy.average(reference_im.frequency.data)
+
+    pol_frame = polarisation_frame_from_wcs(
+        reference_im.image_acc.wcs, reference_im["pixels"].data.shape
+    )
+
+    moment_images = list()
+    moment_wcs = copy.deepcopy(reference_im.image_acc.wcs)
+    moment_wcs.wcs.crval[3] = reference_frequency
+    moment_wcs.wcs.cdelt[3] = reference_im.image_acc.wcs.wcs.cdelt[3]
+
+    scale = 1.0 / nmoment
+    for moment in range(nmoment):
+        moment_image = create_image_from_array(
+            scale * moment_im["pixels"].data[moment, ...][numpy.newaxis, ...],
+            moment_wcs,
+            pol_frame,
+        )
+        moment_image.image_acc.wcs.wcs.crval[3] = reference_frequency
+        moment_image.image_acc.wcs.wcs.cdelt[3] = reference_im.attrs[
+            "channel_bandwidth"
+        ]
+
+        moment_images.append(moment_image)
+
+    return moment_images
 
 
 def calculate_image_from_frequency_moments(

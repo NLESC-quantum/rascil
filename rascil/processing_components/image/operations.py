@@ -7,6 +7,7 @@ __all__ = [
     "average_image_over_frequency",
     "calculate_image_frequency_moments",
     "calculate_image_from_frequency_moments",
+    "calculate_image_taylor_terms",
     "convert_polimage_to_stokes",
     "convert_stokes_to_polimage",
     "create_empty_image_like",
@@ -564,6 +565,7 @@ def calculate_image_frequency_moments(
 def calculate_image_taylor_terms(
     moment_im: Image,
     reference_im,
+    ntaylor=2,
 ) -> List[Image]:
     """Calculate set of Taylor terms corresponding to a moment cube
 
@@ -571,7 +573,13 @@ def calculate_image_taylor_terms(
     :param reference_im Reference image
     :return: List of Taylor images
     """
+
+    if ntaylor > 2:
+        raise ValueError("Only maximum of 2 taylor terms supported currently")
+
     nmoment, npol, ny, nx = moment_im["pixels"].data.shape
+    nchan = reference_im["pixels"].data.shape[0]
+
     reference_frequency = numpy.average(reference_im.frequency.data)
 
     pol_frame = polarisation_frame_from_wcs(
@@ -583,10 +591,22 @@ def calculate_image_taylor_terms(
     moment_wcs.wcs.crval[3] = reference_frequency
     moment_wcs.wcs.cdelt[3] = reference_im.image_acc.wcs.wcs.cdelt[3]
 
-    scale = 1.0 / nmoment
-    for moment in range(nmoment):
+    sumwt2 = 0.0
+    for chan in range(nchan):
+        weight = numpy.power(
+            (reference_im.frequency[chan].data - reference_frequency)
+            / reference_frequency,
+            2,
+        )
+        sumwt2 += weight
+
+    for taylor in range(ntaylor):
+        if taylor > 0:
+            scale = 1.0 / sumwt2
+        else:
+            scale = 1.0 / nchan
         moment_image = create_image_from_array(
-            scale * moment_im["pixels"].data[moment, ...][numpy.newaxis, ...],
+            scale * moment_im["pixels"].data[taylor, ...][numpy.newaxis, ...],
             moment_wcs,
             pol_frame,
         )
@@ -594,7 +614,6 @@ def calculate_image_taylor_terms(
         moment_image.image_acc.wcs.wcs.cdelt[3] = reference_im.attrs[
             "channel_bandwidth"
         ]
-
         moment_images.append(moment_image)
 
     return moment_images

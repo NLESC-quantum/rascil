@@ -29,6 +29,7 @@ from rascil.processing_components import (
     image_gather_channels,
     create_calibration_controls,
     advise_wide_field,
+    calculate_image_taylor_terms,
 )
 
 from rascil.processing_components.util.performance import (
@@ -401,7 +402,7 @@ def write_results(imagename, result, performance_file, args):
     :param result: Set of results i.e. deconvolved, residual, restored, skymodel
     :param performance_file: Name of performance file
     :param args: command line parameters
-    :return: Names out output files
+    :return: Names of output files
     """
     residual, restored, skymodel = result
 
@@ -415,17 +416,24 @@ def write_results(imagename, result, performance_file, args):
     plt.show(block=False)
     deconvolvedname = imagename + "_deconvolved.fits"
     export_image_to_fits(deconvolved_image, deconvolvedname)
-    del deconvolved_image
 
     skymodelname = imagename + "_skymodel.hdf"
     export_skymodel_to_hdf5(skymodel, skymodelname)
     del skymodel
 
     if args.clean_restored_output == "moments":
-        log.info("Writing restored image as moments cube at centred at mid-frequency")
-        restoredname = imagename + "_restored_moments.fits"
+        log.info(
+            "Writing restored image as Taylor terms cube at centred at mid-frequency"
+        )
         performance_qa_image(performance_file, "restored_moments", restored, mode="a")
-        export_image_to_fits(restored, restoredname)
+        restored_taylor_terms = calculate_image_taylor_terms(
+            restored, deconvolved_image
+        )
+        for taylor, taylorimage in enumerate(restored_taylor_terms):
+            taylorfile = f"{imagename}_restored_Taylor{taylor}.fits"
+            export_image_to_fits(taylorimage, taylorfile)
+        restoredname = f"{imagename}_restored_Taylor0.fits"
+
     elif args.clean_restored_output == "integrated":
         log.info("Writing restored image as single plane at mid-frequency")
         restoredname = imagename + "_restored_centre.fits"

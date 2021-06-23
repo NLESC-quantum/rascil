@@ -400,7 +400,7 @@ class _rsexecutebase:
                 print("rsexcute.close: closed down Dask Client")
             if self._client.cluster is not None:
                 self._client.cluster.close()
-            self._client.close()
+            self._client.shutdown()
             self._client = None
 
     def init_statistics(self):

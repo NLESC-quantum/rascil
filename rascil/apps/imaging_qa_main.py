@@ -328,12 +328,15 @@ def analyze_image(args):
 
     if args.ingest_fitsname_moment is not None:
 
-        input_image_moment = args.ingest_fitsname_moment + "Taylor"
+        input_image_moment = args.ingest_fitsname_moment + "_Taylor[1-9].fits"
     else:
-        input_image_moment = args.ingest_fitsname_restored.replace(".fits", "Taylor")
+        input_image_moment = args.ingest_fitsname_restored.replace(
+            ".fits", "Taylor[1-9].fits"
+        )
 
     moment_images = glob.glob(input_image_moment)
     log.info("Number of frequency moments image found: {}".format(len(moment_images)))
+    log.info("They are:{}".format(moment_images))
 
     log.info("Putting sources into skycomponents format.")
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
@@ -584,9 +587,9 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
                 moment_data = add_image(moment_data, moment_data_now)
 
         image_frequency = moment_data.frequency.data
-        ras = [comp.direction.ra.radian for comp in comp_list]
-        decs = [comp.direction.dec.radian for comp in comp_list]
-        skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
+        ras = [comp.direction.ra.degree for comp in comp_list]
+        decs = [comp.direction.dec.degree for comp in comp_list]
+        skycoords = SkyCoord(ras * u.deg, decs * u.deg, frame="icrs")
         pixlocs = skycoord_to_pixel(
             skycoords, moment_data.image_acc.wcs, origin=0, mode="wcs"
         )
@@ -595,17 +598,24 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
 
             # TODO: Needs update for multiple polarizations
             nchan = len(comp.frequency.data)
-            pixloc = (pixlocs[0][icomp], pixlocs[1][icomp])
+            pixloc = (round(pixlocs[0][icomp]), round(pixlocs[1][icomp]))
+
             if (
                 nchan == len(image_frequency)
-                and numpy.max(numpy.abs(comp.frequency.data - image_frequency)) < 1e-7
+                and np.max(np.abs(comp.frequency.data - image_frequency)) < 1e-7
             ):
-                flux = im["pixels"].data[:, :, pixloc[0], pixloc[1]]
-                if comp.flux.all() > 0:
+                flux = moment_data["pixels"].data[:, :, pixloc[1], pixloc[0]]
+                log.info(
+                    "Taylor flux:{} for skycomponent {}, {}".format(
+                        flux, ras[icomp], decs[icomp]
+                    )
+                )
+                if comp.flux.all() > 0.0:
                     spec_indx = flux / comp.flux
             else:
                 spec_indx = 0
 
+            log.info("TEST: spectral index calculated{}".format(spec_indx))
             fluxes = [
                 comp.flux[i][0] * (f / comp.frequency.data[nchan // 2]) ** spec_indx
                 for i, f in enumerate(comp.frequency.data)

@@ -598,6 +598,7 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
 
             # TODO: Needs update for multiple polarizations
             nchan = len(comp.frequency.data)
+            npol = 1
             pixloc = (round(pixlocs[0][icomp]), round(pixlocs[1][icomp]))
 
             if (
@@ -615,12 +616,12 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
             else:
                 spec_indx = 0
 
-            log.info("TEST: spectral index calculated{}".format(spec_indx))
+            log.info("Spectral index calculated is {}".format(spec_indx))
             fluxes = [
                 comp.flux[i][0] * (f / comp.frequency.data[nchan // 2]) ** spec_indx
                 for i, f in enumerate(comp.frequency.data)
             ]
-            flux_array = np.reshape(np.array(fluxes), (nchan, 1))
+            flux_array = np.reshape(np.array(fluxes), (nchan, npol))
             comp.flux = flux_array
 
         return comp_list

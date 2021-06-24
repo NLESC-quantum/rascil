@@ -540,7 +540,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
         direc = SkyCoord(
             ra=row["RA"] * u.deg, dec=row["DEC"] * u.deg, frame="icrs", equinox="J2000"
         )
-        f0 = row["Total_flux"]
+        f0 = row["Peak_flux"]
         if f0 > 0:  # filter out ghost sources
             try:
                 spec_indx = row["Spec_Indx"]
@@ -606,15 +606,15 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
                 and np.max(np.abs(comp.frequency.data - image_frequency)) < 1e-7
             ):
                 flux = moment_data["pixels"].data[:, :, pixloc[1], pixloc[0]]
-                log.info(
+                log.debug(
                     "Taylor flux:{} for skycomponent {}, {}".format(
                         flux, ras[icomp], decs[icomp]
                     )
                 )
                 if comp.flux.all() > 0.0:
-                    spec_indx = flux / comp.flux
+                    spec_indx = flux / comp.flux[nchan // 2][0]
             else:
-                spec_indx = 0
+                spec_indx = 0.0
 
             log.info("Spectral index calculated is {}".format(spec_indx))
             fluxes = [
@@ -692,7 +692,7 @@ def check_source(orig, comp, match_sep):
     for match in matches:
         m_comp = comp[match[0]]
         m_orig = orig[match[1]]
-        log.info(f"Original: {m_orig} Match {m_comp}")
+        log.debug(f"Original: {m_orig} Match {m_comp}")
 
     return matches
 

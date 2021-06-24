@@ -341,6 +341,13 @@ def analyze_image(args):
     log.info("Putting sources into skycomponents format.")
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
 
+    # Correct and put into new csv file
+    # Calculate spectral index from frequency moment images
+    if args.use_frequency_moment == "True" and len(moment_images) != 0:
+
+        log.info("Calculate spectral index from frequency moment images.")
+        out = calculate_spec_index_from_moment(out, moment_images)
+
     if args.check_source == "True":
 
         if ".h5" in args.input_source_filename or ".hdf" in args.input_source_filename:
@@ -351,13 +358,8 @@ def analyze_image(args):
         else:
             raise FileFormatError("Input file must be of format: hdf5 or txt.")
 
-        # Calculate spectral index from frequency moment images
-        if args.use_frequency_moment == "True" and len(moment_images) != 0:
-
-            log.info("Calculate spectral index from frequency moment images.")
-            out = calculate_spec_index_from_moment(out, moment_images)
-
-            # Compensate for primary beam correction
+        # Compensate for primary beam correction
+        # Note this should be applied to source in, not source out
         if args.apply_primary == "True":
             log.info("Correcting fluxes for primary beam.")
             telescope = args.telescope_model
@@ -577,6 +579,7 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
     """
 
     if len(moment_images) == 0:
+        log.info("No moment images found, no csv file written.")
         return comp_list
 
     else:
@@ -594,11 +597,15 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
             skycoords, moment_data.image_acc.wcs, origin=0, mode="wcs"
         )
 
+        # TODO: Needs update for multiple polarizations
+        nchan = len(comp_list[0].frequency.data)
+        npol = 1
+        freqs = [comp.frequency.data[nchan // 2] for comp in comp_list]
+        central_fluxes = [comp.flux[nchan // 2][0] for comp in comp_list]
+
+        spec_indx = np.zeros(len(comp_list))
         for icomp, comp in enumerate(comp_list):
 
-            # TODO: Needs update for multiple polarizations
-            nchan = len(comp.frequency.data)
-            npol = 1
             pixloc = (round(pixlocs[0][icomp]), round(pixlocs[1][icomp]))
 
             if (
@@ -612,17 +619,33 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
                     )
                 )
                 if comp.flux.all() > 0.0:
-                    spec_indx = flux / comp.flux[nchan // 2][0]
+                    spec_indx[icomp] = flux / comp.flux[nchan // 2][0]
             else:
-                spec_indx = 0.0
+                spec_indx[icomp] = 0.0
 
-            log.info("Spectral index calculated is {}".format(spec_indx))
+            log.debug("Spectral index calculated is {}".format(spec_indx))
             fluxes = [
-                comp.flux[i][0] * (f / comp.frequency.data[nchan // 2]) ** spec_indx
+                comp.flux[i][0]
+                * (f / comp.frequency.data[nchan // 2]) ** spec_indx[icomp]
                 for i, f in enumerate(comp.frequency.data)
             ]
             flux_array = np.reshape(np.array(fluxes), (nchan, npol))
             comp.flux = flux_array
+
+        # Write to new csv file
+        ds = pd.DataFrame(
+            {
+                "RA (deg)": ras,
+                "Dec (deg)": decs,
+                "Central freq (Hz)": freqs,
+                "Central flux (Jy)": central_fluxes,
+                "Spectral index": spec_indx,
+            }
+        )
+        csv_name = moment_images[0].replace("Taylor*.fits", "_corrected.csv")
+        log.info("Writing source data to {}".format(csv_name))
+
+        ds.to_csv(csv_name, index=True)
 
         return comp_list
 

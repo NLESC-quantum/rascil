@@ -642,7 +642,7 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
                 "Spectral index": spec_indx,
             }
         )
-        csv_name = moment_images[0].replace("Taylor[1-9].fits", "_corrected.csv")
+        csv_name = moment_images[0].replace(".fits", "_corrected.csv")
         log.info("Writing source data to {}".format(csv_name))
 
         ds.to_csv(csv_name, index=True)

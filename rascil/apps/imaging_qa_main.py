@@ -348,6 +348,15 @@ def analyze_image(args):
         log.info("Calculate spectral index from frequency moment images.")
         out = calculate_spec_index_from_moment(out, moment_images)
 
+    # Compensate for primary beam correction
+    # Note this should be applied to source out when it is division, source in when multiplication
+    if args.apply_primary == "True":
+        log.info("Correcting fluxes for primary beam.")
+        telescope = args.telescope_model
+        out = correct_primary_beam(
+            input_image_restored, input_image_sensitivity, out, telescope=telescope
+        )
+
     if args.check_source == "True":
 
         if ".h5" in args.input_source_filename or ".hdf" in args.input_source_filename:
@@ -357,15 +366,6 @@ def analyze_image(args):
             orig = read_skycomponent_from_txt(args.input_source_filename, freq)
         else:
             raise FileFormatError("Input file must be of format: hdf5 or txt.")
-
-        # Compensate for primary beam correction
-        # Note this should be applied to source in, not source out
-        if args.apply_primary == "True":
-            log.info("Correcting fluxes for primary beam.")
-            telescope = args.telescope_model
-            orig = correct_primary_beam(
-                input_image_restored, input_image_sensitivity, orig, telescope=telescope
-            )
 
         results = check_source(orig, out, args.match_sep)
 

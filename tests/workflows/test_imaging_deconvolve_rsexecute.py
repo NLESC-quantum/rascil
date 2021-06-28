@@ -20,7 +20,6 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     deconvolve_list_rsexecute_workflow,
     residual_list_rsexecute_workflow,
     restore_list_rsexecute_workflow,
-    restore_list_singlefacet_rsexecute_workflow,
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.processing_components import (
@@ -36,6 +35,7 @@ from rascil.processing_components.simulation import (
     create_unittest_components,
     insert_unittest_errors,
 )
+from rascil.workflows import remove_sumwt
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
 
 log = logging.getLogger("rascil-logger")
@@ -220,7 +220,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         numpy.testing.assert_allclose(qa.data["min"], 0.0, atol=1e-7, err_msg=f"{qa}")
 
     def test_deconvolve_and_restore_cube_mmclean(self):
-        nmoment = 2
         self.actualSetUp(add_errors=True)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
@@ -229,9 +228,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             dopsf=False,
             normalise=True,
         )
-        dirty_imagelist_trimmed = [
-            rsexecute.execute(lambda dd: dd[0])(d) for d in dirty_imagelist
-        ]
         psf_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
@@ -239,53 +235,42 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             dopsf=True,
             normalise=True,
         )
-        psf_imagelist_trimmed = [
-            rsexecute.execute(lambda dd: dd[0])(d) for d in psf_imagelist
-        ]
-        # The deconvolution for mmclean requires the images in FREQUENCY space
+        dirty_imagelist = rsexecute.persist(dirty_imagelist)
+        psf_imagelist = rsexecute.persist(psf_imagelist)
         dec_imagelist = deconvolve_list_rsexecute_workflow(
-            dirty_imagelist_trimmed,
-            psf_imagelist_trimmed,
+            dirty_imagelist,
+            psf_imagelist,
             self.model_imagelist,
             niter=100,
             fractional_threshold=0.01,
             scales=[0, 3],
             algorithm="mmclean",
-            nmoment=nmoment,
+            nmoment=1,
             nchan=self.freqwin,
             threshold=0.01,
             gain=0.7,
         )
-        # At this point the deconvolved model is in MOMENT space but the next
-        # function requires the model in FREQUENCY space
-        frequency = [
-            rsexecute.execute(lambda vv: vv.frequency.data[0], nout=1)(v)
-            for v in self.vis_list
-        ]
-        # dec_imagelist = rsexecute.execute(
-        #     calculate_image_list_from_frequency_moments, nout=len(frequency)
-        # )(dec_imagelist, frequency=frequency)
-        # residual_imagelist = residual_list_rsexecute_workflow(
-        #     self.vis_list, model_imagelist=dec_imagelist, context="ng"
-        # )
-        restored_list = restore_list_singlefacet_rsexecute_workflow(
+        residual_imagelist = residual_list_rsexecute_workflow(
+            self.vis_list, model_imagelist=dec_imagelist, context="ng"
+        )
+        restored_list = restore_list_rsexecute_workflow(
             model_imagelist=dec_imagelist,
             psf_imagelist=psf_imagelist,
-            #            residual_imagelist=residual_imagelist,
+            residual_imagelist=residual_imagelist,
             empty=self.model_imagelist,
-            restore_facets=1,
         )
 
-        restored = rsexecute.compute(restored_list, sync=True)
+        centre = len(restored_list) // 2
+        restored = rsexecute.compute(restored_list, sync=True)[centre]
 
         if self.persist:
-            for moment in range(nmoment):
-                export_image_to_fits(
-                    restored[nmoment],
-                    f"{self.dir}/test_imaging_{rsexecute.type()}_moment{moment}_mmclean_restored.fits",
-                )
+            export_image_to_fits(
+                restored,
+                "%s/test_imaging_%s_mmclean_restored.fits"
+                % (self.dir, rsexecute.type()),
+            )
 
-        qa = qa_image(restored[0])
+        qa = qa_image(restored)
         numpy.testing.assert_allclose(
             qa.data["max"], 29.904079739467672, atol=1e-7, err_msg=f"{qa}"
         )

@@ -272,7 +272,7 @@ class TestImage(unittest.TestCase):
         error = numpy.std(
             reconstructed_cube["pixels"].data - original_cube["pixels"].data
         )
-        assert error < 0.435, error
+        assert error < 3.4, error
 
     def test_calculate_image_taylor_terms(self):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)

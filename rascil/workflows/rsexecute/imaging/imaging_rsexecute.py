@@ -25,7 +25,10 @@ import logging
 import numpy
 
 from rascil.data_models.parameters import get_parameter
-from rascil.processing_components import calculate_image_frequency_moments
+from rascil.processing_components import (
+    calculate_image_frequency_moments,
+    calculate_image_from_frequency_moments,
+)
 from rascil.processing_components import create_empty_image_like
 from rascil.processing_components import create_griddata_from_image
 from rascil.processing_components import (

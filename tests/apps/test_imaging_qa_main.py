@@ -250,10 +250,7 @@ def test_continuum_imaging_checker(
     taylor_model = insert_skycomponent(
         taylor_model, taylor_components, insert_method=insert_method
     )
-    if noise > 0.0:
-        taylor_model["pixels"].data += rng.normal(
-            0.0, noise, taylor_model["pixels"].data.shape
-        )
+
     taylor_file = rascil_path(f"test_results/test_imaging_qa_{tag}_Taylor1.fits")
     export_image_to_fits(taylor_model, taylor_file)
 

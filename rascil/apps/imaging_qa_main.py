@@ -331,7 +331,7 @@ def analyze_image(args):
         input_image_moment = args.ingest_fitsname_moment + "_Taylor[1-9].fits"
     else:
         input_image_moment = args.ingest_fitsname_restored.replace(
-            ".fits", "Taylor[1-9].fits"
+            ".fits", "_Taylor[1-9].fits"
         )
 
     moment_images = glob.glob(input_image_moment)
@@ -612,7 +612,7 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
                 nchan == len(image_frequency)
                 and np.max(np.abs(comp.frequency.data - image_frequency)) < 1e-7
             ):
-                flux = moment_data["pixels"].data[:, :, pixloc[1], pixloc[0]]
+                flux = moment_data["pixels"].data[nchan // 2, 0, pixloc[1], pixloc[0]]
                 log.debug(
                     "Taylor flux:{} for skycomponent {}, {}".format(
                         flux, ras[icomp], decs[icomp]
@@ -623,7 +623,7 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
             else:
                 spec_indx[icomp] = 0.0
 
-            log.debug("Spectral index calculated is {}".format(spec_indx))
+            log.debug("Spectral index calculated is {}".format(spec_indx[icomp]))
             fluxes = [
                 comp.flux[i][0]
                 * (f / comp.frequency.data[nchan // 2]) ** spec_indx[icomp]

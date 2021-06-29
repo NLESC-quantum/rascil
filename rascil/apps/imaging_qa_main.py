@@ -94,7 +94,9 @@ def cli_parser():
         "--ingest_fitsname_moment",
         type=str,
         default=None,
-        help="FITS file of the frequency moment images to be read (Note: Use prefix here)",
+        help="FITS file of the frequency moment images to be read \
+		(Note: Use the prefix of the fits files, e.g. if the restored image is test_image_restored.fits \
+		here should input test_image)",
     )
     parser.add_argument(
         "--finder_beam_maj",
@@ -336,7 +338,6 @@ def analyze_image(args):
 
     moment_images = glob.glob(input_image_moment)
     log.info("Number of frequency moments image found: {}".format(len(moment_images)))
-    log.info("They are:{}".format(moment_images))
 
     log.info("Putting sources into skycomponents format.")
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)

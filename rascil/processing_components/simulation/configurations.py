@@ -498,6 +498,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             "S10‐6",
         ]
         fc["names"].data = names
+        fc = fc.sel({"id": [3, 4, 8, 11, 12, 16]})
 
     elif (name == "MID") or (name == "MIDR5"):
         location = mid_location

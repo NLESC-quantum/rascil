@@ -373,6 +373,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
         LOWBD2
         LOWBD2-core
         LOW == LOWR3
+        LOW_AA0.5
         MID == MIDR5
         MEERKAT+
         ASKAP
@@ -380,7 +381,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
         VLAA
         VLAA_north
 
-    :param name: name of Configuration MID, LOW, LOFAR, VLAA, ASKAP
+    :param name: name of Configuration e.g. MID, LOW, LOFAR, VLAA, ASKAP
     :param rmax: Maximum distance of station from the average (m)
     :return:
 

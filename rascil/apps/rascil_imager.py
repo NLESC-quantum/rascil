@@ -422,9 +422,7 @@ def write_results(imagename, result, performance_file, args):
     del skymodel
 
     if args.clean_restored_output == "moments":
-        log.info(
-            "Writing restored image as Taylor terms cube centred at mid-frequency"
-        )
+        log.info("Writing restored image as Taylor terms cube centred at mid-frequency")
         performance_qa_image(performance_file, "restored_moments", restored, mode="a")
         restored_taylor_terms = calculate_image_taylor_terms(
             restored, deconvolved_image

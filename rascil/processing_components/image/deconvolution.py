@@ -29,8 +29,6 @@ __all__ = [
     "deconvolve_cube",
     "restore_cube",
     "fit_psf",
-    "convert_clean_beam_to_pixels",
-    "convert_clean_beam_to_degrees",
 ]
 
 import logging
@@ -40,6 +38,10 @@ import numpy
 from astropy.convolution import Gaussian2DKernel, convolve_fft
 from astropy.modeling import models, fitting
 
+from processing_components.image.operations import (
+    convert_clean_beam_to_degrees,
+    convert_clean_beam_to_pixels,
+)
 from rascil.data_models.memory_data_models import Image
 from rascil.data_models.parameters import get_parameter
 from rascil.data_models.polarisation import PolarisationFrame
@@ -49,10 +51,9 @@ from rascil.processing_components.arrays.cleaners import (
     msclean,
     msmfsclean,
 )
-from rascil.processing_components.image.operations import (
+from processing_components.image.taylor_terms import (
     calculate_image_frequency_moments,
-    calculate_image_from_frequency_moments,
-    image_is_canonical,
+    calculate_image_from_frequency_taylor_terms,
 )
 from rascil.processing_components.image.operations import create_image_from_array
 
@@ -566,8 +567,8 @@ def mmclean_kernel(dirty, prefix, psf, window, sensitivity, **kwargs):
         "deconvolve_cube %s: calculating spectral cubes from frequency moment images"
         % prefix
     )
-    comp_image = calculate_image_from_frequency_moments(dirty, comp_image)
-    residual_image = calculate_image_from_frequency_moments(dirty, residual_image)
+    comp_image = calculate_image_from_frequency_taylor_terms(dirty, comp_image)
+    residual_image = calculate_image_from_frequency_taylor_terms(dirty, residual_image)
     return comp_image, residual_image
 
 
@@ -701,31 +702,6 @@ def fit_psf(psf: Image, **kwargs):
     return convert_clean_beam_to_degrees(psf, beam_pixels)
 
 
-def convert_clean_beam_to_degrees(im, beam_pixels):
-    """Convert clean beam in pixels to deg deg, deg
-
-    :param im: Image
-    :param beam_pixels:
-    :return: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
-    """
-    # cellsize in radians
-    cellsize = numpy.deg2rad(im.image_acc.wcs.wcs.cdelt[1])
-    to_mm = 4.0 * numpy.log(2.0)
-    if beam_pixels[1] > beam_pixels[0]:
-        clean_beam = {
-            "bmaj": numpy.rad2deg(beam_pixels[1] * cellsize * to_mm),
-            "bmin": numpy.rad2deg(beam_pixels[0] * cellsize * to_mm),
-            "bpa": numpy.rad2deg(beam_pixels[2]),
-        }
-    else:
-        clean_beam = {
-            "bmaj": numpy.rad2deg(beam_pixels[0] * cellsize * to_mm),
-            "bmin": numpy.rad2deg(beam_pixels[1] * cellsize * to_mm),
-            "bpa": numpy.rad2deg(beam_pixels[2]) + 90.0,
-        }
-    return clean_beam
-
-
 def restore_cube(model: Image, psf=None, residual=None, clean_beam=None) -> Image:
     """Restore the model image to the residuals
 
@@ -783,22 +759,3 @@ def restore_cube(model: Image, psf=None, residual=None, clean_beam=None) -> Imag
     restored.attrs["clean_beam"] = clean_beam
 
     return restored
-
-
-def convert_clean_beam_to_pixels(model, clean_beam):
-    """Convert clean beam to pixels
-
-    :param model:
-    :param clean_beam: e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
-    :return:
-    """
-    to_mm = 4.0 * numpy.log(2.0)
-    # Cellsize in radians
-    cellsize = numpy.deg2rad(model.image_acc.wcs.wcs.cdelt[1])
-    # Beam in pixels
-    beam_pixels = (
-        numpy.deg2rad(clean_beam["bmin"]) / (cellsize * to_mm),
-        numpy.deg2rad(clean_beam["bmaj"]) / (cellsize * to_mm),
-        numpy.deg2rad(clean_beam["bpa"]),
-    )
-    return beam_pixels

@@ -19,7 +19,8 @@ __all__ = [
 
 from .arrays import *
 from .calibration import *
-from .griddata import *
+
+# from .griddata import *
 from .flagging import *
 from .fourier_transforms import *
 from .image import *

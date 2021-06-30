@@ -43,7 +43,7 @@ from rascil.processing_components.image import (
     image_scatter_channels,
     image_gather_channels,
 )
-from rascil.processing_components.image import calculate_image_frequency_moments
+from processing_components.image.taylor_terms import calculate_image_frequency_moments
 from rascil.processing_components.imaging import normalise_sumwt
 from rascil.processing_components.imaging import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility

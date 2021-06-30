@@ -25,26 +25,28 @@ import logging
 import numpy
 
 from rascil.data_models.parameters import get_parameter
-from rascil.processing_components import calculate_image_frequency_moments
-from rascil.processing_components import create_empty_image_like
-from rascil.processing_components import create_griddata_from_image
-from rascil.processing_components import (
+from processing_components.image.taylor_terms import calculate_image_frequency_moments
+from rascil.processing_components.image.operations import create_empty_image_like
+from rascil.processing_components.griddata.operations import create_griddata_from_image
+from rascil.processing_components.image.deconvolution import (
     deconvolve_cube,
     restore_cube,
     create_image_from_array,
 )
-from rascil.processing_components import (
+from rascil.processing_components.griddata.gridding import (
     grid_blockvisibility_weight_to_griddata,
     griddata_blockvisibility_reweight,
     griddata_merge_weights,
+)
+from rascil.processing_components.image.deconvolution import (
     fit_psf,
-    normalise_sumwt,
 )
 from rascil.processing_components import (
     image_scatter_facets,
     image_gather_facets,
     image_scatter_channels,
 )
+from rascil.processing_components.imaging.base import normalise_sumwt
 from rascil.processing_components import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute

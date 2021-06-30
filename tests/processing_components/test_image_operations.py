@@ -25,9 +25,6 @@ from rascil.processing_components import (
 )
 from rascil.processing_components.image.operations import (
     export_image_to_fits,
-    calculate_image_frequency_moments,
-    calculate_image_from_frequency_moments,
-    add_image,
     qa_image,
     reproject_image,
     convert_polimage_to_stokes,
@@ -241,60 +238,6 @@ class TestImage(unittest.TestCase):
             )
             < 1e-12
         )
-
-    def test_calculate_image_frequency_moments(self):
-        frequency = numpy.linspace(0.9e8, 1.1e8, 9)
-        original_cube = create_low_test_image_from_gleam(
-            npixel=512, cellsize=0.0001, frequency=frequency, flux_limit=1.0
-        )
-        if self.persist:
-            export_image_to_fits(
-                original_cube, fitsfile="%s/test_moments_cube.fits" % (self.dir)
-            )
-        cube = create_empty_image_like(original_cube)
-        moment_cube = calculate_image_frequency_moments(cube, nmoment=3)
-        print(moment_cube.image_acc.wcs)
-        if self.persist:
-            export_image_to_fits(
-                moment_cube, fitsfile="%s/test_moments_moment_cube.fits" % (self.dir)
-            )
-        reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)
-        print(reconstructed_cube.image_acc.wcs)
-        if self.persist:
-            export_image_to_fits(
-                reconstructed_cube,
-                fitsfile="%s/test_moments_reconstructed_cube.fits" % (self.dir),
-            )
-        error = numpy.std(
-            reconstructed_cube["pixels"].data - original_cube["pixels"].data
-        )
-        assert error < 0.2, error
-
-    def test_calculate_image_frequency_moments_1(self):
-        frequency = numpy.linspace(0.9e8, 1.1e8, 9)
-        original_cube = create_low_test_image_from_gleam(
-            npixel=512, cellsize=0.0001, frequency=frequency, flux_limit=1.0
-        )
-        if self.persist:
-            export_image_to_fits(
-                original_cube, fitsfile="%s/test_moments_1_cube.fits" % (self.dir)
-            )
-        cube = create_empty_image_like(original_cube)
-        moment_cube = calculate_image_frequency_moments(cube, nmoment=1)
-        if self.persist:
-            export_image_to_fits(
-                moment_cube, fitsfile="%s/test_moments_1_moment_cube.fits" % (self.dir)
-            )
-        reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)
-        if self.persist:
-            export_image_to_fits(
-                reconstructed_cube,
-                fitsfile="%s/test_moments_1_reconstructed_cube.fits" % (self.dir),
-            )
-        error = numpy.std(
-            reconstructed_cube["pixels"].data - original_cube["pixels"].data
-        )
-        assert error < 0.2
 
     def test_create_w_term_image(self):
         phasecentre = SkyCoord(

@@ -26,7 +26,6 @@ __all__ = [
     "invert_2d",
     "predict_awprojection",
     "invert_awprojection",
-    "predict_skycomponent_visibility",
     "create_image_from_visibility",
     "advise_wide_field",
     "visibility_recentre",
@@ -45,18 +44,15 @@ from astropy.wcs.utils import pixel_to_skycoord
 
 from rascil.data_models.memory_data_models import BlockVisibility, Image, Skycomponent
 from rascil.data_models.parameters import get_parameter
-from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
+from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.griddata.gridding import (
     grid_blockvisibility_to_griddata,
     fft_griddata_to_image,
     fft_image_to_griddata,
     degrid_blockvisibility_from_griddata,
 )
-from rascil.processing_components.griddata.kernels import (
-    create_pswf_convolutionfunction,
-)
 from rascil.processing_components.griddata.operations import create_griddata_from_image
-from rascil.processing_components.image import (
+from rascil.processing_components.image.operations import (
     create_image_from_array,
     convert_polimage_to_stokes,
     convert_stokes_to_polimage,
@@ -191,6 +187,10 @@ def predict_2d(vis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
 
     gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
+        from rascil.processing_components.griddata.kernels import (
+            create_pswf_convolutionfunction,
+        )
+
         gcf, cf = create_pswf_convolutionfunction(
             model,
             support=get_parameter(kwargs, "support", 8),
@@ -246,6 +246,10 @@ def invert_2d(
 
     gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
+        from rascil.processing_components.griddata.kernels import (
+            create_pswf_convolutionfunction,
+        )
+
         gcfcf = functools.partial(
             create_pswf_convolutionfunction,
             support=get_parameter(kwargs, "support", 8),
@@ -350,26 +354,6 @@ def fill_blockvis_for_psf(svis):
         )
 
     return svis
-
-
-def predict_skycomponent_visibility(
-    vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]]
-) -> BlockVisibility:
-    """Predict the visibility from a Skycomponent, add to existing visibility, for BlockVisibility
-
-    Now replaced by dft_skycomponent_visibility
-
-    :param vis: BlockVisibility
-    :param sc: Skycomponent or list of SkyComponents
-    :return: BlockVisibility or BlockVisibility
-    """
-
-    log.warning(
-        "predict_skycomponent_visibility: deprecated - please use dft_skycomponent_visibility"
-    )
-    from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
-
-    return dft_skycomponent_visibility(vis, sc)
 
 
 def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:

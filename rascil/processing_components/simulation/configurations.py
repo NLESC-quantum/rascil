@@ -373,6 +373,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
         LOWBD2
         LOWBD2-core
         LOW == LOWR3
+        LOW_AA0.5
         MID == MIDR5
         MEERKAT+
         ASKAP
@@ -380,7 +381,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
         VLAA
         VLAA_north
 
-    :param name: name of Configuration MID, LOW, LOFAR, VLAA, ASKAP
+    :param name: name of Configuration e.g. MID, LOW, LOFAR, VLAA, ASKAP
     :param rmax: Maximum distance of station from the average (m)
     :return:
 
@@ -457,6 +458,49 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             ecef=True,
             **kwargs
         )
+    elif name == "LOW-AA0.5":
+        location = low_location
+        log.debug(
+            "create_named_configuration: %s\n\t%s\n\t%s"
+            % (name, location.geocentric, location.geodetic)
+        )
+        fc = create_configuration_from_LLAfile(
+            antfile=rascil_data_path(
+                "configurations/LOW_SKA-TEL-SKO-0000422_Rev3_AA0.5.txt"
+            ),
+            location=location,
+            mount="XY",
+            names="LOW_AA0.5_%d",
+            vp_type="LOW",
+            diameter=38.0,
+            alt=300.0,
+            name=name,
+            ecef=True,
+            **kwargs
+        )
+        names = [
+            "S8‐1",
+            "S8‐2",
+            "S8‐3",
+            "S8‐4",
+            "S8‐5",
+            "S8‐6",
+            "S9‐1",
+            "S9‐2",
+            "S9‐3",
+            "S9‐4",
+            "S9‐5",
+            "S9‐6",
+            "S10‐1",
+            "S10‐2",
+            "S10‐3",
+            "S10‐4",
+            "S10‐5",
+            "S10‐6",
+        ]
+        fc["names"].data = names
+        fc = fc.sel({"id": [3, 4, 8, 11, 12, 16]})
+
     elif (name == "MID") or (name == "MIDR5"):
         location = mid_location
         log.debug(
@@ -568,10 +612,12 @@ def select_configuration(config, names=None):
     if names is None:
         return config
 
+    names = numpy.array(names)
     ind = []
-    for iname, name in enumerate(config.names):
-        if name in names:
-            ind.append(iname)
+    for iname, name in enumerate(config.names.data):
+        for aname in names:
+            if aname.strip() == name.strip():
+                ind.append(iname)
 
     assert len(ind) > 0, "No antennas selected using names {}".format(names)
 

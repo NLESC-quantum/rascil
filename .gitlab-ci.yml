@@ -62,8 +62,7 @@ test:
     - mkdir -p test_results
   script:
 #    - PYTHONPATH=`pwd` HOME=`pwd` make test
-    - HOME=`pwd` py.test tests/apps/test_rascil_advise.py --verbose
-    - gdb --args python3 -c "import sys, numpy; print(numpy.__version__, sys.version)"
+    - HOME=`pwd` py.test tests/workflows/test_voltage_patterns_pol_vis_rsexecute.py --verbose
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:

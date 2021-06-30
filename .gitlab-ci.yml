@@ -54,14 +54,16 @@ test:
   stage: test
   before_script:
     - apt-get update
-    - apt-get -y install rsync ca-certificates pybind11-dev
+    - apt-get -y install rsync ca-certificates pybind11-dev gdb
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
     - mkdir -p /usr/share/casacore/data/
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
     - mkdir -p test_results
   script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make test
+#    - PYTHONPATH=`pwd` HOME=`pwd` make test
+    - HOME=`pwd` py.test tests/apps/test_rascil_advise.py --verbose
+    - gdb --args python3 -c "import sys, numpy; print(numpy.__version__, sys.version)"
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:

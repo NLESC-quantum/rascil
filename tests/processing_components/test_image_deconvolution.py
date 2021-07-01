@@ -18,7 +18,9 @@ from rascil.processing_components.skycomponent.operations import restore_skycomp
 
 from rascil.processing_components import (
     deconvolve_cube,
+    deconvolve_list,
     restore_cube,
+    restore_list,
     fit_psf,
     create_pb,
 )
@@ -105,6 +107,15 @@ class TestImageDeconvolution(unittest.TestCase):
         )
         if self.persist:
             export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
+
+    def test_restore_list(self):
+        self.model["pixels"].data[0, 0, 256, 256] = 1.0
+        self.cmodel = restore_list([self.model], [self.psf])[0]
+        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 1.0) < 1e-7, numpy.max(
+            self.cmodel["pixels"].data
+        )
+        if self.persist:
+            export_image_to_fits(self.cmodel, "%s/test_restore_list.fits" % (self.dir))
 
     def test_restore_clean_beam(self):
         """Test restoration with specified beam beam

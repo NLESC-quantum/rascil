@@ -153,6 +153,9 @@ def image_scatter(im: Image, dim="frequency", subimages=None) -> List[Image]:
     See also
         :py:func:`rascil.processing_components.image.iterators.image_channel_iter`
     """
+    if im is None:
+        return None
+
     return [r[1] for r in im.groupby_bins(dim, bins=subimages, squeeze=False)]
 
 

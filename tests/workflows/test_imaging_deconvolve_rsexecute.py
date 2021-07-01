@@ -27,6 +27,7 @@ from rascil.processing_components import (
     smooth_image,
     create_pb,
     qa_image,
+    image_gather_channels,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import (
@@ -220,11 +221,11 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             empty=self.model_imagelist,
         )
 
-        centre = len(restored_list) // 2
-        restored = rsexecute.compute(restored_list, sync=True)[centre]
+        restored = rsexecute.compute(restored_list, sync=True)
+        restored = image_gather_channels(restored)
 
         self.save_and_check(
-            29.900555425986333, -2.388388683540972, restored, "mmclean_facets"
+            34.025081369372046, -3.0862288540801703, restored, "mmclean"
         )
 
     def test_deconvolve_and_restore_cube_msclean(self):
@@ -271,10 +272,10 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             empty=self.model_imagelist,
         )
 
-        centre = len(restored_list) // 2
-        restored = rsexecute.compute(restored_list, sync=True)[centre]
+        restored = rsexecute.compute(restored_list, sync=True)
+        restored = image_gather_channels(restored)
 
-        self.save_and_check(29.88477591528865, -2.401360614574868, restored, "msclean")
+        self.save_and_check(33.989223196919845, -3.376259696305599, restored, "msclean")
 
     def test_deconvolve_and_restore_cube_mmclean_facets(self):
         self.actualSetUp(add_errors=True)
@@ -324,16 +325,18 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             empty=self.model_imagelist,
         )
 
-        centre = len(restored_list) // 2
-        restored = rsexecute.compute(restored_list, sync=True)[centre]
+        restored = rsexecute.compute(restored_list, sync=True)
+        restored = image_gather_channels(restored)
+
         self.save_and_check(
-            29.839788390450003, -2.464580888159162, restored, "mmclean_facets"
+            34.2025966873645, -3.8007230968610055, restored, "mmclean_facets"
         )
 
     def save_and_check(self, flux_max, flux_min, restored, tag):
         if self.persist:
             export_image_to_fits(
-                restored, f"{self.dir}/test_imaging_rsexecute_{tag}_restored.fits"
+                restored,
+                f"{self.dir}/test_imaging_deconvolve_rsexecute_{tag}_restored.fits",
             )
         qa = qa_image(restored)
         numpy.testing.assert_allclose(

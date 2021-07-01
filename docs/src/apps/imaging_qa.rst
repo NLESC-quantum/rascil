@@ -17,6 +17,7 @@ and check with the original inputs. Currently it features the following:
   - Finds sources above a certain threshold and outputs the catalogue (in CSV, FITS and skycomponents format). For multi-frequency images, the source detection can be performed on the central channel or average over all channels. 
   - Produces image statistics and diagnostic plots including: running mean plots of the residual, restored, background and sources and a histogram with fitted Gaussian and power spectrum of the residual are also plotted.
   - Optional: Read in the sensitivity image and apply a primary beam correction to the fluxes.
+  - Optional: Estimate the spectral index by reading in frequency moment images (in FITS format) containing higher order Taylor terms. 
   - Optional: compares with input source catalogue : takes hdf5 and txt format. The source input should has columns of "RA(deg), Dec(deg), FluxI(Jy), FluxQ(Jy), FluxU(Jy), FluxV(Jy), Ref. Freq.(Hz), Spectral Index".
   - Optional: plot the comparison and error of positions and fluxes for input and output source catalogue.
 

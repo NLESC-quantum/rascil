@@ -29,6 +29,7 @@ from rascil.processing_components import (
     image_gather_channels,
     create_calibration_controls,
     advise_wide_field,
+    calculate_image_taylor_terms,
 )
 
 from rascil.processing_components.util.performance import (
@@ -381,7 +382,7 @@ def cip(args, bvis_list, model_list, msname, clean_beam=None):
     log.info("rascil.imager.cip: Finished compute of continuum imaging pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_cip".format(args.clean_nmoment))
-    return write_results(imagename, result, args.performance_file)
+    return write_results(imagename, result, args.performance_file, args)
 
 
 def perf_graph(result, name, start, performance_file):
@@ -394,13 +395,14 @@ def perf_graph(result, name, start, performance_file):
     performance_store_dict(performance_file, "graph", graph)
 
 
-def write_results(imagename, result, performance_file):
+def write_results(imagename, result, performance_file, args):
     """Write the results out to files
 
     :param imagename: Root of image names
     :param result: Set of results i.e. deconvolved, residual, restored, skymodel
     :param performance_file: Name of performance file
-    :return:
+    :param args: command line parameters
+    :return: Names of output files
     """
     residual, restored, skymodel = result
 
@@ -414,23 +416,33 @@ def write_results(imagename, result, performance_file):
     plt.show(block=False)
     deconvolvedname = imagename + "_deconvolved.fits"
     export_image_to_fits(deconvolved_image, deconvolvedname)
-    del deconvolved_image
 
     skymodelname = imagename + "_skymodel.hdf"
     export_skymodel_to_hdf5(skymodel, skymodelname)
     del skymodel
 
-    if isinstance(restored, list):
+    if args.clean_restored_output == "moments":
+        log.info("Writing restored image as Taylor terms cube centred at mid-frequency")
+        performance_qa_image(performance_file, "restored_moments", restored, mode="a")
+        restored_taylor_terms = calculate_image_taylor_terms(
+            restored, deconvolved_image
+        )
+        for taylor, taylorimage in enumerate(restored_taylor_terms):
+            taylorfile = f"{imagename}_restored_Taylor{taylor}.fits"
+            export_image_to_fits(taylorimage, taylorfile)
+        restoredname = f"{imagename}_restored_Taylor0.fits"
+
+    elif args.clean_restored_output == "integrated":
+        log.info("Writing restored image as single plane at mid-frequency")
+        restoredname = imagename + "_restored_centre.fits"
+        performance_qa_image(performance_file, "restored_centre", restored, mode="a")
+        export_image_to_fits(restored, restoredname)
+    else:
         # This is the case where we have a list of restored images
         restored = image_gather_channels(restored)
         performance_qa_image(performance_file, "restored", restored, mode="a")
         log.info("Writing restored image as spectral cube")
         restoredname = imagename + "_restored.fits"
-        export_image_to_fits(restored, restoredname)
-    else:
-        log.info("Writing restored image as single plane at mid-frequency")
-        restoredname = imagename + "_restored_centre.fits"
-        performance_qa_image(performance_file, "restored_centre", restored, mode="a")
         export_image_to_fits(restored, restoredname)
 
     log.info(qa_image(restored, context="Restored"))
@@ -524,7 +536,7 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
 
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
     return write_results(
-        imagename, (residual, restored, skymodel), args.performance_file
+        imagename, (residual, restored, skymodel), args.performance_file, args
     )
 
 

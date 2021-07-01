@@ -63,7 +63,6 @@ test:
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
-#    - HOME=`pwd` py.test tests/workflows/test_voltage_patterns_pol_vis_rsexecute.py --verbose
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:

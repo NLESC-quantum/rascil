@@ -38,7 +38,6 @@ linting:
   stage: linting
   before_script:
     - pip3 install -r requirements-test.txt
-    - pip3 install -r requirements.txt
     - pip3 install black
   script:
     - make lint
@@ -52,6 +51,8 @@ test:
   except:
     - schedules
   stage: test
+  tags:
+    - k8srunner
   before_script:
     - apt-get update
     - apt-get -y install rsync ca-certificates pybind11-dev gdb
@@ -61,8 +62,8 @@ test:
     - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
     - mkdir -p test_results
   script:
-#    - PYTHONPATH=`pwd` HOME=`pwd` make test
-    - HOME=`pwd` py.test tests/workflows/test_voltage_patterns_pol_vis_rsexecute.py --verbose
+    - PYTHONPATH=`pwd` HOME=`pwd` make test
+#    - HOME=`pwd` py.test tests/workflows/test_voltage_patterns_pol_vis_rsexecute.py --verbose
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:

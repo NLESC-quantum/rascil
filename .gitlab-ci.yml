@@ -51,11 +51,9 @@ test:
   except:
     - schedules
   stage: test
-  tags:
-    - k8srunner
   before_script:
     - apt-get update
-    - apt-get -y install rsync ca-certificates pybind11-dev gdb
+    - apt-get -y install rsync ca-certificates pybind11-dev
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
     - mkdir -p /usr/share/casacore/data/

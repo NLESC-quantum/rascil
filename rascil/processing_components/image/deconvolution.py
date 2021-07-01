@@ -43,7 +43,7 @@ from astropy.modeling import models, fitting
 import numpy
 from astropy.convolution import Gaussian2DKernel, convolve_fft
 
-from processing_components.image.operations import (
+from rascil.processing_components.image.operations import (
     convert_clean_beam_to_degrees,
     convert_clean_beam_to_pixels,
 )
@@ -56,7 +56,7 @@ from rascil.processing_components.arrays.cleaners import (
     msclean,
     msmfsclean,
 )
-from processing_components.image.taylor_terms import (
+from rascil.processing_components.image.taylor_terms import (
     calculate_image_list_frequency_moments,
     calculate_image_list_from_frequency_taylor_terms,
 )

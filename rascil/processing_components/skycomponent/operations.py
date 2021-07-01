@@ -724,7 +724,9 @@ def restore_skycomponent(
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
     pixlocs = skycoord_to_pixel(skycoords, im.image_acc.wcs, origin=0, mode="wcs")
 
-    from processing_components.image.operations import convert_clean_beam_to_pixels
+    from rascil.processing_components.image.operations import (
+        convert_clean_beam_to_pixels,
+    )
 
     beam_pixels = convert_clean_beam_to_pixels(im, clean_beam)
 

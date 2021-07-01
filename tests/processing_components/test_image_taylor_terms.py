@@ -7,7 +7,7 @@ import unittest
 
 import numpy
 
-from processing_components.image.taylor_terms import (
+from rascil.processing_components.image.taylor_terms import (
     calculate_image_frequency_moments,
     calculate_image_from_frequency_taylor_terms,
 )

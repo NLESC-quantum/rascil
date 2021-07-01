@@ -216,7 +216,7 @@ def calculate_image_list_frequency_moments(
 
 
 def calculate_image_list_from_frequency_taylor_terms(
-    im: Image, moment_image: Image, reference_frequency=None
+    im_list: List[Image], moment_image: Image, reference_frequency=None
 ) -> List[Image]:
     """Calculate image list from frequency weighted moments
 
@@ -227,21 +227,17 @@ def calculate_image_list_from_frequency_taylor_terms(
     :param im: Image cube to be reconstructed
     :param moment_image: Moment cube (constructed using calculate_image_frequency_moments)
     :param reference_frequency: Reference frequency (default None uses average)
-    :return: list of reconstructed image
+    :return: list of reconstructed images
     """
     # assert isinstance(im, Image)
-    nchan, npol, ny, nx = im["pixels"].data.shape
+    nchan = len(im_list)
     nmoment, mnpol, mny, mnx = moment_image["pixels"].data.shape
     assert nmoment > 0
 
-    assert npol == mnpol
-    assert ny == mny
-    assert nx == mnx
-
-    # assert moment_image.wcs.wcs.ctype[3] == 'MOMENT', "Second image should be a moment image"
+    frequency = numpy.array([d.frequency.data[0] for d in im_list])
 
     if reference_frequency is None:
-        reference_frequency = numpy.average(im.frequency.data)
+        reference_frequency = numpy.average(frequency)
     log.debug(
         "calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)"
         % (1e-6 * reference_frequency)
@@ -249,18 +245,18 @@ def calculate_image_list_from_frequency_taylor_terms(
 
     newims = list()
     for chan in range(nchan):
-        newim_data = numpy.zeros_like(im["pixels"].data[...])
+        newim_data = numpy.zeros_like(im_list[chan]["pixels"].data[...])
         for moment in range(nmoment):
             weight = numpy.power(
-                (im.frequency[chan].data - reference_frequency) / reference_frequency,
+                (frequency[chan] - reference_frequency) / reference_frequency,
                 moment,
             )
             newim_data[0, ...] += moment_image["pixels"].data[moment, ...] * weight
 
         newim = create_image_from_array(
             newim_data,
-            wcs=im.image_acc.wcs,
-            polarisation_frame=im.image_acc.polarisation_frame,
+            wcs=im_list[chan].image_acc.wcs,
+            polarisation_frame=im_list[chan].image_acc.polarisation_frame,
         )
 
         newims.append(newim)

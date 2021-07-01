@@ -15,7 +15,9 @@ import logging
 
 import numpy
 
-from processing_components.image.taylor_terms import calculate_image_frequency_moments
+from rascil.processing_components.image.taylor_terms import (
+    calculate_image_frequency_moments,
+)
 from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.processing_components.imaging import normalise_sumwt
 from rascil.processing_components.imaging import (
@@ -152,36 +154,15 @@ def threshold_list(
     """
     peak = 0.0
     for i, result in enumerate(imagelist):
-        if use_moment0:
-            moments = calculate_image_frequency_moments(result)
-            this_peak = numpy.max(
-                numpy.abs(moments["pixels"].data[0, ...] / result["pixels"].shape[0])
-            )
-            peak = max(peak, this_peak)
-            log.info(
-                "threshold_list: using moment 0, sub_image %d, peak = %f,"
-                % (i, this_peak)
-            )
-        else:
-            ref_chan = result["pixels"].data.shape[0] // 2
-            this_peak = numpy.max(numpy.abs(result["pixels"].data[ref_chan]))
-            peak = max(peak, this_peak)
-            log.info(
-                "threshold_list: using refchan %d , sub_image %d, peak = %f,"
-                % (ref_chan, i, this_peak)
-            )
+        this_peak = numpy.max(numpy.abs(result["pixels"].data[0]))
+        peak = max(peak, this_peak)
+        log.info("threshold_list: sub_image %d, peak = %f," % (i, this_peak))
 
     actual = max(peak * fractional_threshold, threshold)
 
-    if use_moment0:
-        log.info(
-            "threshold_list %s: Global peak in moment 0 = %.6f, sub-image clean threshold will be %.6f"
-            % (prefix, peak, actual)
-        )
-    else:
-        log.info(
-            "threshold_list %s: Global peak = %.6f, sub-image clean threshold will be %.6f"
-            % (prefix, peak, actual)
-        )
+    log.info(
+        "threshold_list %s: Global peak = %.6f, sub-image clean threshold will be %.6f"
+        % (prefix, peak, actual)
+    )
 
     return actual

@@ -659,10 +659,10 @@ def mmclean_kernel_list(
         % prefix
     )
     comp_list = calculate_image_list_from_frequency_taylor_terms(
-        dirty_list[0], comp_taylor
+        dirty_list, comp_taylor
     )
     residual_list = calculate_image_list_from_frequency_taylor_terms(
-        dirty_list[0], residual_taylor
+        dirty_list, residual_taylor
     )
     return comp_list, residual_list
 

@@ -26,6 +26,7 @@ from rascil.processing_components import (
 from rascil.processing_components.image.operations import (
     export_image_to_fits,
     calculate_image_frequency_moments,
+    calculate_image_taylor_terms,
     calculate_image_from_frequency_moments,
     add_image,
     qa_image,
@@ -245,20 +246,23 @@ class TestImage(unittest.TestCase):
     def test_calculate_image_frequency_moments(self):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
         original_cube = create_low_test_image_from_gleam(
-            npixel=512, cellsize=0.0001, frequency=frequency, flux_limit=1.0
+            npixel=512, cellsize=0.001, frequency=frequency, flux_limit=1.0
         )
+        original_cube = smooth_image(original_cube, width=1.0)
+
         if self.persist:
             export_image_to_fits(
-                original_cube, fitsfile="%s/test_moments_cube.fits" % (self.dir)
+                original_cube,
+                fitsfile="%s/test_moments_original_cube.fits" % (self.dir),
             )
-        cube = create_empty_image_like(original_cube)
-        moment_cube = calculate_image_frequency_moments(cube, nmoment=3)
-        print(moment_cube.image_acc.wcs)
+        moment_cube = calculate_image_frequency_moments(original_cube, nmoment=3)
         if self.persist:
             export_image_to_fits(
                 moment_cube, fitsfile="%s/test_moments_moment_cube.fits" % (self.dir)
             )
-        reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)
+        reconstructed_cube = calculate_image_from_frequency_moments(
+            original_cube, moment_cube
+        )
         print(reconstructed_cube.image_acc.wcs)
         if self.persist:
             export_image_to_fits(
@@ -268,33 +272,39 @@ class TestImage(unittest.TestCase):
         error = numpy.std(
             reconstructed_cube["pixels"].data - original_cube["pixels"].data
         )
-        assert error < 0.2, error
+        assert error < 3.4, error
 
-    def test_calculate_image_frequency_moments_1(self):
+    def test_calculate_image_taylor_terms(self):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
         original_cube = create_low_test_image_from_gleam(
-            npixel=512, cellsize=0.0001, frequency=frequency, flux_limit=1.0
+            npixel=512,
+            cellsize=0.001,
+            frequency=frequency,
+            flux_limit=1.0,
+            applybeam=True,
+        )
+        original_cube = smooth_image(original_cube, width=1.0)
+        if self.persist:
+            export_image_to_fits(
+                original_cube,
+                fitsfile="%s/test_taylor_terms_original.fits" % (self.dir),
+            )
+        moment_cube = calculate_image_frequency_moments(original_cube, nmoment=3)
+        if self.persist:
+            export_image_to_fits(
+                moment_cube,
+                fitsfile="%s/test_taylor_terms_moments_cube.fits" % (self.dir),
+            )
+        taylor_term_images = calculate_image_taylor_terms(
+            moment_cube,
+            original_cube,
         )
         if self.persist:
-            export_image_to_fits(
-                original_cube, fitsfile="%s/test_moments_1_cube.fits" % (self.dir)
-            )
-        cube = create_empty_image_like(original_cube)
-        moment_cube = calculate_image_frequency_moments(cube, nmoment=1)
-        if self.persist:
-            export_image_to_fits(
-                moment_cube, fitsfile="%s/test_moments_1_moment_cube.fits" % (self.dir)
-            )
-        reconstructed_cube = calculate_image_from_frequency_moments(cube, moment_cube)
-        if self.persist:
-            export_image_to_fits(
-                reconstructed_cube,
-                fitsfile="%s/test_moments_1_reconstructed_cube.fits" % (self.dir),
-            )
-        error = numpy.std(
-            reconstructed_cube["pixels"].data - original_cube["pixels"].data
-        )
-        assert error < 0.2
+            for moment, moment_image in enumerate(taylor_term_images):
+                export_image_to_fits(
+                    moment_image,
+                    fitsfile=f"{self.dir}/test_taylor_terms_term{moment}_plane.fits",
+                )
 
     def test_create_w_term_image(self):
         phasecentre = SkyCoord(

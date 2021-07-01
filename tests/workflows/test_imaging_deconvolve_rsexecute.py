@@ -35,6 +35,7 @@ from rascil.processing_components.simulation import (
     create_unittest_components,
     insert_unittest_errors,
 )
+from rascil.workflows import remove_sumwt
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
 
 log = logging.getLogger("rascil-logger")
@@ -143,11 +144,12 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
 
             self.cmodel = smooth_image(model)
             export_image_to_fits(
-                model, "%s/test_imaging_rsexecute_deconvolved_model.fits" % self.dir
+                model,
+                f"{self.dir}/test_imaging_rsexecute_deconvolved_model.fits",
             )
             export_image_to_fits(
                 self.cmodel,
-                "%s/test_imaging_rsexecute_deconvolved_cmodel.fits" % self.dir,
+                f"{self.dir}/test_imaging_rsexecute_deconvolved_cmodel.fits",
             )
 
         if add_errors:
@@ -203,14 +205,12 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             threshold=0.1,
             gain=0.7,
         )
-        deconvolved = rsexecute.persist(deconvolved)
         deconvolved = rsexecute.compute(deconvolved, sync=True)
 
         if self.persist:
             export_image_to_fits(
                 deconvolved[0],
-                "%s/test_imaging_%s_deconvolve_spectral.fits"
-                % (self.dir, rsexecute.type()),
+                f"{self.dir}/test_imaging_{rsexecute.type()}_deconvolve_spectral.fits",
             )
 
         qa = qa_image(deconvolved[0])
@@ -250,11 +250,9 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             threshold=0.01,
             gain=0.7,
         )
-        dec_imagelist = rsexecute.persist(dec_imagelist)
         residual_imagelist = residual_list_rsexecute_workflow(
             self.vis_list, model_imagelist=dec_imagelist, context="ng"
         )
-        residual_imagelist = rsexecute.persist(residual_imagelist)
         restored_list = restore_list_rsexecute_workflow(
             model_imagelist=dec_imagelist,
             psf_imagelist=psf_imagelist,
@@ -332,8 +330,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 restored,
-                "%s/test_imaging_%s_overlap_mmclean_restored.fits"
-                % (self.dir, rsexecute.type()),
+                f"{self.dir}/test_imaging{rsexecute.type()}_overlap_mmclean_restored.fits",
             )
 
         qa = qa_image(restored)

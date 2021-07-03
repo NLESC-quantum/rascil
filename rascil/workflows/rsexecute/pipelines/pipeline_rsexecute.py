@@ -58,6 +58,9 @@ def ical_list_rsexecute_workflow(
     psf_imagelist = invert_list_rsexecute_workflow(
         vis_list, model_imagelist, context=context, dopsf=True, **kwargs
     )
+    psf_imagelist_trimmed = [
+        rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
+    ]
 
     model_vislist = [
         rsexecute.execute(copy_visibility, nout=1)(v, zero=True) for v in vis_list
@@ -118,10 +121,13 @@ def ical_list_rsexecute_workflow(
             facets=facets,
             **kwargs,
         )
+    residual_imagelist_trimmed = [
+        rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+    ]
 
     deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
-        residual_imagelist,
-        psf_imagelist,
+        residual_imagelist_trimmed,
+        psf_imagelist_trimmed,
         model_imagelist,
         prefix=f"{pipeline_name} cycle 0",
         **kwargs,
@@ -165,9 +171,12 @@ def ical_list_rsexecute_workflow(
                     **kwargs,
                 )
 
+            residual_imagelist_trimmed = [
+                rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+            ]
             deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
-                residual_imagelist,
-                psf_imagelist,
+                residual_imagelist_trimmed,
+                psf_imagelist_trimmed,
                 deconvolve_model_imagelist,
                 prefix=f"{pipeline_name} cycle {cycle+1}",
                 **kwargs,
@@ -219,6 +228,9 @@ def continuum_imaging_list_rsexecute_workflow(
     psf_imagelist = invert_list_rsexecute_workflow(
         vis_list, model_imagelist, context=context, dopsf=True, **kwargs
     )
+    psf_imagelist_trimmed = [
+        rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
+    ]
 
     residual_imagelist = residual_list_rsexecute_workflow(
         vis_list,
@@ -228,10 +240,13 @@ def continuum_imaging_list_rsexecute_workflow(
         facets=facets,
         **kwargs,
     )
+    residual_imagelist_trimmed = [
+        rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+    ]
 
     deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
-        residual_imagelist,
-        psf_imagelist,
+        residual_imagelist_trimmed,
+        psf_imagelist_trimmed,
         model_imagelist,
         prefix="cip cycle 0",
         **kwargs,
@@ -248,9 +263,13 @@ def continuum_imaging_list_rsexecute_workflow(
                 facets=facets,
                 **kwargs,
             )
+            residual_imagelist_trimmed = [
+                rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+            ]
+
             deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
-                residual_imagelist,
-                psf_imagelist,
+                residual_imagelist_trimmed,
+                psf_imagelist_trimmed,
                 deconvolve_model_imagelist,
                 prefix=prefix,
                 **kwargs,
@@ -264,6 +283,7 @@ def continuum_imaging_list_rsexecute_workflow(
         facets=facets,
         **kwargs,
     )
+
     output = get_parameter(kwargs, "restored_output", "list")
     if output == "integrated":
         restored_imagelist = restore_centre_rsexecute_workflow(

@@ -573,7 +573,7 @@ def deconvolve_list_rsexecute_workflow(
         )
         return spsf
 
-    psf_list_trimmed = [
+    psf_list_extracted = [
         rsexecute.execute(imaging_extract_psf)(p, deconvolve_facets) for p in psf_list
     ]
 
@@ -603,7 +603,7 @@ def deconvolve_list_rsexecute_workflow(
     scattered_results_list = [
         deconvolve_list_singlefacet_rsexecute_workflow(
             d_list,
-            psf_list_trimmed,
+            psf_list_extracted,
             m_list,
             sensitivity_list=sens_list,
             prefix=prefix,

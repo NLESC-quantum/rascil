@@ -61,6 +61,9 @@ def ical_skymodel_list_rsexecute_workflow(
     psf_imagelist = invert_list_rsexecute_workflow(
         vis_list, model_imagelist, context=context, dopsf=True, **kwargs
     )
+    psf_imagelist_trimmed = [
+        rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
+    ]
 
     # Create a list of copied input visibilities
     model_vislist = [
@@ -132,9 +135,12 @@ def ical_skymodel_list_rsexecute_workflow(
             **kwargs,
         )
 
+    residual_imagelist_trimmed = [
+        rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+    ]
     skymodel_list = deconvolve_skymodel_list_rsexecute_workflow(
-        residual_imagelist,
-        psf_imagelist,
+        residual_imagelist_trimmed,
+        psf_imagelist_trimmed,
         skymodel_list,
         prefix=f"{pipeline_name} cycle 0",
         fit_skymodel=True,
@@ -189,10 +195,13 @@ def ical_skymodel_list_rsexecute_workflow(
                     **kwargs,
                 )
 
+            residual_imagelist_trimmed = [
+                rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+            ]
             # Deconvolve to get an updated skymodel
             skymodel_list = deconvolve_skymodel_list_rsexecute_workflow(
-                residual_imagelist,
-                psf_imagelist,
+                residual_imagelist_trimmed,
+                psf_imagelist_trimmed,
                 skymodel_list,
                 prefix=f"{pipeline_name} cycle {cycle + 1}",
                 **kwargs,

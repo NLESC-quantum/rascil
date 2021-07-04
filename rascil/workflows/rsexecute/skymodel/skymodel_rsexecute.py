@@ -564,7 +564,7 @@ def deconvolve_skymodel_list_rsexecute_workflow(
 
         skymodel_list = [
             rsexecute.execute(skymodel_update_components, nout=1)(
-                skymodel_list[i], dirty[0]
+                skymodel_list[i], dirty
             )
             for i, dirty in enumerate(dirty_image_list)
         ]

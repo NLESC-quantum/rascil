@@ -6,7 +6,7 @@
 #
 alabaster==0.7.12
     # via sphinx
-astroid==2.5.6
+astroid==2.6.2
     # via pylint
 attrs==21.2.0
     # via pytest
@@ -56,7 +56,7 @@ markupsafe==2.0.1
     #   jinja2
 mccabe==0.6.1
     # via pylint
-packaging==20.9
+packaging==21.0
     # via
     #   pytest
     #   sphinx
@@ -70,7 +70,7 @@ pygments==2.9.0
     # via
     #   -r requirements-test.in
     #   sphinx
-pylint==2.8.3
+pylint==2.9.3
     # via
     #   -r requirements-test.in
     #   pylint-junit
@@ -153,12 +153,14 @@ tornado==6.1
 typed-ast==1.4.3
     # via astroid
 typing-extensions==3.10.0.0
-    # via importlib-metadata
+    # via
+    #   astroid
+    #   importlib-metadata
 urllib3==1.26.6
     # via requests
 wrapt==1.12.1
     # via astroid
-zipp==3.4.1
+zipp==3.5.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:

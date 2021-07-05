@@ -153,7 +153,7 @@ def performance_dask_configuration(performance_file, rsexec, indent=2, mode="a")
                     "client": str(rsexec.client),
                     "nworkers": len(workers),
                     "nthreads": int(
-                        numpy.sum([workers[worker]["nthreads"] for worker in workers])
+                        numpy.sum([workers[worker].nthreads for worker in workers])
                     ),
                 }
         else:

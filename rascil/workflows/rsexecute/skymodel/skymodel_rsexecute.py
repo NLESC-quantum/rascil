@@ -2,7 +2,6 @@ __all__ = [
     "predict_skymodel_list_rsexecute_workflow",
     "restore_skymodel_list_rsexecute_workflow",
     "restore_centre_skymodel_list_rsexecute_workflow",
-    "restore_moments_skymodel_list_rsexecute_workflow",
     "invert_skymodel_list_rsexecute_workflow",
     "deconvolve_skymodel_list_rsexecute_workflow",
 ]
@@ -11,7 +10,6 @@ import logging
 
 import numpy
 
-from rascil.data_models import get_parameter
 from rascil.processing_components import (
     copy_skycomponent,
     apply_beam_to_skycomponent,
@@ -19,8 +17,6 @@ from rascil.processing_components import (
     extract_skycomponents_from_skymodel,
     image_scatter_facets,
     image_gather_facets,
-    calculate_image_frequency_moments,
-    image_gather_channels,
 )
 from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import restore_cube, fit_psf
@@ -309,51 +305,6 @@ def restore_centre_skymodel_list_rsexecute_workflow(
     residual = sum_invert_results_rsexecute(residual_imagelist)[0]
     restored = rsexecute.execute(skymodel_restore, nout=1)(
         skymodel_list[centre], residual, clean_beam
-    )
-
-    return restored
-
-
-def restore_moments_skymodel_list_rsexecute_workflow(
-    skymodel_list, psf_imagelist, residual_imagelist=None, clean_beam=None, **kwargs
-):
-    """Create a graph to calculate the restored skymodel for a selected set of moments
-
-    :param skymodel_list: Skymodel (frequency) list (or graph)
-    :param psf_imagelist: PSF (frequency) list (or graph)
-    :param residual_imagelist: Residual (frequency) list (or graph)
-    :param kwargs: Parameters for functions in components
-    :param clean_beam: Clean beam e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
-    :return: list of restored images (or graph)
-    """
-    _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
-
-    # Find the PSF by summing over all channels, fit to this psf
-    if clean_beam is None:
-        psf = sum_invert_results_rsexecute(psf_imagelist)[0]
-        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
-
-    # Add the model over all channels
-    centre = len(skymodel_list) // 2
-
-    nmoment = get_parameter(kwargs, "nmoment", 1)
-
-    def skymodel_restore(sm, resid, cb):
-        frequency_skymodel_image = image_gather_channels([s.image for s in sm])
-        moment_skymodel_image = calculate_image_frequency_moments(
-            frequency_skymodel_image, nmoment=nmoment
-        )
-        frequency_residual_image = image_gather_channels([r[0] for r in resid])
-        moment_residual_image = calculate_image_frequency_moments(
-            frequency_residual_image, nmoment=nmoment
-        )
-        moment_restored_image = restore_cube(
-            moment_skymodel_image, residual=moment_residual_image, clean_beam=cb
-        )
-        return restore_skycomponent(moment_restored_image, sm[centre].components, cb)
-
-    restored = rsexecute.execute(skymodel_restore, nout=1)(
-        skymodel_list, residual_imagelist, clean_beam
     )
 
     return restored

@@ -26,7 +26,6 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import (
     invert_skymodel_list_rsexecute_workflow,
     residual_skymodel_list_rsexecute_workflow,
     restore_skymodel_list_rsexecute_workflow,
-    restore_moments_skymodel_list_rsexecute_workflow,
     restore_centre_skymodel_list_rsexecute_workflow,
     deconvolve_skymodel_list_rsexecute_workflow,
 )
@@ -223,10 +222,6 @@ def ical_skymodel_list_rsexecute_workflow(
         )
     elif output == "list":
         restored_imagelist = restore_skymodel_list_rsexecute_workflow(
-            skymodel_list, psf_imagelist, residual_imagelist, **kwargs
-        )
-    elif output == "moments":
-        restored_imagelist = restore_moments_skymodel_list_rsexecute_workflow(
             skymodel_list, psf_imagelist, residual_imagelist, **kwargs
         )
     else:

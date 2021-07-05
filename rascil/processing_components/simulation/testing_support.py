@@ -496,7 +496,7 @@ def create_low_test_image_from_gleam(
     polarisation_frame=PolarisationFrame("stokesI"),
     cellsize=0.000015,
     frequency=numpy.array([1e8]),
-    channel_bandwidth=None,
+    channel_bandwidth=numpy.array([1e6]),
     phasecentre=None,
     kind="cubic",
     applybeam=False,
@@ -551,13 +551,6 @@ def create_low_test_image_from_gleam(
 
     if polarisation_frame is None:
         polarisation_frame = PolarisationFrame("stokesI")
-
-    if channel_bandwidth is None:
-        nchan = len(frequency)
-        if nchan > 1:
-            channel_bandwidth = numpy.array(nchan * [frequency[1] - frequency[0]])
-        else:
-            channel_bandwidth = numpy.array([1e6])
 
     npol = polarisation_frame.npol
     nchan = len(frequency)

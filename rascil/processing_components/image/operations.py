@@ -33,6 +33,9 @@ import copy
 import logging
 import warnings
 
+from typing import List, Union
+
+
 import numpy
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
@@ -471,7 +474,6 @@ def average_image_over_frequency(im: Image) -> Image:
     # assert isinstance(im, Image)
     assert image_is_canonical(im)
 
-    nchannels = len(im.frequency.data)
     newim_data = numpy.mean(im["pixels"].data, axis=0)[numpy.newaxis, ...]
 
     assert not numpy.isnan(numpy.sum(im["pixels"].data)), "NaNs present in image data"

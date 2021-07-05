@@ -7,6 +7,7 @@ import datetime
 import logging
 import os
 import sys
+import glob
 
 import matplotlib
 
@@ -17,6 +18,7 @@ import pandas as pd
 import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
+from astropy.wcs.utils import skycoord_to_pixel
 
 from rascil.data_models import (
     PolarisationFrame,
@@ -32,6 +34,7 @@ from rascil.processing_components.image.operations import (
     import_image_from_fits,
     export_image_to_fits,
     create_image_from_array,
+    add_image,
 )
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.plot_skycomponent import (
@@ -88,6 +91,14 @@ def cli_parser():
         help="FITS file of the sensitivity image to be read",
     )
     parser.add_argument(
+        "--ingest_fitsname_moment",
+        type=str,
+        default=None,
+        help="FITS file of the frequency moment images to be read \
+		(Note: Use the prefix of the fits files, e.g. if the restored image is test_image_restored.fits \
+		here should input test_image)",
+    )
+    parser.add_argument(
         "--finder_beam_maj",
         type=float,
         default=1.0,
@@ -128,6 +139,12 @@ def cli_parser():
         type=str,
         default="False",
         help="Whether to divide by primary beam after BDSF to correct source flux",
+    )
+    parser.add_argument(
+        "--use_frequency_moment",
+        type=str,
+        default="False",
+        help="Whether to use frequency moment images after BDSF to correct spectral index",
     )
     parser.add_argument(
         "--telescope_model",
@@ -311,8 +328,35 @@ def analyze_image(args):
     else:
         rascil_source_file = args.rascil_source_file
 
+    if args.ingest_fitsname_moment is not None:
+
+        input_image_moment = args.ingest_fitsname_moment + "_Taylor[1-9].fits"
+    else:
+        input_image_moment = args.ingest_fitsname_restored.replace(
+            ".fits", "_Taylor[1-9].fits"
+        )
+
+    moment_images = glob.glob(input_image_moment)
+    log.info("Number of frequency moments image found: {}".format(len(moment_images)))
+
     log.info("Putting sources into skycomponents format.")
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
+
+    # Correct and put into new csv file
+    # Calculate spectral index from frequency moment images
+    if args.use_frequency_moment == "True" and len(moment_images) != 0:
+
+        log.info("Calculate spectral index from frequency moment images.")
+        out = calculate_spec_index_from_moment(out, moment_images)
+
+    # Compensate for primary beam correction
+    # Note this should be applied to source out when it is division, source in when multiplication
+    if args.apply_primary == "True":
+        log.info("Correcting fluxes for primary beam.")
+        telescope = args.telescope_model
+        out = correct_primary_beam(
+            input_image_restored, input_image_sensitivity, out, telescope=telescope
+        )
 
     if args.check_source == "True":
 
@@ -323,13 +367,6 @@ def analyze_image(args):
             orig = read_skycomponent_from_txt(args.input_source_filename, freq)
         else:
             raise FileFormatError("Input file must be of format: hdf5 or txt.")
-
-        # Compensate for primary beam correction
-        if args.apply_primary == "True":
-            telescope = args.telescope_model
-            orig = correct_primary_beam(
-                input_image_restored, input_image_sensitivity, orig, telescope=telescope
-            )
 
         results = check_source(orig, out, args.match_sep)
 
@@ -506,7 +543,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
         direc = SkyCoord(
             ra=row["RA"] * u.deg, dec=row["DEC"] * u.deg, frame="icrs", equinox="J2000"
         )
-        f0 = row["Total_flux"]
+        f0 = row["Peak_flux"]
         if f0 > 0:  # filter out ghost sources
             try:
                 spec_indx = row["Spec_Indx"]
@@ -529,6 +566,89 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     export_skycomponent_to_hdf5(comp, rascil_source_file)
 
     return comp
+
+
+def calculate_spec_index_from_moment(comp_list, moment_images):
+    """
+    Calculate spectral index using frequency moment images.
+
+    :param comp_list: Source list in skycomponents format
+    :param moment_images: Frequency moment images in FITS format
+
+    :return newcomp: New lists of skycomponents with updated spectral index.
+
+    """
+
+    if len(moment_images) == 0:
+        log.info("No moment images found, no csv file written.")
+        return comp_list
+
+    else:
+        moment_data = import_image_from_fits(moment_images[0])
+        if len(moment_images) > 1:
+            for moment_image in moment_images:
+                moment_data_now = import_image_from_fits(moment_image)
+                moment_data = add_image(moment_data, moment_data_now)
+
+        image_frequency = moment_data.frequency.data
+        ras = [comp.direction.ra.degree for comp in comp_list]
+        decs = [comp.direction.dec.degree for comp in comp_list]
+        skycoords = SkyCoord(ras * u.deg, decs * u.deg, frame="icrs")
+        pixlocs = skycoord_to_pixel(
+            skycoords, moment_data.image_acc.wcs, origin=0, mode="wcs"
+        )
+
+        # TODO: Needs update for multiple polarizations
+        nchan = len(comp_list[0].frequency.data)
+        npol = 1
+        freqs = [comp.frequency.data[nchan // 2] for comp in comp_list]
+        central_fluxes = [comp.flux[nchan // 2][0] for comp in comp_list]
+
+        spec_indx = np.zeros(len(comp_list))
+        for icomp, comp in enumerate(comp_list):
+
+            pixloc = (round(pixlocs[0][icomp]), round(pixlocs[1][icomp]))
+
+            if (
+                nchan == len(image_frequency)
+                and np.max(np.abs(comp.frequency.data - image_frequency)) < 1e-7
+            ):
+                flux = moment_data["pixels"].data[nchan // 2, 0, pixloc[1], pixloc[0]]
+                log.debug(
+                    "Taylor flux:{} for skycomponent {}, {}".format(
+                        flux, ras[icomp], decs[icomp]
+                    )
+                )
+                if comp.flux.all() > 0.0:
+                    spec_indx[icomp] = flux / comp.flux[nchan // 2][0]
+            else:
+                spec_indx[icomp] = 0.0
+
+            log.debug("Spectral index calculated is {}".format(spec_indx[icomp]))
+            fluxes = [
+                comp.flux[i][0]
+                * (f / comp.frequency.data[nchan // 2]) ** spec_indx[icomp]
+                for i, f in enumerate(comp.frequency.data)
+            ]
+            flux_array = np.reshape(np.array(fluxes), (nchan, npol))
+            comp.flux = flux_array
+
+        # Write to new csv file
+        ds = pd.DataFrame(
+            {
+                "RA (deg)": ras,
+                "Dec (deg)": decs,
+                "Central freq (Hz)": freqs,
+                "Central flux (Jy)": central_fluxes,
+                "Spectral index": spec_indx,
+            }
+        )
+        csv_name = moment_images[0].replace(".fits", "_corrected.csv")
+        log.info("Writing source data to {}".format(csv_name))
+
+        ds.to_csv(csv_name, index=True)
+
+        return comp_list
 
 
 def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
@@ -596,7 +716,7 @@ def check_source(orig, comp, match_sep):
     for match in matches:
         m_comp = comp[match[0]]
         m_orig = orig[match[1]]
-        log.info(f"Original: {m_orig} Match {m_comp}")
+        log.debug(f"Original: {m_orig} Match {m_comp}")
 
     return matches
 

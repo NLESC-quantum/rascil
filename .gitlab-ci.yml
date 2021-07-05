@@ -38,7 +38,6 @@ linting:
   stage: linting
   before_script:
     - pip3 install -r requirements-test.txt
-    - pip3 install -r requirements.txt
     - pip3 install black
   script:
     - make lint

@@ -36,6 +36,7 @@ from rascil.processing_components.simulation import (
     create_unittest_components,
     insert_unittest_errors,
 )
+from rascil.workflows import remove_sumwt
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
 
 log = logging.getLogger("rascil-logger")

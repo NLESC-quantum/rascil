@@ -585,7 +585,7 @@ def deconvolve_list_rsexecute_workflow(
     # Find the global threshold. This uses the peak in the average on the frequency axis since we
     # want to use it in a stopping criterion in a moment clean
     global_threshold = threshold_list_rsexecute(
-        dirty_list,
+        scattered_facets_dirty_list,
         threshold,
         fractional_threshold,
         prefix=prefix,
@@ -896,8 +896,10 @@ def threshold_list_rsexecute(imagelist, threshold, fractional_threshold, prefix=
     :return:
     """
 
-    def find_peak(i, im):
-        this_peak = numpy.max(numpy.abs(im["pixels"].data[0]))
+    def find_peak(i, im_list):
+        this_peak = numpy.max(
+            [numpy.max(numpy.abs(im["pixels"].data[0])) for im in im_list]
+        )
         log.info("threshold_list_rsexecute: sub_image %d, peak = %f," % (i, this_peak))
         return this_peak
 

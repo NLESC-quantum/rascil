@@ -83,6 +83,8 @@ def simulate_DTV_prop(
         )
     elif len(DTVrange[0]) == 1:
         bchan = DTVrange[0].min()
+        # TODO: line 95 (amp = ..) fails if the index in DTVrange[0] is the last index in frequency,
+        #   and hence echan is set to an index out of range
         echan = DTVrange[0].max() + 1
     else:
         bchan = DTVrange[0].min()
@@ -268,9 +270,9 @@ def check_prop_parms(attenuation_state, beamgain_state, transmitter_list):
                 "location": [115.8605, -31.9505],
                 "power": 50000.0,
                 "height": 175,
+                "freq": 177.5,
+                "bw": 7,
             },
-            "freq": 177.5,
-            "bw": 7,
         }
 
     return attenuation_value, att_context, beamgain_value, bg_context, transmitter_list

@@ -16,6 +16,7 @@ __all__ = [
     "sum_invert_results_rsexecute",
     "sum_predict_results_rsexecute",
     "restore_centre_rsexecute_workflow",
+    "threshold_list_rsexecute",
 ]
 
 import collections
@@ -55,11 +56,11 @@ from rascil.processing_components import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.image import image_gather_channels_rsexecute
+
 from rascil.workflows.shared import (
     imaging_context,
     remove_sumwt,
     sum_predict_results,
-    threshold_list,
     sum_invert_results,
 )
 
@@ -583,7 +584,7 @@ def deconvolve_list_rsexecute_workflow(
 
     # Find the global threshold. This uses the peak in the average on the frequency axis since we
     # want to use it in a stopping criterion in a moment clean
-    global_threshold = rsexecute.execute(threshold_list, nout=1)(
+    global_threshold = threshold_list_rsexecute(
         dirty_list,
         threshold,
         fractional_threshold,
@@ -883,3 +884,35 @@ def sum_invert_results_rsexecute(image_list, split=2):
         return rsexecute.execute(sum_invert_results, nout=2)(result)
     else:
         return rsexecute.execute(sum_invert_results, nout=2)(image_list)
+
+
+def threshold_list_rsexecute(imagelist, threshold, fractional_threshold, prefix=""):
+    """Find actual threshold for list of results
+
+    :param prefix: Prefix in log messages
+    :param imagelist:
+    :param threshold: Absolute threshold
+    :param fractional_threshold: Fractional  threshold
+    :return:
+    """
+
+    def find_peak(i, im):
+        this_peak = numpy.max(numpy.abs(im["pixels"].data[0]))
+        log.info("threshold_list_rsexecute: sub_image %d, peak = %f," % (i, this_peak))
+        return this_peak
+
+    peak_list = [
+        rsexecute.execute(find_peak, nout=1)(i, image)
+        for i, image in enumerate(imagelist)
+    ]
+
+    def find_global(pl):
+        peak = numpy.max(pl)
+        actual = max(peak * fractional_threshold, threshold)
+        log.info(
+            "threshold_list_rsexecute %s: Global peak = %.6f, sub-image clean threshold will be %.6f"
+            % (prefix, peak, actual)
+        )
+        return actual
+
+    return rsexecute.execute(find_global, nout=1)(peak_list)

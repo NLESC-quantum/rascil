@@ -265,7 +265,10 @@ class TestBufferDataModelHelpers(unittest.TestCase):
 
         config = {
             "buffer": {"directory": self.dir},
-            "skymodel": {"name": "test_bufferskymodel.hdf", "data_model": "SkyModel"},
+            "skymodel": {
+                "name": "test_bufferskymodel_no_image.hdf",
+                "data_model": "SkyModel",
+            },
         }
         bdm = BufferSkyModel(config["buffer"], config["skymodel"], sm)
         bdm.sync()
@@ -299,7 +302,10 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         with self.assertRaises(AssertionError):
             config = {
                 "buffer": {"directory": self.dir},
-                "image": {"name": "test_bufferskyimage.hdf", "data_model": "Image"},
+                "image": {
+                    "name": "test_bufferskyimage_assertion.hdf",
+                    "data_model": "Image",
+                },
             }
             bdm = BufferImage(config["buffer"], config["image"], im)
             bdm.sync()

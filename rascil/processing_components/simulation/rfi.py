@@ -253,7 +253,7 @@ def check_prop_parms(attenuation_state, beamgain_state, transmitter_list):
     :return:
     """
     if attenuation_state is None:
-        attenuation_value = 1.0
+        attenuation_value = 175.0#1.0
         att_context = "att_value"
     else:
         attenuation_value = attenuation_state[0]
@@ -336,45 +336,10 @@ def simulate_rfi_block_prop(
 
     for trans in transmitter_list:
 
-        # print('Processing transmitter', trans)
-        emitter_power = transmitter_list[trans]["power"]
-        emitter_location = EarthLocation(
-            lon=transmitter_list[trans]["location"][0],
-            lat=transmitter_list[trans]["location"][1],
-            height=transmitter_list[trans]["height"],
-        )
-        emitter_freq = transmitter_list[trans]["freq"] * 1e06
-        emitter_bw = transmitter_list[trans]["bw"] * 1e06
-
-        attenuation, beamgain = get_file_strings(
-            attenuation_value, att_context, beamgain_value, bg_context, trans
-        )
-
-        # Calculate the power spectral density of the DTV station: Watts/Hz
-        emitter, DTV_range = simulate_DTV_prop(
-            bvis.frequency,
-            bvis.time,
-            power=emitter_power,
-            freq_cen=emitter_freq,
-            bw=emitter_bw,
-            frequency_variable=frequency_variable,
-            time_variable=time_variable,
-        )
-
-        # Calculate the propagators for signals from Perth to the stations in low
-        # These are fixed in time but vary with frequency. The ad hoc attenuation
-        # is set to produce signal roughly equal to noise at LOW
-        propagators = create_propagators_prop(
-            bvis.configuration,
-            bvis.frequency,
-            nants_start=nants_start,
-            station_skip=station_skip,
-            attenuation=attenuation,
-            beamgainval=beamgain,
-            trans_range=DTV_range,
-        )
-        # Now calculate the RFI at the stations, based on the emitter and the propagators
-        rfi_at_station = calculate_rfi_at_station(propagators, emitter)
+        emitter_location, rfi_at_station = rfi_at_station_per_transmitter(att_context, attenuation_value,
+                                                                          beamgain_value, bg_context, bvis,
+                                                                          frequency_variable, nants_start, station_skip,
+                                                                          time_variable, trans, transmitter_list)
 
         # Calculate the rfi correlation using the fringe rotation and the rfi at the station
         # [ntimes, nants, nants, nchan, npol]
@@ -441,3 +406,44 @@ def simulate_rfi_block_prop(
                 bvis["vis"].data[iha, ...] += bvis_data_copy[iha, ...] * phasor
 
     return bvis
+
+
+def rfi_at_station_per_transmitter(att_context, attenuation_value, beamgain_value, bg_context, bvis, frequency_variable,
+                                   nants_start, station_skip, time_variable, trans, transmitter_list):
+    # print('Processing transmitter', trans)
+    emitter_power = transmitter_list[trans]["power"]
+    emitter_location = EarthLocation(
+        lon=transmitter_list[trans]["location"][0],
+        lat=transmitter_list[trans]["location"][1],
+        height=transmitter_list[trans]["height"],
+    )
+    emitter_freq = transmitter_list[trans]["freq"] * 1e06
+    emitter_bw = transmitter_list[trans]["bw"] * 1e06
+    attenuation, beamgain = get_file_strings(
+        attenuation_value, att_context, beamgain_value, bg_context, trans
+    )
+    # Calculate the power spectral density of the DTV station: Watts/Hz
+    emitter, DTV_range = simulate_DTV_prop(
+        bvis.frequency,
+        bvis.time,
+        power=emitter_power,
+        freq_cen=emitter_freq,
+        bw=emitter_bw,
+        frequency_variable=frequency_variable,
+        time_variable=time_variable,
+    )
+    # Calculate the propagators for signals from Perth to the stations in low
+    # These are fixed in time but vary with frequency. The ad hoc attenuation
+    # is set to produce signal roughly equal to noise at LOW
+    propagators = create_propagators_prop(
+        bvis.configuration,
+        bvis.frequency,
+        nants_start=nants_start,
+        station_skip=station_skip,
+        attenuation=attenuation,
+        beamgainval=beamgain,
+        trans_range=DTV_range,
+    )
+    # Now calculate the RFI at the stations, based on the emitter and the propagators
+    rfi_at_station = calculate_rfi_at_station(propagators, emitter)
+    return emitter_location, rfi_at_station

@@ -294,11 +294,11 @@ class TestRFISim(unittest.TestCase):
         assert (bvis["vis"].data[:, :, 4, :] != 0).all()
 
         # checking some values to make sure results don't change
-        # index: time=0, station=1, channel=3, pol=all
+        # index: time=0, baseline=1, channel=3, pol=all
         assert (abs(bvis["vis"].data[0, 1, 3, :]) == 200000000000000016777216.00).all()
-        # index: time=0, station=2, channel=3, pol=all
+        # index: time=0, baseline=2, channel=3, pol=all
         assert (abs(bvis["vis"].data[0, 2, 3, :]) == 199999999999999983222784.00).all()
-        # index: time=4, station=4, channel=4, pol=all
+        # index: time=4, baseline=4, channel=4, pol=all
         assert (abs(bvis["vis"].data[4, 4, 4, :]) == 199999999999999983222784.00).all()
 
 

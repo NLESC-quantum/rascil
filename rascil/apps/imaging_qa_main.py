@@ -385,7 +385,8 @@ def analyze_image(args):
                     out,
                     input_image_restored,
                     args.match_sep,
-                    csv_file=csv_name,
+                    sources_in_file=args.input_source_filename,
+                    sources_out_file=csv_name,
                     flux_limit=args.flux_limit,
                     plot_file=plot_file,
                 )
@@ -773,7 +774,14 @@ def read_skycomponent_from_txt(filename, freq):
 
 
 def plot_errors(
-    orig, comp, input_image, match_sep, csv_file=None, flux_limit=0.0, plot_file=None
+    orig,
+    comp,
+    input_image,
+    match_sep,
+    sources_in_file=None,
+    sources_out_file=None,
+    flux_limit=0.0,
+    plot_file=None,
 ):
     """
     Plot the position and flux errors for source input and output
@@ -782,7 +790,8 @@ def plot_errors(
     :param comp: Output source list in skycomponent format
     :param input_image: Input image for Gaussian fits
     :param match_sep: The criteria for maximum separation
-    :param csv_file: Name of csv file to be read
+    :param sources_in_file: Name of input source file to be read (only use this for spectral index)
+    :param sources_out_file: Name of csv file to be read (for sources out)
     :param flux_limit: The flux criterion for plotting cutoff
     :param plot_file: prefix of the plot files
     :return
@@ -798,15 +807,25 @@ def plot_errors(
     nchan = image["pixels"].shape[0]
     refchan = nchan // 2
 
-    if csv_file is not None:
-        log.info("Reading spectral index from csv file.")
-        try:
-            data = pd.read_csv(csv_file, engine="python")
-            indexes = data["Spectral index"].to_numpy()
-        except KeyError:
-            indexes = None
+    # If reading spectral index from files (temporary)
+    if sources_in_file is not None and ".txt" in sources_in_file:
+
+        log.info("Reading spectral index from sources in file.")
+        data_in = np.loadtxt(sources_in_file, delimiter=",", unpack=True)
+        indexes_in = data_in[7]
+
     else:
-        indexes = None
+        indexes_in = None
+
+    if sources_out_file is not None:
+        log.info("Reading spectral index from sources out file.")
+        try:
+            data = pd.read_csv(sources_out_file, engine="python")
+            indexes_out = data["Spectral index"].to_numpy()
+        except KeyError:
+            indexes_out = None
+    else:
+        indexes_out = None
 
     ra_comp, dec_comp = plot_skycomponents_positions(
         comp, orig, img_size=img_size, plot_file=plot_file, tol=match_sep
@@ -847,7 +866,7 @@ def plot_errors(
     )
 
     log.info("Plotting spectral index.")
-    if nchan > 1 or indexes is not None:
+    if nchan > 1 or indexes_out is not None:
 
         spec_in, spec_out = plot_multifreq_spectral_index(
             comp,
@@ -856,7 +875,8 @@ def plot_errors(
             plot_file=plot_file,
             tol=match_sep,
             flux_limit=flux_limit,
-            spec_indx_test=indexes,
+            spec_indx_test=indexes_out,
+            spec_indx_ref=indexes_in,
             plot_diagnostics=True,
         )
 

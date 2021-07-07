@@ -332,9 +332,8 @@ def analyze_image(args):
 
         input_image_moment = args.ingest_fitsname_moment + "_Taylor[1-9].fits"
     else:
-        input_image_moment = args.ingest_fitsname_restored.replace(
-            ".fits", "_Taylor[1-9].fits"
-        )
+        # Used for YANDA image format
+        input_image_moment = args.ingest_fitsname_restored.replace(".0.", ".[1-9].")
 
     moment_images = glob.glob(input_image_moment)
     log.info("Number of frequency moments image found: {}".format(len(moment_images)))
@@ -376,14 +375,19 @@ def analyze_image(args):
                 log.info("No matches are found. Skipping plotting routines.")
             else:
                 plot_file = args.ingest_fitsname_restored.replace(".fits", "")
+                if args.use_frequency_moment == "True" and len(moment_images) != 0:
+                    csv_name = moment_images[0].replace(".fits", "_corrected.csv")
+                else:
+                    csv_name = None
                 log.info("Plotting errors: {}".format(plot_file))
                 plot_errors(
                     orig,
                     out,
                     input_image_restored,
                     args.match_sep,
-                    args.flux_limit,
-                    plot_file,
+                    csv_file=csv_name,
+                    flux_limit=args.flux_limit,
+                    plot_file=plot_file,
                 )
 
     else:
@@ -709,6 +713,8 @@ def check_source(orig, comp, match_sep):
 
     """
 
+    log.info("{} sources in and {} sources out".format(len(orig), len(comp)))
+
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)
 
     log.debug("Here is the complete list of matches.")
@@ -766,7 +772,9 @@ def read_skycomponent_from_txt(filename, freq):
     return comp
 
 
-def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
+def plot_errors(
+    orig, comp, input_image, match_sep, csv_file=None, flux_limit=0.0, plot_file=None
+):
     """
     Plot the position and flux errors for source input and output
 
@@ -774,6 +782,7 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
     :param comp: Output source list in skycomponent format
     :param input_image: Input image for Gaussian fits
     :param match_sep: The criteria for maximum separation
+    :param csv_file: Name of csv file to be read
     :param flux_limit: The flux criterion for plotting cutoff
     :param plot_file: prefix of the plot files
     :return
@@ -788,6 +797,16 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
     phasecentre = image.image_acc.phasecentre
     nchan = image["pixels"].shape[0]
     refchan = nchan // 2
+
+    if csv_file is not None:
+        log.info("Reading spectral index from csv file.")
+        try:
+            data = pd.read_csv(csv_file, engine="python")
+            indexes = data["Spectral index"].to_numpy()
+        except KeyError:
+            indexes = None
+    else:
+        indexes = None
 
     ra_comp, dec_comp = plot_skycomponents_positions(
         comp, orig, img_size=img_size, plot_file=plot_file, tol=match_sep
@@ -827,8 +846,9 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
         comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
     )
 
-    if nchan > 1:
-        log.info("Plotting spectral index.")
+    log.info("Plotting spectral index.")
+    if nchan > 1 or indexes is not None:
+
         spec_in, spec_out = plot_multifreq_spectral_index(
             comp,
             orig,
@@ -836,6 +856,7 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
             plot_file=plot_file,
             tol=match_sep,
             flux_limit=flux_limit,
+            spec_indx_test=indexes,
             plot_diagnostics=True,
         )
 

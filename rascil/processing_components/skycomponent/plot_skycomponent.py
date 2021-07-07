@@ -522,6 +522,7 @@ def plot_multifreq_spectral_index(
     plot_file=None,
     tol=1e-5,
     flux_limit=0.0,
+    spec_indx_test=None,
     plot_diagnostics=False,
     **kwargs,
 ):
@@ -533,6 +534,7 @@ def plot_multifreq_spectral_index(
     :param plot_file: Filename of the plot
     :param tol: Tolerance in rad
     :param flux_limit: Cutoff for plot (only components with central flux larger than this are plotted)
+    :param spec_indx_test: Spectral index of comps_test if provided (if None, fit from components)
     :param plot_diagnostics: Whether to plot diagnostics plot (flux in vs. spectral index out)
     :return: [spec_in, spec_out]:
              The spectral index array for users to check
@@ -549,9 +551,14 @@ def plot_multifreq_spectral_index(
         m_ref = comps_ref[match[1]]
 
         spec_in[i] = fit_skycomponent_spectral_index(m_ref)
-        spec_out[i] = fit_skycomponent_spectral_index(m_comp)
+        if spec_indx_test is None or len(spec_indx_test) < i:
+            spec_out[i] = fit_skycomponent_spectral_index(m_comp)
+        else:
+            spec_out[i] = spec_indx_test[match[0]]
         flux_in[i] = m_ref.flux[m_ref.flux.shape[0] // 2][0]
         dist[i] = m_comp.direction.separation(phasecentre).degree
+
+    log.info("spec_indx: {}".format(spec_out))
 
     # mask out the ones that didn't get fitted properly
     mask_spec = (spec_in != 0.0) & (spec_out != 0.0)

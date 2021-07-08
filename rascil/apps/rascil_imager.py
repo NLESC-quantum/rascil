@@ -214,20 +214,21 @@ def setup_rsexecute(args):
         # Sample the memory usage with a scheduler plugin
         if args.dask_memory_usage_file is not None:
             rsexecute.memusage(args.dask_memory_usage_file)
+        if args.dask_tcp_timeout is not None:
+            dask.config.set({"distributed.comm.timeouts.tcp": args.dask_tcp_timeout})
+
+        if args.dask_connect_timeout is not None:
+            dask.config.set(
+                {"distributed.comm.timeouts.tcp": args.dask_connect_timeout}
+            )
+
+        tcp_timeout = dask.config.config["distributed.comm.timeouts.tcp"]
+        connect_timeout = dask.config.config["distributed.comm.timeouts.connect"]
+
+        log.info(f"Dask timeouts: connect {connect_timeout} tcp: {tcp_timeout}")
         performance_dask_configuration(args.performance_file, rsexecute)
     else:
         rsexecute.set_client(use_dask=False)
-
-    if args.dask_tcp_timeout is not None:
-        dask.config.set({"distributed.comm.timeouts.tcp": args.dask_tcp_timeout})
-
-    if args.dask_connect_timeout is not None:
-        dask.config.set({"distributed.comm.timeouts.tcp": args.dask_connect_timeout})
-
-    tcp_timeout = dask.config.config["distributed.comm.timeouts.tcp"]
-    connect_timeout = dask.config.config["distributed.comm.timeouts.connect"]
-
-    log.info(f"Dask timeouts: connect {connect_timeout} tcp: {tcp_timeout}")
 
 
 def get_blockvis_list(args):

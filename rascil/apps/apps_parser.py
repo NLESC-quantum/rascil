@@ -314,6 +314,20 @@ def apps_parser_dask(parser):
         default=None,
         help="Externally defined Dask scheduler e.g. 127.0.0.1:8786 or ssh for SSHCluster",
     )
+
+    parser.add_argument(
+        "--dask_tcp_timeout",
+        type=str,
+        default="60s",
+        help="Dask TCP timeout",
+    )
+    parser.add_argument(
+        "--dask_connect_timeout",
+        type=str,
+        default="60s",
+        help="Dask connect timeout",
+    )
+
     return parser
 
 

@@ -30,6 +30,8 @@ from datetime import datetime
 
 import numpy
 
+import dask
+
 from rascil.processing_components.image.operations import qa_image
 
 log = logging.getLogger("rascil-logger")
@@ -142,6 +144,10 @@ def performance_dask_configuration(performance_file, rsexec, indent=2, mode="a")
                     "nworkers": len(workers),
                     "nthreads": int(
                         numpy.sum([workers[worker].nthreads for worker in workers])
+                    ),
+                    "tcp_timeout": dask.config.get("distributed.comm.timeouts.tcp"),
+                    "connect_timeout": dask.config.get(
+                        "distributed.comm.timeouts.connect"
                     ),
                 }
 

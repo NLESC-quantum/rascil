@@ -16,6 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from distributed import Client, SSHCluster
+import dask
 
 from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
 from rascil.processing_components.util.sizeof import get_size
@@ -216,6 +217,17 @@ def setup_rsexecute(args):
         performance_dask_configuration(args.performance_file, rsexecute)
     else:
         rsexecute.set_client(use_dask=False)
+
+    if args.dask_tcp_timeout is not None:
+        dask.config.set({"distributed.comm.timeouts.tcp": args.dask_tcp_timeout})
+
+    if args.dask_connect_timeout is not None:
+        dask.config.set({"distributed.comm.timeouts.tcp": args.dask_connect_timeout})
+
+    tcp_timeout = dask.config.config["distributed.comm.timeouts.tcp"]
+    connect_timeout = dask.config.config["distributed.comm.timeouts.connect"]
+
+    log.info(f"Dask timeouts: connect {connect_timeout} tcp: {tcp_timeout}")
 
 
 def get_blockvis_list(args):

@@ -3,7 +3,9 @@
 """
 
 import logging
+import math
 import unittest
+from unittest.mock import patch
 
 import astropy.units as u
 import numpy
@@ -258,7 +260,8 @@ class TestRFISim(unittest.TestCase):
 
         assert round(numpy.abs(propagators).min(), 16) == 3.1622777e-9
 
-    def test_simulate_rfi_block_prop(self):
+    @patch("rascil.processing_components.simulation.rfi.get_file_strings")
+    def test_simulate_rfi_block_prop(self, mock_get_file_string): #
         """
         regression to test that simulate_rfi_block_prop correctly updates the
         block visibility data with RFI signal using the default
@@ -266,6 +269,11 @@ class TestRFISim(unittest.TestCase):
         """
         nants_start = self.nants
         bvis = self.bvis.copy()
+
+        rfi_at_station = numpy.zeros((len(bvis.time), nants_start, len(bvis.frequency)), dtype=complex)
+        rfi_at_station[:, :, 3] += 0.044721359549995794
+        rfi_at_station[:, :, 4] += 0.044721359549995794
+        mock_get_file_string.return_value = (rfi_at_station, 1.0)
 
         starting_visibility = bvis["vis"].data.copy()
 

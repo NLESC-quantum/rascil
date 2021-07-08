@@ -165,7 +165,7 @@ def create_propagators_prop(
     :param nants_start: limiting station to use determined by use of rmax
     :param station_skip: number of stations to skip
     :param trans_range: array start and stop channels for applying the attenuation and beam gain
-    :return: Complex array [nants, ntimes]
+    :return: Complex array [nants, nchannels]
     """
 
     nchannels = len(frequency)
@@ -253,7 +253,7 @@ def check_prop_parms(attenuation_state, beamgain_state, transmitter_list):
     :return:
     """
     if attenuation_state is None:
-        attenuation_value = 175.0#1.0
+        attenuation_value = 1.0
         att_context = "att_value"
     else:
         attenuation_value = attenuation_state[0]
@@ -336,19 +336,20 @@ def simulate_rfi_block_prop(
 
     for trans in transmitter_list:
 
-        emitter_location, rfi_at_station = rfi_at_station_per_transmitter(att_context, attenuation_value,
-                                                                          beamgain_value, bg_context, bvis,
-                                                                          frequency_variable, nants_start, station_skip,
-                                                                          time_variable, trans, transmitter_list)
-
-        # Calculate the rfi correlation using the fringe rotation and the rfi at the station
-        # [ntimes, nants, nants, nchan, npol]
-
-        bvis_data_copy[...] = calculate_station_correlation_rfi(
-            rfi_at_station, baselines=bvis.baselines
-        )
+        # emitter_location, rfi_for_sub_stations = rfi_at_station_per_transmitter(att_context, attenuation_value,
+        #                                                                   beamgain_value, bg_context, bvis,
+        #                                                                   frequency_variable, nants_start, station_skip,
+        #                                                                   time_variable, trans, transmitter_list)
 
         ntimes, nbaselines, nchan, npol = bvis.vis.shape
+
+        emitter_location, rfi_for_sub_stations = refactored_rf_at_stat(att_context, attenuation_value, beamgain_value,
+                                                                       bg_context, bvis, nants_start, nchan,
+                                                                       station_skip, trans, transmitter_list)
+
+        bvis_data_copy[...] = calculate_station_correlation_rfi(
+            rfi_for_sub_stations, baselines=bvis.baselines
+        )
 
         k = numpy.array(bvis.frequency) / phyconst.c_m_s
         uvw = bvis.uvw.data[..., numpy.newaxis] * k
@@ -406,6 +407,52 @@ def simulate_rfi_block_prop(
                 bvis["vis"].data[iha, ...] += bvis_data_copy[iha, ...] * phasor
 
     return bvis
+
+
+def refactored_rf_at_stat(att_context, attenuation_value, beamgain_value, bg_context, bvis, nants_start, nchan,
+                          station_skip, trans, transmitter_list):
+    emitter_location = EarthLocation(
+        lon=transmitter_list[trans]["location"][0],
+        lat=transmitter_list[trans]["location"][1],
+        height=transmitter_list[trans]["height"],
+    )
+    rfi_at_station, beamgain = get_file_strings(
+        attenuation_value, att_context, beamgain_value, bg_context, trans
+    )
+    if isinstance(rfi_at_station, str):
+        rfi_at_station = numpy.load(rfi_at_station)
+    if isinstance(beamgain, str):
+        beamgain = numpy.loadtxt(beamgain)
+    rfi_at_station *= beamgain  # shape of rfi_at_station = [ntimes, nants, n_rfi_channels]
+    # Calculate the rfi correlation using the fringe rotation and the rfi at the station
+    # [ntimes, nants, nants, nchan, npol]
+    # for this to work, I need to add more channels to match the input channel number
+    # --> rfi_at_station at this point only holds data for channels where there is a signal
+    # user can request to simulate more channels --> need to add those with no signal in them
+    # not correct yet, it needs to add the extra channels to the correct place, not jus the end
+    if rfi_at_station.shape[2] < nchan:
+        #     chans_to_add = nchan - rfi_at_station.shape[2]
+        #     to_append = numpy.zeros((rfi_at_station.shape[0], rfi_at_station.shape[1], chans_to_add))
+        #     rfi_at_station = numpy.append(rfi_at_station, to_append, axis=2)
+
+        # appending the right number of channels probably has to happen before the atten data is written to files
+        # --> when read from hdf5, it already has the correct number of channels in it,
+        # with power only in the relevant channels
+        to_append = numpy.zeros((rfi_at_station.shape[0], rfi_at_station.shape[1], 2))
+        rfi_at_station = numpy.insert(rfi_at_station, [0], to_append, axis=2)
+        rfi_at_station = numpy.append(rfi_at_station, to_append, axis=2)
+    ska_stations = bvis.configuration.names.values
+    ska_ids = [int(x.strip("LOW_")) for x in ska_stations]
+    # only run code for SKA stations which are part of the bvis configuration
+    rfi_for_sub_stations = numpy.zeros((rfi_at_station.shape[0], len(ska_ids),
+                                        rfi_at_station.shape[2]), dtype=complex)
+    # j = 0
+    # for i in ska_ids:
+    #     rfi_for_sub_stations[:, j, :] = rfi_at_station[:, i, :]
+    #     j += 1
+    rfi_for_sub_stations = rfi_at_station[:, :nants_start, :]
+    rfi_for_sub_stations = rfi_for_sub_stations[:, ::station_skip, :]
+    return emitter_location, rfi_for_sub_stations
 
 
 def rfi_at_station_per_transmitter(att_context, attenuation_value, beamgain_value, bg_context, bvis, frequency_variable,

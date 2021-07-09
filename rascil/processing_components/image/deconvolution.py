@@ -94,14 +94,14 @@ def deconvolve_list(
 
     For example::
 
-        comp, residual = deconvolve_cube(dirty, psf, niter=1000, gain=0.7, algorithm='msclean',
+        comp, residual = deconvolve_list(dirty_list, psf_list, niter=1000, gain=0.7, algorithm='msclean',
                                          scales=[0, 3, 10, 30], threshold=0.01)
 
     For the MFS clean, the psf must have number of channels >= 2 * nmoment
 
-    :param dirty_list: Image dirty image
-    :param psf_list: Image Point Spread Function
-    :param sensitivity_list: Sensitivity image (i.e. inverse noise level)
+    :param dirty_list: list of dirty image
+    :param psf_list: list of point spread function
+    :param sensitivity_list: List of Sensitivity image (i.e. inverse noise level)
     :param prefix: Informational message for logging
     :param window_shape: Window description
     :param mask: Window in the form of an image, overrides window_shape
@@ -275,7 +275,7 @@ def complex_hogbom_kernel_list(
     """
 
     log.info(
-        "deconvolve_cube_complex: Starting Hogbom-complex clean of each channel separately"
+        "complex_hogbom_kernel_list: Starting Hogbom-complex clean of each channel separately"
     )
 
     fracthresh, gain, niter, thresh, scales = common_arguments(**kwargs)
@@ -292,7 +292,7 @@ def complex_hogbom_kernel_list(
             if pol == 0 or pol == 3:
                 if psf["pixels"].data[0, pol, :, :].max():
                     log.info(
-                        "deconvolve_cube_complex: Processing pol %d, channel %d"
+                        "complex_hogbom_kernel_list: Processing pol %d, channel %d"
                         % (pol, channel)
                     )
                     if window is None:
@@ -323,13 +323,13 @@ def complex_hogbom_kernel_list(
                         )
                 else:
                     log.info(
-                        "deconvolve_cube_complex: Skipping pol %d, channel %d"
+                        "complex_hogbom_kernel_list: Skipping pol %d, channel %d"
                         % (pol, channel)
                     )
             if pol == 1:
                 if psf["pixels"].data[0, 1:2, :, :].max():
                     log.info(
-                        "deconvolve_cube_complex: Processing pol 1 and 2, channel %d"
+                        "complex_hogbom_kernel_list: Processing pol 1 and 2, channel %d"
                         % (channel)
                     )
                     if window is None:
@@ -368,7 +368,7 @@ def complex_hogbom_kernel_list(
                         )
                 else:
                     log.info(
-                        "deconvolve_cube_complex: Skipping pol 1 and 2, channel %d"
+                        "complex_hogbom_kernel_list: Skipping pol 1 and 2, channel %d"
                         % (channel)
                     )
                 if pol == 2:
@@ -444,7 +444,7 @@ def hogbom_kernel_list(
     """
 
     log.info(
-        "deconvolve_cube %s: Starting Hogbom clean of each polarisation and channel separately"
+        "hogbom_kernel_list %s: Starting Hogbom clean of each polarisation and channel separately"
         % prefix
     )
 
@@ -460,7 +460,7 @@ def hogbom_kernel_list(
         for pol in range(dirty["pixels"].data.shape[1]):
             if psf["pixels"].data[0, pol, :, :].max():
                 log.info(
-                    "deconvolve_cube %s: Processing pol %d, channel %d"
+                    "hogbom_kernel_list %s: Processing pol %d, channel %d"
                     % (prefix, pol, channel)
                 )
                 if window_list is None or window_list[channel] is None:
@@ -493,7 +493,7 @@ def hogbom_kernel_list(
                     )
             else:
                 log.info(
-                    "deconvolve_cube %s: Skipping pol %d, channel %d"
+                    "hogbom_kernel_list %s: Skipping pol %d, channel %d"
                     % (prefix, pol, channel)
                 )
         comp_image = create_image_from_array(
@@ -545,7 +545,7 @@ def mmclean_kernel_list(
 
     findpeak = get_parameter(kwargs, "findpeak", "RASCIL")
     log.info(
-        "deconvolve_cube %s: Starting Multi-scale multi-frequency clean of each polarisation separately"
+        "mmclean_kernel_list %s: Starting Multi-scale multi-frequency clean of each polarisation separately"
         % prefix
     )
     nmoment = get_parameter(kwargs, "nmoment", 3)
@@ -557,7 +557,7 @@ def mmclean_kernel_list(
     nchan = len(dirty_list)
     if not (nchan > 2 * (nmoment - 1)):
         raise ValueError(
-            "Require nchan %d > 2 * (nmoment %d - 1)" % (nchan, 2 * (nmoment - 1))
+            "Requires nchan %d > 2 * (nmoment %d - 1)" % (nchan, 2 * (nmoment - 1))
         )
     dirty_taylor = calculate_image_list_frequency_moments(dirty_list, nmoment=nmoment)
 
@@ -586,11 +586,11 @@ def mmclean_kernel_list(
     dirty_taylor["pixels"].data /= psf_peak
     psf_taylor["pixels"].data /= psf_peak
     log.info(
-        "deconvolve_cube %s: Shape of Dirty moments image %s"
+        "mmclean_kernel_list %s: Shape of Dirty moments image %s"
         % (prefix, str(dirty_taylor["pixels"].shape))
     )
     log.info(
-        "deconvolve_cube %s: Shape of PSF moments image %s"
+        "mmclean_kernel_list %s: Shape of PSF moments image %s"
         % (prefix, str(psf_taylor["pixels"].shape))
     )
 
@@ -609,7 +609,7 @@ def mmclean_kernel_list(
             sens = None
         # Always use the Stokes I PSF
         if psf_taylor["pixels"].data[0, 0, :, :].max():
-            log.info("deconvolve_cube %s: Processing pol %d" % (prefix, pol))
+            log.info("mmclean_kernel_list %s: Processing pol %d" % (prefix, pol))
             if window_taylor is None:
                 comp_array[:, pol, :, :], residual_array[:, pol, :, :] = msmfsclean(
                     dirty_taylor["pixels"].data[:, pol, :, :],
@@ -655,7 +655,7 @@ def mmclean_kernel_list(
         dirty_taylor.image_acc.polarisation_frame,
     )
     log.info(
-        "deconvolve_list %s: calculating spectral image lists from frequency moment images"
+        "mmclean_kernel_list %s: calculating spectral image lists from frequency moment images"
         % prefix
     )
     comp_list = calculate_image_list_from_frequency_taylor_terms(
@@ -699,7 +699,7 @@ def msclean_kernel_list(
     :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
     """
     log.info(
-        "deconvolve_list %s: Starting Multi-scale clean of each polarisation and channel separately"
+        "msclean_kernel_list %s: Starting Multi-scale clean of each polarisation and channel separately"
         % prefix
     )
 
@@ -721,7 +721,7 @@ def msclean_kernel_list(
                 sens = None
             if psf["pixels"].data[0, pol, :, :].max():
                 log.info(
-                    "deconvolve_list %s: Processing pol %d, channel %d"
+                    "msclean_kernel_list %s: Processing pol %d, channel %d"
                     % (prefix, pol, channel)
                 )
                 if window_list is None or window_list[channel] is None:
@@ -752,7 +752,7 @@ def msclean_kernel_list(
                     )
             else:
                 log.info(
-                    "deconvolve_cube %s: Skipping pol %d, channel %d"
+                    "msclean_kernel_list %s: Skipping pol %d, channel %d"
                     % (prefix, pol, channel)
                 )
         comp_image = create_image_from_array(
@@ -805,17 +805,17 @@ def restore_list(
             if psf is not None:
                 clean_beam = fit_psf(psf)
                 log.info(
-                    "restore_cube: Using fitted clean beam (deg, deg, deg) = {}".format(
+                    "restore_list: Using fitted clean beam (deg, deg, deg) = {}".format(
                         clean_beam
                     )
                 )
             else:
                 raise ValueError(
-                    "restore_cube: Either the psf or the clean_beam must be specified"
+                    "restore_list: Either the psf or the clean_beam must be specified"
                 )
         else:
             log.info(
-                "restore_cube: Using clean beam  (deg, deg, deg) = {}".format(
+                "restore_list: Using clean beam  (deg, deg, deg) = {}".format(
                     clean_beam
                 )
             )

@@ -258,7 +258,7 @@ def apps_parser_cleaning(parser):
         "--clean_restored_output",
         type=str,
         default="list",
-        help="Type of restored image output: list or integrated",
+        help="Type of restored image output: taylor, list, or integrated",
     )
 
     return parser

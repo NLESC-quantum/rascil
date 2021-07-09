@@ -7,6 +7,7 @@ __all__ = [
     "calculate_image_from_frequency_taylor_terms",
     "calculate_image_list_frequency_moments",
     "calculate_image_list_from_frequency_taylor_terms",
+    "calculate_frequency_taylor_terms_from_image_list",
 ]
 import copy
 import logging
@@ -262,3 +263,65 @@ def calculate_image_list_from_frequency_taylor_terms(
         newims.append(newim)
 
     return newims
+
+
+def calculate_frequency_taylor_terms_from_image_list(
+    im_list: List[Image], nmoment=1, reference_frequency=None
+) -> List[Image]:
+    """Calculate frequency taylor terms
+
+    .. math::
+
+        w_k = \\left(\\left(\\nu - \\nu_{ref}\\right) /  \\nu_{ref}\\right)^k
+
+    :param im_list: Image list to be reconstructed
+    :param moment_image: Moment cube (constructed using calculate_image_frequency_moments)
+    :param reference_frequency: Reference frequency (default None uses average)
+    :return: list of reconstructed images
+    """
+    # assert isinstance(im, Image)
+    nchan = len(im_list)
+    single_chan, npol, ny, nx = im_list[0]["pixels"].shape
+    assert single_chan == 1
+
+    frequency = numpy.array([d.frequency.data[0] for d in im_list])
+
+    if reference_frequency is None:
+        reference_frequency = frequency[len(frequency) // 2]
+    log.debug(
+        "calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)"
+        % (1e-6 * reference_frequency)
+    )
+
+    wcs = im_list[nchan // 2].image_acc.wcs.deepcopy()
+    wcs.wcs.ctype[3] = "FREQ"
+    wcs.wcs.crval[3] = reference_frequency
+    wcs.wcs.crpix[3] = 1.0
+    wcs.wcs.cdelt[3] = 1.0
+    wcs.wcs.cunit[3] = "Hz"
+
+    polarisation_frame = im_list[nchan // 2].image_acc.polarisation_frame
+
+    channel_moment_coupling = numpy.zeros([nchan, nmoment])
+    for chan in range(nchan):
+        for m in range(nmoment):
+            channel_moment_coupling[chan, m] += numpy.power(
+                (frequency[chan] - reference_frequency) / reference_frequency,
+                m,
+            )
+
+    pinv = numpy.linalg.pinv(channel_moment_coupling, rcond=1e-7)
+
+    decoupled_images = list()
+    for moment in range(nmoment):
+        decoupled_data = numpy.zeros([1, npol, ny, nx])
+        for chan in range(nchan):
+            decoupled_data[0] += pinv[moment, chan] * im_list[chan]["pixels"][0, ...]
+        decoupled_image = Image(
+            data=decoupled_data,
+            wcs=wcs,
+            polarisation_frame=polarisation_frame,
+        )
+        decoupled_images.append(decoupled_image)
+
+    return decoupled_images

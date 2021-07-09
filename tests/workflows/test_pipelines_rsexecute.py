@@ -207,6 +207,41 @@ class TestPipelineGraphs(unittest.TestCase):
         ]
         self.model_imagelist = rsexecute.persist(self.model_imagelist, sync=True)
 
+    def test_continuum_imaging_pipeline_taylor_terms(self):
+        self.actualSetUp()
+
+        continuum_imaging_list = continuum_imaging_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            context="ng",
+            algorithm="mmclean",
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=5,
+            gain=0.7,
+            deconvolve_facets=4,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            do_wstacking=True,
+            restored_output="taylor",
+        )
+
+        clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
+
+        self.save_and_check(
+            "continuum_imaging_pipeline_taylor",
+            clean,
+            residual,
+            restored,
+            101.23240469914016,
+            -0.3411878869084084,
+            taylor=True,
+        )
+
     def test_continuum_imaging_pipeline(self):
         self.actualSetUp()
 
@@ -240,28 +275,50 @@ class TestPipelineGraphs(unittest.TestCase):
             -1.4378387157224086,
         )
 
-    def save_and_check(self, tag, clean, residual, restored, flux_max, flux_min):
+    def save_and_check(
+        self, tag, clean, residual, restored, flux_max, flux_min, taylor=False
+    ):
 
-        clean = image_gather_channels(clean)
-        residual = image_gather_channels([r[0] for r in residual])
-        restored = image_gather_channels(restored)
-
-        if self.persist:
-            export_image_to_fits(
-                clean,
-                f"{self.dir}/test_pipelines_{tag}_rsexecute_deconvolved.fits",
-            )
-            export_image_to_fits(
-                residual,
-                f"{self.dir}/test_pipelines_{tag}_rsexecute_residual.fits",
-            )
-            export_image_to_fits(
-                restored,
-                f"{self.dir}/test_pipelines_{tag}_rsexecute_restored.fits",
-            )
-        qa = qa_image(restored)
-        assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] - flux_min) < 1.0e-7, str(qa)
+        if not taylor:
+            clean = image_gather_channels(clean)
+            residual = image_gather_channels([r[0] for r in residual])
+            restored = image_gather_channels(restored)
+            if self.persist:
+                export_image_to_fits(
+                    clean,
+                    f"{self.dir}/test_pipelines_{tag}_rsexecute_deconvolved.fits",
+                )
+                export_image_to_fits(
+                    residual,
+                    f"{self.dir}/test_pipelines_{tag}_rsexecute_residual.fits",
+                )
+                export_image_to_fits(
+                    restored,
+                    f"{self.dir}/test_pipelines_{tag}_rsexecute_restored.fits",
+                )
+            qa = qa_image(restored)
+            assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)
+            assert numpy.abs(qa.data["min"] - flux_min) < 1.0e-7, str(qa)
+        else:
+            if self.persist:
+                for moment, _ in enumerate(clean):
+                    export_image_to_fits(
+                        clean[moment],
+                        f"{self.dir}/test_pipelines_{tag}_rsexecute_deconvolved_taylor{moment}.fits",
+                    )
+                for moment, _ in enumerate(clean):
+                    export_image_to_fits(
+                        residual[moment],
+                        f"{self.dir}/test_pipelines_{tag}_rsexecute_residual_taylor{moment}.fits",
+                    )
+                for moment, _ in enumerate(clean):
+                    export_image_to_fits(
+                        restored[moment],
+                        f"{self.dir}/test_pipelines_{tag}_rsexecute_restored_taylor{moment}.fits",
+                    )
+            qa = qa_image(restored[0])
+            assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)
+            assert numpy.abs(qa.data["min"] - flux_min) < 1.0e-7, str(qa)
 
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, dopol=True)

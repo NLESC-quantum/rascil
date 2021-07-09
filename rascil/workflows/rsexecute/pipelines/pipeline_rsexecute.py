@@ -10,7 +10,9 @@ __all__ = [
 import logging
 
 from rascil.data_models.parameters import get_parameter
-from rascil.processing_components.griddata import create_pswf_convolutionfunction
+from rascil.processing_components.image.taylor_terms import (
+    calculate_frequency_taylor_terms_from_image_list,
+)
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.calibration.calibration_rsexecute import (
     calibrate_list_rsexecute_workflow,
@@ -20,6 +22,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     invert_list_rsexecute_workflow,
     residual_list_rsexecute_workflow,
     restore_centre_rsexecute_workflow,
+    restore_taylor_terms_rsexecute_workflow,
     predict_list_rsexecute_workflow,
     subtract_list_rsexecute_workflow,
     restore_list_rsexecute_workflow,
@@ -283,16 +286,35 @@ def continuum_imaging_list_rsexecute_workflow(
         facets=facets,
         **kwargs,
     )
-
     output = get_parameter(kwargs, "restored_output", "list")
     if output == "integrated":
         restored_imagelist = restore_centre_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
         )
+    elif output == "taylor":
+        nmoment = get_parameter(kwargs, "nmoment", 1)
+        residual_imagelist_trimmed = [
+            rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+        ]
+        deconvolve_model_imagelist = rsexecute.execute(
+            calculate_frequency_taylor_terms_from_image_list, nout=nmoment
+        )(deconvolve_model_imagelist, nmoment=nmoment)
+        residual_imagelist = rsexecute.execute(
+            calculate_frequency_taylor_terms_from_image_list, nout=nmoment
+        )(residual_imagelist_trimmed, nmoment=nmoment)
+
+        restored_imagelist = restore_taylor_terms_rsexecute_workflow(
+            deconvolve_model_imagelist,
+            psf_imagelist,
+            residual_imagelist,
+            **kwargs,
+        )
+
     elif output == "list":
         restored_imagelist = restore_list_rsexecute_workflow(
             deconvolve_model_imagelist, psf_imagelist, residual_imagelist, **kwargs
         )
+
     else:
         raise ValueError(
             f"continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output}"

@@ -27,7 +27,7 @@ import numpy
 
 from rascil.data_models.parameters import get_parameter
 from rascil.processing_components.image.taylor_terms import (
-    calculate_image_frequency_moments,
+    calculate_frequency_taylor_terms_from_image_list,
 )
 from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.processing_components.griddata.operations import create_griddata_from_image
@@ -391,6 +391,50 @@ def restore_centre_rsexecute_workflow(
         )
 
     return restored
+
+
+def restore_taylor_terms_rsexecute_workflow(
+    model_imagelist, psf_imagelist, residual_imagelist=None, **kwargs
+):
+    """Create a graph to restore the taylow terms
+
+    :param model_imagelist: Model list (or graph)
+    :param psf_imagelist: PSF list (or graph)
+    :param residual_imagelist: Residual list (or graph)
+    :param kwargs: Parameters for functions in components
+    :return: list of restored images (or graphs)
+    """
+    if residual_imagelist is not None:
+        if len(residual_imagelist) != len(model_imagelist):
+            log.error("Model and residual list have different lengths")
+            raise ValueError("Model and residual list have different lengths")
+
+    # Find the PSF by summing over all channels, fit to this psf
+    psf = sum_invert_results_rsexecute(psf_imagelist)[0]
+    clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
+
+    nmoment = get_parameter(kwargs, "nmoment", 1)
+
+    if residual_imagelist is not None:
+
+        restored_list = [
+            rsexecute.execute(restore_cube, nout=1)(
+                model_imagelist[moment],
+                residual=residual_imagelist[moment],
+                clean_beam=clean_beam,
+            )
+            for moment in range(nmoment)
+        ]
+    else:
+        restored_list = [
+            rsexecute.execute(restore_cube, nout=1)(
+                model_imagelist[moment],
+                clean_beam=clean_beam,
+            )
+            for moment in range(nmoment)
+        ]
+
+    return rsexecute.optimize(restored_list)
 
 
 def deconvolve_list_singlefacet_rsexecute_workflow(

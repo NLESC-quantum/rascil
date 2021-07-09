@@ -431,7 +431,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     # Now do the deconvolution for a single facet.
     def imaging_deconvolve(dirty, psf, model, sens, gthreshold, msk):
 
-        log.info("deconvolve_list_rsexecute_workflow: Starting clean")
+        log.info("deconvolve_list_singlefacet_rsexecute_workflow: Starting clean")
 
         this_peak = numpy.max([numpy.max(numpy.abs(d["pixels"].data)) for d in dirty])
 

@@ -318,13 +318,13 @@ def apps_parser_dask(parser):
     parser.add_argument(
         "--dask_tcp_timeout",
         type=str,
-        default="60s",
+        default=None,
         help="Dask TCP timeout",
     )
     parser.add_argument(
         "--dask_connect_timeout",
         type=str,
-        default="60s",
+        default=None,
         help="Dask connect timeout",
     )
 

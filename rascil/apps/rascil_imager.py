@@ -222,8 +222,8 @@ def setup_rsexecute(args):
                 {"distributed.comm.timeouts.tcp": args.dask_connect_timeout}
             )
 
-        tcp_timeout = dask.config.config["distributed.comm.timeouts.tcp"]
-        connect_timeout = dask.config.config["distributed.comm.timeouts.connect"]
+        tcp_timeout = dask.config.get("distributed.comm.timeouts.tcp")
+        connect_timeout = dask.config.get("distributed.comm.timeouts.connect")
 
         log.info(f"Dask timeouts: connect {connect_timeout} tcp: {tcp_timeout}")
         performance_dask_configuration(args.performance_file, rsexecute)

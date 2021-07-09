@@ -336,19 +336,24 @@ def simulate_rfi_block_prop(
 
     for trans in transmitter_list:
 
-        # emitter_location, rfi_for_sub_stations = rfi_at_station_per_transmitter(att_context, attenuation_value,
-        #                                                                   beamgain_value, bg_context, bvis,
-        #                                                                   frequency_variable, nants_start, station_skip,
-        #                                                                   time_variable, trans, transmitter_list)
+        emitter_location, rfi_at_station = rfi_at_station_per_transmitter(
+            att_context,
+            attenuation_value,
+            beamgain_value,
+            bg_context,
+            bvis,
+            frequency_variable,
+            nants_start,
+            station_skip,
+            time_variable,
+            trans,
+            transmitter_list,
+        )
 
         ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
-        emitter_location, rfi_for_sub_stations = refactored_rf_at_stat(att_context, attenuation_value, beamgain_value,
-                                                                       bg_context, bvis, nants_start, nchan,
-                                                                       station_skip, trans, transmitter_list)
-
         bvis_data_copy[...] = calculate_station_correlation_rfi(
-            rfi_for_sub_stations, baselines=bvis.baselines
+            rfi_at_station, baselines=bvis.baselines
         )
 
         k = numpy.array(bvis.frequency) / phyconst.c_m_s
@@ -409,21 +414,175 @@ def simulate_rfi_block_prop(
     return bvis
 
 
-def refactored_rf_at_stat(att_context, attenuation_value, beamgain_value, bg_context, bvis, nants_start, nchan,
-                          station_skip, trans, transmitter_list):
-    emitter_location = EarthLocation(
-        lon=transmitter_list[trans]["location"][0],
-        lat=transmitter_list[trans]["location"][1],
-        height=transmitter_list[trans]["height"],
-    )
-    rfi_at_station, beamgain = get_file_strings(
-        attenuation_value, att_context, beamgain_value, bg_context, trans
-    )
-    if isinstance(rfi_at_station, str):
-        rfi_at_station = numpy.load(rfi_at_station)
+def simulate_rfi_block_prop_new(
+    bvis,
+    apparent_emitter_power,
+    apparent_emitter_coordinates,
+    rfi_sources,
+    nants_start,
+    station_skip,
+    beamgain_state=None,
+    use_pole=False,
+):
+    """Simulate RFI in a BlockVisility
+
+    :param time_variable: Is the signal to be simulated as variable in time?
+    :param frequency_variable: Is the signal to be simulated as variable in frequency?
+    :param transmitter_list: dictionary of transmitters
+    :param beamgain_state: beam gains to apply to the signal or file containing values and flag to declare which
+    :param attenuation_state: Attenuation to be applied to signal or file containing values and flag to declare which
+    :param use_pole: Set the emitter to nbe at the southern celestial pole
+    :return: BlockVisibility
+    """
+
+    if beamgain_state is None:
+        beamgain_value = 1.0
+        bg_context = "bg_value"
+    else:
+        beamgain_value = beamgain_state[0]
+        bg_context = beamgain_state[1]
+
+    # temporary copy to calculate contribution for each transmitter
+    bvis_data_copy = copy.copy(bvis["vis"].data)
+    ntimes, nbaselines, nchan, npol = bvis.vis.shape
+
+    for i, source in enumerate(rfi_sources):  # this will tell us the index of the source in the data
+        rfi_at_station = refactored_rf_at_stat(
+            apparent_emitter_power[i],
+            beamgain_value,
+            bg_context,
+            nants_start,
+            nchan,
+            station_skip,
+            source,
+        )
+
+        bvis_data_copy[...] = calculate_station_correlation_rfi(
+            rfi_at_station, baselines=bvis.baselines
+        )
+
+        k = numpy.array(bvis.frequency) / phyconst.c_m_s
+        uvw = bvis.uvw.data[..., numpy.newaxis] * k
+
+        if use_pole:
+            # Calculate phasor needed to shift from the phasecentre to the pole
+            pole = SkyCoord(
+                ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame="icrs", equinox="J2000"
+            )
+            l, m, n = skycoord_to_lmn(pole, bvis.phasecentre)
+            phasor = numpy.ones([ntimes, nbaselines, nchan, npol], dtype="complex")
+            for chan in range(nchan):
+                phasor[:, :, chan, :] = simulate_point(uvw[..., chan], l, m)[
+                    ..., numpy.newaxis
+                ]
+
+            # Now add this into the BlockVisibility
+            bvis["vis"].data += bvis_data_copy * phasor
+
+        else:
+            # We know where the emitter is. Calculate the bearing to the emitter from
+            # the site, convert az, el to ha, dec. ha, dec is static.
+            site = bvis.configuration.location
+
+            # apparent_emitter_coordinates [nsource x ntimes x nantennas x [az,el,dist]
+            # ax is index [:, :, :, 0]; el is index [:, :, :, 1]
+            # use only values for the stations to be kept
+            # This is a temporary hack! We can't deal with station/time dependent az/el values yet:
+            # find the median of the azimuth values, and find its index in the array
+            # use the index to find the corresponding elevations, and take the first one (all shoudl be the same)
+            az = apparent_emitter_coordinates[i, :, :, 0]
+            az = az[:nants_start]
+            az1 = az[::station_skip]
+            az = numpy.median(az1[1:,1:])  # az1[1:,1:] is needed because otherwise the element-number is even
+            azind = numpy.where(az1==az)
+
+            el = apparent_emitter_coordinates[i, :, :, 1]
+            el = el[:nants_start]
+            el1 = el[::station_skip]
+            el = el1[azind][0]
+
+            emitter_location = [EarthLocation(
+                lon=116.061666666667,
+                lat=-32.0127777777778,
+                height=175,
+            ), EarthLocation(
+                lon=114.121111111111,
+                lat=-21.9186111111111,
+                height=34,
+            )]
+
+            site = bvis.configuration.location
+            site_tup = (site.lat.deg, site.lon.deg)
+            emitter_tup = (emitter_location[i].lat.deg, emitter_location[i].lon.deg)
+            # Compass bearing is in range [0,360.0]
+            az = (
+                calculate_initial_compass_bearing(site_tup, emitter_tup)
+                * numpy.pi
+                / 180.0
+            )
+            el = 0.0
+
+            hadec1 = azel_to_hadec(az1, el1, site.lat.rad)
+            hadec = azel_to_hadec(az, el, site.lat.rad)
+            r2d = 180.0 / numpy.pi
+            log.info(
+                f"simulate_rfi_block: Emitter at az, el {az * r2d:.3}, {el * r2d:.3} "
+                + f"appears at ha, dec {hadec[0] * r2d:.3}, {hadec[1] * r2d:.3}"
+            )
+            # Now step through the time stamps, calculating the effective
+            # sky position for the emitter, and performing phase rotation
+            # appropriately
+            hourangles = calculate_blockvisibility_hourangles(bvis)
+            for iha, ha in enumerate(hourangles.data):
+                ra = -hadec[0] + ha
+                dec = hadec[1]
+                emitter_sky = SkyCoord(ra * u.rad, dec * u.rad)
+                l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
+
+                phasor = numpy.ones([nbaselines, nchan, npol], dtype="complex")
+                for chan in range(nchan):
+                    phasor[:, chan, :] = simulate_point(uvw[iha, ..., chan], l, m)[
+                        ..., numpy.newaxis
+                    ]
+
+                # Now fill this into the BlockVisibility
+                bvis["vis"].data[iha, ...] += bvis_data_copy[iha, ...] * phasor
+
+    return bvis
+
+
+def refactored_rf_at_stat(
+    isotropic_emitter_power,
+    beamgain_value,
+    bg_context,
+    nants_start,
+    nchan,
+    station_skip,
+    trans,
+):
+
+    if bg_context == "bg_dir":
+        beamgain = (
+            beamgain_value
+            + trans
+            + "_beam_gain_TIME_SEP_CHAN_SEP_CROSS_POWER_AMP_I_I.txt"
+        )
+    elif bg_context == "bg_file":
+        beamgain = beamgain_value
+    else:
+        beamgain = beamgain_value
+
+    if isinstance(isotropic_emitter_power, str):
+        isotropic_emitter_power = numpy.load(isotropic_emitter_power)
+
     if isinstance(beamgain, str):
         beamgain = numpy.loadtxt(beamgain)
-    rfi_at_station *= beamgain  # shape of rfi_at_station = [ntimes, nants, n_rfi_channels]
+
+    # apply the beamgain to the input apparent emitter power
+    rfi_at_station = isotropic_emitter_power.copy() * numpy.sqrt(
+        beamgain
+    )  # shape of rfi_at_station = [ntimes, nants, n_rfi_channels]
+
     # Calculate the rfi correlation using the fringe rotation and the rfi at the station
     # [ntimes, nants, nants, nchan, npol]
     # for this to work, I need to add more channels to match the input channel number
@@ -441,22 +600,39 @@ def refactored_rf_at_stat(att_context, attenuation_value, beamgain_value, bg_con
         to_append = numpy.zeros((rfi_at_station.shape[0], rfi_at_station.shape[1], 2))
         rfi_at_station = numpy.insert(rfi_at_station, [0], to_append, axis=2)
         rfi_at_station = numpy.append(rfi_at_station, to_append, axis=2)
-    ska_stations = bvis.configuration.names.values
-    ska_ids = [int(x.strip("LOW_")) for x in ska_stations]
-    # only run code for SKA stations which are part of the bvis configuration
-    rfi_for_sub_stations = numpy.zeros((rfi_at_station.shape[0], len(ska_ids),
-                                        rfi_at_station.shape[2]), dtype=complex)
+
+    # TODO: I think this is the correct way of determining which stations should be used in the calcs
+    # ska_stations = bvis.configuration.names.values
+    # ska_ids = [int(x.strip("LOW_")) for x in ska_stations]
+    # # only run code for SKA stations which are part of the bvis configuration
+    # rfi_for_sub_stations = numpy.zeros((rfi_at_station.shape[0], len(ska_ids),
+    #                                     rfi_at_station.shape[2]), dtype=complex)
     # j = 0
     # for i in ska_ids:
     #     rfi_for_sub_stations[:, j, :] = rfi_at_station[:, i, :]
     #     j += 1
-    rfi_for_sub_stations = rfi_at_station[:, :nants_start, :]
-    rfi_for_sub_stations = rfi_for_sub_stations[:, ::station_skip, :]
-    return emitter_location, rfi_for_sub_stations
+    # TODO: is this correct? it assumes that the stations we want to use are in the front of the list
+    #   but we got them by saying how far they can be from the centre, so that's not necessarily the first stations
+    rfi_at_stations = rfi_at_station[:, :nants_start, :]
+    rfi_at_stations = rfi_at_stations[:, ::station_skip, :]
+
+    # TODO: why does rfi_for_sub_stations have to be a complex array?
+    return rfi_at_stations
 
 
-def rfi_at_station_per_transmitter(att_context, attenuation_value, beamgain_value, bg_context, bvis, frequency_variable,
-                                   nants_start, station_skip, time_variable, trans, transmitter_list):
+def rfi_at_station_per_transmitter(
+    att_context,
+    attenuation_value,
+    beamgain_value,
+    bg_context,
+    bvis,
+    frequency_variable,
+    nants_start,
+    station_skip,
+    time_variable,
+    trans,
+    transmitter_list,
+):
     # print('Processing transmitter', trans)
     emitter_power = transmitter_list[trans]["power"]
     emitter_location = EarthLocation(

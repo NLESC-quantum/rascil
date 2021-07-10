@@ -22,7 +22,6 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     invert_list_rsexecute_workflow,
     residual_list_rsexecute_workflow,
     restore_centre_rsexecute_workflow,
-    restore_taylor_terms_rsexecute_workflow,
     predict_list_rsexecute_workflow,
     subtract_list_rsexecute_workflow,
     restore_list_rsexecute_workflow,
@@ -286,6 +285,32 @@ def continuum_imaging_list_rsexecute_workflow(
         facets=facets,
         **kwargs,
     )
+    (
+        deconvolve_model_imagelist,
+        residual_imagelist,
+        restored_imagelist,
+    ) = restore_pipeline_rsexecute_workflow(
+        deconvolve_model_imagelist, psf_imagelist, residual_imagelist, kwargs
+    )
+
+    return deconvolve_model_imagelist, residual_imagelist, restored_imagelist
+
+
+def restore_pipeline_rsexecute_workflow(
+    deconvolve_model_imagelist, psf_imagelist, residual_imagelist, kwargs
+):
+    """Restore images using one of a number of methods selected by restored_output
+
+    list: lists of images
+    integrated: restored is the central channel image plus the average residual
+    taylor: lists of Taylor terms of all images
+
+    :param deconvolve_model_imagelist:
+    :param psf_imagelist:
+    :param residual_imagelist:
+    :param kwargs:
+    :return:
+    """
     output = get_parameter(kwargs, "restored_output", "list")
     if output == "integrated":
         restored_imagelist = restore_centre_rsexecute_workflow(
@@ -302,8 +327,11 @@ def continuum_imaging_list_rsexecute_workflow(
         residual_imagelist = rsexecute.execute(
             calculate_frequency_taylor_terms_from_image_list, nout=nmoment
         )(residual_imagelist_trimmed, nmoment=nmoment)
+        residual_imagelist = [
+            rsexecute.execute(lambda x: (x, 0.0))(d) for d in residual_imagelist
+        ]
 
-        restored_imagelist = restore_taylor_terms_rsexecute_workflow(
+        restored_imagelist = restore_list_rsexecute_workflow(
             deconvolve_model_imagelist,
             psf_imagelist,
             residual_imagelist,
@@ -319,7 +347,6 @@ def continuum_imaging_list_rsexecute_workflow(
         raise ValueError(
             f"continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output}"
         )
-
     return deconvolve_model_imagelist, residual_imagelist, restored_imagelist
 
 

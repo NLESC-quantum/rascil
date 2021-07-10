@@ -308,7 +308,7 @@ class TestPipelineGraphs(unittest.TestCase):
                     )
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
-                        residual[moment],
+                        residual[moment][0],
                         f"{self.dir}/test_pipelines_{tag}_rsexecute_residual_taylor{moment}.fits",
                     )
                 for moment, _ in enumerate(clean):
@@ -754,15 +754,53 @@ class TestPipelineGraphs(unittest.TestCase):
         )
         clean = [sm.image for sm in sky_model_list]
 
-        if self.persist:
-            self.save_and_check(
-                "cip_skymodel_pipeline_empty",
-                clean,
-                residual,
-                restored,
-                116.94307436039853,
-                -1.4378387157224086,
-            )
+        self.save_and_check(
+            "cip_skymodel_pipeline_empty",
+            clean,
+            residual,
+            restored,
+            116.94307436039853,
+            -1.4378387157224086,
+        )
+
+    def test_continuum_imaging_skymodel_pipeline_empty_taylor_terms(self):
+        self.actualSetUp()
+
+        continuum_imaging_list = continuum_imaging_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=None,
+            context="ng",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=5,
+            gain=0.7,
+            deconvolve_facets=4,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            restored_output="taylor",
+        )
+        residual, restored, sky_model_list = rsexecute.compute(
+            continuum_imaging_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        self.save_and_check(
+            "cip_skymodel_pipeline_empty_taylor_terms",
+            clean,
+            residual,
+            restored,
+            101.23240469914016,
+            -0.3411879302406853,
+            taylor=True,
+        )
 
     def test_continuum_imaging_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp()
@@ -793,15 +831,14 @@ class TestPipelineGraphs(unittest.TestCase):
         )
         clean = [sm.image for sm in sky_model_list]
 
-        if self.persist:
-            self.save_and_check(
-                "cip_skymodel_pipeline_empty_threshold",
-                clean,
-                residual,
-                restored,
-                116.94307436039853,
-                -1.4378387157224086,
-            )
+        self.save_and_check(
+            "cip_skymodel_pipeline_empty_threshold_taylor",
+            clean,
+            residual,
+            restored,
+            116.94307436039853,
+            -1.4378387157224086,
+        )
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
@@ -851,15 +888,14 @@ class TestPipelineGraphs(unittest.TestCase):
         )
         clean = [sm.image for sm in sky_model_list]
 
-        if self.persist:
-            self.save_and_check(
-                "cip_skymodel_pipeline_partial",
-                clean,
-                residual,
-                restored,
-                116.94307436039853,
-                -1.4378387157224086,
-            )
+        self.save_and_check(
+            "cip_skymodel_pipeline_partial",
+            clean,
+            residual,
+            restored,
+            116.94307436039853,
+            -1.4378387157224086,
+        )
 
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()
@@ -897,15 +933,14 @@ class TestPipelineGraphs(unittest.TestCase):
         )
         clean = [sm.image for sm in sky_model_list]
 
-        if self.persist:
-            self.save_and_check(
-                "cip_skymodel_pipeline_exact",
-                clean,
-                residual,
-                restored,
-                116.94307436039853,
-                -1.4378387157224086,
-            )
+        self.save_and_check(
+            "cip_skymodel_pipeline_exact",
+            clean,
+            residual,
+            restored,
+            116.94307436039853,
+            -1.4378387157224086,
+        )
 
 
 if __name__ == "__main__":

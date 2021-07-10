@@ -14,6 +14,9 @@ from rascil.data_models.parameters import get_parameter
 from rascil.processing_components import (
     copy_visibility,
 )
+from rascil.processing_components.image.taylor_terms import (
+    calculate_frequency_taylor_terms_from_image_list,
+)
 from rascil.workflows.rsexecute import calibrate_list_rsexecute_workflow
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
@@ -215,11 +218,71 @@ def ical_skymodel_list_rsexecute_workflow(
         skymodel_list=skymodel_list,
         **kwargs,
     )
+
+    (
+        skymodel_list,
+        residual_imagelist,
+        restored_imagelist,
+    ) = restore_skymodel_pipeline_rsexecute_workflow(
+        skymodel_list, psf_imagelist, residual_imagelist, **kwargs
+    )
+    return (
+        residual_imagelist,
+        restored_imagelist,
+        skymodel_list,
+        gt_list,
+    )
+
+
+def restore_skymodel_pipeline_rsexecute_workflow(
+    skymodel_list, psf_imagelist, residual_imagelist, **kwargs
+):
+    """Restore images using one of a number of methods selected by restored_output
+
+    list: lists of images
+    integrated: restored is the central channel image plus the average residual
+    taylor: lists of Taylor terms of all images
+
+    :param skymodel_imagelist:
+    :param psf_imagelist:
+    :param residual_imagelist:
+    :param kwargs:
+    :return:
+    """
     output = get_parameter(kwargs, "restored_output", "list")
+
     if output == "integrated":
         restored_imagelist = restore_centre_skymodel_list_rsexecute_workflow(
             skymodel_list, psf_imagelist, residual_imagelist, **kwargs
         )
+    elif output == "taylor":
+        # In this case, we overwrite the originals with Taylor term versions
+        nmoment = get_parameter(kwargs, "nmoment", 1)
+        deconvolve_model_imagelist = [s.image for s in skymodel_list]
+        deconvolve_model_imagelist = rsexecute.execute(
+            calculate_frequency_taylor_terms_from_image_list, nout=nmoment
+        )(deconvolve_model_imagelist, nmoment=nmoment)
+
+        residual_imagelist_trimmed = [
+            rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+        ]
+        residual_imagelist = rsexecute.execute(
+            calculate_frequency_taylor_terms_from_image_list, nout=nmoment
+        )(residual_imagelist_trimmed, nmoment=nmoment)
+        residual_imagelist = [
+            rsexecute.execute(lambda x: (x, 0.0))(d) for d in residual_imagelist
+        ]
+
+        # Note that this discards the components: TODO: Add component fitting
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=deconvolve_model_imagelist[moment])
+            for moment in range(nmoment)
+        ]
+        # Note that the psf has not been converted to Taylor form
+        restored_imagelist = restore_skymodel_list_rsexecute_workflow(
+            skymodel_list, psf_imagelist, residual_imagelist, **kwargs
+        )
+
     elif output == "list":
         restored_imagelist = restore_skymodel_list_rsexecute_workflow(
             skymodel_list, psf_imagelist, residual_imagelist, **kwargs
@@ -229,12 +292,7 @@ def ical_skymodel_list_rsexecute_workflow(
             f"continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output}"
         )
 
-    return (
-        residual_imagelist,
-        restored_imagelist,
-        skymodel_list,
-        gt_list,
-    )
+    return skymodel_list, residual_imagelist, restored_imagelist
 
 
 def continuum_imaging_skymodel_list_rsexecute_workflow(

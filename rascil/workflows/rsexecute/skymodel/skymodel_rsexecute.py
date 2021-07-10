@@ -18,6 +18,9 @@ from rascil.processing_components import (
     image_scatter_facets,
     image_gather_facets,
 )
+from rascil.processing_components.image.taylor_terms import (
+    calculate_frequency_taylor_terms_from_image_list,
+)
 from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import restore_cube, fit_psf
 from rascil.processing_components.imaging import dft_skycomponent_visibility
@@ -319,10 +322,6 @@ def _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list):
     :param residual_imagelist:
     :param skymodel_list:
     """
-    if len(skymodel_list) != len(psf_imagelist):
-        errmsg = "Skymodel and psf list have different lengths"
-        log.error(errmsg)
-        raise ValueError(errmsg)
     if residual_imagelist is not None:
         if len(skymodel_list) != len(residual_imagelist):
             errmsg = "Skymodel and residual list have different lengths"
@@ -364,6 +363,123 @@ def restore_skymodel_single_list_rsexecute_workflow(
 
 
 def restore_skymodel_list_rsexecute_workflow(
+    skymodel_list,
+    psf_imagelist,
+    residual_imagelist=None,
+    restore_facets=1,
+    restore_overlap=8,
+    restore_taper="tukey",
+    clean_beam=None,
+    **kwargs
+):
+    """Create a graph to calculate the restored image
+
+    :param model_imagelist: Model list (or graph)
+    :param psf_imagelist: PSF list (or graph)
+    :param residual_imagelist: Residual list (or graph)
+    :param clean_beam: Clean beam e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
+    :param kwargs: Parameters for functions in components
+    :param restore_facets: Number of facets used per axis (used to distribute)
+    :param restore_overlap: Overlap in pixels (0 is best)
+    :param restore_taper: Type of taper between facets
+    :return: list of restored images (or graph)
+    """
+    _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list)
+
+    if clean_beam is None:
+        clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
+        psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
+        clean_beam = rsexecute.execute(fit_psf)(psf)
+
+    if restore_overlap < 0:
+        raise ValueError("Number of pixels for restore overlap must be >= 0")
+
+    if restore_facets % 2 == 0 or restore_facets == 1:
+        actual_number_facets = restore_facets
+    else:
+        actual_number_facets = max(1, (restore_facets - 1))
+
+    # Scatter each list element into a list. We will then run restore_cube on each
+    facet_model_list = [
+        rsexecute.execute(
+            image_scatter_facets, nout=actual_number_facets * actual_number_facets
+        )(sm.image, facets=restore_facets, overlap=restore_overlap, taper=restore_taper)
+        for sm in skymodel_list
+    ]
+
+    if residual_imagelist is not None:
+        residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
+            residual_imagelist
+        )
+        facet_residual_list = [
+            rsexecute.execute(
+                image_scatter_facets, nout=actual_number_facets * actual_number_facets
+            )(
+                residual,
+                facets=restore_facets,
+                overlap=restore_overlap,
+                taper=restore_taper,
+            )
+            for residual in residual_list
+        ]
+        facet_restored_list = [
+            [
+                rsexecute.execute(
+                    restore_cube, nout=actual_number_facets * actual_number_facets
+                )(
+                    model=facet_model_list[i][im],
+                    residual=facet_residual_list[i][im],
+                    clean_beam=clean_beam,
+                )
+                for im, _ in enumerate(facet_model_list[i])
+            ]
+            for i, _ in enumerate(skymodel_list)
+        ]
+    else:
+        facet_restored_list = [
+            [
+                rsexecute.execute(
+                    restore_cube, nout=actual_number_facets * actual_number_facets
+                )(model=facet_model_list[i][im], clean_beam=clean_beam)
+                for im, _ in enumerate(facet_model_list[i])
+            ]
+            for i, _ in enumerate(skymodel_list)
+        ]
+
+    # Now we gather the results across all facets
+    restored_imagelist = [
+        rsexecute.execute(image_gather_facets)(
+            facet_restored_list[i],
+            skymodel_list[i].image,
+            facets=restore_facets,
+            overlap=restore_overlap,
+            taper=restore_taper,
+        )
+        for i, _ in enumerate(skymodel_list)
+    ]
+
+    def skymodel_restore_component(s, restored_image, cb):
+        return restore_skycomponent(restored_image, s.components, cb)
+
+    restored_imagelist = [
+        rsexecute.execute(skymodel_restore_component, nout=1)(
+            sm, restored_imagelist[ism], clean_beam
+        )
+        for ism, sm in enumerate(skymodel_list)
+    ]
+
+    def set_clean_beam(r, cb):
+        r.attrs["clean_beam"] = cb
+        return r
+
+    restored_imagelist = [
+        rsexecute.execute(set_clean_beam, nout=1)(r, clean_beam)
+        for r in restored_imagelist
+    ]
+    return rsexecute.optimize(restored_imagelist)
+
+
+def restore_taylor_terms_skymodel_list_rsexecute_workflow(
     skymodel_list,
     psf_imagelist,
     residual_imagelist=None,

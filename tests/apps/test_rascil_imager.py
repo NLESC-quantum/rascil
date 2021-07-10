@@ -46,7 +46,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
-default_run = False
+default_run = True
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ default_run = False
     "component_threshold, component_method, offset, flat_sky, restored_output",
     [
         (
-            not default_run,
+            default_run,
             "invert",
             True,
             0,
@@ -75,8 +75,8 @@ default_run = False
             0,
             "invert",
             False,
-            94.73840939270013,
-            -13.614616421597278,
+            90.58847332407103,
+            -10.899132439379027,
             None,
             None,
             5.5,
@@ -90,8 +90,8 @@ default_run = False
             5,
             "ical",
             True,
-            116.01740390541707,
-            -1.6249443528138325,
+            115.72442071615356,
+            -0.8494262709534897,
             None,
             None,
             5.0,
@@ -99,14 +99,14 @@ default_run = False
             "list",
         ),
         (
-            not default_run,
+            default_run,
             "cip",
             True,
             5,
             "cip",
             False,
-            116.82915647003882,
-            -1.034798067250713,
+            116.82068791892249,
+            -0.14702039759907018,
             None,
             "None",
             5.0,
@@ -120,8 +120,8 @@ default_run = False
             5,
             "cip",
             False,
-            116.9194381185469,
-            -9.878779238880398,
+            96.71205433915084,
+            -5.472037162107906,
             None,
             "None",
             5.5,
@@ -135,8 +135,8 @@ default_run = False
             5,
             "cip",
             False,
-            111.29281438355484,
-            -1.6919812258498772,
+            99.57360446681236,
+            -0.38011414020468276,
             "10",
             "fit",
             5.5,
@@ -150,11 +150,11 @@ default_run = False
             5,
             "cip",
             False,
-            111.29281438355484,
-            -1.6919812258498772,
-            "10",
-            "fit",
-            5.5,
+            101.20102410921574,
+            -0.03072964300976511,
+            "1e15",
+            "None",
+            5.0,
             False,
             "taylor",
         ),
@@ -399,7 +399,7 @@ def test_rascil_imager(
         "--clean_restored_output",
         restored_output,
         "--clean_restore_facets",
-        "4",
+        "1",
         "--clean_psf_support",
         "64",
     ]

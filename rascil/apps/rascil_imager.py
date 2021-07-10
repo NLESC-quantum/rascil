@@ -446,36 +446,36 @@ def write_results(restored_output, imagename, result, performance_file):
     elif restored_output == "taylor":
         nmoment = len(restored)
         # Do the first last so that the name will be correct for Taylor 0
-        for moment in range(nmoment - 1, -1, -1):
+        for taylor in range(nmoment - 1, -1, -1):
             performance_qa_image(
                 performance_file,
-                f"deconvolved moment{moment}",
-                deconvolved[moment],
+                f"deconvolved taylor{taylor}",
+                deconvolved[taylor],
                 mode="a",
             )
             log.info(
-                qa_image(deconvolved[moment], context=f"Deconvolved moment{moment}")
+                qa_image(deconvolved[taylor], context=f"Deconvolved taylor{taylor}")
             )
-            deconvolvedname = imagename + f"_deconvolved_moment{moment}.fits"
-            export_image_to_fits(deconvolved[moment], deconvolvedname)
+            deconvolvedname = imagename + f"_deconvolved_taylor{taylor}.fits"
+            export_image_to_fits(deconvolved[taylor], deconvolvedname)
 
             performance_qa_image(
-                performance_file, f"restored moment{moment}", restored[moment], mode="a"
+                performance_file, f"restored taylor{taylor}", restored[taylor], mode="a"
             )
             log.info("Writing restored image")
-            log.info(qa_image(restored[moment], context="Residual"))
-            restoredname = imagename + f"_restored_moment{moment}.fits"
-            export_image_to_fits(restored[moment], restoredname)
+            log.info(qa_image(restored[taylor], context=f"Restored taylor{taylor}"))
+            restoredname = imagename + f"_restored_taylor{taylor}.fits"
+            export_image_to_fits(restored[taylor], restoredname)
 
             performance_qa_image(
                 performance_file,
-                f"residual_moment{moment}",
-                residual[moment][0],
+                f"residual_taylor{taylor}",
+                residual[taylor][0],
                 mode="a",
             )
-            log.info(qa_image(residual[moment][0], context="Residual"))
-            residualname = imagename + f"_residual_moment{moment}.fits"
-            export_image_to_fits(residual[moment][0], residualname)
+            log.info(qa_image(residual[taylor][0], context="Residual"))
+            residualname = imagename + f"_residual_taylor{taylor}.fits"
+            export_image_to_fits(residual[taylor][0], residualname)
 
     else:
         deconvolved_image = image_gather_channels(deconvolved)

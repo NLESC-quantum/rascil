@@ -67,7 +67,7 @@ class TestPipelineGraphs(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path
 
         self.dir = rascil_path("test_results")
-        self.persist = os.getenv("RASCIL_PERSIST", False)
+        self.persist = os.getenv("RASCIL_PERSIST", True)
 
     def tearDown(self):
         rsexecute.close()
@@ -125,7 +125,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.model_imagelist = [
             rsexecute.execute(create_unittest_model, nout=1)(
-                self.bvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005
+                self.bvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.001
             )
             for i in range(nfreqwin)
         ]
@@ -201,7 +201,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.model_imagelist = [
             rsexecute.execute(create_unittest_model, nout=1)(
-                self.bvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.0005
+                self.bvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.001
             )
             for i in range(nfreqwin)
         ]
@@ -237,8 +237,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            101.23240469914016,
-            -0.3411878869084084,
+            101.21958010678065,
+            -0.020218107844289,
             taylor=True,
         )
 
@@ -271,8 +271,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.94307436039853,
-            -1.4378387157224086,
+            116.89672602257198,
+            -0.0635623703688846,
         )
 
     def save_and_check(
@@ -797,8 +797,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            101.23240469914016,
-            -0.3411879302406853,
+            101.21958010678065,
+            -0.020218107844288964,
             taylor=True,
         )
 

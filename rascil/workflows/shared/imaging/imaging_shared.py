@@ -119,7 +119,10 @@ def remove_sumwt(results):
     :param results:
     :return: A list of just the dirty images
     """
-    return [d[0] for d in results]
+    try:
+        return [d[0] for d in results]
+    except KeyError:
+        return results
 
 
 def sum_predict_results(results):

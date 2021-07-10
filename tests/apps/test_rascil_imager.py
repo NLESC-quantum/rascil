@@ -46,26 +46,27 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
-default_run = True
+default_run = False
 
 
 @pytest.mark.parametrize(
     "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, "
-    "component_threshold, component_method, offset, flat_sky",
+    "component_threshold, component_method, offset, flat_sky, restored_output",
     [
         (
-            default_run,
+            not default_run,
             "invert",
             True,
             0,
             "invert",
             False,
-            97.86001353082986,
-            -13.658737888701651,
+            101.58410851350841,
+            -9.893454610760015,
             None,
             None,
             5.0,
             False,
+            "list",
         ),
         (
             default_run,
@@ -80,12 +81,13 @@ default_run = True
             None,
             5.5,
             False,
+            "list",
         ),
         (
             default_run,
             "ical",
             True,
-            9,
+            5,
             "ical",
             True,
             116.01740390541707,
@@ -94,12 +96,13 @@ default_run = True
             None,
             5.0,
             False,
+            "list",
         ),
         (
-            default_run,
+            not default_run,
             "cip",
             True,
-            9,
+            5,
             "cip",
             False,
             116.82915647003882,
@@ -108,26 +111,28 @@ default_run = True
             "None",
             5.0,
             False,
+            "list",
         ),
         (
             default_run,
             "cip_offset",
             True,
-            9,
+            5,
             "cip",
             False,
-            106.40528966776557,
-            -1.6816523606721545,
+            116.9194381185469,
+            -9.878779238880398,
             None,
             "None",
             5.5,
             False,
+            "list",
         ),
         (
             default_run,
             "cip_offset_fit",
             True,
-            9,
+            5,
             "cip",
             False,
             111.29281438355484,
@@ -136,6 +141,22 @@ default_run = True
             "fit",
             5.5,
             False,
+            "list",
+        ),
+        (
+            default_run,
+            "cip_taylor",
+            True,
+            5,
+            "cip",
+            False,
+            111.29281438355484,
+            -1.6919812258498772,
+            "10",
+            "fit",
+            5.5,
+            False,
+            "taylor",
         ),
     ],
 )
@@ -152,6 +173,7 @@ def test_rascil_imager(
     component_method,
     offset,
     flat_sky,
+    restored_output,
 ):
     """
 
@@ -166,13 +188,15 @@ def test_rascil_imager(
     :param component_threshold: Flux above which components are searched and fitted in first deconvolution
     :param component_method: Method to find components: fit or None
     :param offset: Offset of test pattern in RA pizels
+    :param flat_sky: Make the sky flat
+    :param restored_output: Type of restored output
     :return:
     """
 
     if not enabled:
         return True
 
-    nfreqwin = 7
+    nfreqwin = 5
     dospectral = True
     zerow = False
     dopol = False
@@ -230,7 +254,7 @@ def test_rascil_imager(
 
     model_imagelist = [
         rsexecute.execute(create_unittest_model, nout=1)(
-            bvis_list[i], image_pol, npixel=npixel, cellsize=0.0005
+            bvis_list[i], image_pol, npixel=npixel, cellsize=0.001
         )
         for i in range(nfreqwin)
     ]
@@ -346,7 +370,7 @@ def test_rascil_imager(
         "--imaging_npixel",
         "512",
         "--imaging_cellsize",
-        "0.0005",
+        "0.001",
         "--imaging_dft_kernel",
         "cpu_looped",
         "--imaging_flat_sky",
@@ -357,27 +381,27 @@ def test_rascil_imager(
         "--clean_nmajor",
         f"{nmajor}",
         "--clean_niter",
-        "1000",
+        "100",
         "--clean_algorithm",
         "mmclean",
         "--clean_nmoment",
         "2",
         "--clean_gain",
-        "0.1",
+        "0.7",
         "--clean_scales",
         "0",
         "--clean_threshold",
-        "0.003",
+        "0.01",
         "--clean_fractional_threshold",
-        "0.03",
+        "0.1",
         "--clean_facets",
         "1",
         "--clean_restored_output",
-        "list",
+        restored_output,
         "--clean_restore_facets",
         "4",
-        "--clean_restore_overlap",
-        "8",
+        "--clean_psf_support",
+        "64",
     ]
     if component_threshold is not None and component_method is not None:
         clean_args += [

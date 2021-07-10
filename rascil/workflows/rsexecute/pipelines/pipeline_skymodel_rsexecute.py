@@ -289,7 +289,7 @@ def restore_skymodel_pipeline_rsexecute_workflow(
         )
     else:
         raise ValueError(
-            f"continuum_imaging_list_rsexecute_workflow: Unknown restored_output {output}"
+            f"continuum_imaging_skymodel_list_rsexecute_workflow: Unknown restored_output {output}"
         )
 
     return skymodel_list, residual_imagelist, restored_imagelist

@@ -481,20 +481,20 @@ class Image(xarray.Dataset):
 
         frequency = wcs.sub([4]).wcs_pix2world(range(nchan), 0)[0]
         cellsize = numpy.deg2rad(numpy.abs(wcs.wcs.cdelt[1]))
-        cx = numpy.deg2rad(wcs.wcs.crval[0])
-        cy = numpy.deg2rad(wcs.wcs.crval[1])
+        ra = numpy.deg2rad(wcs.wcs.crval[0])
+        dec = numpy.deg2rad(wcs.wcs.crval[1])
 
-        lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
-        try:
-            ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
-            ra = numpy.deg2rad(ra)
-            dec = numpy.deg2rad(dec)
-        except:
-            log.warning(
-                "Coordinates not RA, Dec pair: ra, dec coordinates are x, y meshes"
-            )
-            ra = lmesh
-            dec = mmesh
+        # lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+        # try:
+        #     ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
+        #     ra = numpy.deg2rad(ra)
+        #     dec = numpy.deg2rad(dec)
+        # except:
+        #     log.warning(
+        #         "Coordinates not RA, Dec pair: ra, dec coordinates are x, y meshes"
+        #     )
+        #     ra = lmesh
+        #     dec = mmesh
 
         # Define the dimensions
         dims = ["frequency", "polarisation", "y", "x"]
@@ -504,13 +504,11 @@ class Image(xarray.Dataset):
             "frequency": ("frequency", frequency),
             "polarisation": ("polarisation", polarisation_frame.names),
             "y": numpy.linspace(
-                cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny, endpoint=False
+                dec - cellsize * ny / 2, dec + cellsize * ny / 2, ny, endpoint=False
             ),
             "x": numpy.linspace(
-                cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx, endpoint=False
+                ra - cellsize * nx / 2, ra + cellsize * nx / 2, nx, endpoint=False
             ),
-            "ra": (("x", "y"), ra, {"units": "rad"}),
-            "dec": (("x", "y"), dec, {"units": "rad"}),
         }
 
         assert (
@@ -545,6 +543,8 @@ class Image(xarray.Dataset):
             "clean_beam": clean_beam,
             "refpixel": (wcs.wcs.crpix),
             "channel_bandwidth": wcs.wcs.cdelt[3],
+            "ra": ra,
+            "dec": dec,
         }
 
         super().__init__(data_vars, coords=coords, attrs=attrs)
@@ -601,11 +601,9 @@ class ImageAccessor(XarrayAccessorMixin):
 
         :return:
         """
-        cx = len(self._obj.coords["x"].data) // 2
-        cy = len(self._obj.coords["y"].data) // 2
         return SkyCoord(
-            numpy.rad2deg(self._obj.coords["ra"][cy, cx].values) * u.deg,
-            numpy.rad2deg(self._obj.coords["dec"][cy, cx].values) * u.deg,
+            numpy.rad2deg(self._obj.attrs["ra"]) * u.deg,
+            numpy.rad2deg(self._obj.attrs["dec"]) * u.deg,
             frame="icrs",
             equinox="J2000",
         )

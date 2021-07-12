@@ -3,7 +3,6 @@
 """
 
 import logging
-import math
 import unittest
 from unittest.mock import patch
 
@@ -15,11 +14,8 @@ from astropy.coordinates import SkyCoord, EarthLocation
 from rascil.data_models import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation.rfi import (
-    create_propagators,
     calculate_rfi_at_station,
     calculate_station_correlation_rfi,
-    simulate_DTV_prop,
-    create_propagators_prop,
     simulate_rfi_block_prop,
 )
 from rascil.processing_components.visibility.base import create_blockvisibility
@@ -76,6 +72,9 @@ class TestRFISim(unittest.TestCase):
 
     def test_rfi_correlation(self):
         """Calculate the value of the correlated RFI using nominal attenuation, check for regression"""
+
+        # TODO: this will have to be updated to test the new function!!
+
         # Perth from Google for the moment
         perth = EarthLocation(lon=115.8605 * u.deg, lat=-31.9505 * u.deg, height=0.0)
 
@@ -115,153 +114,8 @@ class TestRFISim(unittest.TestCase):
             1,
         ), correlation.shape
 
-    def test_rfi_propagators(self):
-        """Calculate the value of the propagator from Perth to array, check for regression"""
-        nants_start = len(self.low.names)
-
-        # Calculate the power spectral density of the DTV station using the transmitter bandwidth and frequency
-        # : Watts/Hz
-        emitter, channel_range = simulate_DTV_prop(
-            self.frequency,
-            self.times,
-            power=self.transmitter_dict["power"],
-            freq_cen=self.transmitter_dict["freq"] * 1e6,
-            bw=self.transmitter_dict["bw"] * 1e6,
-            time_variable=False,
-            frequency_variable=False,
-        )
-        numpy.testing.assert_almost_equal(
-            numpy.max(numpy.abs(emitter)), 0.05980416299307147
-        )
-        assert len(channel_range) == 2
-        assert channel_range[0] == 117
-        assert channel_range[1] == 350
-        assert emitter.shape == (self.ntimes, self.nchannels)
-
-        # Calculate the propagators for signals from Perth to the stations in low
-        # These are fixed in time but vary with frequency. The attenuation and beam gain
-        # are set per frequency channel covered by the transmitter bandwidth.
-
-        propagators = create_propagators_prop(
-            self.low,
-            self.frequency,
-            nants_start,
-            station_skip=self.antskip,
-            attenuation=1e-9,
-            beamgainval=1e-8,
-            trans_range=channel_range,
-        )
-        assert propagators.shape == (self.nants, self.nchannels), propagators.shape
-
-    def test_simulate_dtv_prop(self):
-        """
-        simulate_DTV_prop correctly calculates the power spectral density [W/Hz] of
-        the DTV station in Perth using the transmitter bandwidth and frequency
-
-        Do all time_variable, frequency_variable cases
-        """
-        emitter, channel_range = simulate_DTV_prop(
-            self.frequency,
-            self.times,
-            power=self.transmitter_dict["power"],
-            freq_cen=self.transmitter_dict["freq"] * 1e6,
-            bw=self.transmitter_dict["bw"] * 1e6,
-            time_variable=False,
-            frequency_variable=False,
-        )
-
-        numpy.testing.assert_almost_equal(
-            numpy.max(numpy.abs(emitter)), 0.05980416299307147
-        )
-        assert len(channel_range) == 2
-        assert channel_range[0] == 117
-        assert channel_range[1] == 350
-        assert emitter.shape == (self.ntimes, self.nchannels)
-
-        emitter, channel_range = simulate_DTV_prop(
-            self.frequency,
-            self.times,
-            power=self.transmitter_dict["power"],
-            freq_cen=self.transmitter_dict["freq"] * 1e6,
-            bw=self.transmitter_dict["bw"] * 1e6,
-            time_variable=False,
-            frequency_variable=True,
-        )
-
-        numpy.testing.assert_almost_equal(
-            numpy.max(numpy.abs(emitter)), 0.20291900444429292
-        )
-        assert len(channel_range) == 2
-        assert channel_range[0] == 117
-        assert channel_range[1] == 350
-        assert emitter.shape == (self.ntimes, self.nchannels)
-
-        emitter, channel_range = simulate_DTV_prop(
-            self.frequency,
-            self.times,
-            power=self.transmitter_dict["power"],
-            freq_cen=self.transmitter_dict["freq"] * 1e6,
-            bw=self.transmitter_dict["bw"] * 1e6,
-            time_variable=True,
-            frequency_variable=False,
-        )
-
-        numpy.testing.assert_almost_equal(
-            numpy.max(numpy.abs(emitter)), 0.15779614478384324
-        )
-        assert len(channel_range) == 2
-        assert channel_range[0] == 117
-        assert channel_range[1] == 350
-        assert emitter.shape == (self.ntimes, self.nchannels)
-
-        emitter, channel_range = simulate_DTV_prop(
-            self.frequency,
-            self.times,
-            power=self.transmitter_dict["power"],
-            freq_cen=self.transmitter_dict["freq"] * 1e6,
-            bw=self.transmitter_dict["bw"] * 1e6,
-            time_variable=True,
-            frequency_variable=True,
-        )
-
-        numpy.testing.assert_almost_equal(
-            numpy.max(numpy.abs(emitter)), 0.28001147137009325
-        )
-        assert len(channel_range) == 2
-        assert channel_range[0] == 117
-        assert channel_range[1] == 350
-        assert emitter.shape == (self.ntimes, self.nchannels)
-
-    def test_create_propagators_prop(self):
-        """
-        Calculate the propagators for signals from Perth to the stations in low
-        These are fixed in time but vary with frequency. The attenuation and beam gain
-        are set per frequency channel covered by the transmitter bandwidth.
-        """
-        channel_range = (117, 350)
-
-        propagators = create_propagators_prop(
-            self.low,
-            self.frequency,
-            self.nants,
-            station_skip=self.antskip,
-            attenuation=1e-9,
-            beamgainval=1e-8,
-            trans_range=channel_range,
-        )
-
-        assert propagators.shape == (self.nants, self.nchannels)
-
-        # if we don't want the exact value, because it's hard to calculate
-        # maybe we can test that there are values different than 1.0 in the array,
-        # which were supposed to be added by the function
-        assert numpy.abs(propagators).min() != 1.0
-        assert numpy.abs(propagators).max() == 1.0
-
-        assert round(numpy.abs(propagators).min(), 16) == 3.1622777e-9
-
     @patch("rascil.processing_components.simulation.rfi.get_file_strings")
-    def test_simulate_rfi_block_prop(self, mock_get_file_string): #
+    def test_simulate_rfi_block_prop(self, mock_get_file_string):
         """
         regression to test that simulate_rfi_block_prop correctly updates the
         block visibility data with RFI signal using the default

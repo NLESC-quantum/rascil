@@ -52,7 +52,10 @@ from rascil.processing_components.imaging.base import normalise_sumwt
 from rascil.processing_components import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.workflows.rsexecute.image import image_gather_channels_rsexecute
+from rascil.workflows.rsexecute.image import (
+    image_gather_channels_rsexecute,
+    sum_images_rsexecute,
+)
 
 from rascil.workflows.shared import (
     imaging_context,
@@ -494,6 +497,21 @@ def deconvolve_list_rsexecute_workflow(
 
     nchan = len(dirty_list)
 
+    # Work out the threshold. Need to find global peak over all dirty_list images
+    threshold = get_parameter(kwargs, "threshold", 0.0)
+    fractional_threshold = get_parameter(kwargs, "fractional_threshold", 0.1)
+
+    # Find the global threshold. This uses the peak in the average on the frequency axis since we
+    # want to use it in a stopping criterion in a moment clean
+    global_threshold = threshold_list_rsexecute(
+        dirty_list,
+        threshold,
+        fractional_threshold,
+        prefix=prefix,
+    )
+    # Dask is apparently smart enough to evaluate futures in kwargs
+    kwargs["threshold"] = global_threshold
+
     # We can divide the processing up into overlapping facets and then
     # run the single facet deconvolution on each
     deconvolve_facets = get_parameter(kwargs, "deconvolve_facets", 1)
@@ -574,20 +592,6 @@ def deconvolve_list_rsexecute_workflow(
     psf_list_extracted = [
         rsexecute.execute(imaging_extract_psf)(p, deconvolve_facets) for p in psf_list
     ]
-
-    # Work out the threshold. Need to find global peak over all dirty_list images
-    threshold = get_parameter(kwargs, "threshold", 0.0)
-    fractional_threshold = get_parameter(kwargs, "fractional_threshold", 0.1)
-
-    # Find the global threshold. This uses the peak in the average on the frequency axis since we
-    # want to use it in a stopping criterion in a moment clean
-    global_threshold = threshold_list_rsexecute(
-        scattered_facets_dirty_list,
-        threshold,
-        fractional_threshold,
-        prefix=prefix,
-    )
-    kwargs["threshold"] = global_threshold
 
     if mask is not None:
         mask_list = rsexecute.execute(
@@ -893,25 +897,20 @@ def threshold_list_rsexecute(imagelist, threshold, fractional_threshold, prefix=
     :return:
     """
 
-    def find_peak(i, im_list):
-        this_peak = numpy.max(
-            [numpy.max(numpy.abs(im["pixels"].data[0])) for im in im_list]
+    # Use the sum since it's quickest
+    frequency_plane = sum_images_rsexecute(imagelist)
+    norm = 1.0 / len(imagelist)
+
+    def find_peak_moment0(m0):
+        this_peak = norm * numpy.max(
+            numpy.abs(numpy.average(m0["pixels"].data, axis=0))
         )
-        log.info("threshold_list_rsexecute: sub_image %d, peak = %f," % (i, this_peak))
-        return this_peak
-
-    peak_list = [
-        rsexecute.execute(find_peak, nout=1)(i, image)
-        for i, image in enumerate(imagelist)
-    ]
-
-    def find_global(pl):
-        peak = numpy.max(pl)
-        actual = max(peak * fractional_threshold, threshold)
+        log.info("threshold_list_rsexecute: peak = %f," % (this_peak))
+        actual = max(this_peak * fractional_threshold, threshold)
         log.info(
-            "threshold_list_rsexecute %s: Global peak = %.6f, sub-image clean threshold will be %.6f"
-            % (prefix, peak, actual)
+            "threshold_list_rsexecute: Global peak = %.6f, sub-image clean threshold will be %.6f"
+            % (this_peak, actual)
         )
         return actual
 
-    return rsexecute.execute(find_global, nout=1)(peak_list)
+    return rsexecute.execute(find_peak_moment0, nout=1)(frequency_plane)

@@ -271,8 +271,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.89672602257198,
-            -0.0635623703688846,
+            116.85036592844513,
+            -0.06482127115187702,
         )
 
     def save_and_check(
@@ -797,8 +797,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            101.21958010678065,
-            -0.020218107844288964,
+            101.20392917498113,
+            0.02019460212426687,
             taylor=True,
         )
 

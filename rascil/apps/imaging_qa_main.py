@@ -19,6 +19,7 @@ import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.wcs.utils import skycoord_to_pixel
+from astropy.io import fits
 
 from rascil.data_models import (
     PolarisationFrame,
@@ -260,6 +261,8 @@ def analyze_image(args):
     input_image_restored = args.ingest_fitsname_restored
 
     im = import_image_from_fits(args.ingest_fitsname_restored)
+    hdulist = fits.open(args.ingest_fitsname_restored)
+    header = hdulist[0].header
 
     nchan = im["pixels"].shape[0]
     if nchan == 1:
@@ -330,8 +333,11 @@ def analyze_image(args):
 
     if args.ingest_fitsname_moment is not None:
 
-        input_image_moment = args.ingest_fitsname_moment + "_Taylor[1-9].fits"
+        # Used for RASCIL images
+        input_image_moment = args.ingest_fitsname_moment + "_taylor[1-9].fits"
+
     else:
+
         # Used for YANDA image format
         input_image_moment = args.ingest_fitsname_restored.replace(".0.", ".[1-9].")
 
@@ -590,10 +596,12 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
 
     else:
         moment_data = import_image_from_fits(moment_images[0])
-        if len(moment_images) > 1:
-            for moment_image in moment_images:
-                moment_data_now = import_image_from_fits(moment_image)
-                moment_data = add_image(moment_data, moment_data_now)
+
+        # This applies to multiple Taylor images, but ignore for now
+        #        if len(moment_images) > 1:
+        #            for moment_image in moment_images:
+        #                moment_data_now = import_image_from_fits(moment_image)
+        #                moment_data = add_image(moment_data, moment_data_now)
 
         image_frequency = moment_data.frequency.data
         ras = [comp.direction.ra.degree for comp in comp_list]
@@ -620,8 +628,8 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
             ):
                 flux = moment_data["pixels"].data[nchan // 2, 0, pixloc[1], pixloc[0]]
                 log.debug(
-                    "Taylor flux:{} for skycomponent {}, {}".format(
-                        flux, ras[icomp], decs[icomp]
+                    "Taylor flux:{} for skycomponent {}, {}, compared to original flux {}".format(
+                        flux, ras[icomp], decs[icomp], comp.flux[nchan // 2][0]
                     )
                 )
                 if comp.flux.all() > 0.0:
@@ -807,7 +815,7 @@ def plot_errors(
     nchan = image["pixels"].shape[0]
     refchan = nchan // 2
 
-    # If reading spectral index from files (temporary)
+    # If reading spectral index from files
     if sources_in_file is not None and ".txt" in sources_in_file:
 
         log.info("Reading spectral index from sources in file.")

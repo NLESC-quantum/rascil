@@ -129,7 +129,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         ]
 
         # Calculate the model convolved with a Gaussian.
-
         if self.persist:
 
             self.model_imagelist = [
@@ -140,7 +139,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             ]
 
             self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
-            model = self.model_imagelist[0]
+            model = image_gather_channels(self.model_imagelist)
 
             self.cmodel = smooth_image(model)
             export_image_to_fits(
@@ -177,7 +176,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         ]
 
     def test_deconvolve_and_restore_cube_mmclean(self):
-        self.actualSetUp(add_errors=True)
+        self.actualSetUp(add_errors=False)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
@@ -225,11 +224,11 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         restored = image_gather_channels(restored)
 
         self.save_and_check(
-            34.025081369372046, -3.0862288540801703, restored, "mmclean"
+            116.29006740027764, -0.40238957355136723, restored, "mmclean"
         )
 
     def test_deconvolve_and_restore_cube_msclean(self):
-        self.actualSetUp(add_errors=True)
+        self.actualSetUp(add_errors=False)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
@@ -275,10 +274,12 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         restored = rsexecute.compute(restored_list, sync=True)
         restored = image_gather_channels(restored)
 
-        self.save_and_check(33.989223196919845, -3.376259696305599, restored, "msclean")
+        self.save_and_check(
+            116.35326725293572, -0.49709339987059054, restored, "msclean"
+        )
 
     def test_deconvolve_and_restore_cube_mmclean_facets(self):
-        self.actualSetUp(add_errors=True)
+        self.actualSetUp(add_errors=False)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
@@ -329,7 +330,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         restored = image_gather_channels(restored)
 
         self.save_and_check(
-            34.2025966873645, -3.8007230968610055, restored, "mmclean_facets"
+            116.61854950606396, -9.46205848678285, restored, "mmclean_facets"
         )
 
     def save_and_check(self, flux_max, flux_min, restored, tag):

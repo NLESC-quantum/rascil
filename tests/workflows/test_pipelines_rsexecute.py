@@ -439,8 +439,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.87657624675474,
-            -0.06610275592373382,
+            116.86874157145884,
+            -0.0665865700969427,
         )
 
     def test_ical_pipeline_global(self):
@@ -722,8 +722,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.9315731003449,
-            -0.07230405921211963,
+            116.89159484588785,
+            -0.03298836500193018,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):

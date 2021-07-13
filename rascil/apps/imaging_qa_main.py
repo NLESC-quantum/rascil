@@ -19,7 +19,6 @@ import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.wcs.utils import skycoord_to_pixel
-from astropy.io import fits
 
 from rascil.data_models import (
     PolarisationFrame,
@@ -261,8 +260,6 @@ def analyze_image(args):
     input_image_restored = args.ingest_fitsname_restored
 
     im = import_image_from_fits(args.ingest_fitsname_restored)
-    hdulist = fits.open(args.ingest_fitsname_restored)
-    header = hdulist[0].header
 
     nchan = im["pixels"].shape[0]
     if nchan == 1:
@@ -597,11 +594,11 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
     else:
         moment_data = import_image_from_fits(moment_images[0])
 
-        # This applies to multiple Taylor images, but ignore for now
-        #        if len(moment_images) > 1:
-        #            for moment_image in moment_images:
-        #                moment_data_now = import_image_from_fits(moment_image)
-        #                moment_data = add_image(moment_data, moment_data_now)
+        # This applies to multiple Taylor images (not tested now)
+        if len(moment_images) > 1:
+            for moment_image in moment_images:
+                moment_data_now = import_image_from_fits(moment_image)
+                moment_data = add_image(moment_data, moment_data_now)
 
         image_frequency = moment_data.frequency.data
         ras = [comp.direction.ra.degree for comp in comp_list]

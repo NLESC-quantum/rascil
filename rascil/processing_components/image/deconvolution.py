@@ -238,26 +238,23 @@ def bound_psf_list(dirty_list, prefix, psf_list, psf_support=None, **kwargs):
                 dirty["pixels"].shape[2] // 2, dirty["pixels"].shape[3] // 2
             )
 
-        if (psf_support <= psf["pixels"].shape[2] // 2) and (
-            (psf_support <= psf["pixels"].shape[3] // 2)
-        ):
-            centre = [psf["pixels"].shape[2] // 2, psf["pixels"].shape[3] // 2]
-            psf = psf.isel(
-                x=slice((centre[0] - psf_support), (centre[0] + psf_support)),
-                y=slice((centre[1] - psf_support), (centre[1] + psf_support)),
-            )
-            log.info(
-                "deconvolve_cube %s: PSF support = +/- %d pixels"
-                % (prefix, psf_support)
-            )
-            log.info(
-                "deconvolve_cube %s: PSF shape %s"
-                % (prefix, str(psf["pixels"].data.shape))
-            )
-        else:
-            log.info("Using entire psf for dconvolution")
-        psfs.append(psf)
-    return psfs
+    if (psf_support <= psf["pixels"].shape[2] // 2) and (
+        (psf_support <= psf["pixels"].shape[3] // 2)
+    ):
+        centre = [psf["pixels"].shape[2] // 2, psf["pixels"].shape[3] // 2]
+        psf = psf.isel(
+            x=slice((centre[0] - psf_support), (centre[0] + psf_support)),
+            y=slice((centre[1] - psf_support), (centre[1] + psf_support)),
+        )
+        log.debug(
+            "deconvolve_cube %s: PSF support = +/- %d pixels" % (prefix, psf_support)
+        )
+        log.debug(
+            "deconvolve_cube %s: PSF shape %s" % (prefix, str(psf["pixels"].data.shape))
+        )
+    else:
+        log.info("Using entire psf for dconvolution")
+    return psf
 
 
 def complex_hogbom_kernel_list(

@@ -152,7 +152,7 @@ def invert_list_rsexecute_workflow(
             template_model_imagelist[ivis],
             dopsf=dopsf,
             normalise=normalise,
-            **kwargs
+            **kwargs,
         )
         for ivis, vis in enumerate(vis_list)
     ]
@@ -180,7 +180,7 @@ def residual_list_rsexecute_workflow(vis, model_imagelist, context="2d", **kwarg
         context=context,
         dopsf=False,
         normalise=True,
-        **kwargs
+        **kwargs,
     )
     return rsexecute.optimize(result)
 
@@ -242,7 +242,7 @@ def restore_list_rsexecute_workflow(
     restore_overlap=8,
     restore_taper="tukey",
     clean_beam=None,
-    **kwargs
+    **kwargs,
 ):
     """Create a graph to calculate the restored image
 
@@ -400,7 +400,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     sensitivity_list=None,
     prefix="",
     mask=None,
-    **kwargs
+    **kwargs,
 ):
     """Create a graph for deconvolution of a single image, adding to the model
 
@@ -467,7 +467,7 @@ def deconvolve_list_rsexecute_workflow(
     sensitivity_list=None,
     prefix="",
     mask=None,
-    **kwargs
+    **kwargs,
 ):
     """Create a graph for deconvolution, adding to the model
 
@@ -525,7 +525,7 @@ def deconvolve_list_rsexecute_workflow(
             sensitivity_list=sensitivity_list,
             prefix=prefix,
             mask=None,
-            **kwargs
+            **kwargs,
         )
 
     deconvolve_overlap = get_parameter(kwargs, "deconvolve_overlap", 0)
@@ -604,19 +604,21 @@ def deconvolve_list_rsexecute_workflow(
     # contains the clean image cube and lists of list components (a number for each channel)
     scattered_results_list = [
         deconvolve_list_singlefacet_rsexecute_workflow(
-            d_list,
-            psf_list_extracted,
-            m_list,
-            sensitivity_list=sens_list,
-            prefix=prefix,
-            msk=msk_list,
-            **kwargs
+            [(d, 0.0)],
+            [(psf_centre, 0.0)],
+            [m],
+            sensitivity_list=[sens],
+            prefix=f"{prefix} subimage {subimage}",
+            msk=msk,
+            **kwargs,
         )
-        for d_list, m_list, msk_list, sens_list in zip(
-            scattered_facets_dirty_list,
-            scattered_facets_model_list,
-            mask_list,
-            scattered_facets_sensitivity_list,
+        for subimage, (d, m, msk, sens) in enumerate(
+            zip(
+                scattered_facets_dirty_list,
+                scattered_facets_model_list,
+                mask_list,
+                scattered_facets_sensitivity_list,
+            )
         )
     ]
 

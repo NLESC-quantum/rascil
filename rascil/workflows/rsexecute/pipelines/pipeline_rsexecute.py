@@ -250,13 +250,13 @@ def continuum_imaging_list_rsexecute_workflow(
         residual_imagelist_trimmed,
         psf_imagelist_trimmed,
         model_imagelist,
-        prefix="cip cycle 0",
+        prefix=f"{pipeline_name} cycle 0",
         **kwargs,
     )
     nmajor = get_parameter(kwargs, "nmajor", 5)
     if nmajor > 1:
         for cycle in range(nmajor):
-            prefix = "cip cycle %d" % (cycle + 1)
+            prefix = f"{pipeline_name} cycle {cycle+1}"
             residual_imagelist = residual_list_rsexecute_workflow(
                 vis_list,
                 deconvolve_model_imagelist,

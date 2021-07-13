@@ -237,8 +237,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            101.21958010678065,
-            -0.020218107844289,
+            101.2039174372309,
+            -0.02020077240430279,
             taylor=True,
         )
 
@@ -349,8 +349,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.89672602257198,
-            -0.06356237036888479,
+            116.85036592844513,
+            -0.06482127115187702,
         )
 
     def test_ical_pipeline(self):
@@ -394,8 +394,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.87868429541761,
-            -0.06771395474814158,
+            116.83965595466495,
+            -0.0685445739832829,
         )
 
     def test_ical_pipeline_pol(self):
@@ -483,8 +483,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.06543508288999,
-            -0.5764016952368943,
+            116.03919403218217,
+            -0.5768811651762246,
         )
 
     def test_ical_skymodel_pipeline_empty(self):
@@ -538,8 +538,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.89659392370211,
-            -0.06330293717055603,
+            116.85384347821685,
+            -0.06493540147134771,
         )
 
     def test_ical_skymodel_pipeline_empty_threshold(self):
@@ -594,8 +594,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.89659392370211,
-            -0.06330293717055588,
+            116.85384347821685,
+            -0.06493540147134771,
         )
 
     def test_ical_skymodel_pipeline_exact(self):
@@ -653,8 +653,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.9163022771049,
-            -0.05878704323868134,
+            116.9315731003449,
+            -0.07230405921211963,
         )
 
     def test_ical_skymodel_pipeline_partial(self):
@@ -722,8 +722,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.90135112912975,
-            -0.03141375912623667,
+            116.9315731003449,
+            -0.07230405921211963,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):
@@ -759,8 +759,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.89672602257197,
-            -0.06356237036888461,
+            116.8503995336827,
+            -0.06486468146793634,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty_taylor_terms(self):
@@ -798,7 +798,7 @@ class TestPipelineGraphs(unittest.TestCase):
             residual,
             restored,
             101.20392917498113,
-            0.02019460212426687,
+            -0.02019460212426699,
             taylor=True,
         )
 

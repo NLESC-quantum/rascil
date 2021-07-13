@@ -25,6 +25,7 @@ import logging
 
 import numpy
 
+from rascil.data_models import Image
 from rascil.data_models.parameters import get_parameter
 from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.processing_components.griddata.operations import create_griddata_from_image
@@ -431,9 +432,18 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     # Now do the deconvolution for a single facet.
     def imaging_deconvolve(dirty, psf, model, sens, gthreshold, msk):
 
+        if not isinstance(dirty, collections.abc.Iterable):
+            raise ValueError(
+                "deconvolve_list_singlefacet_rsexecute_workflow: dirty is not Iterable"
+            )
+        if not isinstance(dirty[0], Image):
+            raise ValueError(
+                f"deconvolve_list_singlefacet_rsexecute_workflow: dirty[0] is not an Image: {dirty[0]}"
+            )
+
         log.info("deconvolve_list_singlefacet_rsexecute_workflow: Starting clean")
 
-        this_peak = numpy.max([numpy.max(numpy.abs(d["pixels"].data)) for d in dirty])
+        this_peak = numpy.max([numpy.max(numpy.abs(dd["pixels"].data)) for dd in dirty])
 
         if this_peak > 1.1 * gthreshold:
             kwargs["threshold"] = gthreshold
@@ -471,6 +481,8 @@ def deconvolve_list_rsexecute_workflow(
 ):
     """Create a graph for deconvolution, adding to the model
 
+    note dirty_list and psf_list must have sumwt trimmed before calling this function
+
     :param dirty_list: list of dirty images (or graph)
     :param psf_list: list of psfs (or graph)
     :param model_imagelist: list of models (or graph)
@@ -494,6 +506,20 @@ def deconvolve_list_rsexecute_workflow(
         dec_imagelist = rsexecute.persist(dec_imagelist)
 
     """
+    # We can divide the processing up into overlapping facets and then
+    # run the single facet deconvolution on each
+    deconvolve_facets = get_parameter(kwargs, "deconvolve_facets", 1)
+
+    if deconvolve_facets == 1:
+        return deconvolve_list_singlefacet_rsexecute_workflow(
+            dirty_list,
+            psf_list,
+            model_imagelist,
+            sensitivity_list=sensitivity_list,
+            prefix=prefix,
+            mask=None,
+            **kwargs,
+        )
 
     nchan = len(dirty_list)
 
@@ -512,22 +538,7 @@ def deconvolve_list_rsexecute_workflow(
     # Dask is apparently smart enough to evaluate futures in kwargs
     kwargs["threshold"] = global_threshold
 
-    # We can divide the processing up into overlapping facets and then
-    # run the single facet deconvolution on each
-    deconvolve_facets = get_parameter(kwargs, "deconvolve_facets", 1)
-
     # Single facet case
-    if deconvolve_facets == 1:
-        return deconvolve_list_singlefacet_rsexecute_workflow(
-            dirty_list,
-            psf_list,
-            model_imagelist,
-            sensitivity_list=sensitivity_list,
-            prefix=prefix,
-            mask=None,
-            **kwargs,
-        )
-
     deconvolve_overlap = get_parameter(kwargs, "deconvolve_overlap", 0)
     deconvolve_taper = get_parameter(kwargs, "deconvolve_taper", None)
     deconvolve_number_facets = deconvolve_facets ** 2
@@ -604,10 +615,10 @@ def deconvolve_list_rsexecute_workflow(
     # contains the clean image cube and lists of list components (a number for each channel)
     scattered_results_list = [
         deconvolve_list_singlefacet_rsexecute_workflow(
-            [(d, 0.0)],
-            [(psf_centre, 0.0)],
-            [m],
-            sensitivity_list=[sens],
+            d,
+            psf_list_extracted,
+            m,
+            sensitivity_list=sens,
             prefix=f"{prefix} subimage {subimage}",
             msk=msk,
             **kwargs,

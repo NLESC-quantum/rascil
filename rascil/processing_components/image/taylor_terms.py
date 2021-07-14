@@ -112,7 +112,10 @@ def calculate_image_from_frequency_taylor_terms(
     # assert isinstance(im, Image)
     nchan, npol, ny, nx = im["pixels"].data.shape
     n_taylor_terms, mnpol, mny, mnx = taylor_terms_image["pixels"].data.shape
-    assert n_taylor_terms > 0
+    if n_taylor_terms <= 0:
+        raise ValueError(
+            "calculate_image_from_frequency_taylor_terms: the number of taylor terms must be greater than zero"
+        )
 
     assert npol == mnpol
     assert ny == mny
@@ -233,7 +236,6 @@ def calculate_image_list_from_frequency_taylor_terms(
     # assert isinstance(im, Image)
     nchan = len(im_list)
     nmoment, mnpol, mny, mnx = moment_image["pixels"].data.shape
-    assert nmoment > 0
 
     frequency = numpy.array([d.frequency.data[0] for d in im_list])
 
@@ -282,7 +284,10 @@ def calculate_frequency_taylor_terms_from_image_list(
     # assert isinstance(im, Image)
     nchan = len(im_list)
     single_chan, npol, ny, nx = im_list[0]["pixels"].shape
-    assert single_chan == 1
+    if single_chan > 1:
+        raise ValueError(
+            "calculate_frequency_taylor_terms_from_image_list: each image must be single channel"
+        )
 
     frequency = numpy.array([d.frequency.data[0] for d in im_list])
 

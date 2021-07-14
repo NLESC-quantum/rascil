@@ -243,9 +243,9 @@ def restore_skymodel_pipeline_rsexecute_workflow(
     integrated: restored is the central channel image plus the average residual
     taylor: lists of Taylor terms of all images
 
-    :param skymodel_imagelist:
-    :param psf_imagelist:
-    :param residual_imagelist:
+    :param skymodel_imagelist: List (or graph) of skymodels
+    :param psf_imagelist: List (or graph) of point spread functions
+    :param residual_imagelist: List (or graph) of residual images
     :param kwargs:
     :return:
     """

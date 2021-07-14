@@ -263,7 +263,7 @@ def bound_psf_list(dirty_list, prefix, psf_list, psf_support=None, **kwargs):
 def complex_hogbom_kernel_list(
     dirty_list: List[Image], psf_list: List[Image], window_list: List[Image], **kwargs
 ):
-    """Complex Hogbom CLEAN of stokesIQUV image
+    """Complex Hogbom CLEAN of stokesIQUV image, operating of lists of single frequency images
 
     :param dirty_list: Image dirty image
     :param psf_list: Image Point Spread Function
@@ -283,6 +283,7 @@ def complex_hogbom_kernel_list(
     comp_images = list()
     residual_images = list()
 
+    # Clean each dirty image in the list
     for channel, dirty in enumerate(dirty_list):
         psf = psf_list[channel]
         window = window_list[channel]
@@ -425,22 +426,23 @@ def hogbom_kernel_list(
     window_list: List[Image],
     **kwargs
 ):
-    """Hogbom Clean
+    """Hogbom Clean, operating of lists of single frequency images
 
-    See: Hogbom CLEAN A&A Suppl, 15, 417, (1974)
+     See: Hogbom CLEAN A&A Suppl, 15, 417, (1974)
 
-    :param dirty_list: Image dirty image
-    :param prefix: Informational message for logging
-    :param psf_list: Image Point Spread Function
-    :param window: Window array (Bool) - clean where True
-    :param gain: loop gain (float) 0.1
-    :param threshold: Clean threshold (0.0)
-    :param fractional_threshold: Fractional threshold (0.01)
-    :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
-    :param nmoment: Number of frequency moments (default 3)
-    :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'ASKAPSoft'|'CASA'|'RASCIL', Default is RASCIL.
+    :param dirty_list: List of dirty images
+     :param prefix: Informational string to be used in log messages e.g. "cycle 1, subimage 42"
+     :param psf_list: List of Point Spread Function
+     :param window_list: List of window images
+     :param sensitivity_list: List of sensitivity images
+     :param gain: loop gain (float) 0.1
+     :param threshold: Clean threshold (0.0)
+     :param fractional_threshold: Fractional threshold (0.01)
+     :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
+     :param nmoment: Number of frequency moments (default 3)
+     :param findpeak: Method of finding peak in mfsclean: 'Algorithm1'|'ASKAPSoft'|'CASA'|'RASCIL', Default is RASCIL.
 
-    :return: component image_list, residual image_list
+     :return: component image_list, residual image_list
     """
 
     log.info(
@@ -524,11 +526,13 @@ def mmclean_kernel_list(
 
     For the MFS clean, the psf must have number of channels >= 2 * nmoment
 
-    :param dirty_list: Image dirty image
+    :param dirty_list: List of dirty images
     :param prefix: Informational string to be used in log messages e.g. "cycle 1, subimage 42"
-    :param psf_list: Image Point Spread Function
+    :param psf_list: List of Point Spread Function
     :param window_list: List of window images
-    :param sensitivity_list: sensitivity image
+    :param sensitivity_list: List of sensitivity images
+    :return: component image_list, residual image_list
+
     :return: component image_list, residual image_list
 
     The following optional arguments can be passed via kwargs:
@@ -675,7 +679,7 @@ def msclean_kernel_list(
     sensitivity_list=None,
     **kwargs
 ):
-    """MultiScale CLEAN
+    """MultiScale CLEAN, operating of lists of single frequency images
 
     See: Cornwell, T.J., Multiscale CLEAN (IEEE Journal of Selected Topics in Sig Proc,
     2008 vol. 2 pp. 793-801)
@@ -683,11 +687,11 @@ def msclean_kernel_list(
     The clean search is performed on the product of the sensitivity image (if supplied) and
     the residual image. This gives a way to bias against high noise.
 
-    :param dirty_list: Image dirty image
+    :param dirty_list: List of dirty images
     :param prefix: Informational string to be used in log messages e.g. "cycle 1, subimage 42"
-    :param psf_list: Image Point Spread Function
+    :param psf_list: List of Point Spread Function
     :param window_list: List of window images
-    :param sensitivity_list: sensitivity image
+    :param sensitivity_list: List of sensitivity images
     :return: component image_list, residual image_list
 
     The following optional arguments can be passed via kwargs:

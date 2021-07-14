@@ -55,7 +55,6 @@ class TestImage(unittest.TestCase):
             )
         cube = create_empty_image_like(original_cube)
         moment_cube = calculate_image_frequency_moments(cube, nmoment=3)
-        print(moment_cube.image_acc.wcs)
         if self.persist:
             export_image_to_fits(
                 moment_cube, fitsfile="%s/test_moments_moment_cube.fits" % (self.dir)

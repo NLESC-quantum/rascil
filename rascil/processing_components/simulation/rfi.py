@@ -169,6 +169,15 @@ def calculate_rfi_at_station(
     return rfi_at_station
 
 
+def _get_uvw_per_station(xyz, ha, dec):
+    """arrays"""
+    uvw = []
+    for i in range(len(ha)):
+        uvw.append(xyz_to_uvw(xyz[i], ha[i], dec[i]))
+
+    return numpy.array(uvw)
+
+
 def simulate_rfi_block_prop(
     bvis,
     apparent_emitter_power,
@@ -228,10 +237,10 @@ def simulate_rfi_block_prop(
             rfi_at_station_all_chans, baselines=bvis.baselines
         )
 
-        k = numpy.array(bvis.frequency) / phyconst.c_m_s
-        uvw = bvis.uvw.data[..., numpy.newaxis] * k
-
         if use_pole:
+            k = numpy.array(bvis.frequency) / phyconst.c_m_s
+            uvw = bvis.uvw.data[..., numpy.newaxis] * k
+
             # Calculate phasor needed to shift from the phasecentre to the pole
             pole = SkyCoord(
                 ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame="icrs", equinox="J2000"
@@ -247,53 +256,7 @@ def simulate_rfi_block_prop(
             bvis["vis"].data += bvis_data_copy * phasor
 
         else:
-            # emitter_location = [
-            #     EarthLocation(
-            #         lon=116.061666666667,
-            #         lat=-32.0127777777778,
-            #         height=175,
-            #     ),
-            #     EarthLocation(
-            #         lon=114.121111111111,
-            #         lat=-21.9186111111111,
-            #         height=34,
-            #     ),
-            # ]
-            #
-            # site = bvis.configuration.location
-            # site_tup = (site.lat.deg, site.lon.deg)
-            # emitter_tup = (emitter_location[i].lat.deg, emitter_location[i].lon.deg)
-            # # Compass bearing is in range [0,360.0]
-            # az = (
-            #     calculate_initial_compass_bearing(site_tup, emitter_tup)
-            #     * numpy.pi
-            #     / 180.0
-            # )
-            # el = 0.0
-            # hadec = azel_to_hadec(az, el, site.lat.rad)
-            # r2d = 180.0 / numpy.pi
-            # log.info(
-            #     f"simulate_rfi_block: Emitter at az, el {az * r2d:.3}, {el * r2d:.3} "
-            #     + f"appears at ha, dec {hadec[0] * r2d:.3}, {hadec[1] * r2d:.3}"
-            # )
-            # # Now step through the time stamps, calculating the effective
-            # # sky position for the emitter, and performing phase rotation
-            # # appropriately
-            # hourangles = calculate_blockvisibility_hourangles(bvis)
-            # for iha, ha in enumerate(hourangles.data):
-            #     ra = -hadec[0] + ha
-            #     dec = hadec[1]
-            #     emitter_sky = SkyCoord(ra * u.rad, dec * u.rad)
-            #     l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
-            #
-            #     phasor = numpy.ones([nbaselines, nchan, npol], dtype="complex")
-            #     for chan in range(nchan):
-            #         phasor[:, chan, :] = simulate_point(uvw[iha, ..., chan], l, m)[
-            #             ..., numpy.newaxis
-            #         ]
-            #
-            #     # Now fill this into the BlockVisibility
-            #     bvis["vis"].data[iha, ...] += bvis_data_copy[iha, ...] * phasor
+            k = bvis.frequency.data / phyconst.c_m_s
 
             # We know where the emitter is.
             site = bvis.configuration.location
@@ -308,43 +271,34 @@ def simulate_rfi_block_prop(
             # Now step through the time stamps, calculating the effective
             # sky position for the emitter, and performing phase rotation
             # appropriately
-            nstations = bvis.configuration.xyz.shape[0]
             hourangles = calculate_blockvisibility_hourangles(bvis)
             for iha, ha in enumerate(hourangles.data):
+                # calculate station-based arrays
+                ant_uvw = _get_uvw_per_station(
+                    bvis.configuration.xyz.data, hadec[0][iha, :], hadec[1][iha, :]
+                )
+                ant_ra = -hadec[0][iha, :] + ha
+                ant_dec = hadec[1][iha, :]
+                emitter_sky = SkyCoord(ant_ra * u.rad, ant_dec * u.rad)
+                l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
+
                 phasor = numpy.ones([nbaselines, nchan, npol], dtype="complex")
                 for j, (station1, station2) in enumerate(bvis.baselines.values):
-                    ant_uvw1 = xyz_to_uvw(
-                        bvis.configuration.xyz.data[station1],
-                        hadec[0][iha, station1],
-                        hadec[1][iha, station1],
-                    )
-                    ant_uvw2 = xyz_to_uvw(
-                        bvis.configuration.xyz.data[station2],
-                        hadec[0][iha, station2],
-                        hadec[1][iha, station2],
-                    )
-                    # station 1
-                    ra1 = -hadec[0][iha, station1] + ha
-                    dec1 = hadec[1][iha, station1]
-                    emitter_sky1 = SkyCoord(ra1 * u.rad, dec1 * u.rad)
-                    l1, m1, n1 = skycoord_to_lmn(emitter_sky1, bvis.phasecentre)
-
-                    # station 2
-                    ra2 = -hadec[0][iha, station2] + ha
-                    dec2 = hadec[1][iha, station2]
-                    emitter_sky2 = SkyCoord(ra2 * u.rad, dec2 * u.rad)
-                    l2, m2, n2 = skycoord_to_lmn(emitter_sky2, bvis.phasecentre)
-
                     for chan in range(nchan):
-                        k = bvis.frequency.data[chan] / phyconst.c_m_s
                         phasor[j, chan, :] = (
-                            simulate_point_antenna(k * ant_uvw1, l1, m1)
+                            simulate_point_antenna(
+                                k[chan] * ant_uvw[station1], l[station1], m[station1]
+                            )
                             * numpy.conjugate(
-                                simulate_point_antenna(k * ant_uvw2, l2, m2)
+                                simulate_point_antenna(
+                                    k[chan] * ant_uvw[station2],
+                                    l[station2],
+                                    m[station2],
+                                )
                             )
                         )[..., numpy.newaxis]
 
-                    # Now fill this into the BlockVisibility
+                # Now fill this into the BlockVisibility
                 bvis["vis"].data[iha, ...] += bvis_data_copy[iha, ...] * phasor
 
     return bvis

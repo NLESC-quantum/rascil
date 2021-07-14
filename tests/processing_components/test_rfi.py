@@ -161,7 +161,7 @@ class TestRFISim(unittest.TestCase):
             1,
         ), correlation.shape
 
-    def test_simulate_rfi_block_prop(self):
+    def test_simulate_rfi_block_prop_use_pol(self):
         """
         regression to test that simulate_rfi_block_prop correctly updates the
         block visibility data with RFI signal.

@@ -166,6 +166,10 @@ def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
     polarisation_frame = PolarisationFrame("stokesI")
 
     if len(data.shape) == 4:
+        # RASCIL images are RA, DEC, STOKES, FREQ
+        if wcs.axis_type_names[3] == "STOKES":
+            wcs = wcs.swapaxes(2, 3)
+            data = numpy.transpose(data, (1, 0, 2, 3))
         try:
             polarisation_frame = polarisation_frame_from_wcs(wcs, data.shape)
             # FITS and RASCIL polarisation conventions differ

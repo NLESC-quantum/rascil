@@ -201,6 +201,20 @@ class TestImage(unittest.TestCase):
             wcs.wcs.cdelt[0] = -1.0
             polarisation_frame_from_wcs(wcs, shape)
 
+    def test_yanda_fits(self):
+        yanda_im = import_image_from_fits(
+            rascil_data_path(("models/image.tst-001.taylor.0.restored.fits"))
+        )
+        assert yanda_im["pixels"].shape == (1, 1, 1536, 1536)
+        assert (
+            yanda_im.attrs["spectral_type"] == "FREQ"
+        ), "Frequency axis is in wrong dimension"
+        numpy.testing.assert_almost_equal(
+            yanda_im.frequency.data[0],
+            1.499e8,
+            err_msg="Frequency axis has wrong values",
+        )
+
     def test_polarisation_frame_from_wcs_jones(self):
         vp = import_image_from_fits(
             rascil_data_path("models/MID_FEKO_VP_B2_45_1360_real.fits"), fixpol=False

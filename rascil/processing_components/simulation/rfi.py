@@ -34,7 +34,11 @@ from rascil.processing_components.util.array_functions import average_chunks2
 from rascil.processing_components.util.compass_bearing import (
     calculate_initial_compass_bearing,
 )
-from rascil.processing_components.util.coordinate_support import simulate_point
+from rascil.processing_components.util.coordinate_support import (
+    simulate_point,
+    simulate_point_antenna,
+    xyz_to_uvw,
+)
 from rascil.processing_components.util.coordinate_support import (
     skycoord_to_lmn,
     azel_to_hadec,
@@ -304,9 +308,21 @@ def simulate_rfi_block_prop(
             # Now step through the time stamps, calculating the effective
             # sky position for the emitter, and performing phase rotation
             # appropriately
+            nstations = bvis.configuration.xyz.shape[0]
             hourangles = calculate_blockvisibility_hourangles(bvis)
             for iha, ha in enumerate(hourangles.data):
+                phasor = numpy.ones([nbaselines, nchan, npol], dtype="complex")
                 for j, (station1, station2) in enumerate(bvis.baselines.values):
+                    ant_uvw1 = xyz_to_uvw(
+                        bvis.configuration.xyz.data[station1],
+                        hadec[0][iha, station1],
+                        hadec[1][iha, station1],
+                    )
+                    ant_uvw2 = xyz_to_uvw(
+                        bvis.configuration.xyz.data[station2],
+                        hadec[0][iha, station2],
+                        hadec[1][iha, station2],
+                    )
                     # station 1
                     ra1 = -hadec[0][iha, station1] + ha
                     dec1 = hadec[1][iha, station1]
@@ -319,16 +335,16 @@ def simulate_rfi_block_prop(
                     emitter_sky2 = SkyCoord(ra2 * u.rad, dec2 * u.rad)
                     l2, m2, n2 = skycoord_to_lmn(emitter_sky2, bvis.phasecentre)
 
-                    phasor = numpy.ones([nbaselines, nchan, npol], dtype="complex")
                     for chan in range(nchan):
+                        k = bvis.frequency.data[chan] / phyconst.c_m_s
                         phasor[j, chan, :] = (
-                            simulate_point(uvw[iha, j, :, chan], l1, m1)
-                            - simulate_point(uvw[iha, j, :, chan], l2, m2)
+                            simulate_point_antenna(k * ant_uvw1, l1, m1)
+                            * numpy.conjugate(
+                                simulate_point_antenna(k * ant_uvw2, l2, m2)
+                            )
                         )[..., numpy.newaxis]
 
                     # Now fill this into the BlockVisibility
-                    bvis["vis"].data[iha, j, ...] += (
-                        bvis_data_copy[iha, j, ...] * phasor
-                    )
+                bvis["vis"].data[iha, ...] += bvis_data_copy[iha, ...] * phasor
 
     return bvis

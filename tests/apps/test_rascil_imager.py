@@ -46,7 +46,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
-default_run = False
+default_run = True
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ default_run = False
     "component_threshold, component_method, offset, flat_sky, restored_output",
     [
         (
-            not default_run,
+            default_run,
             "invert",
             True,
             0,

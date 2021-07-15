@@ -251,7 +251,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.03317941816398) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.14322579060089866) < 1.0e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_continuum_imaging_pipeline_pol(self):
         self.actualSetUp(add_errors=False, dopol=True)
 
@@ -353,7 +352,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.04110915447107) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.13802297573216515) < 1.0e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_ical_pipeline_pol(self):
         self.actualSetUp(add_errors=True, dopol=True)
         controls = create_calibration_controls()
@@ -410,7 +408,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.04262292227956) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.14023674377903816) < 1.0e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_ical_pipeline_global(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -469,7 +466,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 99.2291010715883) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.566365494871639) < 1.0e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_ical_skymodel_pipeline_empty(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -538,7 +534,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.03636094114569) < 1e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.1368896248916611) < 1e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_ical_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -680,7 +675,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.01691390925012) < 1e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.015435903203822881) < 1e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_ical_skymodel_pipeline_partial(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -763,7 +757,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.01749785037397) < 1e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.0683933958944093) < 1e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_continuum_imaging_skymodel_pipeline_empty(self):
         self.actualSetUp()
 
@@ -814,7 +807,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.03317941816397) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.14322579060089646) < 1.0e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_continuum_imaging_skymodel_pipeline_empty_threshold(self):
         self.actualSetUp()
 
@@ -866,7 +858,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.01689049423403) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.06610616076695902) < 1.0e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_continuum_imaging_skymodel_pipeline_partial(self):
         self.actualSetUp()
 
@@ -938,7 +929,6 @@ class TestPipelineGraphs(unittest.TestCase):
         assert numpy.abs(qa.data["max"] - 100.00784388600081) < 1.0e-7, str(qa)
         assert numpy.abs(qa.data["min"] + 0.03304451079009792) < 1.0e-7, str(qa)
 
-    @unittest.skip("Not needed")
     def test_continuum_imaging_skymodel_pipeline_exact(self):
         self.actualSetUp()
 

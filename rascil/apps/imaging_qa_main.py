@@ -815,11 +815,13 @@ def plot_errors(
     # If reading spectral index from files
     if sources_in_file is not None and ".txt" in sources_in_file:
 
+        # Currently only applied to txt files
         log.info("Reading spectral index from sources in file.")
         data_in = np.loadtxt(sources_in_file, delimiter=",", unpack=True)
         indexes_in = data_in[7]
 
     else:
+        log.info("Using fitted spectral index in.")
         indexes_in = None
 
     if sources_out_file is not None:
@@ -828,8 +830,12 @@ def plot_errors(
             data = pd.read_csv(sources_out_file, engine="python")
             indexes_out = data["Spectral index"].to_numpy()
         except KeyError:
+            log.warning(
+                "File does not contain spectral index information, using fitted values instead."
+            )
             indexes_out = None
     else:
+        log.info("Using fitted spectral index out.")
         indexes_out = None
 
     ra_comp, dec_comp = plot_skycomponents_positions(

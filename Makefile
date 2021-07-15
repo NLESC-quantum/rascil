@@ -70,12 +70,12 @@ test-singlepass:
 	--pylint --pylint-error-types=EF --durations=30
 
 test:
-	HOME=`pwd` py.test -s -v tests/apps/test_rascil_imager.py --verbose #tests/apps tests/workflows/test_*_rsexecute.py
-	--junitxml unit-tests-workflows.xml \
-	--cov rascil \
-	--cov-report html:coverage  \
-	--cov-report xml:coverage.xml \
-	--pylint --pylint-error-types=EF --durations=30
+	HOME=`pwd` py.test -s -v tests/workflows/test_pipelines_rsexecute.py --verbose #tests/apps tests/workflows/test_*_rsexecute.py
+# 	--junitxml unit-tests-workflows.xml \
+# 	--cov rascil \
+# 	--cov-report html:coverage  \
+# 	--cov-report xml:coverage.xml \
+# 	--pylint --pylint-error-types=EF --durations=30
 # 	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
 # 	tests/data_models tests/processing_components \
 # 	--verbose \

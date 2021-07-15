@@ -46,7 +46,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
-default_run = True
+default_run = False
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ default_run = True
     "component_threshold, component_method, offset, flat_sky, restored_output",
     [
         (
-            default_run,
+            not default_run,
             "invert",
             True,
             0,
@@ -347,7 +347,7 @@ def test_rascil_imager(
         rascil_path(f"test_results/test_rascil_imager_{tag}.ms"), bvis_list
     )
 
-    rsexecute.close()
+    # rsexecute.close()
 
     invert_args = [
         "--mode",

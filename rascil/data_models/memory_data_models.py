@@ -469,6 +469,20 @@ class Image(xarray.Dataset):
     def __init__(self, data, polarisation_frame=None, wcs=None, clean_beam=None):
         """Create an Image
 
+        Note that the spatial coordinates x, y are linear. ra, dec coordinates can be
+        image via :py:func:`rascil.processing_components.image.operations.image_add_ra_dec_grid`
+
+        The addition of ra, dec grid enables selections such as:
+
+        secd = 1.0 / numpy.cos(numpy.deg2rad(im.dec_grid))
+        r = numpy.hypot(
+            (im.ra_grid - im.ra) * secd,
+            im.dec_grid - im.image.dec,
+        )
+        show_image(im.where(r < 0.3, 0.0))
+        plt.show()
+
+
         :param data: pixel values
         :param polarisation_frame: as a PolarisationFrame object
         :param wcs: WCS object
@@ -483,18 +497,6 @@ class Image(xarray.Dataset):
         cellsize = numpy.deg2rad(numpy.abs(wcs.wcs.cdelt[1]))
         ra = numpy.deg2rad(wcs.wcs.crval[0])
         dec = numpy.deg2rad(wcs.wcs.crval[1])
-
-        # lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
-        # try:
-        #     ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
-        #     ra = numpy.deg2rad(ra)
-        #     dec = numpy.deg2rad(dec)
-        # except:
-        #     log.warning(
-        #         "Coordinates not RA, Dec pair: ra, dec coordinates are x, y meshes"
-        #     )
-        #     ra = lmesh
-        #     dec = mmesh
 
         # Define the dimensions
         dims = ["frequency", "polarisation", "y", "x"]

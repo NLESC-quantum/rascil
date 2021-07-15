@@ -257,7 +257,7 @@ def test_continuum_imaging_checker(
             0.0, noise, taylor_model["pixels"].data.shape
         )
 
-    taylor_file = rascil_path(f"test_results/test_imaging_qa_{tag}_Taylor1.fits")
+    taylor_file = rascil_path(f"test_results/test_imaging_qa_{tag}_taylor1.fits")
     export_image_to_fits(taylor_model, taylor_file)
 
     parser = cli_parser()
@@ -269,6 +269,8 @@ def test_continuum_imaging_checker(
             residual_file,
             "--ingest_fitsname_sensitivity",
             sensitivity_file,
+            "--ingest_fitsname_moment",
+            rascil_path(f"test_results/test_imaging_qa_{tag}"),
             "--check_source",
             "True",
             "--plot_source",
@@ -378,7 +380,7 @@ def test_continuum_imaging_checker(
         )
 
     # test new csv file generated and accuracy
-    csv_file = rascil_path(f"test_results/test_imaging_qa_{tag}_Taylor1_corrected.csv")
+    csv_file = rascil_path(f"test_results/test_imaging_qa_{tag}_taylor1_corrected.csv")
     assert os.path.exists(csv_file)
 
     # This part does not work yet: skip for now

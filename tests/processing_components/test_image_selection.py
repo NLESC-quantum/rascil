@@ -13,7 +13,11 @@ import xarray
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components import create_test_image, show_image
+from rascil.processing_components import (
+    create_test_image,
+    show_image,
+    image_add_ra_dec_grid,
+)
 
 log = logging.getLogger("rascil-logger")
 
@@ -70,11 +74,11 @@ class TestImageSelection(unittest.TestCase):
         numpy.testing.assert_array_equal(subim.coords["polarisation"], ["I"])
 
     def test_image_where_radius_radec(self):
-        nchan, npol, ny, nx = self.image["pixels"].shape
+        self.image = image_add_ra_dec_grid(self.image)
         secd = 1.0 / numpy.cos(numpy.deg2rad(self.image.dec))
         r = numpy.hypot(
-            (self.image.ra - self.image.ra[ny // 2, nx // 2]) * secd,
-            self.image.dec - self.image.dec[ny // 2, nx // 2],
+            (self.image.ra_grid - self.image.ra) * secd,
+            self.image.dec_grid - self.image.dec,
         )
         show_image(self.image.where(r < 0.3, 0.0))
         plt.show()

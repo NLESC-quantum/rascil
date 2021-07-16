@@ -14,6 +14,9 @@ from rascil.data_models.parameters import get_parameter
 from rascil.processing_components import (
     copy_visibility,
 )
+from rascil.processing_components.skycomponent.taylor_terms import (
+    calculate_frequency_taylor_terms_from_skycomponents,
+)
 from rascil.processing_components.image.taylor_terms import (
     calculate_frequency_taylor_terms_from_image_list,
 )
@@ -273,7 +276,13 @@ def restore_skymodel_pipeline_rsexecute_workflow(
             rsexecute.execute(lambda x: (x, 0.0))(d) for d in residual_imagelist
         ]
 
-        # Note that this discards the components: TODO: Add component fitting
+        skycomponent_list = [
+            rsexecute.execute(calculate_frequency_taylor_terms_from_skycomponents)(
+                sm.components, nmoment=nmoment
+            )
+            for sm in skymodel_list
+        ]
+
         skymodel_list = [
             rsexecute.execute(SkyModel)(image=deconvolve_model_imagelist[moment])
             for moment in range(nmoment)

@@ -544,6 +544,9 @@ class Image(xarray.Dataset):
             "spectral_type": wcs.wcs.ctype[3],
             "clean_beam": clean_beam,
             "refpixel": (wcs.wcs.crpix),
+            "channel_bandwidth": wcs.wcs.cdelt[3],
+            "ra": ra,
+            "dec": dec,
         }
 
         super().__init__(data_vars, coords=coords, attrs=attrs)

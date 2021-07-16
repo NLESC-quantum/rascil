@@ -70,7 +70,8 @@ test-singlepass:
 	--pylint --pylint-error-types=EF --durations=30
 
 test:
-	HOME=`pwd` py.test -s -v tests/apps/test_rascil_imager.py --verbose #tests/apps tests/workflows/test_*_rsexecute.py
+	HOME=`pwd` py.test -n 1 -s -v tests/apps/test_rascil_imager.py --verbose #tests/apps
+	tests/workflows/test_*_rsexecute.py
 # 	--junitxml unit-tests-workflows.xml \
 # 	--cov rascil \
 # 	--cov-report html:coverage  \

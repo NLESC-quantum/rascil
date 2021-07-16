@@ -20,6 +20,7 @@ import glob
 
 import astropy.units as u
 import numpy
+import pandas as pd
 import pytest
 from astropy.coordinates import SkyCoord
 from numpy.random import default_rng
@@ -46,6 +47,7 @@ from rascil.processing_components.skycomponent import (
     find_skycomponent_matches,
     fit_skycomponent_spectral_index,
     apply_beam_to_skycomponent,
+    copy_skycomponent,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -277,6 +279,8 @@ def test_continuum_imaging_checker(
             comp_file,  # hdffile
             "--match_sep",
             "1.0e-4",
+            "--use_frequency_moment",
+            "True",
             "--apply_primary",
             "True",
             "--savefits_rmsim",

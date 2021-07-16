@@ -7,6 +7,7 @@ import datetime
 import logging
 import os
 import sys
+import glob
 
 import matplotlib
 
@@ -17,6 +18,7 @@ import pandas as pd
 import bdsf
 import astropy.units as u
 from astropy.coordinates import SkyCoord
+from astropy.wcs.utils import skycoord_to_pixel
 
 from rascil.data_models import (
     PolarisationFrame,
@@ -32,6 +34,7 @@ from rascil.processing_components.image.operations import (
     import_image_from_fits,
     export_image_to_fits,
     create_image_from_array,
+    add_image,
 )
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.plot_skycomponent import (
@@ -88,6 +91,14 @@ def cli_parser():
         help="FITS file of the sensitivity image to be read",
     )
     parser.add_argument(
+        "--ingest_fitsname_moment",
+        type=str,
+        default=None,
+        help="FITS file of the frequency moment images to be read \
+		(Note: Use the prefix of the fits files, e.g. if the restored image is test_image_restored.fits \
+		here should input test_image)",
+    )
+    parser.add_argument(
         "--finder_beam_maj",
         type=float,
         default=1.0,
@@ -128,6 +139,12 @@ def cli_parser():
         type=str,
         default="False",
         help="Whether to divide by primary beam after BDSF to correct source flux",
+    )
+    parser.add_argument(
+        "--use_frequency_moment",
+        type=str,
+        default="False",
+        help="Whether to use frequency moment images after BDSF to correct spectral index",
     )
     parser.add_argument(
         "--telescope_model",
@@ -327,6 +344,22 @@ def analyze_image(args):
     log.info("Putting sources into skycomponents format.")
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
 
+    # Correct and put into new csv file
+    # Calculate spectral index from frequency moment images
+    if args.use_frequency_moment == "True" and len(moment_images) != 0:
+
+        log.info("Calculate spectral index from frequency moment images.")
+        out = calculate_spec_index_from_moment(out, moment_images)
+
+    # Compensate for primary beam correction
+    # Note this should be applied to source out when it is division, source in when multiplication
+    if args.apply_primary == "True":
+        log.info("Correcting fluxes for primary beam.")
+        telescope = args.telescope_model
+        out = correct_primary_beam(
+            input_image_restored, input_image_sensitivity, out, telescope=telescope
+        )
+
     if args.check_source == "True":
 
         if ".h5" in args.input_source_filename or ".hdf" in args.input_source_filename:
@@ -336,13 +369,6 @@ def analyze_image(args):
             orig = read_skycomponent_from_txt(args.input_source_filename, freq)
         else:
             raise FileFormatError("Input file must be of format: hdf5 or txt.")
-
-        # Compensate for primary beam correction
-        if args.apply_primary == "True":
-            telescope = args.telescope_model
-            orig = correct_primary_beam(
-                input_image_restored, input_image_sensitivity, orig, telescope=telescope
-            )
 
         results = check_source(orig, out, args.match_sep)
 
@@ -525,7 +551,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
         direc = SkyCoord(
             ra=row["RA"] * u.deg, dec=row["DEC"] * u.deg, frame="icrs", equinox="J2000"
         )
-        f0 = row["Total_flux"]
+        f0 = row["Peak_flux"]
         if f0 > 0:  # filter out ghost sources
             try:
                 spec_indx = row["Spec_Indx"]
@@ -702,7 +728,7 @@ def check_source(orig, comp, match_sep):
     for match in matches:
         m_comp = comp[match[0]]
         m_orig = orig[match[1]]
-        log.info(f"Original: {m_orig} Match {m_comp}")
+        log.debug(f"Original: {m_orig} Match {m_comp}")
 
     return matches
 

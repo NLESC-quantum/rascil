@@ -233,6 +233,31 @@ def test_continuum_imaging_checker(
     residual_file = rascil_path(f"test_results/test_imaging_qa_{tag}_residual.fits")
     export_image_to_fits(residual_model, residual_file)
 
+    # Create frequency moment image
+    taylor_model = create_image(
+        npixel=npixel,
+        cellsize=cellsize,
+        phasecentre=phasecentre,
+        frequency=image_frequency,
+        polarisation_frame=PolarisationFrame("stokesI"),
+    )
+    taylor_components = copy_skycomponent(components_with_pb)
+    spec_indx = -0.7
+    for comp in taylor_components:
+        comp.flux = comp.flux * spec_indx
+
+    taylor_model = insert_skycomponent(
+        taylor_model, taylor_components, insert_method=insert_method
+    )
+
+    if noise > 0.0:
+        taylor_model["pixels"].data += rng.normal(
+            0.0, noise, taylor_model["pixels"].data.shape
+        )
+
+    taylor_file = rascil_path(f"test_results/test_imaging_qa_{tag}_taylor1.fits")
+    export_image_to_fits(taylor_model, taylor_file)
+
     parser = cli_parser()
     args = parser.parse_args(
         [
@@ -242,6 +267,8 @@ def test_continuum_imaging_checker(
             residual_file,
             "--ingest_fitsname_sensitivity",
             sensitivity_file,
+            "--ingest_fitsname_moment",
+            rascil_path(f"test_results/test_imaging_qa_{tag}"),
             "--check_source",
             "True",
             "--plot_source",
@@ -347,6 +374,15 @@ def test_continuum_imaging_checker(
                 f"test_results/test_imaging_qa_{tag}_spec_index_diagnostics_dist.png"
             )
         )
+
+    # test new csv file generated and accuracy
+    csv_file = rascil_path(f"test_results/test_imaging_qa_{tag}_taylor1_corrected.csv")
+    assert os.path.exists(csv_file)
+
+    # This part does not work yet: skip for now
+    # data = pd.read_csv(csv_file, engine="python")
+    # indexes = data["Spectral index"]
+    # numpy.testing.assert_array_almost_equal(indexes / spec_indx, 1.0, decimal=1)
 
     # test that create_index() generates the html and md files,
     # at the end of analyze_image()

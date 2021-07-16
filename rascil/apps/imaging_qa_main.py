@@ -311,6 +311,19 @@ def analyze_image(args):
     else:
         rascil_source_file = args.rascil_source_file
 
+    if args.ingest_fitsname_moment is not None:
+
+        # Used for RASCIL images
+        input_image_moment = args.ingest_fitsname_moment + "_taylor[1-9].fits"
+
+    else:
+
+        # Used for YANDA image format
+        input_image_moment = args.ingest_fitsname_restored.replace(".0.", ".[1-9].")
+
+    moment_images = glob.glob(input_image_moment)
+    log.info("Number of frequency moments image found: {}".format(len(moment_images)))
+
     log.info("Putting sources into skycomponents format.")
     out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
 
@@ -339,14 +352,20 @@ def analyze_image(args):
                 log.info("No matches are found. Skipping plotting routines.")
             else:
                 plot_file = args.ingest_fitsname_restored.replace(".fits", "")
+                if args.use_frequency_moment == "True" and len(moment_images) != 0:
+                    csv_name = moment_images[0].replace(".fits", "_corrected.csv")
+                else:
+                    csv_name = None
                 log.info("Plotting errors: {}".format(plot_file))
                 plot_errors(
                     orig,
                     out,
                     input_image_restored,
                     args.match_sep,
-                    args.flux_limit,
-                    plot_file,
+                    sources_in_file=args.input_source_filename,
+                    sources_out_file=csv_name,
+                    flux_limit=args.flux_limit,
+                    plot_file=plot_file,
                 )
 
     else:
@@ -531,6 +550,91 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     return comp
 
 
+def calculate_spec_index_from_moment(comp_list, moment_images):
+    """
+    Calculate spectral index using frequency moment images.
+
+    :param comp_list: Source list in skycomponents format
+    :param moment_images: Frequency moment images in FITS format
+
+    :return newcomp: New lists of skycomponents with updated spectral index.
+
+    """
+
+    if len(moment_images) == 0:
+        log.info("No moment images found, no csv file written.")
+        return comp_list
+
+    else:
+        moment_data = import_image_from_fits(moment_images[0])
+
+        # This applies to multiple Taylor images (not tested now)
+        if len(moment_images) > 1:
+            for moment_image in moment_images:
+                moment_data_now = import_image_from_fits(moment_image)
+                moment_data = add_image(moment_data, moment_data_now)
+
+        image_frequency = moment_data.frequency.data
+        ras = [comp.direction.ra.degree for comp in comp_list]
+        decs = [comp.direction.dec.degree for comp in comp_list]
+        skycoords = SkyCoord(ras * u.deg, decs * u.deg, frame="icrs")
+        pixlocs = skycoord_to_pixel(
+            skycoords, moment_data.image_acc.wcs, origin=0, mode="wcs"
+        )
+
+        # TODO: Needs update for multiple polarizations
+        nchan = len(comp_list[0].frequency.data)
+        npol = 1
+        freqs = [comp.frequency.data[nchan // 2] for comp in comp_list]
+        central_fluxes = [comp.flux[nchan // 2][0] for comp in comp_list]
+
+        spec_indx = np.zeros(len(comp_list))
+        for icomp, comp in enumerate(comp_list):
+
+            pixloc = (round(pixlocs[0][icomp]), round(pixlocs[1][icomp]))
+
+            if (
+                nchan == len(image_frequency)
+                and np.max(np.abs(comp.frequency.data - image_frequency)) < 1e-7
+            ):
+                flux = moment_data["pixels"].data[nchan // 2, 0, pixloc[1], pixloc[0]]
+                log.debug(
+                    "Taylor flux:{} for skycomponent {}, {}, compared to original flux {}".format(
+                        flux, ras[icomp], decs[icomp], comp.flux[nchan // 2][0]
+                    )
+                )
+                if comp.flux.all() > 0.0:
+                    spec_indx[icomp] = flux / comp.flux[nchan // 2][0]
+            else:
+                spec_indx[icomp] = 0.0
+
+            log.debug("Spectral index calculated is {}".format(spec_indx[icomp]))
+            fluxes = [
+                comp.flux[i][0]
+                * (f / comp.frequency.data[nchan // 2]) ** spec_indx[icomp]
+                for i, f in enumerate(comp.frequency.data)
+            ]
+            flux_array = np.reshape(np.array(fluxes), (nchan, npol))
+            comp.flux = flux_array
+
+        # Write to new csv file
+        ds = pd.DataFrame(
+            {
+                "RA (deg)": ras,
+                "Dec (deg)": decs,
+                "Central freq (Hz)": freqs,
+                "Central flux (Jy)": central_fluxes,
+                "Spectral index": spec_indx,
+            }
+        )
+        csv_name = moment_images[0].replace(".fits", "_corrected.csv")
+        log.info("Writing source data to {}".format(csv_name))
+
+        ds.to_csv(csv_name, index=True)
+
+        return comp_list
+
+
 def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
     """
     Add optional primary beam correction for fluxes.
@@ -589,6 +693,8 @@ def check_source(orig, comp, match_sep):
 
     """
 
+    log.info("{} sources in and {} sources out".format(len(orig), len(comp)))
+
     matches = find_skycomponent_matches(comp, orig, tol=match_sep)
 
     log.debug("Here is the complete list of matches.")
@@ -646,7 +752,16 @@ def read_skycomponent_from_txt(filename, freq):
     return comp
 
 
-def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
+def plot_errors(
+    orig,
+    comp,
+    input_image,
+    match_sep,
+    sources_in_file=None,
+    sources_out_file=None,
+    flux_limit=0.0,
+    plot_file=None,
+):
     """
     Plot the position and flux errors for source input and output
 
@@ -654,6 +769,8 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
     :param comp: Output source list in skycomponent format
     :param input_image: Input image for Gaussian fits
     :param match_sep: The criteria for maximum separation
+    :param sources_in_file: Name of input source file to be read (only use this for spectral index)
+    :param sources_out_file: Name of csv file to be read (for sources out)
     :param flux_limit: The flux criterion for plotting cutoff
     :param plot_file: prefix of the plot files
     :return
@@ -668,6 +785,32 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
     phasecentre = image.image_acc.phasecentre
     nchan = image["pixels"].shape[0]
     refchan = nchan // 2
+
+    # If reading spectral index from files
+    if sources_in_file is not None and ".txt" in sources_in_file:
+
+        # Currently only applied to txt files
+        log.info("Reading spectral index from sources in file.")
+        data_in = np.loadtxt(sources_in_file, delimiter=",", unpack=True)
+        indexes_in = data_in[7]
+
+    else:
+        log.info("Using fitted spectral index in.")
+        indexes_in = None
+
+    if sources_out_file is not None:
+        log.info("Reading spectral index from sources out file.")
+        try:
+            data = pd.read_csv(sources_out_file, engine="python")
+            indexes_out = data["Spectral index"].to_numpy()
+        except KeyError:
+            log.warning(
+                "File does not contain spectral index information, using fitted values instead."
+            )
+            indexes_out = None
+    else:
+        log.info("Using fitted spectral index out.")
+        indexes_out = None
 
     ra_comp, dec_comp = plot_skycomponents_positions(
         comp, orig, img_size=img_size, plot_file=plot_file, tol=match_sep
@@ -707,8 +850,9 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
         comp, orig, phasecentre, image, plot_file=plot_file, tol=match_sep
     )
 
-    if nchan > 1:
-        log.info("Plotting spectral index.")
+    log.info("Plotting spectral index.")
+    if nchan > 1 or indexes_out is not None:
+
         spec_in, spec_out = plot_multifreq_spectral_index(
             comp,
             orig,
@@ -716,6 +860,8 @@ def plot_errors(orig, comp, input_image, match_sep, flux_limit, plot_file):
             plot_file=plot_file,
             tol=match_sep,
             flux_limit=flux_limit,
+            spec_indx_test=indexes_out,
+            spec_indx_ref=indexes_in,
             plot_diagnostics=True,
         )
 

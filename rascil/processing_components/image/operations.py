@@ -14,6 +14,7 @@ __all__ = [
     "create_window",
     "export_image_to_fits",
     "fft_image_to_griddata",
+    "image_add_ra_dec_grid",
     "image_is_canonical",
     "import_image_from_fits",
     "pad_image",
@@ -41,7 +42,7 @@ from astropy.wcs import WCS
 from astropy.wcs.utils import skycoord_to_pixel
 from reproject import reproject_interp
 
-from rascil.data_models.memory_data_models import QA, Image
+from rascil.data_models.memory_data_models import QA, Image, image_wcs
 from rascil.data_models.parameters import get_parameter
 from rascil.data_models.polarisation import (
     PolarisationFrame,
@@ -56,6 +57,19 @@ from rascil.processing_components.griddata.operations import create_griddata_fro
 
 warnings.simplefilter("ignore", FITSFixedWarning)
 log = logging.getLogger("rascil-logger")
+
+
+def image_add_ra_dec_grid(im):
+    """Add ra, dec coordinates"""
+    _, _, ny, nx = im["pixels"].shape
+    lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
+    ra_grid, dec_grid = image_wcs(im).sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
+    ra_grid = numpy.deg2rad(ra_grid)
+    dec_grid = numpy.deg2rad(dec_grid)
+    im = im.assign_coords(
+        ra_grid=(("x", "y"), ra_grid), dec_grid=(("x", "y"), dec_grid)
+    )
+    return im
 
 
 def image_is_canonical(im: Image):

@@ -347,7 +347,10 @@ def test_rascil_imager(
         rascil_path(f"test_results/test_rascil_imager_{tag}.ms"), bvis_list
     )
 
-    # rsexecute.close()
+    rsexecute.close()
+
+    rsexecute.set_client(use_dask=True)
+    rsexecute.close()
 
     # invert_args = [
     #     "--mode",

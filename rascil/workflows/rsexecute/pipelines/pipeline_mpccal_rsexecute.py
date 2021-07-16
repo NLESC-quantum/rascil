@@ -119,7 +119,7 @@ def mpccal_skymodel_list_rsexecute_workflow(
         )
 
         deconvolved = deconvolve_list_rsexecute_workflow(
-            [(residual, 1.0)], [psf_obs[0]], [model], **kwargs
+            [residual], [psf_obs[0][0]], [model], **kwargs
         )
 
         # The M step: 2 - Update the gaintables

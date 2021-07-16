@@ -5,9 +5,6 @@
 __all__ = [
     "add_image",
     "average_image_over_frequency",
-    "calculate_image_frequency_moments",
-    "calculate_image_from_frequency_moments",
-    "calculate_image_taylor_terms",
     "convert_polimage_to_stokes",
     "convert_stokes_to_polimage",
     "create_empty_image_like",
@@ -37,12 +34,7 @@ import copy
 import logging
 import warnings
 
-from typing import List, Union
-
-
 import numpy
-import xarray
-from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.wcs import FITSFixedWarning
@@ -497,6 +489,7 @@ def average_image_over_frequency(im: Image) -> Image:
     # assert isinstance(im, Image)
     assert image_is_canonical(im)
 
+    nchannels = len(im.frequency.data)
     newim_data = numpy.mean(im["pixels"].data, axis=0)[numpy.newaxis, ...]
 
     assert not numpy.isnan(numpy.sum(im["pixels"].data)), "NaNs present in image data"
@@ -509,190 +502,6 @@ def average_image_over_frequency(im: Image) -> Image:
     return create_image_from_array(
         newim_data, newim_wcs, im.image_acc.polarisation_frame
     )
-
-
-def calculate_image_frequency_moments(
-    im: Image, reference_frequency=None, nmoment=1
-) -> Image:
-    """Calculate frequency weighted moments of an image cube
-
-    The frequency moments are calculated using:
-
-    .. math::
-
-        w_k = \\left(\\left(\\nu - \\nu_{ref}\\right) /  \\nu_{ref}\\right)^k
-
-
-    Note that the spectral axis is replaced by a MOMENT axis.
-
-    For example, to find the moments and then reconstruct from just the moments::
-
-        moment_cube = calculate_image_frequency_moments(model_multichannel, nmoment=5)
-        reconstructed_cube = calculate_image_from_frequency_moments(model_multichannel, moment_cube)
-
-    :param im: Image cube
-    :param reference_frequency: Reference frequency (default None uses average)
-    :param nmoment: Number of moments to calculate
-    :return: Moments image
-    """
-    # assert isinstance(im, Image)
-    assert image_is_canonical(im)
-
-    assert nmoment > 0
-    nchan, npol, ny, nx = im["pixels"].data.shape
-    channels = numpy.arange(nchan)
-    freq = im.image_acc.wcs.sub(["spectral"]).wcs_pix2world(channels, 0)[0]
-
-    assert (
-        nmoment <= nchan
-    ), "Number of moments %d cannot exceed the number of channels %d" % (nmoment, nchan)
-
-    if reference_frequency is None:
-        reference_frequency = numpy.average(freq.data)
-    log.debug(
-        "calculate_image_frequency_moments: Reference frequency = %.3f (MHz)"
-        % (reference_frequency / 1e6)
-    )
-
-    moment_data = numpy.zeros([nmoment, npol, ny, nx])
-
-    assert not numpy.isnan(numpy.sum(im["pixels"].data)), "NaNs present in image data"
-
-    for moment in range(nmoment):
-        for chan in range(nchan):
-            weight = numpy.power(
-                (freq[chan] - reference_frequency) / reference_frequency, moment
-            )
-            moment_data[moment, ...] += im["pixels"].data[chan, ...] * weight
-
-    assert not numpy.isnan(numpy.sum(moment_data)), "NaNs present in moment data"
-
-    moment_wcs = copy.deepcopy(im.image_acc.wcs)
-
-    moment_wcs.wcs.ctype[3] = "MOMENT"
-    moment_wcs.wcs.crval[3] = 0.0
-    moment_wcs.wcs.crpix[3] = 1.0
-    moment_wcs.wcs.cdelt[3] = 1.0
-    moment_wcs.wcs.cunit[3] = ""
-
-    return create_image_from_array(
-        moment_data, moment_wcs, im.image_acc.polarisation_frame
-    )
-
-
-def calculate_image_taylor_terms(
-    moment_im: Image,
-    reference_im,
-    ntaylor=2,
-) -> List[Image]:
-    """Calculate set of Taylor terms corresponding to a moment cube
-
-    :param moment_im: Image cube
-    :param reference_im Reference image
-    :return: List of Taylor images
-    """
-
-    if ntaylor > 2:
-        raise ValueError("Only maximum of 2 taylor terms supported currently")
-
-    nmoment, npol, ny, nx = moment_im["pixels"].data.shape
-    nchan = reference_im["pixels"].data.shape[0]
-
-    reference_frequency = numpy.average(reference_im.frequency.data)
-
-    pol_frame = polarisation_frame_from_wcs(
-        reference_im.image_acc.wcs, reference_im["pixels"].data.shape
-    )
-
-    moment_images = list()
-    moment_wcs = copy.deepcopy(reference_im.image_acc.wcs)
-    moment_wcs.wcs.crval[3] = reference_frequency
-    moment_wcs.wcs.cdelt[3] = reference_im.image_acc.wcs.wcs.cdelt[3]
-
-    sumwt2 = 0.0
-    for chan in range(nchan):
-        weight = numpy.power(
-            (reference_im.frequency[chan].data - reference_frequency)
-            / reference_frequency,
-            2,
-        )
-        sumwt2 += weight
-
-    for taylor in range(ntaylor):
-        if taylor > 0:
-            scale = 1.0 / sumwt2
-        else:
-            scale = 1.0 / nchan
-        moment_image = create_image_from_array(
-            scale * moment_im["pixels"].data[taylor, ...][numpy.newaxis, ...],
-            moment_wcs,
-            pol_frame,
-        )
-        moment_image.image_acc.wcs.wcs.crval[3] = reference_frequency
-        moment_image.image_acc.wcs.wcs.cdelt[3] = reference_im.attrs[
-            "channel_bandwidth"
-        ]
-        moment_images.append(moment_image)
-
-    return moment_images
-
-
-def calculate_image_from_frequency_moments(
-    im: Image, moment_image: Image, reference_frequency=None
-) -> Image:
-    """Calculate channel image from frequency weighted moments
-
-    .. math::
-
-        w_k = \\left(\\left(\\nu - \\nu_{ref}\\right) /  \\nu_{ref}\\right)^k
-
-
-    Note that a new image is created
-
-    For example, to find the moments and then reconstruct from just the moments::
-
-        moment_cube = calculate_image_frequency_moments(model_multichannel, nmoment=5)
-        reconstructed_cube = calculate_image_from_frequency_moments(model_multichannel, moment_cube)
-
-
-    :param im: Image cube to be reconstructed
-    :param moment_image: Moment cube (constructed using calculate_image_frequency_moments)
-    :param reference_frequency: Reference frequency (default None uses average)
-    :return: reconstructed image
-    """
-    # assert isinstance(im, Image)
-    nchan, npol, ny, nx = im["pixels"].data.shape
-    nmoment, mnpol, mny, mnx = moment_image["pixels"].data.shape
-    assert nmoment > 0
-
-    assert npol == mnpol
-    assert ny == mny
-    assert nx == mnx
-
-    # assert moment_image.wcs.wcs.ctype[3] == 'MOMENT', "Second image should be a moment image"
-
-    if reference_frequency is None:
-        reference_frequency = numpy.average(im.frequency.data)
-    log.debug(
-        "calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)"
-        % (1e-6 * reference_frequency)
-    )
-
-    newim_data = numpy.zeros_like(im["pixels"].data[...])
-    for moment in range(nmoment):
-        for chan in range(nchan):
-            weight = numpy.power(
-                (im.frequency[chan].data - reference_frequency) / reference_frequency,
-                moment,
-            )
-            newim_data[chan, ...] += moment_image["pixels"].data[moment, ...] * weight
-
-    newim = create_image_from_array(
-        newim_data,
-        wcs=im.image_acc.wcs,
-        polarisation_frame=im.image_acc.polarisation_frame,
-    )
-    return newim
 
 
 def remove_continuum_image(im: Image, degree=1, mask=None):
@@ -1520,3 +1329,47 @@ def apply_voltage_pattern_to_image(
         newim = convert_polimage_to_stokes(newim)
 
         return newim
+
+
+def convert_clean_beam_to_degrees(im, beam_pixels):
+    """Convert clean beam in pixels to deg deg, deg
+
+    :param im: Image
+    :param beam_pixels:
+    :return: dict e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
+    """
+    # cellsize in radians
+    cellsize = numpy.deg2rad(im.image_acc.wcs.wcs.cdelt[1])
+    to_mm = 4.0 * numpy.log(2.0)
+    if beam_pixels[1] > beam_pixels[0]:
+        clean_beam = {
+            "bmaj": numpy.rad2deg(beam_pixels[1] * cellsize * to_mm),
+            "bmin": numpy.rad2deg(beam_pixels[0] * cellsize * to_mm),
+            "bpa": numpy.rad2deg(beam_pixels[2]),
+        }
+    else:
+        clean_beam = {
+            "bmaj": numpy.rad2deg(beam_pixels[0] * cellsize * to_mm),
+            "bmin": numpy.rad2deg(beam_pixels[1] * cellsize * to_mm),
+            "bpa": numpy.rad2deg(beam_pixels[2]) + 90.0,
+        }
+    return clean_beam
+
+
+def convert_clean_beam_to_pixels(model, clean_beam):
+    """Convert clean beam to pixels
+
+    :param model:
+    :param clean_beam: e.g. {"bmaj":0.1, "bmin":0.05, "bpa":-60.0}. Units are deg, deg, deg
+    :return:
+    """
+    to_mm = 4.0 * numpy.log(2.0)
+    # Cellsize in radians
+    cellsize = numpy.deg2rad(model.image_acc.wcs.wcs.cdelt[1])
+    # Beam in pixels
+    beam_pixels = (
+        numpy.deg2rad(clean_beam["bmin"]) / (cellsize * to_mm),
+        numpy.deg2rad(clean_beam["bmaj"]) / (cellsize * to_mm),
+        numpy.deg2rad(clean_beam["bpa"]),
+    )
+    return beam_pixels

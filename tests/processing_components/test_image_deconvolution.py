@@ -17,6 +17,8 @@ from rascil.processing_components.arrays.cleaners import overlapIndices
 from rascil.processing_components.skycomponent.operations import restore_skycomponent
 
 from rascil.processing_components import (
+    deconvolve_list,
+    restore_list,
     deconvolve_cube,
     restore_cube,
     fit_psf,
@@ -76,8 +78,8 @@ class TestImageDeconvolution(unittest.TestCase):
             cellsize=0.001,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
-        self.dirty, sumwt = invert_2d(self.vis, self.model)
-        self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)
+        self.dirty = invert_2d(self.vis, self.model)[0]
+        self.psf = invert_2d(self.vis, self.model, dopsf=True)[0]
         self.sensitivity = create_pb(self.model, "LOW")
 
     def overlaptest(self, a1, a2, s1, s2):
@@ -106,6 +108,15 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
 
+    def test_restore_list(self):
+        self.model["pixels"].data[0, 0, 256, 256] = 1.0
+        self.cmodel = restore_list([self.model], [self.psf])[0]
+        assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 1.0) < 1e-7, numpy.max(
+            self.cmodel["pixels"].data
+        )
+        if self.persist:
+            export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
+
     def test_restore_clean_beam(self):
         """Test restoration with specified beam beam
 
@@ -115,7 +126,9 @@ class TestImageDeconvolution(unittest.TestCase):
         # The beam is specified in degrees
         bmaj = 0.006 * 180.0 / numpy.pi
         self.cmodel = restore_cube(
-            self.model, self.psf, clean_beam={"bmaj": bmaj, "bmin": bmaj, "bpa": 0.0}
+            self.model,
+            self.psf,
+            clean_beam={"bmaj": bmaj, "bmin": bmaj, "bpa": 0.0},
         )
         assert numpy.abs(numpy.max(self.cmodel["pixels"].data) - 1.0) < 1e-7, numpy.max(
             self.cmodel["pixels"].data
@@ -168,15 +181,9 @@ class TestImageDeconvolution(unittest.TestCase):
             algorithm="hogbom",
             threshold=0.01,
         )
-        if self.persist:
-            export_image_to_fits(
-                self.residual, "%s/test_deconvolve_hogbom-residual.fits" % (self.dir)
-            )
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_hogbom-clean.fits" % (self.dir)
-            )
+            self.save_results("hogbom")
         assert numpy.max(self.residual["pixels"].data) < 1.2
 
     def test_deconvolve_msclean(self):
@@ -189,20 +196,22 @@ class TestImageDeconvolution(unittest.TestCase):
             scales=[0, 3, 10, 30],
             threshold=0.01,
         )
-        if self.persist:
-            export_image_to_fits(
-                self.comp, "%s/test_deconvolve_msclean-comp.fits" % (self.dir)
-            )
-        if self.persist:
-            export_image_to_fits(
-                self.residual, "%s/test_deconvolve_msclean-residual.fits" % (self.dir)
-            )
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_msclean-clean.fits" % (self.dir)
-            )
+            self.save_results("msclean")
         assert numpy.max(self.residual["pixels"].data) < 1.2
+
+    def save_results(self, tag):
+        export_image_to_fits(
+            self.comp, f"{self.dir}/test_deconvolve_{tag}-deconvolved.fits"
+        )
+        export_image_to_fits(
+            self.residual,
+            f"{self.dir}/test_deconvolve_{tag}-residual.fits",
+        )
+        export_image_to_fits(
+            self.cmodel, f"{self.dir}/test_deconvolve_{tag}-restored.fits"
+        )
 
     def test_deconvolve_msclean_sensitivity(self):
         self.comp, self.residual = deconvolve_cube(
@@ -215,32 +224,16 @@ class TestImageDeconvolution(unittest.TestCase):
             scales=[0, 3, 10, 30],
             threshold=0.01,
         )
+        self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.comp,
-                "%s/test_deconvolve_msclean_sensitivity-comp.fits" % (self.dir),
-            )
-        if self.persist:
-            export_image_to_fits(
-                self.residual,
-                "%s/test_deconvolve_msclean_sensitivity-residual.fits" % (self.dir),
-            )
-        self.restored = restore_cube(self.comp, self.psf, self.residual)
-        if self.persist:
-            export_image_to_fits(
-                self.restored,
-                "%s/test_deconvolve_msclean_sensitivity-restored.fits" % (self.dir),
-            )
-            export_image_to_fits(
-                self.sensitivity,
-                "%s/test_deconvolve_msclean_sensitivity.fits" % (self.dir),
-            )
+            self.save_results("msclean-sensitivity")
+
         qa = qa_image(self.residual)
         numpy.testing.assert_allclose(
-            qa.data["max"], 4.277866752638536, atol=1e-7, err_msg=f"{qa}"
+            qa.data["max"], 0.885413708649923, atol=1e-7, err_msg=f"{qa}"
         )
         numpy.testing.assert_allclose(
-            qa.data["min"], -2.2012918658511422, atol=1e-7, err_msg=f"{qa}"
+            qa.data["min"], -0.9840797231429542, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_msclean_1scale(self):
@@ -254,20 +247,9 @@ class TestImageDeconvolution(unittest.TestCase):
             scales=[0],
             threshold=0.01,
         )
-        if self.persist:
-            export_image_to_fits(
-                self.comp, "%s/test_deconvolve_msclean_1scale-comp.fits" % (self.dir)
-            )
-        if self.persist:
-            export_image_to_fits(
-                self.residual,
-                "%s/test_deconvolve_msclean_1scale-residual.fits" % (self.dir),
-            )
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_msclean_1scale-clean.fits" % (self.dir)
-            )
+            self.save_results("msclean-1scale")
         assert numpy.max(self.residual["pixels"].data) < 1.2
 
     def test_deconvolve_hogbom_no_edge(self):
@@ -280,16 +262,9 @@ class TestImageDeconvolution(unittest.TestCase):
             algorithm="hogbom",
             threshold=0.01,
         )
-        if self.persist:
-            export_image_to_fits(
-                self.residual,
-                "%s/test_deconvolve_hogbom_noedge-residual.fits" % (self.dir),
-            )
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_hogbom_no_edge-clean.fits" % (self.dir)
-            )
+            self.save_results("hogbom_no_edge")
         assert numpy.max(self.residual["pixels"].data) < 1.2
 
     def test_deconvolve_hogbom_inner_quarter(self):
@@ -302,17 +277,9 @@ class TestImageDeconvolution(unittest.TestCase):
             algorithm="hogbom",
             threshold=0.01,
         )
-        if self.persist:
-            export_image_to_fits(
-                self.residual,
-                "%s/test_deconvolve_hogbom_innerquarter-residual.fits" % (self.dir),
-            )
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_hogbom_innerquarter-clean.fits" % (self.dir),
-            )
+            self.save_results("hogbom_no_inner_quarter")
         assert numpy.max(self.residual["pixels"].data) < 1.2
 
     def test_deconvolve_msclean_inner_quarter(self):
@@ -327,22 +294,9 @@ class TestImageDeconvolution(unittest.TestCase):
             scales=[0, 3, 10, 30],
             threshold=0.01,
         )
-        if self.persist:
-            export_image_to_fits(
-                self.comp,
-                "%s/test_deconvolve_msclean_innerquarter-comp.fits" % (self.dir),
-            )
-        if self.persist:
-            export_image_to_fits(
-                self.residual,
-                "%s/test_deconvolve_msclean_innerquarter-residual.fits" % (self.dir),
-            )
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.cmodel,
-                "%s/test_deconvolve_msclean_innerquarter-clean.fits" % (self.dir),
-            )
+            self.save_results("msclean_inner_quarter")
         assert numpy.max(self.residual["pixels"].data) < 1.2
 
     def test_deconvolve_hogbom_subpsf(self):
@@ -357,16 +311,9 @@ class TestImageDeconvolution(unittest.TestCase):
             algorithm="hogbom",
             threshold=0.01,
         )
-        if self.persist:
-            export_image_to_fits(
-                self.residual,
-                "%s/test_deconvolve_hogbom_subpsf-residual.fits" % (self.dir),
-            )
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_hogbom_subpsf-clean.fits" % (self.dir)
-            )
+            self.save_results("hogbom_subpsf")
         assert numpy.max(self.residual["pixels"].data[..., 56:456, 56:456]) < 1.2
 
     def test_deconvolve_msclean_subpsf(self):
@@ -382,20 +329,9 @@ class TestImageDeconvolution(unittest.TestCase):
             scales=[0, 3, 10, 30],
             threshold=0.01,
         )
-        if self.persist:
-            export_image_to_fits(
-                self.comp, "%s/test_deconvolve_msclean_subpsf-comp.fits" % (self.dir)
-            )
-        if self.persist:
-            export_image_to_fits(
-                self.residual,
-                "%s/test_deconvolve_msclean_subpsf-residual.fits" % (self.dir),
-            )
         self.cmodel = restore_cube(self.comp, self.psf, self.residual)
         if self.persist:
-            export_image_to_fits(
-                self.cmodel, "%s/test_deconvolve_msclean_subpsf-clean.fits" % (self.dir)
-            )
+            self.save_results("msclean_subpsf")
         assert numpy.max(self.residual["pixels"].data[..., 56:456, 56:456]) < 1.0
 
 

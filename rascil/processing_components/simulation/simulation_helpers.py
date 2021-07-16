@@ -28,7 +28,7 @@ from astropy.coordinates import SkyCoord
 from rascil import phyconst
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image import create_image
+from rascil.processing_components.image.operations import create_image
 from rascil.processing_components.image.operations import show_image
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.base import copy_skycomponent

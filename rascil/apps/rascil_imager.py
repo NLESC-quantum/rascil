@@ -190,7 +190,9 @@ def imager(args):
 def setup_rsexecute(args):
     # We can run distributed (use_dask=True) or in serial (use_dask=False). Using Dask is usually recommended
     if args.use_dask == "True":
-        if args.dask_scheduler == "ssh":
+        if args.dask_scheduler == "existing":
+            log.info("Using existing dask client")
+        elif args.dask_scheduler == "ssh":
             log.info("Using SSH scheduler")
             cluster = SSHCluster(
                 args.dask_nodes,
@@ -199,9 +201,11 @@ def setup_rsexecute(args):
                 scheduler_options={"port": 0, "dashboard_address": ":8787"},
             )
             client = Client(cluster)
+            rsexecute.set_client(use_dask=True, client=client)
         elif args.dask_scheduler is not None:
             log.info("Using specified scheduler {}".format(args.dask_scheduler))
-            client = Client(scheduler=args.dask_scheduler)
+            client = Client(address=args.dask_scheduler)
+            rsexecute.set_client(use_dask=True, client=client)
         else:
             log.info("Gettting client via get_dask_client")
             client = get_dask_client(
@@ -209,7 +213,8 @@ def setup_rsexecute(args):
                 threads_per_worker=args.dask_nthreads,
                 memory_limit=args.dask_memory,
             )
-        rsexecute.set_client(use_dask=True, client=client)
+            rsexecute.set_client(use_dask=True, client=client)
+
         rsexecute.init_statistics()
         # Sample the memory usage with a scheduler plugin
         if args.dask_memory_usage_file is not None:

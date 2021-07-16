@@ -2,26 +2,22 @@
 
 """
 import logging
-import pytest
 import shutil
 
 import numpy
+import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.apps.rascil_imager import cli_parser, imager
 from rascil.data_models import SkyModel
+from rascil.data_models.data_model_helpers import export_skymodel_to_hdf5
 from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.data_models.data_model_helpers import export_skymodel_to_hdf5
 from rascil.processing_components import (
     export_blockvisibility_to_ms,
     concatenate_blockvisibility_frequency,
     find_skycomponents,
-)
-from rascil.processing_components.util.performance import (
-    performance_store_dict,
-    performance_environment,
 )
 from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import (
@@ -42,6 +38,10 @@ from rascil.processing_components.simulation import (
 )
 from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
+from rascil.processing_components.util.performance import (
+    performance_store_dict,
+    performance_environment,
+)
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
@@ -347,131 +347,128 @@ def test_rascil_imager(
         rascil_path(f"test_results/test_rascil_imager_{tag}.ms"), bvis_list
     )
 
-    rsexecute.close()
+    invert_args = [
+        "--mode",
+        f"{mode}",
+        "--use_dask",
+        f"{use_dask}",
+        "--performance_file",
+        rascil_path(f"test_results/test_rascil_imager_{tag}.json"),
+        "--dask_memory_usage_file",
+        rascil_path(f"test_results/test_rascil_imager_{tag}.csv"),
+        "--ingest_msname",
+        rascil_path(f"test_results/test_rascil_imager_{tag}.ms"),
+        "--ingest_vis_nchan",
+        f"{nfreqwin}",
+        "--ingest_dd",
+        "0",
+        "--ingest_chan_per_blockvis",
+        "1",
+        "--imaging_npixel",
+        "512",
+        "--imaging_cellsize",
+        "0.0005",
+        "--imaging_dft_kernel",
+        "cpu_looped",
+        "--imaging_flat_sky",
+        "False",
+        "--dask_scheduler",
+        "existing",
+    ]
 
-    rsexecute.set_client(use_dask=True)
-    rsexecute.close()
+    clean_args = [
+        "--clean_nmajor",
+        f"{nmajor}",
+        "--clean_niter",
+        "1000",
+        "--clean_algorithm",
+        "mmclean",
+        "--clean_nmoment",
+        "3",
+        "--clean_gain",
+        "0.1",
+        "--clean_scales",
+        "0",
+        "--clean_threshold",
+        "1.0",
+        "--clean_fractional_threshold",
+        "0.1",
+        "--clean_facets",
+        "1",
+        "--clean_restored_output",
+        restored_output,
+        "--clean_restore_facets",
+        "4",
+        "--clean_restore_overlap",
+        "8",
+    ]
+    if component_threshold is not None and component_method is not None:
+        clean_args += [
+            "--clean_component_threshold",
+            f"{component_threshold}",
+            "--clean_component_method",
+            f"{component_method}",
+        ]
+    else:
+        clean_args += [
+            "--clean_component_threshold",
+            "1e15",
+            "--clean_component_method",
+            "fit",
+        ]
 
-    # invert_args = [
-    #     "--mode",
-    #     f"{mode}",
-    #     "--use_dask",
-    #     f"{use_dask}",
-    #     "--performance_file",
-    #     rascil_path(f"test_results/test_rascil_imager_{tag}.json"),
-    #     "--dask_memory_usage_file",
-    #     rascil_path(f"test_results/test_rascil_imager_{tag}.csv"),
-    #     "--ingest_msname",
-    #     rascil_path(f"test_results/test_rascil_imager_{tag}.ms"),
-    #     "--ingest_vis_nchan",
-    #     f"{nfreqwin}",
-    #     "--ingest_dd",
-    #     "0",
-    #     "--ingest_chan_per_blockvis",
-    #     "1",
-    #     "--imaging_npixel",
-    #     "512",
-    #     "--imaging_cellsize",
-    #     "0.0005",
-    #     "--imaging_dft_kernel",
-    #     "cpu_looped",
-    #     "--imaging_flat_sky",
-    #     "False",
-    # ]
-    #
-    # clean_args = [
-    #     "--clean_nmajor",
-    #     f"{nmajor}",
-    #     "--clean_niter",
-    #     "1000",
-    #     "--clean_algorithm",
-    #     "mmclean",
-    #     "--clean_nmoment",
-    #     "3",
-    #     "--clean_gain",
-    #     "0.1",
-    #     "--clean_scales",
-    #     "0",
-    #     "--clean_threshold",
-    #     "1.0",
-    #     "--clean_fractional_threshold",
-    #     "0.1",
-    #     "--clean_facets",
-    #     "1",
-    #     "--clean_restored_output",
-    #     restored_output,
-    #     "--clean_restore_facets",
-    #     "4",
-    #     "--clean_restore_overlap",
-    #     "8",
-    # ]
-    # if component_threshold is not None and component_method is not None:
-    #     clean_args += [
-    #         "--clean_component_threshold",
-    #         f"{component_threshold}",
-    #         "--clean_component_method",
-    #         f"{component_method}",
-    #     ]
-    # else:
-    #     clean_args += [
-    #         "--clean_component_threshold",
-    #         "1e15",
-    #         "--clean_component_method",
-    #         "fit",
-    #     ]
-    #
-    # calibration_args = [
-    #     "--calibration_T_first_selfcal",
-    #     "2",
-    #     "--calibration_T_phase_only",
-    #     "True",
-    #     "--calibration_T_timeslice",
-    #     "0.0",
-    #     "--calibration_G_first_selfcal",
-    #     "5",
-    #     "--calibration_G_phase_only",
-    #     "False",
-    #     "--calibration_G_timeslice",
-    #     "1200.0",
-    #     "--calibration_B_first_selfcal",
-    #     "8",
-    #     "--calibration_B_phase_only",
-    #     "False",
-    #     "--calibration_B_timeslice",
-    #     "1.0e5",
-    #     "--calibration_global_solution",
-    #     "True",
-    #     "--calibration_context",
-    #     "TG",
-    # ]
-    #
-    # parser = cli_parser()
-    # if mode == "invert":
-    #     args = parser.parse_args(invert_args)
-    # elif mode == "cip":
-    #     args = parser.parse_args(invert_args + clean_args)
-    # elif mode == "ical":
-    #     args = parser.parse_args(invert_args + clean_args + calibration_args)
-    # else:
-    #     return ValueError(f"rascil-imager: Unknown mode {mode}")
-    #
-    # performance_environment(args.performance_file, mode="w")
-    # performance_store_dict(args.performance_file, "cli_args", vars(args), mode="a")
-    #
-    # if mode == "invert":
-    #     dirtyname = imager(args)
-    #     dirty = import_image_from_fits(dirtyname)
-    #     qa = qa_image(dirty)
-    # elif mode == "cip":
-    #     restoredname = imager(args)[2]
-    #     dirty = import_image_from_fits(restoredname)
-    #     qa = qa_image(dirty)
-    # elif mode == "ical":
-    #     restoredname = imager(args)[2]
-    #     dirty = import_image_from_fits(restoredname)
-    #     qa = qa_image(dirty)
-    # else:
-    #     return ValueError(f"rascil-imager: Unknown mode {mode}")
-    #
-    # numpy.testing.assert_allclose(qa.data["max"], flux_max, atol=1e-7, err_msg=f"{qa}")
-    # numpy.testing.assert_allclose(qa.data["min"], flux_min, atol=1e-7, err_msg=f"{qa}")
+    calibration_args = [
+        "--calibration_T_first_selfcal",
+        "2",
+        "--calibration_T_phase_only",
+        "True",
+        "--calibration_T_timeslice",
+        "0.0",
+        "--calibration_G_first_selfcal",
+        "5",
+        "--calibration_G_phase_only",
+        "False",
+        "--calibration_G_timeslice",
+        "1200.0",
+        "--calibration_B_first_selfcal",
+        "8",
+        "--calibration_B_phase_only",
+        "False",
+        "--calibration_B_timeslice",
+        "1.0e5",
+        "--calibration_global_solution",
+        "True",
+        "--calibration_context",
+        "TG",
+    ]
+
+    parser = cli_parser()
+    if mode == "invert":
+        args = parser.parse_args(invert_args)
+    elif mode == "cip":
+        args = parser.parse_args(invert_args + clean_args)
+    elif mode == "ical":
+        args = parser.parse_args(invert_args + clean_args + calibration_args)
+    else:
+        return ValueError(f"rascil-imager: Unknown mode {mode}")
+
+    performance_environment(args.performance_file, mode="w")
+    performance_store_dict(args.performance_file, "cli_args", vars(args), mode="a")
+
+    if mode == "invert":
+        dirtyname = imager(args)
+        dirty = import_image_from_fits(dirtyname)
+        qa = qa_image(dirty)
+    elif mode == "cip":
+        restoredname = imager(args)[2]
+        dirty = import_image_from_fits(restoredname)
+        qa = qa_image(dirty)
+    elif mode == "ical":
+        restoredname = imager(args)[2]
+        dirty = import_image_from_fits(restoredname)
+        qa = qa_image(dirty)
+    else:
+        return ValueError(f"rascil-imager: Unknown mode {mode}")
+
+    numpy.testing.assert_allclose(qa.data["max"], flux_max, atol=1e-7, err_msg=f"{qa}")
+    numpy.testing.assert_allclose(qa.data["min"], flux_min, atol=1e-7, err_msg=f"{qa}")

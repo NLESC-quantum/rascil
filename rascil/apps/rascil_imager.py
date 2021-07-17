@@ -217,7 +217,7 @@ def setup_rsexecute(args):
 
         rsexecute.init_statistics()
         # Sample the memory usage with a scheduler plugin
-        if args.dask_memory_usage_file is not None:
+        if rsexecute.using_dask and args.dask_memory_usage_file is not None:
             rsexecute.memusage(args.dask_memory_usage_file)
         performance_dask_configuration(args.performance_file, rsexecute)
     else:

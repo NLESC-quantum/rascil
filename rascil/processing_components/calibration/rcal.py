@@ -9,7 +9,6 @@ import collections
 from rascil.data_models.memory_data_models import BlockVisibility, GainTable
 from rascil.processing_components.visibility.base import copy_visibility
 from rascil.processing_components.calibration.solvers import solve_gaintable
-from rascil.processing_components.imaging import dft_skycomponent_visibility
 
 
 def rcal(vis: BlockVisibility, components, **kwargs) -> GainTable:
@@ -27,6 +26,9 @@ def rcal(vis: BlockVisibility, components, **kwargs) -> GainTable:
 
     if not isinstance(vis, collections.abc.Iterable):
         vis = [vis]
+
+    # Import here to avoid a circular dependency
+    from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 
     for ichunk, vischunk in enumerate(vis):
         vispred = copy_visibility(vischunk, zero=True)

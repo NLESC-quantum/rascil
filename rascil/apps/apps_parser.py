@@ -258,7 +258,7 @@ def apps_parser_cleaning(parser):
         "--clean_restored_output",
         type=str,
         default="list",
-        help="Type of restored image output: list or integrated",
+        help="Type of restored image output: taylor, list, or integrated",
     )
 
     return parser
@@ -315,6 +315,20 @@ def apps_parser_dask(parser):
         help="Externally defined Dask scheduler e.g. 127.0.0.1:8786 or ssh for SSHCluster"
         " or existing for current scheduler",
     )
+
+    parser.add_argument(
+        "--dask_tcp_timeout",
+        type=str,
+        default=None,
+        help="Dask TCP timeout",
+    )
+    parser.add_argument(
+        "--dask_connect_timeout",
+        type=str,
+        default=None,
+        help="Dask connect timeout",
+    )
+
     return parser
 
 

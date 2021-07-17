@@ -63,13 +63,13 @@ def sum_images_rsexecute(image_list, split=2):
 
     """
 
-    def sum_images(imagelist):
-        if len(image_list) == 1:
-            return image_list[0]
+    def sum_images(imlist):
+        if len(imlist) == 1:
+            return imlist[0]
         else:
-            assert len(image_list) > 1, image_list
-            out = imagelist[0].copy(deep=True)
-            out["pixels"].data += imagelist[1]["pixels"].data
+            assert len(imlist) > 1, imlist
+            out = imlist[0].copy(deep=True)
+            out["pixels"].data += imlist[1]["pixels"].data
             return out
 
     if len(image_list) > split:

@@ -25,7 +25,10 @@ from rascil.processing_components.simulation import (
     create_test_skycomponents_from_s3,
 )
 from rascil.processing_components import concatenate_visibility
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.visibility.base import (
     create_blockvisibility,
     create_blockvisibility,
@@ -52,6 +55,7 @@ class TestTesting_Support(unittest.TestCase):
             ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
         )
         self.config = create_named_configuration("LOWBD2-CORE")
+        self.config = decimate_configuration(self.config, skip=3)
         self.times = numpy.linspace(-300.0, 300.0, 3) * numpy.pi / 43200.0
         nants = self.config.xyz.shape[0]
         assert nants > 1
@@ -182,6 +186,7 @@ class TestTesting_Support(unittest.TestCase):
         assert sc[0].name == "S3_36315789"
         self.assertAlmostEqual(sc[0].flux[0, 0], 3.6065651245943307, 7)
 
+    @unittest.skip("Too expensive for CI/CD")
     def test_create_test_skycomponents_from_s3_deep(self):
         self.frequency = numpy.linspace(0.8e9, 1.2e9, 5)
         sc = create_test_skycomponents_from_s3(
@@ -189,11 +194,11 @@ class TestTesting_Support(unittest.TestCase):
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("stokesI"),
             frequency=self.frequency,
-            radius=0.001,
+            radius=0.0003,
         )
-        assert len(sc) == 103, "Expected 103 sources, actually found %d" % len(sc)
-        assert sc[0].name == "S3_150601"
-        self.assertAlmostEqual(sc[0].flux[0, 0], 3.0708204704510455e-05, 7)
+        assert len(sc) == 6, "Expected 103 sources, actually found %d" % len(sc)
+        assert sc[0].name == "S3_40130498"
+        self.assertAlmostEqual(sc[0].flux[0, 0], 4.20562639e-05, 7)
 
     def test_create_test_image_from_s3_low(self):
         im = create_test_image_from_s3(

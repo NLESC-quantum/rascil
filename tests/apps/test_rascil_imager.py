@@ -206,7 +206,7 @@ def test_rascil_imager(
 
     rng = default_rng(1805550721)
 
-    rsexecute.set_client(use_dask=use_dask)
+    rsexecute.set_client(use_dask=False)
 
     npixel = 512
     low = create_named_configuration("LOWBD2", rmax=750.0)

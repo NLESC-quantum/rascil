@@ -50,7 +50,10 @@ from rascil.processing_components.imaging import (
     create_vp_generic,
 )
 from rascil.processing_components.simulation import create_configuration_from_MIDfile
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.simulation import (
     simulate_gaintable,
     create_gaintable_from_screen,
@@ -100,6 +103,7 @@ def simulate_list_rsexecute_workflow(
     format="blockvis",
     rmax=1000.0,
     zerow=False,
+    skip=1,
 ):
     """A component to simulate an observation
 
@@ -120,6 +124,8 @@ def simulate_list_rsexecute_workflow(
     :param polarisation_frame: def PolarisationFrame("stokesI")
     :param order: 'time' or 'frequency' or 'both' or None: def 'frequency'
     :param format: 'blockvis' or 'vis': def 'blockvis'
+    :param zerow: Set w to zero
+    :param skip: Number of dishes/stations to skip
     :return: graph of vis_list with different frequencies in different elements
     """
     create_vis = create_blockvisibility
@@ -135,6 +141,9 @@ def simulate_list_rsexecute_workflow(
         conf = config
     else:
         conf = create_named_configuration(config, rmax=rmax)
+
+    if skip > 1:
+        conf = decimate_configuration(conf, skip=1)
 
     if order == "time":
         log.debug(

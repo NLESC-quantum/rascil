@@ -24,6 +24,7 @@ from rascil.processing_components import (
     image_gather_channels,
     create_low_test_beam,
     calculate_blockvisibility_azel,
+    decimate_configuration,
 )
 from rascil.workflows import (
     predict_skymodel_list_rsexecute_workflow,
@@ -162,6 +163,7 @@ def test_imaging_pipeline(
         rmax=rmax,
         format="blockvis",
         zerow=False,
+        skip=18,
     )
     bvis_list = rsexecute.persist(bvis_list)
 

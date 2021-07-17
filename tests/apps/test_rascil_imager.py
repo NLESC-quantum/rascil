@@ -30,7 +30,10 @@ from rascil.processing_components.image.operations import (
     smooth_image,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.simulation import (
     ingest_unittest_visibility,
     create_unittest_model,
@@ -57,6 +60,21 @@ default_run = True
             default_run,
             "invert",
             True,
+            0,
+            "invert",
+            False,
+            101.58410851350841,
+            -9.893454610760015,
+            None,
+            None,
+            5.0,
+            False,
+            "list",
+        ),
+        (
+            default_run,
+            "invert",
+            False,
             0,
             "invert",
             False,
@@ -211,6 +229,7 @@ def test_rascil_imager(
 
     npixel = 512
     low = create_named_configuration("LOWBD2", rmax=750.0)
+    decimate_configuration(low, skip=3)
     freqwin = nfreqwin
     ntimes = 3
     times = numpy.linspace(-3.0, +3.0, ntimes) * numpy.pi / 12.0

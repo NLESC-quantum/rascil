@@ -32,6 +32,7 @@ from rascil.processing_components import (
     filter_skycomponents_by_flux,
     create_blockvisibility,
     create_empty_image_like,
+    decimate_configuration,
 )
 from rascil.workflows import (
     invert_list_rsexecute_workflow,
@@ -106,7 +107,8 @@ class TestPipelineMPC(unittest.TestCase):
         times = numpy.linspace(-10.0, 10.0, ntimes) * numpy.pi / (3600.0 * 12.0)
 
         phasecentre = SkyCoord(ra=+0.0 * u.deg, dec=dec, frame="icrs", equinox="J2000")
-        low = create_named_configuration("LOWBD2", rmax=self.rmax, skip=6)
+        low = create_named_configuration("LOWBD2", rmax=self.rmax)
+        low = decimate_configuration(low, skip=18)
 
         blockvis = create_blockvisibility(
             low,
@@ -205,7 +207,7 @@ class TestPipelineMPC(unittest.TestCase):
         ]
         for chunk in chunks:
             result = predict_skymodel_list_rsexecute_workflow(
-                future_vis, chunk, context="2d", docal=True
+                future_vis, chunk, context="ng", docal=True
             )
             work_vis = rsexecute.compute(result, sync=True)
             for w in work_vis:
@@ -259,7 +261,7 @@ class TestPipelineMPC(unittest.TestCase):
             future_theta_list,
             mpccal_progress=progress,
             nmajor=5,
-            context="2d",
+            context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
@@ -273,7 +275,7 @@ class TestPipelineMPC(unittest.TestCase):
         combined_model = calculate_skymodel_equivalent_image(self.theta_list)
 
         psf_obs = invert_list_rsexecute_workflow(
-            [self.all_skymodel_noniso_vis], [model], context="2d", dopsf=True
+            [self.all_skymodel_noniso_vis], [model], context="ng", dopsf=True
         )
         result = restore_list_rsexecute_workflow(
             [combined_model], psf_obs, [(residual, 0.0)]
@@ -350,7 +352,7 @@ class TestPipelineMPC(unittest.TestCase):
             future_theta_list,
             mpccal_progress=progress,
             nmajor=5,
-            context="2d",
+            context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
@@ -364,7 +366,7 @@ class TestPipelineMPC(unittest.TestCase):
         combined_model = calculate_skymodel_equivalent_image(self.theta_list)
 
         psf_obs = invert_list_rsexecute_workflow(
-            [self.all_skymodel_noniso_vis], [model], context="2d", dopsf=True
+            [self.all_skymodel_noniso_vis], [model], context="ng", dopsf=True
         )
         result = restore_list_rsexecute_workflow(
             [combined_model], psf_obs, [(residual, 0.0)]
@@ -442,7 +444,7 @@ class TestPipelineMPC(unittest.TestCase):
             future_theta_list,
             mpccal_progress=progress,
             nmajor=5,
-            context="2d",
+            context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
@@ -456,7 +458,7 @@ class TestPipelineMPC(unittest.TestCase):
         combined_model = calculate_skymodel_equivalent_image(self.theta_list)
 
         psf_obs = invert_list_rsexecute_workflow(
-            [self.all_skymodel_noniso_vis], [model], context="2d", dopsf=True
+            [self.all_skymodel_noniso_vis], [model], context="ng", dopsf=True
         )
         result = restore_list_rsexecute_workflow(
             [combined_model], psf_obs, [(residual, 0.0)]
@@ -528,7 +530,7 @@ class TestPipelineMPC(unittest.TestCase):
             future_theta_list,
             mpccal_progress=progress,
             nmajor=5,
-            context="2d",
+            context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
@@ -542,7 +544,7 @@ class TestPipelineMPC(unittest.TestCase):
         combined_model = calculate_skymodel_equivalent_image(self.theta_list)
 
         psf_obs = invert_list_rsexecute_workflow(
-            [self.all_skymodel_noniso_vis], [model], context="2d", dopsf=True
+            [self.all_skymodel_noniso_vis], [model], context="ng", dopsf=True
         )
         result = restore_list_rsexecute_workflow(
             [combined_model], psf_obs, [(residual, 0.0)]
@@ -616,7 +618,7 @@ class TestPipelineMPC(unittest.TestCase):
             future_theta_list,
             mpccal_progress=progress,
             nmajor=5,
-            context="2d",
+            context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
@@ -630,7 +632,7 @@ class TestPipelineMPC(unittest.TestCase):
         combined_model = calculate_skymodel_equivalent_image(self.theta_list)
 
         psf_obs = invert_list_rsexecute_workflow(
-            [self.all_skymodel_noniso_vis], [model], context="2d", dopsf=True
+            [self.all_skymodel_noniso_vis], [model], context="ng", dopsf=True
         )
         result = restore_list_rsexecute_workflow(
             [combined_model], psf_obs, [(residual, 0.0)]

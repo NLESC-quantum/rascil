@@ -194,7 +194,8 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         continuum_imaging_list = continuum_imaging_list_rsexecute_workflow(
             bvis_list,
             model_list,
-            context="2d",
+            context="ng",
+            do_wstacking=False,
             algorithm="msclean",
             niter=1000,
             fractional_threshold=0.1,

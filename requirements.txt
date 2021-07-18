@@ -32,21 +32,21 @@ bcrypt==3.2.0
     # via paramiko
 bdsf==1.9.2
     # via -r requirements.in
-bleach==3.3.0
+bleach==3.3.1
     # via nbconvert
-bokeh==2.3.2
+bokeh==2.3.3
     # via -r requirements.in
 cached-property==1.5.2
     # via h5py
 certifi==2021.5.30
     # via requests
-cffi==1.14.5
+cffi==1.14.6
     # via
     #   argon2-cffi
     #   bcrypt
     #   cryptography
     #   pynacl
-chardet==4.0.0
+charset-normalizer==2.0.3
     # via requests
 click==8.0.1
     # via
@@ -62,7 +62,7 @@ cryptography==3.4.7
     # via paramiko
 cycler==0.10.0
     # via matplotlib
-dask==2021.06.2
+dask==2021.07.0
     # via
     #   -r requirements.in
     #   distributed
@@ -76,17 +76,17 @@ decorator==4.4.2
     #   networkx
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.6.2
+distributed==2021.7.0
     # via
     #   -r requirements.in
     #   dask-memusage
-ducc0==0.16.0
+ducc0==0.17.0
     # via -r requirements.in
 entrypoints==0.3
     # via nbconvert
 fasteners==0.16.3
     # via zarr
-fsspec==2021.6.1
+fsspec==2021.7.0
     # via dask
 future==0.18.2
     # via python-casacore
@@ -94,13 +94,13 @@ gitdb==4.0.7
     # via gitpython
 gitpython==3.1.18
     # via -r requirements.in
-graphviz==0.16
+graphviz==0.17
     # via -r requirements.in
 h5py==3.3.0
     # via -r requirements.in
 heapdict==1.0.1
     # via zict
-idna==2.10
+idna==3.2
     # via requests
 imageio==2.9.0
     # via scikit-image
@@ -109,7 +109,7 @@ importlib-metadata==3.10.1
     #   click
     #   ipykernel
     #   jsonschema
-ipykernel==6.0.1
+ipykernel==6.0.2
     # via
     #   ipywidgets
     #   jupyter
@@ -194,7 +194,9 @@ matplotlib==3.4.2
     #   aotools
     #   scikit-image
 matplotlib-inline==0.1.2
-    # via ipython
+    # via
+    #   ipykernel
+    #   ipython
 mistune==0.8.4
     # via nbconvert
 msgpack==1.0.2
@@ -233,7 +235,7 @@ numba==0.53.1
     #   aotools
 numcodecs==0.8.0
     # via zarr
-numpy==1.20.3
+numpy==1.21.1
     # via
     #   -r requirements.in
     #   aotools
@@ -280,7 +282,7 @@ photutils==1.1.0
     # via -r requirements.in
 pickleshare==0.7.5
     # via ipython
-pillow==8.3.0
+pillow==8.3.1
     # via
     #   bokeh
     #   imageio
@@ -319,7 +321,7 @@ pyrsistent==0.18.0
     # via jsonschema
 python-casacore==3.3.1
     # via -r requirements.in
-python-dateutil==2.8.1
+python-dateutil==2.8.2
     # via
     #   bokeh
     #   jupyter-client
@@ -349,7 +351,7 @@ qtpy==1.9.0
     # via qtconsole
 reproject==0.7.1
     # via -r requirements.in
-requests==2.25.1
+requests==2.26.0
     # via
     #   python-gitlab
     #   requests-toolbelt

@@ -763,8 +763,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            1116.4187277100092,
-            -2.9605822206888597,
+            116.418727710009,
+            -2.9605822206888637,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty_taylor_terms(self):

@@ -136,7 +136,6 @@ class TestPipelineMPC(unittest.TestCase):
 
         blockvis["imaging_weight"].data[...] = blockvis["weight"].data[...]
         blockvis = weight_list_serial_workflow([blockvis], [small_model])[0]
-        # blockvis = taper_list_serial_workflow([blockvis], 3 * cellsize)[0]
 
         # ### Generate the model from the GLEAM catalog, including application of the primary beam.
 
@@ -260,14 +259,14 @@ class TestPipelineMPC(unittest.TestCase):
             future_model,
             future_theta_list,
             mpccal_progress=progress,
-            nmajor=5,
+            nmajor=3,
             context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
             gain=0.1,
-            niter=1000,
-            psf_support=256,
+            niter=100,
+            psf_support=64,
         )
 
         (self.theta_list, residual) = rsexecute.compute(result, sync=True)
@@ -351,14 +350,14 @@ class TestPipelineMPC(unittest.TestCase):
             future_model,
             future_theta_list,
             mpccal_progress=progress,
-            nmajor=5,
+            nmajor=3,
             context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
             gain=0.1,
-            niter=1000,
-            psf_support=256,
+            niter=100,
+            psf_support=64,
         )
 
         (self.theta_list, residual) = rsexecute.compute(result, sync=True)
@@ -443,14 +442,14 @@ class TestPipelineMPC(unittest.TestCase):
             future_model,
             future_theta_list,
             mpccal_progress=progress,
-            nmajor=5,
+            nmajor=3,
             context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
             gain=0.1,
-            niter=1000,
-            psf_support=256,
+            niter=100,
+            psf_support=64,
         )
 
         (self.theta_list, residual) = rsexecute.compute(result, sync=True)
@@ -529,14 +528,14 @@ class TestPipelineMPC(unittest.TestCase):
             future_model,
             future_theta_list,
             mpccal_progress=progress,
-            nmajor=5,
+            nmajor=3,
             context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
             gain=0.1,
-            niter=1000,
-            psf_support=256,
+            niter=100,
+            psf_support=64,
         )
 
         (self.theta_list, residual) = rsexecute.compute(result, sync=True)
@@ -617,14 +616,14 @@ class TestPipelineMPC(unittest.TestCase):
             future_model,
             future_theta_list,
             mpccal_progress=progress,
-            nmajor=5,
+            nmajor=3,
             context="ng",
             algorithm="hogbom",
             fractional_threshold=0.15,
             threshold=0.05,
             gain=0.1,
-            niter=1000,
-            psf_support=256,
+            niter=100,
+            psf_support=64,
         )
 
         (self.theta_list, residual) = rsexecute.compute(result, sync=True)

@@ -31,7 +31,10 @@ from rascil.processing_components.imaging.dft import (
     idft_visibility_skycomponent,
 )
 from rascil.processing_components.imaging.primary_beams import create_vp, create_pb
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.skycomponent import (
     create_skycomponent,
     apply_beam_to_skycomponent,

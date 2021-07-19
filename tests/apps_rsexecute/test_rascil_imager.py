@@ -2,26 +2,22 @@
 
 """
 import logging
-import pytest
 import shutil
 
 import numpy
+import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.apps.rascil_imager import cli_parser, imager
 from rascil.data_models import SkyModel
+from rascil.data_models.data_model_helpers import export_skymodel_to_hdf5
 from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.data_models.data_model_helpers import export_skymodel_to_hdf5
 from rascil.processing_components import (
     export_blockvisibility_to_ms,
     concatenate_blockvisibility_frequency,
     find_skycomponents,
-)
-from rascil.processing_components.util.performance import (
-    performance_store_dict,
-    performance_environment,
 )
 from rascil.processing_components import import_image_from_fits
 from rascil.processing_components.calibration.operations import (
@@ -34,7 +30,10 @@ from rascil.processing_components.image.operations import (
     smooth_image,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.simulation import (
     ingest_unittest_visibility,
     create_unittest_model,
@@ -42,6 +41,10 @@ from rascil.processing_components.simulation import (
 )
 from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
+from rascil.processing_components.util.performance import (
+    performance_store_dict,
+    performance_environment,
+)
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
@@ -60,8 +63,23 @@ default_run = True
             0,
             "invert",
             False,
-            101.58410851350841,
-            -9.893454610760015,
+            109.18220601849407,
+            -14.916575458445271,
+            None,
+            None,
+            5.0,
+            False,
+            "list",
+        ),
+        (
+            default_run,
+            "invert",
+            False,
+            0,
+            "invert",
+            False,
+            109.18220601849407,
+            -14.916575458445271,
             None,
             None,
             5.0,
@@ -75,8 +93,8 @@ default_run = True
             0,
             "invert",
             False,
-            90.58847332407103,
-            -10.899132439379027,
+            103.06845603990989,
+            -15.773391773333904,
             None,
             None,
             5.5,
@@ -90,8 +108,8 @@ default_run = True
             5,
             "ical",
             True,
-            115.72442071615362,
-            -0.9051176398840277,
+            110.79920080326511,
+            -12.271525931452086,
             None,
             None,
             5.0,
@@ -105,8 +123,8 @@ default_run = True
             5,
             "cip",
             False,
-            116.82068791892242,
-            -0.15421431370415745,
+            109.54082354546229,
+            -13.40197932716969,
             None,
             "None",
             5.0,
@@ -120,8 +138,8 @@ default_run = True
             5,
             "cip",
             False,
-            96.71205433915085,
-            -5.664036504578327,
+            103.33756291910817,
+            -13.151075366874808,
             None,
             "None",
             5.5,
@@ -135,9 +153,9 @@ default_run = True
             5,
             "cip",
             False,
-            99.57360446681236,
-            -0.38011414020468276,
-            "10",
+            113.29208667276272,
+            -13.63038369993718,
+            "30",
             "fit",
             5.5,
             False,
@@ -150,8 +168,8 @@ default_run = True
             5,
             "cip",
             False,
-            101.20102410921574,
-            -0.03072964300976511,
+            93.75256853301931,
+            -4.1526899537694835,
             "1e15",
             "None",
             5.0,
@@ -207,10 +225,11 @@ def test_rascil_imager(
 
     rng = default_rng(1805550721)
 
-    rsexecute.set_client(use_dask=use_dask)
+    rsexecute.set_client(use_dask=False)
 
     npixel = 512
     low = create_named_configuration("LOWBD2", rmax=750.0)
+    low = decimate_configuration(low, skip=9)
     freqwin = nfreqwin
     ntimes = 3
     times = numpy.linspace(-3.0, +3.0, ntimes) * numpy.pi / 12.0
@@ -348,8 +367,6 @@ def test_rascil_imager(
         rascil_path(f"test_results/test_rascil_imager_{tag}.ms"), bvis_list
     )
 
-    rsexecute.close()
-
     invert_args = [
         "--mode",
         f"{mode}",
@@ -375,6 +392,8 @@ def test_rascil_imager(
         "cpu_looped",
         "--imaging_flat_sky",
         "False",
+        "--dask_scheduler",
+        "existing",
     ]
 
     clean_args = [

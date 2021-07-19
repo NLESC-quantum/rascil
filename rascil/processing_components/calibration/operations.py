@@ -105,7 +105,10 @@ def apply_gaintable(
                     # lgain = numpy.ones_like(gain)
                     # lgain[numpy.abs(gain) > 0.0] = 1.0 / gain[numpy.abs(gain) > 0.0]
                     lgain = numpy.ones_like(gain)
-                    numpy.putmask(lgain, numpy.abs(gain) > 0.0, 1.0 / gain)
+                    try:
+                        numpy.putmask(lgain, numpy.abs(gain) > 0.0, 1.0 / gain)
+                    except FloatingPointError:
+                        pass
                 else:
                     lgain = gain
 

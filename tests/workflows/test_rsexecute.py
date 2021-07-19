@@ -37,7 +37,6 @@ class Testrsexecute(unittest.TestCase):
             return x ** 2
 
         for trial in range(10):
-            print(trial)
             rsexecute.close()
             rsexecute.set_client(use_dask=True)
             graph = rsexecute.execute(square)(numpy.arange(10))

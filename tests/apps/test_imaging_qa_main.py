@@ -79,11 +79,11 @@ logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
         (
             0.0001,
             512,
-            64,
+            8,
             0.001,
             "Nearest",
             0.00003,
-            "nearest_npixel512_nchan64_noise0.00003_flux0.001",
+            "nearest_npixel512_nchan8_noise0.00003_flux0.001",
         ),
         (
             0.0001,

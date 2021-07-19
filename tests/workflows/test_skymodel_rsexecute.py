@@ -12,7 +12,11 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components import create_named_configuration
+from rascil.processing_components import (
+    create_named_configuration,
+    decimate_configuration,
+    qa_visibility,
+)
 from rascil.processing_components import (
     ingest_unittest_visibility,
     create_low_test_skymodel_from_gleam,
@@ -52,10 +56,11 @@ class TestSkyModel(unittest.TestCase):
     def actualSetUp(self, freqwin=1, dopol=False, zerow=False):
 
         self.npixel = 512
-        self.low = create_named_configuration("LOWBD2", rmax=300.0)
+        self.low = create_named_configuration("LOW", rmax=300.0)
+        self.low = decimate_configuration(self.low, skip=9)
         self.freqwin = freqwin
         self.vis_list = list()
-        self.ntimes = 5
+        self.ntimes = 3
         self.cellsize = 0.001
         self.radius = self.npixel * self.cellsize / 2.0
         # Choose the interval so that the maximum change in w is smallish
@@ -133,7 +138,10 @@ class TestSkyModel(unittest.TestCase):
             self.vis_list[0], self.skymodel_list, context="ng"
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
-        assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
+        qa = qa_visibility(skymodel_vislist[0])
+        numpy.testing.assert_almost_equal(
+            qa.data["maxabs"], 60.35140880932053, err_msg=str(qa)
+        )
 
     def test_predict_with_pb(self):
         self.actualSetUp()
@@ -177,7 +185,10 @@ class TestSkyModel(unittest.TestCase):
             get_pb=get_pb,
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
-        assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
+        qa = qa_visibility(skymodel_vislist[0])
+        numpy.testing.assert_almost_equal(
+            qa.data["maxabs"], 32.20530966848842, err_msg=str(qa)
+        )
 
     def test_invert_with_pb(self):
         self.actualSetUp()
@@ -243,10 +254,10 @@ class TestSkyModel(unittest.TestCase):
         qa = qa_image(skymodel_list[0][0])
 
         numpy.testing.assert_allclose(
-            qa.data["max"], 3.7563900102650116, atol=1e-7, err_msg=f"{qa}"
+            qa.data["max"], 3.7166391470621285, atol=1e-7, err_msg=f"{qa}"
         )
         numpy.testing.assert_allclose(
-            qa.data["min"], -0.24385090091180575, atol=1e-7, err_msg=f"{qa}"
+            qa.data["min"], -1.2836203760675384, atol=1e-7, err_msg=f"{qa}"
         )
 
         # Now repeat with flat_sky=True
@@ -270,10 +281,10 @@ class TestSkyModel(unittest.TestCase):
         qa = qa_image(skymodel_list[0][0])
 
         numpy.testing.assert_allclose(
-            qa.data["max"], 4.0133318595524, atol=1e-7, err_msg=f"{qa}"
+            qa.data["max"], 3.970861986801607, atol=1e-7, err_msg=f"{qa}"
         )
         numpy.testing.assert_allclose(
-            qa.data["min"], -0.2519292965274322, atol=1e-7, err_msg=f"{qa}"
+            qa.data["min"], -1.3949135194193039, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_predict_nocomponents(self):
@@ -308,7 +319,10 @@ class TestSkyModel(unittest.TestCase):
             self.vis_list[0], self.skymodel_list, context="ng"
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
-        assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
+        qa = qa_visibility(skymodel_vislist[0])
+        numpy.testing.assert_almost_equal(
+            qa.data["maxabs"], 39.916746503252156, err_msg=str(qa)
+        )
 
     def test_predict_noimage(self):
         self.actualSetUp()
@@ -342,7 +356,10 @@ class TestSkyModel(unittest.TestCase):
             self.vis_list[0], self.skymodel_list, context="ng"
         )
         skymodel_vislist = rsexecute.compute(skymodel_vislist, sync=True)
-        assert numpy.max(numpy.abs(skymodel_vislist[0].vis)) > 0.0
+        qa = qa_visibility(skymodel_vislist[0])
+        numpy.testing.assert_almost_equal(
+            qa.data["maxabs"], 20.434662306068372, err_msg=str(qa)
+        )
 
 
 if __name__ == "__main__":

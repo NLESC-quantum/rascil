@@ -1,29 +1,30 @@
 """ Unit tests for pipelines expressed via rsexecute
 """
 
+import functools
 import logging
 import os
 import sys
 import unittest
-import functools
 
 import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.griddata import apply_bounding_box_convolutionfunction
-from rascil.processing_components.griddata.kernels import (
-    create_awterm_convolutionfunction,
-)
 from rascil.processing_components import (
     export_image_to_fits,
     smooth_image,
     qa_image,
-    fit_psf,
+)
+from rascil.processing_components.griddata.kernels import (
+    create_awterm_convolutionfunction,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.simulation import (
     ingest_unittest_visibility,
     create_unittest_model,
@@ -45,7 +46,6 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     residual_list_rsexecute_workflow,
     sum_invert_results_rsexecute,
     restore_list_rsexecute_workflow,
-    restore_list_singlefacet_rsexecute_workflow,
 )
 from rascil.workflows.shared.imaging.imaging_shared import sum_invert_results
 
@@ -80,6 +80,7 @@ class TestImaging(unittest.TestCase):
 
         self.npixel = 256
         self.low = create_named_configuration("LOWBD2", rmax=750.0)
+        self.low = decimate_configuration(self.low, skip=6)
         self.freqwin = freqwin
         self.bvis_list = list()
         self.ntimes = 5
@@ -218,7 +219,9 @@ class TestImaging(unittest.TestCase):
                 "Component differs in position %.3f pixels" % separation / cellsize
             )
 
-    def _predict_base(self, context="2d", extra="", fluxthreshold=1.0, **kwargs):
+    def _predict_base(
+        self, context="ng", do_wstacking=False, extra="", fluxthreshold=1.0, **kwargs
+    ):
         centre = self.freqwin // 2
 
         vis_list = zero_list_rsexecute_workflow(self.bvis_list)
@@ -256,7 +259,7 @@ class TestImaging(unittest.TestCase):
         self,
         context,
         extra="",
-        fluxthreshold=1.0,
+        fluxthreshold=2.0,
         positionthreshold=1.0,
         check_components=True,
         gcfcf=None,
@@ -297,7 +300,7 @@ class TestImaging(unittest.TestCase):
 
     def test_predict_2d(self):
         self.actualSetUp(zerow=True)
-        self._predict_base(context="2d", fluxthreshold=3.0)
+        self._predict_base(context="ng", do_wstacking=False, fluxthreshold=3.0)
 
     def test_predict_ng(self):
         self.actualSetUp()
@@ -306,17 +309,30 @@ class TestImaging(unittest.TestCase):
     def test_predict_wprojection(self):
         self.actualSetUp()
         self._predict_base(
-            context="2d", extra="_wprojection", fluxthreshold=5.0, gcfcf=self.gcfcf
+            context="ng",
+            do_wstacking=False,
+            extra="_wprojection",
+            fluxthreshold=5.0,
+            gcfcf=self.gcfcf,
         )
 
     def test_invert_2d(self):
         self.actualSetUp(zerow=True)
-        self._invert_base(context="2d", positionthreshold=2.0, check_components=False)
+        self._invert_base(
+            context="ng",
+            do_wstacking=False,
+            positionthreshold=2.0,
+            check_components=False,
+        )
 
     def test_invert_2d_psf(self):
         self.actualSetUp(zerow=True)
         self._invert_base(
-            context="2d", positionthreshold=2.0, check_components=False, dopsf=True
+            context="ng",
+            do_wstacking=False,
+            positionthreshold=2.0,
+            check_components=False,
+            dopsf=True,
         )
 
     def test_invert_2d_uniform(self):
@@ -325,7 +341,8 @@ class TestImaging(unittest.TestCase):
             self.bvis_list, self.model_list, weighting="uniform"
         )
         self._invert_base(
-            context="2d",
+            context="ng",
+            do_wstacking=False,
             extra="_uniform",
             positionthreshold=2.0,
             check_components=False,
@@ -337,7 +354,8 @@ class TestImaging(unittest.TestCase):
             self.bvis_list, self.model_list, weighting="robust", robustness=0.0
         )
         self._invert_base(
-            context="2d",
+            context="ng",
+            do_wstacking=False,
             extra="_uniform",
             positionthreshold=2.0,
             check_components=False,
@@ -350,7 +368,11 @@ class TestImaging(unittest.TestCase):
     def test_invert_wprojection(self):
         self.actualSetUp()
         self._invert_base(
-            context="2d", extra="_wprojection", positionthreshold=2.0, gcfcf=self.gcfcf
+            context="ng",
+            do_wstacking=False,
+            extra="_wprojection",
+            positionthreshold=2.0,
+            gcfcf=self.gcfcf,
         )
 
     def test_zero_list(self):
@@ -389,7 +411,7 @@ class TestImaging(unittest.TestCase):
 
         centre = self.freqwin // 2
         residual_image_list = residual_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="2d"
+            self.bvis_list, self.model_list, context="ng", do_wstacking=False
         )
         residual_image_list = rsexecute.compute(residual_image_list, sync=True)
         qa = qa_image(residual_image_list[centre][0])
@@ -401,10 +423,14 @@ class TestImaging(unittest.TestCase):
 
         centre = self.freqwin // 2
         psf_image_list = invert_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="2d", dopsf=True
+            self.bvis_list,
+            self.model_list,
+            context="ng",
+            do_wstacking=False,
+            dopsf=True,
         )
         residual_image_list = residual_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="2d"
+            self.bvis_list, self.model_list, context="ng", do_wstacking=False
         )
         restored_image_list = restore_list_rsexecute_workflow(
             self.model_list, psf_image_list, residual_image_list
@@ -419,15 +445,19 @@ class TestImaging(unittest.TestCase):
             )
 
         qa = qa_image(restored_image_list[centre])
-        assert numpy.abs(qa.data["max"] - 100.00571826154011) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.018409852770223414) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.00000000000163) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 5.555050064664968e-12) < 1e-7, str(qa)
 
     def test_restored_list_noresidual(self):
         self.actualSetUp(zerow=True)
 
         centre = self.freqwin // 2
         psf_image_list = invert_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="2d", dopsf=True
+            self.bvis_list,
+            self.model_list,
+            context="ng",
+            do_wstacking=False,
+            dopsf=True,
         )
         restored_image_list = restore_list_rsexecute_workflow(
             self.model_list, psf_image_list
@@ -458,11 +488,15 @@ class TestImaging(unittest.TestCase):
         ]
 
         residual_image_list = residual_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="2d"
+            self.bvis_list, self.model_list, context="ng", do_wstacking=False
         )
         centre = self.freqwin // 2
         psf_image_list = invert_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="2d", dopsf=True
+            self.bvis_list,
+            self.model_list,
+            context="ng",
+            do_wstacking=False,
+            dopsf=True,
         )
         psf_image_list = rsexecute.compute(psf_image_list, sync=True)
         clean_beam = {"bmaj": 0.12, "bmin": 0.1, "bpa": -0.8257413937065491}
@@ -505,8 +539,8 @@ class TestImaging(unittest.TestCase):
             )
 
         qa = qa_image(restored_2facets_image_list[centre])
-        assert numpy.abs(qa.data["max"] - 100.0057182615401) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.041057034327480695) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 100.00000000000163) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 8.72234065230259e-12) < 1e-7, str(qa)
 
         restored_2facets_image_list[centre][
             "pixels"
@@ -518,14 +552,14 @@ class TestImaging(unittest.TestCase):
                 % (self.dir, rsexecute.type()),
             )
         qa = qa_image(restored_2facets_image_list[centre])
-        assert numpy.abs(qa.data["max"] - 0.01840985277019904) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.03001185084361445) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 0.0013772581716870525) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 4.2921636357042816e-05) < 1e-7, str(qa)
 
     def test_sum_invert_list(self):
         self.actualSetUp(zerow=True)
 
         residual_image_list = residual_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="2d"
+            self.bvis_list, self.model_list, context="ng", do_wstacking=False
         )
         residual_image_list = rsexecute.compute(residual_image_list, sync=True)
         route2 = sum_invert_results(residual_image_list)
@@ -536,7 +570,7 @@ class TestImaging(unittest.TestCase):
             qa = qa_image(r[0])
             assert numpy.abs(qa.data["max"] - 0.15513038832438183) < 1.0, str(qa)
             assert numpy.abs(qa.data["min"] + 0.4607090445091728) < 1.0, str(qa)
-            assert numpy.abs(r[1] - 415950.0) < 1e-7, r
+            assert numpy.abs(r[1] - 11700.0) < 1e-7, r
 
 
 if __name__ == "__main__":

@@ -20,11 +20,12 @@ from rascil.processing_components import (
 from rascil.processing_components.image import export_image_to_fits, qa_image
 from rascil.processing_components.imaging import create_image_from_visibility
 from rascil.processing_components.imaging.primary_beams import create_vp
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.workflows import (
     create_standard_mid_simulation_rsexecute_workflow,
-    predict_dft_rsexecute_workflow,
-    predict_fft_components_rsexecute_workflow,
     calculate_residual_fft_rsexecute_workflow,
     calculate_residual_dft_rsexecute_workflow,
 )
@@ -48,7 +49,7 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
 
-    def createVis(self, config="MID", dec=-35.0, rmax=1e2, freq=1.3e9):
+    def createVis(self, config="MID", dec=-35.0, rmax=1e2, freq=1.3e9, skip=3):
         self.frequency = numpy.array([freq])
         self.channel_bandwidth = numpy.array([1e6])
         self.flux = numpy.array([[100.0, 60.0, -10.0, +1.0]])
@@ -56,6 +57,7 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
             ra=+15.0 * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000"
         )
         self.config = create_named_configuration(config, rmax=rmax)
+        self.config = decimate_configuration(self.config, skip=skip)
         self.times = numpy.linspace(-300.0, 300.0, 3) * numpy.pi / 43200.0
         nants = self.config.xyz.shape[0]
         self.npixel = 512
@@ -102,9 +104,6 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
             frame="icrs",
             equinox="J2000",
         )
-        print(self.phasecentre)
-        print(odirection)
-
         original_components = [
             Skycomponent(
                 direction=odirection,

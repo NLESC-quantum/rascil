@@ -127,6 +127,12 @@ def apps_parser_imaging(parser):
         help="Robustness for robust weighting",
     )
     parser.add_argument(
+        "--imaging_gaussian_taper",
+        type=float,
+        default=None,
+        help="Size of Gaussian taper (rad)",
+    )
+    parser.add_argument(
         "--imaging_dopsf",
         type=str,
         default="False",

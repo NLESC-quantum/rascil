@@ -47,6 +47,7 @@ from rascil.workflows import (
     ical_skymodel_list_rsexecute_workflow,
     invert_list_rsexecute_workflow,
     sum_invert_results_rsexecute,
+    taper_list_rsexecute_workflow,
 )
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
@@ -283,6 +284,10 @@ def weight_blockvis(args, bvis_list, model_list):
             model_list,
             weighting=args.imaging_weighting,
             robustness=args.imaging_robustness,
+        )
+    if args.imaging_gaussian_taper is not None:
+        bvis_list = taper_list_rsexecute_workflow(
+            bvis_list, args.imaging_gaussian_taper
         )
     return bvis_list
 

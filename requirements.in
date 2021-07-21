@@ -10,7 +10,7 @@ jupyter
 jupyter_contrib_nbextensions
 matplotlib
 numba
-numpy
+numpy==1.20.3
 paramiko
 photutils
 python-casacore==3.3.1

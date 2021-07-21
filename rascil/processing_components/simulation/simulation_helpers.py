@@ -28,7 +28,7 @@ from astropy.coordinates import SkyCoord
 from rascil import phyconst
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image import create_image
+from rascil.processing_components.image.operations import create_image
 from rascil.processing_components.image.operations import show_image
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.base import copy_skycomponent
@@ -579,7 +579,9 @@ def create_mid_simulation_components(
         "create_simulation_components: Created %d components" % len(filtered_components)
     )
 
+    # If applying primary beam, return components before and after the primary beam
+    # If not, return the components, and reference component.
     if apply_pb:
-        return filtered_pb_components, reference_component
+        return filtered_pb_components, filtered_components
     else:
         return filtered_components, reference_component

@@ -27,6 +27,7 @@ from rascil.processing_components import (
     smooth_image,
     create_pb,
     qa_image,
+    image_gather_channels,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import (
@@ -35,7 +36,6 @@ from rascil.processing_components.simulation import (
     create_unittest_components,
     insert_unittest_errors,
 )
-from rascil.workflows import remove_sumwt
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
 
 log = logging.getLogger("rascil-logger")
@@ -129,7 +129,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         ]
 
         # Calculate the model convolved with a Gaussian.
-
         if self.persist:
 
             self.model_imagelist = [
@@ -140,16 +139,15 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             ]
 
             self.model_imagelist = rsexecute.compute(self.model_imagelist, sync=True)
-            model = self.model_imagelist[0]
+            model = image_gather_channels(self.model_imagelist)
 
             self.cmodel = smooth_image(model)
             export_image_to_fits(
-                model,
-                f"{self.dir}/test_imaging_rsexecute_deconvolved_model.fits",
+                model, "%s/test_imaging_deconvolve_rsexecute_model.fits" % self.dir
             )
             export_image_to_fits(
                 self.cmodel,
-                f"{self.dir}/test_imaging_rsexecute_deconvolved_cmodel.fits",
+                "%s/test_imaging_deconvolve_rsexecute_cmodel.fits" % self.dir,
             )
 
         if add_errors:
@@ -177,50 +175,8 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             for freqwin, _ in enumerate(self.frequency)
         ]
 
-    def test_deconvolve_spectral(self):
-        self.actualSetUp(add_errors=True)
-        dirty_imagelist = invert_list_rsexecute_workflow(
-            self.vis_list,
-            self.model_imagelist,
-            context="ng",
-            dopsf=False,
-            normalise=True,
-        )
-        psf_imagelist = invert_list_rsexecute_workflow(
-            self.vis_list,
-            self.model_imagelist,
-            context="ng",
-            dopsf=True,
-            normalise=True,
-        )
-        dirty_imagelist = rsexecute.persist(dirty_imagelist)
-        psf_imagelist = rsexecute.persist(psf_imagelist)
-        deconvolved = deconvolve_list_rsexecute_workflow(
-            dirty_imagelist,
-            psf_imagelist,
-            self.model_imagelist,
-            niter=100,
-            fractional_threshold=0.1,
-            scales=[0, 3],
-            threshold=0.1,
-            gain=0.7,
-        )
-        deconvolved = rsexecute.compute(deconvolved, sync=True)
-
-        if self.persist:
-            export_image_to_fits(
-                deconvolved[0],
-                f"{self.dir}/test_imaging_{rsexecute.type()}_deconvolve_spectral.fits",
-            )
-
-        qa = qa_image(deconvolved[0])
-        numpy.testing.assert_allclose(
-            qa.data["max"], 19.522798145338943, atol=1e-7, err_msg=f"{qa}"
-        )
-        numpy.testing.assert_allclose(qa.data["min"], 0.0, atol=1e-7, err_msg=f"{qa}")
-
     def test_deconvolve_and_restore_cube_mmclean(self):
-        self.actualSetUp(add_errors=True)
+        self.actualSetUp(add_errors=False)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
@@ -235,17 +191,21 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             dopsf=True,
             normalise=True,
         )
-        dirty_imagelist = rsexecute.persist(dirty_imagelist)
-        psf_imagelist = rsexecute.persist(psf_imagelist)
+        dirty_imagelist_trimmed = [
+            rsexecute.execute(lambda x: x[0])(d) for d in dirty_imagelist
+        ]
+        psf_imagelist_trimmed = [
+            rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
+        ]
         dec_imagelist = deconvolve_list_rsexecute_workflow(
-            dirty_imagelist,
-            psf_imagelist,
+            dirty_imagelist_trimmed,
+            psf_imagelist_trimmed,
             self.model_imagelist,
             niter=100,
             fractional_threshold=0.01,
             scales=[0, 3],
             algorithm="mmclean",
-            nmoment=1,
+            nmoment=2,
             nchan=self.freqwin,
             threshold=0.01,
             gain=0.7,
@@ -260,26 +220,15 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             empty=self.model_imagelist,
         )
 
-        centre = len(restored_list) // 2
-        restored = rsexecute.compute(restored_list, sync=True)[centre]
+        restored = rsexecute.compute(restored_list, sync=True)
+        restored = image_gather_channels(restored)
 
-        if self.persist:
-            export_image_to_fits(
-                restored,
-                "%s/test_imaging_%s_mmclean_restored.fits"
-                % (self.dir, rsexecute.type()),
-            )
-
-        qa = qa_image(restored)
-        numpy.testing.assert_allclose(
-            qa.data["max"], 29.904079739467672, atol=1e-7, err_msg=f"{qa}"
-        )
-        numpy.testing.assert_allclose(
-            qa.data["min"], -2.383588500083969, atol=1e-7, err_msg=f"{qa}"
+        self.save_and_check(
+            116.29006740027764, -0.40238957355136723, restored, "mmclean"
         )
 
-    def test_deconvolve_and_restore_cube_mmclean_facets(self):
-        self.actualSetUp(add_errors=True)
+    def test_deconvolve_and_restore_cube_msclean(self):
+        self.actualSetUp(add_errors=False)
         dirty_imagelist = invert_list_rsexecute_workflow(
             self.vis_list,
             self.model_imagelist,
@@ -294,17 +243,72 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             dopsf=True,
             normalise=True,
         )
-        dirty_imagelist = rsexecute.persist(dirty_imagelist)
-        psf_imagelist = rsexecute.persist(psf_imagelist)
+        dirty_imagelist_trimmed = [
+            rsexecute.execute(lambda x: x[0])(d) for d in dirty_imagelist
+        ]
+        psf_imagelist_trimmed = [
+            rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
+        ]
         dec_imagelist = deconvolve_list_rsexecute_workflow(
-            dirty_imagelist,
-            psf_imagelist,
+            dirty_imagelist_trimmed,
+            psf_imagelist_trimmed,
+            self.model_imagelist,
+            niter=100,
+            fractional_threshold=0.01,
+            scales=[0, 3],
+            algorithm="msclean",
+            nchan=self.freqwin,
+            threshold=0.01,
+            gain=0.7,
+        )
+        residual_imagelist = residual_list_rsexecute_workflow(
+            self.vis_list, model_imagelist=dec_imagelist, context="ng"
+        )
+        restored_list = restore_list_rsexecute_workflow(
+            model_imagelist=dec_imagelist,
+            psf_imagelist=psf_imagelist,
+            residual_imagelist=residual_imagelist,
+            empty=self.model_imagelist,
+        )
+
+        restored = rsexecute.compute(restored_list, sync=True)
+        restored = image_gather_channels(restored)
+
+        self.save_and_check(
+            116.35326725293572, -0.49709339987059054, restored, "msclean"
+        )
+
+    def test_deconvolve_and_restore_cube_mmclean_facets(self):
+        self.actualSetUp(add_errors=False)
+        dirty_imagelist = invert_list_rsexecute_workflow(
+            self.vis_list,
+            self.model_imagelist,
+            context="ng",
+            dopsf=False,
+            normalise=True,
+        )
+        psf_imagelist = invert_list_rsexecute_workflow(
+            self.vis_list,
+            self.model_imagelist,
+            context="ng",
+            dopsf=True,
+            normalise=True,
+        )
+        dirty_imagelist_trimmed = [
+            rsexecute.execute(lambda x: x[0])(d) for d in dirty_imagelist
+        ]
+        psf_imagelist_trimmed = [
+            rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
+        ]
+        dec_imagelist = deconvolve_list_rsexecute_workflow(
+            dirty_imagelist_trimmed,
+            psf_imagelist_trimmed,
             self.model_imagelist,
             niter=100,
             fractional_threshold=0.1,
             scales=[0, 3],
             algorithm="mmclean",
-            nmoment=1,
+            nmoment=2,
             nchan=self.freqwin,
             threshold=0.01,
             gain=0.7,
@@ -312,11 +316,9 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             deconvolve_overlap=8,
             deconvolve_taper="tukey",
         )
-        dec_imagelist = rsexecute.persist(dec_imagelist)
         residual_imagelist = residual_list_rsexecute_workflow(
             self.vis_list, model_imagelist=dec_imagelist, context="ng"
         )
-        residual_imagelist = rsexecute.persist(residual_imagelist)
         restored_list = restore_list_rsexecute_workflow(
             model_imagelist=dec_imagelist,
             psf_imagelist=psf_imagelist,
@@ -324,21 +326,25 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
             empty=self.model_imagelist,
         )
 
-        centre = len(restored_list) // 2
-        restored = rsexecute.compute(restored_list, sync=True)[centre]
+        restored = rsexecute.compute(restored_list, sync=True)
+        restored = image_gather_channels(restored)
 
+        self.save_and_check(
+            116.61854950606396, -9.46205848678285, restored, "mmclean_facets"
+        )
+
+    def save_and_check(self, flux_max, flux_min, restored, tag):
         if self.persist:
             export_image_to_fits(
                 restored,
-                f"{self.dir}/test_imaging{rsexecute.type()}_overlap_mmclean_restored.fits",
+                f"{self.dir}/test_imaging_deconvolve_rsexecute_{tag}_restored.fits",
             )
-
         qa = qa_image(restored)
         numpy.testing.assert_allclose(
-            qa.data["max"], 29.840393345494547, atol=1e-7, err_msg=f"{qa}"
+            qa.data["max"], flux_max, atol=1e-7, err_msg=f"{qa}"
         )
         numpy.testing.assert_allclose(
-            qa.data["min"], -2.4760642560915413, atol=1e-7, err_msg=f"{qa}"
+            qa.data["min"], flux_min, atol=1e-7, err_msg=f"{qa}"
         )
 
 

@@ -12,6 +12,7 @@ __all__ = [
     "limit_rmax",
     "find_vptype_from_name",
     "select_configuration",
+    "decimate_configuration",
 ]
 
 import numpy
@@ -628,6 +629,27 @@ def select_configuration(config, names=None):
         xyz=config.xyz[ind],
         vp_type=config.vp_type[ind],
         diameter=config.diameter[ind],
+        name=config.name,
+    )
+    return fc
+
+
+def decimate_configuration(config, start=0, stop=-1, skip=1):
+    """Decimate a configuration
+
+    :param config:
+    :param start: Start of selection
+    :param stop: End of selection
+    :param skip: Antennas/stations to skip
+    :return:
+    """
+    fc = Configuration(
+        location=config.location,
+        names=config.names[start:stop:skip],
+        mount=config.mount[start:stop:skip],
+        xyz=config.xyz[start:stop:skip],
+        vp_type=config.vp_type[start:stop:skip],
+        diameter=config.diameter[start:stop:skip],
         name=config.name,
     )
     return fc

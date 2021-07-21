@@ -95,5 +95,3 @@ examples/mcve/xarray/mydask.png
 *.nbi
 
 performance/
-
-saved_tests/

@@ -20,6 +20,7 @@ from rascil.data_models import PolarisationFrame, rascil_path
 from rascil.processing_components.simulation import (
     create_named_configuration,
     select_configuration,
+    decimate_configuration,
 )
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.simulation import plot_uvcoverage, plot_configuration
@@ -43,11 +44,11 @@ class TestPlotConfigurations(unittest.TestCase):
             ra=+15.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
         )
         self.times = numpy.linspace(-4 * 3600, 4 * 3600.0, 60) * numpy.pi / 43200.0
-        # self.times = numpy.array([0])
 
-    def createVis(self, config, dec=-35.0, rmax=None, names=None):
+    def createVis(self, config, dec=-35.0, rmax=None, names=None, skip=1):
         self.config = create_named_configuration(config, rmax=rmax)
         self.config = select_configuration(self.config, names)
+        self.config = decimate_configuration(self.config, skip=skip)
         self.phasecentre = SkyCoord(
             ra=+15 * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000"
         )
@@ -80,6 +81,7 @@ class TestPlotConfigurations(unittest.TestCase):
     def test_plot_configurations(self):
         for config in ["LOW", "LOWBD2", "LOWBD2-CORE", "ASKAP", "MID", "MEERKAT+"]:
             self.config = create_named_configuration(config)
+            self.config = decimate_configuration(self.config, skip=3)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_configuration(
@@ -104,7 +106,7 @@ class TestPlotConfigurations(unittest.TestCase):
 
     def test_plot_configurations_uvcoverage(self):
         for config in ["LOW", "LOWBD2", "LOWBD2-CORE", "ASKAP", "MID", "MEERKAT+"]:
-            self.createVis(config)
+            self.createVis(config, skip=3)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_uvcoverage(

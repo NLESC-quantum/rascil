@@ -32,6 +32,21 @@ class Testrsexecute(unittest.TestCase):
             result == numpy.array([0, 1, 4, 9, 16, 25, 36, 49, 64, 81])
         ).all(), result
 
+    def test_restart(self):
+        def square(x):
+            return x ** 2
+
+        for trial in range(10):
+            rsexecute.close()
+            rsexecute.set_client(use_dask=True)
+            graph = rsexecute.execute(square)(numpy.arange(10))
+            result = rsexecute.compute(graph, sync=True)
+            assert (
+                result == numpy.array([0, 1, 4, 9, 16, 25, 36, 49, 64, 81])
+            ).all(), result
+
+        rsexecute.close()
+
     def test_useDaskAsync(self):
         def square(x):
             return x ** 2

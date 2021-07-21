@@ -28,7 +28,10 @@ from rascil.processing_components.image.operations import (
     smooth_image,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.simulation import (
     ingest_unittest_visibility,
     create_unittest_model,
@@ -77,7 +80,8 @@ class TestPipelineGraphs(unittest.TestCase):
     ):
 
         self.npixel = 512
-        self.low = create_named_configuration("LOWBD2", rmax=750.0)
+        self.low = create_named_configuration("LOW", rmax=750.0)
+        self.low = decimate_configuration(self.low, skip=6)
         self.freqwin = nfreqwin
         self.ntimes = 3
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
@@ -220,9 +224,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -237,8 +241,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            101.2039174372309,
-            -0.02020077240430279,
+            100.95228614313233,
+            -0.9624314037146422,
             taylor=True,
         )
 
@@ -255,9 +259,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -271,8 +275,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.85036592844513,
-            -0.06482127115187702,
+            116.41872771000925,
+            -2.960582220688862,
         )
 
     def save_and_check(
@@ -333,9 +337,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -349,8 +353,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.85036592844513,
-            -0.06482127115187702,
+            116.41872771000924,
+            -2.9605822206888672,
         )
 
     def test_ical_pipeline(self):
@@ -371,9 +375,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -394,8 +398,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.83965595466495,
-            -0.0685445739832829,
+            114.3778364345568,
+            -2.7443482118181453,
         )
 
     def test_ical_pipeline_pol(self):
@@ -415,9 +419,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -439,8 +443,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.86874157145884,
-            -0.0665865700969427,
+            116.32505431889213,
+            -3.2612949002701157,
         )
 
     def test_ical_pipeline_global(self):
@@ -460,9 +464,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -483,8 +487,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.03919403218217,
-            -0.5768811651762246,
+            113.97735360881542,
+            -4.173423159203104,
         )
 
     def test_ical_skymodel_pipeline_empty(self):
@@ -510,9 +514,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -538,8 +542,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.85384347821685,
-            -0.06493540147134771,
+            115.44840835047472,
+            -3.1683098167384154,
         )
 
     def test_ical_skymodel_pipeline_empty_threshold(self):
@@ -565,9 +569,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -594,8 +598,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.85384347821685,
-            -0.06493540147134771,
+            115.44840835047474,
+            -3.1683098167384207,
         )
 
     def test_ical_skymodel_pipeline_exact(self):
@@ -625,9 +629,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -653,8 +657,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.9315731003449,
-            -0.07230405921211963,
+            117.12688433964439,
+            -0.958712930761286,
         )
 
     def test_ical_skymodel_pipeline_partial(self):
@@ -694,9 +698,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -722,8 +726,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.89159484588785,
-            -0.03298836500193018,
+            115.84726586975867,
+            -2.042232400397852,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):
@@ -741,9 +745,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -759,8 +763,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.8503995336827,
-            -0.06486468146793634,
+            116.418727710009,
+            -2.9605822206888637,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty_taylor_terms(self):
@@ -778,9 +782,9 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
-            deconvolve_facets=4,
+            deconvolve_facets=2,
             deconvolve_overlap=32,
             deconvolve_taper="tukey",
             psf_support=64,
@@ -797,8 +801,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            101.20392917498113,
-            -0.02019460212426699,
+            100.95228614313233,
+            -0.9624314037146426,
             taylor=True,
         )
 
@@ -817,7 +821,7 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
             deconvolve_facets=1,
             deconvolve_overlap=32,
@@ -836,8 +840,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.86478642682081,
-            -0.06542164215332748,
+            116.43049437889789,
+            -2.9253662168285444,
         )
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
@@ -875,7 +879,7 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
             deconvolve_facets=1,
             deconvolve_overlap=32,
@@ -893,8 +897,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.88999978091275,
-            -0.03304147650627375,
+            116.66827517836279,
+            -1.4626831084142733,
         )
 
     def test_continuum_imaging_skymodel_pipeline_exact(self):
@@ -920,7 +924,7 @@ class TestPipelineGraphs(unittest.TestCase):
             fractional_threshold=0.1,
             threshold=0.01,
             nmoment=2,
-            nmajor=5,
+            nmajor=3,
             gain=0.7,
             deconvolve_facets=1,
             deconvolve_overlap=32,

@@ -29,7 +29,10 @@ from rascil.processing_components.imaging.base import (
 )
 from rascil.processing_components.imaging.primary_beams import create_low_test_beam
 from rascil.processing_components.simulation import create_low_test_image_from_gleam
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.visibility.base import create_blockvisibility
 
 log = logging.getLogger("rascil-logger")
@@ -45,6 +48,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.persist = os.getenv("RASCIL_PERSIST", False)
         self.niter = 1000
         self.lowcore = create_named_configuration("LOWBD2-CORE")
+        self.lowcore = decimate_configuration(self.lowcore, skip=9)
         self.nchan = 6
         self.times = (numpy.pi / 12.0) * numpy.linspace(-3.0, 3.0, 7)
         self.frequency = numpy.linspace(0.9e8, 1.1e8, self.nchan)
@@ -174,7 +178,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         if self.persist:
             self.save_images("mmclean_notaylor_noscales")
-        assert numpy.max(self.residual[0]["pixels"].data) < 0.13
+        assert numpy.max(self.residual[0]["pixels"].data) < 0.25
 
     def test_deconvolve_mmclean_linear(self):
         self.comp, self.residual = deconvolve_list(
@@ -238,7 +242,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         if self.persist:
             self.save_images("mmclean_linear_noscales")
-        assert numpy.max(self.residual[0]["pixels"].data) < 0.2
+        assert numpy.max(self.residual[0]["pixels"].data) < 0.25
 
     def test_deconvolve_mmclean_quadratic(self):
         self.comp, self.residual = deconvolve_list(
@@ -276,7 +280,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         if self.persist:
             self.save_images("mmclean_quadratic_noscales")
-        assert numpy.max(self.residual[0]["pixels"].data) < 0.2
+        assert numpy.max(self.residual[0]["pixels"].data) < 0.76
 
     def save_images(self, tag):
         """Save the images with standard names

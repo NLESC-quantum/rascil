@@ -579,7 +579,9 @@ def create_mid_simulation_components(
         "create_simulation_components: Created %d components" % len(filtered_components)
     )
 
+    # If applying primary beam, return components before and after the primary beam
+    # If not, return the components, and reference component.
     if apply_pb:
-        return filtered_pb_components, reference_component
+        return filtered_pb_components, filtered_components
     else:
         return filtered_components, reference_component

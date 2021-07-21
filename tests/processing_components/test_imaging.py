@@ -28,7 +28,10 @@ from rascil.processing_components.imaging.base import (
 )
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 from rascil.processing_components.imaging.primary_beams import create_pb_generic
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.processing_components.simulation import (
     ingest_unittest_visibility,
     create_unittest_model,
@@ -65,6 +68,7 @@ class TestImaging2D(unittest.TestCase):
 
         self.npixel = 256
         self.low = create_named_configuration("LOWBD2", rmax=750.0)
+        self.low = decimate_configuration(self.low, skip=3)
         self.freqwin = freqwin
         self.vis = list()
         self.ntimes = 5
@@ -228,8 +232,8 @@ class TestImaging2D(unittest.TestCase):
         self.actualSetUp(zerow=True)
         self._predict_base(
             name="predict_2d",
-            flux_max=0.03039877113909005,
-            flux_min=-0.44964697782222884,
+            flux_max=0.07221939460567486,
+            flux_min=-0.434717474892552754,
         )
 
     def test_predict_2d_point(self):
@@ -257,24 +261,24 @@ class TestImaging2D(unittest.TestCase):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         self._predict_base(
             name="predict_2d_IQUV",
-            flux_max=0.04496469778222492,
-            flux_min=-0.4496469778222473,
+            flux_max=0.0722193946056726,
+            flux_min=-0.4347174748925693,
         )
 
     def test_predict_2d_IQ(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQ"))
         self._predict_base(
             name="predict_2d_IQ",
-            flux_max=0.03039877113909037,
-            flux_min=-0.4496469778222473,
+            flux_max=0.0722193946056726,
+            flux_min=-0.434717474892569,
         )
 
     def test_predict_2d_IV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIV"))
         self._predict_base(
             name="predict_2d_IV",
-            flux_max=0.03039877113909037,
-            flux_min=-0.4496469778222473,
+            flux_max=0.0722193946056726,
+            flux_min=-0.4347174748925693,
         )
 
     def test_invert_2d(self):
@@ -283,8 +287,8 @@ class TestImaging2D(unittest.TestCase):
             name="invert_2d",
             positionthreshold=2.0,
             check_components=False,
-            flux_max=99.88613044417559,
-            flux_min=-3.9859697198315946,
+            flux_max=100.9654697773242,
+            flux_min=-8.103733961660813,
         )
 
     def test_invert_2d_IQUV(self):
@@ -293,8 +297,8 @@ class TestImaging2D(unittest.TestCase):
             name="invert_2d_IQUV",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=99.88613044417558,
-            flux_min=-9.988613044417564,
+            flux_max=100.96546977732424,
+            flux_min=-10.096546977732427,
         )
 
     def test_invert_2d_spec_I(self):
@@ -308,8 +312,8 @@ class TestImaging2D(unittest.TestCase):
             name="invert_2d_spec_I",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=114.80218072211346,
-            flux_min=-6.221028210656658,
+            flux_max=115.82172186951361,
+            flux_min=-12.352221472031786,
         )
 
     def test_invert_2d_spec_IQUV(self):
@@ -320,8 +324,8 @@ class TestImaging2D(unittest.TestCase):
             name="invert_2d_IQUV",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=114.80218072211358,
-            flux_min=-11.480218072211347,
+            flux_max=115.82172186951371,
+            flux_min=-12.352221472032312,
         )
 
     def test_invert_2d_IQ(self):
@@ -330,8 +334,8 @@ class TestImaging2D(unittest.TestCase):
             name="invert_2d_IQ",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=99.88613044417559,
-            flux_min=-3.9859697198315946,
+            flux_max=100.96546977732424,
+            flux_min=-8.103733961660813,
         )
 
     def test_invert_2d_IV(self):
@@ -340,8 +344,8 @@ class TestImaging2D(unittest.TestCase):
             name="invert_2d_IV",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=99.88613044417559,
-            flux_min=-3.985969719835822,
+            flux_max=100.96546977732424,
+            flux_min=-8.103733961660813,
         )
 
     def test_predict_awterm(self):
@@ -360,11 +364,11 @@ class TestImaging2D(unittest.TestCase):
             polarisation_frame=self.vis_pol,
         )
         self._predict_base(
-            fluxthreshold=61.0,
+            fluxthreshold=62.0,
             name="predict_awterm",
             gcfcf=gcfcf,
-            flux_max=60.98826559182058,
-            flux_min=-1.7924340974177628,
+            flux_max=61.7962762969381,
+            flux_min=-5.420056174913808,
         )
 
     def test_predict_awterm_spec(self):
@@ -386,8 +390,8 @@ class TestImaging2D(unittest.TestCase):
             fluxthreshold=61.0,
             name="predict_awterm_spec",
             gcfcf=gcfcf,
-            flux_max=58.538564041621974,
-            flux_min=-2.203267830209366,
+            flux_max=59.59422693950642,
+            flux_min=-5.0391706517957955,
         )
 
     @unittest.skip("Takes too long to run regularly")
@@ -432,8 +436,8 @@ class TestImaging2D(unittest.TestCase):
             positionthreshold=35.0,
             check_components=False,
             gcfcf=gcfcf,
-            flux_max=97.6611407915587,
-            flux_min=-2.9645838580463315,
+            flux_max=96.69252147910645,
+            flux_min=-6.110150403739334,
         )
 
     def test_invert_awterm_spec(self):
@@ -456,8 +460,8 @@ class TestImaging2D(unittest.TestCase):
             positionthreshold=35.0,
             check_components=False,
             gcfcf=gcfcf,
-            flux_max=112.1328682483291,
-            flux_min=-4.700474530998013,
+            flux_max=110.98751973294647,
+            flux_min=-8.991729415360501,
         )
 
     @unittest.skip("Takes too long to run regularly")
@@ -500,8 +504,8 @@ class TestImaging2D(unittest.TestCase):
             fluxthreshold=5.0,
             name="predict_wterm",
             gcfcf=gcfcf,
-            flux_max=1.120420296125513,
-            flux_min=-0.8803490916523007,
+            flux_max=1.563253192648258,
+            flux_min=-1.8992207460723078,
         )
 
     def test_invert_wterm(self):
@@ -520,8 +524,8 @@ class TestImaging2D(unittest.TestCase):
             positionthreshold=35.0,
             check_components=False,
             gcfcf=gcfcf,
-            flux_max=99.01934338254706,
-            flux_min=-3.5815839650623804,
+            flux_max=100.29162257614617,
+            flux_min=-8.34142746239203,
         )
 
     def test_invert_spec_wterm(self):
@@ -541,8 +545,8 @@ class TestImaging2D(unittest.TestCase):
             positionthreshold=1.0,
             check_components=False,
             gcfcf=gcfcf,
-            flux_max=113.38250379178004,
-            flux_min=-4.926171480979307,
+            flux_max=114.50082196608498,
+            flux_min=-9.16145050719757,
         )
 
     def test_invert_psf(self):

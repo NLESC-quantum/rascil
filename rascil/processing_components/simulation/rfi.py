@@ -171,9 +171,7 @@ def calculate_rfi_at_station(
 
 def _get_uvw_per_station(xyz, ha, dec):
     """arrays"""
-    uvw = []
-    for i in range(len(ha)):
-        uvw.append(xyz_to_uvw(xyz[i], ha[i], dec[i]))
+    uvw = [xyz_to_uvw(xyz[i], ha[i], dec[i]) for i in range(len(ha))]
 
     return numpy.array(uvw)
 

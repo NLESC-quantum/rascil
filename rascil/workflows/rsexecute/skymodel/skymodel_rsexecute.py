@@ -555,7 +555,8 @@ def deconvolve_skymodel_list_rsexecute_workflow(
     :return: list of skymodels (or graph)
     """
     component_method = get_parameter(kwargs, "component_method", None)
-    if fit_skymodel and component_method == "fit":
+    component_threshold = get_parameter(kwargs, "component_threshold", None)
+    if fit_skymodel and component_method == "fit" and component_threshold is not None:
         # Update the skymodel with point sources found in moment 0
         # and fitted by a polynomial in frequency.
 

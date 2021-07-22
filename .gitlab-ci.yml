@@ -65,15 +65,16 @@ test:
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
+  after_script:
+    - mv .coverage coverage_test
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:
-      - .coverage*
+      - coverage_test
       - coverage
-      - coverage-other.xml
       - unit-tests-other.xml
 
-test-slow:
+test-dask:
   except:
     - schedules
   stage: test
@@ -89,14 +90,15 @@ test-slow:
     - cd -
     - mkdir -p test_results
   script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make test-slow
+    - PYTHONPATH=`pwd` HOME=`pwd` make test-dask
+  after_script:
+    - mv .coverage coverage_dask
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:
-      - .coverage*
+      - coverage_dask
       - coverage
-      - coverage-slow.xml
-      - unit-tests-workflows.xml
+      - unit-tests-dask.xml
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -190,10 +192,10 @@ prepare ci metrics:
   when: always
   before_script:
     - mkdir -p build/reports
-    - coverage combine
-    - coverage xml && mv coverage.xml ./build/reports/coverage.xml
+    - coverage combine coverage_* && coverage xml
+    - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
     - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
-    - python3 util/xmlcombine.py unit-tests-workflows.xml unit-tests-other.xml > unit-tests.xml
+    - python3 util/xmlcombine.py unit-tests-dask.xml unit-tests-other.xml > unit-tests.xml
     - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
   script:
     # Gitlab CI badges creation: START

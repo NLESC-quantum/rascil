@@ -70,23 +70,20 @@ test-singlepass:
 	--pylint --pylint-error-types=EF --durations=30
 
 test:
-	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
+	HOME=`pwd` coverage run --source rascil -m py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
 	tests/apps tests/data_models tests/processing_components \
 	--verbose \
 	--junitxml unit-tests-other.xml \
-	--cov rascil \
-	--cov-report term  \
-	--cov-report html:coverage  \
-	--cov-report xml:coverage-other.xml \
 	--pylint --pylint-error-types=EF --durations=30
+	coverage report -m
+	coverage html -d coverage
 
-test-slow:
-	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py tests/apps_rsexecute/test*.py --verbose \
-	--junitxml unit-tests-workflows.xml \
-	--cov rascil \
-	--cov-report html:coverage  \
-	--cov-report xml:coverage-slow.xml \
+test-dask:
+	HOME=`pwd` coverage run --source rascil -m py.test tests/workflows tests/apps_rsexecute --verbose \
+	--junitxml unit-tests-dask.xml \
 	--pylint --pylint-error-types=EF --durations=30
+	coverage report -m
+	coverage html -d coverage
 
 upgrade_pip:  ## make sure pip is up to date.
 	pip install --upgrade pip

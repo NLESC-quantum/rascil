@@ -453,6 +453,17 @@ def write_results(restored_output, imagename, result, performance_file):
         log.info("Writing restored image as spectral cube")
         restoredname = imagename + "_restored.fits"
         export_image_to_fits(restored, restoredname)
+
+        residual = remove_sumwt(residual)
+        residual_image = image_gather_channels(residual)
+        del residual
+        performance_qa_image(performance_file, "residual", residual_image, mode="a")
+        log.info("Writing residual image as spectral cube")
+        log.info(qa_image(residual_image, context="Residual"))
+        residualname = imagename + "_residual.fits"
+        export_image_to_fits(residual_image, residualname)
+        del residual_image
+
     elif restored_output == "taylor":
         nmoment = len(restored)
         # Do the first last so that the name will be correct for Taylor 0
@@ -483,7 +494,7 @@ def write_results(restored_output, imagename, result, performance_file):
                 residual[taylor][0],
                 mode="a",
             )
-            log.info(qa_image(residual[taylor][0], context="Residual"))
+            log.info(qa_image(residual[taylor][0], context=f"Residual taylor{taylor}"))
             residualname = imagename + f"_residual_taylor{taylor}.fits"
             export_image_to_fits(residual[taylor][0], residualname)
 

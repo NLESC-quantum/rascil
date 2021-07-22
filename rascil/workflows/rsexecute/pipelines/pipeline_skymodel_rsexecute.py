@@ -277,9 +277,9 @@ def restore_skymodel_pipeline_rsexecute_workflow(
             rsexecute.execute(lambda x: (x, 0.0))(d) for d in residual_imagelist
         ]
         # Now we need to create a skymodel in Taylor space
-        skymodel_list = rsexecute.execute(convert_skycomponents_taylor_terms_list)(
-            deconvolve_model_imagelist, nmoment=nmoment, skymodel_list=skymodel_list
-        )
+        skymodel_list = rsexecute.execute(
+            convert_skycomponents_taylor_terms_list, nout=nmoment
+        )(deconvolve_model_imagelist, nmoment=nmoment, skymodel_list=skymodel_list)
 
         # Note that the psf has not been converted to Taylor form
         restored_imagelist = restore_skymodel_list_rsexecute_workflow(

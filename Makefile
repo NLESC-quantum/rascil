@@ -75,10 +75,9 @@ test:
 	--verbose \
 	--junitxml unit-tests-other.xml \
 	--cov rascil \
-	--cov-append \
 	--cov-report term  \
 	--cov-report html:coverage  \
-	--cov-report xml:coverage.xml \
+	--cov-report xml:coverage-other.xml \
 	--pylint --pylint-error-types=EF --durations=30
 
 test-slow:
@@ -86,7 +85,7 @@ test-slow:
 	--junitxml unit-tests-workflows.xml \
 	--cov rascil \
 	--cov-report html:coverage  \
-	--cov-report xml:coverage.xml \
+	--cov-report xml:coverage-slow.xml \
 	--pylint --pylint-error-types=EF --durations=30
 
 upgrade_pip:  ## make sure pip is up to date.

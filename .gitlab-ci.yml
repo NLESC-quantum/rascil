@@ -69,7 +69,7 @@ test:
   artifacts:
     paths:
     - coverage
-    - coverage.xml
+    - coverage-other.xml
     - unit-tests-other.xml
 
 test-slow:
@@ -93,7 +93,7 @@ test-slow:
   artifacts:
     paths:
     - coverage
-    - coverage.xml
+    - coverage-slow.xml
     - unit-tests-workflows.xml
 
 # Always try to build the docs since this catches errors via the notebook
@@ -188,6 +188,7 @@ prepare ci metrics:
   when: always
   before_script:
     - mkdir -p build/reports
+    - python3 util/xmlcombine.py coverage-other.xml coverage-slow.xml > coverage.xml
     - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
     - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
     - python3 util/xmlcombine.py unit-tests-workflows.xml unit-tests-other.xml > unit-tests.xml

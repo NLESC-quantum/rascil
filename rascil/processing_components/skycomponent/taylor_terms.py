@@ -33,7 +33,7 @@ log = logging.getLogger("rascil-logger")
 def calculate_frequency_taylor_terms_from_skycomponents(
     sc_list: List[Skycomponent], nmoment=1, reference_frequency=None
 ) -> List[List[Skycomponent]]:
-    """Calculate frequency taylor terms for a list of kycomponents
+    """Calculate frequency taylor terms for a list of skycomponents
 
     :param sc_list: Skycomponent
     :param reference_frequency: Reference frequency (default None uses centre point)

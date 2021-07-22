@@ -44,18 +44,12 @@ class TestSkycomponentTaylorTerm(unittest.TestCase):
         frequency = numpy.linspace(0.9e8, 1.1e8, 9)
         sc = create_low_test_skycomponents_from_gleam(
             phasecentre=phasecentre, frequency=frequency, flux_limit=10.0
-        )[0]
-        sc_list = []
-        for chan, frequency in enumerate(sc.frequency):
-            newsc = copy_skycomponent(sc)
-            newsc.frequency = numpy.array([frequency])
-            newsc.flux = sc.flux[chan][numpy.newaxis, :]
-            sc_list.append(newsc)
+        )[0:10]
 
         taylor_term_list = calculate_frequency_taylor_terms_from_skycomponents(
-            sc_list, nmoment=3
+            sc, nmoment=3
         )
-        assert len(taylor_term_list) == 3
+        assert len(taylor_term_list) == 10
 
     def test_find_skycomponents_frequency_taylor_terms(self):
         phasecentre = SkyCoord(
@@ -76,9 +70,10 @@ class TestSkycomponentTaylorTerm(unittest.TestCase):
 
         for moment in [1, 2, 3]:
             sc_list = find_skycomponents_frequency_taylor_terms(
-                im_list, nmoment=moment, flux_limit=20.0
+                im_list, nmoment=moment, component_threshold=20.0
             )
-            print(moment, len(sc_list), len(sc_list[0]))
+            assert len(sc_list) == 9
+            assert len(sc_list[0]) == 3
 
 
 if __name__ == "__main__":

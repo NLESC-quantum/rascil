@@ -73,6 +73,30 @@ test:
     - coverage.xml
     - unit-tests.xml
 
+test-slow:
+  except:
+    - schedules
+  stage: test
+  before_script:
+    - apt-get update
+    - apt-get -y install rsync ca-certificates pybind11-dev
+    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
+    - mkdir -p test_results
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make test-slow
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+    - coverage
+    - coverage.xml
+    - unit-tests.xml
+
 # Always try to build the docs since this catches errors via the notebook
 docs:
   except:

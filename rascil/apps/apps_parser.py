@@ -215,7 +215,7 @@ def apps_parser_cleaning(parser):
     parser.add_argument(
         "--clean_component_method",
         type=str,
-        default="None",
+        default="fit",
         help="Method to convert sources in image to skycomponents",
     )
     parser.add_argument(

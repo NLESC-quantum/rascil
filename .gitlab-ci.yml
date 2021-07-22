@@ -70,7 +70,7 @@ test:
     paths:
     - coverage
     - coverage.xml
-    - unit-tests.xml
+    - unit-tests-other.xml
 
 test-slow:
   except:
@@ -94,7 +94,7 @@ test-slow:
     paths:
     - coverage
     - coverage.xml
-    - unit-tests.xml
+    - unit-tests-workflows.xml
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -190,6 +190,7 @@ prepare ci metrics:
     - mkdir -p build/reports
     - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
     - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
+    - python3 util/xmlcombine.py unit-tests-workflows.xml unit-tests-other.xml > unit-tests.xml
     - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
   script:
     # Gitlab CI badges creation: START

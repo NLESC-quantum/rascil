@@ -120,13 +120,14 @@ def find_skycomponents_frequency_taylor_terms(
         return []
 
     found_component_list = []
-    for sc in moment0_skycomponents:
+    for isc, sc in enumerate(moment0_skycomponents):
         found_component = copy_skycomponent(sc)
         found_component.frequency = frequency
         found_component.flux = numpy.array(
             [list(fit_skycomponent(d, sc, **kwargs).flux[0, :]) for d in dirty_list]
         )
         found_component_list.append(found_component)
+        log.info(f"Component {isc}: {found_component}")
 
     interpolated_sc_list = interpolate_skycomponents_frequency(
         found_component_list, nmoment=nmoment, reference_frequency=reference_frequency

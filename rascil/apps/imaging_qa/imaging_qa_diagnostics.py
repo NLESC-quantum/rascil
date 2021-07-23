@@ -249,6 +249,7 @@ def plot_with_running_mean(img, input_image, stats, projection, description="ima
     plt.close()
 
 
+# TODO: This function is costly and needs to be revisited
 def source_region_mask(img):
     """
     Mask pixels from an image which are within 5*beam_width of sources in the
@@ -299,6 +300,8 @@ def source_region_mask(img):
     background_mask = np.ma.array(
         image_to_be_masked, mask=background_regions, copy=True
     )
+
+    log.info("Finished masking.")
 
     return source_mask, background_mask
 

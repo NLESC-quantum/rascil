@@ -281,6 +281,8 @@ def test_continuum_imaging_checker(
             "1.0e-4",
             "--use_frequency_moment",
             "True",
+            "--perform_diagnostics",
+            "True",
             "--apply_primary",
             "True",
             "--savefits_rmsim",

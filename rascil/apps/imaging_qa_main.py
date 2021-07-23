@@ -135,6 +135,12 @@ def cli_parser():
         help="For multi-channel images, what mode to perform source detection on (single or average)",
     )
     parser.add_argument(
+        "--perform_diagnostics",
+        type=str,
+        default="False",
+        help="Whether to perform diagnostics of the images (restored and residual)",
+    )
+    parser.add_argument(
         "--apply_primary",
         type=str,
         default="False",
@@ -275,8 +281,9 @@ def analyze_image(args):
     input_image_residual = args.ingest_fitsname_residual
     input_image_sensitivity = args.ingest_fitsname_sensitivity
     quiet_bdsf = False if args.quiet_bdsf == "False" else True
+    perform_diagnostics = False if args.perform_diagnostics == "False" else True
     restart = args.restart
-    saverms = args.savefits_rmsim
+    saverms = False if args.savefits_rmsim == "False" else True
     multichan_option = args.finder_multichan_option
 
     # If read restoring beam from header
@@ -309,6 +316,7 @@ def analyze_image(args):
             thresh_pix,
             nchan,
             multichan_option,
+            perform_diagnostics=perform_diagnostics,
             quiet_bdsf=quiet_bdsf,
             saverms=saverms,
         )
@@ -418,6 +426,7 @@ def imaging_qa_bdsf(
     thresh_pix,
     nchan,
     multichan_option,
+    perform_diagnostics=False,
     quiet_bdsf=False,
     saverms=False,
 ):
@@ -432,6 +441,7 @@ def imaging_qa_bdsf(
     :param thresh_pix: Peak threshold
     :param nchan: Number of channels
     :param multichan_option: Mode to perform BDSF on multi-channel images
+    :param perform_diagnostics: if True, perform diagnostics function on the images
     :param quiet_bdsf: if True, suppress text output of bdsf logs to screen.
                        Output is still sent to the log file
     :param saverms: if True, save background rms image as a FITS file
@@ -447,6 +457,9 @@ def imaging_qa_bdsf(
             nchan, refchan, multichan_option
         )
     )
+
+    before_time = datetime.datetime.now()
+    log.info("Going into BDSF at time : {}".format(before_time))
 
     if nchan == 1:  # single frequency
         img_rest = bdsf.process_image(
@@ -478,8 +491,12 @@ def imaging_qa_bdsf(
     )
     img_rest.export_image(img_type="gaus_resid", clobber=True)
 
-    log.info("Running diagnostics for the restored image")
-    imaging_qa_diagnostics(img_rest, input_image_restored, "restored")
+    after_time = datetime.datetime.now()
+    log.info("Exiting BDSF at time : {}".format(after_time))
+
+    if perform_diagnostics:
+        log.info("Running diagnostics for the restored image")
+        imaging_qa_diagnostics(img_rest, input_image_restored, "restored")
 
     if input_image_residual is not None:
         log.info("Analysing the residual image")
@@ -505,9 +522,9 @@ def imaging_qa_bdsf(
                 spectralindex_do=True,
             )
 
-        save_rms_file = input_image_residual.replace(".fits", "_residual_rms")
-
         if saverms:
+
+            save_rms_file = input_image_residual.replace(".fits", "_residual_rms")
             residual_im = import_image_from_fits(input_image_residual)
 
             resid_im_array = np.reshape(
@@ -521,8 +538,10 @@ def imaging_qa_bdsf(
             )
             export_image_to_fits(rms_image, save_rms_file + ".fits")
 
-        log.info("Running diagnostics for the residual image")
-        imaging_qa_diagnostics(img_resid, input_image_residual, "residual")
+        if perform_diagnostics:
+
+            log.info("Running diagnostics for the residual image")
+            imaging_qa_diagnostics(img_resid, input_image_residual, "residual")
 
     return
 

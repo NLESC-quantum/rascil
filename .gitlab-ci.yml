@@ -66,7 +66,7 @@ test:
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
   after_script:
-    - mv .coverage coverage_test
+    - mv coverage_other coverage_test
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:
@@ -92,7 +92,7 @@ test-dask:
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test-dask
   after_script:
-    - mv .coverage coverage_dask
+    - mv coverage_other coverage_dask
   coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:

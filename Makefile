@@ -70,8 +70,9 @@ test-singlepass:
 	--pylint --pylint-error-types=EF --durations=30
 
 test:
-	HOME=`pwd` coverage run --source rascil -m py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
-	tests/apps tests/data_models tests/processing_components \
+	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
+	tests/apps/imaging_qa \
+	--cov=rascil \
 	--verbose \
 	--junitxml unit-tests-other.xml \
 	--pylint --pylint-error-types=EF --durations=30
@@ -79,7 +80,8 @@ test:
 	coverage html -d coverage
 
 test-dask:
-	HOME=`pwd` coverage run --source rascil -m py.test tests/workflows tests/apps_rsexecute --verbose \
+	HOME=`pwd` py.test tests/workflows tests/apps_rsexecute --verbose \
+	--cov=rascil \
 	--junitxml unit-tests-dask.xml \
 	--pylint --pylint-error-types=EF --durations=30
 	coverage report -m

@@ -85,7 +85,7 @@ def find_skycomponents_frequency_taylor_terms(
 
         w_k = \\left(\\left(\\nu - \\nu_{ref}\\right) /  \\nu_{ref}\\right)^k
 
-    :param dirty_list: List of images to be searhed. These should be different frequencies
+    :param dirty_list: List of images to be searched. These should be different frequencies
     :param nmoment: Number of moments to be fitted
     :param reference_frequency: Reference frequency (default None uses centre frequency)
     :return: list of skycomponents
@@ -169,7 +169,7 @@ def interpolate_skycomponents_frequency(
         newsc = copy_skycomponent(sc)
         x = (frequency - reference_frequency) / reference_frequency
         y = sc.flux
-        coeffs = P.polyfit(x, y, nmoment)
+        coeffs = P.polyfit(x, y, nmoment - 1)
         newsc.flux = P.polyval(x, coeffs).T
         newsc_list.append(newsc)
 

@@ -45,10 +45,10 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path
 
         self.dir = rascil_path("test_results")
-        self.persist = os.getenv("RASCIL_PERSIST", False)
-        self.niter = 1000
+        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.niter = 10000
         self.lowcore = create_named_configuration("LOWBD2-CORE")
-        self.lowcore = decimate_configuration(self.lowcore, skip=9)
+        self.lowcore = decimate_configuration(self.lowcore, skip=3)
         self.nchan = 6
         self.times = (numpy.pi / 12.0) * numpy.linspace(-3.0, 3.0, 7)
         self.frequency = numpy.linspace(0.9e8, 1.1e8, self.nchan)
@@ -130,10 +130,10 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
             gain=0.1,
             algorithm="mmclean",
             scales=[0, 3, 10],
-            threshold=0.01,
+            threshold=0.001,
             nmoment=1,
             findpeak="RASCIL",
-            fractional_threshold=0.01,
+            fractional_threshold=0.001,
             window_shape="quarter",
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
@@ -169,10 +169,10 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
             gain=0.1,
             algorithm="mmclean",
             scales=[0],
-            threshold=0.01,
+            threshold=0.001,
             nmoment=1,
             findpeak="RASCIL",
-            fractional_threshold=0.01,
+            fractional_threshold=0.001,
             window_shape="quarter",
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
@@ -288,21 +288,21 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         :param tag: Informational, unique tag
         :return:
         """
-        for icomp, comp in enumerate(self.comp):
-            export_image_to_fits(
-                comp,
-                f"{self.dir}/test_deconvolve_{tag}-deconvolved_taylor{icomp}.fits",
-            )
-        for ires, residual in enumerate(self.residual):
-            export_image_to_fits(
-                residual,
-                f"{self.dir}/test_deconvolve_{tag}-residual_taylor{ires}.fits",
-            )
-        for icmodel, cmodel in enumerate(self.cmodel):
-            export_image_to_fits(
-                cmodel,
-                f"{self.dir}/test_deconvolve_{tag}-restored_taylor{icmodel}.fits",
-            )
+        comp = image_gather_channels(self.comp)
+        export_image_to_fits(
+            comp,
+            f"{self.dir}/test_deconvolve_{tag}_deconvolved.fits",
+        )
+        residual = image_gather_channels(self.residual)
+        export_image_to_fits(
+            residual,
+            f"{self.dir}/test_deconvolve_{tag}_residual.fits",
+        )
+        cmodel = image_gather_channels(self.cmodel)
+        export_image_to_fits(
+            cmodel,
+            f"{self.dir}/test_deconvolve_{tag}_restored.fits",
+        )
 
     def test_deconvolve_mmclean_quadratic_psf(self):
         self.comp, self.residual = deconvolve_list(

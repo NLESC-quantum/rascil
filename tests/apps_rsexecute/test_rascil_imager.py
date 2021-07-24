@@ -217,14 +217,14 @@ def test_rascil_imager(
     dospectral = True
     zerow = False
     dopol = False
-    persist = True
+    persist = False
 
     # We always want the same numbers
     from numpy.random import default_rng
 
     rng = default_rng(1805550721)
 
-    rsexecute.set_client(use_dask=False)
+    rsexecute.set_client(use_dask=use_dask)
 
     npixel = 512
     low = create_named_configuration("LOWBD2", rmax=300.0)

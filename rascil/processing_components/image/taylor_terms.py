@@ -59,7 +59,7 @@ def calculate_image_frequency_moments(
     ), "Number of moments %d cannot exceed the number of channels %d" % (nmoment, nchan)
 
     if reference_frequency is None:
-        reference_frequency = numpy.average(freq.data)
+        reference_frequency = freq.data[nchan // 2]
     log.debug(
         "calculate_image_frequency_moments: Reference frequency = %.3f (MHz)"
         % (reference_frequency / 1e6)
@@ -122,7 +122,7 @@ def calculate_image_from_frequency_taylor_terms(
     assert nx == mnx
 
     if reference_frequency is None:
-        reference_frequency = numpy.average(im.frequency.data)
+        reference_frequency = im.frequency.data[nchan // 2]
     log.debug(
         "calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)"
         % (1e-6 * reference_frequency)
@@ -191,7 +191,7 @@ def calculate_image_list_frequency_moments(
         )
 
     if reference_frequency is None:
-        reference_frequency = numpy.average(freq)
+        reference_frequency = freq[nchan // 2]
     log.debug(
         "calculate_image_frequency_moments: Reference frequency = %.3f (MHz)"
         % (reference_frequency / 1e6)
@@ -240,7 +240,7 @@ def calculate_image_list_from_frequency_taylor_terms(
     frequency = numpy.array([d.frequency.data[0] for d in im_list])
 
     if reference_frequency is None:
-        reference_frequency = numpy.average(frequency)
+        reference_frequency = frequency[nchan // 2]
     log.debug(
         "calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)"
         % (1e-6 * reference_frequency)

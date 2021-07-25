@@ -62,13 +62,13 @@ cryptography==3.4.7
     # via paramiko
 cycler==0.10.0
     # via matplotlib
-dask==2021.07.0
+dask==2021.07.1
     # via
     #   -r requirements.in
     #   distributed
 dask-memusage==1.1
     # via -r requirements.in
-debugpy==1.3.0
+debugpy==1.4.1
     # via ipykernel
 decorator==4.4.2
     # via
@@ -76,11 +76,11 @@ decorator==4.4.2
     #   networkx
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.7.0
+distributed==2021.7.1
     # via
     #   -r requirements.in
     #   dask-memusage
-ducc0==0.17.0
+ducc0==0.18.0
     # via -r requirements.in
 entrypoints==0.3
     # via nbconvert
@@ -109,7 +109,7 @@ importlib-metadata==3.10.1
     #   click
     #   ipykernel
     #   jsonschema
-ipykernel==6.0.2
+ipykernel==6.0.3
     # via
     #   ipywidgets
     #   jupyter
@@ -264,7 +264,8 @@ packaging==21.0
     # via
     #   bleach
     #   bokeh
-pandas==1.3.0
+    #   dask
+pandas==1.3.1
     # via
     #   -r requirements.in
     #   xarray
@@ -441,7 +442,7 @@ webencodings==0.5.1
     # via bleach
 widgetsnbextension==3.5.1
     # via ipywidgets
-xarray==0.18.2
+xarray==0.19.0
     # via -r requirements.in
 zarr==2.8.3
     # via -r requirements.in

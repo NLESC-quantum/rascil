@@ -150,7 +150,7 @@ publish_to_car:
     - TWINE_USERNAME=${CAR_PYPI_USERNAME} TWINE_PASSWORD=${CAR_PYPI_PASSWORD} twine upload --repository-url $CAR_PYPI_REPOSITORY_URL dist/*
   rules:
     - if: '$CI_COMMIT_TAG'
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    # - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
 
 # Trigger downstream docker build to nexus only if this is build of the master,
 # Pass the tag downstream so that the build can be marked stable if this is tagged

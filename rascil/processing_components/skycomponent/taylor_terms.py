@@ -1,9 +1,9 @@
-""" Image functions using taylor terms in frequency
+""" Skycomponent functions using taylor terms in frequency
 
 """
 
 __all__ = [
-    "calculate_frequency_taylor_terms_from_skycomponents",
+    "calculate_skycomponent_list_taylor_terms",
     "find_skycomponents_frequency_taylor_terms",
     "interpolate_skycomponents_frequency",
     "transpose_skycomponents_to_channels",
@@ -30,12 +30,13 @@ from rascil.processing_components.image.taylor_terms import (
 log = logging.getLogger("rascil-logger")
 
 
-def calculate_frequency_taylor_terms_from_skycomponents(
+def calculate_skycomponent_list_taylor_terms(
     sc_list: List[Skycomponent], nmoment=1, reference_frequency=None
 ) -> List[List[Skycomponent]]:
     """Calculate frequency taylor terms for a list of skycomponents
 
-    :param sc_list: Skycomponent
+    :param sc_list: List of Skycomponent
+    :param nmoment: Number of moments/Taylor terms to use
     :param reference_frequency: Reference frequency (default None uses centre point)
     :return: Skycomponents as one component per Taylor term
     """
@@ -95,7 +96,7 @@ def find_skycomponents_frequency_taylor_terms(
     if reference_frequency is None:
         reference_frequency = frequency[len(frequency) // 2]
     log.debug(
-        "calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)"
+        "find_skycomponents_frequency_taylor_terms: Reference frequency = %.3f (MHz)"
         % (1e-6 * reference_frequency)
     )
 
@@ -140,26 +141,19 @@ def interpolate_skycomponents_frequency(
 ) -> List[Skycomponent]:
     """Smooth skycomponent fluxes by fitting polynomial in frequency
 
-    First the sources are found using the moment0 image, and then the
-    flux is fit in frequency by a Taylor series with nmoment terms.
-    The final result is a list of lists where the outer coordinate
-    is frequency
+    Each skycomponent in a list is interpolated in frequency using a Taylor series expansion.
 
-    .. math::
-
-        w_k = \\left(\\left(\\nu - \\nu_{ref}\\right) /  \\nu_{ref}\\right)^k
-
-    :param im_list: Image list to be reconstructed
-    :param moment_image: Moment cube (constructed using calculate_image_frequency_moments)
-    :param reference_frequency: Reference frequency (default None uses average)
-    :return: list of reconstructed images
+    :param sc_list: List of skycomponents to be interpolated (in frequency_
+    :param nmoment: Number of moments to be fitted
+    :param reference_frequency: Reference frequency (default None uses central frequency)
+    :return: list of interpolated skycomponents
     """
     frequency = sc_list[0].frequency
 
     if reference_frequency is None:
         reference_frequency = frequency[len(frequency) // 2]
     log.debug(
-        "calculate_image_from_frequency_moments: Reference frequency = %.3f (MHz)"
+        "interpolate_skycomponents_frequency: Reference frequency = %.3f (MHz)"
         % (1e-6 * reference_frequency)
     )
 
@@ -200,7 +194,10 @@ def transpose_skycomponents_to_channels(
 def gather_skycomponents_from_channels(
     sc_list: List[List[Skycomponent]],
 ) -> List[Skycomponent]:
-    """Gather a component list from [chan][source] to [source]*skycomponent
+    """Gather a component list from [chan][source] to [source]
+
+    This function converts list of lists of single frequency skycomponents into
+    a list of multi-frequency skycomponents
 
     :param sc_list:
     :return: List[List[Skycomponent]]

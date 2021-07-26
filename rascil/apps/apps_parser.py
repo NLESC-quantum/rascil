@@ -210,13 +210,13 @@ def apps_parser_cleaning(parser):
         "--clean_component_threshold",
         type=float,
         default=None,
-        help="Sources with absolute flux > this level (Jy) are fit using skycomponents",
+        help="Sources with absolute flux > this level (Jy) are fit or extracted using skycomponents",
     )
     parser.add_argument(
         "--clean_component_method",
         type=str,
         default="fit",
-        help="Method to convert sources in image to skycomponents",
+        help="Method to convert sources in image to skycomponents: 'fit' in frequency or 'extract' actual values",
     )
     parser.add_argument(
         "--clean_fractional_threshold",

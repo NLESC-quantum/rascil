@@ -564,6 +564,18 @@ def deconvolve_skymodel_list_rsexecute_workflow(
             convert_skycomponents_taylor_terms_list, nout=len(skymodel_list)
         )(dirty_image_list, skymodel_list, **kwargs)
         return skymodel_list
+    elif (
+        fit_skymodel
+        and component_method == "extract"
+        and component_threshold is not None
+    ):
+        # Update the skymodel with point sources found in moment 0
+        # and extracted from the frequency cube without fitting
+        kwargs["nmoment"] = len(skymodel_list)
+        skymodel_list = rsexecute.execute(
+            convert_skycomponents_taylor_terms_list, nout=len(skymodel_list)
+        )(dirty_image_list, skymodel_list, **kwargs)
+        return skymodel_list
     else:
         deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
 

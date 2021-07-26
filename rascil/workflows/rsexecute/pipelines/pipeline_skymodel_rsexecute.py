@@ -15,7 +15,7 @@ from rascil.processing_components import (
     copy_visibility,
 )
 from rascil.processing_components.skycomponent.taylor_terms import (
-    calculate_frequency_taylor_terms_from_skycomponents,
+    calculate_skycomponent_list_taylor_terms,
     gather_skycomponents_from_channels,
 )
 from rascil.processing_components.image.taylor_terms import (
@@ -323,7 +323,7 @@ def convert_skycomponents_taylor_terms_list(
         return skymodel_list
 
     # Convert to Taylor term components [source][taylor term]
-    skycomponent_list = calculate_frequency_taylor_terms_from_skycomponents(
+    skycomponent_list = calculate_skycomponent_list_taylor_terms(
         channel_sky_component_list, nmoment=nmoment
     )
     skymodel_list = [

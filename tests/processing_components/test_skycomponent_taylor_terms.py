@@ -12,7 +12,7 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 
 from rascil.processing_components.skycomponent.taylor_terms import (
-    calculate_frequency_taylor_terms_from_skycomponents,
+    calculate_skycomponent_list_taylor_terms,
     find_skycomponents_frequency_taylor_terms,
 )
 
@@ -46,9 +46,7 @@ class TestSkycomponentTaylorTerm(unittest.TestCase):
             phasecentre=phasecentre, frequency=frequency, flux_limit=10.0
         )[0:10]
 
-        taylor_term_list = calculate_frequency_taylor_terms_from_skycomponents(
-            sc, nmoment=3
-        )
+        taylor_term_list = calculate_skycomponent_list_taylor_terms(sc, nmoment=3)
         assert len(taylor_term_list) == 10
 
     def test_find_skycomponents_frequency_taylor_terms(self):

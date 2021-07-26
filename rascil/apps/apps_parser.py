@@ -130,7 +130,7 @@ def apps_parser_imaging(parser):
         "--imaging_gaussian_taper",
         type=float,
         default=None,
-        help="Size of Gaussian taper (rad)",
+        help="Size of Gaussian smoothing, implemented as taper in weights (rad)",
     )
     parser.add_argument(
         "--imaging_dopsf",

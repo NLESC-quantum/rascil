@@ -150,7 +150,7 @@ publish_to_car:
     - TWINE_USERNAME=${CAR_PYPI_USERNAME} TWINE_PASSWORD=${CAR_PYPI_PASSWORD} twine upload --repository-url $CAR_PYPI_REPOSITORY_URL dist/*
   rules:
     - if: '$CI_COMMIT_TAG'
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    # - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
 
 # Trigger downstream docker build to nexus only if this is build of the master,
 # Pass the tag downstream so that the build can be marked stable if this is tagged
@@ -189,25 +189,13 @@ prepare ci metrics:
   stage: prepost
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   when: always
-  before_script:
+  script:
     - mkdir -p build/reports
     - coverage combine coverage_* && coverage xml && coverage html -d coverage && coverage report
     - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
     - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
     - python3 util/xmlcombine.py unit-tests-dask.xml unit-tests-other.xml > unit-tests.xml
     - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
-  script:
-    # Gitlab CI badges creation: START
-    # The following reads::
-    # build/reports/code-coverage.xml
-    # build/reports/unit-tests.xml
-    # build/reports/linting.xml
-    # And writes:
-    # build/reports/ci-metrics.json
-    - apt-get -y update
-    - apt-get install -y curl --no-install-recommends
-    - curl -s https://gitlab.com/ska-telescope/ci-metrics-utilities/raw/master/scripts/ci-badges-func.sh | sh
-    # Gitlab CI badges creation: END
   artifacts:
     paths:
       - coverage

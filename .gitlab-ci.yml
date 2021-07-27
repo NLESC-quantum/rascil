@@ -5,7 +5,6 @@ variables:
 
 workflow:
   rules:
-    - if: $CI_MERGE_REQUEST_ID
     - if: $CI_COMMIT_BRANCH
 
 stages:
@@ -192,7 +191,7 @@ prepare ci metrics:
   when: always
   before_script:
     - mkdir -p build/reports
-    - coverage combine coverage_* && coverage xml
+    - coverage combine coverage_* && coverage xml && coverage html -d coverage && coverage report
     - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
     - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
     - python3 util/xmlcombine.py unit-tests-dask.xml unit-tests-other.xml > unit-tests.xml
@@ -211,6 +210,7 @@ prepare ci metrics:
     # Gitlab CI badges creation: END
   artifacts:
     paths:
+      - coverage
       - ./build
 
 # Create Gitlab CI badges from CI metrics

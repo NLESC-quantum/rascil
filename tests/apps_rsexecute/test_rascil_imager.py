@@ -32,7 +32,6 @@ from rascil.processing_components.image.operations import (
 from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.simulation import (
     create_named_configuration,
-    decimate_configuration,
 )
 from rascil.processing_components.simulation import (
     ingest_unittest_visibility,
@@ -48,7 +47,7 @@ from rascil.processing_components.util.performance import (
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.WARNING)
+
 default_run = True
 
 
@@ -63,8 +62,8 @@ default_run = True
             0,
             "invert",
             False,
-            109.18220601849407,
-            -14.916575458445271,
+            103.63382302943607,
+            -13.8067614467685381,
             None,
             None,
             5.0,
@@ -73,31 +72,16 @@ default_run = True
         ),
         (
             default_run,
-            "invert",
+            "invert_no_dask",
             False,
             0,
             "invert",
             False,
-            109.18220601849407,
-            -14.916575458445271,
+            103.63382302943607,
+            -13.8067614467685381,
             None,
             None,
             5.0,
-            False,
-            "list",
-        ),
-        (
-            default_run,
-            "invert_offset",
-            True,
-            0,
-            "invert",
-            False,
-            103.06845603990989,
-            -15.773391773333904,
-            None,
-            None,
-            5.5,
             False,
             "list",
         ),
@@ -108,8 +92,8 @@ default_run = True
             5,
             "ical",
             True,
-            110.79920080326511,
-            -12.271525931452086,
+            115.98965405253988,
+            -2.1083946683276023,
             None,
             None,
             5.0,
@@ -123,8 +107,8 @@ default_run = True
             5,
             "cip",
             False,
-            109.54082354546229,
-            -13.40197932716969,
+            116.67731822396905,
+            -0.32871056966532786,
             None,
             "None",
             5.0,
@@ -138,8 +122,8 @@ default_run = True
             5,
             "cip",
             False,
-            103.33756291910817,
-            -13.151075366874808,
+            109.38573937740418,
+            -0.6415969031845449,
             None,
             "None",
             5.5,
@@ -148,18 +132,48 @@ default_run = True
         ),
         (
             default_run,
-            "cip_offset_fit",
+            "cip_fit_taylor",
             True,
-            5,
+            3,
             "cip",
             False,
-            113.29208667276272,
-            -13.63038369993718,
-            "30",
+            101.17122457748901,
+            -0.06584976131067097,
+            "30.0",
+            "fit",
+            5.0,
+            False,
+            "taylor",
+        ),
+        (
+            default_run,
+            "cip_offset_fit_taylor",
+            True,
+            3,
+            "cip",
+            False,
+            97.95906184518552,
+            -0.5032138732152285,
+            "30.0",
             "fit",
             5.5,
             False,
-            "list",
+            "taylor",
+        ),
+        (
+            default_run,
+            "cip_extract_fit_taylor",
+            True,
+            3,
+            "cip",
+            False,
+            97.90896603183057,
+            -0.4840034108318304,
+            "30.0",
+            "extract",
+            5.5,
+            False,
+            "taylor",
         ),
         (
             default_run,
@@ -168,8 +182,8 @@ default_run = True
             5,
             "cip",
             False,
-            93.75256853301931,
-            -4.1526899537694835,
+            100.9697837967499,
+            -0.060762130137376746,
             "1e15",
             "None",
             5.0,
@@ -214,22 +228,21 @@ def test_rascil_imager(
     if not enabled:
         return True
 
-    nfreqwin = 5
+    nfreqwin = 7
     dospectral = True
     zerow = False
     dopol = False
-    persist = True
+    persist = False
 
     # We always want the same numbers
     from numpy.random import default_rng
 
     rng = default_rng(1805550721)
 
-    rsexecute.set_client(use_dask=False)
+    rsexecute.set_client(use_dask=use_dask)
 
     npixel = 512
-    low = create_named_configuration("LOWBD2", rmax=750.0)
-    low = decimate_configuration(low, skip=9)
+    low = create_named_configuration("LOWBD2", rmax=300.0)
     freqwin = nfreqwin
     ntimes = 3
     times = numpy.linspace(-3.0, +3.0, ntimes) * numpy.pi / 12.0
@@ -400,17 +413,17 @@ def test_rascil_imager(
         "--clean_nmajor",
         f"{nmajor}",
         "--clean_niter",
-        "100",
+        "1000",
         "--clean_algorithm",
         "mmclean",
         "--clean_nmoment",
         "2",
         "--clean_gain",
-        "0.7",
+        "0.1",
         "--clean_scales",
         "0",
         "--clean_threshold",
-        "0.01",
+        "0.4",
         "--clean_fractional_threshold",
         "0.1",
         "--clean_facets",

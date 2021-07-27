@@ -629,11 +629,14 @@ def msmfsclean(
     pmax = psf.max()
     assert pmax > 0.0
 
-    psfpeak = argmax(numpy.fabs(psf))
-    log.info("mmclean %s: Peak of PSF = %s at %s" % (prefix, pmax, psfpeak))
-    dmax = dirty.max()
-    dpeak = argmax(dirty)
-    log.info("mmclean %s: Peak of Dirty = %.6f Jy/beam at %s " % (prefix, dmax, dpeak))
+    psfpeak = argmax(numpy.fabs(psf[0]))
+    log.info("mmclean %s: Peak of PSF moment0 = %s at %s" % (prefix, pmax, psfpeak))
+    dmax = numpy.abs(dirty[0]).max()
+    dpeak = argmax(numpy.abs(dirty[0]))
+    log.info(
+        "mmclean %s: Peak of Dirty moment0 = %.6f Jy/beam at %s "
+        % (prefix, dmax, dpeak)
+    )
     lpsf = psf / pmax
     ldirty = dirty / pmax
 
@@ -675,7 +678,9 @@ def msmfsclean(
         windowstack[convolve_scalestack(scalestack, window) > 0.9] = 1.0
 
     maxabs = numpy.max(numpy.abs((smresidual[0, 0, :, :])))
-    log.info("mmclean %s: Max abs in dirty Image = %.6f Jy/beam" % (prefix, maxabs))
+    log.info(
+        "mmclean %s: Max abs in dirty Image moment0 = %.6f Jy/beam" % (prefix, maxabs)
+    )
     absolutethresh = max(thresh, fracthresh * maxabs)
     log.info("mmclean %s: Start of minor cycle" % prefix)
     log.info(
@@ -968,6 +973,6 @@ def find_optimum_scale_zero_moment(smpsol, sensitivity, windowstack):
         if this_max > optimum:
             optimum = this_max
             sscale = scale
-            sx, sy = argmax(smpsol[scale, 0, ...])
+            sx, sy = argmax(numpy.abs(smpsol[scale, 0, ...]))
 
     return sx, sy, sscale

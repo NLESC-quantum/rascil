@@ -127,6 +127,12 @@ def apps_parser_imaging(parser):
         help="Robustness for robust weighting",
     )
     parser.add_argument(
+        "--imaging_gaussian_taper",
+        type=float,
+        default=None,
+        help="Size of Gaussian smoothing, implemented as taper in weights (rad)",
+    )
+    parser.add_argument(
         "--imaging_dopsf",
         type=str,
         default="False",
@@ -204,13 +210,13 @@ def apps_parser_cleaning(parser):
         "--clean_component_threshold",
         type=float,
         default=None,
-        help="Sources > this level are converted to skycomponents",
+        help="Sources with absolute flux > this level (Jy) are fit or extracted using skycomponents",
     )
     parser.add_argument(
         "--clean_component_method",
         type=str,
         default="fit",
-        help="Method to convert sources in image to skycomponents",
+        help="Method to convert sources in image to skycomponents: 'fit' in frequency or 'extract' actual values",
     )
     parser.add_argument(
         "--clean_fractional_threshold",

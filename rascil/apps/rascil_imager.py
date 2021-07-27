@@ -13,8 +13,6 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt
-
 from distributed import Client, SSHCluster
 import dask
 
@@ -47,6 +45,7 @@ from rascil.workflows import (
     ical_skymodel_list_rsexecute_workflow,
     invert_list_rsexecute_workflow,
     sum_invert_results_rsexecute,
+    taper_list_rsexecute_workflow,
 )
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
@@ -284,6 +283,10 @@ def weight_blockvis(args, bvis_list, model_list):
             weighting=args.imaging_weighting,
             robustness=args.imaging_robustness,
         )
+    if args.imaging_gaussian_taper is not None:
+        bvis_list = taper_list_rsexecute_workflow(
+            bvis_list, args.imaging_gaussian_taper
+        )
     return bvis_list
 
 
@@ -448,6 +451,17 @@ def write_results(restored_output, imagename, result, performance_file):
         log.info("Writing restored image as spectral cube")
         restoredname = imagename + "_restored.fits"
         export_image_to_fits(restored, restoredname)
+
+        residual = remove_sumwt(residual)
+        residual_image = image_gather_channels(residual)
+        del residual
+        performance_qa_image(performance_file, "residual", residual_image, mode="a")
+        log.info("Writing residual image as spectral cube")
+        log.info(qa_image(residual_image, context="Residual"))
+        residualname = imagename + "_residual.fits"
+        export_image_to_fits(residual_image, residualname)
+        del residual_image
+
     elif restored_output == "taylor":
         nmoment = len(restored)
         # Do the first last so that the name will be correct for Taylor 0
@@ -478,7 +492,7 @@ def write_results(restored_output, imagename, result, performance_file):
                 residual[taylor][0],
                 mode="a",
             )
-            log.info(qa_image(residual[taylor][0], context="Residual"))
+            log.info(qa_image(residual[taylor][0], context=f"Residual taylor{taylor}"))
             residualname = imagename + f"_residual_taylor{taylor}.fits"
             export_image_to_fits(residual[taylor][0], residualname)
 

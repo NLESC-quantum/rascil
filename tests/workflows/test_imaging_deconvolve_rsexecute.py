@@ -224,7 +224,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         restored = image_gather_channels(restored)
 
         self.save_and_check(
-            116.29006740027764, -0.40238957355136723, restored, "mmclean"
+            116.67179726013609, -0.4492163142147586, restored, "mmclean"
         )
 
     def test_deconvolve_and_restore_cube_msclean(self):
@@ -330,7 +330,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         restored = image_gather_channels(restored)
 
         self.save_and_check(
-            116.61854950606396, -9.46205848678285, restored, "mmclean_facets"
+            116.47887405801777, -8.469237692923516, restored, "mmclean_facets"
         )
 
     def save_and_check(self, flux_max, flux_min, restored, tag):

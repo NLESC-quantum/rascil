@@ -569,6 +569,8 @@ def mmclean_kernel_list(
         sensitivity_taylor = calculate_image_list_frequency_moments(
             sensitivity_list, nmoment=nmoment
         )
+        sensitivity_taylor["pixels"].data /= nchan
+
     else:
         sensitivity_taylor = None
 
@@ -576,6 +578,7 @@ def mmclean_kernel_list(
         window_taylor = calculate_image_list_frequency_moments(
             window_list, nmoment=nmoment
         )
+        window_taylor["pixels"].data /= nchan
     else:
         window_taylor = None
 
@@ -611,7 +614,7 @@ def mmclean_kernel_list(
             sens = sensitivity_taylor["pixels"].data[:, pol, :, :]
         else:
             sens = None
-        # Always use the Stokes I PSF
+        # Always use the moment 0, Stokes I PSF
         if psf_taylor["pixels"].data[0, 0, :, :].max():
             log.info("mmclean_kernel_list %s: Processing pol %d" % (prefix, pol))
             if window_taylor is None:

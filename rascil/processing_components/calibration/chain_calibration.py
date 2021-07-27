@@ -4,7 +4,7 @@ Calibration control is via a calibration_controls dictionary created by :py:func
 
    . T - Atmospheric phase
    . G - Electronics gain
-   . polynomial - Polarisation
+   . P - Polarisation
    . B - Bandpass
    . I - Ionosphere
 
@@ -12,11 +12,11 @@ This is specified via a dictionary::
 
     contexts = {'T': {'shape': 'scalar', 'timeslice': 'auto', 'phase_only': True, 'first_iteration': 0},
                 'G': {'shape': 'vector', 'timeslice': 60.0, 'phase_only': False, 'first_iteration': 0},
-                'polynomial': {'shape': 'matrix', 'timeslice': 1e4, 'phase_only': False, 'first_iteration': 0},
+                'P': {'shape': 'matrix', 'timeslice': 1e4, 'phase_only': False, 'first_iteration': 0},
                 'B': {'shape': 'vector', 'timeslice': 1e5, 'phase_only': False, 'first_iteration': 0},
                 'I': {'shape': 'vector', 'timeslice': 1.0, 'phase_only': True, 'first_iteration': 0}}
 
-Currently polynomial and I are not supported.
+Currently P and I are not supported.
 
 For example::
 
@@ -79,7 +79,7 @@ def create_calibration_controls():
 
         T: Atmospheric phase
         G: Electronic gains
-        polynomial: Polarisation
+        P: Polarisation
         B: Bandpass
         I: Ionosphere
 
@@ -92,7 +92,7 @@ def create_calibration_controls():
 
     # controls = {'T': {'shape': 'scalar', 'timeslice': 'auto', 'phase_only': True, 'first_selfcal': 0},
     #             'G': {'shape': 'vector', 'timeslice': 60.0, 'phase_only': False, 'first_selfcal': 0},
-    #             'polynomial': {'shape': 'matrix', 'timeslice': 1e4, 'phase_only': False, 'first_selfcal': 0},
+    #             'P': {'shape': 'matrix', 'timeslice': 1e4, 'phase_only': False, 'first_selfcal': 0},
     #             'B': {'shape': 'vector', 'timeslice': 1e5, 'phase_only': False, 'first_selfcal': 0},
     #             'I': {'shape': 'vector', 'timeslice': 1.0, 'phase_only': True, 'first_selfcal': 0}}
 

@@ -315,7 +315,7 @@ def solve_antenna_gains_itsubs_nocrossdata(
 
     See Appendix D, section D.1 in:
 
-    J. polynomial. Hamaker, “Understanding radio polarimetry - IV. The full-coherency analogue of
+    J. P. Hamaker, “Understanding radio polarimetry - IV. The full-coherency analogue of
     scalar self-calibration: Self-alignment, dynamic range and polarimetric fidelity,” Astronomy
     and Astrophysics Supplement Series, vol. 143, no. 3, pp. 515–534, May 2000.
 
@@ -369,7 +369,7 @@ def solve_antenna_gains_itsubs_matrix(
 
     See Appendix D, section D.1 in:
 
-    J. polynomial. Hamaker, “Understanding radio polarimetry - IV. The full-coherency analogue of
+    J. P. Hamaker, “Understanding radio polarimetry - IV. The full-coherency analogue of
     scalar self-calibration: Self-alignment, dynamic range and polarimetric fidelity,” Astronomy
     and Astrophysics Supplement Series, vol. 143, no. 3, pp. 515–534, May 2000.
 

@@ -1023,7 +1023,7 @@ def create_blockvisibility_from_uvfits(fitsname, channum=None, ack=False, antnum
         columns are entered as a list.
         """
 
-        pre = re.compile(r"PTYPE(?P<i>\d+)")
+        pre = re.compile(r"PTYPE(?polynomial<i>\d+)")
         res = {}
         for k, v in hdul.header.items():
             m = pre.match(k)

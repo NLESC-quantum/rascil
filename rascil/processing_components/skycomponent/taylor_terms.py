@@ -15,7 +15,7 @@ from typing import List
 
 import numpy
 
-from numpy.polynomial import polynomial as P
+from numpy.polynomial import polynomial as polynomial
 
 from rascil.data_models import Skycomponent, Image, get_parameter
 from rascil.processing_components import (
@@ -106,7 +106,7 @@ def find_skycomponents_frequency_taylor_terms(
     threshold = get_parameter(kwargs, "component_threshold", numpy.inf)
     try:
         moment0_skycomponents = find_skycomponents(moment0_list[0], threshold=threshold)
-    except AssertionError:
+    except ValueError:
         log.info(
             f"find_skycomponents_frequency_taylor_terms: No skycomponents found in moment 0"
         )
@@ -163,8 +163,8 @@ def interpolate_skycomponents_frequency(
         newsc = copy_skycomponent(sc)
         x = (frequency - reference_frequency) / reference_frequency
         y = sc.flux
-        coeffs = P.polyfit(x, y, nmoment - 1)
-        newsc.flux = P.polyval(x, coeffs).T
+        coeffs = polynomial.polyfit(x, y, nmoment - 1)
+        newsc.flux = polynomial.polyval(x, coeffs).T
         newsc_list.append(newsc)
 
     return newsc_list
@@ -175,7 +175,8 @@ def transpose_skycomponents_to_channels(
 ) -> List[List[Skycomponent]]:
     """Tranpose a component list from [source,chan] to [chan,source]
 
-    :param sc_list:
+
+    :param sc_list: List of Skycomponents
     :return: List[List[Skycomponent]]
     """
     newsc_list = list()

@@ -301,11 +301,11 @@ def restore_skymodel_pipeline_rsexecute_workflow(
 def convert_skycomponents_taylor_terms_list(
     deconvolve_model_imagelist, nmoment, skymodel_list
 ):
-    """Convert skycomponents into Taylor term form
+    """Convert skycomponents into Taylor term form and update skymodel
 
     :param deconvolve_model_imagelist: Deconvolved model in Taylor term sequence
-    :param nmoment:
-    :param skymodel_list: Skymodel in Frequency space
+    :param nmoment: Number of moments/Taylor terms
+    :param skymodel_list: Skymodel in Frequency space, to be updated
     :return:
     """
     # Extract the skycomponents in frequency space

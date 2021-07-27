@@ -308,7 +308,8 @@ def find_skycomponents(
     segments = segmentation.detect_sources(
         image_sum, threshold, npixels=npixels, filter_kernel=kernel
     )
-    assert segments is not None, "Failed to find any components"
+    if segments == None:
+        raise ValueError("find_skycomponents: Failed to find any components")
 
     log.info("find_skycomponents: Identified %d segments" % segments.nlabels)
 

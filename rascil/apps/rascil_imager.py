@@ -475,7 +475,7 @@ def write_results(restored_output, imagename, result, performance_file):
             log.info(
                 qa_image(deconvolved[taylor], context=f"Deconvolved taylor{taylor}")
             )
-            deconvolvedname = imagename + f"_deconvolved_taylor{taylor}.fits"
+            deconvolvedname = imagename + f".taylor.{taylor}.deconvolved.fits"
             export_image_to_fits(deconvolved[taylor], deconvolvedname)
 
             performance_qa_image(
@@ -483,7 +483,7 @@ def write_results(restored_output, imagename, result, performance_file):
             )
             log.info("Writing restored image")
             log.info(qa_image(restored[taylor], context=f"Restored taylor{taylor}"))
-            restoredname = imagename + f"_restored_taylor{taylor}.fits"
+            restoredname = imagename + f".taylor.{taylor}.restored.fits"
             export_image_to_fits(restored[taylor], restoredname)
 
             performance_qa_image(
@@ -493,7 +493,7 @@ def write_results(restored_output, imagename, result, performance_file):
                 mode="a",
             )
             log.info(qa_image(residual[taylor][0], context=f"Residual taylor{taylor}"))
-            residualname = imagename + f"_residual_taylor{taylor}.fits"
+            residualname = imagename + f".taylor.{taylor}.residual.fits"
             export_image_to_fits(residual[taylor][0], residualname)
 
     else:

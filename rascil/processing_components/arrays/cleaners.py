@@ -723,10 +723,10 @@ def msmfsclean(
             )
 
         # Are we ready to stop yet?
-        peak = numpy.max(numpy.fabs(mval))
+        peak = numpy.fabs(mval[0])
         if peak < absolutethresh:
             log.info(
-                "mmclean %s: At iteration %d, absolute value of peak %.6f is below stopping threshold %.6f"
+                "mmclean %s: At iteration %d, absolute value of peak moment0 %.6f is below stopping threshold %.6f"
                 % (prefix, i, peak, absolutethresh)
             )
             break

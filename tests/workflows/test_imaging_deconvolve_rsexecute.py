@@ -160,11 +160,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         self.vis_list = rsexecute.persist(self.vis_list)
         self.model_imagelist = rsexecute.scatter(self.model_imagelist)
 
-        self.sensitivity_list = [
-            rsexecute.execute(create_pb)(m, "LOW") for m in self.model_imagelist
-        ]
-        self.sensitivity_list = rsexecute.persist(self.sensitivity_list)
-
         self.model_imagelist = [
             rsexecute.execute(create_unittest_model, nout=freqwin)(
                 self.vis_list[freqwin],
@@ -330,7 +325,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         restored = image_gather_channels(restored)
 
         self.save_and_check(
-            116.47887405801777, -8.469237692923516, restored, "mmclean_facets"
+            116.48095756623249, -8.349801652941618, restored, "mmclean_facets"
         )
 
     def save_and_check(self, flux_max, flux_min, restored, tag):

@@ -5,22 +5,18 @@ import logging
 import os
 import unittest
 
-import numpy
-
-
-from astropy.coordinates import SkyCoord
 import astropy.units as u
-
-from rascil.processing_components.skycomponent.taylor_terms import (
-    calculate_skycomponent_list_taylor_terms,
-    find_skycomponents_frequency_taylor_terms,
-)
+import numpy
+from astropy.coordinates import SkyCoord
 
 from rascil.processing_components import (
     create_low_test_skycomponents_from_gleam,
     create_low_test_image_from_gleam,
-    copy_skycomponent,
     smooth_image,
+)
+from rascil.processing_components.skycomponent.taylor_terms import (
+    calculate_skycomponent_list_taylor_terms,
+    find_skycomponents_frequency_taylor_terms,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -30,9 +26,6 @@ log.setLevel(logging.WARNING)
 
 class TestSkycomponentTaylorTerm(unittest.TestCase):
     def setUp(self):
-
-        from rascil.data_models.parameters import rascil_path
-
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def test_calculate_taylor_terms(self):

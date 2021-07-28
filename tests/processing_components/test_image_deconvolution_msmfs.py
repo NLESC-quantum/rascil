@@ -242,7 +242,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_linear_noscales", 15.5835206319907, -0.26785384079391084
+            "mmclean_linear_noscales", 15.583368985102487, -0.2679011639279194
         )
 
     def test_deconvolve_mmclean_quadratic(self):

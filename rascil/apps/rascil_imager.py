@@ -204,6 +204,12 @@ def setup_rsexecute(args):
             log.info("Using specified scheduler {}".format(args.dask_scheduler))
             client = Client(address=args.dask_scheduler)
             rsexecute.set_client(use_dask=True, client=client)
+        elif args.dask_scheduler_file is not None:
+            log.info(
+                "Using specified scheduler file {}".format(args.dask_scheduler_file)
+            )
+            client = Client(scheduler_file=args.dask_scheduler_file)
+            rsexecute.set_client(use_dask=True, client=client)
         else:
             log.info("Gettting client via get_dask_client")
             client = get_dask_client(

@@ -321,6 +321,12 @@ def apps_parser_dask(parser):
         help="Externally defined Dask scheduler e.g. 127.0.0.1:8786 or ssh for SSHCluster"
         " or existing for current scheduler",
     )
+    parser.add_argument(
+        "--dask_scheduler_file",
+        type=str,
+        default=None,
+        help="Externally defined Dask scheduler file to setup dask cluster",
+    )
 
     parser.add_argument(
         "--dask_tcp_timeout",

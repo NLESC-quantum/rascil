@@ -53,6 +53,10 @@ def get_dask_client(
     The environment variable RASCIL_DASK_SCHEDULER is interpreted as pointing to the Dask distributed scheduler.
     and a client using that scheduler is returned. Otherwise a client for a LocalCluster is created.
 
+    The environment variable RASCIL_DASK_SCHEDULER_FILE is interpreted as pointing to the Dask
+    scheduler file and a client using that scheduler is returned. If RASCIL_DASK_SCHEDULER_FILE
+    is set, with_file option is set to true and scheduler_file name is overridden with the RASCIL_DASK_SCHEDULER_FILE
+
     :param timeout: Time out for creation (30s)
     :param n_workers: Number of workers (cores available)
     :param threads_per_worker: 1
@@ -64,10 +68,14 @@ def get_dask_client(
     :return: Dask client
     """
     scheduler = os.getenv("RASCIL_DASK_SCHEDULER", None)
+    if os.getenv("RASCIL_DASK_SCHEDULER_FILE", None) is not None:
+        scheduler_file = os.getenv("RASCIL_DASK_SCHEDULER_FILE")
+        with_file = True
+
     if scheduler is not None:
         print("Creating Dask Client using externally defined scheduler")
         c = Client(scheduler, timeout=timeout)
-    elif with_file:
+    elif with_file or scheduler_file is not None:
         print(
             "Creating Dask Client using externally defined scheduler in file  %s"
             % scheduler_file

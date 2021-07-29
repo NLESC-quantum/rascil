@@ -75,7 +75,7 @@ def get_dask_client(
     if scheduler is not None:
         print("Creating Dask Client using externally defined scheduler")
         c = Client(scheduler, timeout=timeout)
-    elif with_file or scheduler_file is not None:
+    elif with_file:
         print(
             "Creating Dask Client using externally defined scheduler in file  %s"
             % scheduler_file

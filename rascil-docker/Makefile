@@ -28,6 +28,12 @@ push_all_stable:
 	cd rascil-notebook; make tag_stable; make push_stable
 	cd rascil-imaging-qa; make tag_stable; make push_stable
 
+push_all_release:
+	cd rascil-base; push_version
+	cd rascil-full; push_version
+	cd rascil-notebook; push_version
+	cd rascil-imaging-qa; push_version
+
 rm_all:
 	cd rascil-base; make rm
 	cd rascil-full; make rm

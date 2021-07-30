@@ -6,12 +6,14 @@ variables:
 workflow:
   rules:
     - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
 
 stages:
   - linting
   - test
   - build
   - publish
+  - publish-docker
   - prepost
 
 compile_requirements:
@@ -31,8 +33,6 @@ compile_requirements:
     - python3 create_mr.py
 
 linting:
-  except:
-    - schedules
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
   stage: linting
   before_script:
@@ -40,15 +40,15 @@ linting:
     - pip3 install black
   script:
     - make lint
-  when: always
   artifacts:
     paths:
       - linting.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null'
 
 # Always run the unittests
 test:
-  except:
-    - schedules
   stage: test
   before_script:
     - apt-get update
@@ -72,10 +72,11 @@ test:
       - coverage_test
       - coverage
       - unit-tests-other.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null'
 
 test-dask:
-  except:
-    - schedules
   stage: test
   before_script:
     - apt-get update
@@ -98,11 +99,12 @@ test-dask:
       - coverage_dask
       - coverage
       - unit-tests-dask.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null'
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
-  except:
-    - schedules
   stage: test
   before_script:
     - apt-get update
@@ -122,6 +124,9 @@ docs:
     paths:
       - docs/build/html/
     expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null'
 
 # Build the data file only if on the master
 data:
@@ -134,6 +139,7 @@ data:
     expire_in: 6 months
   rules:
     - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master
 publish_to_car:
@@ -150,17 +156,43 @@ publish_to_car:
     - TWINE_USERNAME=${CAR_PYPI_USERNAME} TWINE_PASSWORD=${CAR_PYPI_PASSWORD} twine upload --repository-url $CAR_PYPI_REPOSITORY_URL dist/*
   rules:
     - if: '$CI_COMMIT_TAG'
-    # - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
 
-# Trigger downstream docker build to nexus only if this is build of the master,
-# Pass the tag downstream so that the build can be marked stable if this is tagged
-staging: # Start the construction of dockers files in rascil-docker
-  stage: publish
+# Publish package to Central Artefact Repository only if this is a tagged build of the master
+docker_latest:
+  stage: publish-docker
+  image: docker:20.10.7
+  services:
+    - docker:20.10.7-dind
   variables:
-    UPSTREAM_TAG: $CI_COMMIT_TAG
-  trigger: ska-telescope/external/rascil-docker
+    GIT_VERSION: $CI_COMMIT_SHORT_SHA
+  before_script:
+    - apk add make git
+    - cd rascil-docker
+    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
+  script:
+    - make build_all
+    - make test_all
+    - make push_all
   rules:
     - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null'
+
+docker_release:
+  stage: publish-docker
+  image: docker:20.10.7
+  services:
+    - docker:20.10.7-dind
+  variables:
+    GIT_VERSION: $CI_COMMIT_SHORT_SHA
+  before_script:
+    - apk add make git
+    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
+  script:
+    - make build_all
+    - make test_all
+    - make push_all_release
+  rules:
+    - if: '$CI_COMMIT_TAG'
 
 # Publish the docs, data, and coverage if this is a build of the master
 pages:
@@ -182,13 +214,11 @@ pages:
     expire_in: 30 days
   rules:
     - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null'
 
 prepare ci metrics:
-  except:
-    - schedules
   stage: prepost
   image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-  when: always
   script:
     - mkdir -p build/reports
     - coverage combine coverage_* && coverage xml && coverage html -d coverage && coverage report
@@ -200,6 +230,9 @@ prepare ci metrics:
     paths:
       - coverage
       - ./build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null'
 
 # Create Gitlab CI badges from CI metrics
 # https://developer.skatelescope.org/en/latest/tools/continuousintegration.html#automated-collection-of-ci-health-metrics-as-part-of-the-ci-pipeline

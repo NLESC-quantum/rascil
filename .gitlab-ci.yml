@@ -155,19 +155,16 @@ bump_beta:
     GIT_LFS_SKIP_SMUDGE: "1"  # do not download LFS related files
   before_script:
     - apt-get -y update
-    - apt-get -y install git-lfs
-#    - git lfs fetch --all
+    - apt-get -y install git-lfs  # needed to be able to push to repo, because it is git-lfs configured
     - pip install bumpver
   script:
-    - git remote rm my-remote || echo "remote does not exist"
-    - git remote rm new-remote || echo "remote does not exist"
-    - git remote rm new_origin || echo "remote does not exist"
-    - git remote -v
+    - git remote rm new_origin || echo "Remote does not exist"
 #    - make bump_beta
 #    - git remote add new_origin https://${PROJECT_TOKEN_USER}:${PROJECT_ACCESS_TOKEN}@gitlab.com/ska-telescope/external/rascil.git
 #    - git push new_origin HEAD:${CI_COMMIT_BRANCH}
-#    - git remote rm new_origin || echo "remote does not exist"
-#  rules:
+#    - git remote rm new_origin
+  rules:
+    - if: $CI_COMMIT_MESSAGE !~ /^Release.*/
 #    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master

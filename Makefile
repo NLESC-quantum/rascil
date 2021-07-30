@@ -17,6 +17,10 @@ CBLUE=\033[0;34m
 CEND=\033[0m
 LINE:=$(shell printf '=%.0s' {1..70})
 
+# get package version
+GIT_ROOT_DIR=$(shell git rev-parse --show-toplevel)
+VERSION=$(shell awk -F= '/^__version__ = /{print $$2}' $$GIT_ROOT_DIR/rascil/version.py)
+
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 	DOCKER_REGISTRY_USER=ci-cd
@@ -100,3 +104,11 @@ install_requirements: upgrade_pip
 	pip freeze
 
 update_requirements: requirements install_requirements
+
+bump_beta:
+    bumpver update --patch --tag=beta --tag-num
+
+release:
+    bumpver update --tag=final
+    git tag -a $(VERSION) -m "Release $(VERSION)"
+    git push origin $(VERSION)

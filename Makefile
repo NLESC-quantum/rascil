@@ -112,7 +112,6 @@ update_requirements: requirements install_requirements
 # if not set, only the beta version number is changed, not the semver parts
 bump_beta:
 	bumpver update $(BUMP_TYPE) --tag=beta --tag-num
-	git push origin HEAD:$(CI_COMMIT_BRANCH)
 
 release:
 	bumpver update --tag=final

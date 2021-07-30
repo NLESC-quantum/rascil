@@ -12,9 +12,9 @@ stages:
   - linting
   - test
   - build
-  - bump_version
   - publish
   - publish-docker
+  - bump_version
   - prepost
 
 compile_requirements:
@@ -149,8 +149,17 @@ bump_beta_patch:
 
 bump_beta:
   stage: bump_version
+  variables:
+    GITLAB_USER_ID: $PROJECT_TOKEN_USER_ID
+    GITLAB_USER_LOGIN: $PROJECT_TOKEN_LOGIN_USER
+    GITLAB_USER_NAME: $PROJECT_TOKEN_USER
+    CI_JOB_TOKEN: $PROJECT_ACCESS_TOKEN
   before_script:
     - pip install bumpver
+    - export GITLAB_USER_ID=$PROJECT_TOKEN_USER_ID
+    - export GITLAB_USER_LOGIN=$PROJECT_TOKEN_LOGIN_USER
+    - export GITLAB_USER_NAME=$PROJECT_TOKEN_USER
+    - export CI_JOB_TOKEN=$PROJECT_ACCESS_TOKEN
   script:
     - make bump_beta
 #  rules:

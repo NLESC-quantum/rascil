@@ -19,7 +19,10 @@ LINE:=$(shell printf '=%.0s' {1..70})
 
 # get package version
 GIT_ROOT_DIR=$(shell git rev-parse --show-toplevel)
-VERSION=$(shell awk -F= '/^__version__ = /{print $$2}' $$GIT_ROOT_DIR/rascil/version.py)
+VERSION=$(shell awk -F= '/^__version__ = /{print $$2}' ${GIT_ROOT_DIR}/rascil/version.py)
+
+# version to bump
+BUMP_TYPE ?=
 
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
@@ -105,10 +108,13 @@ install_requirements: upgrade_pip
 
 update_requirements: requirements install_requirements
 
+# BUMP_TYPE can be: "--patch", "--minor", "--major"
+# if not set, only the beta version number is changed, not the semver parts
 bump_beta:
-    bumpver update --patch --tag=beta --tag-num
+	bumpver update $(BUMP_TYPE) --tag=beta --tag-num
+	git push origin HEAD:$(CI_COMMIT_BRANCH)
 
 release:
-    bumpver update --tag=final
-    git tag -a $(VERSION) -m "Release $(VERSION)"
-    git push origin $(VERSION)
+	bumpver update --tag=final
+	git tag -a $(VERSION) -m "Release $(VERSION)"
+	git push origin $(VERSION)

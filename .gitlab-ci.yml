@@ -139,32 +139,14 @@ data:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
-# this will need to run on tag, after everything else finished, and set the new beta version
-bump_beta_patch:
-  stage: bump_version
-  before_script:
-    - pip install bumpver
+build_package:
+  stage: build
   script:
-    - make bump_beta BUMP_TYPE="--patch"
-  rules:
-    - if: '$CI_COMMIT_TAG'
-
-bump_beta:
-  stage: bump_version
-  variables:
-    GIT_LFS_SKIP_SMUDGE: "1"  # do not download LFS related files
-  before_script:
-    - apt-get -y update
-    - apt-get -y install git-lfs  # needed to be able to push to repo, because it is git-lfs configured
-    - pip install bumpver
-  script:
-    - git remote rm new_origin || echo "Remote does not exist"
-#    - make bump_beta
-#    - git remote add new_origin https://${PROJECT_TOKEN_USER}:${PROJECT_ACCESS_TOKEN}@gitlab.com/ska-telescope/external/rascil.git
-#    - git push new_origin HEAD:${CI_COMMIT_BRANCH}
-#    - git remote rm new_origin
-  rules:
-    - if: $CI_COMMIT_MESSAGE !~ /^Release.*/
+    - python3 setup.py egg_info sdist bdist_wheel # --universal option to used for pure
+  artifacts:
+    paths:
+      - dist
+#  rules:
 #    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master

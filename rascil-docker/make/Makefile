@@ -7,10 +7,9 @@ IMAGE_PREFIX ?= artefact.skao.int
 GIT_VERSION ?= $(shell git rev-parse --verify --short=8 HEAD)
 GIT_ROOT_DIR=$(shell git rev-parse --show-toplevel)
 
-
 # Get image name from the release file and version from rascil/version.py
 NAME=$(shell awk -F= '/^name=/{print $$2}' release)
-VERSION=$(shell awk -F= '/^__version__ = /{print $$2}' $$GIT_ROOT_DIR/rascil/version.py)
+VERSION=$(shell awk -F= '/^__version__ = /{print $$2}' $(GIT_ROOT_DIR)/rascil/version.py)
 
 IMAGE := $(IMAGE_PREFIX)/$(NAME)
 DEFAULT_TAG := $(IMAGE):$(VERSION)-$(GIT_VERSION)

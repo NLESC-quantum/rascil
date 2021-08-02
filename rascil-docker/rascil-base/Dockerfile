@@ -26,8 +26,8 @@ USER root
 
 # This will clone into (and create) a directory at /rascil
 # The data directory will not be loaded correctly until LFS is enabled
-COPY dist/*whl ./rascil-latest-master-py-none-any.whl
-RUN pip install rascil-latest-master-py-none-any.whl
+COPY *whl .
+RUN pip install *.whl
 
 # Set runtime environment variables.
 ENV RASCIL=/rascil

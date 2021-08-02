@@ -156,7 +156,6 @@ publish_to_car:
   script:
     - echo "Commit tag is ${CI_COMMIT_TAG}"
     - echo "Commit message is ${CI_COMMIT_MESSAGE}"
-    - python3 setup.py egg_info sdist bdist_wheel # --universal option to used for pure
     - /usr/local/bin/extract-metadata.sh MANIFEST.skao.int
     - for filename in dist/*.whl dist/*.tar.gz; do
     -   /usr/local/bin/patch-metadata.sh $filename MANIFEST.skao.int
@@ -175,14 +174,16 @@ docker_latest:
     GIT_VERSION: $CI_COMMIT_SHORT_SHA
   before_script:
     - apk add make git
-    - cd rascil-docker
-    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
+    - cd rascil-docker/rascil-base
+#    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
   script:
-    - make build_all
-    - make test_all
-    - make push_all
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+    - make build
+    - docker images
+#    - make build_all
+#    - make test_all
+#    - make push_all
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 docker_release:
   stage: publish-docker

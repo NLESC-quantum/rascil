@@ -11,22 +11,23 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 # Install packages needed to build rascil
-RUN apt-get update -y && apt-get install -y \
-    ca-certificates \
-    gosu git wget curl rsync nano \
-    libxml2-dev liblapack-dev libcfitsio-dev libgtkmm-3.0-dev \
-    cmake g++ build-essential gfortran libpng-dev python-numpy \
-    libboost-python-dev wcslib-dev \
-    python3 python3-dev python3-pip python3-setuptools python3-venv python3-wheel && \
-    apt-get clean -y && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+#RUN apt-get update -y && apt-get install -y \
+#    ca-certificates \
+#    gosu git wget curl rsync nano \
+#    libxml2-dev liblapack-dev libcfitsio-dev libgtkmm-3.0-dev \
+#    cmake g++ build-essential gfortran libpng-dev python-numpy \
+#    libboost-python-dev wcslib-dev \
+#    python3 python3-dev python3-pip python3-setuptools python3-venv python3-wheel && \
+#    apt-get clean -y && \
+#    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 WORKDIR /
 USER root
 
 # This will clone into (and create) a directory at /rascil
 # The data directory will not be loaded correctly until LFS is enabled
-RUN git clone https://gitlab.com/ska-telescope/external/rascil.git
+COPY dist/*whl ./rascil-latest-master-py-none-any.whl
+RUN pip install rascil-latest-master-py-none-any.whl
 
 # Set runtime environment variables.
 ENV RASCIL=/rascil

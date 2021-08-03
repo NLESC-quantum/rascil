@@ -33,98 +33,98 @@ compile_requirements:
   after_script:
     - git remote rm new_origin
 
-#linting:
-#  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
-#  stage: linting
-#  before_script:
-#    - pip3 install -r requirements-test.txt
-#    - pip3 install black
-#  script:
-#    - make lint
-#  artifacts:
-#    paths:
-#      - linting.xml
-#  rules:
-#    - if: '$CI_PIPELINE_SOURCE != "schedule"
-#    - if: '$CI_COMMIT_TAG'
-#
-## Always run the unittests
-#test:
-#  stage: test
-#  before_script:
-#    - apt-get update
-#    - apt-get -y install rsync ca-certificates pybind11-dev
-#    - pip3 install -r requirements-test.txt
-#    - pip3 install -r requirements.txt
-#    - mkdir -p /usr/share/casacore/data/
-#    - cd /usr/share/casacore/data
-#    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
-#    - tar xfz WSRT_Measures.ztar
-#    - cd -
-##    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
-#    - mkdir -p test_results
-#  script:
-#    - PYTHONPATH=`pwd` HOME=`pwd` make test
-#  after_script:
-#    - mv .coverage coverage_test
-#  coverage: '/^TOTAL.+?(\d+\%)$/'
-#  artifacts:
-#    paths:
-#      - coverage_test
-#      - coverage
-#      - unit-tests-other.xml
-#  rules:
-#    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
-#
-#test-dask:
-#  stage: test
-#  before_script:
-#    - apt-get update
-#    - apt-get -y install rsync ca-certificates pybind11-dev
-#    - pip3 install -r requirements-test.txt
-#    - pip3 install -r requirements.txt
-#    - mkdir -p /usr/share/casacore/data/
-#    - cd /usr/share/casacore/data
-#    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
-#    - tar xfz WSRT_Measures.ztar
-#    - cd -
-#    - mkdir -p test_results
-#  script:
-#    - PYTHONPATH=`pwd` HOME=`pwd` make test-dask
-#  after_script:
-#    - mv .coverage coverage_dask
-#  coverage: '/^TOTAL.+?(\d+\%)$/'
-#  artifacts:
-#    paths:
-#      - coverage_dask
-#      - coverage
-#      - unit-tests-dask.xml
-#  rules:
-#    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
-#
-## Always try to build the docs since this catches errors via the notebook
-#docs:
-#  stage: test
-#  before_script:
-#    - apt-get update
-#    - apt-get -y install pandoc rsync
-#    - pip install -r requirements.txt
-#    - pip install -r requirements-docs.txt
-#    - mkdir -p docs/build/html
-#    - mkdir -p test_results
-#    - mkdir -p /usr/share/casacore/data/
-#    - cd /usr/share/casacore/data
-#    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
-#    - tar xfz WSRT_Measures.ztar
-#    - cd -
-#  script:
-#    - PYTHONPATH=`pwd` HOME=`pwd` make docs
-#  artifacts:
-#    paths:
-#      - docs/build/html/
-#    expire_in: 1 week
-#  rules:
-#    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+linting:
+  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  stage: linting
+  before_script:
+    - pip3 install -r requirements-test.txt
+    - pip3 install black
+  script:
+    - make lint
+  artifacts:
+    paths:
+      - linting.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG'
+
+# Always run the unittests
+test:
+  stage: test
+  before_script:
+    - apt-get update
+    - apt-get -y install rsync ca-certificates pybind11-dev
+    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
+#    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
+    - mkdir -p test_results
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make test
+  after_script:
+    - mv .coverage coverage_test
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+      - coverage_test
+      - coverage
+      - unit-tests-other.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+
+test-dask:
+  stage: test
+  before_script:
+    - apt-get update
+    - apt-get -y install rsync ca-certificates pybind11-dev
+    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
+    - mkdir -p test_results
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make test-dask
+  after_script:
+    - mv .coverage coverage_dask
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+      - coverage_dask
+      - coverage
+      - unit-tests-dask.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+
+# Always try to build the docs since this catches errors via the notebook
+docs:
+  stage: test
+  before_script:
+    - apt-get update
+    - apt-get -y install pandoc rsync
+    - pip install -r requirements.txt
+    - pip install -r requirements-docs.txt
+    - mkdir -p docs/build/html
+    - mkdir -p test_results
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make docs
+  artifacts:
+    paths:
+      - docs/build/html/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Build the data file only if on the master
 data:
@@ -138,6 +138,7 @@ data:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
+# output used for publishing the package and building the docker images
 build_package:
   stage: build
   script:
@@ -145,9 +146,9 @@ build_package:
   artifacts:
     paths:
       - dist
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"
-#    - if: '$CI_COMMIT_TAG'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master
 publish_to_car:
@@ -164,7 +165,7 @@ publish_to_car:
   rules:
     - if: '$CI_COMMIT_TAG'
 
-# Publish package to Central Artefact Repository only if this is a tagged build of the master
+# Publish docker:latest to Central Artefact Repository if it's master and there isn't a tag.
 docker_latest:
   stage: publish
   image: docker:20.10.7
@@ -176,15 +177,15 @@ docker_latest:
     - apk add make git
     - cp dist/*whl rascil-docker/rascil-base
     - cd rascil-docker
-#    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
+    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
   script:
     - make build_all_latest
-    - docker images
     - make test_all
-#    - make push_all
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+    - make push_all
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
+# Publish docker:<version> (release) to Central Artefact Repository if this is a tagged build of the master
 docker_release:
   stage: publish
   image: docker:20.10.7
@@ -207,10 +208,10 @@ docker_release:
 # Publish the docs, data, and coverage if this is a build of the master
 pages:
   stage: publish
-#  dependencies:
-#    - docs
-#    - test
-#    - data
+  dependencies:
+    - docs
+    - test
+    - data
   script:
     - rm -rf public
     - mkdir -p public

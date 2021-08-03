@@ -108,12 +108,11 @@ install_requirements: upgrade_pip
 
 update_requirements: requirements install_requirements
 
-# BUMP_TYPE can be: "--patch", "--minor", "--major"
-# if not set, only the beta version number is changed, not the semver parts
-bump_beta:
-	bumpver update $(BUMP_TYPE) --tag=beta --tag-num
+release-patch: ## Make patch release
+	bumpver update --patch -n
 
-release:
-	bumpver update --tag=final
-	git tag -a $(VERSION) -m "Release $(VERSION)"
-	git push origin $(VERSION)
+release-minor: ## Make minor release
+	bumpver update --minor -n
+
+release-major: ## Make major release
+	bumpver update --major -n

@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 # Install packages needed to build rascil
-#RUN apt-get update -y && apt-get install -y \
+RUN apt-get update -y && apt-get install -y rsync
 #    ca-certificates \
 #    gosu git wget curl rsync nano \
 #    libxml2-dev liblapack-dev libcfitsio-dev libgtkmm-3.0-dev \
@@ -26,8 +26,10 @@ USER root
 
 # This will clone into (and create) a directory at /rascil
 # The data directory will not be loaded correctly until LFS is enabled
-COPY *whl .
-RUN pip install *.whl
+COPY rascil-*whl .
+RUN pip install --upgrade pip && \
+    DUCC0_OPTIMIZATION=portable-debug pip install rascil-*.whl && \
+    rm -rf /root/.cache
 
 # Set runtime environment variables.
 ENV RASCIL=/rascil
@@ -42,11 +44,11 @@ RUN mkdir -p /rascil/dask-worker-space && \
     mkdir -p /rascil/test_results && \
     chmod 777 /rascil/test_results
 
-WORKDIR /rascil
+#WORKDIR /rascil
 
-RUN DUCC0_OPTIMIZATION=portable-debug pip3 install -r requirements.txt --upgrade && \
-    DUCC0_OPTIMIZATION=portable-debug python setup.py install && \
-    rm -rf /root/.cache
+#RUN DUCC0_OPTIMIZATION=portable-debug pip3 install -r requirements.txt --upgrade && \
+#    DUCC0_OPTIMIZATION=portable-debug python setup.py install && \
+#    rm -rf /root/.cache
 
 WORKDIR /rascil
 

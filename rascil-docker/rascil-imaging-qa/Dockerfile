@@ -1,7 +1,7 @@
 ARG IMAGE_PREFIX
-
+ARG IMAGE_TAG
 # imaging_qa checker needs rascil data, so we need rascil-full
-FROM ${IMAGE_PREFIX}/rascil-full:latest
+FROM ${IMAGE_PREFIX}/rascil-full:${IMAGE_TAG}
 
 LABEL author="Gabriella Hodosan <hodosan.gabriella@gmail.com>" \
       description="SKA Telescope RASCIL Continuum Imaging QA tool" \

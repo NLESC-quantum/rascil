@@ -1,5 +1,6 @@
 ARG IMAGE_PREFIX
-FROM ${IMAGE_PREFIX}/rascil-full:latest as build
+ARG IMAGE_TAG
+FROM ${IMAGE_PREFIX}/rascil-full:${IMAGE_TAG} as build
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
       description="SKA Telescope RASCIL notebook image" \

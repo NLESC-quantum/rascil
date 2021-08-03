@@ -10,9 +10,7 @@ RUN git clone https://gitlab.com/ska-telescope/external/rascil.git && \
     cd rascil && git lfs install && \
     git lfs pull
 
-RUN ls -la
-
-FROM ${IMAGE_PREFIX}/rascil-base:latest AS build
+FROM ${IMAGE_PREFIX}/rascil-base:latest
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
       description="SKA Telescope RASCIL full reference image" \
@@ -20,6 +18,7 @@ LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
 
 WORKDIR /rascil
 
+# copy LFS data from first stage
 COPY --from=first /rascil/data ./data
 
 # Set runtime environment variables.
@@ -27,10 +26,6 @@ ENV RASCIL=/rascil
 ENV RASCIL_DATA=/rascil/data
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
-
-#RUN apt-get update -y && apt-get install -y --no-install-recommends \
-#    apt-get clean -y && \
-#    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 # Use entrypoint script to create a user on the fly and avoid running as root.
 COPY entrypoint.sh .

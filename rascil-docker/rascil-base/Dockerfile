@@ -2,8 +2,11 @@ FROM python:3.7-slim AS first
 
 WORKDIR /
 
-RUN apt-get update -y && apt-get install -y git
+RUN apt-get update -y && apt-get install -y git rsync
 RUN git clone https://gitlab.com/ska-telescope/external/rascil.git
+
+RUN mkdir -p /usr/share/casacore/data/ && \
+    rsync -avz --timeout=120 rsync://casa-rsync.nrao.edu/casa-data/geodetic  /usr/share/casacore/data/
 
 FROM python:3.7
 
@@ -18,12 +21,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 # Install packages needed to build rascil
-RUN apt-get update -y && apt-get install -y gosu rsync && \
+RUN apt-get update -y && apt-get install -y gosu && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 WORKDIR /
 USER root
+
+COPY --from=first /usr/share/casacore/data /usr/share/casacore/data
 
 # Install RASCIL from wheel built in the "build" stage of the CI pipeline
 # The data directory will not be loaded correctly until LFS is enabled
@@ -47,13 +52,11 @@ RUN mkdir -p /rascil/dask-worker-space && \
 
 WORKDIR /rascil
 
+# examples dir is needed because these are run to test the docker images
 COPY --from=first /rascil/examples ./examples
 
-COPY entrypoint.sh .
-RUN mkdir -p /usr/share/casacore/data/ && \
-    rsync -avz --timeout=120 rsync://casa-rsync.nrao.edu/casa-data/geodetic  /usr/share/casacore/data/
-
 # Use entrypoint script to create a user on the fly and avoid running as root.
+COPY entrypoint.sh .
 RUN chmod +x /rascil/entrypoint.sh
 ENTRYPOINT ["/rascil/entrypoint.sh"]
 CMD ["/bin/bash"]

@@ -52,21 +52,33 @@ IMAGES=artefact.skao.int
 
 # Docker tests
 test_base:
+	@echo "-----------------------"
+	@echo "| TESTING RASCIL-BASE |"
+	@echo "-----------------------"
 	- echo "Running Dask-enabled test cluster_test_ritoy - takes about 20 -- 30 seconds"
 	echo "cd ${WORKDIR};python3 /rascil/examples/cluster_tests/ritoy/cluster_test_ritoy.py" | docker run -i  \
 	${IMAGES}/rascil-base /bin/bash -e
 
 test_full:
+	@echo "-----------------------"
+	@echo "| TESTING RASCIL-FULL |"
+	@echo "-----------------------"
 	- echo "Running imaging.py - takes about 20 -- 30 seconds, writes three fits files in ${WORKDIR}"
 	echo "cd ${WORKDIR};python3 /rascil/examples/scripts/imaging.py" | docker run -i \
 	${IMAGES}/rascil-full /bin/bash -e
 
 test_notebook:
+	@echo "---------------------------"
+	@echo "| TESTING RASCIL-NOTEBOOK |"
+	@echo "---------------------------"
 	- echo "Running imaging notebook - takes about 20 -- 30 seconds, writes html file ${WORKDIR}/imaging.html"
 	echo "cd ${WORKDIR};cp /rascil/examples/notebooks/imaging.ipynb .;jupyter nbconvert --execute --to html \
 	--ExecutePreprocessor.timeout=1200 imaging.ipynb" | docker run -i ${IMAGES}/rascil-notebook /bin/bash -e
 
 test_imaging_qa:
+	@echo "-----------------------------"
+	@echo "| TESTING RASCIL-IMAGING-QA |"
+	@echo "-----------------------------"
 	- echo "Running imaging QA code - takes about 3-5 seconds, outputs the help of the QA tool"
 	docker run -i ${IMAGES}/rascil-imaging-qa /bin/bash -e
 

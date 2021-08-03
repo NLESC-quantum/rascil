@@ -13,8 +13,6 @@ stages:
   - test
   - build
   - publish
-  - publish-docker
-  - bump_version
   - prepost
 
 compile_requirements:
@@ -47,7 +45,8 @@ compile_requirements:
 #    paths:
 #      - linting.xml
 #  rules:
-#    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+#    - if: '$CI_PIPELINE_SOURCE != "schedule"
+#    - if: '$CI_COMMIT_TAG'
 #
 ## Always run the unittests
 #test:
@@ -147,7 +146,8 @@ build_package:
     paths:
       - dist
 #  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"
+#    - if: '$CI_COMMIT_TAG'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master
 publish_to_car:
@@ -166,7 +166,7 @@ publish_to_car:
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master
 docker_latest:
-  stage: publish-docker
+  stage: publish
   image: docker:20.10.7
   services:
     - docker:20.10.7-dind
@@ -186,7 +186,7 @@ docker_latest:
 #    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 docker_release:
-  stage: publish-docker
+  stage: publish
   image: docker:20.10.7
   services:
     - docker:20.10.7-dind
@@ -194,9 +194,11 @@ docker_release:
     GIT_VERSION: $CI_COMMIT_SHORT_SHA
   before_script:
     - apk add make git
+    - cp dist/*whl rascil-docker/rascil-base
+    - cd rascil-docker
     - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
   script:
-    - make build_all
+    - make build_all_latest
     - make test_all
     - make push_all_release
   rules:

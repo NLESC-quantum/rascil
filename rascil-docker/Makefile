@@ -1,14 +1,14 @@
 pull_all:
-	cd rascil-base; make pull;
-	cd rascil-full; make pull;
-	cd rascil-notebook; make pull;
-	cd rascil-imaging-qa; make pull;
+	cd rascil-base; make pull
+	cd rascil-full; make pull
+	cd rascil-notebook; make pull
+	cd rascil-imaging-qa; make pull
 
-build_all:
-	cd rascil-base; make build;
-	cd rascil-full; make build;
-	cd rascil-notebook; make build;
-	cd rascil-imaging-qa; make build;
+build_all_latest:
+	cd rascil-base; make build; make tag_latest
+	cd rascil-full; make build; make tag_latest
+	cd rascil-notebook; make build; make tag_latest
+	cd rascil-imaging-qa; make build; make tag_latest
 
 build_push_all:
 	cd rascil-base; make build; make tag_latest; make push_latest

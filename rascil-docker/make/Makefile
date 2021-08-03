@@ -12,8 +12,7 @@ NAME=$(shell awk -F= '/^name=/{print $$2}' release)
 VERSION=$(shell awk -F= '/^__version__ = /{print $$2}' $(GIT_ROOT_DIR)/rascil/version.py | sed -r "s/\\\"//g" | tr -d " ")
 
 IMAGE := $(IMAGE_PREFIX)/$(NAME)
-IMAGE_TAG := $(VERSION)-$(GIT_VERSION)
-DEFAULT_TAG := $(IMAGE):$(IMAGE_TAG)
+DEFAULT_TAG := $(IMAGE):$(VERSION)-$(GIT_VERSION)
 
 # Environment variables to capture for metadata
 LABEL_ENVVARS := \
@@ -47,15 +46,15 @@ LABELS := $(foreach var,$(LABEL_ENVVARS),--label $(var)="$${$(var)}")
 
 build:  ## Build the image, tagged as :$(VERSION)-$(GIT_VERSION)
 	@echo "$(CRED)$(LINE)$(CEND)"
-	@echo "$(CBLUE)Building image:$(CEND) $(IMAGE):$(IMAGE_TAG)"
+	@echo "$(CBLUE)Building image:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
 	@echo "$(CRED)$(LINE)$(CEND)"
 	docker build \
-	--build-arg IMAGE_PREFIX=$(IMAGE_PREFIX) --build-arg IMAGE_TAG=$(IMAGE_TAG) \
+	--build-arg IMAGE_PREFIX=$(IMAGE_PREFIX) \
 	$(LABELS) \
 	-t $(DEFAULT_TAG) .
 
 push: ## Push default image (tagged as :$(VERSION)-(GIT_VERSION)
-	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(IMAGE_TAG)"
+	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):$(VERSION)-$(GIT_VERSION)"
 	docker push $(DEFAULT_TAG)
 
 tag_latest:

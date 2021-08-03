@@ -178,7 +178,7 @@ docker_latest:
     - cd rascil-docker
 #    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
   script:
-    - make build_all
+    - make build_all_latest
     - make test_all
     - docker images
 #    - make push_all

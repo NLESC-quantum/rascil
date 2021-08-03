@@ -1,3 +1,10 @@
+FROM python:3.7-slim AS first
+
+WORKDIR /
+
+RUN apt-get update -y && apt-get install -y git
+RUN git clone https://gitlab.com/ska-telescope/external/rascil.git
+
 FROM python:3.7
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
@@ -39,6 +46,8 @@ RUN mkdir -p /rascil/dask-worker-space && \
     chmod 777 /rascil/test_results
 
 WORKDIR /rascil
+
+COPY --from=first /rascil/examples ./examples
 
 COPY entrypoint.sh .
 RUN mkdir -p /usr/share/casacore/data/ && \

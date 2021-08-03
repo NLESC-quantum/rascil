@@ -36,7 +36,7 @@ Other useful make commands :
   
 Useful make commands that can be run from the `rascil-docker` directory:
 
-- `build_all` builds, and tags as latest, all the images
+- `build_all_latest` builds, and tags as latest, all the images
 - `rm_all` removes all the images
 - `ls_all` lists all the images
 

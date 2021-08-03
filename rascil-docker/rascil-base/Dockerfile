@@ -11,15 +11,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 # Install packages needed to build rascil
-RUN apt-get update -y && apt-get install -y rsync
+RUN apt-get update -y && apt-get install -y gosu rsync && \
+
 #    ca-certificates \
 #    gosu git wget curl rsync nano \
 #    libxml2-dev liblapack-dev libcfitsio-dev libgtkmm-3.0-dev \
 #    cmake g++ build-essential gfortran libpng-dev python-numpy \
 #    libboost-python-dev wcslib-dev \
 #    python3 python3-dev python3-pip python3-setuptools python3-venv python3-wheel && \
-#    apt-get clean -y && \
-#    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 WORKDIR /
 USER root
@@ -52,6 +53,7 @@ RUN mkdir -p /rascil/dask-worker-space && \
 
 WORKDIR /rascil
 
+COPY entrypoint.sh .
 RUN mkdir -p /usr/share/casacore/data/ && \
     rsync -avz --timeout=120 rsync://casa-rsync.nrao.edu/casa-data/geodetic  /usr/share/casacore/data/
 

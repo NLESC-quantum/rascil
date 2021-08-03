@@ -61,17 +61,9 @@ tag_latest:
 	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):latest"
 	@docker tag $(DEFAULT_TAG) $(IMAGE):latest
 
-tag_stable:
-	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):stable"
-	@docker tag $(DEFAULT_TAG) $(IMAGE):stable
-
 push_latest: tag_latest ## Push the image tagged as :latest
 	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):latest"
 	@docker push $(IMAGE):latest
-
-push_stable: tag_stable ## Push the image tagged as :stable
-	@echo "$(CBLUE)Pushing:$(CEND) $(IMAGE):stable"
-	@docker push $(IMAGE):stable
 
 tag_version:
 	@echo "$(CBLUE)Tagging:$(CEND) $(DEFAULT_TAG) $(CRED)->$(CEND) $(IMAGE):$(VERSION)"

@@ -1,13 +1,10 @@
 # Dockerfiles for RASCIL
 
 These Dockerfiles construct RASCIL docker images working from the RASCIL master. 
-They can be found in the ``rascil-docker`` directory and its subdirectories.
+They can be found in the `rascil-docker` directory and its subdirectories.
 These currently support building, pushing, and tagging images. The images are named
-and tagged as specified in the release file. For example::
-
-    name=rascil-base
-    release=0.1.6b0
-
+as specified in the `release` file of the docker image directory,
+and tagged by the RASCIL version stored in `rascil/version.py`. 
 
 There are various directories for docker files:
 
@@ -16,25 +13,37 @@ There are various directories for docker files:
 - rascil-notebook: Supports running jupyter notebook
 - rascil-imaging-qa: Runs the Continuum Imaging QA tool
 
-## Quick start
+## Automatic publishing
 
-- `cd` into one of the subdirectories
-- Update the version in the release file, before building and pushing the image
-- Build the image with `make build`
-- Push the image to a docker registry `make push`
-- To push the `:latest` tag use `make push_latest`
-- To push a version tag without the git SHA use `make push_version` 
+The docker images are automatically built by the CI pipeline.
+The `latest` versions are pushed to the Central Artifact Repository
+upon merge to the master branch, while the release version 
+(tagged with the RASCIL version number) are pushed when a commit tag
+is pushed to the repository
 
 ## Build, push, and tag a set of Dockerfiles
 
-- `build_all` builds, tags, and pushes all the images
+If you want to build an image yourself, follow these steps:
+
+- `cd` into one of the subdirectories
+- Build the image with `make build`
+
+Other useful make commands :
+
+- `push` pushes the images to the docker registry 
+- `push_latest` pushes the `:latest` tag
+- `push_version` pushes a version tag without the git SHA 
+  
+Useful make commands that can be run from the `rascil-docker` directory:
+
+- `build_all` builds, and tags as latest, all the images
 - `rm_all` removes all the images
 - `ls_all` lists all the images
 
 ## Test the images
 
-The rascil-docker/Makefile contains commands for testing all the images. These write results into
-the host /tmp area. For docker:
+The `rascil-docker/Makefile` contains commands for testing all the images. 
+These write results into the host /tmp area. For docker:
 
 - make test_base
 - make test_full
@@ -54,15 +63,15 @@ And for singularity:
 
 The base and full images are available at::
 
-    nexus.engageska-portugal.pt/rascil-docker/rascil-base
-    nexus.engageska-portugal.pt/rascil-docker/rascil-full
+    artefact.skao.int/rascil-base
+    artefact.skao.int/rascil-full
 
 `rascil-base` does not have the RASCIL test data but is smaller in size. 
 However, for many of the tests and demonstrations the test data is needed, which are included in `rascil-full`.
 
 To run RASCIL with your home directory available inside the image::
 
-    docker run -it --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil-docker/rascil-full
+    docker run -it --volume $HOME:$HOME artefact.skao.int/rascil-full
 
 Now let's run an example. First it simplifies using the container if we do not
 try to write inside the container, and that's why we mapped in our $HOME directory.
@@ -71,7 +80,7 @@ to the name of the HOME directory, which is the same inside and outside the
 container, and then give the full address of the script inside the container. This time
 we will show the prompts from inside the container::
 
-     % docker run -p 8888:8888 -v $HOME:$HOME -it nexus.engageska-portugal.pt/rascil-docker/rascil-full
+     % docker run -p 8888:8888 -v $HOME:$HOME -it artefact.skao.int/rascil-full
      rascil@d0c5fc9fc19d:/rascil$ cd /<your home directory>
      rascil@d0c5fc9fc19d:/<your home directory>$ python3 /rascil/examples/scripts/imaging.py
      ...
@@ -87,11 +96,11 @@ use yours instead), and then we run the script using the absolute path name insi
 
 The docker image to use with RASCIL Jupyter Notebooks is::
 
-    nexus.engageska-portugal.pt/rascil-docker/rascil-notebook
+    artefact.skao.int/rascil-notebook
 
 Run Jupyter Notebooks inside the container::
 
-    docker run -it -p 8888:8888 --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil-docker/rascil-full
+    docker run -it -p 8888:8888 --volume $HOME:$HOME artefact.skao.int/rascil-full
     cd /<your home directory>
     jupyter notebook --no-browser --ip 0.0.0.0  /rascil/examples/notebooks/
 
@@ -118,7 +127,7 @@ to the sources used in the simulation, thus revealing the quality of the imaging
 
 Pull the image:
 
-`docker pull nexus.engageska-portugal.pt/rascil-docker/rascil-imaging-qa:latest`
+`docker pull artefact.skao.int/rascil-imaging-qa:latest`
 
 Run the image:
 
@@ -126,7 +135,7 @@ Run the image:
 docker run -v ${PWD}:/myData -e DOCKER_PATH=${PWD} \
     -e CLI_ARGS='--ingest_fitsname_restored /myData/my_restored.fits \
     --ingest_fitsname_residual /myData/my_residual.fits' \
-    --rm nexus.engageska-portugal.pt/rascil-docker/rascil-imaging-qa:latest
+    --rm artefact.skao.int/rascil-imaging-qa:latest
 ```
 Run it from the directory where your images you want to check are. The output files will
 appear in the same directory. Update the `CLI_ARGS` string with the command line arguments
@@ -138,7 +147,7 @@ is used for generating the output file index files.
 
 Pull the image:
 
-`singularity pull rascil-imaging-qa.img docker://nexus.engageska-portugal.pt/rascil-docker/rascil-imaging-qa:latest`
+`singularity pull rascil-imaging-qa.img docker://artefact.skao.int/rascil-imaging-qa:latest`
 
 Run the image:
 
@@ -171,7 +180,7 @@ Here, we use the `DOCKER` example of mounting our data into the `/myData` direct
 Then, calling `docker run` simplifies as::
 
     docker run -v ${PWD}:/myData  -e DOCKER_PATH=${PWD} -e CLI_ARGS='@/myData/args.txt' \
-    --rm nexus.engageska-portugal.pt/rascil-docker/rascil-imaging-qa:latest
+    --rm artefact.skao.int/rascil-imaging-qa:latest
 
 Here, we assume that your custom args.txt file is also mounted together with the data into ``/myData``. 
 Provide the absolute path to that file when your run the above command.
@@ -192,7 +201,7 @@ The cluster is created using the docker-compose up command. To scale to e.g. 4 d
 The scheduler, 4 workers and a notebook should now be running. To connect to the cluster, run the
 following into another window::
 
-    docker run -it --network host --volume $HOME:$HOME nexus.engageska-portugal.pt/rascil-docker/rascil-full
+    docker run -it --network host --volume $HOME:$HOME artefact.skao.int/rascil-full
 
 Then at the docker prompt, do e.g.::
 
@@ -232,7 +241,7 @@ docker image::
 
 `Singularity <https://sylabs.io/docs/>`_ can be used to load and run the docker images::
 
-    singularity pull RASCIL-full.img docker://nexus.engageska-portugal.pt/rascil-docker/rascil-full
+    singularity pull RASCIL-full.img docker://artefact.skao.int/rascil-full
     singularity exec RASCIL-full.img python3 /rascil/examples/scripts/imaging.py
 
 As in docker, don't run from the /rascil/ directory.

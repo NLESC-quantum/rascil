@@ -103,7 +103,7 @@ the code you are running::
 Docker image
 ++++++++++++
 
-A Docker image is available at ``nexus.engageska-portugal.pt/rascil-docker/rascil-imaging-qa``
+A Docker image is available at ``artefact.skao.int/rascil-imaging-qa``
 which can be run with either Docker or Singularity. Instructions can be found at
 
  .. toctree::

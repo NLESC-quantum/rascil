@@ -34,7 +34,7 @@ compile_requirements:
     - git remote rm new_origin
 
 linting:
-  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  image: artefact.skao.int/ska-tango-images-pytango-builder:9.3.11
   stage: linting
   before_script:
     - pip3 install -r requirements-test.txt
@@ -228,7 +228,7 @@ pages:
 
 prepare ci metrics:
   stage: prepost
-  image: nexus.engageska-portugal.pt/ska-docker/ska-python-buildenv:latest
+  image: artefact.skao.int/ska-tango-images-pytango-builder:9.3.11
   script:
     - mkdir -p build/reports
     - coverage combine coverage_* && coverage xml && coverage html -d coverage && coverage report

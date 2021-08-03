@@ -17,20 +17,13 @@ CBLUE=\033[0;34m
 CEND=\033[0m
 LINE:=$(shell printf '=%.0s' {1..70})
 
-# get package version
-GIT_ROOT_DIR=$(shell git rev-parse --show-toplevel)
-VERSION=$(shell awk -F= '/^__version__ = /{print $$2}' ${GIT_ROOT_DIR}/rascil/version.py)
-
-# version to bump
-BUMP_TYPE ?=
-
 # Set default docker registry user.
 ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 	DOCKER_REGISTRY_USER=ci-cd
 endif
 
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
-	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
+	DOCKER_REGISTRY_HOST=artefact.skao.int
 endif
 
 

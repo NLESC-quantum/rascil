@@ -22,6 +22,7 @@ RUN git lfs install && \
     git lfs pull
 
 # Use entrypoint script to create a user on the fly and avoid running as root.
+COPY entrypoint.sh .
 RUN chmod +x /rascil/entrypoint.sh
 ENTRYPOINT ["/rascil/entrypoint.sh"]
 CMD ["/bin/bash"]

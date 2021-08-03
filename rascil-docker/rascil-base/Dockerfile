@@ -12,20 +12,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Install packages needed to build rascil
 RUN apt-get update -y && apt-get install -y gosu rsync && \
-
-#    ca-certificates \
-#    gosu git wget curl rsync nano \
-#    libxml2-dev liblapack-dev libcfitsio-dev libgtkmm-3.0-dev \
-#    cmake g++ build-essential gfortran libpng-dev python-numpy \
-#    libboost-python-dev wcslib-dev \
-#    python3 python3-dev python3-pip python3-setuptools python3-venv python3-wheel && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 WORKDIR /
 USER root
 
-# This will clone into (and create) a directory at /rascil
+# Install RASCIL from wheel built in the "build" stage of the CI pipeline
 # The data directory will not be loaded correctly until LFS is enabled
 COPY rascil-*whl .
 RUN pip install --upgrade pip && \
@@ -44,12 +37,6 @@ RUN mkdir -p /rascil/dask-worker-space && \
     chmod 777 /rascil/dask-worker-space && \
     mkdir -p /rascil/test_results && \
     chmod 777 /rascil/test_results
-
-#WORKDIR /rascil
-
-#RUN DUCC0_OPTIMIZATION=portable-debug pip3 install -r requirements.txt --upgrade && \
-#    DUCC0_OPTIMIZATION=portable-debug python setup.py install && \
-#    rm -rf /root/.cache
 
 WORKDIR /rascil
 

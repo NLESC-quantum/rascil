@@ -23,6 +23,7 @@ RUN pip3 install "nbconvert<6.0" --upgrade
 #    && jupyter labextension install @jupyter-widgets/jupyterlab-manager dask-labextension
 
 # Use entrypoint script to create a user on the fly and avoid running as root.
+COPY entrypoint.sh .
 RUN chmod +x /rascil/entrypoint.sh
 ENTRYPOINT ["/rascil/entrypoint.sh"]
 CMD ["/bin/bash"]

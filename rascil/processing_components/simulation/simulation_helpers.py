@@ -112,7 +112,7 @@ def plot_visibility(
             yvalue[yvalue > 0.0],
             ".",
             color=colors[ivis],
-            markersize=0.2,
+            markersize=5,
         )
 
     plt.xlabel(x)

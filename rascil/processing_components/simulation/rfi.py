@@ -264,19 +264,19 @@ def simulate_rfi_block_prop(
             az = apparent_emitter_coordinates[i, :, :, 0]
             el = apparent_emitter_coordinates[i, :, :, 1]
 
-            hadec = azel_to_hadec(az, el, site.lat.rad)
+            ha_emitter, dec_emitter = azel_to_hadec(az, el, site.lat.rad)
 
             # Now step through the time stamps, calculating the effective
             # sky position for the emitter, and performing phase rotation
             # appropriately
             hourangles = calculate_blockvisibility_hourangles(bvis)
-            for iha, ha in enumerate(hourangles.data):
+            for iha, ha_phase_ctr in enumerate(hourangles.data):
                 # calculate station-based arrays
                 ant_uvw = _get_uvw_per_station(
-                    bvis.configuration.xyz.data, hadec[0][iha, :], hadec[1][iha, :]
+                    bvis.configuration.xyz.data, ha_emitter[iha, :], dec_emitter[iha, :]
                 )
-                ant_ra = -hadec[0][iha, :] + ha
-                ant_dec = hadec[1][iha, :]
+                ant_ra = -ha_emitter[iha, :] + ha_phase_ctr
+                ant_dec = dec_emitter[iha, :]
                 emitter_sky = SkyCoord(ant_ra * u.rad, ant_dec * u.rad)
                 l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
 

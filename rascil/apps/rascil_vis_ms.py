@@ -83,7 +83,7 @@ def visualise(args):
 
     log.info("\nRASCIL MS Visualiser\n")
 
-    display_ms_as_image(msname=args.ingest_msname)
+    display_ms_as_image(msname=args.ingest_msname, nch=3)
 
     bvis_list = create_blockvisibility_from_ms(args.ingest_msname)
 
@@ -104,14 +104,14 @@ def visualise(args):
     plot_visibility(
         bvis_list,
         plot_file=args.ingest_msname.replace(".ms", "_visibility_amp.png"),
-        chan=nchan // 2,
+        chan=3,
     )
 
     plt.clf()
     plot_visibility(
         bvis_list,
         plot_file=args.ingest_msname.replace(".ms", "_visibility_phase.png"),
-        chan=nchan // 2,
+        chan=3,
         y="phase",
     )
 

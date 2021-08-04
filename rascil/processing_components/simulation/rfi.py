@@ -30,6 +30,9 @@ import numpy
 from astropy.coordinates import SkyCoord, EarthLocation
 
 from rascil import phyconst
+from rascil.data_models.parameters import rascil_path
+from rascil.data_models.polarisation import PolarisationFrame
+from rascil.processing_components.simulation.surface import simulate_gaintable_from_voltage_pattern
 from rascil.processing_components.util.array_functions import average_chunks2
 from rascil.processing_components.util.compass_bearing import (
     calculate_initial_compass_bearing,
@@ -38,14 +41,16 @@ from rascil.processing_components.util.coordinate_support import (
     simulate_point,
     simulate_point_antenna,
     xyz_to_uvw,
-)
-from rascil.processing_components.util.coordinate_support import (
     skycoord_to_lmn,
     azel_to_hadec,
 )
 from rascil.processing_components.visibility.visibility_geometry import (
     calculate_blockvisibility_hourangles,
 )
+from rascil.processing_components.skycomponent.operations import (
+    create_skycomponent
+)
+from rascil.processing_components.image import import_image_from_fits
 
 log = logging.getLogger("rascil-logger")
 
@@ -212,22 +217,54 @@ def simulate_rfi_block_prop(
     bvis_data_copy = copy.copy(bvis["vis"].data)
     ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
+    # BEAM GAIN CODE FOR MID -- TODO: need help from Tim
+    flux = numpy.ones((nchan, npol))
+    sky_comp = create_skycomponent(
+        direction=bvis.phasecentre,
+        flux=flux,
+        frequency=bvis.frequency.data,
+        polarisation_frame=PolarisationFrame(bvis._polarisation_frame),
+    )
+    gain_table = simulate_gaintable_from_voltage_pattern(
+        bvis,
+        [sky_comp],
+        import_image_from_fits(
+            rascil_path("data/models/MID_FEKO_VP_B2_45_1360_imag.fits")
+        ),
+    )
+    beamgain = gain_table['gain'].data
+
     for i, source in enumerate(
         rfi_sources
     ):  # this will tell us the index of the source in the data
-        rfi_at_station = calculate_rfi_at_station(
-            apparent_emitter_power[i],
-            beamgain_value,
-            bg_context,
-            source,
-        )
 
-        rfi_at_station_all_chans = match_frequencies(
-            rfi_at_station,
+        ## ORIGINAL: written for Low, needs to be refactored once gain is done
+        # rfi_at_station = calculate_rfi_at_station(
+        #     apparent_emitter_power[i],
+        #     beamgain_value,
+        #     bg_context,
+        #     source,
+        # )
+        #
+        # rfi_at_station_all_chans1 = match_frequencies(
+        #     rfi_at_station,
+        #     rfi_frequencies,
+        #     bvis.frequency.values,
+        #     bvis.channel_bandwidth.values,
+        # )
+
+        # NEW: applying the beam gain from the table
+        emitter_power_all_chans = match_frequencies(
+            apparent_emitter_power[i],
             rfi_frequencies,
             bvis.frequency.values,
             bvis.channel_bandwidth.values,
         )
+
+        rfi_at_station_all_chans2 = emitter_power_all_chans.copy() * numpy.sqrt(
+            beamgain[:,:,:,0,0]
+        )
+        # TODO: problem: gaintable gives gains only for one antenna, not all --> results don't match
 
         # Calculate the RFI correlation using the fringe rotation and the RFI at the station
         # [ntimes, nants, nants, nchan, npol]

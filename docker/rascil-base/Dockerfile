@@ -1,3 +1,13 @@
+FROM python:3.7-slim AS first
+
+WORKDIR /
+
+RUN apt-get update -y && apt-get install -y git rsync
+RUN git clone https://gitlab.com/ska-telescope/external/rascil.git
+
+RUN mkdir -p /usr/share/casacore/data/ && \
+    rsync -avz --timeout=120 rsync://casa-rsync.nrao.edu/casa-data/geodetic  /usr/share/casacore/data/
+
 FROM python:3.7
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
@@ -11,22 +21,21 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 # Install packages needed to build rascil
-RUN apt-get update -y && apt-get install -y \
-    ca-certificates \
-    gosu git wget curl rsync nano \
-    libxml2-dev liblapack-dev libcfitsio-dev libgtkmm-3.0-dev \
-    cmake g++ build-essential gfortran libpng-dev python-numpy \
-    libboost-python-dev wcslib-dev \
-    python3 python3-dev python3-pip python3-setuptools python3-venv python3-wheel && \
+RUN apt-get update -y && apt-get install -y gosu && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 WORKDIR /
 USER root
 
-# This will clone into (and create) a directory at /rascil
+COPY --from=first /usr/share/casacore/data /usr/share/casacore/data
+
+# Install RASCIL from wheel built in the "build" stage of the CI pipeline
 # The data directory will not be loaded correctly until LFS is enabled
-RUN git clone https://gitlab.com/ska-telescope/external/rascil.git
+COPY rascil-*whl .
+RUN pip install --upgrade pip && \
+    DUCC0_OPTIMIZATION=portable-debug pip install rascil-*.whl && \
+    rm -rf /root/.cache
 
 # Set runtime environment variables.
 ENV RASCIL=/rascil
@@ -43,16 +52,11 @@ RUN mkdir -p /rascil/dask-worker-space && \
 
 WORKDIR /rascil
 
-RUN DUCC0_OPTIMIZATION=portable-debug pip3 install -r requirements.txt --upgrade && \
-    DUCC0_OPTIMIZATION=portable-debug python setup.py install && \
-    rm -rf /root/.cache
-
-WORKDIR /rascil
-
-RUN mkdir -p /usr/share/casacore/data/ && \
-    rsync -avz --timeout=120 rsync://casa-rsync.nrao.edu/casa-data/geodetic  /usr/share/casacore/data/
+# examples dir is needed because these are run to test the docker images
+COPY --from=first /rascil/examples ./examples
 
 # Use entrypoint script to create a user on the fly and avoid running as root.
+COPY entrypoint.sh .
 RUN chmod +x /rascil/entrypoint.sh
 ENTRYPOINT ["/rascil/entrypoint.sh"]
 CMD ["/bin/bash"]

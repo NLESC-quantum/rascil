@@ -12,4 +12,4 @@ WORKDIR /rascil
 ENV CLI_ARGS='-h'
 ENV PYTHONPATH=$RASCIL:$PYTHONPATH
 
-ENTRYPOINT python /rascil/rascil/apps/imaging_qa_main.py $CLI_ARGS
+ENTRYPOINT python -m rascil.apps.imaging_qa_main $CLI_ARGS

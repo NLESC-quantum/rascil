@@ -34,6 +34,8 @@ Installation via docker
 If you are familiar with docker, an easy approach is to use docker:
 
  .. toctree::
+    :maxdepth: 1
+
     installation/RASCIL_docker
 
 

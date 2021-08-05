@@ -40,6 +40,7 @@ extensions = [
     "sphinx_automodapi.automodapi",
     "sphinx_automodapi.smart_resolver",
     "sphinxarg.ext",
+    "m2r2",
 ]
 
 # The following seem to be buggy

@@ -1,7 +1,7 @@
 # Dockerfiles for RASCIL
 
 These Dockerfiles construct RASCIL docker images working from the RASCIL master. 
-They can be found in the `rascil-docker` directory and its subdirectories.
+They can be found in the `docker` directory and its subdirectories.
 These currently support building, pushing, and tagging images. The images are named
 as specified in the `release` file of the docker image directory,
 and tagged by the RASCIL version stored in `rascil/version.py`. 
@@ -34,7 +34,7 @@ Other useful make commands :
 - `push_latest` pushes the `:latest` tag
 - `push_version` pushes a version tag without the git SHA 
   
-Useful make commands that can be run from the `rascil-docker` directory:
+Useful make commands that can be run from the `docker` directory:
 
 - `build_all_latest` builds, and tags as latest, all the images
 - `rm_all` removes all the images
@@ -42,7 +42,7 @@ Useful make commands that can be run from the `rascil-docker` directory:
 
 ## Test the images
 
-The `rascil-docker/Makefile` contains commands for testing all the images. 
+The `docker/Makefile` contains commands for testing all the images. 
 These write results into the host /tmp area. For docker:
 
 - make test_base
@@ -191,7 +191,7 @@ matching those on your system.
 
 ##Running RASCIL as a cluster
 
-The file docker-compose in the rascil-docker code directory a simple way to
+The file docker-compose in the `docker` code directory a simple way to
 create a local cluster of a Dask scheduler and a number of workers. 
 
 The cluster is created using the docker-compose up command. To scale to e.g. 4 dask workers::

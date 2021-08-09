@@ -1,5 +1,4 @@
-"""Unit tests for testing support
-
+"""Make plots of the configurations, along with typical uv coverage
 
 """
 
@@ -30,6 +29,20 @@ log = logging.getLogger("logger")
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
+CONFIG_SKIP = [
+    ("LOW", 3),
+    ("LOWBD2", 3),
+    ("LOWBD2-CORE", 3),
+    ("MID", 3),
+    ("LOW-AA0.5", 1),
+    ("MID-AA0.5", 1),
+    ("ASKAP", 1),
+    ("MEERKAT+", 1),
+    ("LOFAR", 1),
+    ("VLAA", 1),
+    ("VLAA_north", 1),
+]
+
 
 class TestPlotConfigurations(unittest.TestCase):
     def setUp(self):
@@ -49,9 +62,15 @@ class TestPlotConfigurations(unittest.TestCase):
         self.config = create_named_configuration(config, rmax=rmax)
         self.config = select_configuration(self.config, names)
         self.config = decimate_configuration(self.config, skip=skip)
-        self.phasecentre = SkyCoord(
-            ra=+15 * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000"
-        )
+        if self.config.location.lat < 0.0:
+            self.phasecentre = SkyCoord(
+                ra=+15 * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000"
+            )
+        else:
+            self.phasecentre = SkyCoord(
+                ra=+15 * u.deg, dec=-dec * u.deg, frame="icrs", equinox="J2000"
+            )
+
         self.vis = create_blockvisibility(
             self.config,
             self.times,
@@ -67,21 +86,22 @@ class TestPlotConfigurations(unittest.TestCase):
             names = ["SKA057", "SKA062", "SKA072", "SKA071", "SKA002", "SKA049"]
             self.config = create_named_configuration(config)
             self.config = select_configuration(self.config, names)
+            assert len(self.config.names) == len(names)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_configuration(
                 self.config,
                 title=config,
-                plot_file="{dir}/test_plot_{config}_configuration.png".format(
+                plot_file="{dir}/test_plot_select_{config}_configuration.png".format(
                     dir=rascil_path("test_results"), config=config
                 ),
                 label=True,
             )
 
     def test_plot_configurations(self):
-        for config in ["LOW", "LOWBD2", "LOWBD2-CORE", "ASKAP", "MID", "MEERKAT+"]:
+        for config, skip in CONFIG_SKIP:
             self.config = create_named_configuration(config)
-            self.config = decimate_configuration(self.config, skip=3)
+            self.config = decimate_configuration(self.config, skip=skip)
             assert self.config.configuration_acc.size() > 0.0
             plt.clf()
             plot_configuration(
@@ -90,37 +110,13 @@ class TestPlotConfigurations(unittest.TestCase):
                 plot_file="{dir}/test_plot_{config}_configuration.png".format(
                     dir=rascil_path("test_results"), config=config
                 ),
-            )
-
-        for config in ["LOFAR", "VLAA", "VLAA_north"]:
-            self.config = create_named_configuration(config)
-            assert self.config.configuration_acc.size() > 0.0
-            plt.clf()
-            plot_configuration(
-                self.config,
-                title=config,
-                plot_file="{dir}/test_plot_{config}_configuration.png".format(
-                    dir=rascil_path("test_results"), config=config
-                ),
+                label=skip == 1,
             )
 
     def test_plot_configurations_uvcoverage(self):
-        for config in ["LOW", "LOWBD2", "LOWBD2-CORE", "ASKAP", "MID", "MEERKAT+"]:
-            self.createVis(config, skip=3)
+        for config, skip in CONFIG_SKIP:
+            self.createVis(config, skip=skip)
             assert self.config.configuration_acc.size() > 0.0
-            plt.clf()
-            plot_uvcoverage(
-                [self.vis],
-                title=config,
-                plot_file="{dir}/test_plot_{config}_uvcoverage.png".format(
-                    dir=rascil_path("test_results"), config=config
-                ),
-            )
-
-        for config in ["LOFAR", "VLAA", "VLAA_north"]:
-            self.createVis(config, +35.0)
-            assert self.config.configuration_acc.size() > 0.0
-            assert len(self.config.vp_type) == len(self.config.names)
             plt.clf()
             plot_uvcoverage(
                 [self.vis],

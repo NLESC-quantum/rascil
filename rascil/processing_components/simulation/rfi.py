@@ -239,31 +239,31 @@ def simulate_rfi_block_prop(
     ):  # this will tell us the index of the source in the data
 
         ## ORIGINAL: written for Low, needs to be refactored once gain is done
-        rfi_at_station = calculate_rfi_at_station(
-            apparent_emitter_power[i],
-            beamgain_value,
-            bg_context,
-            source,
-        )
+        # rfi_at_station = calculate_rfi_at_station(
+        #     apparent_emitter_power[i],
+        #     beamgain_value,
+        #     bg_context,
+        #     source,
+        # )
+        #
+        # rfi_at_station_all_chans = match_frequencies(
+        #     rfi_at_station,
+        #     rfi_frequencies,
+        #     bvis.frequency.values,
+        #     bvis.channel_bandwidth.values,
+        # )
 
-        rfi_at_station_all_chans = match_frequencies(
-            rfi_at_station,
+        # NEW: applying the beam gain from the table
+        emitter_power_all_chans = match_frequencies(
+            apparent_emitter_power[i],
             rfi_frequencies,
             bvis.frequency.values,
             bvis.channel_bandwidth.values,
         )
 
-        # NEW: applying the beam gain from the table
-        # emitter_power_all_chans = match_frequencies(
-        #     apparent_emitter_power[i],
-        #     rfi_frequencies,
-        #     bvis.frequency.values,
-        #     bvis.channel_bandwidth.values,
-        # )
-        #
-        # rfi_at_station_all_chans = emitter_power_all_chans.copy() * numpy.sqrt(
-        #     beamgain[:, :, :, 0, 0]
-        # )
+        rfi_at_station_all_chans = emitter_power_all_chans.copy() * numpy.sqrt(
+            beamgain[:, :, :, 0, 0]
+        )
         # TODO: problem: gaintable gives gains only for one antenna, not all --> results don't match
 
         # Calculate the RFI correlation using the fringe rotation and the RFI at the station

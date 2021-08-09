@@ -451,7 +451,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             antfile=rascil_data_path("configurations/LOW_SKA-TEL-SKO-0000422_Rev3.txt"),
             location=location,
             mount="XY",
-            names="LOW_%d",
+            names="SKA%03d",
             vp_type="LOW",
             diameter=38.0,
             alt=300.0,
@@ -460,15 +460,16 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             **kwargs
         )
     elif name == "LOW-AA0.5":
-        location = low_location
+        location = EarthLocation(
+            lon=116.69345390 * u.deg, lat=-26.86371635 * u.deg, height=300.0
+        )
+
         log.debug(
             "create_named_configuration: %s\n\t%s\n\t%s"
             % (name, location.geocentric, location.geodetic)
         )
         fc = create_configuration_from_LLAfile(
-            antfile=rascil_data_path(
-                "configurations/LOW_SKA-TEL-SKO-0000422_Rev3_AA0.5.txt"
-            ),
+            antfile=rascil_data_path("configurations/SKA1-LOW-AA0.5-v1.1_AA0p5.txt"),
             location=location,
             mount="XY",
             names="LOW_AA0.5_%d",
@@ -480,27 +481,14 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             **kwargs
         )
         names = [
-            "S8‐1",
-            "S8‐2",
-            "S8‐3",
-            "S8‐4",
-            "S8‐5",
-            "S8‐6",
-            "S9‐1",
-            "S9‐2",
-            "S9‐3",
-            "S9‐4",
-            "S9‐5",
-            "S9‐6",
-            "S10‐1",
-            "S10‐2",
-            "S10‐3",
-            "S10‐4",
-            "S10‐5",
-            "S10‐6",
+            "S008‐1",
+            "S008‐2",
+            "S009‐1",
+            "S009‐2",
+            "S010‐1",
+            "S010‐2",
         ]
         fc["names"].data = names
-        fc = fc.sel({"id": [3, 4, 8, 11, 12, 16]})
 
     elif (name == "MID") or (name == "MIDR5"):
         location = mid_location
@@ -516,6 +504,24 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             location=location,
             **kwargs
         )
+    elif name == "MID-AA0.5":
+        location = mid_location
+        log.debug(
+            "create_named_configuration: %s\n\t%s\n\t%s"
+            % (name, location.geocentric, location.geodetic)
+        )
+        fc = create_configuration_from_MIDfile(
+            antfile=rascil_data_path("configurations/ska1mid.cfg"),
+            vp_type={"M0": "MEERKAT", "SKA": "MID"},
+            mount="azel",
+            name=name,
+            location=location,
+            **kwargs
+        )
+        # See Ben Mort's comment on
+        # https://confluence.skatelescope.org/display/SE/Requirements+for+RCAL+pipelines+for+MID+and+LOW+AA0.5
+        names = ["SKA001", "SKA100", "SKA036", "SKA063"]
+        fc = select_configuration(fc, names)
     elif name == "MEERKAT+":
         location = meerkat_location
         log.debug(
@@ -643,6 +649,9 @@ def decimate_configuration(config, start=0, stop=-1, skip=1):
     :param skip: Antennas/stations to skip
     :return:
     """
+    if skip == 1:
+        return config
+
     fc = Configuration(
         location=config.location,
         names=config.names[start:stop:skip],

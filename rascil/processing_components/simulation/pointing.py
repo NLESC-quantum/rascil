@@ -483,9 +483,7 @@ def simulate_pointingtable_from_timeseries(
         for ant in range(nant):
             regular_freq = original_regular_freq
             regular_axis_values = original_regular_axis_values
-            phi_axis_values = (
-                rng.random(size=len(regular_axis_values)) * 2 * numpy.pi
-            )
+            phi_axis_values = rng.random(size=len(regular_axis_values)) * 2 * numpy.pi
             # create complex array
             z_axis_values = amp_axis_values * numpy.exp(1j * phi_axis_values)  # polar
             # make symmetrical frequencies

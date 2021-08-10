@@ -4,13 +4,24 @@
 
 import argparse
 import logging
-import sys
 import pprint
+from typing import Iterable
+
 import numpy
 import xarray
 
-from rascil.data_models import BlockVisibility, GainTable, export_gaintable_to_hdf5
-from rascil.processing_components import create_blockvisibility_from_ms, solve_gaintable
+from rascil.data_models import (
+    BlockVisibility,
+    GainTable,
+    export_gaintable_to_hdf5,
+    import_skycomponent_from_hdf5,
+)
+from rascil.processing_components import (
+    create_blockvisibility_from_ms,
+    solve_gaintable,
+    dft_skycomponent_visibility,
+    copy_visibility,
+)
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
@@ -42,6 +53,13 @@ def cli_parser():
         type=str,
         default=None,
         help="Name of logfile (default is to construct one from msname)",
+    )
+
+    parser.add_argument(
+        "--ingest_components_file",
+        type=str,
+        default=None,
+        help="Name of components file (HDF5) format",
     )
 
     return parser
@@ -82,49 +100,68 @@ def rcal_simulator(args):
         args.ingest_msname, selected_dds=args.ingest_dd
     )[0]
 
-    log.info(f"MS loaded into BlockVisibility:\n{bvis}\n")
+    if args.ingest_components_file is not None:
+        model_components = import_skycomponent_from_hdf5(args.ingest_components_file)
+    else:
+        model_components = None
 
-    # This returns the full gaintable
-    full_gt = gt_sink(bvis_solver_sink(bvis_source(bvis)))
+    log.info(f"\nMS loaded into BlockVisibility:\n{bvis}\n")
+
+    bvis_gen = bvis_source(bvis)
+    gt_gen = bvis_solver(bvis_gen, model_components, phase_only=True)
+    full_gt = gt_sink(gt_gen)
+
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
     return gtfile
 
 
-def bvis_source(bvis: BlockVisibility, dim="time") -> BlockVisibility:
-    """
+def bvis_source(bvis: BlockVisibility, dim="time") -> Iterable[BlockVisibility]:
+    """Creates a BlockVisibility generator that iterates in the specified dimension
 
     :param bvis: BlockVisibility
-    :return: BlockVisibility
+    :param dim: dimension to be iterated
+    :return: generator of BlockVisibility
     """
-    log.info("rascil_rcal_bvis_source: BlockVisibility source starting")
+    log.info("\nrascil_rcal_bvis_source: BlockVisibility source starting")
     for time, bv in bvis.groupby(dim, squeeze=False):
         yield bv
-    log.info("rascil_rcal_bvis_source: BlockVisibility source has finished")
+    log.info("rascil_rcal_bvis_source: BlockVisibility source has finished\n")
 
 
-def bvis_solver_sink(bvis):
-    """Iterate through the block vis, solving for the gain
+def bvis_solver(
+    bvis_gen: Iterable[BlockVisibility], model_components, **kwargs
+) -> Iterable[GainTable]:
+    """Iterate through the block vis, solving for the gain, returning gaintable generator
 
-    :param bvis:
-    :return: generator of gaintables
+    Optionally takes a list of skycomponents to use as a model
+
+    :param bvis_gen: Generator of BlockVisibility
+    :param model_components: Model components
+    :param kwargs: Optional keywords
+    :return: generator of GainTables
     """
-    for bv in bvis:
-        gt = solve_gaintable(bv, phase_only=True)
+    for bv in bvis_gen:
+        if model_components is not None:
+            modelvis = copy_visibility(bv)
+            modelvis = dft_skycomponent_visibility(modelvis, model_components)
+            gt = solve_gaintable(bv, modelvis=modelvis, **kwargs)
+        else:
+            gt = solve_gaintable(bv, **kwargs)
         yield gt
 
 
-def gt_sink(gt_gen) -> GainTable:
-    """Iterate through the gaintables
+def gt_sink(gt_gen: Iterable[GainTable]):
+    """Iterate through the gaintables, logging resisual, combine into single GainTable
 
-    :param gt_gen:
-    :return: gaintable
+    :param gt_gen: Generator of GainTables
+    :return: GainTable
     """
     gt_list = list()
     for gt in gt_gen:
         datetime = gt["datetime"][0].data
         log.info(
-            f"rascil_rcal_gt_sink: Processing integration {datetime} residual: {numpy.max(gt.residual.data)}"
+            f"rascil_rcal_gt_sink: Processing integration {datetime} residual: {numpy.max(gt.residual.data):.3g}"
         )
         gt_list.append(gt)
 

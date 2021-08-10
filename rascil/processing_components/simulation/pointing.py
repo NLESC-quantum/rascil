@@ -365,7 +365,7 @@ def simulate_pointingtable_from_timeseries(
         az_deg = 180.0
 
     pointing_file = "%s/El%dAz%d.dat" % (pointing_directory, int(el_deg), int(az_deg))
-    log.debug(
+    log.info(
         "simulate_pointingtable_from_timeseries: Reading wind PSD from %s"
         % pointing_file
     )
@@ -484,7 +484,6 @@ def simulate_pointingtable_from_timeseries(
             regular_freq = original_regular_freq
             regular_axis_values = original_regular_axis_values
             phi_axis_values = (
-                #rng.integers(low=1, high=len(regular_axis_values)) * 2 * numpy.pi
                 rng.random(size=len(regular_axis_values)) * 2 * numpy.pi
             )
             # create complex array

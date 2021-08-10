@@ -332,6 +332,8 @@ def simulate_pointingtable_from_timeseries(
 
     if pointing_directory is None:
         pointing_directory = rascil_data_path("models/%s" % time_series_type)
+    else:
+        pointing_directory = pointing_directory + "/%s" % (time_series_type)
 
     pt["pointing"].data = numpy.zeros(pt["pointing"].data.shape)
 
@@ -367,7 +369,10 @@ def simulate_pointingtable_from_timeseries(
         "simulate_pointingtable_from_timeseries: Reading wind PSD from %s"
         % pointing_file
     )
-    psd = numpy.loadtxt(pointing_file)
+    try:
+        psd = numpy.loadtxt(pointing_file)
+    except OSError:
+        raise ValueError("Pointing file %s not found." % pointing_file)
 
     # define some arrays
     freq = psd[:, 0]
@@ -378,7 +383,7 @@ def simulate_pointingtable_from_timeseries(
     elif type == "wind":
         axes = ["pxel", "pel"]
     else:
-        raise ValueError("Pointing type %s not known" % type)
+        raise ValueError("Pointing type %s not known." % type)
 
     freq_interval = 0.0001
 
@@ -418,7 +423,7 @@ def simulate_pointingtable_from_timeseries(
 
         if axis_values_max_index >= freq_max_index:
             raise ValueError(
-                "Frequency break is higher than highest frequency; select a lower break"
+                "Frequency break is higher than highest frequency; select a lower break."
             )
 
         # use original frequency break and max frequency to fit function
@@ -468,7 +473,7 @@ def simulate_pointingtable_from_timeseries(
 
         if (regular_axis_values < 0).any():
             raise ValueError(
-                "Resampling returns negative power values; change fit range"
+                "Resampling returns negative power values; change fit range."
             )
 
         amp_axis_values = numpy.sqrt(regular_axis_values * 2 * freq_interval)

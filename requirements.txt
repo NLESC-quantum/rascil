@@ -32,7 +32,7 @@ bcrypt==3.2.0
     # via paramiko
 bdsf==1.9.2
     # via -r requirements.in
-bleach==3.3.1
+bleach==4.0.0
     # via nbconvert
 bokeh==2.3.3
     # via -r requirements.in
@@ -220,7 +220,7 @@ nest-asyncio==1.5.1
     # via nbclient
 networkx==2.6.2
     # via scikit-image
-notebook==6.4.0
+notebook==6.4.2
     # via
     #   jupyter
     #   jupyter-contrib-core
@@ -340,7 +340,7 @@ pyyaml==5.4.1
     #   distributed
     #   jupyter-contrib-nbextensions
     #   jupyter-nbextensions-configurator
-pyzmq==22.1.0
+pyzmq==22.2.1
     # via
     #   jupyter-client
     #   notebook
@@ -359,7 +359,7 @@ requests-toolbelt==0.9.1
     # via python-gitlab
 scikit-image==0.18.2
     # via -r requirements.in
-scipy==1.7.0
+scipy==1.7.1
     # via
     #   -r requirements.in
     #   aotools

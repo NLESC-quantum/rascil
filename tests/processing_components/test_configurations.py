@@ -40,9 +40,15 @@ class TestConfigurations(unittest.TestCase):
 
     def createVis(self, config, dec=-35.0, rmax=None):
         self.config = create_named_configuration(config, rmax=rmax)
-        self.phasecentre = SkyCoord(
-            ra=+15 * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000"
-        )
+        if self.config.location.lat < 0.0:
+            self.phasecentre = SkyCoord(
+                ra=+15 * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000"
+            )
+        else:
+            self.phasecentre = SkyCoord(
+                ra=+15 * u.deg, dec=-dec * u.deg, frame="icrs", equinox="J2000"
+            )
+
         self.vis = create_blockvisibility(
             self.config,
             self.times,
@@ -64,10 +70,6 @@ class TestConfigurations(unittest.TestCase):
             "MEERKAT+",
         ]:
             self.createVis(config)
-            assert self.config.configuration_acc.size() > 0.0
-            # print("Config ", config, " has centre", self.config.location.geodetic)
-        for config in ["LOFAR", "VLAA", "VLAA_north"]:
-            self.createVis(config, +35.0)
             assert self.config.configuration_acc.size() > 0.0
             assert len(self.config["vp_type"]) == len(self.config["names"])
 

@@ -23,7 +23,7 @@ ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 endif
 
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
-	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
+	DOCKER_REGISTRY_HOST=artefact.skao.int
 endif
 
 
@@ -100,3 +100,12 @@ install_requirements: upgrade_pip
 	pip freeze
 
 update_requirements: requirements install_requirements
+
+release-patch: ## Make patch release
+	bumpver update --patch -n
+
+release-minor: ## Make minor release
+	bumpver update --minor -n
+
+release-major: ## Make major release
+	bumpver update --major -n

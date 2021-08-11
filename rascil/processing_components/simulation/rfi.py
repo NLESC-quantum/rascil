@@ -32,11 +32,15 @@ from astropy.coordinates import SkyCoord, EarthLocation
 from rascil import phyconst
 from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.simulation.surface import simulate_gaintable_from_voltage_pattern
+from rascil.processing_components.simulation.pointing import (
+    simulate_pointingtable,
+)
 from rascil.processing_components.util.array_functions import average_chunks2
+from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.util.compass_bearing import (
     calculate_initial_compass_bearing,
 )
+from rascil.processing_components.imaging.primary_beams import create_vp
 from rascil.processing_components.util.coordinate_support import (
     simulate_point,
     simulate_point_antenna,
@@ -47,9 +51,16 @@ from rascil.processing_components.util.coordinate_support import (
 from rascil.processing_components.visibility.visibility_geometry import (
     calculate_blockvisibility_hourangles,
 )
-from rascil.processing_components.skycomponent.operations import (
-    create_skycomponent
+from rascil.processing_components.skycomponent.operations import create_skycomponent
+from rascil.processing_components.calibration.operations import apply_gaintable
+from rascil.processing_components.calibration.pointing import (
+    create_pointingtable_from_blockvisibility,
 )
+
+from rascil.processing_components.simulation.pointing import (
+    simulate_gaintable_from_pointingtable,
+)
+from rascil.processing_components.visibility.operations import copy_visibility
 from rascil.processing_components.image import import_image_from_fits
 
 log = logging.getLogger("rascil-logger")
@@ -218,22 +229,10 @@ def simulate_rfi_block_prop(
     ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
     # BEAM GAIN CODE FOR MID -- TODO: need help from Tim
-    flux = numpy.ones((nchan, npol))
-    sky_comp = create_skycomponent(
-        direction=bvis.phasecentre,
-        flux=flux,
-        frequency=bvis.frequency.data,
-        polarisation_frame=PolarisationFrame(bvis._polarisation_frame),
-    )
-    gain_table = simulate_gaintable_from_voltage_pattern(
-        bvis,
-        [sky_comp],
-        import_image_from_fits(
-            rascil_path("data/models/MID_FEKO_VP_B2_45_1360_imag.fits")
-        ),
-    )[0]
-    beamgain = gain_table['gain'].data
-
+    flux = numpy.zeros((nchan, npol))
+    flux[:, 2] = 0.0
+    flux[:, 3] = 0.0
+    vp = create_vp(telescope="MID_B2")
     for i, source in enumerate(
         rfi_sources
     ):  # this will tell us the index of the source in the data
@@ -261,10 +260,7 @@ def simulate_rfi_block_prop(
             bvis.channel_bandwidth.values,
         )
 
-        rfi_at_station_all_chans = emitter_power_all_chans.copy() * numpy.sqrt(
-            beamgain[:, :, :, 0, 0]
-        )
-        # TODO: problem: gaintable gives gains only for one antenna, not all --> results don't match
+        rfi_at_station_all_chans = emitter_power_all_chans.copy()
 
         # Calculate the RFI correlation using the fringe rotation and the RFI at the station
         # [ntimes, nants, nants, nchan, npol]
@@ -295,6 +291,7 @@ def simulate_rfi_block_prop(
 
             # We know where the emitter is.
             site = bvis.configuration.location
+            latitude = site.lat.rad
 
             # apparent_emitter_coordinates [nsource x ntimes x nantennas x [az,el,dist]
             # azimuth is index [:, :, :, 0]; elevation is index [:, :, :, 1]
@@ -307,18 +304,34 @@ def simulate_rfi_block_prop(
             # sky position for the emitter, and performing phase rotation
             # appropriately
             hourangles = calculate_blockvisibility_hourangles(bvis)
-            for iha, ha_phase_ctr in enumerate(hourangles.data):
+            final_bvis = copy_visibility(bvis, zero=True)
+            for iha, (time, subvis) in enumerate(
+                final_bvis.groupby("time", squeeze=False)
+            ):
+                pt = create_pointingtable_from_blockvisibility(subvis)
+                pt["nominal"][0, :, :, 0, 0] = numpy.deg2rad(az[iha])[:, numpy.newaxis]
+                pt["nominal"][0, :, :, 1, 1] = numpy.deg2rad(el[iha])[:, numpy.newaxis]
+
+                ha_phase_ctr = hourangles[iha]
                 # calculate station-based arrays
                 ant_uvw = _get_uvw_per_station(
-                    bvis.configuration.xyz.data, ha_emitter[iha, :], dec_emitter[iha, :]
+                    bvis.configuration.xyz.data,
+                    ha_emitter[iha, :] + ha_phase_ctr.rad,
+                    dec_emitter[iha, :],
                 )
-                ant_ra = -ha_emitter[iha, :] + ha_phase_ctr
+                az_centre, el_centre = hadec_to_azel(
+                    ha_phase_ctr, dec_emitter[iha, :], latitude
+                )
+                pt["pointing"][0, ..., 0, 0] = az_centre[:, numpy.newaxis]
+                pt["pointing"][0, ..., 1, 1] = el_centre[:, numpy.newaxis]
+
+                ant_ra = -ha_emitter[iha, :] + ha_phase_ctr.rad
                 ant_dec = dec_emitter[iha, :]
                 emitter_sky = SkyCoord(ant_ra * u.rad, ant_dec * u.rad)
                 l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
 
                 phasor = numpy.ones([nbaselines, nchan, npol], dtype="complex")
-                for j, (station1, station2) in enumerate(bvis.baselines.values):
+                for j, (station1, station2) in enumerate(subvis.baselines.values):
                     for chan in range(nchan):
                         phasor[j, chan, :] = (
                             simulate_point_antenna(
@@ -334,6 +347,23 @@ def simulate_rfi_block_prop(
                         )[..., numpy.newaxis]
 
                 # Now fill this into the BlockVisibility
-                bvis["vis"].data[iha, ...] += bvis_data_copy[iha, ...] * phasor
+                subvis["vis"].data[0, ...] = bvis_data_copy[iha, ...] * phasor
+
+                # Update the location of the emitter
+                emitter_comp = create_skycomponent(
+                    direction=emitter_sky,
+                    flux=flux,
+                    frequency=bvis.frequency.data,
+                    polarisation_frame=PolarisationFrame(bvis._polarisation_frame),
+                )
+
+                # Now calculate and apply the gains
+                gt = simulate_gaintable_from_pointingtable(
+                    vis=subvis, pt=pt, sc=[emitter_comp], vp=vp
+                )
+                subvis = apply_gaintable(subvis, gt[0], inverse=True)
+
+                # Now accumulate over all sources
+            bvis["vis"].data += final_bvis["vis"].data
 
     return bvis

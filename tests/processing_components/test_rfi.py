@@ -27,6 +27,9 @@ log.setLevel(logging.WARNING)
 
 class TestRFISim(unittest.TestCase):
     def setUp(self):
+        pass
+
+    def setup_telescope(self, telescope):
         """Initialise common elements"""
         # Set the random number so that we lways get the same answers
         numpy.random.seed(1805550721)
@@ -38,21 +41,28 @@ class TestRFISim(unittest.TestCase):
 
         rmax = 1000.0
         antskip = 33
-        self.low = create_named_configuration("LOWR3", rmax=rmax, skip=antskip)
-        self.nants = len(self.low.names)
+        self.configuration = create_named_configuration(
+            telescope, rmax=rmax, skip=antskip
+        )
+        self.nants = len(self.configuration.names)
 
         self.apparent_power = numpy.ones((self.ntimes, self.nants, self.nchannels))
 
         # Info. for dummy BlockVisibility
         ftimes = (numpy.pi / 43200.0) * numpy.arange(0.0, 300.0, 30.0)
-        ffrequency = numpy.linspace(1.4e8, 1.9e8, 5)
-        channel_bandwidth = numpy.array([1e7, 1e7, 1e7, 1e7, 1e7])
+        if telescope == "MID":
+            ffrequency = numpy.linspace(1.4e9, 1.9e9, 5)
+            channel_bandwidth = numpy.array([1e8, 1e8, 1e8, 1e8, 1e8])
+        else:
+            ffrequency = numpy.linspace(1.3, 1.5e8, 5)
+            channel_bandwidth = numpy.array([4e6, 4e6, 4e6, 4e6, 4e6])
+
         polarisation_frame = PolarisationFrame("linear")
         phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
         )
         self.bvis = create_blockvisibility(
-            self.low,
+            self.configuration,
             ftimes,
             ffrequency,
             channel_bandwidth=channel_bandwidth,
@@ -88,6 +98,7 @@ class TestRFISim(unittest.TestCase):
         Multiple RFI channels match a single bvis channel.
         Use the median value.
         """
+        self.setup_telescope("LOW")
         rfi_signal = self.apparent_power[:, :, :-10]
         # these will provide data for bvis chan 3
         rfi_signal[0, 0, [28, 29, 30, 31, 32]] = numpy.array([2.0, 2.0, 4.0, 5.0, 5.0])
@@ -107,6 +118,8 @@ class TestRFISim(unittest.TestCase):
         assert (result[:, :, 4] == 6.0).all()
 
     def test_calculate_rfi_at_station_single_beam_gain(self):
+        self.setup_telescope("LOW")
+
         apparent_power = numpy.ones((2, 3, 4))  # 2 times, 3 antennas, 4 channels
         beam_gain_value = 9
         beam_gain_ctx = "bg_value"
@@ -119,6 +132,7 @@ class TestRFISim(unittest.TestCase):
 
     @patch("rascil.processing_components.simulation.rfi.numpy.loadtxt")
     def test_calculate_rfi_at_station_beam_gain_array(self, mock_load):
+        self.setup_telescope("LOW")
         apparent_power = numpy.ones((2, 3, 4))  # 2 times, 3 antennas, 4 channels
         beam_gain_value = "some-file"
         beam_gain_ctx = "bg_file"
@@ -135,6 +149,7 @@ class TestRFISim(unittest.TestCase):
         assert (result[:, :, 3] == apparent_power[:, :, 3] * 5).all()
 
     def test_rfi_correlation(self):
+        self.setup_telescope("LOW")
         """Calculate the value of the correlated RFI using nominal emitter power, check for regression"""
         apparent_power = self.apparent_power * 1.0e-10
         beam_gain_value = 3.0e-8
@@ -168,6 +183,7 @@ class TestRFISim(unittest.TestCase):
 
         RFI signal is for the same frequency channels as the BlockVisibility has
         """
+        self.setup_telescope("MID")
         nants_start = self.nants
         bvis = self.bvis.copy()
 
@@ -194,7 +210,7 @@ class TestRFISim(unittest.TestCase):
             ["source1"],
             bvis.frequency.values,
             beam_gain_state=None,
-            use_pole=True,
+            use_pole=False,
         )
 
         # original block visibility doesn't have any signal in it
@@ -206,11 +222,11 @@ class TestRFISim(unittest.TestCase):
         for i in range(3):
             assert (bvis["vis"].data[:, :, i, :] == 0).all()
 
-        assert (bvis["vis"].data[:, :, 3, :] != 0).all()
-        assert (bvis["vis"].data[:, :, 4, :] != 0).all()
+        assert (bvis["vis"].data[:, :, 3, 0] != 0).all()
+        assert (bvis["vis"].data[:, :, 4, 0] != 0).all()
 
-        assert (abs(bvis["vis"].data[:, :, 3, :]).round(6) == 1.0e6).all()
-        assert (abs(bvis["vis"].data[:, :, 4, :]).round(6) == 2.5e7).all()
+        assert (abs(bvis["vis"].data[:, :, 3, 0] / 1e6).round(1) == 1.0).all()
+        assert (abs(bvis["vis"].data[:, :, 4, 0] / 2.5e7).round(1) == 1.0).all()
 
 
 if __name__ == "__main__":

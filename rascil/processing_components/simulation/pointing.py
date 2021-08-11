@@ -147,10 +147,10 @@ def simulate_gaintable_from_pointingtable(
                             ant, 0, 0, 0
                         ] / numpy.cos(elevation_centre)
                         el_comp = elevation_centre + pointing_ha[ant, 0, 0, 1]
-                        if az_comp - azimuth_comp > numpy.pi:
-                            azimuth_comp += 2.0 * numpy.pi
-                        if az_comp - azimuth_comp < -numpy.pi:
-                            azimuth_comp -= 2.0 * numpy.pi
+                        if az_comp - azimuth_comp[ant] > numpy.pi:
+                            azimuth_comp[ant] += 2.0 * numpy.pi
+                        if az_comp - azimuth_comp[ant] < -numpy.pi:
+                            azimuth_comp[ant] -= 2.0 * numpy.pi
 
                         # We use WCS sensible coordinate handling by labelling the axes misleadingly
                         wcs_azel.wcs.crval[0] = az_comp * r2d
@@ -162,8 +162,8 @@ def simulate_gaintable_from_pointingtable(
                             for gchan in range(gnchan):
                                 gain = numpy.zeros([npol], dtype="complex")
                                 worldloc = [
-                                    azimuth_comp * r2d,
-                                    elevation_comp * r2d,
+                                    azimuth_comp[ant] * r2d,
+                                    elevation_comp[ant] * r2d,
                                     vp.image_acc.wcs.wcs.crval[2],
                                     frequency[gchan],
                                 ]

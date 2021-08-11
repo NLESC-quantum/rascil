@@ -851,7 +851,7 @@ def convert_skymodel_to_hdf(sm, f):
     :param f:
     :return:
     """
-    if not isinstance(sm, xarray.Dataset):
+    if not isinstance(sm, xarray.Dataset) and not isinstance(sm, SkyModel):
         raise ValueError(f"sm is not an xarray.Dataset: {sm}")
 
     f.attrs["rascil_data_model"] = "SkyModel"

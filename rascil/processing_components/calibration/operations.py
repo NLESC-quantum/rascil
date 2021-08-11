@@ -236,6 +236,8 @@ def apply_gaintable(
                                         @ cfs
                                         @ cigain[baseline[1], chan, :, :]
                                     ).reshape([4])
+                                else:
+                                    applied[sub_vis_row, ibaseline, chan, ...] = 0.0
                 else:
                     for sub_vis_row in range(original.shape[0]):
                         for ibaseline, baseline in enumerate(baselines):

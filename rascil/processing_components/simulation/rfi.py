@@ -298,7 +298,9 @@ def simulate_rfi_block_prop(
             az = apparent_emitter_coordinates[i, :, :, 0]
             el = apparent_emitter_coordinates[i, :, :, 1]
 
-            ha_emitter, dec_emitter = azel_to_hadec(az, el, site.lat.rad)
+            ha_emitter, dec_emitter = azel_to_hadec(
+                numpy.deg2rad(az), numpy.deg2rad(el), site.lat.rad
+            )
 
             # Now step through the time stamps, calculating the effective
             # sky position for the emitter, and performing phase rotation

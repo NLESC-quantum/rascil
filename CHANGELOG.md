@@ -4,7 +4,8 @@
 * [MR203] Updated the CI pipeline to build the docker images, build on tag, and publish to the Central Artefact Repository
 * [MR200] Migrated docker builds from rascil-docker repository to rascil/docker directory
 * [MR199] Added CLI option and env variable that passes dask scheduler file to setup dask cluster
-* [MR189] CI pipeline update: tests run in two separate jobs: dask/non-dask 
+* [MR189] CI pipeline update: tests run in two separate jobs: dask/non-dask
+* [MR183, MR195] Update CI pipeline to publish Python package in the SKA central artefact repository
 * [MR177] RFI simulation code is refactored to be compatible with the standard RFI input data
 * [MR154] The repository is Black-compatible, and expects all python code to be [Black](https://github.com/psf/black) formatted
 * [MR136] Added option to load ci_checker arguments in the command line directly from a file
@@ -19,18 +20,18 @@
   Add files: requirements.in, requirements-docs.in, requirements-test.in
 * Makefile updated with requirements management commands:
   `make requirements`, `make install_requirements`, `make update_requirements`
-* Added a new job, called `compile_requirements`, to the CI pipeline to update the requirements; 
+* Added a new job, called `compile_requirements`, to the CI pipeline to update the requirements;
   it is triggered by a schedule in GitLab
 * There is a new option to read in array configurations file with long,lat and specify an arbitrary height.
 
 0.2.0
 -----
 
-* This is a major upgrade breaking interfaces. To bring a wide range of improved capabilities, 
-  we have switched to use xarray instead of numpy to hold class 
+* This is a major upgrade breaking interfaces. To bring a wide range of improved capabilities,
+  we have switched to use xarray instead of numpy to hold class
   data. Thus for example myimage.data now is an xarray.DataArray, and myblockvis.data is
-  an xarray.DataSet. By appending .values, you can get the usual numpy arrays. Xarray has many 
-  capabilities that we intend to make use of in the future. The simplest description is that Xarray 
+  an xarray.DataSet. By appending .values, you can get the usual numpy arrays. Xarray has many
+  capabilities that we intend to make use of in the future. The simplest description is that Xarray
   provides named coordinates such as time, frequency, l, m, baseline.
 * The Image class now is xarray.DataArray with axes "l", "m", "polarisation", "frequency"
 * There is now only one holder of visibilities: BlockVisibility. This is now baseline- rather than
@@ -38,17 +39,17 @@
 * All data classes now support xarray operators such as sel, isel, groupby, groupby_bins,
   where. The selections can be specified as dictionaries
   holding slices e.g. {"time":slice("2001-01-02T09:00:00.0", "2001-01-02T10:00:00.0")}
-* To improve performance, all imaging algorithms have now moved from the workflows layer to be done in 
-  processing_components. The nifty gridder is automatically installed and used as the default algorithm, 
+* To improve performance, all imaging algorithms have now moved from the workflows layer to be done in
+  processing_components. The nifty gridder is automatically installed and used as the default algorithm,
   though 2d and awprojection are also available. predict_list_rsexecute_workflow and invert_list_rsexecute_workflow now simply
   distribute processing across a list of BlockVisibility's. The available contexts are 2d, ng, and
   awprojection.
 * Other workflows such as the pipelines work as before.
 * The LOW test beam is now a uniformly weighted 38m diameter disk
-* There is a new category of python code: command line apps. The first of these is the 
+* There is a new category of python code: command line apps. The first of these is the
   rascil/apps/rascil-imager.sh
-* Array configurations are now specified only in global coordinates: XYZ or long, lat, height. 
-* We have chosen to drop installation via a Conda environment file. The instructions have been 
+* Array configurations are now specified only in global coordinates: XYZ or long, lat, height.
+* We have chosen to drop installation via a Conda environment file. The instructions have been
   updated.
 
 0.1.9

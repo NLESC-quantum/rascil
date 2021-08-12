@@ -1,9 +1,14 @@
 0.2.2b0
 -------
 
-* Updated the CI pipeline to build the docker images, build on tag, and publish to the Central Artefact Repository
-* Migrated docker builds from rascil-docker repository to rascil/docker directory
-* Added index files to the ci_checker, which list and point to the output files of the app
+* [MR203] Updated the CI pipeline to build the docker images, build on tag, and publish to the Central Artefact Repository
+* [MR200] Migrated docker builds from rascil-docker repository to rascil/docker directory
+* [MR189] CI pipeline update: tests run in two separate jobs: dask/non-dask 
+* [MR177] RFI simulation code is refactored to be compatible with the standard RFI input data
+* [MR154] The repository is Black-compatible, and expects all python code to be [Black](https://github.com/psf/black) formatted
+* [MR136] Added option to load ci_checker arguments in the command line directly from a file
+* [MR132, MR145] ci_checker now produces various diagnostics plots, e.g. power spectrum, running mean, histogram, etc.
+* [MR123, MR125] Added index files to the ci_checker, which list and point to the output files of the app
 
 0.2.1
 -----

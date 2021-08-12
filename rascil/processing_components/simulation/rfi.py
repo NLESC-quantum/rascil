@@ -347,7 +347,7 @@ def simulate_rfi_block_prop(
                 # apply_beam_gain_for_mid(az, bvis, dec_emitter, el, emitter_sky, flux, ha_phase_ctr, iha, latitude,
                 #                         subvis, vp)
 
-                # Now accumulate over all sources
+            # Now accumulate over all sources
             bvis["vis"].data += final_bvis["vis"].data
 
     return bvis

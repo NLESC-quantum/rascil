@@ -3,6 +3,7 @@
 
 * [MR203] Updated the CI pipeline to build the docker images, build on tag, and publish to the Central Artefact Repository
 * [MR200] Migrated docker builds from rascil-docker repository to rascil/docker directory
+* [MR199] Added CLI option and env variable that passes dask scheduler file to setup dask cluster
 * [MR189] CI pipeline update: tests run in two separate jobs: dask/non-dask 
 * [MR177] RFI simulation code is refactored to be compatible with the standard RFI input data
 * [MR154] The repository is Black-compatible, and expects all python code to be [Black](https://github.com/psf/black) formatted

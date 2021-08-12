@@ -230,9 +230,10 @@ def simulate_rfi_block_prop(
 
     # BEAM GAIN CODE FOR MID -- TODO: need help from Tim
     flux = numpy.zeros((nchan, npol))
-    flux[:, 2] = 0.0
-    flux[:, 3] = 0.0
+    # flux[:, 2] = 0.0
+    # flux[:, 3] = 0.0
     vp = create_vp(telescope="MID_B2")
+
     for i, source in enumerate(
         rfi_sources
     ):  # this will tell us the index of the source in the data
@@ -299,7 +300,7 @@ def simulate_rfi_block_prop(
             el = apparent_emitter_coordinates[i, :, :, 1]
 
             ha_emitter, dec_emitter = azel_to_hadec(
-                numpy.deg2rad(az), numpy.deg2rad(el), site.lat.rad
+                numpy.deg2rad(az), numpy.deg2rad(el), latitude
             )
 
             # Now step through the time stamps, calculating the effective
@@ -310,10 +311,6 @@ def simulate_rfi_block_prop(
             for iha, (time, subvis) in enumerate(
                 final_bvis.groupby("time", squeeze=False)
             ):
-                pt = create_pointingtable_from_blockvisibility(subvis)
-                pt["nominal"][0, :, :, 0, 0] = numpy.deg2rad(az[iha])[:, numpy.newaxis]
-                pt["nominal"][0, :, :, 1, 1] = numpy.deg2rad(el[iha])[:, numpy.newaxis]
-
                 ha_phase_ctr = hourangles[iha]
                 # calculate station-based arrays
                 ant_uvw = _get_uvw_per_station(
@@ -321,11 +318,6 @@ def simulate_rfi_block_prop(
                     ha_emitter[iha, :] + ha_phase_ctr.rad,
                     dec_emitter[iha, :],
                 )
-                az_centre, el_centre = hadec_to_azel(
-                    ha_phase_ctr, dec_emitter[iha, :], latitude
-                )
-                pt["pointing"][0, ..., 0, 0] = az_centre[:, numpy.newaxis]
-                pt["pointing"][0, ..., 1, 1] = el_centre[:, numpy.newaxis]
 
                 ant_ra = -ha_emitter[iha, :] + ha_phase_ctr.rad
                 ant_dec = dec_emitter[iha, :]
@@ -351,21 +343,37 @@ def simulate_rfi_block_prop(
                 # Now fill this into the BlockVisibility
                 subvis["vis"].data[0, ...] = bvis_data_copy[iha, ...] * phasor
 
-                # Update the location of the emitter
-                emitter_comp = create_skycomponent(
-                    direction=emitter_sky,
-                    flux=flux,
-                    frequency=bvis.frequency.data,
-                    polarisation_frame=PolarisationFrame(bvis._polarisation_frame),
-                )
-
-                # Now calculate and apply the gains
-                gt = simulate_gaintable_from_pointingtable(
-                    vis=subvis, pt=pt, sc=[emitter_comp], vp=vp
-                )
-                subvis = apply_gaintable(subvis, gt[0], inverse=True)
+                # Apply beam gain for Mid
+                # apply_beam_gain_for_mid(az, bvis, dec_emitter, el, emitter_sky, flux, ha_phase_ctr, iha, latitude,
+                #                         subvis, vp)
 
                 # Now accumulate over all sources
             bvis["vis"].data += final_bvis["vis"].data
 
     return bvis
+
+
+def apply_beam_gain_for_mid(az, bvis, dec_emitter, el, emitter_sky, flux, ha_phase_ctr, iha, latitude, subvis, vp):
+    pt = create_pointingtable_from_blockvisibility(subvis)
+    # there is always one time index in pt --> the first index is always 0
+    pt["nominal"][0, :, :, 0, 0] = numpy.deg2rad(az[iha])[:, numpy.newaxis]
+    pt["nominal"][0, :, :, 1, 1] = numpy.deg2rad(el[iha])[:, numpy.newaxis]
+    az_centre, el_centre = hadec_to_azel(
+        ha_phase_ctr, dec_emitter[iha, :], latitude
+    )
+    pt["pointing"][0, ..., 0, 0] = az_centre[:, numpy.newaxis]
+    pt["pointing"][0, ..., 1, 1] = el_centre[:, numpy.newaxis]
+    # Update the location of the emitter
+    emitter_comp = create_skycomponent(
+        direction=emitter_sky,
+        flux=flux,
+        frequency=bvis.frequency.data,
+        polarisation_frame=PolarisationFrame(bvis._polarisation_frame),
+    )
+    # Now calculate and apply the gains
+    gt = simulate_gaintable_from_pointingtable(
+        vis=subvis, pt=pt, sc=[emitter_comp], vp=vp
+    )
+
+    # apply the beam gain --> it updates subvis in place
+    apply_gaintable(subvis, gt[0], inverse=True)

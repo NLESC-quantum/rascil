@@ -1,6 +1,6 @@
 
 /.idea
-/rascil-docker/.idea
+/docker/.idea
 /examples/numba experiments
 
 /docs/build

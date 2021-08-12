@@ -523,17 +523,12 @@ def deconvolve_list_rsexecute_workflow(
 
     nchan = len(dirty_list)
 
-    # Work out the threshold. Need to find global peak over all dirty_list images
-    threshold = get_parameter(kwargs, "threshold", 0.0)
-    fractional_threshold = get_parameter(kwargs, "fractional_threshold", 0.1)
-
     # Find the global threshold. This uses the peak in the average on the frequency axis since we
     # want to use it in a stopping criterion in a moment clean
     global_threshold = threshold_list_rsexecute(
         dirty_list,
-        threshold,
-        fractional_threshold,
         prefix=prefix,
+        **kwargs,
     )
     # Dask is apparently smart enough to evaluate futures in kwargs
     kwargs["threshold"] = global_threshold
@@ -900,13 +895,11 @@ def sum_invert_results_rsexecute(image_list, split=2):
         return rsexecute.execute(sum_invert_results, nout=2)(image_list)
 
 
-def threshold_list_rsexecute(imagelist, threshold, fractional_threshold, prefix=""):
+def threshold_list_rsexecute(imagelist, prefix="", **kwargs):
     """Find actual threshold for list of results
 
     :param prefix: Prefix in log messages
-    :param imagelist:
-    :param threshold: Absolute threshold
-    :param fractional_threshold: Fractional  threshold
+    :param imagelist: List of images
     :return:
     """
 
@@ -914,11 +907,32 @@ def threshold_list_rsexecute(imagelist, threshold, fractional_threshold, prefix=
     frequency_plane = sum_images_rsexecute(imagelist)
     norm = 1.0 / len(imagelist)
 
+    threshold = get_parameter(kwargs, "threshold", 0.0)
+    fractional_threshold = get_parameter(kwargs, "fractional_threshold", 0.1)
+    nfacets = get_parameter(kwargs, "deconvolve_facets", 1)
+    overlap = get_parameter(kwargs, "deconvolve_overlap", 0)
+
     def find_peak_moment0(m0):
-        this_peak = norm * numpy.max(
-            numpy.abs(numpy.average(m0["pixels"].data, axis=0))
-        )
-        log.info("threshold_list_rsexecute: peak = %f," % (this_peak))
+        if nfacets > 1:
+            nchan, npol, ny, nx = m0["pixels"].shape
+            blcx = (nfacets - 1) * overlap
+            blcy = (nfacets - 1) * overlap
+            trcx = nx - (nfacets - 1) * overlap
+            trcy = ny - (nfacets - 1) * overlap
+            this_peak = norm * numpy.max(
+                numpy.abs(
+                    numpy.average(m0["pixels"].data[..., blcy:trcy, blcx:trcx], axis=0)
+                )
+            )
+            log.info(
+                "threshold_list_rsexecute: peak in cleaned area = %f," % (this_peak)
+            )
+        else:
+            this_peak = norm * numpy.max(
+                numpy.abs(numpy.average(m0["pixels"].data, axis=0))
+            )
+            log.info("threshold_list_rsexecute: peak entire image = %f," % (this_peak))
+
         actual = max(this_peak * fractional_threshold, threshold)
         log.info(
             "threshold_list_rsexecute: Global peak = %.6f, sub-image clean threshold will be %.6f"

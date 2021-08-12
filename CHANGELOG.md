@@ -1,6 +1,8 @@
 0.2.2b0
 -------
 
+* Updated the CI pipeline to build the docker images, build on tag, and publish to the Central Artefact Repository
+* Migrated docker builds from rascil-docker repository to rascil/docker directory
 * Added index files to the ci_checker, which list and point to the output files of the app
 
 0.2.1

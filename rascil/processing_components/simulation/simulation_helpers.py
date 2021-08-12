@@ -88,6 +88,7 @@ def plot_visibility(
     x="uvdist",
     plot_file=None,
     chan=0,
+    markersize=0.2,
     **kwargs
 ):
     """Standard plot of visibility
@@ -112,7 +113,7 @@ def plot_visibility(
             yvalue[yvalue > 0.0],
             ".",
             color=colors[ivis],
-            markersize=5,
+            markersize=markersize,
         )
 
     plt.xlabel(x)

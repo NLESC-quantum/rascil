@@ -6,7 +6,7 @@
 #
 alabaster==0.7.12
     # via sphinx
-astroid==2.6.5
+astroid==2.6.6
     # via pylint
 attrs==21.2.0
     # via pytest

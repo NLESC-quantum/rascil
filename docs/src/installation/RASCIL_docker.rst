@@ -1,3 +1,3 @@
 .. _rascil_docker:
 
-.. mdinclude:: ../../../rascil-docker/README.md
+.. mdinclude:: ../../../docker/README.md

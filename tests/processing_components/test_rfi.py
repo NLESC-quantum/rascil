@@ -14,7 +14,7 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation.rfi import (
-    calculate_rfi_at_station,
+    apply_beam_gain_for_low,
     calculate_station_correlation_rfi,
     simulate_rfi_block_prop,
     match_frequencies,
@@ -125,7 +125,7 @@ class TestRFISim(unittest.TestCase):
         beam_gain_value = 9
         beam_gain_ctx = "bg_value"
 
-        result = calculate_rfi_at_station(
+        result = apply_beam_gain_for_low(
             apparent_power, beam_gain_value, beam_gain_ctx, None
         )
         # function multiplies the given apparent power with the sqrt of beam gain
@@ -140,7 +140,7 @@ class TestRFISim(unittest.TestCase):
         # file contains a value of beam gain per channel
         mock_load.return_value = numpy.array([9, 4, 16, 25])
 
-        result = calculate_rfi_at_station(
+        result = apply_beam_gain_for_low(
             apparent_power, beam_gain_value, beam_gain_ctx, None
         )
         # function multiplies the given apparent power with the sqrt of beam gain
@@ -156,7 +156,7 @@ class TestRFISim(unittest.TestCase):
         beam_gain_value = 3.0e-8
         beam_gain_ctx = "bg_value"
         # Now calculate the RFI at the stations, based on the emitter and the propagators
-        rfi_at_station = calculate_rfi_at_station(
+        rfi_at_station = apply_beam_gain_for_low(
             apparent_power, beam_gain_value, beam_gain_ctx, None
         )
         assert rfi_at_station.shape == (

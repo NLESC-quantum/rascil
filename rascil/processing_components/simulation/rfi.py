@@ -146,7 +146,7 @@ def match_frequencies(rfi_signal, rfi_frequencies, bvis_freq_channels, bvis_band
     return new_array[:, :, 1:]
 
 
-def calculate_rfi_at_station(
+def apply_beam_gain_for_low(
     isotropic_emitter_power,
     beam_gain_value,
     beam_gain_context,
@@ -154,7 +154,7 @@ def calculate_rfi_at_station(
 ):
     """
     Apply the beam gain to the apparent emitter power, to determine
-    the received RFI signal at SKA station(s).
+    the received RFI signal at SKA LOW station(s).
 
     :param isotropic_emitter_power: apparent emitter power level as received by an isotropic antenna
                 [ntimes x nantennas x nchannels]
@@ -185,6 +185,60 @@ def calculate_rfi_at_station(
     return rfi_at_station
 
 
+def apply_beam_gain_for_mid(
+    bvis,
+    sub_vis,
+    voltage_pattern,
+    azimuth,
+    elevation,
+    emitter_declination,
+    emitter_sky,
+    ha_phase_ctr,
+    latitude,
+):
+    """
+    Apply the beam gain to the apparent emitter power, to determine
+    the received RFI signal at SKA MID antenna(s).
+
+    :param bvis: original block visibility
+    :param sub_vis: a copy and subset of the block visibility, already containing the RFI signal
+    :param voltage_pattern: voltage pattern object for SKA Mid
+    :param azimuth: azimuth of the RFI source at a given time, in degrees
+    :param elevation: elevation of the RFI source at a given time, in degrees
+    :param emitter_declination: declination of the RFI source at a given time
+    :param emitter_sky: astropy.coordinates.sky_coordinate.SkyCoord object
+    :param ha_phase_ctr: hour angle of the phase centre in degrees
+    :param latitude: latitude of the SKA site in radians
+    """
+    flux = numpy.zeros((bvis.vis.shape[2], bvis.vis.shape[3]))  # [nchan, npol]
+
+    pointing_table = create_pointingtable_from_blockvisibility(sub_vis)
+
+    # there is always one time index in pt --> the first index is always 0
+    pointing_table["nominal"][0, :, :, 0, 0] = numpy.deg2rad(azimuth)[:, numpy.newaxis]
+    pointing_table["nominal"][0, :, :, 1, 1] = numpy.deg2rad(elevation)[
+        :, numpy.newaxis
+    ]
+    az_centre, el_centre = hadec_to_azel(ha_phase_ctr, emitter_declination, latitude)
+    pointing_table["pointing"][0, ..., 0, 0] = az_centre[:, numpy.newaxis]
+    pointing_table["pointing"][0, ..., 1, 1] = el_centre[:, numpy.newaxis]
+
+    # Update the location of the emitter
+    emitter_comp = create_skycomponent(
+        direction=emitter_sky,
+        flux=flux,
+        frequency=bvis.frequency.data,
+        polarisation_frame=PolarisationFrame(bvis._polarisation_frame),
+    )
+    # Now calculate and apply the gains
+    gt = simulate_gaintable_from_pointingtable(
+        vis=sub_vis, pt=pointing_table, sc=[emitter_comp], vp=voltage_pattern
+    )
+
+    # apply the beam gain --> it updates subvis in place
+    apply_gaintable(sub_vis, gt[0], inverse=True)
+
+
 def _get_uvw_per_station(xyz, ha, dec):
     """arrays"""
     uvw = [xyz_to_uvw(xyz[i], ha[i], dec[i]) for i in range(len(ha))]
@@ -212,10 +266,17 @@ def simulate_rfi_block_prop(
     :param rfi_frequencies: frequency channels where there is RFI information
                 length = nchannels
     :param beam_gain_state: tuple of beam gains to apply to the signal or file containing values,
-                           and flag to declare which
-    :param use_pole: Set the emitter to nbe at the southern celestial pole
+                           and flag to declare which; only needed for LOW; for Mid, use None
+    :param use_pole: Set the emitter to be at the southern celestial pole
     :return: BlockVisibility
     """
+
+    mid_or_low = bvis.configuration.name
+    if "MID" not in mid_or_low and "LOW" not in mid_or_low:
+        raise ValueError(
+            "Telescope configuration is neither for SKA Mid nor for SKA Low."
+            "Please specify correct configuration."
+        )
 
     if beam_gain_state is None:
         beamgain_value = 1.0
@@ -228,32 +289,13 @@ def simulate_rfi_block_prop(
     bvis_data_copy = copy.copy(bvis["vis"].data)
     ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
-    # BEAM GAIN CODE FOR MID -- TODO: need help from Tim
-    flux = numpy.zeros((nchan, npol))
-    # flux[:, 2] = 0.0
-    # flux[:, 3] = 0.0
-    vp = create_vp(telescope="MID_B2")
+    if "MID" in mid_or_low:
+        vp = create_vp(telescope="MID_B2")
 
     for i, source in enumerate(
         rfi_sources
     ):  # this will tell us the index of the source in the data
 
-        ## ORIGINAL: written for Low, needs to be refactored once gain is done
-        # rfi_at_station = calculate_rfi_at_station(
-        #     apparent_emitter_power[i],
-        #     beamgain_value,
-        #     bg_context,
-        #     source,
-        # )
-        #
-        # rfi_at_station_all_chans = match_frequencies(
-        #     rfi_at_station,
-        #     rfi_frequencies,
-        #     bvis.frequency.values,
-        #     bvis.channel_bandwidth.values,
-        # )
-
-        # NEW: applying the beam gain from the table
         emitter_power_all_chans = match_frequencies(
             apparent_emitter_power[i],
             rfi_frequencies,
@@ -261,7 +303,17 @@ def simulate_rfi_block_prop(
             bvis.channel_bandwidth.values,
         )
 
-        rfi_at_station_all_chans = emitter_power_all_chans.copy()
+        if "LOW" in mid_or_low:
+            # Apply beam gain for Low RFI data
+            rfi_at_station_all_chans = apply_beam_gain_for_low(
+                emitter_power_all_chans,
+                beamgain_value,
+                bg_context,
+                source,
+            )
+
+        else:
+            rfi_at_station_all_chans = emitter_power_all_chans.copy()
 
         # Calculate the RFI correlation using the fringe rotation and the RFI at the station
         # [ntimes, nants, nants, nchan, npol]
@@ -321,6 +373,7 @@ def simulate_rfi_block_prop(
 
                 ant_ra = -ha_emitter[iha, :] + ha_phase_ctr.rad
                 ant_dec = dec_emitter[iha, :]
+
                 emitter_sky = SkyCoord(ant_ra * u.rad, ant_dec * u.rad)
                 l, m, n = skycoord_to_lmn(emitter_sky, bvis.phasecentre)
 
@@ -343,37 +396,21 @@ def simulate_rfi_block_prop(
                 # Now fill this into the BlockVisibility
                 subvis["vis"].data[0, ...] = bvis_data_copy[iha, ...] * phasor
 
-                # Apply beam gain for Mid
-                # apply_beam_gain_for_mid(az, bvis, dec_emitter, el, emitter_sky, flux, ha_phase_ctr, iha, latitude,
-                #                         subvis, vp)
+                if "MID" in mid_or_low:
+                    # Apply beam gain for Mid
+                    apply_beam_gain_for_mid(
+                        bvis,
+                        subvis,
+                        vp,
+                        az[iha],
+                        el[iha],
+                        dec_emitter[iha, :],
+                        emitter_sky,
+                        ha_phase_ctr,
+                        latitude,
+                    )
 
             # Now accumulate over all sources
             bvis["vis"].data += final_bvis["vis"].data
 
     return bvis
-
-
-def apply_beam_gain_for_mid(az, bvis, dec_emitter, el, emitter_sky, flux, ha_phase_ctr, iha, latitude, subvis, vp):
-    pt = create_pointingtable_from_blockvisibility(subvis)
-    # there is always one time index in pt --> the first index is always 0
-    pt["nominal"][0, :, :, 0, 0] = numpy.deg2rad(az[iha])[:, numpy.newaxis]
-    pt["nominal"][0, :, :, 1, 1] = numpy.deg2rad(el[iha])[:, numpy.newaxis]
-    az_centre, el_centre = hadec_to_azel(
-        ha_phase_ctr, dec_emitter[iha, :], latitude
-    )
-    pt["pointing"][0, ..., 0, 0] = az_centre[:, numpy.newaxis]
-    pt["pointing"][0, ..., 1, 1] = el_centre[:, numpy.newaxis]
-    # Update the location of the emitter
-    emitter_comp = create_skycomponent(
-        direction=emitter_sky,
-        flux=flux,
-        frequency=bvis.frequency.data,
-        polarisation_frame=PolarisationFrame(bvis._polarisation_frame),
-    )
-    # Now calculate and apply the gains
-    gt = simulate_gaintable_from_pointingtable(
-        vis=subvis, pt=pt, sc=[emitter_comp], vp=vp
-    )
-
-    # apply the beam gain --> it updates subvis in place
-    apply_gaintable(subvis, gt[0], inverse=True)

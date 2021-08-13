@@ -32,7 +32,7 @@ def simulate_gaintable_from_pointingtable(
     vis,
     sc,
     pt,
-    vp,  # this is the fits file
+    vp,
     vis_slices=None,
     scale=1.0,
     order=3,

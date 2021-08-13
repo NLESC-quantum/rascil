@@ -215,13 +215,23 @@ def apply_beam_gain_for_mid(
     pointing_table = create_pointingtable_from_blockvisibility(sub_vis)
 
     # there is always one time index in pt --> the first index is always 0
-    pointing_table["nominal"][0, :, :, 0, 0] = numpy.deg2rad(azimuth)[:, numpy.newaxis]
-    pointing_table["nominal"][0, :, :, 1, 1] = numpy.deg2rad(elevation)[
-        :, numpy.newaxis
+    # Axes are [time, ant, frequency, receptor, angle]. All receptors and
+    # frequencies have the same pointing.
+    pointing_table["pointing"][0, :, :, :, 0] = numpy.deg2rad(azimuth)[
+        :, numpy.newaxis, numpy.newaxis
     ]
-    az_centre, el_centre = hadec_to_azel(ha_phase_ctr, emitter_declination, latitude)
-    pointing_table["pointing"][0, ..., 0, 0] = az_centre[:, numpy.newaxis]
-    pointing_table["pointing"][0, ..., 1, 1] = el_centre[:, numpy.newaxis]
+    pointing_table["pointing"][0, :, :, :, 1] = numpy.deg2rad(elevation)[
+        :, numpy.newaxis, numpy.newaxis
+    ]
+    az_centre, el_centre = hadec_to_azel(
+        ha_phase_ctr.rad, emitter_declination, latitude
+    )
+    pointing_table["nominal"][0, :, :, :, 0] = az_centre[
+        :, numpy.newaxis, numpy.newaxis
+    ]
+    pointing_table["nominal"][0, :, :, :, 1] = el_centre[
+        :, numpy.newaxis, numpy.newaxis
+    ]
 
     # Update the location of the emitter
     emitter_comp = create_skycomponent(

@@ -6,13 +6,15 @@
 #
 aotools==1.0.4
     # via -r requirements.in
+argcomplete==1.12.3
+    # via ipykernel
 argon2-cffi==20.1.0
     # via notebook
 argparse==1.4.0
     # via python-casacore
 asciitree==0.3.3
     # via zarr
-astropy==4.3.post1
+astropy==4.3.1
     # via
     #   -r requirements.in
     #   astropy-healpix
@@ -62,7 +64,7 @@ cryptography==3.4.7
     # via paramiko
 cycler==0.10.0
     # via matplotlib
-dask==2021.07.2
+dask==2021.08.0
     # via
     #   -r requirements.in
     #   distributed
@@ -74,7 +76,7 @@ decorator==5.0.9
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.7.2
+distributed==2021.8.0
     # via
     #   -r requirements.in
     #   dask-memusage
@@ -102,13 +104,14 @@ idna==3.2
     # via requests
 imageio==2.9.0
     # via scikit-image
-importlib-metadata==3.10.1
+importlib-metadata==4.6.4
     # via
+    #   argcomplete
     #   astropy
     #   click
     #   ipykernel
     #   jsonschema
-ipykernel==6.0.3
+ipykernel==6.1.0
     # via
     #   ipywidgets
     #   jupyter
@@ -135,6 +138,7 @@ jedi==0.18.0
 jinja2==3.0.1
     # via
     #   bokeh
+    #   distributed
     #   nbconvert
     #   notebook
 jsonschema==3.2.0
@@ -187,7 +191,7 @@ lxml==4.6.3
     # via jupyter-contrib-nbextensions
 markupsafe==2.0.1
     # via jinja2
-matplotlib==3.4.2
+matplotlib==3.4.3
     # via
     #   -r requirements.in
     #   aotools
@@ -220,7 +224,7 @@ nest-asyncio==1.5.1
     # via nbclient
 networkx==2.6.2
     # via scikit-image
-notebook==6.4.2
+notebook==6.4.3
     # via
     #   jupyter
     #   jupyter-contrib-core
@@ -232,7 +236,7 @@ numba==0.53.1
     # via
     #   -r requirements.in
     #   aotools
-numcodecs==0.8.0
+numcodecs==0.8.1
     # via zarr
 numpy==1.20.3
     # via
@@ -264,7 +268,7 @@ packaging==21.0
     #   bleach
     #   bokeh
     #   dask
-pandas==1.3.1
+pandas==1.3.2
     # via
     #   -r requirements.in
     #   xarray
@@ -304,7 +308,7 @@ pycparser==2.20
     # via cffi
 pyerfa==2.0.0
     # via astropy
-pygments==2.9.0
+pygments==2.10.0
     # via
     #   ipython
     #   jupyter-console
@@ -349,7 +353,7 @@ qtconsole==5.1.1
     # via jupyter
 qtpy==1.9.0
     # via qtconsole
-reproject==0.7.1
+reproject==0.8
     # via -r requirements.in
 requests==2.26.0
     # via
@@ -366,7 +370,7 @@ scipy==1.7.1
     #   bdsf
     #   reproject
     #   scikit-image
-send2trash==1.7.1
+send2trash==1.8.0
     # via notebook
 seqfile==0.2.0
     # via -r requirements.in
@@ -389,11 +393,11 @@ tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
     # via distributed
-terminado==0.10.1
+terminado==0.11.0
     # via notebook
 testpath==0.5.0
     # via nbconvert
-tifffile==2021.7.30
+tifffile==2021.8.8
     # via scikit-image
 toolz==0.11.1
     # via

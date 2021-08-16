@@ -10,6 +10,11 @@ from typing import Iterable
 import numpy
 import xarray
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 from rascil.data_models import (
     BlockVisibility,
     GainTable,
@@ -165,8 +170,60 @@ def gt_sink(gt_gen: Iterable[GainTable]):
         )
         gt_list.append(gt)
 
+        gt_update_plot(gt_list, datetime)
+        log.info("Updated gaintable plots.")
+
     full_gt = xarray.concat(gt_list, "time")
     return full_gt
+
+
+def gt_update_plot(gt_list, datetime):
+
+    """Plot a single gaintable (gain and residual values) over time
+
+    :param gt_list: GainTable list to plot
+    :param datetime: The current datetime
+    """
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
+    fig.subplots_adjust(hspace=0)
+
+    gains = []
+    residual = []
+    time = []
+
+    # We only look at the central antenna at the moment
+    for gt in gt_list:
+
+        time.append(gt.time.data[0])
+        current_gain = gt.gain.data[0]
+        nchan = current_gain.shape[1]
+        gains.append(current_gain[:, nchan // 2, 0, 0])
+        residual.append(gt.residual.data[0, nchan // 2, 0, 0])
+
+    # Plotting.
+    gains = numpy.array(gains)
+    amp = numpy.abs(gains)
+    phase = numpy.angle(gains, deg=True)
+    for i in range(gains.shape[1]):
+        ax1.plot(time, amp[:, i] - 1.0, label=f"Station {i}")
+        ax2.plot(time, phase[:, i], label=f"Station {i}")
+
+    ax1.set_ylabel("Gain Amplitude - 1")
+    ax2.set_ylabel("Gain Phase (deg)")
+    ax2.legend(loc="best")
+
+    ax3.plot(time, residual)
+    ax3.set_ylabel("Residual")
+    ax3.set_xlabel("Time(s)")
+    ax3.set_yscale("log")
+    ax3.set_xscale("log")
+
+    fig.suptitle(f"Updated GainTable at {datetime}")
+    plt.savefig(f"plot_{datetime}.png")
+    plt.clf()
+
+    return
 
 
 if __name__ == "__main__":

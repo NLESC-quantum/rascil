@@ -4,18 +4,30 @@
 * [MR203] Updated the CI pipeline to build the docker images, build on tag, and publish to the Central Artefact Repository
 * [MR200] Migrated docker builds from rascil-docker repository to rascil/docker directory
 * [MR199] Added CLI option and env variable that passes dask scheduler file to setup dask cluster
+* [MR191] Updated imaging_qa to make it optional to plot diagnostics plots
 * [MR189] CI pipeline update: tests run in two separate jobs: dask/non-dask
+* [MR185] Updated function to generate MID simulation skycomponents
 * [MR183, MR195] Update CI pipeline to publish Python package in the SKA central artefact repository
 * [MR177] RFI simulation code is refactored to be compatible with the standard RFI input data
+* [MR173] Added more tests for imaging_qa tool. 
+* [MR169] Added functionality in imaging_qa to analyse frequency moment images to allow more accurate calculation of spectral index
+* [MR161, MR163] Renamed ci_checker to imaging_qa
+* [MR158] Updated ci_checker to plot spectral index with flux cutoff and some other diagnostics plots
+* [MR156] Added more unit tests for ci_checker
 * [MR154] The repository is Black-compatible, and expects all python code to be [Black](https://github.com/psf/black) formatted
+* [MR150] Updated ci_checker to provide functionality for primary beam correction
+* [MR142] Updated ci_checker to analyse multi frequency FITs images
+* [MR138] Added wide field plots for ci_checker
 * [MR136] Added option to load ci_checker arguments in the command line directly from a file
 * [MR132, MR145] ci_checker now produces various diagnostics plots, e.g. power spectrum, running mean, histogram, etc.
+* [MR130, MR133, MR141] Updated ci_checker's logging and errors, as well as rearranging the files' locations etc. 
 * [MR123, MR125] Added index files to the ci_checker, which list and point to the output files of the app
+* [MR122] Added functions to plot sources in skycomponents format compatible for ci_checker
 
 0.2.1
 -----
 * New app rascil_advise to advise on imaging parameters for a MeasurementSet
-* New app ci_checker to check sources in continuum imaging images with BDSF
+* New app ci_checker(imaging_qa) to check sources in continuum imaging images with BDSF
 * Implement using requirements*.in files for dependency management.
   Add files: requirements.in, requirements-docs.in, requirements-test.in
 * Makefile updated with requirements management commands:

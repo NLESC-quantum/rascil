@@ -15,6 +15,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from astropy import units as u
+from astropy.time import Time
+from astropy.visualization import time_support
+
 from rascil.data_models import (
     BlockVisibility,
     GainTable,
@@ -179,49 +183,51 @@ def gt_sink(gt_gen: Iterable[GainTable]):
 
 def gt_update_plot(gt_list, datetime):
 
-    """Plot a single gaintable (gain and residual values) over time
+    """Plot gaintable (gain and residual values) over time
 
     :param gt_list: GainTable list to plot
     :param datetime: The current datetime
     """
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
-    fig.subplots_adjust(hspace=0)
+    with time_support(format="iso", scale="utc"):
 
-    gains = []
-    residual = []
-    time = []
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
+        fig.subplots_adjust(hspace=0)
 
-    # We only look at the central antenna at the moment
-    for gt in gt_list:
+        gains = []
+        residual = []
+        time = []
 
-        time.append(gt.time.data[0])
-        current_gain = gt.gain.data[0]
-        nchan = current_gain.shape[1]
-        gains.append(current_gain[:, nchan // 2, 0, 0])
-        residual.append(gt.residual.data[0, nchan // 2, 0, 0])
+        # We only look at the central antenna at the moment
+        for gt in gt_list:
 
-    # Plotting.
-    gains = numpy.array(gains)
-    amp = numpy.abs(gains)
-    phase = numpy.angle(gains, deg=True)
-    for i in range(gains.shape[1]):
-        ax1.plot(time, amp[:, i] - 1.0, label=f"Station {i}")
-        ax2.plot(time, phase[:, i], label=f"Station {i}")
+            time.append(gt.time.data[0] / 86400.0)
+            current_gain = gt.gain.data[0]
+            nchan = current_gain.shape[1]
+            gains.append(current_gain[:, nchan // 2, 0, 0])
+            residual.append(gt.residual.data[0, nchan // 2, 0, 0])
 
-    ax1.set_ylabel("Gain Amplitude - 1")
-    ax2.set_ylabel("Gain Phase (deg)")
-    ax2.legend(loc="best")
+        # Plotting.
+        gains = numpy.array(gains)
+        amp = numpy.abs(gains)
+        phase = numpy.angle(gains, deg=True)
+        timeseries = Time(time, format="mjd", out_subfmt="str")
+        for i in range(gains.shape[1]):
+            ax1.plot(timeseries, amp[:, i] - 1.0, label=f"Station {i}")
+            ax2.plot(timeseries, phase[:, i], label=f"Station {i}")
 
-    ax3.plot(time, residual)
-    ax3.set_ylabel("Residual")
-    ax3.set_xlabel("Time(s)")
-    ax3.set_yscale("log")
-    ax3.set_xscale("log")
+        ax1.set_ylabel("Gain Amplitude - 1")
+        ax2.set_ylabel("Gain Phase (deg)")
+        ax2.legend(loc="best")
 
-    fig.suptitle(f"Updated GainTable at {datetime}")
-    plt.savefig(f"plot_{datetime}.png")
-    plt.clf()
+        ax3.plot(timeseries, residual)
+        ax3.set_ylabel("Residual")
+        ax3.set_xlabel("Time(UTC)")
+        ax3.set_yscale("log")
+
+        fig.suptitle(f"Updated GainTable at {datetime}")
+        plt.savefig(f"plot_{datetime}.png")
+        plt.cla()
 
     return
 

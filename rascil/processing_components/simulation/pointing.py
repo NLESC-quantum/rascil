@@ -13,11 +13,9 @@ __all__ = [
 import logging
 
 import numpy
+from astropy.time import Time
 from scipy.interpolate import RectBivariateSpline
 
-from astropy.time import Time
-
-from rascil.data_models.memory_data_models import BlockVisibility
 from rascil.data_models.memory_data_models import PointingTable
 from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.calibration.operations import (
@@ -37,9 +35,11 @@ def simulate_gaintable_from_pointingtable(
     scale=1.0,
     order=3,
     elevation_limit=15.0 * numpy.pi / 180.0,
-    **kwargs
+    **kwargs,
 ):
     """Create gaintables from a pointing table
+
+    Note that the column "nominal" is not used
 
     :param vis:
     :param sc: Sky components for which pierce points are needed
@@ -141,12 +141,14 @@ def simulate_gaintable_from_pointingtable(
                     )
                     azimuth_comp = azimuth_comp[0].to("rad").value
                     elevation_comp = elevation_comp[0].to("rad").value
+                    # We now add the pointing to the calculated az, el of the component
                     for ant in range(nant):
                         wcs_azel = vp.image_acc.wcs.deepcopy()
-                        az_comp = azimuth_centre + pointing_ha[
+                        az_comp = azimuth_comp[ant] + pointing_ha[
                             ant, 0, 0, 0
                         ] / numpy.cos(elevation_centre)
-                        el_comp = elevation_centre + pointing_ha[ant, 0, 0, 1]
+                        el_comp = elevation_comp[ant] + pointing_ha[ant, 0, 0, 1]
+
                         if az_comp - azimuth_comp[ant] > numpy.pi:
                             azimuth_comp[ant] += 2.0 * numpy.pi
                         if az_comp - azimuth_comp[ant] < -numpy.pi:
@@ -161,6 +163,11 @@ def simulate_gaintable_from_pointingtable(
                         try:
                             for gchan in range(gnchan):
                                 gain = numpy.zeros([npol], dtype="complex")
+                                # Unwrap azimuths
+                                if azimuth_comp[ant] - az_comp > numpy.pi:
+                                    azimuth_comp[ant] -= 2.0 * numpy.pi
+                                if azimuth_comp[ant] - az_comp <= -numpy.pi:
+                                    azimuth_comp[ant] += 2.0 * numpy.pi
                                 worldloc = [
                                     azimuth_comp[ant] * r2d,
                                     elevation_comp[ant] * r2d,
@@ -234,7 +241,7 @@ def simulate_pointingtable(
     static_pointing_error=None,
     global_pointing_error=None,
     seed=None,
-    **kwargs
+    **kwargs,
 ) -> PointingTable:
     """Simulate a gain table
 

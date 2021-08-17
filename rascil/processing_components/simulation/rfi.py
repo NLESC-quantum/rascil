@@ -28,6 +28,7 @@ import logging
 import astropy.units as u
 import numpy
 from astropy.coordinates import SkyCoord, EarthLocation
+from astropy.time import Time
 
 from rascil import phyconst
 from rascil.data_models.parameters import rascil_path
@@ -40,6 +41,8 @@ from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.processing_components.util.compass_bearing import (
     calculate_initial_compass_bearing,
 )
+from rascil.processing_components.util.geometry import calculate_azel
+
 from rascil.processing_components.imaging.primary_beams import create_vp
 from rascil.processing_components.util.coordinate_support import (
     simulate_point,
@@ -217,21 +220,31 @@ def apply_beam_gain_for_mid(
     # there is always one time index in pt --> the first index is always 0
     # Axes are [time, ant, frequency, receptor, angle]. All receptors and
     # frequencies have the same pointing.
-    pointing_table["pointing"][0, :, :, :, 0] = numpy.deg2rad(azimuth)[
-        :, numpy.newaxis, numpy.newaxis
-    ]
-    pointing_table["pointing"][0, :, :, :, 1] = numpy.deg2rad(elevation)[
-        :, numpy.newaxis, numpy.newaxis
-    ]
-    az_centre, el_centre = hadec_to_azel(
-        ha_phase_ctr.rad, emitter_declination, latitude
+    utc_time = Time(
+        [numpy.average(pointing_table["time"]) / 86400.0], format="mjd", scale="utc"
     )
+    az_centre, el_centre = calculate_azel(
+        sub_vis.configuration.location, utc_time, sub_vis.phasecentre
+    )
+    # The nominal pointing is the phasecentre in az, el
     pointing_table["nominal"][0, :, :, :, 0] = az_centre[
         :, numpy.newaxis, numpy.newaxis
     ]
     pointing_table["nominal"][0, :, :, :, 1] = el_centre[
         :, numpy.newaxis, numpy.newaxis
     ]
+    # The pointing is the interferer in az el
+    pointing_table["pointing"][0, :, :, :, 0] = numpy.deg2rad(
+        azimuth[:, numpy.newaxis, numpy.newaxis]
+    )
+    pointing_table["pointing"][0, :, :, :, 1] = numpy.deg2rad(
+        elevation[:, numpy.newaxis, numpy.newaxis]
+    )
+    # Pointing tables define pointing to be relative to the phasecentre
+    pointing_table["pointing"] -= pointing_table["nominal"]
+    pointing_table["pointing"][0, :, :, :, 0] *= numpy.cos(
+        pointing_table["nominal"][0, :, :, :, 1]
+    )
 
     # Update the location of the emitter
     emitter_comp = create_skycomponent(
@@ -264,6 +277,7 @@ def simulate_rfi_block_prop(
     rfi_frequencies,
     beam_gain_state=None,
     use_pole=False,
+    apply_primary_beam=True,
 ):
     """Simulate RFI in a BlockVisility
 
@@ -278,6 +292,7 @@ def simulate_rfi_block_prop(
     :param beam_gain_state: tuple of beam gains to apply to the signal or file containing values,
                            and flag to declare which; only needed for LOW; for Mid, use None
     :param use_pole: Set the emitter to be at the southern celestial pole
+    :param apply_primary_beam: Apply the primary beam
     :return: BlockVisibility
     """
 
@@ -406,7 +421,7 @@ def simulate_rfi_block_prop(
                 # Now fill this into the BlockVisibility
                 subvis["vis"].data[0, ...] = bvis_data_copy[iha, ...] * phasor
 
-                if "MID" in mid_or_low:
+                if apply_primary_beam and "MID" in mid_or_low:
                     # Apply beam gain for Mid
                     apply_beam_gain_for_mid(
                         bvis,

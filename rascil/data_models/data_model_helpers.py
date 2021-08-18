@@ -176,6 +176,8 @@ def convert_configuration_to_hdf(config: Configuration, f):
     """
     if not isinstance(config, Configuration):
         raise ValueError(f"config is not a Configuration: {config}")
+    if config.attrs["rascil_data_model"] != "Configuration":
+        raise ValueError(f"config is not a Configuration: {config}")
 
     cf = f.create_group("configuration")
     cf.attrs["rascil_data_model"] = "Configuration"
@@ -245,7 +247,7 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
     if not isinstance(vis, xarray.Dataset):
         raise ValueError("vis is not an xarray.Dataset")
 
-    if not isinstance(vis, BlockVisibility):
+    if vis.attrs["rascil_data_model"] != "BlockVisibility":
         raise ValueError(f"vis is not a BlockVisibility: {vis}")
 
     # We only need to keep the things we need to reconstruct the data_model
@@ -334,7 +336,7 @@ def convert_flagtable_to_hdf(ft: FlagTable, f):
     """
     if not isinstance(ft, xarray.Dataset):
         raise ValueError(f"ft is not an xarray.Dataset: {ft}")
-    if not isinstance(ft, FlagTable):
+    if ft.attrs["rascil_data_model"] != "FlagTable":
         raise ValueError(f"ft is not a FlagTable: {ft}")
 
     f.attrs["rascil_data_model"] = "FlagTable"
@@ -471,8 +473,8 @@ def convert_gaintable_to_hdf(gt: GainTable, f):
     """
     if not isinstance(gt, xarray.Dataset):
         raise ValueError(f"gt is not an xarray.Dataset: {gt}")
-    if not isinstance(gt, GainTable):
-        raise ValueError(f"gt is not a BlockVisibility: {GainTable}")
+    if gt.attrs["rascil_data_model"] != "GainTable":
+        raise ValueError(f"gt is not a GainTable: {GainTable}")
 
     f.attrs["rascil_data_model"] = "GainTable"
     f.attrs["receptor_frame"] = gt.receptor_frame.type
@@ -566,7 +568,7 @@ def convert_pointingtable_to_hdf(pt: PointingTable, f):
     """
     if not isinstance(pt, xarray.Dataset):
         raise ValueError(f"pt is not an xarray.Dataset: {pt}")
-    if not isinstance(pt, PointingTable):
+    if pt.attrs["rascil_data_model"] != "PointingTable":
         raise ValueError(f"pt is not a PointingTable: {pt}")
 
     f.attrs["rascil_data_model"] = "PointingTable"
@@ -761,14 +763,18 @@ def convert_image_to_hdf(im: Image, f):
     :param f: hdf group
     :return: group with im added
     """
-    if isinstance(im, xarray.Dataset):
-        f.attrs["rascil_data_model"] = "Image"
-        f["data"] = im["pixels"].data
-        f.attrs["wcs"] = numpy.string_(im.image_acc.wcs.to_header_string())
-        f.attrs["phasecentre_coords"] = im.image_acc.phasecentre.to_string()
-        f.attrs["phasecentre_frame"] = im.image_acc.phasecentre.frame.name
-        f.attrs["polarisation_frame"] = im.image_acc.polarisation_frame.type
-        f.attrs["frequency"] = im.frequency
+    if not isinstance(im, xarray.Dataset):
+        raise ValueError(f"im is not xarray dataset {im}")
+    if im.attrs["rascil_data_model"] != "Image":
+        raise ValueError(f"fim is not an Image: {im}")
+
+    f.attrs["rascil_data_model"] = "Image"
+    f["data"] = im["pixels"].data
+    f.attrs["wcs"] = numpy.string_(im.image_acc.wcs.to_header_string())
+    f.attrs["phasecentre_coords"] = im.image_acc.phasecentre.to_string()
+    f.attrs["phasecentre_frame"] = im.image_acc.phasecentre.frame.name
+    f.attrs["polarisation_frame"] = im.image_acc.polarisation_frame.type
+    f.attrs["frequency"] = im.frequency
 
     return f
 
@@ -862,8 +868,6 @@ def convert_skymodel_to_hdf(sm, f):
     :param f: hdf group
     :return: group with skymodel added
     """
-    if not isinstance(sm, xarray.Dataset):
-        raise ValueError(f"sm is not an xarray.Dataset: {sm}")
     if not isinstance(sm, SkyModel):
         raise ValueError(f"sm is not a SkyModel: {sm}")
 
@@ -949,7 +953,7 @@ def convert_griddata_to_hdf(gd: GridData, f):
     """
     if not isinstance(gd, xarray.Dataset):
         raise ValueError(f"gd is not an xarray.Dataset: {gd}")
-    if not isinstance(gd, GridData):
+    if gd.attrs["rascil_data_model"] != "GridData":
         raise ValueError(f"gd is not a GridData: {gd}")
 
     f.attrs["rascil_data_model"] = "GridData"
@@ -1025,7 +1029,7 @@ def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
     """
     if not isinstance(cf, xarray.Dataset):
         raise ValueError("cf is not an xarray.Dataset")
-    if not isinstance(cf, ConvolutionFunction):
+    if cf.attrs["rascil_data_model"] != "ConvolutionFunction":
         raise ValueError(f"cf is not a ConvolutionFunction: {cf}")
 
     f.attrs["rascil_data_model"] = "ConvolutionFunction"

@@ -11,6 +11,7 @@ __all__ = [
 ]
 
 import logging
+import collections
 
 import numpy
 from astropy.time import Time
@@ -144,15 +145,24 @@ def simulate_gaintable_from_pointingtable(
                     # We now add the pointing to the calculated az, el of the component
                     for ant in range(nant):
                         wcs_azel = vp.image_acc.wcs.deepcopy()
-                        az_comp = azimuth_comp[ant] + pointing_ha[
-                            ant, 0, 0, 0
-                        ] / numpy.cos(elevation_centre)
-                        el_comp = elevation_comp[ant] + pointing_ha[ant, 0, 0, 1]
-
-                        if az_comp - azimuth_comp[ant] > numpy.pi:
-                            azimuth_comp[ant] += 2.0 * numpy.pi
-                        if az_comp - azimuth_comp[ant] < -numpy.pi:
-                            azimuth_comp[ant] -= 2.0 * numpy.pi
+                        if isinstance(azimuth_comp, collections.abc.Iterable):
+                            az_comp = azimuth_comp[ant] + pointing_ha[
+                                ant, 0, 0, 0
+                            ] / numpy.cos(elevation_centre)
+                            el_comp = elevation_comp[ant] + pointing_ha[ant, 0, 0, 1]
+                            if az_comp - azimuth_comp[ant] > numpy.pi:
+                                azimuth_comp[ant] += 2.0 * numpy.pi
+                            if az_comp - azimuth_comp[ant] < -numpy.pi:
+                                azimuth_comp[ant] -= 2.0 * numpy.pi
+                        else:
+                            az_comp = azimuth_comp + pointing_ha[
+                                ant, 0, 0, 0
+                            ] / numpy.cos(elevation_centre)
+                            el_comp = elevation_comp + pointing_ha[ant, 0, 0, 1]
+                            if az_comp - azimuth_comp > numpy.pi:
+                                azimuth_comp += 2.0 * numpy.pi
+                            if az_comp - azimuth_comp < -numpy.pi:
+                                azimuth_comp -= 2.0 * numpy.pi
 
                         # We use WCS sensible coordinate handling by labelling the axes misleadingly
                         wcs_azel.wcs.crval[0] = az_comp * r2d

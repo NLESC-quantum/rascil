@@ -729,7 +729,7 @@ def create_pointing_errors_gaintable_rsexecute_workflow(
         for ibv, bvis in enumerate(sub_bvis_list)
     ]
 
-    return nominal_gt_list, actual_gt_list
+    return nominal_gt_list, actual_gt_list, nominal_pt_list, actual_pt_list
 
 
 def create_surface_errors_gaintable_rsexecute_workflow(

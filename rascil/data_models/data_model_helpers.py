@@ -101,6 +101,7 @@ from typing import Union
 import astropy.units as u
 import h5py
 import numpy
+import xarray
 import pandas
 from astropy.coordinates import SkyCoord, EarthLocation
 from astropy.units import Quantity
@@ -167,12 +168,17 @@ def convert_direction_from_string(s: str):
 
 
 def convert_configuration_to_hdf(config: Configuration, f):
-    """Convert a Configuration to HDF
+    """Convert a Configuration to an HDF file
 
-    :param config:
-    :param f:
-    :return:
+    :param config: Configuration
+    :param f: hdf group
+    :return: group with config added
     """
+    if not isinstance(config, Configuration):
+        raise ValueError(f"config is not a Configuration: {config}")
+    if config.attrs["rascil_data_model"] != "Configuration":
+        raise ValueError(f"config is not a Configuration: {config}")
+
     cf = f.create_group("configuration")
     cf.attrs["rascil_data_model"] = "Configuration"
     cf.attrs["name"] = config.name
@@ -195,7 +201,7 @@ def convert_configuration_to_hdf(config: Configuration, f):
 def convert_configuration_from_hdf(f):
     """Extract configuration from HDF
 
-    :param f:
+    :param f: hdf group
     :return: Configuration
     """
     cf = f["configuration"]
@@ -232,13 +238,17 @@ def convert_configuration_from_hdf(f):
 
 
 def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
-    """Convert blockvisibility to HDF
+    """Convert a BlockVisibility to an HDF file
 
-    :param vis:
-    :param f: HDF root
-    :return:
+    :param vis: BlockVisibility
+    :param f: hdf group
+    :return: group with vis added
     """
-    ##assert isinstance(vis, BlockVisibility)
+    if not isinstance(vis, xarray.Dataset):
+        raise ValueError("vis is not an xarray.Dataset")
+
+    if vis.attrs["rascil_data_model"] != "BlockVisibility":
+        raise ValueError(f"vis is not a BlockVisibility: {vis}")
 
     # We only need to keep the things we need to reconstruct the data_model
     f.attrs["rascil_data_model"] = "BlockVisibility"
@@ -270,8 +280,8 @@ def convert_blockvisibility_to_hdf(vis: BlockVisibility, f):
 def convert_hdf_to_blockvisibility(f):
     """Convert HDF root to blockvisibility
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: BlockVisibility
     """
     assert f.attrs["rascil_data_model"] == "BlockVisibility", "Not a BlockVisibility"
     s = f.attrs["phasecentre_coords"].split()
@@ -318,13 +328,16 @@ def convert_hdf_to_blockvisibility(f):
 
 
 def convert_flagtable_to_hdf(ft: FlagTable, f):
-    """Convert flagtable to HDF
+    """Convert a FlagTable to an HDF file
 
-    :param ft:
-    :param f: HDF root
-    :return:
+    :param ft: FlagTable
+    :param f: hdf group
+    :return: group with ft added
     """
-    ##assert isinstance(ft, FlagTable)
+    if not isinstance(ft, xarray.Dataset):
+        raise ValueError(f"ft is not an xarray.Dataset: {ft}")
+    if ft.attrs["rascil_data_model"] != "FlagTable":
+        raise ValueError(f"ft is not a FlagTable: {ft}")
 
     f.attrs["rascil_data_model"] = "FlagTable"
     f.attrs["nants"] = numpy.max([b[1] for b in ft.baselines.data]) + 1
@@ -339,8 +352,8 @@ def convert_flagtable_to_hdf(ft: FlagTable, f):
 def convert_hdf_to_flagtable(f):
     """Convert HDF root to flagtable
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: FlagTable
     """
     assert f.attrs["rascil_data_model"] == "FlagTable", "Not a FlagTable"
     nants = f.attrs["nants"]
@@ -382,7 +395,6 @@ def export_blockvisibility_to_hdf5(vis, filename):
         if isinstance(vis, list):
             f.attrs["number_data_models"] = len(vis)
             for i, v in enumerate(vis):
-                ##assert isinstance(v, BlockVisibility)
                 vf = f.create_group("BlockVisibility%d" % i)
                 convert_blockvisibility_to_hdf(v, vf)
         else:
@@ -394,7 +406,7 @@ def export_blockvisibility_to_hdf5(vis, filename):
 
 
 def import_blockvisibility_from_hdf5(filename):
-    """Import a Visibility from HDF5 format
+    """Import BlockVisibility(s) from HDF5 format
 
     :param filename:
     :return: If only one then a BlockVisibility, otherwise a list of BlockVisibility's
@@ -413,11 +425,10 @@ def import_blockvisibility_from_hdf5(filename):
 
 
 def export_flagtable_to_hdf5(ft, filename):
-    """Export a FlagTable to HDF5 format
+    """Export a FlagTable or list to HDF5 format
 
     :param ft:
     :param filename:
-    :return:
     """
 
     if not isinstance(ft, collections.abc.Iterable):
@@ -426,7 +437,6 @@ def export_flagtable_to_hdf5(ft, filename):
         if isinstance(ft, list):
             f.attrs["number_data_models"] = len(ft)
             for i, v in enumerate(ft):
-                ##assert isinstance(v, FlagTable)
                 vf = f.create_group("FlagTable%d" % i)
                 convert_flagtable_to_hdf(v, vf)
         else:
@@ -437,7 +447,7 @@ def export_flagtable_to_hdf5(ft, filename):
 
 
 def import_flagtable_from_hdf5(filename):
-    """Import a FlagTable from HDF5 format
+    """Import FlagTable(s) from HDF5 format
 
     :param filename:
     :return: If only one then a FlagTable, otherwise a list of FlagTable's
@@ -455,13 +465,16 @@ def import_flagtable_from_hdf5(filename):
 
 
 def convert_gaintable_to_hdf(gt: GainTable, f):
-    """Convert GainTable to HDF
+    """Convert a GainTable to an HDF file
 
-    :param gt:
-    :param f: HDF root
-    :return:
+    :param gt: GainTable
+    :param f: hdf group
+    :return: group with gt added
     """
-    ##assert isinstance(gt, GainTable)
+    if not isinstance(gt, xarray.Dataset):
+        raise ValueError(f"gt is not an xarray.Dataset: {gt}")
+    if gt.attrs["rascil_data_model"] != "GainTable":
+        raise ValueError(f"gt is not a GainTable: {GainTable}")
 
     f.attrs["rascil_data_model"] = "GainTable"
     f.attrs["receptor_frame"] = gt.receptor_frame.type
@@ -476,8 +489,8 @@ def convert_gaintable_to_hdf(gt: GainTable, f):
 def convert_hdf_to_gaintable(f):
     """Convert HDF root to a GainTable
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: GainTable
     """
     assert f.attrs["rascil_data_model"] == "GainTable", "Not a GainTable"
     receptor_frame = ReceptorFrame(f.attrs["receptor_frame"])
@@ -505,9 +518,9 @@ def convert_hdf_to_gaintable(f):
 
 
 def export_gaintable_to_hdf5(gt: GainTable, filename):
-    """Export a GainTable to HDF5 format
+    """Export a GainTable or list to HDF5 format
 
-    :param gt:
+    :param gt: GainTable or list
     :param filename:
     :return:
     """
@@ -518,7 +531,6 @@ def export_gaintable_to_hdf5(gt: GainTable, filename):
         if isinstance(gt, list):
             f.attrs["number_data_models"] = len(gt)
             for i, g in enumerate(gt):
-                ##assert isinstance(g, GainTable)
                 gf = f.create_group("GainTable%d" % i)
                 convert_gaintable_to_hdf(g, gf)
         else:
@@ -548,15 +560,18 @@ def import_gaintable_from_hdf5(filename):
 
 
 def convert_pointingtable_to_hdf(pt: PointingTable, f):
-    """Convert PointingTable to HDF
+    """Convert a PointingTable to an HDF file
 
-    :param pt:
-    :param f: HDF root
-    :return:
+    :param pt: PointingTable
+    :param f: hdf group
+    :return: group with pt added
     """
-    ##assert isinstance(pt, PointingTable)
+    if not isinstance(pt, xarray.Dataset):
+        raise ValueError(f"pt is not an xarray.Dataset: {pt}")
+    if pt.attrs["rascil_data_model"] != "PointingTable":
+        raise ValueError(f"pt is not a PointingTable: {pt}")
 
-    f.attrs["rascil_data_model"] = pt.rascil_data_model
+    f.attrs["rascil_data_model"] = "PointingTable"
     f.attrs["receptor_frame"] = pt.receptor_frame.type
     f.attrs["pointingcentre_coords"] = pt.pointingcentre.to_string()
     f.attrs["pointingcentre_frame"] = pt.pointingcentre.frame.name
@@ -579,8 +594,8 @@ def convert_pointingtable_to_hdf(pt: PointingTable, f):
 def convert_hdf_to_pointingtable(f):
     """Convert HDF root to a PointingTable
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: PointingTable
     """
     assert f.attrs["rascil_data_model"] == "PointingTable", "Not a PointingTable"
     receptor_frame = ReceptorFrame(f.attrs["receptor_frame"])
@@ -617,7 +632,7 @@ def convert_hdf_to_pointingtable(f):
 
 
 def export_pointingtable_to_hdf5(pt: PointingTable, filename):
-    """Export a PointingTable to HDF5 format
+    """Export a PointingTable or list to HDF5 format
 
     :param pt:
     :param filename:
@@ -660,11 +675,13 @@ def import_pointingtable_from_hdf5(filename):
 
 def convert_skycomponent_to_hdf(sc: Skycomponent, f):
     """Convert Skycomponent to HDF
+
     :param sc: SkyComponent
     :param f: HDF root
-    :return:
+    :return: group with sc added
     """
-    ##assert isinstance(sc, Skycomponent)
+    if not isinstance(sc, Skycomponent):
+        raise ValueError(f"sc is not a SkyComponent: {sc}")
 
     f.attrs["rascil_data_model"] = "Skycomponent"
     f.attrs["direction"] = convert_direction_to_string(sc.direction)
@@ -680,8 +697,8 @@ def convert_skycomponent_to_hdf(sc: Skycomponent, f):
 def convert_hdf_to_skycomponent(f):
     """Convert HDF root to a SkyComponent
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: SkyComponent
     """
     assert f.attrs["rascil_data_model"] == "Skycomponent", "Not a Skycomponent"
     direction = convert_direction_from_string(f.attrs["direction"])
@@ -704,7 +721,7 @@ def convert_hdf_to_skycomponent(f):
 
 
 def export_skycomponent_to_hdf5(sc: Union[Skycomponent, list], filename):
-    """Export a Skycomponent to HDF5 format
+    """Export a Skycomponent or list to HDF5 format
 
     :param sc: SkyComponent
     :param filename:
@@ -716,7 +733,6 @@ def export_skycomponent_to_hdf5(sc: Union[Skycomponent, list], filename):
     with h5py.File(filename, "w") as f:
         f.attrs["number_data_models"] = len(sc)
         for i, s in enumerate(sc):
-            ##assert isinstance(s, Skycomponent)
             sf = f.create_group("Skycomponent%d" % i)
             convert_skycomponent_to_hdf(s, sf)
         f.flush()
@@ -741,20 +757,24 @@ def import_skycomponent_from_hdf5(filename):
 
 
 def convert_image_to_hdf(im: Image, f):
-    """Convert Image to HDF
+    """Convert an Image to an HDF file
 
     :param im: Image
-    :param f: HDF root
-    :return:
+    :param f: hdf group
+    :return: group with im added
     """
-    if isinstance(im, Image):
-        f.attrs["rascil_data_model"] = "Image"
-        f["data"] = im["pixels"].data
-        f.attrs["wcs"] = numpy.string_(im.image_acc.wcs.to_header_string())
-        f.attrs["phasecentre_coords"] = im.image_acc.phasecentre.to_string()
-        f.attrs["phasecentre_frame"] = im.image_acc.phasecentre.frame.name
-        f.attrs["polarisation_frame"] = im.image_acc.polarisation_frame.type
-        f.attrs["frequency"] = im.frequency
+    if not isinstance(im, xarray.Dataset):
+        raise ValueError(f"im is not xarray dataset {im}")
+    if im.attrs["rascil_data_model"] != "Image":
+        raise ValueError(f"fim is not an Image: {im}")
+
+    f.attrs["rascil_data_model"] = "Image"
+    f["data"] = im["pixels"].data
+    f.attrs["wcs"] = numpy.string_(im.image_acc.wcs.to_header_string())
+    f.attrs["phasecentre_coords"] = im.image_acc.phasecentre.to_string()
+    f.attrs["phasecentre_frame"] = im.image_acc.phasecentre.frame.name
+    f.attrs["polarisation_frame"] = im.image_acc.polarisation_frame.type
+    f.attrs["frequency"] = im.frequency
 
     return f
 
@@ -762,8 +782,8 @@ def convert_image_to_hdf(im: Image, f):
 def convert_hdf_to_image(f):
     """Convert HDF root to an Image
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: Image
     """
     if (
         "rascil_data_model" in f.attrs.keys()
@@ -783,7 +803,7 @@ def convert_hdf_to_image(f):
 
 
 def export_image_to_hdf5(im, filename):
-    """Export an Image to HDF5 format
+    """Export an Image or list to HDF5 format
 
     :param im:
     :param filename:
@@ -823,11 +843,10 @@ def import_image_from_hdf5(filename):
 
 
 def export_skymodel_to_hdf5(sm, filename):
-    """Export a Skymodel to HDF5 format
+    """Export a Skymodel or list to HDF5 format
 
-    :param sm:
+    :param sm: SkyModel or list of SkyModels
     :param filename:
-    :return:
     """
 
     if not isinstance(sm, collections.abc.Iterable):
@@ -836,7 +855,6 @@ def export_skymodel_to_hdf5(sm, filename):
     with h5py.File(filename, "w") as f:
         f.attrs["number_data_models"] = len(sm)
         for i, s in enumerate(sm):
-            # assert isinstance(s, SkyModel)
             sf = f.create_group("SkyModel%d" % i)
             convert_skymodel_to_hdf(s, sf)
         f.flush()
@@ -844,12 +862,15 @@ def export_skymodel_to_hdf5(sm, filename):
 
 
 def convert_skymodel_to_hdf(sm, f):
-    """
+    """Convert a SkyModel to an HDF file
 
-    :param sm:
-    :param f:
-    :return:
+    :param sm: Skymodel
+    :param f: hdf group
+    :return: group with skymodel added
     """
+    if not isinstance(sm, SkyModel):
+        raise ValueError(f"sm is not a SkyModel: {sm}")
+
     f.attrs["rascil_data_model"] = "SkyModel"
     f.attrs["fixed"] = sm.fixed
     if sm.components is not None:
@@ -872,7 +893,7 @@ def convert_skymodel_to_hdf(sm, f):
 
 
 def import_skymodel_from_hdf5(filename):
-    """Import a Skymodel from HDF5 format
+    """Import a Skymodel or list from HDF5 format
 
     :param filename:
     :return: SkyModel
@@ -888,10 +909,10 @@ def import_skymodel_from_hdf5(filename):
 
 
 def convert_hdf_to_skymodel(f):
-    """
+    """Convert HDF to SkyModel
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: SkyModel
     """
     assert f.attrs["rascil_data_model"] == "SkyModel", f.attrs["rascil_data_model"]
 
@@ -924,13 +945,16 @@ def convert_hdf_to_skymodel(f):
 
 
 def convert_griddata_to_hdf(gd: GridData, f):
-    """Convert Griddata to HDF
+    """Convert a GridDatato an HDF file
 
     :param gd: GridData
-    :param f: HDF root
-    :return:
+    :param f: hdf group
+    :return: group with gd added
     """
-    # assert isinstance(gd, GridData)
+    if not isinstance(gd, xarray.Dataset):
+        raise ValueError(f"gd is not an xarray.Dataset: {gd}")
+    if gd.attrs["rascil_data_model"] != "GridData":
+        raise ValueError(f"gd is not a GridData: {gd}")
 
     f.attrs["rascil_data_model"] = "GridData"
     f["data"] = gd["pixels"].data
@@ -943,8 +967,8 @@ def convert_griddata_to_hdf(gd: GridData, f):
 def convert_hdf_to_griddata(f):
     """Convert HDF root to a GridData
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: GridData
     """
     assert f.attrs["rascil_data_model"] == "GridData", "Not a GridData"
     data = numpy.array(f["data"])
@@ -957,7 +981,7 @@ def convert_hdf_to_griddata(f):
 
 
 def export_griddata_to_hdf5(gd, filename):
-    """Export a GridData to HDF5 format
+    """Export a GridData or list to HDF5 format
 
     :param gd:
     :param filename:
@@ -981,7 +1005,7 @@ def export_griddata_to_hdf5(gd, filename):
 
 
 def import_griddata_from_hdf5(filename):
-    """Import GridData from HDF5 format
+    """Import GridData(s) from HDF5 format
 
     :param filename:
     :return: single image or list of images
@@ -997,13 +1021,16 @@ def import_griddata_from_hdf5(filename):
 
 
 def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
-    """Convert Griddata to HDF
+    """Convert a ConvolutionFunction to an HDF file
 
     :param cf: ConvolutionFunction
-    :param f: HDF root
-    :return:
+    :param f: hdf group
+    :return: group with cf added
     """
-    # assert isinstance(cf, ConvolutionFunction)
+    if not isinstance(cf, xarray.Dataset):
+        raise ValueError("cf is not an xarray.Dataset")
+    if cf.attrs["rascil_data_model"] != "ConvolutionFunction":
+        raise ValueError(f"cf is not a ConvolutionFunction: {cf}")
 
     f.attrs["rascil_data_model"] = "ConvolutionFunction"
     f["data"] = cf["pixels"].data
@@ -1017,8 +1044,8 @@ def convert_convolutionfunction_to_hdf(cf: ConvolutionFunction, f):
 def convert_hdf_to_convolutionfunction(f):
     """Convert HDF root to a ConvolutionFunction
 
-    :param f:
-    :return:
+    :param f: hdf group
+    :return: ConvolutionFunction
     """
     assert f.attrs["rascil_data_model"] == "ConvolutionFunction", f.attrs[
         "rascil_data_model"
@@ -1055,7 +1082,7 @@ def export_convolutionfunction_to_hdf5(cf, filename):
 
 
 def import_convolutionfunction_from_hdf5(filename):
-    """Import ConvolutionFunction from HDF5 format
+    """Import ConvolutionFunction(s) from HDF5 format
 
     :param filename:
     :return: single image or list of images

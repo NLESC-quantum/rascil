@@ -339,6 +339,8 @@ def simulate_pointingtable_from_timeseries(
 
     if pointing_directory is None:
         pointing_directory = rascil_data_path("models/%s" % time_series_type)
+    else:
+        pointing_directory = pointing_directory + "/%s" % (time_series_type)
 
     pt["pointing"].data = numpy.zeros(pt["pointing"].data.shape)
 
@@ -388,7 +390,7 @@ def simulate_pointingtable_from_timeseries(
     elif type == "wind":
         axes = ["pxel", "pel"]
     else:
-        raise ValueError("Pointing type %s not known" % type)
+        raise ValueError("Pointing type %s not known." % type)
 
     freq_interval = 0.0001
 

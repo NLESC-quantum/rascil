@@ -2,6 +2,7 @@
 
 """
 
+import os
 import logging
 import unittest
 
@@ -29,7 +30,7 @@ log.setLevel(logging.WARNING)
 
 class TestRFIRegression(unittest.TestCase):
     def setUp(self):
-        pass
+        self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def setup_telescope(self, telescope):
         """Initialise common elements"""
@@ -95,10 +96,17 @@ class TestRFIRegression(unittest.TestCase):
             (1, len(bvis.time), nants_start, 3),
         )
         # azimuth, elevation, distance
-        emitter_coordinates[:, :, :, 0] = 0.0
-        emitter_coordinates[:, :, :, 1] = 29.45
-        emitter_coordinates[:, :, :, 2] = 600000.0
-
+        # azimuth, elevation, distance
+        emitter_coordinates[:, :, :, 0] = (
+            0.0 + numpy.linspace(-1.0, 1.0, 5)[numpy.newaxis, numpy.newaxis, :]
+        )
+        emitter_coordinates[:, :, :, 1] = (
+            29.45 + numpy.linspace(-2.0, 2.0, 5)[numpy.newaxis, numpy.newaxis, :]
+        )
+        emitter_coordinates[:, :, :, 2] = (
+            600000.0
+            + numpy.linspace(-5000.0, 5000.0, 5)[numpy.newaxis, numpy.newaxis, :]
+        )
         for apply_primary_beam in [True, False]:
             simulate_rfi_block_prop(
                 bvis,
@@ -116,15 +124,29 @@ class TestRFIRegression(unittest.TestCase):
             )
             dirty, sumwt = invert_ng(bvis, model)
             dirty["pixels"].data[numpy.abs(dirty["pixels"].data) > 1e6] = 0.0
-            export_image_to_fits(
-                dirty,
-                rascil_path(
-                    f"test_results/test_rfi_image_withPB{apply_primary_beam}.fits"
-                ),
-            )
+            if self.persist:
+                export_image_to_fits(
+                    dirty,
+                    rascil_path(
+                        f"test_results/test_rfi_image_withPB{apply_primary_beam}.fits"
+                    ),
+                )
             qa = qa_image(dirty)
 
-            print(qa)
+            if apply_primary_beam:
+                numpy.testing.assert_almost_equal(
+                    qa.data["max"], 458854.2087080175, err_msg=str(qa)
+                )
+                numpy.testing.assert_almost_equal(
+                    qa.data["min"], -317039.1555572104, err_msg=str(qa)
+                )
+            else:
+                numpy.testing.assert_almost_equal(
+                    qa.data["max"], 999962.8165061118, err_msg=str(qa)
+                )
+                numpy.testing.assert_almost_equal(
+                    qa.data["min"], -999962.870884174, err_msg=str(qa)
+                )
 
 
 if __name__ == "__main__":

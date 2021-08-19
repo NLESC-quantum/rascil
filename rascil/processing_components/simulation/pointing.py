@@ -11,7 +11,6 @@ __all__ = [
 ]
 
 import logging
-import collections
 
 import numpy
 from astropy.time import Time
@@ -145,24 +144,15 @@ def simulate_gaintable_from_pointingtable(
                     # We now add the pointing to the calculated az, el of the component
                     for ant in range(nant):
                         wcs_azel = vp.image_acc.wcs.deepcopy()
-                        if isinstance(azimuth_comp, collections.abc.Iterable):
-                            az_comp = azimuth_comp[ant] + pointing_ha[
-                                ant, 0, 0, 0
-                            ] / numpy.cos(elevation_centre)
-                            el_comp = elevation_comp[ant] + pointing_ha[ant, 0, 0, 1]
-                            if az_comp - azimuth_comp[ant] > numpy.pi:
-                                azimuth_comp[ant] += 2.0 * numpy.pi
-                            if az_comp - azimuth_comp[ant] < -numpy.pi:
-                                azimuth_comp[ant] -= 2.0 * numpy.pi
-                        else:
-                            az_comp = azimuth_comp + pointing_ha[
-                                ant, 0, 0, 0
-                            ] / numpy.cos(elevation_centre)
-                            el_comp = elevation_comp + pointing_ha[ant, 0, 0, 1]
-                            if az_comp - azimuth_comp > numpy.pi:
-                                azimuth_comp += 2.0 * numpy.pi
-                            if az_comp - azimuth_comp < -numpy.pi:
-                                azimuth_comp -= 2.0 * numpy.pi
+                        az_comp = azimuth_comp + pointing_ha[ant, 0, 0, 0] / numpy.cos(
+                            elevation_centre
+                        )
+                        el_comp = elevation_comp + pointing_ha[ant, 0, 0, 1]
+
+                        if az_comp - azimuth_comp > numpy.pi:
+                            azimuth_comp += 2.0 * numpy.pi
+                        if az_comp - azimuth_comp < -numpy.pi:
+                            azimuth_comp -= 2.0 * numpy.pi
 
                         # We use WCS sensible coordinate handling by labelling the axes misleadingly
                         wcs_azel.wcs.crval[0] = az_comp * r2d
@@ -174,13 +164,13 @@ def simulate_gaintable_from_pointingtable(
                             for gchan in range(gnchan):
                                 gain = numpy.zeros([npol], dtype="complex")
                                 # Unwrap azimuths
-                                if azimuth_comp[ant] - az_comp > numpy.pi:
-                                    azimuth_comp[ant] -= 2.0 * numpy.pi
-                                if azimuth_comp[ant] - az_comp <= -numpy.pi:
-                                    azimuth_comp[ant] += 2.0 * numpy.pi
+                                if azimuth_comp - az_comp > numpy.pi:
+                                    azimuth_comp -= 2.0 * numpy.pi
+                                if azimuth_comp - az_comp <= -numpy.pi:
+                                    azimuth_comp += 2.0 * numpy.pi
                                 worldloc = [
-                                    azimuth_comp[ant] * r2d,
-                                    elevation_comp[ant] * r2d,
+                                    azimuth_comp * r2d,
+                                    elevation_comp * r2d,
                                     vp.image_acc.wcs.wcs.crval[2],
                                     frequency[gchan],
                                 ]
@@ -380,11 +370,14 @@ def simulate_pointingtable_from_timeseries(
         az_deg = 180.0
 
     pointing_file = "%s/El%dAz%d.dat" % (pointing_directory, int(el_deg), int(az_deg))
-    log.debug(
+    log.info(
         "simulate_pointingtable_from_timeseries: Reading wind PSD from %s"
         % pointing_file
     )
-    psd = numpy.loadtxt(pointing_file)
+    try:
+        psd = numpy.loadtxt(pointing_file)
+    except OSError:
+        raise ValueError("Pointing file %s not found." % pointing_file)
 
     # define some arrays
     freq = psd[:, 0]
@@ -435,7 +428,7 @@ def simulate_pointingtable_from_timeseries(
 
         if axis_values_max_index >= freq_max_index:
             raise ValueError(
-                "Frequency break is higher than highest frequency; select a lower break"
+                "Frequency break is higher than highest frequency; select a lower break."
             )
 
         # use original frequency break and max frequency to fit function
@@ -485,7 +478,7 @@ def simulate_pointingtable_from_timeseries(
 
         if (regular_axis_values < 0).any():
             raise ValueError(
-                "Resampling returns negative power values; change fit range"
+                "Resampling returns negative power values; change fit range."
             )
 
         amp_axis_values = numpy.sqrt(regular_axis_values * 2 * freq_interval)
@@ -495,9 +488,7 @@ def simulate_pointingtable_from_timeseries(
         for ant in range(nant):
             regular_freq = original_regular_freq
             regular_axis_values = original_regular_axis_values
-            phi_axis_values = (
-                rng.integers(low=1, high=len(regular_axis_values)) * 2 * numpy.pi
-            )
+            phi_axis_values = rng.random(size=len(regular_axis_values)) * 2 * numpy.pi
             # create complex array
             z_axis_values = amp_axis_values * numpy.exp(1j * phi_axis_values)  # polar
             # make symmetrical frequencies

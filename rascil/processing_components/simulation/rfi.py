@@ -226,21 +226,22 @@ def apply_beam_gain_for_mid(
     az_centre, el_centre = calculate_azel(
         sub_vis.configuration.location, utc_time, sub_vis.phasecentre
     )
-    # The nominal pointing is the phasecentre in az, el
+    # The nominal pointing is the phasecentre in az, el. This is the same value
+    # calculated by simulate_gaintable_from_pointingtable
     pointing_table["nominal"][0, :, :, :, 0] = az_centre[
         :, numpy.newaxis, numpy.newaxis
     ]
     pointing_table["nominal"][0, :, :, :, 1] = el_centre[
         :, numpy.newaxis, numpy.newaxis
     ]
-    # The pointing is the interferer in az el
+    # The pointing is the interferer in az el as seen from each antenna
     pointing_table["pointing"][0, :, :, :, 0] = numpy.deg2rad(
         azimuth[:, numpy.newaxis, numpy.newaxis]
     )
     pointing_table["pointing"][0, :, :, :, 1] = numpy.deg2rad(
         elevation[:, numpy.newaxis, numpy.newaxis]
     )
-    # Pointing tables define pointing to be relative to the phasecentre
+    # Pointing tables define pointing to be relative to the nominal
     pointing_table["pointing"] -= pointing_table["nominal"]
     pointing_table["pointing"][0, :, :, :, 0] *= numpy.cos(
         pointing_table["nominal"][0, :, :, :, 1]
@@ -430,7 +431,7 @@ def simulate_rfi_block_prop(
                         az[iha],
                         el[iha],
                         dec_emitter[iha, :],
-                        emitter_sky,
+                        bvis.phasecentre,
                         ha_phase_ctr,
                         latitude,
                     )

@@ -124,6 +124,8 @@ class TestRFIRegression(unittest.TestCase):
             )
             qa = qa_image(dirty)
 
+            print(qa)
+
 
 if __name__ == "__main__":
     unittest.main()

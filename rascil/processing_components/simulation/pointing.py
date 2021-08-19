@@ -218,16 +218,16 @@ def simulate_gaintable_from_pointingtable(
             log.warning("Zero length pointing interval")
 
     if number_bad > 0:
-        log.warning(
+        log.debug(
             "simulate_gaintable_from_pointingtable: %d points inside the voltage pattern image"
             % (number_good)
         )
-        log.warning(
+        log.debug(
             "simulate_gaintable_from_pointingtable: %d points outside the voltage pattern image will be ignored"
             % (number_bad)
         )
     if number_singular > 0:
-        log.warning(
+        log.debug(
             "simulate_gaintable_from_pointingtable: %d points have singular gain"
             % (number_singular)
         )

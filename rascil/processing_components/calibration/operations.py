@@ -104,7 +104,7 @@ def apply_gaintable(
                 if inverse:
                     # lgain = numpy.ones_like(gain)
                     # lgain[numpy.abs(gain) > 0.0] = 1.0 / gain[numpy.abs(gain) > 0.0]
-                    lgain = numpy.ones_like(gain)
+                    lgain = numpy.zeros_like(gain)
                     try:
                         numpy.putmask(lgain, numpy.abs(gain) > 0.0, 1.0 / gain)
                     except FloatingPointError:
@@ -138,14 +138,17 @@ def apply_gaintable(
                 for sub_vis_row in range(original.shape[0]):
                     for ibaseline, (a1, a2) in enumerate(baselines):
                         for chan in range(nchan):
-                            applied[sub_vis_row, ibaseline, chan, 0] = (
-                                original[sub_vis_row, ibaseline, chan, 0]
-                                * smueller1[chan, a1, a2]
-                            )
-                            appliedwt[sub_vis_row, ibaseline, chan, 0] = (
-                                gainwt[a1, chan, 0, 0] * gainwt[a2, chan, 0, 0]
-                            )
-                            # applied[sub_vis_row, ibaseline, chan, 0][antantwt == 0.0] = 0.0
+                            if numpy.abs(smueller1[chan, a1, a2]) > 0.0:
+                                applied[sub_vis_row, ibaseline, chan, 0] = (
+                                    original[sub_vis_row, ibaseline, chan, 0]
+                                    * smueller1[chan, a1, a2]
+                                )
+                                appliedwt[sub_vis_row, ibaseline, chan, 0] = (
+                                    gainwt[a1, chan, 0, 0] * gainwt[a2, chan, 0, 0]
+                                )
+                            else:
+                                applied[sub_vis_row, ibaseline, chan, 0] = 0.0
+                                appliedwt[sub_vis_row, ibaseline, chan, 0] = 0.0
 
                 # smueller1 = numpy.einsum('ijlm,kjlm->ikj', lgain, numpy.conjugate(lgain))
                 # for sub_vis_row in range(original.shape[0]):

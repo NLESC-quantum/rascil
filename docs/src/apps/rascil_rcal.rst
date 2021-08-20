@@ -16,7 +16,10 @@ assumed to be available or a point source model is used.
 
 In rascil_rcal an MeasurementSet is read in and then iterated through in time-order
 solving for the gains. The gaintables are accumulated into a single gain table that is written
-as an HDF file.
+as an HDF file. There is also an additional plotting function that dynamically update the gaintable values
+(gain amplitude, phase and residual) over time. 
+
+If plotting is required, please make sure you have the plots/ folder created.
 
 Example script
 ++++++++++++++
@@ -27,7 +30,8 @@ MID continuum imaging simulations::
     #!/bin/bash
     python3 $RASCIL/rascil/apps/rascil_rcal.py \
     --ingest_msname SKA_MID_SIM_custom_B2_dec_-45.0_nominal_nchan100_actual.ms \
-    --components_file SKA_MID_SIM_custom_B2_dec_-45.0_nominal_nchan100_components.hdf
+    --ingest_components_file SKA_MID_SIM_custom_B2_dec_-45.0_nominal_nchan100_components.hdf \
+    --do_plotting True
 
 
 Command line arguments

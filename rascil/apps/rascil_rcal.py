@@ -70,6 +70,12 @@ def cli_parser():
         default=None,
         help="Name of components file (HDF5) format",
     )
+    parser.add_argument(
+        "--do_plotting",
+        type=str,
+        default=False,
+        help="If yes, plot the gain table values over time",
+    )
 
     return parser
 
@@ -118,7 +124,7 @@ def rcal_simulator(args):
 
     bvis_gen = bvis_source(bvis)
     gt_gen = bvis_solver(bvis_gen, model_components, phase_only=True)
-    full_gt = gt_sink(gt_gen)
+    full_gt = gt_sink(gt_gen, args.do_plotting)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -160,10 +166,11 @@ def bvis_solver(
         yield gt
 
 
-def gt_sink(gt_gen: Iterable[GainTable]):
+def gt_sink(gt_gen: Iterable[GainTable], do_plotting):
     """Iterate through the gaintables, logging resisual, combine into single GainTable
 
     :param gt_gen: Generator of GainTables
+    :param do_plotting: Option to plot gain tables
     :return: GainTable
     """
     gt_list = list()
@@ -174,8 +181,9 @@ def gt_sink(gt_gen: Iterable[GainTable]):
         )
         gt_list.append(gt)
 
-        gt_update_plot(gt_list, datetime)
-        log.info("Updated gaintable plots.")
+        if do_plotting == "True":
+            gt_update_plot(gt_list, datetime)
+            log.info("Updated gaintable plots.")
 
     full_gt = xarray.concat(gt_list, "time")
     return full_gt
@@ -191,6 +199,7 @@ def gt_update_plot(gt_list, datetime):
 
     with time_support(format="iso", scale="utc"):
 
+        plt.cla()
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
         fig.subplots_adjust(hspace=0)
 
@@ -226,8 +235,8 @@ def gt_update_plot(gt_list, datetime):
         ax3.set_yscale("log")
 
         fig.suptitle(f"Updated GainTable at {datetime}")
-        plt.savefig(f"plot_{datetime}.png")
-        plt.cla()
+        # plt.draw()
+        plt.savefig(f"plots/plot_{datetime}.png")
 
     return
 

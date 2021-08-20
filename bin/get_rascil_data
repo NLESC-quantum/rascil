@@ -9,6 +9,8 @@ RASCIL_DATA=$RASCIL/rascil_data
 if [ ! -d $RASCIL_DATA ]; then
     mkdir $RASCIL_DATA
 fi
+
+DIR=$PWD
 cd $RASCIL_DATA
 TGZ=rascil_data.tgz
 # The URL in the documentation is wrong.
@@ -16,7 +18,7 @@ echo "Getting RASCIL data"
 curl https://ska-telescope.gitlab.io/external/rascil/$TGZ -o $TGZ
 tar zxf $TGZ
 rm -f $TGZ
-export RASCIL_DATA=$RASCID_DIR/data
+cd $DIR
 
 # Check if git lfs is available.
 git lfs help > /dev/null 2>&1

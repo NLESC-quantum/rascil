@@ -134,18 +134,21 @@ class TestRFIRegression(unittest.TestCase):
             qa = qa_image(dirty)
 
             if apply_primary_beam:
-                numpy.testing.assert_almost_equal(
-                    qa.data["max"], 458854.2087080175, err_msg=str(qa)
+                numpy.testing.assert_approx_equal(
+                    qa.data["max"],
+                    458854.2087080175,
+                    8,
+                    err_msg=str(qa),
                 )
-                numpy.testing.assert_almost_equal(
-                    qa.data["min"], -317039.1555572104, err_msg=str(qa)
+                numpy.testing.assert_approx_equal(
+                    qa.data["min"], -317039.1555572104, 8, err_msg=str(qa)
                 )
             else:
-                numpy.testing.assert_almost_equal(
-                    qa.data["max"], 999962.8165061118, err_msg=str(qa)
+                numpy.testing.assert_approx_equal(
+                    qa.data["max"], 999962.8165061118, 8, err_msg=str(qa)
                 )
-                numpy.testing.assert_almost_equal(
-                    qa.data["min"], -999962.870884174, err_msg=str(qa)
+                numpy.testing.assert_approx_equal(
+                    qa.data["min"], -999962.870884174, 8, err_msg=str(qa)
                 )
 
 

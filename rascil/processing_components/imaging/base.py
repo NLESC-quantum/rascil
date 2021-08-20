@@ -435,12 +435,7 @@ def create_image_from_visibility(vis: BlockVisibility, **kwargs) -> Image:
 
     # Image sampling options
     npixel = get_parameter(kwargs, "npixel", 512)
-    if isinstance(vis, BlockVisibility):
-        uvmax = numpy.max((numpy.abs(vis["uvw_lambda"].data[..., 0:2])))
-    else:
-        uvmax = numpy.max((numpy.abs(vis["uvw"][..., 0:1])))
-
-        uvmax *= numpy.max(frequency) / phyconst.c_m_s
+    uvmax = numpy.max((numpy.abs(vis["uvw_lambda"].data[..., 0:2])))
     log.debug("create_image_from_visibility: uvmax = %f wavelengths" % uvmax)
     criticalcellsize = 1.0 / (uvmax * 2.0)
     log.debug(

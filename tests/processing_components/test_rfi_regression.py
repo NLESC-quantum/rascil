@@ -34,9 +34,6 @@ class TestRFIRegression(unittest.TestCase):
 
     def setup_telescope(self, telescope):
         """Initialise common elements"""
-        # Set the random number so that we lways get the same answers
-        numpy.random.seed(1805550721)
-
         self.nchannels = 5
 
         self.ntimes = 100
@@ -50,13 +47,13 @@ class TestRFIRegression(unittest.TestCase):
 
         self.apparent_power = numpy.ones((self.ntimes, self.nants, self.nchannels))
 
-        ftimes = (numpy.pi / 43200.0) * numpy.arange(-3600, +3600.0, 225.0)
+        ftimes = (numpy.pi / 43200.0) * numpy.arange(-3600.0, +3600.0, 225.0)
         log.info(f"Times: {ftimes}")
         if telescope == "MID":
             ffrequency = numpy.linspace(1.4e9, 1.9e9, 5)
             channel_bandwidth = numpy.array([1e8, 1e8, 1e8, 1e8, 1e8])
         else:
-            ffrequency = numpy.linspace(1.3, 1.5e8, 5)
+            ffrequency = numpy.linspace(1.3e8, 1.5e8, 5)
             channel_bandwidth = numpy.array([4e6, 4e6, 4e6, 4e6, 4e6])
 
         polarisation_frame = PolarisationFrame("linear")

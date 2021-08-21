@@ -74,6 +74,7 @@ setup(
     ],
     packages=(packages + packages_data),
     install_requires=reqs,
+    scripts=["bin/get_rascil_data"],
     test_suite="tests",
     tests_require=["pytest"],
 )

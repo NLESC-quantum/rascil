@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ -z "$RASCIL" ]; then
+    echo "RASCIL environment variable is not set"
+    exit 1
+fi
+RASCIL_DATA=$RASCIL/rascil_data
+
+if [ ! -d $RASCIL_DATA ]; then
+    mkdir $RASCIL_DATA
+fi
+
+DIR=$PWD
+cd $RASCIL_DATA
+TGZ=rascil_data.tgz
+# The URL in the documentation is wrong.
+echo "Getting RASCIL data"
+curl https://ska-telescope.gitlab.io/external/rascil/$TGZ -o $TGZ
+tar zxf $TGZ
+rm -f $TGZ
+cd $DIR
+
+# Check if git lfs is available.
+git lfs help > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "Getting LFS data files"
+    git lfs pull
+else
+    echo "git lfs is not available"
+fi
+
+CASA_DIR="$RASCIL/casacore_data"
+if [ ! -d "$CASA_DIR" ]; then
+    echo "Create .casarc"
+    echo "measures.directory: $CASA_DIR" > $HOME/.casarc
+fi
+echo "Getting CASA measures data"
+rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic $CASA_DIR
+

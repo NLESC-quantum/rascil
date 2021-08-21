@@ -321,9 +321,9 @@ def qa_image(im: Image, context="") -> QA:
     :param im:
     :return: QA
     """
-    im_data = im["pixels"].values
+    im_data = im["pixels"].data
     data = {
-        "shape": str(im_data.shape),
+        "shape": str(im["pixels"].data.shape),
         "size": im.nbytes,
         "max": numpy.max(im_data),
         "min": numpy.min(im_data),

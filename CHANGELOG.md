@@ -1,38 +1,38 @@
-0.2.2b0
--------
+0.3.0
+-----
 
-* [MR207] RCAL prototype as an app
-* [MR206] Add AA0.5 definitions to configurations
-* [MR203] Updated the CI pipeline to build the docker images, build on tag, and publish to the Central Artefact Repository
-* [MR201] Calculation of CLEAN threshold should avoid uncleaned regions
-* [MR200] Migrated docker builds from rascil-docker repository to rascil/docker directory
-* [MR199] Added CLI option and env variable that passes dask scheduler file to setup dask cluster
-* [MR198] Fixes termination problem in CLEAN caused by error in threshold determination
-* [MR191] Updated imaging_qa to make it optional to plot diagnostics plots
-* [MR189] CI pipeline update: tests run in two separate jobs: dask/non-dask
-* [MR185] Updated function to generate MID simulation skycomponents
-* [MR183, MR195] Update CI pipeline to publish Python package in the SKA central artefact repository
-* [MR181] Large set of changes to reduce run time of CI tests from about 160 minutes to 50 minutes
-* [MR180] RA, Dec coordinates now added to Image when needed, saves time and memory
-* [MR177] RFI simulation code is refactored to be compatible with the standard RFI input data
-* [MR174] Improves the memory and processing scaling of the Multi-Scale Multifrequency Clean
-* [MR169] Added functionality in imaging_qa to analyse frequency moment images to allow more accurate calculation of spectral index
-* [MR161, MR163] Renamed ci_checker to imaging_qa
-* [MR160] Changes aimed at decreasing the memory used in the restore step.
-* [MR154] The repository is Black-compatible, and expects all python code to be [Black](https://github.com/psf/black) formatted
-* [MR152] Tools for measuring time spent in Dask functions
-* [MR150] Updated ci_checker to provide functionality for primary beam correction
-* [MR148] Initialise astropy before dask starts, minimises threading errors
-* [MR142] Updated ci_checker to analyse multi frequency FITS images
-* [MR139] Simple app rascil_image_check to check value of image, to be used in scripts
-* [MR138] Added wide field plots for ci_checker
-* [MR136] Added option to load ci_checker arguments in the command line directly from a file
-* [MR132, MR145, MR158] ci_checker now produces various diagnostics plots, e.g. power spectrum, running mean, histogram, spectral index with flux cutoff, etc.
-* [MR131] Supports modelling of compact sources at fractional pixel locations in the continuum imaging pipelines. 
-* [MR130, MR133, MR141] Updated ci_checker's logging and errors, as well as rearranging the files' locations etc. 
-* [MR123, MR125] Added index files to the ci_checker, which list and point to the output files of the app
-* [MR124] Clean beam now propagated through inputs to rascil-imager and out to FITS 
-* [MR122] Added functions to plot sources in skycomponents format compatible for ci_checker
+* RCAL prototype as an app ([MR207](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/207))
+* Add AA0.5 definitions to configurations ([MR206](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/206))
+* Updated the CI pipeline to build the docker images, build on tag, and publish to the Central Artefact Repository ([MR203](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/203))
+* Calculation of CLEAN threshold should avoid uncleaned regions ([MR201](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/201))
+* Migrated docker builds from rascil-docker repository to rascil/docker directory ([MR200](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/200))
+* Added CLI option and env variable that passes dask scheduler file to setup dask cluster ([MR199](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/199))
+* Fixes termination problem in CLEAN caused by error in threshold determination ([MR198](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/198))
+* Updated imaging_qa to make it optional to plot diagnostics plots ([MR191](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/191))
+* CI pipeline update: tests run in two separate jobs: dask/non-dask ([MR189](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/198))
+* Updated `create_mid_simulation_components` function to generate MID simulation skycomponents ([MR185](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/185))
+* Update CI pipeline to publish Python package in the SKA central artefact repository ([MR183](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/183), [MR195](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/195))
+* Large set of changes to reduce run time of CI tests from about 160 minutes to 50 minutes ([MR181](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/181))
+* RA, Dec coordinates now added to Image when needed, saves time and memory ([MR180](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/180))
+* RFI simulation code is refactored to be compatible with the standard RFI input data ([MR177](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/177))
+* Improves the memory and processing scaling of the Multi-Scale Multifrequency Clean ([MR174](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/174))
+* Added functionality in imaging_qa to analyse frequency moment images to allow more accurate calculation of spectral index ([MR169](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/169))
+* Renamed ci_checker to imaging_qa ([MR161](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/161), [MR163](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/163))
+* Changes aimed at decreasing the memory used in the restore step. ([MR160](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/160))
+* The repository is Black-compatible, and expects all python code to be [Black](https://github.com/psf/black) formatted ([MR154](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/154))
+* Tools for measuring time spent in Dask functions ([MR152](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/152))
+* Updated ci_checker to provide functionality for primary beam correction ([MR150](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/150))
+* Initialise astropy before dask starts, minimises threading errors ([MR148](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/148))
+* Updated ci_checker to analyse multi frequency FITS images ([MR142](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/142))
+* Simple app rascil_image_check to check value of image, to be used in scripts ([MR139](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/139))
+* Added wide field plots for ci_checker ([MR138](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/138))
+* Added option to load ci_checker arguments in the command line directly from a file ([MR136](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/136))
+* ci_checker now produces various diagnostics plots, e.g. power spectrum, running mean, histogram, spectral index with flux cutoff, etc. ([MR132](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/132), [MR145](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/145), [MR158](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/158))
+* Supports modelling of compact sources at fractional pixel locations in the continuum imaging pipelines ([MR131](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/131))
+* Updated ci_checker's logging and errors, as well as rearranging the files' locations etc. ([MR130](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/130), [MR133](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/133), [MR141](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/141))
+* Added index files to the ci_checker, which list and point to the output files of the app ([MR123](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/123), [MR125](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/125))
+* Clean beam now propagated through inputs to rascil-imager and out to FITS ([MR124](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/124)) 
+* Added functions to plot sources in skycomponents format compatible for ci_checker ([MR122](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/122))
 
 0.2.1
 -----

@@ -122,7 +122,6 @@ class TestRFIRegression(unittest.TestCase):
                     ),
                 )
             qa = qa_image(dirty)
-            print(qa.data)
 
             if apply_primary_beam:
                 numpy.testing.assert_approx_equal(

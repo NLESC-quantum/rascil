@@ -223,16 +223,17 @@ def gt_update_plot(gt_list, datetime):
         timeseries = Time(time, format="mjd", out_subfmt="str")
         for i in range(gains.shape[1]):
             ax1.plot(timeseries, amp[:, i] - 1.0, label=f"Antenna {i}")
-            ax2.plot(timeseries, phase[:, i]/phase[:,0], label=f"Antenna {i}")
+            ax2.plot(timeseries, phase[:, i] - phase[:, 0], label=f"Antenna {i}")
 
         ax1.set_ylabel("Gain Amplitude - 1")
-        ax2.set_ylabel("Gain Phase (Antenna/Antenna 0)")
+        ax2.set_ylabel("Gain Phase (Antenna - Antenna 0)")
         ax2.legend(loc="best")
 
         ax3.plot(timeseries, residual)
         ax3.set_ylabel("Residual")
         ax3.set_xlabel("Time(UTC)")
         ax3.set_yscale("log")
+        plt.xticks(rotation=30)
 
         fig.suptitle(f"Updated GainTable at {datetime}")
         plt.savefig(f"plots/plot_{datetime}.png")

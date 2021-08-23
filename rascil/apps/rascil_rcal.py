@@ -222,11 +222,11 @@ def gt_update_plot(gt_list, datetime):
         phase = numpy.angle(gains, deg=True)
         timeseries = Time(time, format="mjd", out_subfmt="str")
         for i in range(gains.shape[1]):
-            ax1.plot(timeseries, amp[:, i] - 1.0, label=f"Station {i}")
-            ax2.plot(timeseries, phase[:, i], label=f"Station {i}")
+            ax1.plot(timeseries, amp[:, i] - 1.0, label=f"Antenna {i}")
+            ax2.plot(timeseries, phase[:, i]/phase[:,0], label=f"Antenna {i}")
 
         ax1.set_ylabel("Gain Amplitude - 1")
-        ax2.set_ylabel("Gain Phase (deg)")
+        ax2.set_ylabel("Gain Phase (Antenna/Antenna 0)")
         ax2.legend(loc="best")
 
         ax3.plot(timeseries, residual)
@@ -235,7 +235,6 @@ def gt_update_plot(gt_list, datetime):
         ax3.set_yscale("log")
 
         fig.suptitle(f"Updated GainTable at {datetime}")
-        # plt.draw()
         plt.savefig(f"plots/plot_{datetime}.png")
 
     return

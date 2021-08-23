@@ -1201,6 +1201,7 @@ class BlockVisibility(xarray.Dataset):
         )
 
         attrs = dict()
+        attrs["rascil_data_model"] = "BlockVisibility"
         attrs["configuration"] = configuration  # Antenna/station configuration
         attrs["source"] = source
         attrs["phasecentre"] = phasecentre
@@ -1381,6 +1382,7 @@ class FlagTable(xarray.Dataset):
         )
 
         attrs = dict()
+        attrs["rascil_data_model"] = "FlagTable"
         attrs["_polarisation_frame"] = polarisation_frame.type
         attrs["configuration"] = configuration  # Antenna/station configuration
 

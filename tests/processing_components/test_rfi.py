@@ -220,12 +220,8 @@ class TestRFISim(unittest.TestCase):
             assert (starting_visibility[:, :, i, :] == 0).all()
 
         # rfi signal is expected in the 4th and 5th channels (index 3, 4)
-        for i in range(3):
-            assert (bvis["vis"].data[:, :, i, :] == 0).all()
-
-        # Temporarily disable these tests
-        # assert (bvis["vis"].data[:, :, 3, 0] != 0).all()
-        # assert (bvis["vis"].data[:, :, 4, 0] != 0).all()
+        assert (bvis["vis"].data[:, :, 3, :] != 0).all()
+        assert (bvis["vis"].data[:, :, 4, :] != 0).all()
         # assert (abs(bvis["vis"].data[:, :, 3, 0] / 1e6).round(1) == 1.0).all()
         # assert (abs(bvis["vis"].data[:, :, 4, 0] / 2.5e7).round(1) == 1.0).all()
 

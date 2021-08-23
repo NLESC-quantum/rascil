@@ -322,23 +322,28 @@ def simulate_rfi_block_prop(
         rfi_sources
     ):  # this will tell us the index of the source in the data
 
-        emitter_power_all_chans = match_frequencies(
-            apparent_emitter_power[i],
-            rfi_frequencies,
-            bvis.frequency.values,
-            bvis.channel_bandwidth.values,
-        )
-
         if "LOW" in mid_or_low:
             # Apply beam gain for Low RFI data
-            rfi_at_station_all_chans = apply_beam_gain_for_low(
-                emitter_power_all_chans,
+            rfi_at_station = apply_beam_gain_for_low(
+                apparent_emitter_power[i],
                 beamgain_value,
                 bg_context,
                 source,
             )
+            rfi_at_station_all_chans = match_frequencies(
+                rfi_at_station,
+                rfi_frequencies,
+                bvis.frequency.values,
+                bvis.channel_bandwidth.values,
+            )
 
         else:
+            emitter_power_all_chans = match_frequencies(
+                apparent_emitter_power[i],
+                rfi_frequencies,
+                bvis.frequency.values,
+                bvis.channel_bandwidth.values,
+            )
             rfi_at_station_all_chans = emitter_power_all_chans.copy()
 
         # Calculate the RFI correlation using the fringe rotation and the RFI at the station
@@ -431,7 +436,7 @@ def simulate_rfi_block_prop(
                         az[iha],
                         el[iha],
                         dec_emitter[iha, :],
-                        bvis.phasecentre,
+                        bvis.phasecentre,  # why not emitter_sky?
                         ha_phase_ctr,
                         latitude,
                     )

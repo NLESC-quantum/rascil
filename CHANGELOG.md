@@ -16,31 +16,28 @@
 * [MR180] RA, Dec coordinates now added to Image when needed, saves time and memory
 * [MR177] RFI simulation code is refactored to be compatible with the standard RFI input data
 * [MR174] Improves the memory and processing scaling of the Multi-Scale Multifrequency Clean
-* [MR173] Added more tests for imaging_qa tool. 
 * [MR169] Added functionality in imaging_qa to analyse frequency moment images to allow more accurate calculation of spectral index
 * [MR161, MR163] Renamed ci_checker to imaging_qa
-* [MR160] Changes aimed at decreasing the memory used in the restore step.  
-* [MR158] Updated ci_checker to plot spectral index with flux cutoff and some other diagnostics plots
-* [MR156] Added more unit tests for ci_checker
+* [MR160] Changes aimed at decreasing the memory used in the restore step.
 * [MR154] The repository is Black-compatible, and expects all python code to be [Black](https://github.com/psf/black) formatted
 * [MR152] Tools for measuring time spent in Dask functions
 * [MR150] Updated ci_checker to provide functionality for primary beam correction
 * [MR148] Initialise astropy before dask starts, minimises threading errors
-* [MR142] Updated ci_checker to analyse multi frequency FITs images
+* [MR142] Updated ci_checker to analyse multi frequency FITS images
 * [MR139] Simple app rascil_image_check to check value of image, to be used in scripts
 * [MR138] Added wide field plots for ci_checker
 * [MR136] Added option to load ci_checker arguments in the command line directly from a file
-* [MR132, MR145] ci_checker now produces various diagnostics plots, e.g. power spectrum, running mean, histogram, etc.
+* [MR132, MR145, MR158] ci_checker now produces various diagnostics plots, e.g. power spectrum, running mean, histogram, spectral index with flux cutoff, etc.
 * [MR131] Supports modelling of compact sources at fractional pixel locations in the continuum imaging pipelines. 
 * [MR130, MR133, MR141] Updated ci_checker's logging and errors, as well as rearranging the files' locations etc. 
 * [MR123, MR125] Added index files to the ci_checker, which list and point to the output files of the app
 * [MR124] Clean beam now propagated through inputs to rascil-imager and out to FITS 
-  [MR122] Added functions to plot sources in skycomponents format compatible for ci_checker
+* [MR122] Added functions to plot sources in skycomponents format compatible for ci_checker
 
 0.2.1
 -----
 * New app rascil_advise to advise on imaging parameters for a MeasurementSet
-* New app ci_checker(imaging_qa) to check sources in continuum imaging images with BDSF
+* New app ci_checker to check sources in continuum imaging images with BDSF
 * Implement using requirements*.in files for dependency management.
   Add files: requirements.in, requirements-docs.in, requirements-test.in
 * Makefile updated with requirements management commands:

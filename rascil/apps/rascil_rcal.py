@@ -79,6 +79,13 @@ def cli_parser():
         help="Solution should be for phases only",
     )
 
+    parser.add_argument(
+        "--solution_tolerance",
+        type=float,
+        default=1e-12,
+        help="Tolerance for solution: stops iteration when changes below this level",
+    )
+
     return parser
 
 
@@ -130,6 +137,7 @@ def rcal_simulator(args):
         model_components,
         phase_only=args.phase_only_solution == "True",
         use_previous=args.use_previous_gaintable == "True",
+        tol=args.solution_tolerance,
     )
     full_gt = gt_sink(gt_gen)
 

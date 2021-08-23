@@ -22,8 +22,6 @@ astropy==4.3.1
     #   reproject
 astropy-healpix==0.6
     # via reproject
-async-generator==1.10
-    # via nbclient
 attrs==21.2.0
     # via jsonschema
 backcall==0.2.0
@@ -64,7 +62,7 @@ cryptography==3.4.7
     # via paramiko
 cycler==0.10.0
     # via matplotlib
-dask==2021.08.0
+dask==2021.08.1
     # via
     #   -r requirements.in
     #   distributed
@@ -76,14 +74,16 @@ decorator==5.0.9
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.8.0
+distributed==2021.8.1
     # via
     #   -r requirements.in
     #   dask-memusage
-ducc0==0.18.0
+ducc0==0.19.0
     # via -r requirements.in
 entrypoints==0.3
-    # via nbconvert
+    # via
+    #   jupyter-client
+    #   nbconvert
 fasteners==0.16.3
     # via zarr
 fsspec==2021.7.0
@@ -111,7 +111,7 @@ importlib-metadata==4.6.4
     #   click
     #   ipykernel
     #   jsonschema
-ipykernel==6.1.0
+ipykernel==6.2.0
     # via
     #   ipywidgets
     #   jupyter
@@ -145,7 +145,7 @@ jsonschema==3.2.0
     # via nbformat
 jupyter==1.0.0
     # via -r requirements.in
-jupyter-client==6.1.12
+jupyter-client==7.0.1
     # via
     #   ipykernel
     #   jupyter-console
@@ -183,7 +183,7 @@ jupyterlab-widgets==1.0.0
     # via ipywidgets
 kiwisolver==1.3.1
     # via matplotlib
-llvmlite==0.36.0
+llvmlite==0.37.0
     # via numba
 locket==0.2.1
     # via partd
@@ -206,7 +206,7 @@ msgpack==1.0.2
     # via distributed
 natsort==7.1.1
     # via seqfile
-nbclient==0.5.3
+nbclient==0.5.4
     # via nbconvert
 nbconvert==6.1.0
     # via
@@ -221,7 +221,9 @@ nbformat==5.1.3
     #   nbconvert
     #   notebook
 nest-asyncio==1.5.1
-    # via nbclient
+    # via
+    #   jupyter-client
+    #   nbclient
 networkx==2.6.2
     # via scikit-image
 notebook==6.4.3
@@ -232,11 +234,11 @@ notebook==6.4.3
     #   jupyter-latex-envs
     #   jupyter-nbextensions-configurator
     #   widgetsnbextension
-numba==0.53.1
+numba==0.54.0
     # via
     #   -r requirements.in
     #   aotools
-numcodecs==0.8.1
+numcodecs==0.9.0
     # via zarr
 numpy==1.20.3
     # via
@@ -294,7 +296,7 @@ pillow==8.3.1
     #   scikit-image
 prometheus-client==0.11.0
     # via notebook
-prompt-toolkit==3.0.19
+prompt-toolkit==3.0.20
     # via
     #   ipython
     #   jupyter-console
@@ -351,7 +353,7 @@ pyzmq==22.2.1
     #   qtconsole
 qtconsole==5.1.1
     # via jupyter
-qtpy==1.9.0
+qtpy==1.10.0
     # via qtconsole
 reproject==0.8
     # via -r requirements.in
@@ -393,7 +395,7 @@ tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
     # via distributed
-terminado==0.11.0
+terminado==0.11.1
     # via notebook
 testpath==0.5.0
     # via nbconvert

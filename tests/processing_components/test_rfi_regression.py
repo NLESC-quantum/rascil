@@ -34,18 +34,12 @@ class TestRFIRegression(unittest.TestCase):
 
     def setup_telescope(self, telescope):
         """Initialise common elements"""
-        self.nchannels = 5
-
-        self.ntimes = 100
-
         rmax = 50.0
         antskip = 1
         self.configuration = create_named_configuration(
             telescope, rmax=rmax, skip=antskip
         )
         self.nants = len(self.configuration.names)
-
-        self.apparent_power = numpy.ones((self.ntimes, self.nants, self.nchannels))
 
         ftimes = (numpy.pi / 43200.0) * numpy.arange(-3600.0, +3600.0, 225.0)
         log.info(f"Times: {ftimes}")
@@ -89,11 +83,11 @@ class TestRFIRegression(unittest.TestCase):
         # only add signal to the 4th and 5th channels (for testing purposes)
         emitter_power[:, :, :, 3] = 1.0e-10
         emitter_power[:, :, :, 4] = 5.0e-10
+
+        # azimuth, elevation, distance
         emitter_coordinates = numpy.ones(
             (1, len(bvis.time), nants_start, 3),
         )
-        # azimuth, elevation, distance
-        # azimuth, elevation, distance
         emitter_coordinates[:, :, :, 0] = (
             0.0 + numpy.linspace(-1.0, 1.0, 5)[numpy.newaxis, numpy.newaxis, :]
         )
@@ -112,7 +106,6 @@ class TestRFIRegression(unittest.TestCase):
                 ["source1"],
                 bvis.frequency.values,
                 beam_gain_state=None,
-                use_pole=False,
                 apply_primary_beam=apply_primary_beam,
             )
 
@@ -129,6 +122,7 @@ class TestRFIRegression(unittest.TestCase):
                     ),
                 )
             qa = qa_image(dirty)
+            print(qa.data)
 
             if apply_primary_beam:
                 numpy.testing.assert_approx_equal(

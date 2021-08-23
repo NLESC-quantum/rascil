@@ -216,7 +216,6 @@ def test_simulate_rfi_block_prop_use_pol(telescope, apply_beam):
         ["source1"],
         bvis.frequency.values,
         beam_gain_state=None,
-        use_pole=False,
         apply_primary_beam=apply_beam,
     )
 

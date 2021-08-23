@@ -27,20 +27,13 @@ import logging
 
 import astropy.units as u
 import numpy
-from astropy.coordinates import SkyCoord, EarthLocation
+from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
 from rascil import phyconst
-from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.simulation.pointing import (
-    simulate_pointingtable,
-)
+
 from rascil.processing_components.util.array_functions import average_chunks2
-from rascil.processing_components.util.coordinate_support import hadec_to_azel
-from rascil.processing_components.util.compass_bearing import (
-    calculate_initial_compass_bearing,
-)
 from rascil.processing_components.util.geometry import calculate_azel
 
 from rascil.processing_components.imaging.primary_beams import create_vp
@@ -64,7 +57,6 @@ from rascil.processing_components.simulation.pointing import (
     simulate_gaintable_from_pointingtable,
 )
 from rascil.processing_components.visibility.operations import copy_visibility
-from rascil.processing_components.image import import_image_from_fits
 
 log = logging.getLogger("rascil-logger")
 
@@ -194,10 +186,7 @@ def apply_beam_gain_for_mid(
     voltage_pattern,
     azimuth,
     elevation,
-    emitter_declination,
-    emitter_sky,
-    ha_phase_ctr,
-    latitude,
+    phase_centre,
 ):
     """
     Apply the beam gain to the apparent emitter power, to determine
@@ -208,10 +197,7 @@ def apply_beam_gain_for_mid(
     :param voltage_pattern: voltage pattern object for SKA Mid
     :param azimuth: azimuth of the RFI source at a given time, in degrees
     :param elevation: elevation of the RFI source at a given time, in degrees
-    :param emitter_declination: declination of the RFI source at a given time
-    :param emitter_sky: astropy.coordinates.sky_coordinate.SkyCoord object
-    :param ha_phase_ctr: hour angle of the phase centre in degrees
-    :param latitude: latitude of the SKA site in radians
+    :param phase_centre: astropy.coordinates.sky_coordinate.SkyCoord object
     """
     flux = numpy.zeros((bvis.vis.shape[2], bvis.vis.shape[3]))  # [nchan, npol]
 
@@ -249,7 +235,7 @@ def apply_beam_gain_for_mid(
 
     # Update the location of the emitter
     emitter_comp = create_skycomponent(
-        direction=emitter_sky,
+        direction=phase_centre,
         flux=flux,
         frequency=bvis.frequency.data,
         polarisation_frame=PolarisationFrame(bvis._polarisation_frame),
@@ -293,7 +279,7 @@ def simulate_rfi_block_prop(
     :param beam_gain_state: tuple of beam gains to apply to the signal or file containing values,
                            and flag to declare which; only needed for LOW; for Mid, use None
     :param use_pole: Set the emitter to be at the southern celestial pole
-    :param apply_primary_beam: Apply the primary beam
+    :param apply_primary_beam: Apply the primary beam, not used for Low
     :return: BlockVisibility
     """
 
@@ -435,10 +421,7 @@ def simulate_rfi_block_prop(
                         vp,
                         az[iha],
                         el[iha],
-                        dec_emitter[iha, :],
-                        bvis.phasecentre,  # why not emitter_sky?
-                        ha_phase_ctr,
-                        latitude,
+                        bvis.phasecentre,
                     )
 
             # Now accumulate over all sources

@@ -2,6 +2,7 @@
 
 """
 
+import sys
 import argparse
 import logging
 import pprint
@@ -21,10 +22,12 @@ from rascil.processing_components import (
     solve_gaintable,
     dft_skycomponent_visibility,
     copy_visibility,
+    copy_gaintable,
 )
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cli_parser():
@@ -60,6 +63,27 @@ def cli_parser():
         type=str,
         default=None,
         help="Name of components file (HDF5) format",
+    )
+
+    parser.add_argument(
+        "--use_previous_gaintable",
+        type=str,
+        default="True",
+        help="Use previous gaintable as starting point for solution",
+    )
+
+    parser.add_argument(
+        "--phase_only_solution",
+        type=str,
+        default="True",
+        help="Solution should be for phases only",
+    )
+
+    parser.add_argument(
+        "--solution_tolerance",
+        type=float,
+        default=1e-12,
+        help="Tolerance for solution: stops iteration when changes below this level",
     )
 
     return parser
@@ -108,7 +132,13 @@ def rcal_simulator(args):
     log.info(f"\nMS loaded into BlockVisibility:\n{bvis}\n")
 
     bvis_gen = bvis_source(bvis)
-    gt_gen = bvis_solver(bvis_gen, model_components, phase_only=True)
+    gt_gen = bvis_solver(
+        bvis_gen,
+        model_components,
+        phase_only=args.phase_only_solution == "True",
+        use_previous=args.use_previous_gaintable == "True",
+        tol=args.solution_tolerance,
+    )
     full_gt = gt_sink(gt_gen)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
@@ -130,7 +160,7 @@ def bvis_source(bvis: BlockVisibility, dim="time") -> Iterable[BlockVisibility]:
 
 
 def bvis_solver(
-    bvis_gen: Iterable[BlockVisibility], model_components, **kwargs
+    bvis_gen: Iterable[BlockVisibility], model_components, use_previous=True, **kwargs
 ) -> Iterable[GainTable]:
     """Iterate through the block vis, solving for the gain, returning gaintable generator
 
@@ -141,13 +171,18 @@ def bvis_solver(
     :param kwargs: Optional keywords
     :return: generator of GainTables
     """
+    previous = None
     for bv in bvis_gen:
         if model_components is not None:
             modelvis = copy_visibility(bv)
             modelvis = dft_skycomponent_visibility(modelvis, model_components)
-            gt = solve_gaintable(bv, modelvis=modelvis, **kwargs)
+            gt = solve_gaintable(bv, modelvis=modelvis, gt=previous, **kwargs)
+            if use_previous:
+                copy_gaintable(gt, previous)
         else:
-            gt = solve_gaintable(bv, **kwargs)
+            gt = solve_gaintable(bv, gt=previous, **kwargs)
+        if use_previous:
+            copy_gaintable(gt, previous)
         yield gt
 
 

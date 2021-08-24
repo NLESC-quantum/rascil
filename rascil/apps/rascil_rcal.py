@@ -79,7 +79,12 @@ def cli_parser():
         default=False,
         help="If yes, plot the gain table values over time",
     )
-
+    parser.add_argument(
+        "--plot_dir",
+        type=str,
+        default=None,
+        help="Directory to save the gain plots into (default is the same directory the MS file is located)",
+    )
     parser.add_argument(
         "--use_previous_gaintable",
         type=str,
@@ -144,6 +149,13 @@ def rcal_simulator(args):
     else:
         model_components = None
 
+    if args.plot_dir is None:
+        plot_dir = os.getcwd() + "plots/"
+    else:
+        plot_dir = args.plot_dir
+
+    log.info(f"Write plots into directory: \n{plot_dir}\n")
+
     log.info(f"\nMS loaded into BlockVisibility:\n{bvis}\n")
 
     bvis_gen = bvis_source(bvis)
@@ -155,8 +167,7 @@ def rcal_simulator(args):
         use_previous=args.use_previous_gaintable == "True",
         tol=args.solution_tolerance,
     )
-    full_gt = gt_sink(gt_gen, args.do_plotting)
-
+    full_gt = gt_sink(gt_gen, args.do_plotting, plot_dir)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -203,11 +214,13 @@ def bvis_solver(
         yield gt
 
 
-def gt_sink(gt_gen: Iterable[GainTable], do_plotting):
+def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dir):
     """Iterate through the gaintables, logging resisual, combine into single GainTable
 
     :param gt_gen: Generator of GainTables
     :param do_plotting: Option to plot gain tables
+    :param plot_dir: Directory to save plots
+
     :return: GainTable
     """
     gt_list = list()
@@ -219,19 +232,22 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting):
         gt_list.append(gt)
 
         if do_plotting == "True":
-            gt_update_plot(gt_list, datetime)
+            gt_update_plot(gt_list, datetime, plot_dir)
             log.info("Updated gaintable plots.")
 
     full_gt = xarray.concat(gt_list, "time")
     return full_gt
 
 
-def gt_update_plot(gt_list, datetime):
+def gt_update_plot(gt_list, datetime, plot_dir):
 
     """Plot gaintable (gain and residual values) over time
 
     :param gt_list: GainTable list to plot
     :param datetime: The current datetime
+    :param plot_dir: Directory to save plots
+
+    :return
     """
 
     with time_support(format="iso", scale="utc"):
@@ -273,7 +289,7 @@ def gt_update_plot(gt_list, datetime):
         plt.xticks(rotation=30)
 
         fig.suptitle(f"Updated GainTable at {datetime}")
-        plt.savefig(f"plots/plot_{datetime}.png")
+        plt.savefig(plot_dir + f"plot_{datetime}.png")
 
     return
 

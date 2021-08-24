@@ -142,6 +142,8 @@ class TestRASCILRcal(unittest.TestCase):
         self.args.ingest_components_file = rascil_path(
             "test_results/test_rascil_rcal_components.hdf"
         )
+        self.args.do_plotting = "True"
+        self.args.plot_dir = rascil_path("test_results/plots")
 
     def tearDown(self) -> None:
         self.cleanup_data_files()

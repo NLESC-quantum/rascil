@@ -403,6 +403,9 @@ def qa_gaintable(gt: GainTable, context=None) -> QA:
     :param gt:
     :return: QA
     """
+    if not numpy.max(gt.weight.data) > 0.0:
+        raise ValueError("qa_gaintable: All gaintable weights are zero")
+
     agt = numpy.abs(gt.gain.data[gt.weight.data > 0.0])
     pgt = numpy.angle(gt.gain.data[gt.weight.data > 0.0])
     rgt = gt.residual.data[numpy.sum(gt.weight.data, axis=1) > 0.0]

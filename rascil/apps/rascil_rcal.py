@@ -88,7 +88,7 @@ def cli_parser():
     parser.add_argument(
         "--use_previous_gaintable",
         type=str,
-        default="True",
+        default="False",
         help="Use previous gaintable as starting point for solution",
     )
 
@@ -205,12 +205,11 @@ def bvis_solver(
             modelvis = copy_visibility(bv)
             modelvis = dft_skycomponent_visibility(modelvis, model_components)
             gt = solve_gaintable(bv, modelvis=modelvis, gt=previous, **kwargs)
-            if use_previous:
-                copy_gaintable(gt, previous)
         else:
             gt = solve_gaintable(bv, gt=previous, **kwargs)
+
         if use_previous:
-            copy_gaintable(gt, previous)
+            previous = copy_gaintable(gt)
         yield gt
 
 

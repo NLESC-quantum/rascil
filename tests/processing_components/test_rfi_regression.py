@@ -66,7 +66,32 @@ class TestRFIRegression(unittest.TestCase):
             weight=1.0,
         )
 
-    def test_simulate_rfi_block_prop_image(self):
+        nants_start = self.nants
+
+        self.emitter_power = numpy.zeros(
+            (1, len(self.bvis.time), nants_start, len(self.bvis.frequency)),
+            dtype=complex,
+        )  # one source
+        # only add signal to the 4th and 5th channels (for testing purposes)
+        self.emitter_power[:, :, :, 3] = 1.0e-10
+        self.emitter_power[:, :, :, 4] = 5.0e-10
+
+        # azimuth, elevation, distance
+        self.emitter_coordinates = numpy.ones(
+            (1, len(self.bvis.time), nants_start, 3),
+        )
+        self.emitter_coordinates[:, :, :, 0] = (
+            0.0 + numpy.linspace(-1.0, 1.0, 5)[numpy.newaxis, numpy.newaxis, :]
+        )
+        self.emitter_coordinates[:, :, :, 1] = (
+            29.45 + numpy.linspace(-2.0, 2.0, 5)[numpy.newaxis, numpy.newaxis, :]
+        )
+        self.emitter_coordinates[:, :, :, 2] = (
+            600000.0
+            + numpy.linspace(-5000.0, 5000.0, 5)[numpy.newaxis, numpy.newaxis, :]
+        )
+
+    def test_simulate_rfi_block_prop_image_beam_true(self):
         """
         regression to test that simulate_rfi_block_prop correctly updates the
         block visibility data with RFI signal. We do this by making an image
@@ -74,72 +99,74 @@ class TestRFIRegression(unittest.TestCase):
         RFI signal is for the same frequency channels as the BlockVisibility has
         """
         self.setup_telescope("MID")
-        nants_start = self.nants
-        bvis = self.bvis.copy()
+        bvis = self.bvis.copy(deep=True)
 
-        emitter_power = numpy.zeros(
-            (1, len(bvis.time), nants_start, len(bvis.frequency)), dtype=complex
-        )  # one source
-        # only add signal to the 4th and 5th channels (for testing purposes)
-        emitter_power[:, :, :, 3] = 1.0e-10
-        emitter_power[:, :, :, 4] = 5.0e-10
+        simulate_rfi_block_prop(
+            bvis,
+            self.emitter_power,
+            self.emitter_coordinates,
+            ["source1"],
+            bvis.frequency.values,
+            beam_gain_state=None,
+            apply_primary_beam=True,
+        )
 
-        # azimuth, elevation, distance
-        emitter_coordinates = numpy.ones(
-            (1, len(bvis.time), nants_start, 3),
-        )
-        emitter_coordinates[:, :, :, 0] = (
-            0.0 + numpy.linspace(-1.0, 1.0, 5)[numpy.newaxis, numpy.newaxis, :]
-        )
-        emitter_coordinates[:, :, :, 1] = (
-            29.45 + numpy.linspace(-2.0, 2.0, 5)[numpy.newaxis, numpy.newaxis, :]
-        )
-        emitter_coordinates[:, :, :, 2] = (
-            600000.0
-            + numpy.linspace(-5000.0, 5000.0, 5)[numpy.newaxis, numpy.newaxis, :]
-        )
-        for apply_primary_beam in [True, False]:
-            simulate_rfi_block_prop(
-                bvis,
-                emitter_power,
-                emitter_coordinates,
-                ["source1"],
-                bvis.frequency.values,
-                beam_gain_state=None,
-                apply_primary_beam=apply_primary_beam,
+        model = create_image_from_visibility(bvis, npixel=1024, cellsize=0.002, nchan=1)
+        dirty, sumwt = invert_ng(bvis, model)
+        dirty["pixels"].data[numpy.abs(dirty["pixels"].data) > 1e6] = 0.0
+        if self.persist:
+            export_image_to_fits(
+                dirty,
+                rascil_path(f"test_results/test_rfi_image_withPBTrue.fits"),
             )
+        qa = qa_image(dirty)
 
-            model = create_image_from_visibility(
-                bvis, npixel=1024, cellsize=0.002, nchan=1
+        numpy.testing.assert_approx_equal(
+            qa.data["max"],
+            458854.2087080175,
+            8,
+            err_msg=str(qa),
+        )
+        numpy.testing.assert_approx_equal(
+            qa.data["min"], -317039.1555572104, 8, err_msg=str(qa)
+        )
+
+    def test_simulate_rfi_block_prop_image_beam_false(self):
+        """
+        regression to test that simulate_rfi_block_prop correctly updates the
+        block visibility data with RFI signal. We do this by making an image
+
+        RFI signal is for the same frequency channels as the BlockVisibility has
+        """
+        self.setup_telescope("MID")
+        bvis = self.bvis.copy(deep=True)
+
+        simulate_rfi_block_prop(
+            bvis,
+            self.emitter_power,
+            self.emitter_coordinates,
+            ["source1"],
+            bvis.frequency.values,
+            beam_gain_state=None,
+            apply_primary_beam=False,
+        )
+
+        model = create_image_from_visibility(bvis, npixel=1024, cellsize=0.002, nchan=1)
+        dirty, sumwt = invert_ng(bvis, model)
+        dirty["pixels"].data[numpy.abs(dirty["pixels"].data) > 1e6] = 0.0
+        if self.persist:
+            export_image_to_fits(
+                dirty,
+                rascil_path(f"test_results/test_rfi_image_withPBFalse.fits"),
             )
-            dirty, sumwt = invert_ng(bvis, model)
-            dirty["pixels"].data[numpy.abs(dirty["pixels"].data) > 1e6] = 0.0
-            if self.persist:
-                export_image_to_fits(
-                    dirty,
-                    rascil_path(
-                        f"test_results/test_rfi_image_withPB{apply_primary_beam}.fits"
-                    ),
-                )
-            qa = qa_image(dirty)
+        qa = qa_image(dirty)
 
-            if apply_primary_beam:
-                numpy.testing.assert_approx_equal(
-                    qa.data["max"],
-                    458854.2087080175,
-                    8,
-                    err_msg=str(qa),
-                )
-                numpy.testing.assert_approx_equal(
-                    qa.data["min"], -317039.1555572104, 8, err_msg=str(qa)
-                )
-            else:
-                numpy.testing.assert_approx_equal(
-                    qa.data["max"], 999962.8165061118, 8, err_msg=str(qa)
-                )
-                numpy.testing.assert_approx_equal(
-                    qa.data["min"], -999962.870884174, 8, err_msg=str(qa)
-                )
+        numpy.testing.assert_approx_equal(
+            qa.data["max"], 999980.5470391798, 8, err_msg=str(qa)
+        )
+        numpy.testing.assert_approx_equal(
+            qa.data["min"], -999991.7435593636, 8, err_msg=str(qa)
+        )
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ import argparse
 import logging
 import pprint
 from typing import Iterable
+import os
 
 import numpy
 import xarray
@@ -86,6 +87,12 @@ def cli_parser():
         help="Directory to save the gain plots into (default is the same directory the MS file is located)",
     )
     parser.add_argument(
+        "--plot_dynamic",
+        type=str,
+        default=False,
+        help="If yes, enable dynamic plotting and save animation; if no, just save the final gain table",
+    )
+    parser.add_argument(
         "--use_previous_gaintable",
         type=str,
         default="False",
@@ -150,7 +157,7 @@ def rcal_simulator(args):
         model_components = None
 
     if args.plot_dir is None:
-        plot_dir = os.getcwd() + "plots/"
+        plot_dir = os.getcwd() + "/plots/"
     else:
         plot_dir = args.plot_dir
 
@@ -167,7 +174,9 @@ def rcal_simulator(args):
         use_previous=args.use_previous_gaintable == "True",
         tol=args.solution_tolerance,
     )
-    full_gt = gt_sink(gt_gen, args.do_plotting, plot_dir)
+
+    plotfile = plot_dir + args.ingest_msname.replace(".ms", "_plot.png")
+    full_gt = gt_sink(gt_gen, args.do_plotting, plotfile)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -213,12 +222,12 @@ def bvis_solver(
         yield gt
 
 
-def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dir):
+def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_name):
     """Iterate through the gaintables, logging resisual, combine into single GainTable
 
     :param gt_gen: Generator of GainTables
     :param do_plotting: Option to plot gain tables
-    :param plot_dir: Directory to save plots
+    :param plot_name: File name for the plot (contains directory name)
 
     :return: GainTable
     """
@@ -230,21 +239,21 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dir):
         )
         gt_list.append(gt)
 
-        if do_plotting == "True":
-            gt_update_plot(gt_list, datetime, plot_dir)
-            log.info("Updated gaintable plots.")
+    if do_plotting == "True":
+
+        gt_final_plot(gt_list, plot_name)
+        log.info("Save final plot.")
 
     full_gt = xarray.concat(gt_list, "time")
     return full_gt
 
 
-def gt_update_plot(gt_list, datetime, plot_dir):
+def gt_final_plot(gt_list, plot_name=None):
 
     """Plot gaintable (gain and residual values) over time
 
     :param gt_list: GainTable list to plot
-    :param datetime: The current datetime
-    :param plot_dir: Directory to save plots
+    :param plot_name: File name for the plot (contains directory name)
 
     :return
     """
@@ -259,6 +268,7 @@ def gt_update_plot(gt_list, datetime, plot_dir):
         residual = []
         time = []
 
+        datetime = gt_list[0]["datetime"][0].data
         # We only look at the central antenna at the moment
         for gt in gt_list:
 
@@ -288,7 +298,7 @@ def gt_update_plot(gt_list, datetime, plot_dir):
         plt.xticks(rotation=30)
 
         fig.suptitle(f"Updated GainTable at {datetime}")
-        plt.savefig(plot_dir + f"plot_{datetime}.png")
+        plt.savefig(plot_name)
 
     return
 

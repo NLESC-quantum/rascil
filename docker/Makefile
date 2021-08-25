@@ -17,10 +17,10 @@ push_all:
 	cd rascil-imaging-qa; make tag_latest; make push_latest
 
 push_all_release:
-	cd rascil-base; push_version
-	cd rascil-full; push_version
-	cd rascil-notebook; push_version
-	cd rascil-imaging-qa; push_version
+	cd rascil-base; make push_version
+	cd rascil-full; make push_version
+	cd rascil-notebook; make push_version
+	cd rascil-imaging-qa; make push_version
 
 rm_all:
 	cd rascil-base; make rm

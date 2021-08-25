@@ -48,7 +48,7 @@ Releasing a new version
 
 The release process:
 
-* Overall based on: https://developer.skatelescope.org/ and in particular https://developer.skatelescope.org/en/latest/development/software_package_release_procedure.html
+* Overall based on: https://developer.skao.int/ and in particular https://developer.skao.int/en/latest/tools/software-package-release-procedure.html
 * Use semantic versioning: https://semver.org
 * Follow the packaging process in: https://packaging.python.org/tutorials/packaging-projects/
 
@@ -65,7 +65,7 @@ This is only allowed for releasing a new version of the package.
 Steps:
 ------
 
- * Ensure that the current master builds on GitLab: https://gitlab.com/ska-telescope/rascil/-/pipelines
+ * Ensure that the current master builds on GitLab: https://gitlab.com/ska-telescope/external/rascil/-/pipelines
  * Decide whether a release is warranted and what semantic version number it should be: https://semver.org
  * Check if the documentation has been updated. If not, create a new branch, update the documentation,
    create a merge request and merge that to master (after approval).

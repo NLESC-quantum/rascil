@@ -16,6 +16,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib import animation
 
 from astropy import units as u
 from astropy.time import Time
@@ -175,8 +176,8 @@ def rcal_simulator(args):
         tol=args.solution_tolerance,
     )
 
-    plotfile = plot_dir + args.ingest_msname.replace(".ms", "_plot.png")
-    full_gt = gt_sink(gt_gen, args.do_plotting, plotfile)
+    plotfile = plot_dir + args.ingest_msname.replace(".ms", "_plot")
+    full_gt = gt_sink(gt_gen, args.do_plotting, args.plot_dynamic, plotfile)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -222,11 +223,12 @@ def bvis_solver(
         yield gt
 
 
-def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_name):
+def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
     """Iterate through the gaintables, logging resisual, combine into single GainTable
 
     :param gt_gen: Generator of GainTables
     :param do_plotting: Option to plot gain tables
+    :param plot_dynamic: Option to make it a dynamic plot
     :param plot_name: File name for the plot (contains directory name)
 
     :return: GainTable
@@ -239,18 +241,116 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_name):
         )
         gt_list.append(gt)
 
+        # Skip the first data
+        if do_plotting == "True" and plot_dynamic == "True" and len(gt_list) > 1:
+
+            dyn = DynamicUpdate()
+            dyn(gt_list, plot_name)
+            log.info(f"Done dynamic plotting for {datetime}.")
+
     if do_plotting == "True":
 
-        gt_final_plot(gt_list, plot_name)
+        gt_single_plot(gt_list, plot_name)
         log.info("Save final plot.")
 
     full_gt = xarray.concat(gt_list, "time")
     return full_gt
 
 
-def gt_final_plot(gt_list, plot_name=None):
+class DynamicUpdate:
+
+    """List of functions to plot gaintable (gain and residual values) over time
+    Updates the plot dynamically and saves to animation
+
+    """
+
+    def SetUp(self):
+
+        self.lines = []
+        for i, ax in enumerate(self.axes):
+            (lines,) = ax.plot([], [], linewidth=2)
+            self.lines.append(lines)
+            ax.set_autoscaley_on(True)
+
+        return self.lines
+
+    def plotting(self, xdata, ydatas):
+
+        for i, ax in enumerate(self.axes):
+            self.lines[i].set_xdata(xdata)
+            self.lines[i].set_ydata(ydata[i])
+
+            ax.relim()
+            ax.autoscale_view()
+
+            # self.fig.canvas.draw()
+            # self.fig.canvas.flush_events()
+
+        return self.lines
+
+    def animate(self, gt_list):
+
+        xdata = []
+        y1 = []
+        y2 = []
+        y3 = []
+        xdata, y1, y2, y3 = get_gain_data(gt_list)
+        self.lines = self.plotting(xdata, [y1, y2, y3])
+
+    def __call__(self, gt_list, plot_name):
+
+        self.fig, self.axes = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
+        self.fig.subplots_adjust(hspace=0)
+        anim = animation.FuncAnimation(
+            self.fig,
+            self.animate(gt_list),
+            init_func=self.SetUp,
+            frames=200,
+            interval=20,
+            blit=True,
+        )
+
+        anim.save(plot_name + ".gif", writer="imagemagick")
+
+
+def get_gain_data(gt_list):
+
+    """Get data from a list of GainTables used for plotting.
+
+    :param gt_list: GainTable list to plot
+
+    :return: List of arrays in format of [time, amplitude-1, phase-phase(antenna0), residual]
+
+    """
+
+    with time_support(format="iso", scale="utc"):
+
+        gains = []
+        residual = []
+        time = []
+
+        # We only look at the central channel at the moment
+        for gt in gt_list:
+
+            time.append(gt.time.data[0] / 86400.0)
+            current_gain = gt.gain.data[0]
+            nchan = current_gain.shape[1]
+            gains.append(current_gain[:, nchan // 2, 0, 0])
+            residual.append(gt.residual.data[0, nchan // 2, 0, 0])
+
+        gains = numpy.array(gains)
+        amp = numpy.abs(gains) - 1.0
+        phase = numpy.angle(gains, deg=True)
+        phase_rel = [(phase[:, i] - phase[:, 0]) for i in range(len(phase[0]))]
+        timeseries = Time(time, format="mjd", out_subfmt="str")
+
+        return [timeseries, amp, phase_rel, residual]
+
+
+def gt_single_plot(gt_list, plot_name=None):
 
     """Plot gaintable (gain and residual values) over time
+       Used to generate a single plot only
 
     :param gt_list: GainTable list to plot
     :param plot_name: File name for the plot (contains directory name)
@@ -264,28 +364,13 @@ def gt_final_plot(gt_list, plot_name=None):
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
         fig.subplots_adjust(hspace=0)
 
-        gains = []
-        residual = []
-        time = []
-
         datetime = gt_list[0]["datetime"][0].data
-        # We only look at the central antenna at the moment
-        for gt in gt_list:
 
-            time.append(gt.time.data[0] / 86400.0)
-            current_gain = gt.gain.data[0]
-            nchan = current_gain.shape[1]
-            gains.append(current_gain[:, nchan // 2, 0, 0])
-            residual.append(gt.residual.data[0, nchan // 2, 0, 0])
+        timeseries, amp, phase_rel, residual = get_gain_data(gt_list)
 
-        # Plotting.
-        gains = numpy.array(gains)
-        amp = numpy.abs(gains)
-        phase = numpy.angle(gains, deg=True)
-        timeseries = Time(time, format="mjd", out_subfmt="str")
-        for i in range(gains.shape[1]):
-            ax1.plot(timeseries, amp[:, i] - 1.0, label=f"Antenna {i}")
-            ax2.plot(timeseries, phase[:, i] - phase[:, 0], label=f"Antenna {i}")
+        for i in range(amp.shape[1]):
+            ax1.plot(timeseries, amp[:, i], label=f"Antenna {i}")
+            ax2.plot(timeseries, phase_rel[i], label=f"Antenna {i}")
 
         ax1.set_ylabel("Gain Amplitude - 1")
         ax2.set_ylabel("Gain Phase (Antenna - Antenna 0)")
@@ -298,7 +383,7 @@ def gt_final_plot(gt_list, plot_name=None):
         plt.xticks(rotation=30)
 
         fig.suptitle(f"Updated GainTable at {datetime}")
-        plt.savefig(plot_name)
+        plt.savefig(plot_name + ".png")
 
     return
 

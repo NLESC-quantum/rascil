@@ -23,7 +23,6 @@ log = logging.getLogger("rascil-logger")
 
 try:
     from casacore.tables import table, tableutil
-    from casacore.measures import measures
 
     class WriteMs(BaseData):
         """

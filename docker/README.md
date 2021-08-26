@@ -16,10 +16,14 @@ There are various directories for docker files:
 ## Automatic publishing
 
 The docker images are automatically built by the CI pipeline.
-The `latest` versions are pushed to the Central Artifact Repository
-upon merge to the master branch, while the release version 
+The `latest` versions are pushed to the [Central Artifact Repository](https://artefact.skao.int/#browse/browse:docker-all)
+(CAR) upon merge to the master branch, while the release version 
 (tagged with the RASCIL version number) are pushed when a commit tag
 is pushed to the repository
+
+Note: at the moment, `latest` versions are NOT accessible from the CAR.
+To find out what versions you can download, look for the relevant 
+RASCIL docker image in the [Central Artifact Repository](https://artefact.skao.int/#browse/browse:docker-all)
 
 ## Build, push, and tag a set of Dockerfiles
 

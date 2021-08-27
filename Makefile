@@ -69,16 +69,16 @@ test-singlepass:
 	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
 
-test: # tests/data_models tests/processing_components
+test:
 	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
-    tests/apps --verbose \
+    tests/apps tests/data_models tests/processing_components --verbose \
 	--cov=rascil \
 	--junitxml unit-tests-other.xml \
 	--pylint --pylint-error-types=EF --durations=30
 	coverage html -d coverage
 
-test-dask: # tests/workflows
-	HOME=`pwd` py.test tests/apps_rsexecute --verbose \
+test-dask:
+	HOME=`pwd` py.test tests/workflows tests/apps_rsexecute --verbose \
 	--cov=rascil \
 	--junitxml unit-tests-dask.xml \
 	--pylint --pylint-error-types=EF --durations=30

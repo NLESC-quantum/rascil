@@ -143,7 +143,7 @@ class TestRASCILRcal(unittest.TestCase):
             "test_results/test_rascil_rcal_components.hdf"
         )
         self.args.do_plotting = "True"
-        self.args.plot_dir = rascil_path("test_results/plots")
+        self.args.plot_dir = rascil_path("test_results/")
 
     def tearDown(self) -> None:
         self.cleanup_data_files()
@@ -168,6 +168,9 @@ class TestRASCILRcal(unittest.TestCase):
         qa = qa_visibility(bvis_difference)
         assert qa.data["maxabs"] < 1e-12, str(qa)
         assert qa.data["minabs"] < 1e-12, str(qa)
+
+        plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        assert os.path.exists(plotfile)
 
 
 if __name__ == "__main__":

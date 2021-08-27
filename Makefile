@@ -77,8 +77,8 @@ test: # tests/data_models tests/processing_components
 	--pylint --pylint-error-types=EF --durations=30
 	coverage html -d coverage
 
-test-dask:
-	HOME=`pwd` py.test tests/workflows tests/apps_rsexecute --verbose \
+test-dask: # tests/workflows
+	HOME=`pwd` py.test tests/apps_rsexecute --verbose \
 	--cov=rascil \
 	--junitxml unit-tests-dask.xml \
 	--pylint --pylint-error-types=EF --durations=30

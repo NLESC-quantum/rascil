@@ -77,32 +77,32 @@ test:
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
-#test-dask:
-#  stage: test
-#  before_script:
-#    - apt-get update
-#    # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
-#    - apt-get -y install rsync ca-certificates gfortran libboost-dev libboost-python-dev libboost-numpy-dev
-#    - pip3 install -r requirements-test.txt
-#    - pip3 install -r requirements.txt
-#    - mkdir -p /usr/share/casacore/data/
-#    - cd /usr/share/casacore/data
-#    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
-#    - tar xfz WSRT_Measures.ztar
-#    - cd -
-#    - mkdir -p test_results
-#  script:
-#    - PYTHONPATH=`pwd` HOME=`pwd` make test-dask
-#  after_script:
-#    - mv .coverage coverage_dask
-#  coverage: '/^TOTAL.+?(\d+\%)$/'
-#  artifacts:
-#    paths:
-#      - coverage_dask
-#      - coverage
-#      - unit-tests-dask.xml
-#  rules:
-#    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+test-dask:
+  stage: test
+  before_script:
+    - apt-get update
+    # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
+    - apt-get -y install rsync ca-certificates gfortran libboost-dev libboost-python-dev libboost-numpy-dev
+    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
+    - mkdir -p test_results
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make test-dask
+  after_script:
+    - mv .coverage coverage_dask
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+      - coverage_dask
+      - coverage
+      - unit-tests-dask.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -200,7 +200,7 @@ docker_latest:
     - apk add make git
     - cp dist/*whl docker/rascil-base
     - cd docker
-    - export IMAGE_PREFIX=$CI_REGISTRY
+    - export IMAGE_PREFIX=${CI_REGISTRY}
     - docker login -u $CI_JOB_USER -p $CI_JOB_TOKEN $CI_REGISTRY
   script:
     - make build_all_latest

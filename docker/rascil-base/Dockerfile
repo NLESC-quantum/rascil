@@ -33,6 +33,10 @@ COPY --from=first /usr/share/casacore/data /usr/share/casacore/data
 # Install RASCIL from wheel built in the "build" stage of the CI pipeline
 # The data directory will not be loaded correctly until LFS is enabled
 COPY rascil-*whl .
+
+# these are needed for bdsf to install
+RUN apt-get update -y && apt-get install -y gfortran libboost-dev libboost-python-dev libboost-numpy-dev
+
 RUN pip install --upgrade pip && \
     DUCC0_OPTIMIZATION=portable-debug pip install rascil-*.whl && \
     rm -rf /root/.cache

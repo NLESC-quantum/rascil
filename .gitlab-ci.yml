@@ -149,9 +149,9 @@ build_package:
   artifacts:
     paths:
       - dist
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
-#    - if: '$CI_COMMIT_TAG'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master
 publish_to_car:
@@ -188,21 +188,6 @@ publish_to_car:
 #    - make push_all
 #  rules:
 #    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
-
-docker_latest:
-  stage: publish
-  image: docker:20.10.7
-  services:
-    - docker:20.10.7-dind
-  variables:
-    GIT_VERSION: $CI_COMMIT_SHORT_SHA
-  before_script:
-    - apk add make git
-    - cp dist/*whl docker/rascil-base
-    - cd docker
-  script:
-    - make build_all_latest
-    - make test_all
 
 # Publish docker:<version> (release) to Central Artefact Repository if this is a tagged build of the master
 docker_release:

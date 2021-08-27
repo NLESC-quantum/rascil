@@ -163,8 +163,6 @@ def rcal_simulator(args):
     else:
         plot_dir = args.plot_dir
 
-    log.info(f"Write plots into directory: \n{plot_dir}\n")
-
     log.info(f"\nMS loaded into BlockVisibility:\n{bvis}\n")
 
     bvis_gen = bvis_source(bvis)
@@ -177,7 +175,10 @@ def rcal_simulator(args):
         tol=args.solution_tolerance,
     )
 
-    plotfile = plot_dir + args.ingest_msname.replace(".ms", "_plot")
+    base = os.path.basename(args.ingest_msname)
+    plotfile = plot_dir + base.replace(".ms", "_plot")
+    log.info(f"Write plots into : \n{plotfile}\n")
+
     full_gt = gt_sink(gt_gen, args.do_plotting, args.plot_dynamic, plotfile)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
@@ -310,7 +311,7 @@ class DynamicUpdate:
                 self.animate(gt_list),
                 frames=200,
                 interval=20,
-                #blit=True,
+                # blit=True,
             )
 
             anim.save(plot_name + ".gif", writer="imagemagick")

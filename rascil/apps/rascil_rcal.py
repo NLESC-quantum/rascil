@@ -183,6 +183,7 @@ def rcal_simulator(args):
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
+
     return gtfile
 
 
@@ -246,8 +247,7 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
         # Skip the first data
         if do_plotting == "True" and plot_dynamic == "True" and len(gt_list) > 1:
 
-            dyn = DynamicUpdate()
-            dyn(gt_list, plot_name)
+            dynamic_update(gt_list, plot_name)
             log.info(f"Done dynamic plotting for {datetime}.")
 
     if do_plotting == "True":
@@ -259,62 +259,66 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
     return full_gt
 
 
-class DynamicUpdate:
+def dynamic_update(gt_list, plot_name):
 
-    """List of functions to plot gaintable (gain and residual values) over time
+    """Function to plot gaintable (gain and residual values) over time
     Updates the plot dynamically and saves to animation
 
     """
 
-    def SetUp(self):
+    fig, axes = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
+    fig.subplots_adjust(hspace=0)
+    lines = []
 
-        self.lines = []
-        for i, ax in enumerate(self.axes):
-            (lines,) = ax.plot([], [], linewidth=2)
-            self.lines.append(lines)
+    def init():
+
+        for ax in axes:
+            (line,) = ax.plot([], [], "o")
+            line.set_data([], [])
+            lines.append(line)
             ax.set_autoscaley_on(True)
 
-    def plotting(self, xdata, ydatas):
+        return lines
 
-        for i, ax in enumerate(self.axes):
-            self.lines[i].set_xdata(xdata)
-            self.lines[i].set_ydata(ydatas[i])
+    def animate(i, gt_list):
 
-            # ax.relim()
+        x, y1, y2, y3 = get_gain_data(gt_list)
+        print(x, y1[:, 0], y2[0], y3)
+        #        amp = []
+        #        phase = []
+        #        legends = []
+        #        for i in range(y1.shape[1]):
+        #            amp.append([x, y1[:, i]])
+        #            phase.append([x, y2[i]])
+        #            legends.append(f"Antenna {i}")
+        lines[0].set_data(x, y1[:, 0])
+        lines[1].set_data(y2[0])
+        lines[2].set_data(x, y3)
+
+        for ax in axes:
+            ax.relim()
             ax.autoscale_view()
 
-            # self.fig.canvas.draw()
-            # self.fig.canvas.flush_events()
+        return lines
 
-        return self.lines
+        # Start the animation.
 
-    def animate(self, gt_list):
+    with time_support(format="iso", scale="utc"):
 
-        xdata = []
-        y1 = []
-        y2 = []
-        y3 = []
-        xdata, y1, y2, y3 = get_gain_data(gt_list)
+        anim = animation.FuncAnimation(
+            fig,
+            animate,
+            init_func=init,
+            fargs=(gt_list,),
+            frames=len(gt_list),
+            interval=200,
+            blit=True,
+        )
+        log.info(f"Save animation to {plot_name}.")
 
-        self.lines = self.plotting(xdata, [y1, y2, y3])
+        anim.save(plot_name + ".gif", writer="imagemagick")
 
-        return self.lines
-
-    def __call__(self, gt_list, plot_name):
-
-        self.fig, self.axes = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
-        self.fig.subplots_adjust(hspace=0)
-        self.SetUp()
-        with time_support(format="iso", scale="utc"):
-            anim = animation.FuncAnimation(
-                self.fig,
-                self.animate(gt_list),
-                frames=200,
-                interval=20,
-                # blit=True,
-            )
-
-            anim.save(plot_name + ".gif", writer="imagemagick")
+    return
 
 
 def get_gain_data(gt_list):

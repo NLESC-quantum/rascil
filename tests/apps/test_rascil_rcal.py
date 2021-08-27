@@ -43,7 +43,7 @@ class TestRASCILRcal(unittest.TestCase):
         :param dopol: Use polarisation?
         """
 
-        self.cleanup_data_files()
+        self.persist = os.getenv("RASCIL_PERSIST", True)
 
         self.low = create_named_configuration("LOW-AA0.5")
         self.freqwin = 200
@@ -122,17 +122,15 @@ class TestRASCILRcal(unittest.TestCase):
 
     def cleanup_data_files(self):
         """Cleanup the temporary data files"""
-        shutil.rmtree(
-            rascil_path("test_results/test_rascil_rcal_components.hdf"),
-            ignore_errors=True,
-        )
-        shutil.rmtree(
-            rascil_path("test_results/test_rascil_rcal_gaintable.hdf"),
-            ignore_errors=True,
-        )
+        os.remove(rascil_path("test_results/test_rascil_rcal_components.hdf"))
+        os.remove(rascil_path("test_results/test_rascil_rcal_gaintable.hdf"))
         shutil.rmtree(
             rascil_path("test_results/test_rascil_rcal.ms"), ignore_errors=True
         )
+        os.remove(
+            rascil_path("test_results/test_rascil_rcal_plot.png"),
+        )
+        os.remove(rascil_path("test_results/test_rascil_rcal_rcal.log"))
 
     def setUp(self) -> None:
 
@@ -144,9 +142,6 @@ class TestRASCILRcal(unittest.TestCase):
         )
         self.args.do_plotting = "True"
         self.args.plot_dir = rascil_path("test_results/")
-
-    def tearDown(self) -> None:
-        self.cleanup_data_files()
 
     def test_rcal(self):
 
@@ -171,6 +166,9 @@ class TestRASCILRcal(unittest.TestCase):
 
         plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
         assert os.path.exists(plotfile)
+
+        if self.persist is False:
+            self.cleanup_data_files()
 
 
 if __name__ == "__main__":

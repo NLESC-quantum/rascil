@@ -200,12 +200,9 @@ docker_latest:
     - apk add make git
     - cp dist/*whl docker/rascil-base
     - cd docker
-    - export IMAGE_PREFIX=${CI_REGISTRY}
-    - echo $CI_JOB_TOKEN | docker login -u $CI_JOB_USER --password-stdin $CI_REGISTRY
   script:
     - make build_all_latest
     - make test_all
-    - make push_all
 
 # Publish docker:<version> (release) to Central Artefact Repository if this is a tagged build of the master
 docker_release:

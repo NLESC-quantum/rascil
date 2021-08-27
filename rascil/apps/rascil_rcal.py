@@ -35,6 +35,7 @@ from rascil.processing_components import (
     dft_skycomponent_visibility,
     copy_visibility,
     copy_gaintable,
+    create_gaintable_from_blockvisibility,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -222,7 +223,9 @@ def bvis_solver(
             gt = solve_gaintable(bv, gt=previous, **kwargs)
 
         if use_previous:
+            newgt = create_gaintable_from_blockvisibility(bv)
             previous = copy_gaintable(gt)
+            previous["time"] = newgt["time"]
         yield gt
 
 

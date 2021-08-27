@@ -286,7 +286,6 @@ def dynamic_update(gt_list, plot_name):
     def animate(i, gt_list):
 
         x, y1, y2, y3 = get_gain_data(gt_list)
-        print(x, y1[:, 0], y2[0], y3)
         #        amp = []
         #        phase = []
         #        legends = []
@@ -294,7 +293,7 @@ def dynamic_update(gt_list, plot_name):
         #            amp.append([x, y1[:, i]])
         #            phase.append([x, y2[i]])
         #            legends.append(f"Antenna {i}")
-        lines[0].set_data(x, y1[:, 0])
+        lines[0].set_data(x, y1[0])
         lines[1].set_data(y2[0])
         lines[2].set_data(x, y3)
 
@@ -334,6 +333,15 @@ def get_gain_data(gt_list):
 
     """
 
+    def angle_wrap(angle):
+
+        if angle > 180.0:
+            angle = 360.0 - angle
+        if angle < -180.0:
+            angle = 360.0 + angle
+
+        return angle
+
     with time_support(format="iso", scale="utc"):
 
         gains = []
@@ -351,8 +359,17 @@ def get_gain_data(gt_list):
 
         gains = numpy.array(gains)
         amp = numpy.abs(gains) - 1.0
+        amp = amp.reshape(amp.shape[1], amp.shape[0])
         phase = numpy.angle(gains, deg=True)
-        phase_rel = [(phase[:, i] - phase[:, 0]) for i in range(len(phase[0]))]
+
+        phase_rel = []
+        for i in range(len(phase[0])):
+            phase_now = phase[:, i] - phase[:, 0]
+            phase_now = [angle_wrap(element) for element in phase_now]
+            phase_rel.append(phase_now)
+        phase_rel = numpy.array(phase_rel)
+        print(amp.shape, phase_rel.shape)
+
         timeseries = Time(time, format="mjd", out_subfmt="str")
 
         return [timeseries, amp, phase_rel, residual]
@@ -379,15 +396,15 @@ def gt_single_plot(gt_list, plot_name=None):
 
         timeseries, amp, phase_rel, residual = get_gain_data(gt_list)
 
-        for i in range(amp.shape[1]):
-            ax1.plot(timeseries, amp[:, i], label=f"Antenna {i}")
-            ax2.plot(timeseries, phase_rel[i], label=f"Antenna {i}")
+        for i in range(amp.shape[0]):
+            ax1.plot(timeseries, amp[i], "o", label=f"Antenna {i}")
+            ax2.plot(timeseries, phase_rel[i], "o", label=f"Antenna {i}")
 
         ax1.set_ylabel("Gain Amplitude - 1")
         ax2.set_ylabel("Gain Phase (Antenna - Antenna 0)")
         ax2.legend(loc="best")
 
-        ax3.plot(timeseries, residual)
+        ax3.plot(timeseries, residual, "o")
         ax3.set_ylabel("Residual")
         ax3.set_xlabel("Time(UTC)")
         ax3.set_yscale("log")

@@ -1,6 +1,6 @@
 ARG IMAGE_PREFIX
 
-FROM python:3.7-slim AS first
+FROM python:3.9-slim AS first
 
 WORKDIR /
 

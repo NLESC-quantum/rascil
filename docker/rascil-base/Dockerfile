@@ -1,4 +1,4 @@
-FROM python:3.7-slim AS first
+FROM python:3.9-slim AS first
 
 WORKDIR /
 
@@ -8,7 +8,7 @@ RUN git clone https://gitlab.com/ska-telescope/external/rascil.git
 RUN mkdir -p /usr/share/casacore/data/ && \
     rsync -avz --timeout=120 rsync://casa-rsync.nrao.edu/casa-data/geodetic  /usr/share/casacore/data/
 
-FROM python:3.7
+FROM python:3.9
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
       description="SKA Telescope RASCIL base root reference image" \

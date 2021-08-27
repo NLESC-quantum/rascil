@@ -273,15 +273,13 @@ class DynamicUpdate:
             self.lines.append(lines)
             ax.set_autoscaley_on(True)
 
-        return self.lines
-
     def plotting(self, xdata, ydatas):
 
         for i, ax in enumerate(self.axes):
             self.lines[i].set_xdata(xdata)
-            self.lines[i].set_ydata(ydata[i])
+            self.lines[i].set_ydata(ydatas[i])
 
-            ax.relim()
+            # ax.relim()
             ax.autoscale_view()
 
             # self.fig.canvas.draw()
@@ -296,22 +294,26 @@ class DynamicUpdate:
         y2 = []
         y3 = []
         xdata, y1, y2, y3 = get_gain_data(gt_list)
+
         self.lines = self.plotting(xdata, [y1, y2, y3])
+
+        return self.lines
 
     def __call__(self, gt_list, plot_name):
 
         self.fig, self.axes = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
         self.fig.subplots_adjust(hspace=0)
-        anim = animation.FuncAnimation(
-            self.fig,
-            self.animate(gt_list),
-            init_func=self.SetUp,
-            frames=200,
-            interval=20,
-            blit=True,
-        )
+        self.SetUp()
+        with time_support(format="iso", scale="utc"):
+            anim = animation.FuncAnimation(
+                self.fig,
+                self.animate(gt_list),
+                frames=200,
+                interval=20,
+                #blit=True,
+            )
 
-        anim.save(plot_name + ".gif", writer="imagemagick")
+            anim.save(plot_name + ".gif", writer="imagemagick")
 
 
 def get_gain_data(gt_list):

@@ -276,10 +276,22 @@ def dynamic_update(gt_list, plot_name):
     def init():
 
         for ax in axes:
-            (line,) = ax.plot([], [], "o")
-            line.set_data([], [])
+            (line,) = ax.plot([], [], "-")
+            #            line.set_data([]), [])
             lines.append(line)
             ax.set_autoscaley_on(True)
+
+        x, y1, y2, y3 = get_gain_data(gt_list)
+        #        amp = []
+        #        phase = []
+        #        legends = []
+        #        for i in range(y1.shape[1]):
+        #            amp.append([x, y1[:, i]])
+        #            phase.append([x, y2[i]])
+        #            legends.append(f"Antenna {i}")
+        lines[0].set_data(x, y1[0])
+        lines[1].set_data(x, y2[0])
+        lines[2].set_data(x, y3)
 
         return lines
 
@@ -294,7 +306,7 @@ def dynamic_update(gt_list, plot_name):
         #            phase.append([x, y2[i]])
         #            legends.append(f"Antenna {i}")
         lines[0].set_data(x, y1[0])
-        lines[1].set_data(y2[0])
+        lines[1].set_data(x, y2[0])
         lines[2].set_data(x, y3)
 
         for ax in axes:
@@ -313,10 +325,10 @@ def dynamic_update(gt_list, plot_name):
             init_func=init,
             fargs=(gt_list,),
             frames=len(gt_list),
-            interval=200,
+            interval=20,
             blit=True,
         )
-        log.info(f"Save animation to {plot_name}.")
+        log.info(f"Save animation to {plot_name}.gif")
 
         anim.save(plot_name + ".gif", writer="imagemagick")
 
@@ -368,7 +380,6 @@ def get_gain_data(gt_list):
             phase_now = [angle_wrap(element) for element in phase_now]
             phase_rel.append(phase_now)
         phase_rel = numpy.array(phase_rel)
-        print(amp.shape, phase_rel.shape)
 
         timeseries = Time(time, format="mjd", out_subfmt="str")
 

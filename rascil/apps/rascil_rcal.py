@@ -216,7 +216,7 @@ def bvis_solver(
     previous = None
     for bv in bvis_gen:
         if model_components is not None:
-            modelvis = copy_visibility(bv)
+            modelvis = copy_visibility(bv, zero=True)
             modelvis = dft_skycomponent_visibility(modelvis, model_components)
             gt = solve_gaintable(bv, modelvis=modelvis, gt=previous, **kwargs)
         else:
@@ -225,7 +225,7 @@ def bvis_solver(
         if use_previous:
             newgt = create_gaintable_from_blockvisibility(bv)
             previous = copy_gaintable(gt)
-            previous["time"] = newgt["time"]
+            previous["time"].data = newgt["time"].data
         yield gt
 
 

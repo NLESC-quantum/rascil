@@ -22,10 +22,12 @@ from matplotlib import animation
 from astropy import units as u
 from astropy.time import Time
 from astropy.visualization import time_support
+from astropy.coordinates import SkyCoord
 
 from rascil.data_models import (
     BlockVisibility,
     GainTable,
+    PolarisationFrame,
     export_gaintable_to_hdf5,
     import_skycomponent_from_hdf5,
 )
@@ -35,8 +37,10 @@ from rascil.processing_components import (
     dft_skycomponent_visibility,
     copy_visibility,
     copy_gaintable,
+    create_skycomponent,
     create_gaintable_from_blockvisibility,
 )
+
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
@@ -155,7 +159,19 @@ def rcal_simulator(args):
     )[0]
 
     if args.ingest_components_file is not None:
-        model_components = import_skycomponent_from_hdf5(args.ingest_components_file)
+        if ".hdf" in args.ingest_components_file:
+            model_components = import_skycomponent_from_hdf5(
+                args.ingest_components_file
+            )
+        elif ".txt" in args.ingest_components_file:
+            pol = bvis.blockvisibility_acc.polarisation_frame
+            model_components = read_skycomponent_from_txt_with_external_frequency(
+                args.ingest_components_file, bvis.frequency, pol
+            )
+        else:
+            log.error("File format not supported.")
+            model_components = None
+
     else:
         model_components = None
 
@@ -286,7 +302,7 @@ def dynamic_update(gt_list, plot_name):
         #        phase = []
         #        legends = []
         #        for i in range(y1.shape[1]):
-        #            amp.append([x, y1[:, i]])
+        #            amp.append([x, y1[i]])
         #            phase.append([x, y2[i]])
         #            legends.append(f"Antenna {i}")
         lines[0].set_data(x, y1[0])
@@ -298,11 +314,12 @@ def dynamic_update(gt_list, plot_name):
     def animate(i, gt_list):
 
         x, y1, y2, y3 = get_gain_data(gt_list)
+        # First get single antenna working
         #        amp = []
         #        phase = []
         #        legends = []
         #        for i in range(y1.shape[1]):
-        #            amp.append([x, y1[:, i]])
+        #            amp.append([x, y1[i]])
         #            phase.append([x, y2[i]])
         #            legends.append(f"Antenna {i}")
         lines[0].set_data(x, y1[0])
@@ -425,6 +442,51 @@ def gt_single_plot(gt_list, plot_name=None):
         plt.savefig(plot_name + ".png")
 
     return
+
+
+def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
+    """
+    Read source input from a txt file and make them into skycomponents
+
+    :param filename: Name of input file
+    :param freq: External frequency data
+    :param pol: Polarization frame
+    :return comp: List of skycomponents
+    """
+
+    data = numpy.loadtxt(filename, delimiter=",", unpack=True)
+    comp = []
+
+    ra = data[0]
+    dec = data[1]
+    flux = data[2]
+
+    nchan = len(freq)
+    npol = pol.npol
+    log.info(f" nchan = {nchan}, npol = {npol}")
+
+    for i, row in enumerate(ra):
+
+        direc = SkyCoord(
+            ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
+        )
+
+        # Temporary: Currently doesn't do frequency correction for flux
+        # This should be fixed.
+        flux_array = numpy.zeros((nchan, npol))
+
+        flux_array[:, 0] = flux[i]
+
+        comp.append(
+            create_skycomponent(
+                direction=direc,
+                flux=flux_array,
+                frequency=freq,
+                polarisation_frame=pol,
+            )
+        )
+
+    return comp
 
 
 if __name__ == "__main__":

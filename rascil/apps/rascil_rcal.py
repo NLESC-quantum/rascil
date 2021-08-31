@@ -160,10 +160,12 @@ def rcal_simulator(args):
 
     if args.ingest_components_file is not None:
         if ".hdf" in args.ingest_components_file:
+            log.info(f"Reading HDF components file {args.ingest_components_file}")
             model_components = import_skycomponent_from_hdf5(
                 args.ingest_components_file
             )
         elif ".txt" in args.ingest_components_file:
+            log.info(f"Reading text components file {args.ingest_components_file}")
             pol = bvis.blockvisibility_acc.polarisation_frame
             model_components = read_skycomponent_from_txt_with_external_frequency(
                 args.ingest_components_file, bvis.frequency, pol
@@ -173,6 +175,7 @@ def rcal_simulator(args):
             model_components = None
 
     else:
+        log.info(f"Using point source model")
         model_components = None
 
     if args.plot_dir is None:

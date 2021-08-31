@@ -267,10 +267,9 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
         gt_list.append(gt)
 
         # Skip the first data
-        if do_plotting == "True" and plot_dynamic == "True" and len(gt_list) > 1:
-
-            dynamic_update(gt_list, plot_name)
-            log.info(f"Done dynamic plotting for {datetime}.")
+    #        if do_plotting == "True" and plot_dynamic == "True" and len(gt_list) > 1:
+    #            dynamic_update(gt_list, plot_name)
+    #            log.info(f"Done dynamic plotting for {datetime}.")
 
     if do_plotting == "True":
 
@@ -279,80 +278,6 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
 
     full_gt = xarray.concat(gt_list, "time")
     return full_gt
-
-
-def dynamic_update(gt_list, plot_name):
-
-    """Function to plot gaintable (gain and residual values) over time
-    Updates the plot dynamically and saves to animation
-
-    """
-
-    fig, axes = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
-    fig.subplots_adjust(hspace=0)
-    lines = []
-
-    def init():
-
-        for ax in axes:
-            (line,) = ax.plot([], [], "-")
-            #            line.set_data([]), [])
-            lines.append(line)
-            ax.set_autoscaley_on(True)
-
-        x, y1, y2, y3 = get_gain_data(gt_list)
-        #        amp = []
-        #        phase = []
-        #        legends = []
-        #        for i in range(y1.shape[1]):
-        #            amp.append([x, y1[i]])
-        #            phase.append([x, y2[i]])
-        #            legends.append(f"Antenna {i}")
-        lines[0].set_data(x, y1[0])
-        lines[1].set_data(x, y2[0])
-        lines[2].set_data(x, y3)
-
-        return lines
-
-    def animate(i, gt_list):
-
-        x, y1, y2, y3 = get_gain_data(gt_list)
-        # First get single antenna working
-        #        amp = []
-        #        phase = []
-        #        legends = []
-        #        for i in range(y1.shape[1]):
-        #            amp.append([x, y1[i]])
-        #            phase.append([x, y2[i]])
-        #            legends.append(f"Antenna {i}")
-        lines[0].set_data(x, y1[0])
-        lines[1].set_data(x, y2[0])
-        lines[2].set_data(x, y3)
-
-        for ax in axes:
-            ax.relim()
-            ax.autoscale_view()
-
-        return lines
-
-        # Start the animation.
-
-    with time_support(format="iso", scale="utc"):
-
-        anim = animation.FuncAnimation(
-            fig,
-            animate,
-            init_func=init,
-            fargs=(gt_list,),
-            frames=len(gt_list),
-            interval=20,
-            blit=True,
-        )
-        log.info(f"Save animation to {plot_name}.gif")
-
-        anim.save(plot_name + ".gif", writer="imagemagick")
-
-    return
 
 
 def get_gain_data(gt_list):

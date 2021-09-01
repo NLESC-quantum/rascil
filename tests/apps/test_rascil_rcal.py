@@ -6,12 +6,20 @@ import os
 import logging
 import unittest
 import shutil
+import glob
 
 import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
+from astropy.visualization import time_support
 
-from rascil.apps.rascil_rcal import cli_parser, rcal_simulator
+from rascil.apps.rascil_rcal import (
+    cli_parser,
+    rcal_simulator,
+    get_gain_data,
+    read_skycomponent_from_txt_with_external_frequency,
+)
 from rascil.data_models import (
     rascil_path,
     Skycomponent,
@@ -43,7 +51,7 @@ class TestRASCILRcal(unittest.TestCase):
         :param dopol: Use polarisation?
         """
 
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
 
         self.low = create_named_configuration("LOW-AA0.5")
         self.freqwin = 200
@@ -67,7 +75,7 @@ class TestRASCILRcal(unittest.TestCase):
             self.image_pol = PolarisationFrame("stokesI")
             f = [100.0]
 
-        flux = numpy.array(self.freqwin * [f])
+        self.flux = numpy.array(self.freqwin * [f])
 
         self.phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -81,7 +89,7 @@ class TestRASCILRcal(unittest.TestCase):
             self.phasecentre,
         )
 
-        self.create_dft_components(flux)
+        self.create_dft_components(self.flux)
 
         self.create_apply_gains()
 
@@ -103,6 +111,23 @@ class TestRASCILRcal(unittest.TestCase):
             [pointsource],
             rascil_path("test_results/test_rascil_rcal_components.hdf"),
         )
+        self.txtfile = rascil_path("test_results/test_rascil_rcal_components.txt")
+
+        coord_ra = pointsource.direction.ra.degree
+        coord_dec = pointsource.direction.dec.degree
+        f = open(self.txtfile, "w")
+        f.write(
+            "%.6f, %.6f, %10.6e, %10.6e, %10.6e, %10.6e\n"
+            % (
+                coord_ra,
+                coord_dec,
+                pointsource.flux[0][0],
+                0.0,
+                0.0,
+                0.0,
+            )
+        )
+        f.close()
 
     def create_apply_gains(self):
         """Create the gaintable, apply to the visibility, write as MeasurementSet
@@ -122,15 +147,16 @@ class TestRASCILRcal(unittest.TestCase):
 
     def cleanup_data_files(self):
         """Cleanup the temporary data files"""
-        os.remove(rascil_path("test_results/test_rascil_rcal_components.hdf"))
-        os.remove(rascil_path("test_results/test_rascil_rcal_gaintable.hdf"))
+
+        # First remove the measurement set
         shutil.rmtree(
             rascil_path("test_results/test_rascil_rcal.ms"), ignore_errors=True
         )
-        os.remove(
-            rascil_path("test_results/test_rascil_rcal_plot.png"),
-        )
-        os.remove(rascil_path("test_results/test_rascil_rcal_rcal.log"))
+
+        to_remove = rascil_path("test_results/test_rascil_rcal*")
+        for f in glob.glob(to_remove):
+            if os.path.exists(f):
+                os.remove(f)
 
     def setUp(self) -> None:
 
@@ -143,6 +169,7 @@ class TestRASCILRcal(unittest.TestCase):
         self.args.do_plotting = "True"
         self.args.plot_dir = rascil_path("test_results/")
 
+    # Regression test
     def test_rcal(self):
 
         self.make_MS()
@@ -166,6 +193,32 @@ class TestRASCILRcal(unittest.TestCase):
 
         plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
         assert os.path.exists(plotfile)
+
+        if self.persist is False:
+            self.cleanup_data_files()
+
+    # Unit tests for additional functions
+    def test_read_txtfile(self):
+        "Test for read_skycomponent_from_txt_with_external_frequency"
+
+        self.make_MS()
+        components_read = read_skycomponent_from_txt_with_external_frequency(
+            self.txtfile, self.frequency, self.vis_pol
+        )
+        assert components_read.direction == self.phasecentre
+        assert components_read.flux[:, 0].all() == self.flux.all()
+
+        if self.persist is False:
+            self.cleanup_data_files()
+
+    def test_get_gain_data(self):
+
+        self.make_MS()
+        gain_data = get_gain_data(self.gt)
+        assert len(gain_data[0]) == 1  # time dimension
+        assert len(gain_data[1]) == 6  # gain dimension (number of antennas)
+        assert len(gain_data[2]) == 6  # phase dimension
+        assert len(gain_data[3]) == 1  # residual dimension
 
         if self.persist is False:
             self.cleanup_data_files()

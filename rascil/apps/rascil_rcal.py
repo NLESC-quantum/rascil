@@ -266,7 +266,7 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
         )
         gt_list.append(gt)
 
-        # Skip the first data
+        # Tentative dynamic plotting routine
     #        if do_plotting == "True" and plot_dynamic == "True" and len(gt_list) > 1:
     #            dynamic_update(gt_list, plot_name)
     #            log.info(f"Done dynamic plotting for {datetime}.")
@@ -298,6 +298,11 @@ def get_gain_data(gt_list):
             angle = 360.0 + angle
 
         return angle
+
+    single = not isinstance(gt_list, list)
+
+    if single:
+        gt_list = [gt_list]
 
     with time_support(format="iso", scale="utc"):
 
@@ -382,37 +387,47 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     :return comp: List of skycomponents
     """
 
-    data = numpy.loadtxt(filename, delimiter=",", unpack=True)
-    comp = []
-
-    ra = data[0]
-    dec = data[1]
-    flux = data[2]
-
     nchan = len(freq)
     npol = pol.npol
     log.info(f" nchan = {nchan}, npol = {npol}")
 
-    for i, row in enumerate(ra):
+    data = numpy.loadtxt(filename, delimiter=",", unpack=True)
+    ra = data[0]
+    dec = data[1]
+    flux = data[2]
 
-        direc = SkyCoord(
-            ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
-        )
-
-        # Temporary: Currently doesn't do frequency correction for flux
-        # This should be fixed.
+    # Single element.
+    if not isinstance(ra, list):
+        direc = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000")
         flux_array = numpy.zeros((nchan, npol))
-
-        flux_array[:, 0] = flux[i]
-
-        comp.append(
-            create_skycomponent(
-                direction=direc,
-                flux=flux_array,
-                frequency=freq,
-                polarisation_frame=pol,
-            )
+        flux_array[:, 0] = flux
+        comp = create_skycomponent(
+            direction=direc,
+            flux=flux_array,
+            frequency=freq,
+            polarisation_frame=pol,
         )
+    else:
+        comp = []
+        for i, row in enumerate(ra):
+
+            direc = SkyCoord(
+                ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
+            )
+
+            # Temporary: Currently doesn't do frequency correction for flux
+            # This should be fixed.
+            flux_array = numpy.zeros((nchan, npol))
+            flux_array[:, 0] = flux[i]
+
+            comp.append(
+                create_skycomponent(
+                    direction=direc,
+                    flux=flux_array,
+                    frequency=freq,
+                    polarisation_frame=pol,
+                )
+            )
 
     return comp
 

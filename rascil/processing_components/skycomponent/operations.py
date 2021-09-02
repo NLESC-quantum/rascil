@@ -50,10 +50,7 @@ from scipy.spatial.qhull import Voronoi
 from rascil.data_models import Image, Skycomponent, get_parameter
 from rascil.data_models.polarisation import PolarisationFrame, convert_pol_frame
 from rascil.processing_components.calibration.jones import apply_jones
-from rascil.processing_components.image import create_image_from_array
-from rascil.processing_components.image.deconvolution import (
-    convert_clean_beam_to_pixels,
-)
+from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.util.array_functions import (
     insert_function_sinc,
@@ -311,7 +308,8 @@ def find_skycomponents(
     segments = segmentation.detect_sources(
         image_sum, threshold, npixels=npixels, filter_kernel=kernel
     )
-    assert segments is not None, "Failed to find any components"
+    if segments == None:
+        raise ValueError("find_skycomponents: Failed to find any components")
 
     log.info("find_skycomponents: Identified %d segments" % segments.nlabels)
 
@@ -726,6 +724,10 @@ def restore_skycomponent(
     decs = [comp.direction.dec.radian for comp in sc]
     skycoords = SkyCoord(ras * u.rad, decs * u.rad, frame="icrs")
     pixlocs = skycoord_to_pixel(skycoords, im.image_acc.wcs, origin=0, mode="wcs")
+
+    from rascil.processing_components.image.operations import (
+        convert_clean_beam_to_pixels,
+    )
 
     beam_pixels = convert_clean_beam_to_pixels(im, clean_beam)
 

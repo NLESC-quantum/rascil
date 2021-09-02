@@ -15,7 +15,9 @@ import logging
 
 import numpy
 
-from rascil.processing_components.image import calculate_image_frequency_moments
+from rascil.processing_components.image.taylor_terms import (
+    calculate_image_frequency_moments,
+)
 from rascil.processing_components.image.operations import create_empty_image_like
 from rascil.processing_components.imaging import normalise_sumwt
 from rascil.processing_components.imaging import (
@@ -117,7 +119,10 @@ def remove_sumwt(results):
     :param results:
     :return: A list of just the dirty images
     """
-    return [d[0] for d in results]
+    try:
+        return [d[0] for d in results]
+    except KeyError:
+        return results
 
 
 def sum_predict_results(results):

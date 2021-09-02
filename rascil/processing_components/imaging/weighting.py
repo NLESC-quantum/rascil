@@ -9,25 +9,18 @@ There are two classes of functions:
 
 __all__ = ["weight_visibility", "taper_visibility_gaussian", "taper_visibility_tukey"]
 
+import logging
 
 import numpy
 
-import logging
-
-import astropy.constants as constants
-
-from rascil.data_models.memory_data_models import BlockVisibility
+from rascil import phyconst
 from rascil.processing_components.griddata.gridding import (
     grid_blockvisibility_weight_to_griddata,
     griddata_blockvisibility_reweight,
 )
-from rascil.processing_components.griddata.kernels import (
-    create_pswf_convolutionfunction,
-)
 from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.image.operations import image_is_canonical
 from rascil.processing_components.util.array_functions import tukey_filter
-from rascil import phyconst
 
 log = logging.getLogger("rascil-logger")
 

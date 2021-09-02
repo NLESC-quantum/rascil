@@ -85,7 +85,8 @@ def create_calibration_controls():
 
     Therefore first get this default dictionary and then adjust parameters as desired. The calibrate function takes a context string e.g. TGB. It then calibrates each of these Jones matrices in turn
 
-    Note that P and I calibration require off diagonal terms producing non-commutation of the Jones matrices. This is not handled yet.
+    Note that P and I calibration require off diagonal terms producing non-commutation of the Jones matrices. This is
+    not handled yet.
 
     :return: dictionary
     """

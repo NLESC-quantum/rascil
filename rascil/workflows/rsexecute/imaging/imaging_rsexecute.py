@@ -16,6 +16,7 @@ __all__ = [
     "sum_invert_results_rsexecute",
     "sum_predict_results_rsexecute",
     "restore_centre_rsexecute_workflow",
+    "threshold_list_rsexecute",
 ]
 
 import collections
@@ -24,36 +25,43 @@ import logging
 
 import numpy
 
+from rascil.data_models import Image
 from rascil.data_models.parameters import get_parameter
-from rascil.processing_components import calculate_image_frequency_moments
-from rascil.processing_components import create_empty_image_like
-from rascil.processing_components import create_griddata_from_image
-from rascil.processing_components import (
+from rascil.processing_components.image.operations import create_empty_image_like
+from rascil.processing_components.griddata.operations import create_griddata_from_image
+from rascil.processing_components.image.deconvolution import (
     deconvolve_cube,
+    deconvolve_list,
     restore_cube,
+    restore_list,
     create_image_from_array,
 )
-from rascil.processing_components import (
+from rascil.processing_components.griddata.gridding import (
     grid_blockvisibility_weight_to_griddata,
     griddata_blockvisibility_reweight,
     griddata_merge_weights,
+)
+from rascil.processing_components.image.deconvolution import (
     fit_psf,
-    normalise_sumwt,
 )
 from rascil.processing_components import (
     image_scatter_facets,
     image_gather_facets,
     image_scatter_channels,
 )
+from rascil.processing_components.imaging.base import normalise_sumwt
 from rascil.processing_components import taper_visibility_gaussian
 from rascil.processing_components.visibility import copy_visibility
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.workflows.rsexecute.image import image_gather_channels_rsexecute
+from rascil.workflows.rsexecute.image import (
+    image_gather_channels_rsexecute,
+    sum_images_rsexecute,
+)
+
 from rascil.workflows.shared import (
     imaging_context,
     remove_sumwt,
     sum_predict_results,
-    threshold_list,
     sum_invert_results,
 )
 
@@ -145,7 +153,7 @@ def invert_list_rsexecute_workflow(
             template_model_imagelist[ivis],
             dopsf=dopsf,
             normalise=normalise,
-            **kwargs
+            **kwargs,
         )
         for ivis, vis in enumerate(vis_list)
     ]
@@ -173,7 +181,7 @@ def residual_list_rsexecute_workflow(vis, model_imagelist, context="2d", **kwarg
         context=context,
         dopsf=False,
         normalise=True,
-        **kwargs
+        **kwargs,
     )
     return rsexecute.optimize(result)
 
@@ -235,7 +243,7 @@ def restore_list_rsexecute_workflow(
     restore_overlap=8,
     restore_taper="tukey",
     clean_beam=None,
-    **kwargs
+    **kwargs,
 ):
     """Create a graph to calculate the restored image
 
@@ -393,7 +401,7 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
     sensitivity_list=None,
     prefix="",
     mask=None,
-    **kwargs
+    **kwargs,
 ):
     """Create a graph for deconvolution of a single image, adding to the model
 
@@ -421,67 +429,45 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
         dec_imagelist = rsexecute.persist(dec_imagelist)
 
     """
-    nchan = len(dirty_list)
-    # Number of moments. 1 is the sum.
-    nmoment = get_parameter(kwargs, "nmoment", 1)
-
     # Now do the deconvolution for a single facet.
     def imaging_deconvolve(dirty, psf, model, sens, gthreshold, msk):
 
-        log.info("deconvolve_list_rsexecute_workflow: Starting clean")
-
-        if nmoment > 0:
-            moment0 = calculate_image_frequency_moments(dirty)
-            this_peak = (
-                numpy.max(numpy.abs(moment0["pixels"].data[0, ...]))
-                / dirty["pixels"].data.shape[0]
+        if not isinstance(dirty, collections.abc.Iterable):
+            raise ValueError(
+                "deconvolve_list_singlefacet_rsexecute_workflow: dirty is not Iterable"
             )
-        else:
-            ref_chan = dirty["pixels"].data.shape[0] // 2
-            this_peak = numpy.max(numpy.abs(dirty["pixels"].data[ref_chan, ...]))
+        if not isinstance(dirty[0], Image):
+            raise ValueError(
+                f"deconvolve_list_singlefacet_rsexecute_workflow: dirty[0] is not an Image: {dirty[0]}"
+            )
+
+        log.info("deconvolve_list_singlefacet_rsexecute_workflow: Starting clean")
+
+        this_peak = numpy.max([numpy.max(numpy.abs(dd["pixels"].data)) for dd in dirty])
 
         if this_peak > 1.1 * gthreshold:
             kwargs["threshold"] = gthreshold
-            result, _ = deconvolve_cube(
+            comp, _ = deconvolve_list(
                 dirty, psf, prefix=prefix, mask=msk, sensitivity=sens, **kwargs
             )
-
-            assert result["pixels"].data.shape == model["pixels"].data.shape
-            result["pixels"].data = result["pixels"].data + model["pixels"].data
-            return result
+            for ic, c in enumerate(comp):
+                c["pixels"].data = c["pixels"].data + model[ic]["pixels"].data
+            return comp
         else:
-            return model.copy(deep=True)
+            return model
 
-    dirty_cube = image_gather_channels_rsexecute(
-        [dirty_list[chan][0] for chan in range(nchan)]
-    )
-    psf_cube = image_gather_channels_rsexecute(
-        [psf_list[chan][0] for chan in range(nchan)]
-    )
-    model_cube = image_gather_channels_rsexecute(
-        [model_imagelist[chan] for chan in range(nchan)]
-    )
-    # The sensitivity list can contain Nones so we need to check for that case:
-    if (
-        isinstance(sensitivity_list, collections.abc.Iterable)
-        and sensitivity_list[0] is not None
-    ):
-        sens_cube = image_gather_channels_rsexecute(
-            [sensitivity_list[chan] for chan in range(nchan)]
-        )
-    else:
-        sens_cube = None
-
-    # Work out the threshold. Need to find global peak over all dirty_list images
     threshold = get_parameter(kwargs, "threshold", 0.0)
-    nmoment = get_parameter(kwargs, "nmoment", 1)
 
-    clean_cube = rsexecute.execute(imaging_deconvolve, nout=nchan)(
-        dirty_cube, psf_cube, model_cube, sens_cube, threshold, msk=mask
+    clean_list = rsexecute.execute(imaging_deconvolve, nout=len(dirty_list))(
+        dirty_list,
+        psf_list,
+        model_imagelist,
+        sensitivity_list,
+        threshold,
+        msk=mask,
     )
-    clean_cube = rsexecute.execute(image_scatter_channels, nout=nchan)(clean_cube)
 
-    return clean_cube
+    return clean_list
 
 
 def deconvolve_list_rsexecute_workflow(
@@ -491,9 +477,11 @@ def deconvolve_list_rsexecute_workflow(
     sensitivity_list=None,
     prefix="",
     mask=None,
-    **kwargs
+    **kwargs,
 ):
     """Create a graph for deconvolution, adding to the model
+
+    note dirty_list and psf_list must have sumwt trimmed before calling this function
 
     :param dirty_list: list of dirty images (or graph)
     :param psf_list: list of psfs (or graph)
@@ -518,9 +506,8 @@ def deconvolve_list_rsexecute_workflow(
         dec_imagelist = rsexecute.persist(dec_imagelist)
 
     """
-
-    nchan = len(dirty_list)
-
+    # We can divide the processing up into overlapping facets and then
+    # run the single facet deconvolution on each
     deconvolve_facets = get_parameter(kwargs, "deconvolve_facets", 1)
 
     if deconvolve_facets == 1:
@@ -531,14 +518,30 @@ def deconvolve_list_rsexecute_workflow(
             sensitivity_list=sensitivity_list,
             prefix=prefix,
             mask=None,
-            **kwargs
+            **kwargs,
         )
 
+    nchan = len(dirty_list)
+
+    # Find the global threshold. This uses the peak in the average on the frequency axis since we
+    # want to use it in a stopping criterion in a moment clean
+    global_threshold = threshold_list_rsexecute(
+        dirty_list,
+        prefix=prefix,
+        **kwargs,
+    )
+    # Dask is apparently smart enough to evaluate futures in kwargs
+    kwargs["threshold"] = global_threshold
+
+    # Single facet case
     deconvolve_overlap = get_parameter(kwargs, "deconvolve_overlap", 0)
     deconvolve_taper = get_parameter(kwargs, "deconvolve_taper", None)
     deconvolve_number_facets = deconvolve_facets ** 2
 
-    scattered_facets_model_list = scatter_facets_gather_channels(
+    # Each list is a sequence in frequency. We want to scatter each channel
+    # image into facet-space and then transpose from [channel][facet] to
+    # [facet][channel],
+    scattered_facets_model_list = scatter_facets_and_transpose(
         deconvolve_facets,
         deconvolve_number_facets,
         deconvolve_overlap,
@@ -547,27 +550,21 @@ def deconvolve_list_rsexecute_workflow(
         nchan,
     )
 
-    def getitem(d, i):
-        return d[i]
-
-    dirty_only_list = [rsexecute.execute(getitem)(d, 0) for d in dirty_list]
-    scattered_facets_dirty_list = scatter_facets_gather_channels(
+    scattered_facets_dirty_list = scatter_facets_and_transpose(
         deconvolve_facets,
         deconvolve_number_facets,
         deconvolve_overlap,
         deconvolve_taper,
-        dirty_only_list,
+        dirty_list,
         nchan,
     )
     if sensitivity_list is not None:
-        sensitivity_only_list = [rsexecute.execute(getitem)(d, 1) for d in dirty_list]
-
-        scattered_facets_sensitivity_list = scatter_facets_gather_channels(
+        scattered_facets_sensitivity_list = scatter_facets_and_transpose(
             deconvolve_facets,
             deconvolve_number_facets,
             deconvolve_overlap,
             deconvolve_taper,
-            sensitivity_only_list,
+            sensitivity_list,
             nchan,
         )
     else:
@@ -575,6 +572,8 @@ def deconvolve_list_rsexecute_workflow(
             None for facet in range(deconvolve_number_facets)
         ]
 
+    # For the PSF we extract the parts around the phasecentres so no scattering
+    # is appropriate
     def imaging_extract_psf(psf, facets):
         assert not numpy.isnan(numpy.sum(psf["pixels"].data)), "NaNs present in PSF"
         cx = psf["pixels"].shape[3] // 2
@@ -596,31 +595,9 @@ def deconvolve_list_rsexecute_workflow(
         )
         return spsf
 
-    psf_list_trimmed = [
-        rsexecute.execute(imaging_extract_psf)(p[0], deconvolve_facets)
-        for p in psf_list
+    psf_list_extracted = [
+        rsexecute.execute(imaging_extract_psf)(p, deconvolve_facets) for p in psf_list
     ]
-
-    psf_centre = image_gather_channels_rsexecute(
-        [psf_list_trimmed[chan] for chan in range(nchan)]
-    )
-
-    # Work out the threshold. Need to find global peak over all dirty_list images
-    threshold = get_parameter(kwargs, "threshold", 0.0)
-    fractional_threshold = get_parameter(kwargs, "fractional_threshold", 0.1)
-    nmoment = get_parameter(kwargs, "nmoment", 1)
-    use_moment0 = nmoment > 0
-
-    # Find the global threshold. This uses the peak in the average on the frequency axis since we
-    # want to use it in a stopping criterion in a moment clean
-    global_threshold = rsexecute.execute(threshold_list, nout=1)(
-        scattered_facets_dirty_list,
-        threshold,
-        fractional_threshold,
-        use_moment0=use_moment0,
-        prefix=prefix,
-    )
-    kwargs["threshold"] = global_threshold
 
     if mask is not None:
         mask_list = rsexecute.execute(
@@ -633,19 +610,21 @@ def deconvolve_list_rsexecute_workflow(
     # contains the clean image cube and lists of list components (a number for each channel)
     scattered_results_list = [
         deconvolve_list_singlefacet_rsexecute_workflow(
-            [(d, 0.0)],
-            [(psf_centre, 0.0)],
-            [m],
-            sensitivity_list=[sens],
-            prefix=prefix,
+            d,
+            psf_list_extracted,
+            m,
+            sensitivity_list=sens,
+            prefix=f"{prefix} subimage {subimage}",
             msk=msk,
-            **kwargs
+            **kwargs,
         )
-        for d, m, msk, sens in zip(
-            scattered_facets_dirty_list,
-            scattered_facets_model_list,
-            mask_list,
-            scattered_facets_sensitivity_list,
+        for subimage, (d, m, msk, sens) in enumerate(
+            zip(
+                scattered_facets_dirty_list,
+                scattered_facets_model_list,
+                mask_list,
+                scattered_facets_sensitivity_list,
+            )
         )
     ]
 
@@ -654,7 +633,7 @@ def deconvolve_list_rsexecute_workflow(
     # Gather the results back into one image, correcting for overlaps as necessary. The taper function is is used to
     # feather the facets together
 
-    return [
+    result = [
         rsexecute.execute(image_gather_facets, nout=1)(
             [
                 scattered_results_list[facet][chan]
@@ -666,9 +645,10 @@ def deconvolve_list_rsexecute_workflow(
         )
         for chan in range(nchan)
     ]
+    return result
 
 
-def scatter_facets_gather_channels(
+def scatter_facets_and_transpose(
     deconvolve_facets,
     deconvolve_number_facets,
     deconvolve_overlap,
@@ -686,22 +666,24 @@ def scatter_facets_gather_channels(
     :param nchan: Number of channels
     :return: List of frequency image cubes (or graph), arranged by facet
     """
-    scattered_channels_facets_model_list = [
+
+    # Scatter into [channel][facet] space
+    scattered_channels_facets_list = [
         rsexecute.execute(image_scatter_facets, nout=deconvolve_number_facets)(
-            m,
+            model_imagelist[chan],
             facets=deconvolve_facets,
             overlap=deconvolve_overlap,
             taper=deconvolve_taper,
         )
-        for m in model_imagelist
+        for chan in range(nchan)
     ]
-    scattered_facets_model_list = [
-        image_gather_channels_rsexecute(
-            [scattered_channels_facets_model_list[chan][facet] for chan in range(nchan)]
-        )
+    # Tranpose from [channel][facet] to [facet][channel]
+    scattered_facets_channels_list = [
+        [scattered_channels_facets_list[chan][facet] for chan in range(nchan)]
         for facet in range(deconvolve_number_facets)
     ]
-    return scattered_facets_model_list
+
+    return scattered_facets_channels_list
 
 
 def deconvolve_list_channel_rsexecute_workflow(
@@ -720,8 +702,6 @@ def deconvolve_list_channel_rsexecute_workflow(
     """
 
     def imaging_deconvolve_channel(dirty, psf):
-        # assert isinstance(dirty, Image)
-        # assert isinstance(psf, Image)
         comp, _ = deconvolve_cube(dirty, psf, **kwargs)
         return comp
 
@@ -913,3 +893,51 @@ def sum_invert_results_rsexecute(image_list, split=2):
         return rsexecute.execute(sum_invert_results, nout=2)(result)
     else:
         return rsexecute.execute(sum_invert_results, nout=2)(image_list)
+
+
+def threshold_list_rsexecute(imagelist, prefix="", **kwargs):
+    """Find actual threshold for list of results
+
+    :param prefix: Prefix in log messages
+    :param imagelist: List of images
+    :return:
+    """
+
+    # Use the sum since it's quickest
+    frequency_plane = sum_images_rsexecute(imagelist)
+    norm = 1.0 / len(imagelist)
+
+    threshold = get_parameter(kwargs, "threshold", 0.0)
+    fractional_threshold = get_parameter(kwargs, "fractional_threshold", 0.1)
+    nfacets = get_parameter(kwargs, "deconvolve_facets", 1)
+    overlap = get_parameter(kwargs, "deconvolve_overlap", 0)
+
+    def find_peak_moment0(m0):
+        if nfacets > 1:
+            nchan, npol, ny, nx = m0["pixels"].shape
+            blcx = (nfacets - 1) * overlap
+            blcy = (nfacets - 1) * overlap
+            trcx = nx - (nfacets - 1) * overlap
+            trcy = ny - (nfacets - 1) * overlap
+            this_peak = norm * numpy.max(
+                numpy.abs(
+                    numpy.average(m0["pixels"].data[..., blcy:trcy, blcx:trcx], axis=0)
+                )
+            )
+            log.info(
+                "threshold_list_rsexecute: peak in cleaned area = %f," % (this_peak)
+            )
+        else:
+            this_peak = norm * numpy.max(
+                numpy.abs(numpy.average(m0["pixels"].data, axis=0))
+            )
+            log.info("threshold_list_rsexecute: peak entire image = %f," % (this_peak))
+
+        actual = max(this_peak * fractional_threshold, threshold)
+        log.info(
+            "threshold_list_rsexecute: Global peak = %.6f, sub-image clean threshold will be %.6f"
+            % (this_peak, actual)
+        )
+        return actual
+
+    return rsexecute.execute(find_peak_moment0, nout=1)(frequency_plane)

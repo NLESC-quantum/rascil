@@ -12,6 +12,7 @@ __all__ = [
     "limit_rmax",
     "find_vptype_from_name",
     "select_configuration",
+    "decimate_configuration",
 ]
 
 import numpy
@@ -373,6 +374,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
         LOWBD2
         LOWBD2-core
         LOW == LOWR3
+        LOW_AA0.5
         MID == MIDR5
         MEERKAT+
         ASKAP
@@ -380,7 +382,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
         VLAA
         VLAA_north
 
-    :param name: name of Configuration MID, LOW, LOFAR, VLAA, ASKAP
+    :param name: name of Configuration e.g. MID, LOW, LOFAR, VLAA, ASKAP
     :param rmax: Maximum distance of station from the average (m)
     :return:
 
@@ -449,7 +451,7 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             antfile=rascil_data_path("configurations/LOW_SKA-TEL-SKO-0000422_Rev3.txt"),
             location=location,
             mount="XY",
-            names="LOW_%d",
+            names="SKA%03d",
             vp_type="LOW",
             diameter=38.0,
             alt=300.0,
@@ -457,6 +459,37 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             ecef=True,
             **kwargs
         )
+    elif name == "LOW-AA0.5":
+        location = EarthLocation(
+            lon=116.69345390 * u.deg, lat=-26.86371635 * u.deg, height=300.0
+        )
+
+        log.debug(
+            "create_named_configuration: %s\n\t%s\n\t%s"
+            % (name, location.geocentric, location.geodetic)
+        )
+        fc = create_configuration_from_LLAfile(
+            antfile=rascil_data_path("configurations/SKA1-LOW-AA0.5-v1.1_AA0p5.txt"),
+            location=location,
+            mount="XY",
+            names="LOW_AA0.5_%d",
+            vp_type="LOW",
+            diameter=38.0,
+            alt=300.0,
+            name=name,
+            ecef=True,
+            **kwargs
+        )
+        names = [
+            "S008‐1",
+            "S008‐2",
+            "S009‐1",
+            "S009‐2",
+            "S010‐1",
+            "S010‐2",
+        ]
+        fc["names"].data = names
+
     elif (name == "MID") or (name == "MIDR5"):
         location = mid_location
         log.debug(
@@ -471,6 +504,24 @@ def create_named_configuration(name: str = "LOWBD2", **kwargs) -> Configuration:
             location=location,
             **kwargs
         )
+    elif name == "MID-AA0.5":
+        location = mid_location
+        log.debug(
+            "create_named_configuration: %s\n\t%s\n\t%s"
+            % (name, location.geocentric, location.geodetic)
+        )
+        fc = create_configuration_from_MIDfile(
+            antfile=rascil_data_path("configurations/ska1mid.cfg"),
+            vp_type={"M0": "MEERKAT", "SKA": "MID"},
+            mount="azel",
+            name=name,
+            location=location,
+            **kwargs
+        )
+        # See Ben Mort's comment on
+        # https://confluence.skatelescope.org/display/SE/Requirements+for+RCAL+pipelines+for+MID+and+LOW+AA0.5
+        names = ["SKA001", "SKA100", "SKA036", "SKA063"]
+        fc = select_configuration(fc, names)
     elif name == "MEERKAT+":
         location = meerkat_location
         log.debug(
@@ -568,10 +619,12 @@ def select_configuration(config, names=None):
     if names is None:
         return config
 
+    names = numpy.array(names)
     ind = []
-    for iname, name in enumerate(config.names):
-        if name in names:
-            ind.append(iname)
+    for iname, name in enumerate(config.names.data):
+        for aname in names:
+            if aname.strip() == name.strip():
+                ind.append(iname)
 
     assert len(ind) > 0, "No antennas selected using names {}".format(names)
 
@@ -582,6 +635,30 @@ def select_configuration(config, names=None):
         xyz=config.xyz[ind],
         vp_type=config.vp_type[ind],
         diameter=config.diameter[ind],
+        name=config.name,
+    )
+    return fc
+
+
+def decimate_configuration(config, start=0, stop=-1, skip=1):
+    """Decimate a configuration
+
+    :param config:
+    :param start: Start of selection
+    :param stop: End of selection
+    :param skip: Antennas/stations to skip
+    :return:
+    """
+    if skip == 1:
+        return config
+
+    fc = Configuration(
+        location=config.location,
+        names=config.names[start:stop:skip],
+        mount=config.mount[start:stop:skip],
+        xyz=config.xyz[start:stop:skip],
+        vp_type=config.vp_type[start:stop:skip],
+        diameter=config.diameter[start:stop:skip],
         name=config.name,
     )
     return fc

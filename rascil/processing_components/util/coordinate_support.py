@@ -514,6 +514,30 @@ def simulate_point(dist_uvw, l, m):
     return numpy.exp(-2j * numpy.pi * numpy.einsum("...fs,s->...f", dist_uvw, s))
 
 
+def simulate_point_antenna(dist_uvw, l, m):
+    """
+    Simulate visibility phasor for unit amplitude point source at
+    direction cosines (l,m) relative to the phase centre. This provides
+    the phasor for one antenna
+
+    This includes phase tracking to the centre of the field (hence the minus 1
+    in the exponent.)
+
+    Note that point source is delta function, therefore the
+    FT relationship becomes an exponential, evaluated at
+    (uvw.lmn)
+
+    :param dist_uvw: :math:`(u,v,w)` distribution of projected baselines (in wavelengths)
+    :param l: horizontal direction cosine relative to phase tracking centre
+    :param m: orthogonal directon cosine relative to phase tracking centre
+    """
+
+    # vector direction to source
+    s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+    # complex valued Visibility data_models
+    return numpy.exp(-2j * numpy.pi * numpy.dot(dist_uvw, s))
+
+
 def visibility_shift(uvw, vis, dl, dm):
     """
     Shift visibilities by the given image-space distance. This is

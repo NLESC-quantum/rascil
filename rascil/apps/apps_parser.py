@@ -127,6 +127,12 @@ def apps_parser_imaging(parser):
         help="Robustness for robust weighting",
     )
     parser.add_argument(
+        "--imaging_gaussian_taper",
+        type=float,
+        default=None,
+        help="Size of Gaussian smoothing, implemented as taper in weights (rad)",
+    )
+    parser.add_argument(
         "--imaging_dopsf",
         type=str,
         default="False",
@@ -204,13 +210,13 @@ def apps_parser_cleaning(parser):
         "--clean_component_threshold",
         type=float,
         default=None,
-        help="Sources > this level are converted to skycomponents",
+        help="Sources with absolute flux > this level (Jy) are fit or extracted using skycomponents",
     )
     parser.add_argument(
         "--clean_component_method",
         type=str,
         default="fit",
-        help="Method to convert sources in image to skycomponents",
+        help="Method to convert sources in image to skycomponents: 'fit' in frequency or 'extract' actual values",
     )
     parser.add_argument(
         "--clean_fractional_threshold",
@@ -258,7 +264,7 @@ def apps_parser_cleaning(parser):
         "--clean_restored_output",
         type=str,
         default="list",
-        help="Type of restored image output: list or integrated",
+        help="Type of restored image output: taylor, list, or integrated",
     )
 
     return parser
@@ -312,8 +318,29 @@ def apps_parser_dask(parser):
         "--dask_scheduler",
         type=str,
         default=None,
-        help="Externally defined Dask scheduler e.g. 127.0.0.1:8786 or ssh for SSHCluster",
+        help="Externally defined Dask scheduler e.g. 127.0.0.1:8786 or ssh for SSHCluster"
+        " or existing for current scheduler",
     )
+    parser.add_argument(
+        "--dask_scheduler_file",
+        type=str,
+        default=None,
+        help="Externally defined Dask scheduler file to setup dask cluster",
+    )
+
+    parser.add_argument(
+        "--dask_tcp_timeout",
+        type=str,
+        default=None,
+        help="Dask TCP timeout",
+    )
+    parser.add_argument(
+        "--dask_connect_timeout",
+        type=str,
+        default=None,
+        help="Dask connect timeout",
+    )
+
     return parser
 
 

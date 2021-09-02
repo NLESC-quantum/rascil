@@ -10,6 +10,7 @@ import logging
 
 import numpy
 
+from rascil.data_models import get_parameter
 from rascil.processing_components import (
     copy_skycomponent,
     apply_beam_to_skycomponent,
@@ -17,6 +18,9 @@ from rascil.processing_components import (
     extract_skycomponents_from_skymodel,
     image_scatter_facets,
     image_gather_facets,
+)
+from rascil.processing_components.skycomponent.taylor_terms import (
+    find_skycomponents_frequency_taylor_terms,
 )
 from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.image import restore_cube, fit_psf
@@ -319,10 +323,6 @@ def _check_imagelist_lengths(psf_imagelist, residual_imagelist, skymodel_list):
     :param residual_imagelist:
     :param skymodel_list:
     """
-    if len(skymodel_list) != len(psf_imagelist):
-        errmsg = "Skymodel and psf list have different lengths"
-        log.error(errmsg)
-        raise ValueError(errmsg)
     if residual_imagelist is not None:
         if len(skymodel_list) != len(residual_imagelist):
             errmsg = "Skymodel and residual list have different lengths"
@@ -550,26 +550,32 @@ def deconvolve_skymodel_list_rsexecute_workflow(
     :param psf_list: List of corresponding psf images (or graphs)
     :param skymodel_list: list of skymodels (or graph)
     :param prefix: Informational prefix for logging messages
+    :param fit_skymodel: Fit the skymodel?
     :param kwargs:
     :return: list of skymodels (or graph)
     """
+    component_method = get_parameter(kwargs, "component_method", None)
+    component_threshold = get_parameter(kwargs, "component_threshold", None)
+    if fit_skymodel and component_method == "fit" and component_threshold is not None:
+        # Update the skymodel with point sources found in moment 0
+        # and fitted by a polynomial in frequency.
 
-    if fit_skymodel:
-        # Now recreate the sky models
-        # Set the skymodel image and then if the model is not fixed extract skycomponents
-        def skymodel_update_components(sm, d):
-            if not sm.fixed:
-                sm = extract_skycomponents_from_skymodel(sm, d, **kwargs)
-            return sm
-
-        skymodel_list = [
-            rsexecute.execute(skymodel_update_components, nout=1)(
-                skymodel_list[i], dirty[0]
-            )
-            for i, dirty in enumerate(dirty_image_list)
-        ]
+        skymodel_list = rsexecute.execute(
+            convert_skycomponents_taylor_terms_list, nout=len(skymodel_list)
+        )(dirty_image_list, skymodel_list, **kwargs)
         return skymodel_list
-
+    elif (
+        fit_skymodel
+        and component_method == "extract"
+        and component_threshold is not None
+    ):
+        # Update the skymodel with point sources found in moment 0
+        # and extracted from the frequency cube without fitting
+        kwargs["nmoment"] = len(skymodel_list)
+        skymodel_list = rsexecute.execute(
+            convert_skycomponents_taylor_terms_list, nout=len(skymodel_list)
+        )(dirty_image_list, skymodel_list, **kwargs)
+        return skymodel_list
     else:
         deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
 
@@ -591,3 +597,23 @@ def deconvolve_skymodel_list_rsexecute_workflow(
             for i, m in enumerate(deconvolve_model_imagelist)
         ]
         return skymodel_list
+
+
+def convert_skycomponents_taylor_terms_list(dirty_image_list, skymodel_list, **kwargs):
+
+    skycomponent_list = find_skycomponents_frequency_taylor_terms(
+        dirty_image_list, **kwargs
+    )
+
+    def add_skycomponents(sm, scl):
+        if len(scl) > 0:
+            for sc in scl:
+                sm.components.append(sc)
+        return sm
+
+    if len(skycomponent_list) > 0:
+        skymodel_list = [
+            add_skycomponents(sm, skycomponent_list[ism])
+            for ism, sm in enumerate(skymodel_list)
+        ]
+    return skymodel_list

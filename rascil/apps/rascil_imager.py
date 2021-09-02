@@ -13,9 +13,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt
-
 from distributed import Client, SSHCluster
+import dask
 
 from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
 from rascil.processing_components.util.sizeof import get_size
@@ -23,7 +22,6 @@ from rascil.processing_components.util.sizeof import get_size
 from rascil.processing_components import (
     create_image_from_visibility,
     qa_image,
-    show_image,
     convert_blockvisibility_to_stokesI,
     export_image_to_fits,
     image_gather_channels,
@@ -47,6 +45,7 @@ from rascil.workflows import (
     ical_skymodel_list_rsexecute_workflow,
     invert_list_rsexecute_workflow,
     sum_invert_results_rsexecute,
+    taper_list_rsexecute_workflow,
 )
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
@@ -189,7 +188,9 @@ def imager(args):
 def setup_rsexecute(args):
     # We can run distributed (use_dask=True) or in serial (use_dask=False). Using Dask is usually recommended
     if args.use_dask == "True":
-        if args.dask_scheduler == "ssh":
+        if args.dask_scheduler == "existing":
+            log.info("Using existing dask client")
+        elif args.dask_scheduler == "ssh":
             log.info("Using SSH scheduler")
             cluster = SSHCluster(
                 args.dask_nodes,
@@ -198,9 +199,17 @@ def setup_rsexecute(args):
                 scheduler_options={"port": 0, "dashboard_address": ":8787"},
             )
             client = Client(cluster)
+            rsexecute.set_client(use_dask=True, client=client)
         elif args.dask_scheduler is not None:
             log.info("Using specified scheduler {}".format(args.dask_scheduler))
-            client = Client(scheduler=args.dask_scheduler)
+            client = Client(address=args.dask_scheduler)
+            rsexecute.set_client(use_dask=True, client=client)
+        elif args.dask_scheduler_file is not None:
+            log.info(
+                "Using specified scheduler file {}".format(args.dask_scheduler_file)
+            )
+            client = Client(scheduler_file=args.dask_scheduler_file)
+            rsexecute.set_client(use_dask=True, client=client)
         else:
             log.info("Gettting client via get_dask_client")
             client = get_dask_client(
@@ -208,11 +217,24 @@ def setup_rsexecute(args):
                 threads_per_worker=args.dask_nthreads,
                 memory_limit=args.dask_memory,
             )
-        rsexecute.set_client(use_dask=True, client=client)
+            rsexecute.set_client(use_dask=True, client=client)
+
         rsexecute.init_statistics()
         # Sample the memory usage with a scheduler plugin
-        if args.dask_memory_usage_file is not None:
+        if rsexecute.using_dask and args.dask_memory_usage_file is not None:
             rsexecute.memusage(args.dask_memory_usage_file)
+        if args.dask_tcp_timeout is not None:
+            dask.config.set({"distributed.comm.timeouts.tcp": args.dask_tcp_timeout})
+
+        if args.dask_connect_timeout is not None:
+            dask.config.set(
+                {"distributed.comm.timeouts.tcp": args.dask_connect_timeout}
+            )
+
+        tcp_timeout = dask.config.get("distributed.comm.timeouts.tcp")
+        connect_timeout = dask.config.get("distributed.comm.timeouts.connect")
+
+        log.info(f"Dask timeouts: connect {connect_timeout} tcp: {tcp_timeout}")
         performance_dask_configuration(args.performance_file, rsexecute)
     else:
         rsexecute.set_client(use_dask=False)
@@ -266,6 +288,10 @@ def weight_blockvis(args, bvis_list, model_list):
             model_list,
             weighting=args.imaging_weighting,
             robustness=args.imaging_robustness,
+        )
+    if args.imaging_gaussian_taper is not None:
+        bvis_list = taper_list_rsexecute_workflow(
+            bvis_list, args.imaging_gaussian_taper
         )
     return bvis_list
 
@@ -381,7 +407,9 @@ def cip(args, bvis_list, model_list, msname, clean_beam=None):
     log.info("rascil.imager.cip: Finished compute of continuum imaging pipeline graph")
 
     imagename = msname.replace(".ms", "_nmoment{}_cip".format(args.clean_nmoment))
-    return write_results(imagename, result, args.performance_file)
+    return write_results(
+        args.clean_restored_output, imagename, result, args.performance_file
+    )
 
 
 def perf_graph(result, name, start, performance_file):
@@ -394,9 +422,10 @@ def perf_graph(result, name, start, performance_file):
     performance_store_dict(performance_file, "graph", graph)
 
 
-def write_results(imagename, result, performance_file):
+def write_results(restored_output, imagename, result, performance_file):
     """Write the results out to files
 
+    :param restored_output: Type of output: list or taylor
     :param imagename: Root of image names
     :param result: Set of results i.e. deconvolved, residual, restored, skymodel
     :param performance_file: Name of performance file
@@ -404,52 +433,105 @@ def write_results(imagename, result, performance_file):
     """
     residual, restored, skymodel = result
 
-    deconvolved = [sm.image for sm in skymodel]
-    deconvolved_image = image_gather_channels(deconvolved)
-    del deconvolved
-    performance_qa_image(performance_file, "deconvolved", deconvolved_image, mode="a")
-    log.info(qa_image(deconvolved_image, context="Deconvolved"))
-    show_image(deconvolved_image, title=f"{imagename} Clean deconvolved image")
-    plt.savefig(imagename + "_deconvolved.png")
-    plt.show(block=False)
-    deconvolvedname = imagename + "_deconvolved.fits"
-    export_image_to_fits(deconvolved_image, deconvolvedname)
-    del deconvolved_image
+    deconvolvedname = None
+    residualname = None
+    restoredname = None
 
+    deconvolved = [sm.image for sm in skymodel]
     skymodelname = imagename + "_skymodel.hdf"
     export_skymodel_to_hdf5(skymodel, skymodelname)
     del skymodel
 
-    if isinstance(restored, list):
-        # This is the case where we have a list of restored images
+    if restored_output == "list":
+        deconvolved_image = image_gather_channels(deconvolved)
+        del deconvolved
+        performance_qa_image(
+            performance_file, "deconvolved", deconvolved_image, mode="a"
+        )
+        log.info(qa_image(deconvolved_image, context="Deconvolved"))
+        deconvolvedname = imagename + "_deconvolved.fits"
+        export_image_to_fits(deconvolved_image, deconvolvedname)
+        del deconvolved_image
         restored = image_gather_channels(restored)
         performance_qa_image(performance_file, "restored", restored, mode="a")
         log.info("Writing restored image as spectral cube")
         restoredname = imagename + "_restored.fits"
         export_image_to_fits(restored, restoredname)
+
+        residual = remove_sumwt(residual)
+        residual_image = image_gather_channels(residual)
+        del residual
+        performance_qa_image(performance_file, "residual", residual_image, mode="a")
+        log.info("Writing residual image as spectral cube")
+        log.info(qa_image(residual_image, context="Residual"))
+        residualname = imagename + "_residual.fits"
+        export_image_to_fits(residual_image, residualname)
+        del residual_image
+
+    elif restored_output == "taylor":
+        nmoment = len(restored)
+        # Do the first last so that the name will be correct for Taylor 0
+        for taylor in range(nmoment - 1, -1, -1):
+            performance_qa_image(
+                performance_file,
+                f"deconvolved taylor{taylor}",
+                deconvolved[taylor],
+                mode="a",
+            )
+            log.info(
+                qa_image(deconvolved[taylor], context=f"Deconvolved taylor{taylor}")
+            )
+            deconvolvedname = imagename + f".taylor.{taylor}.deconvolved.fits"
+            export_image_to_fits(deconvolved[taylor], deconvolvedname)
+
+            performance_qa_image(
+                performance_file, f"restored taylor{taylor}", restored[taylor], mode="a"
+            )
+            log.info("Writing restored image")
+            log.info(qa_image(restored[taylor], context=f"Restored taylor{taylor}"))
+            restoredname = imagename + f".taylor.{taylor}.restored.fits"
+            export_image_to_fits(restored[taylor], restoredname)
+
+            performance_qa_image(
+                performance_file,
+                f"residual_taylor{taylor}",
+                residual[taylor][0],
+                mode="a",
+            )
+            log.info(qa_image(residual[taylor][0], context=f"Residual taylor{taylor}"))
+            residualname = imagename + f".taylor.{taylor}.residual.fits"
+            export_image_to_fits(residual[taylor][0], residualname)
+
     else:
+        deconvolved_image = image_gather_channels(deconvolved)
+        del deconvolved
+        performance_qa_image(
+            performance_file,
+            "deconvolved",
+            deconvolved_image,
+            mode="a",
+        )
+        log.info(qa_image(deconvolved_image, context=f"Deconvolved"))
+        deconvolvedname = imagename + f"_deconvolved.fits"
+        export_image_to_fits(deconvolved_image, deconvolvedname)
+        del deconvolved_image
+
         log.info("Writing restored image as single plane at mid-frequency")
         restoredname = imagename + "_restored_centre.fits"
         performance_qa_image(performance_file, "restored_centre", restored, mode="a")
         export_image_to_fits(restored, restoredname)
 
-    log.info(qa_image(restored, context="Restored"))
-    show_image(restored, title=f"{imagename} Clean restored image")
-    plt.savefig(imagename + "_restored.png")
-    plt.show(block=False)
-    del restored
+        log.info(qa_image(restored, context="Restored"))
+        del restored
 
-    residual = remove_sumwt(residual)
-    residual_image = image_gather_channels(residual)
-    del residual
-    performance_qa_image(performance_file, "residual", residual_image, mode="a")
-    log.info(qa_image(residual_image, context="Residual"))
-    show_image(residual_image, title=f"{imagename} Clean residual image")
-    plt.savefig(imagename + "_residual.png")
-    plt.show(block=False)
-    residualname = imagename + "_residual.fits"
-    export_image_to_fits(residual_image, residualname)
-    del residual_image
+        residual = remove_sumwt(residual)
+        residual_image = image_gather_channels(residual)
+        del residual
+        performance_qa_image(performance_file, "residual", residual_image, mode="a")
+        log.info(qa_image(residual_image, context="Residual"))
+        residualname = imagename + "_residual.fits"
+        export_image_to_fits(residual_image, residualname)
+        del residual_image
 
     return (deconvolvedname, residualname, restoredname, skymodelname)
 
@@ -524,7 +606,10 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
 
     imagename = msname.replace(".ms", "_nmoment{}_ical".format(args.clean_nmoment))
     return write_results(
-        imagename, (residual, restored, skymodel), args.performance_file
+        args.clean_restored_output,
+        imagename,
+        (residual, restored, skymodel),
+        args.performance_file,
     )
 
 
@@ -559,18 +644,12 @@ def invert(args, bvis_list, model_list, msname):
     if args.imaging_dopsf == "True":
         performance_qa_image(args.performance_file, "psf", dirty, mode="a")
         log.info(qa_image(dirty, context="PSF"))
-        show_image(dirty, title=f"{imagename} PSF image")
-        plt.savefig(imagename + "_psf.png")
-        plt.show(block=False)
         psfname = imagename + "_psf.fits"
         export_image_to_fits(dirty, psfname)
         return psfname
     else:
         performance_qa_image(args.performance_file, "dirty", dirty, mode="a")
         log.info(qa_image(dirty, context="Dirty"))
-        show_image(dirty, title=f"{imagename} Dirty image")
-        plt.savefig(imagename + "_dirty.png")
-        plt.show(block=False)
         dirtyname = imagename + "_dirty.fits"
         export_image_to_fits(dirty, dirtyname)
         return dirtyname

@@ -21,7 +21,10 @@ from rascil.processing_components import (
 )
 from rascil.processing_components.imaging import create_image_from_visibility
 from rascil.processing_components.imaging.primary_beams import create_vp
-from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import (
+    create_named_configuration,
+    decimate_configuration,
+)
 from rascil.workflows import (
     create_standard_mid_simulation_rsexecute_workflow,
     predict_dft_rsexecute_workflow,
@@ -47,13 +50,14 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
     def tearDown(self):
         rsexecute.close()
 
-    def createVis(self, config="MID", dec=-35.0, rmax=1e2, freq=1.3e9):
+    def createVis(self, config="MID", dec=-35.0, rmax=1e2, freq=1.3e9, skip=3):
         self.frequency = numpy.array([freq])
         self.channel_bandwidth = numpy.array([1e6])
         self.phasecentre = SkyCoord(
             ra=+15.0 * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000"
         )
         self.config = create_named_configuration(config, rmax=rmax)
+        self.config = decimate_configuration(self.config, skip=skip)
         self.times = numpy.linspace(-300.0, 300.0, 3) * numpy.pi / 43200.0
         nants = self.config.xyz.shape[0]
         self.npixel = 512
@@ -257,20 +261,25 @@ class TestVoltagePatternsPolGraph(unittest.TestCase):
 
         return result
 
+    @unittest.skip("Only output is a set of plots")
     def test_apply_voltage_pattern_image_stokesI(self):
         result = self._test(test_vp=False, name="stokesI")
 
+    @unittest.skip("Only output is a set of plots")
     def test_apply_voltage_pattern_image_stokesI_long(self):
         result = self._test(test_vp=False, name="stokesI", time_range=[-4.0, +4.0])
 
+    @unittest.skip("Only output is a set of plots")
     def test_apply_voltage_pattern_image_test_vp_stokesI(self):
         result = self._test(test_vp=True, name="stokesI_test_vp")
 
+    @unittest.skip("Only output is a set of plots")
     def test_apply_voltage_pattern_image_stokesIQUV(self):
         result = self._test(
             test_vp=False, name="stokesIQUV", flux=[1.0, 0.5, -0.2, 0.1]
         )
 
+    @unittest.skip("Only output is a set of plots")
     def test_apply_voltage_pattern_image_test_vp_stokesIQUV(self):
         result = self._test(
             test_vp=True, name="stokesIQUV_test_vp", flux=[1.0, 0.5, -0.2, 0.1]

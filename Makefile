@@ -23,7 +23,7 @@ ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 endif
 
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
-	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
+	DOCKER_REGISTRY_HOST=artefact.skao.int
 endif
 
 
@@ -70,24 +70,19 @@ test-singlepass:
 	--pylint --pylint-error-types=EF --durations=30
 
 test:
-	HOME=`pwd` py.test tests/workflows/test_*_rsexecute.py tests/apps --verbose \
-	--junitxml unit-tests-workflows.xml \
-	--cov rascil \
-	--cov-report html:coverage  \
-	--cov-report xml:coverage.xml \
-	--pylint --pylint-error-types=EF --durations=30
 	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
-	tests/data_models tests/processing_components \
-	--verbose \
+    tests/apps tests/data_models tests/processing_components --verbose \
+	--cov=rascil \
 	--junitxml unit-tests-other.xml \
-	--cov rascil \
-	--cov-append \
-	--cov-report term  \
-	--cov-report html:coverage  \
-	--cov-report xml:coverage.xml \
 	--pylint --pylint-error-types=EF --durations=30
-	python3 util/xmlcombine.py unit-tests-workflows.xml unit-tests-other.xml > unit-tests.xml
-	rm unit-tests-workflows.xml unit-tests-other.xml
+	coverage html -d coverage
+
+test-dask:
+	HOME=`pwd` py.test tests/workflows tests/apps_rsexecute --verbose \
+	--cov=rascil \
+	--junitxml unit-tests-dask.xml \
+	--pylint --pylint-error-types=EF --durations=30
+	coverage html -d coverage
 
 upgrade_pip:  ## make sure pip is up to date.
 	pip install --upgrade pip
@@ -105,3 +100,12 @@ install_requirements: upgrade_pip
 	pip freeze
 
 update_requirements: requirements install_requirements
+
+release-patch: ## Make patch release
+	bumpver update --patch -n
+
+release-minor: ## Make minor release
+	bumpver update --minor -n
+
+release-major: ## Make major release
+	bumpver update --major -n

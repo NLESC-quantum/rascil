@@ -15,6 +15,11 @@ assert sys.version_info[0] >= 3
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
+version = {}
+VERSION_PATH = os.path.join("rascil", "version.py")
+with open(VERSION_PATH, "r") as file:
+    exec(file.read(), version)
+
 # List of requirements cannot contain lines that start with #
 # can neither work with git+https ones, hence we'll remove it
 # and add it back below with the correct syntax for setup.py
@@ -49,7 +54,7 @@ packages_data = [
 
 setup(
     name="rascil",
-    version="0.2.2b0",
+    version=version["__version__"],
     python_requires=">=3.7",
     description="Radio Astronomy Simulation, Calibration, and Imaging Library",
     long_description=readme + "\n\n",
@@ -69,6 +74,7 @@ setup(
     ],
     packages=(packages + packages_data),
     install_requires=reqs,
+    scripts=["bin/get_rascil_data"],
     test_suite="tests",
     tests_require=["pytest"],
 )

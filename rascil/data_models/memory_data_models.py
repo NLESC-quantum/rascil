@@ -469,6 +469,20 @@ class Image(xarray.Dataset):
     def __init__(self, data, polarisation_frame=None, wcs=None, clean_beam=None):
         """Create an Image
 
+        Note that the spatial coordinates x, y are linear. ra, dec coordinates can be
+        image via :py:func:`rascil.processing_components.image.operations.image_add_ra_dec_grid`
+
+        The addition of ra, dec grid enables selections such as:
+
+        secd = 1.0 / numpy.cos(numpy.deg2rad(im.dec_grid))
+        r = numpy.hypot(
+            (im.ra_grid - im.ra) * secd,
+            im.dec_grid - im.image.dec,
+        )
+        show_image(im.where(r < 0.3, 0.0))
+        plt.show()
+
+
         :param data: pixel values
         :param polarisation_frame: as a PolarisationFrame object
         :param wcs: WCS object
@@ -481,20 +495,8 @@ class Image(xarray.Dataset):
 
         frequency = wcs.sub([4]).wcs_pix2world(range(nchan), 0)[0]
         cellsize = numpy.deg2rad(numpy.abs(wcs.wcs.cdelt[1]))
-        cx = numpy.deg2rad(wcs.wcs.crval[0])
-        cy = numpy.deg2rad(wcs.wcs.crval[1])
-
-        lmesh, mmesh = numpy.meshgrid(numpy.arange(ny), numpy.arange(nx))
-        try:
-            ra, dec = wcs.sub([1, 2]).wcs_pix2world(lmesh, mmesh, 0)
-            ra = numpy.deg2rad(ra)
-            dec = numpy.deg2rad(dec)
-        except:
-            log.warning(
-                "Coordinates not RA, Dec pair: ra, dec coordinates are x, y meshes"
-            )
-            ra = lmesh
-            dec = mmesh
+        ra = numpy.deg2rad(wcs.wcs.crval[0])
+        dec = numpy.deg2rad(wcs.wcs.crval[1])
 
         # Define the dimensions
         dims = ["frequency", "polarisation", "y", "x"]
@@ -504,13 +506,11 @@ class Image(xarray.Dataset):
             "frequency": ("frequency", frequency),
             "polarisation": ("polarisation", polarisation_frame.names),
             "y": numpy.linspace(
-                cy - cellsize * ny / 2, cy + cellsize * ny / 2, ny, endpoint=False
+                dec - cellsize * ny / 2, dec + cellsize * ny / 2, ny, endpoint=False
             ),
             "x": numpy.linspace(
-                cx - cellsize * nx / 2, cx + cellsize * nx / 2, nx, endpoint=False
+                ra - cellsize * nx / 2, ra + cellsize * nx / 2, nx, endpoint=False
             ),
-            "ra": (("x", "y"), ra, {"units": "rad"}),
-            "dec": (("x", "y"), dec, {"units": "rad"}),
         }
 
         assert (
@@ -544,6 +544,9 @@ class Image(xarray.Dataset):
             "spectral_type": wcs.wcs.ctype[3],
             "clean_beam": clean_beam,
             "refpixel": (wcs.wcs.crpix),
+            "channel_bandwidth": wcs.wcs.cdelt[3],
+            "ra": ra,
+            "dec": dec,
         }
 
         super().__init__(data_vars, coords=coords, attrs=attrs)
@@ -600,11 +603,9 @@ class ImageAccessor(XarrayAccessorMixin):
 
         :return:
         """
-        cx = len(self._obj.coords["x"].data) // 2
-        cy = len(self._obj.coords["y"].data) // 2
         return SkyCoord(
-            numpy.rad2deg(self._obj.coords["ra"][cy, cx].values) * u.deg,
-            numpy.rad2deg(self._obj.coords["dec"][cy, cx].values) * u.deg,
+            numpy.rad2deg(self._obj.attrs["ra"]) * u.deg,
+            numpy.rad2deg(self._obj.attrs["dec"]) * u.deg,
             frame="icrs",
             equinox="J2000",
         )
@@ -1200,6 +1201,7 @@ class BlockVisibility(xarray.Dataset):
         )
 
         attrs = dict()
+        attrs["rascil_data_model"] = "BlockVisibility"
         attrs["configuration"] = configuration  # Antenna/station configuration
         attrs["source"] = source
         attrs["phasecentre"] = phasecentre
@@ -1380,6 +1382,7 @@ class FlagTable(xarray.Dataset):
         )
 
         attrs = dict()
+        attrs["rascil_data_model"] = "FlagTable"
         attrs["_polarisation_frame"] = polarisation_frame.type
         attrs["configuration"] = configuration  # Antenna/station configuration
 

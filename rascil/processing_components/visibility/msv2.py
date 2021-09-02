@@ -648,8 +648,8 @@ try:
             # tStart = utcStart.mjd
             # utcStop = Time(self.data[-1].obstime, format='mjd', scale='utc')
             # tStop = utcStop.mjd
-            tStart = self.data[0].obstime
-            tStop = self.data[-1].obstime
+            tStart = float(self.data[0].obstime)
+            tStop = float(self.data[-1].obstime)
 
             tb.putcell("TIME_RANGE", 0, [tStart, tStop])
             tb.putcell("LOG", 0, "Not provided")
@@ -1442,15 +1442,13 @@ try:
                         ant1List = a1List
                         ant2List = a2List
 
-                    ### Add in the new u, v, and w coordinates
+                    # Add in the new u, v, and w coordinates
                     uvwList = -uvwCoords[order, :]
 
-                    ### Add in the new date/time and integration time
-                    # timeList = [utc - astro.MJD_OFFSET for bl in dataSet.baselines]
-                    inttimeList = [dataSet.inttime for bl in dataSet.baselines]
-                    # timeList = [(utc0/86400.0 - 2400000.5) * 86400 + dataSet.inttime / 2.0 for bl in dataSet.baselines]
+                    # Add in the new date/time and integration time
+                    inttimeList = [float(dataSet.inttime) for bl in dataSet.baselines]
                     timeList = [
-                        dataSet.obstime + dataSet.inttime / 2.0
+                        float(dataSet.obstime + dataSet.inttime / 2.0)
                         for bl in dataSet.baselines
                     ]
 
@@ -1458,10 +1456,10 @@ try:
                         dataSet.obstime + dataSet.inttime for bl in dataSet.baselines
                     ]
 
-                    ### Add in the new new source ID and name
+                    # Add in the new new source ID and name
                     sourceList = [sourceID for bl in dataSet.baselines]
 
-                    ## Zero out the visibility data
+                    # Zero out the visibility data
                     try:
                         matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
                         flag_matrix.shape = (

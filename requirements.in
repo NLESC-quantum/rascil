@@ -13,7 +13,7 @@ numba
 numpy
 paramiko
 photutils
-python-casacore==3.3.1
+python-casacore
 graphviz
 reproject
 scikit-image
@@ -24,6 +24,6 @@ tabulate
 xarray
 pandas
 zarr
-bdsf
+git+https://github.com/lofar-astron/PyBDSF.git@master#egg=bdsf
 gitpython
 python-gitlab

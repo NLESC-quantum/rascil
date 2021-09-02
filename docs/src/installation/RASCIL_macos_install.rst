@@ -4,7 +4,7 @@ Installation of RASCIL on macos
 ===============================
 
 RASCIL is well-suited to running under macos. Installation should be straightforward. Although the pip approach can
-be used, we recommend use of Anaconda https://www.anaconda.com. It is necessary to
+be used, we recommend use of Anaconda https://www.anaconda.com It is necessary to
 install python-casacore in a separate step. The steps required are::
 
     conda create -n rascil_env python=3.7
@@ -13,6 +13,8 @@ install python-casacore in a separate step. The steps required are::
     git clone https://gitlab.com/ska-telescope/rascil
     cd rascil
     pip install -r requirements.txt
+
+We have specified python 3.7 since this currently is the preferred and supported version.
 
 Then at the top level directory, do::
 

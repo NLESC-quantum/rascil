@@ -4,13 +4,17 @@ Installation of RASCIL on macos
 ===============================
 
 RASCIL is well-suited to running under macos. Installation should be straightforward. Although the pip approach can
-be used, we recommend use of Anaconda https://www.anaconda.com. Using anaconda::
+be used, we recommend use of Anaconda https://www.anaconda.com It is necessary to
+install python-casacore in a separate step. The steps required are::
 
+    conda create -n rascil_env python=3.7
+    conda activate rascil_env
+    conda install -c conda-forge python-casacore=3.3.1
     git clone https://gitlab.com/ska-telescope/rascil
     cd rascil
-    conda env create -f environment.yml
-    conda activate rascil
-    conda config --env --append channels conda-forge
+    pip install -r requirements.txt
+
+We have specified python 3.7 since this currently is the preferred and supported version.
 
 Then at the top level directory, do::
 
@@ -24,7 +28,7 @@ Finally to get the casa measures data::
 
 Or if your anaconda is in your home directory::
 
-        rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic ~/opt/anaconda/envs/rascil/lib/casa/data/
+    rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic ~/opt/anaconda/envs/rascil/lib/casa/data/
 
 
 Finally, put the following definitions in your .bashrc::

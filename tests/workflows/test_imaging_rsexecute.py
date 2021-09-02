@@ -369,6 +369,10 @@ class TestImaging(unittest.TestCase):
 
     def test_invert_wprojection(self):
         self.actualSetUp()
+        # We increase the threshold on the position check because w projection does a particularly
+        # poor job on this test. We could improve the precision with a more finely sampled w kernel
+        # but the test would run longer. Give that ng is much faster, wprojection is not worth the
+        # extra time testing.
         self._invert_base(
             context="ng",
             do_wstacking=False,

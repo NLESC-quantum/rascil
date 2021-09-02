@@ -32,7 +32,7 @@ class TestGeometry(unittest.TestCase):
             self.lowcore,
             self.times,
             self.frequency,
-            utc_time= Time(["2020-01-01T00:00:00"], format="isot", scale="utc"),
+            utc_time=Time(["2020-01-01T00:00:00"], format="isot", scale="utc"),
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             weight=1.0,

@@ -152,7 +152,10 @@ class TestImagingNG(unittest.TestCase):
                 comp.direction, self.components
             )
             if separation / cellsize > positionthreshold:
-                raise ValueError("Component differs in position %.3f pixels" % (separation / cellsize))
+                raise ValueError(
+                    "Component differs in position %.3f pixels"
+                    % (separation / cellsize)
+                )
 
     def _predict_base(self, fluxthreshold=1.0, name="predict_ng", **kwargs):
 

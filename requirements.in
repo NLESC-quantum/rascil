@@ -1,5 +1,6 @@
 aotools
 astropy
+astroplan
 bokeh
 dask
 dask-memusage

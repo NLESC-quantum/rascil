@@ -45,7 +45,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestRASCILRcal(unittest.TestCase):
-    def make_MS(self, dopol=False):
+    def pre_setup(self, dopol=False):
         """Create and fill values into the MeassurementSet
 
         :param dopol: Use polarisation?
@@ -89,14 +89,27 @@ class TestRASCILRcal(unittest.TestCase):
             self.phasecentre,
         )
 
-        self.create_dft_components(self.flux)
+    def makeMS(self, flux):
 
-        self.create_apply_gains()
+        comp = self.create_dft_components(flux)
+
+        export_skycomponent_to_hdf5(
+            [comp],
+            rascil_path("test_results/test_rascil_rcal_components.hdf"),
+        )
+
+        self.bvis_error = self.create_apply_gains()
+
+        export_blockvisibility_to_ms(
+            rascil_path("test_results/test_rascil_rcal.ms"), [self.bvis_error]
+        )
 
     def create_dft_components(self, flux):
         """Create the components, save to file, dft into visibility
 
         :param flux:
+
+        :return pointsource: Point source skycomponent
         """
         pointsource = Skycomponent(
             direction=self.phasecentre,
@@ -107,21 +120,22 @@ class TestRASCILRcal(unittest.TestCase):
         self.bvis_original = dft_skycomponent_visibility(
             self.bvis_original, pointsource
         )
-        export_skycomponent_to_hdf5(
-            [pointsource],
-            rascil_path("test_results/test_rascil_rcal_components.hdf"),
-        )
+
+        return pointsource
+
+    def write_to_txt(self, comp):
+
         self.txtfile = rascil_path("test_results/test_rascil_rcal_components.txt")
 
-        coord_ra = pointsource.direction.ra.degree
-        coord_dec = pointsource.direction.dec.degree
+        coord_ra = comp.direction.ra.degree
+        coord_dec = comp.direction.dec.degree
         f = open(self.txtfile, "w")
         f.write(
             "%.6f, %.6f, %10.6e, %10.6e, %10.6e, %10.6e\n"
             % (
                 coord_ra,
                 coord_dec,
-                pointsource.flux[0][0],
+                comp.flux[0][0],
                 0.0,
                 0.0,
                 0.0,
@@ -132,18 +146,17 @@ class TestRASCILRcal(unittest.TestCase):
     def create_apply_gains(self):
         """Create the gaintable, apply to the visibility, write as MeasurementSet
 
-        :return:
+        :return: bvis_error: BlockVisibility
         """
         self.gt = create_gaintable_from_blockvisibility(self.bvis_original)
         self.gt = simulate_gaintable(self.gt, phase_error=0.1)
         qa_gt = qa_gaintable(self.gt)
         assert qa_gt.data["rms-amp"] < 1e-12, str(qa_gt)
         assert qa_gt.data["rms-phase"] > 0.0, str(qa_gt)
-        self.bvis_error = apply_gaintable(self.bvis_original, self.gt)
-        assert numpy.std(numpy.angle(self.bvis_error["vis"].data)) > 0.0
-        export_blockvisibility_to_ms(
-            rascil_path("test_results/test_rascil_rcal.ms"), [self.bvis_error]
-        )
+        bvis_error = apply_gaintable(self.bvis_original, self.gt)
+        assert numpy.std(numpy.angle(bvis_error["vis"].data)) > 0.0
+
+        return bvis_error
 
     def cleanup_data_files(self):
         """Cleanup the temporary data files"""
@@ -172,7 +185,8 @@ class TestRASCILRcal(unittest.TestCase):
     # Regression test
     def test_rcal(self):
 
-        self.make_MS()
+        self.pre_setup()
+        self.makeMS(self.flux)
         gtfile = rcal_simulator(self.args)
 
         # Check that the gaintable exists and is correct by applying it to
@@ -197,11 +211,15 @@ class TestRASCILRcal(unittest.TestCase):
         if self.persist is False:
             self.cleanup_data_files()
 
-    # Unit tests for additional functions
+        # Unit tests for additional functions
+
     def test_read_txtfile(self):
         "Test for read_skycomponent_from_txt_with_external_frequency"
 
-        self.make_MS()
+        self.pre_setup()
+        comp = self.create_dft_components(self.flux)
+        self.write_to_txt(comp)
+
         components_read = read_skycomponent_from_txt_with_external_frequency(
             self.txtfile, self.frequency, self.vis_pol
         )
@@ -213,7 +231,10 @@ class TestRASCILRcal(unittest.TestCase):
 
     def test_get_gain_data(self):
 
-        self.make_MS()
+        self.pre_setup()
+        comp = self.create_dft_components(self.flux)
+        self.bvis_error = self.create_apply_gains()
+
         gain_data = get_gain_data(self.gt)
         assert len(gain_data[0]) == 1  # time dimension
         assert len(gain_data[1]) == 6  # gain dimension (number of antennas)

@@ -215,9 +215,11 @@ class TestImaging(unittest.TestCase):
             ocomp, separation = find_nearest_skycomponent(
                 comp.direction, self.components
             )
-            assert separation / cellsize < positionthreshold, (
-                "Component differs in position %.3f pixels" % separation / cellsize
-            )
+            if separation / cellsize > positionthreshold:
+                raise ValueError(
+                    "Component differs in position %.3f pixels"
+                    % (separation / cellsize)
+                )
 
     def _predict_base(
         self, context="ng", do_wstacking=False, extra="", fluxthreshold=1.0, **kwargs
@@ -371,7 +373,7 @@ class TestImaging(unittest.TestCase):
             context="ng",
             do_wstacking=False,
             extra="_wprojection",
-            positionthreshold=2.0,
+            positionthreshold=2.1,
             gcfcf=self.gcfcf,
         )
 

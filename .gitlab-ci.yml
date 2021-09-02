@@ -1,4 +1,4 @@
-image: python:3.7
+image: python:3.9
 
 variables:
   MPLBACKEND: "agg"
@@ -53,7 +53,8 @@ test:
   stage: test
   before_script:
     - apt-get update
-    - apt-get -y install rsync ca-certificates pybind11-dev
+    # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
+    - apt-get -y install rsync ca-certificates gfortran libboost-dev libboost-python-dev libboost-numpy-dev
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
     - mkdir -p /usr/share/casacore/data/
@@ -80,7 +81,8 @@ test-dask:
   stage: test
   before_script:
     - apt-get update
-    - apt-get -y install rsync ca-certificates pybind11-dev
+    # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
+    - apt-get -y install rsync ca-certificates gfortran libboost-dev libboost-python-dev libboost-numpy-dev
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
     - mkdir -p /usr/share/casacore/data/
@@ -107,7 +109,8 @@ docs:
   stage: test
   before_script:
     - apt-get update
-    - apt-get -y install pandoc rsync
+    # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
+    - apt-get -y install pandoc rsync gfortran libboost-dev libboost-python-dev libboost-numpy-dev
     - pip install -r requirements.txt
     - pip install -r requirements-docs.txt
     - mkdir -p docs/build/html

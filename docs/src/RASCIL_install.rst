@@ -21,7 +21,7 @@ in a separate step::
 
     mkdir rascil_data
     cd rascil_data
-    curl https://ska-telescope.gitlab.io/rascil/rascil_data.tgz -o rascil_data.tgz
+    curl https://ska-telescope.gitlab.io/external/rascil/rascil_data.tgz -o rascil_data.tgz
     tar zxf rascil_data.tgz
     cd data
     export RASCIL_DATA=`pwd`
@@ -50,7 +50,7 @@ The installation steps are:
 
 - Use git to make a local clone of the Github repository::
 
-   git clone https://gitlab.com/ska-telescope/rascil
+   git clone https://gitlab.com/ska-telescope/external/rascil.git
 
 - Change into that directory::
 
@@ -119,7 +119,7 @@ Testing
 
 Check your installation by running a subset of the tests::
 
-   pip install pytest pytest-xdist
+   pip3 install pytest pytest-xdist
    py.test -n 4 tests/processing_components
 
 Or the full set::

@@ -7,23 +7,26 @@ There are two classes of functions:
 
 """
 
-__all__ = ['weight_visibility', 'weight_blockvisibility', 'taper_visibility_gaussian',
-           'taper_visibility_tukey']
+__all__ = ["weight_visibility", "taper_visibility_gaussian", "taper_visibility_tukey"]
 
+import logging
 
 import numpy
 
-from rascil.data_models.memory_data_models import Visibility, BlockVisibility
-from rascil.processing_components.griddata.gridding import grid_visibility_weight_to_griddata, \
-    griddata_visibility_reweight, grid_blockvisibility_weight_to_griddata, griddata_blockvisibility_reweight
-from rascil.processing_components.griddata.kernels import create_pswf_convolutionfunction
+from rascil import phyconst
+from rascil.processing_components.griddata.gridding import (
+    grid_blockvisibility_weight_to_griddata,
+    griddata_blockvisibility_reweight,
+)
 from rascil.processing_components.griddata.operations import create_griddata_from_image
 from rascil.processing_components.image.operations import image_is_canonical
 from rascil.processing_components.util.array_functions import tukey_filter
 
+log = logging.getLogger("rascil-logger")
 
-def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.0, **kwargs):
-    """ Weight the visibility data
+
+def weight_visibility(vis, model, weighting="uniform", robustness=0.0, **kwargs):
+    """Weight the visibility data
 
     This is done collectively so the weights are summed over all vis_lists and then
     corrected
@@ -34,22 +37,23 @@ def weight_visibility(vis, model, gcfcf=None, weighting='uniform', robustness=0.
     :param robustness: Robustness parameter
     :param kwargs: Parameters for functions in graphs
     :return: Reweighted vis
-   """
+    """
 
-    assert isinstance(vis, Visibility), vis
     assert image_is_canonical(model)
 
-    if gcfcf is None:
-        gcfcf = create_pswf_convolutionfunction(model)
+    griddata = create_griddata_from_image(
+        model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
+    )
+    griddata, sumwt = grid_blockvisibility_weight_to_griddata(vis, griddata)
+    vis = griddata_blockvisibility_reweight(
+        vis, griddata, weighting=weighting, robustness=robustness
+    )
 
-    griddata = create_griddata_from_image(model, vis)
-    griddata, sumwt = grid_visibility_weight_to_griddata(vis, griddata, gcfcf[1])
-    vis = griddata_visibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
     return vis
 
 
-def weight_blockvisibility(vis, model, gcfcf=None, weighting="uniform", robustness=0.0, **kwargs):
-    """ Weight the visibility data
+def weight_blockvisibility(vis, model, weighting="uniform", robustness=0.0, **kwargs):
+    """Weight the visibility data
 
     This is done collectively so the weights are summed over all vis_lists and then
     corrected
@@ -59,47 +63,47 @@ def weight_blockvisibility(vis, model, gcfcf=None, weighting="uniform", robustne
     :param weighting: Type of weighting
     :param kwargs: Parameters for functions in graphs
     :return: List of vis_graphs
-   """
-
-    assert isinstance(vis, BlockVisibility), vis
-    assert image_is_canonical(model)
-
-    if gcfcf is None:
-        gcfcf = create_pswf_convolutionfunction(model)
-
-    griddata = create_griddata_from_image(model, vis)
-    griddata, sumwt = grid_blockvisibility_weight_to_griddata(vis, griddata, gcfcf[1])
-    vis = griddata_blockvisibility_reweight(vis, griddata, gcfcf[1], weighting=weighting, robustness=robustness)
-    return vis
+    """
+    log.info("weight_blockvisibility: is deprecated, use weight_visibility")
+    return weight_visibility(vis, model, weighting, robustness, **kwargs)
 
 
-def taper_visibility_gaussian(vis: Visibility, beam=None) -> Visibility:
-    """ Taper the visibility weights
+def taper_visibility_gaussian(vis, beam=None):
+    """Taper the visibility weights
 
     These are cumulative. If You can reset the imaging_weights
     using :py:mod:`processing_components.imaging.weighting.weight_visibility`
 
-    :param vis: Visibility with imaging_weight's to be tapered
+    :param vis: blockvisibility with imaging_weight's to be tapered
     :param beam: desired resolution (Full width half maximum, radians)
     :return: visibility with imaging_weight column modified
     """
-    assert isinstance(vis, Visibility), vis
-    
+    # assert isinstance(vis, BlockVisibility), vis
+
     if beam is None:
         raise ValueError("Beam size not specified for Gaussian taper")
-    uvdistsq = vis.u ** 2 + vis.v ** 2
+
+    # assert isinstance(vis, BlockVisibility), vis
     # See http://mathworld.wolfram.com/FourierTransformGaussian.html
     scale_factor = numpy.pi ** 2 * beam ** 2 / (4.0 * numpy.log(2.0))
-    prior = vis.flagged_imaging_weight[:, :]
-    wt = numpy.exp(-scale_factor * uvdistsq)
-    vis.data['imaging_weight'][:, :] = vis.flagged_imaging_weight[:, :] * wt[:, numpy.newaxis]
-    
+
+    for chan, freq in enumerate(vis.frequency.data):
+        wave = phyconst.c_m_s / freq
+        uvdistsq = (
+            vis.blockvisibility_acc.u.data ** 2 + vis.blockvisibility_acc.v.data ** 2
+        ) / wave ** 2
+        wt = numpy.exp(-scale_factor * uvdistsq)
+        vis["imaging_weight"].data[..., chan, :] = (
+            vis.blockvisibility_acc.flagged_imaging_weight[..., chan, :]
+            * wt[..., numpy.newaxis]
+        )
+
     return vis
 
 
-def taper_visibility_tukey(vis: Visibility, tukey=0.1) -> Visibility:
-    """ Taper the visibility weights
-    
+def taper_visibility_tukey(vis, tukey=0.1):
+    """Taper the visibility weights
+
     This algorithm is present in WSClean.
 
     See https://sourceforge.net/p/wsclean/wiki/Tapering
@@ -111,17 +115,25 @@ def taper_visibility_tukey(vis: Visibility, tukey=0.1) -> Visibility:
     These are cumulative. If You can reset the imaging_weights
     using :py:mod:`processing_components.imaging.weighting.weight_visibility`
 
-    :param vis: Visibility with imaging_weight's to be tapered
+    :param vis: blockvisibility with imaging_weight's to be tapered
     :return: visibility with imaging_weight column modified
     """
 
-    assert isinstance(vis, Visibility), vis
+    # assert isinstance(vis, BlockVisibility), vis
 
-    uvdist = numpy.sqrt(vis.u ** 2 + vis.v ** 2)
-    uvdistmax = numpy.max(uvdist)
-    uvdist /= uvdistmax
-    wt = numpy.array([tukey_filter(uv, tukey) for uv in uvdist])
-    vis.data['imaging_weight'][:, :] = vis.flagged_imaging_weight[:, :] * wt[:, numpy.newaxis]
-    
+    oshape = vis["imaging_weight"].data[..., 0, 0].shape
+    for chan, freq in enumerate(vis.frequency.data):
+        wave = phyconst.c_m_s / freq
+        uvdist = numpy.sqrt(
+            vis.blockvisibility_acc.u.data ** 2 + vis.blockvisibility_acc.v.data ** 2
+        )
+        uvdist = uvdist.flatten() / wave
+        uvdistmax = numpy.max(uvdist)
+        uvdist /= uvdistmax
+        wt = numpy.array([tukey_filter(uv, tukey) for uv in uvdist]).reshape(oshape)
+        vis["imaging_weight"].data[..., chan, :] = (
+            vis.blockvisibility_acc.flagged_imaging_weight[..., chan, :]
+            * wt[..., numpy.newaxis]
+        )
+
     return vis
-

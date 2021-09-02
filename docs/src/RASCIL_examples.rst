@@ -10,18 +10,19 @@ The best way to get familiar with RASCIL is via jupyter notebooks. For example::
 
    jupyter notebook examples/notebooks/imaging.ipynb
 
-See the jupyter note books below:
+See the jupyter notebooks below:
 
 .. toctree::
    :maxdepth: 3
 
    examples/notebooks/imaging.rst
-   examples/notebooks/imaging-wterm_rsexecute.rst
    examples/notebooks/simple-dask_rsexecute.rst
-   examples/notebooks/imaging-pipelines_rsexecute.rst
    examples/notebooks//bandpass-calibration_serial.rst
+   examples/notebooks/demo_visibility_xarray.rst
 
 In addition, there are other notebooks in examples/notebooks that are not built as part of this documentation.
+In some cases it may be necessary to add the following to the notebook to locate the RASCIL data
+:code:`%env RASCIL_DATA=~/rascil_data/data`
 
 Running scripts
 ***************
@@ -32,8 +33,6 @@ Some example scripts are found in the directory examples/scripts.
    :maxdepth: 3
 
    examples/scripts/imaging.rst
-   examples/scripts/dprepb_rsexecute_pipeline.rst
-   examples/scripts/imaging_sim2.rst
    examples/scripts/primary_beam_zernikes.rst
 
 SKA simulations
@@ -46,9 +45,7 @@ using data files in the RASCIL data repository.
 .. toctree::
    :maxdepth: 1
 
-   examples/ska_simulations/surface_simulation.rst
-   examples/ska_simulations/pointing_simulation.rst
-   examples/ska_simulations/atmospheric_simulation.rst
+   examples/ska_simulations/mid_simulation.rst
 
 * :ref:`genindex`
 * :ref:`modindex`

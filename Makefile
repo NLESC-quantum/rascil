@@ -23,7 +23,7 @@ ifeq ($(strip $(DOCKER_REGISTRY_USER)),)
 endif
 
 ifeq ($(strip $(DOCKER_REGISTRY_HOST)),)
-	DOCKER_REGISTRY_HOST=nexus.engageska-portugal.pt
+	DOCKER_REGISTRY_HOST=artefact.skao.int
 endif
 
 
@@ -34,46 +34,78 @@ RASCIL_DATA = $(CURRENT_DIR)/data
 
 .DEFAULT_GOAL := help
 
-clean: cleantests
+clean:
 	$(PYTHON) setup.py clean --all
 	rm -rf dist
 
-in: inplace # just a shortcut
-inplace:
-	$(PYTHON) setup.py build >/dev/null 2>&1 && $(PYTHON) setup.py install >/dev/null 2>&1 || (echo "'$(PYTHON) setup.py install' failed."; exit -1)
+# Use bash shell with pipefail option enabled so that the return status of a
+# piped command is the value of the last (rightmost) commnand to exit with a
+# non-zero status. This lets us pipe output into tee but still exit on test
+# failures.
+SHELL = /bin/bash
+.SHELLFLAGS = -o pipefail -c
 
-build: in  ## build and install this project - make sure pipenv shell is activated
+all: test lint docs
 
-cleantests: ## clean out the cache before tests are run
-	rm -rf workers-*.dirlock
-	cd tests && rm -rf __pycache__
+.PHONY: all test lint docs
 
-unittest: cleantests  ## run tests using unittest
-	MPLBACKEND=agg $(PYTHON) -m unittest -f --locals tests/*/test_*.py
+lint:
+# outputs linting.xml
+	pylint --exit-zero --extension-pkg-whitelist=numpy --ignored-classes=astropy.units,astropy.constants,HDUList --output-format=pylint2junit.JunitReporter rascil > linting.xml
+	pylint --exit-zero --extension-pkg-whitelist=numpy --ignored-classes=astropy.units,astropy.constants,HDUList --output-format=parseable rascil
+	black --check .
 
-pytest: cleantests  ## run tests using pytest
-	pip install pytest >/dev/null 2>&1
-	pytest -x $(TESTS)
+docs:  ## build docs
+# Outputs docs/build/html
+	$(MAKE) -C docs/src html
 
-trailing-spaces:
-	find rascil/processing_components -name "*.py" -exec perl -pi -e 's/[ \t]*$$//' {} \;
-	find rascil/workflows -name "*.py" -exec perl -pi -e 's/[ \t]*$$//' {} \;
+test-singlepass:
+	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
+	 tests --verbose \
+	--junitxml unit-tests.xml \
+	--cov rascil \
+	--cov-report term \
+	--cov-report html:coverage  \
+	--cov-report xml:coverage.xml \
+	--pylint --pylint-error-types=EF --durations=30
 
-docs: inplace  ## build docs
-	$(MAKE) -C docs/src dirhtml
+test:
+	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
+    tests/apps tests/data_models tests/processing_components --verbose \
+	--cov=rascil \
+	--junitxml unit-tests-other.xml \
+	--pylint --pylint-error-types=EF --durations=30
+	coverage html -d coverage
 
-code-flake:
-	# flake8 ignore long lines and trailing whitespace
-	$(FLAKE) --ignore=E501,W293,F401 --builtins=ModuleNotFoundError rascil/processing_components rascil/workflows
+test-dask:
+	HOME=`pwd` py.test tests/workflows tests/apps_rsexecute --verbose \
+	--cov=rascil \
+	--junitxml unit-tests-dask.xml \
+	--pylint --pylint-error-types=EF --durations=30
+	coverage html -d coverage
 
-code-lint:
-	$(PYLINT) --extension-pkg-whitelist=numpy \
-	  --ignored-classes=astropy.units,astropy.constants,HDUList \
-	  -E rascil/processing_components rascil/workflows tests/
+upgrade_pip:  ## make sure pip is up to date.
+	pip install --upgrade pip
 
-code-analysis: code-flake code-lint  ## run pylint and flake8 checks
+requirements: upgrade_pip  ## update and compile requirements
+	pip install -U pip-tools
+	pip-compile -U --output-file requirements.txt requirements.in
+	pip-compile -U --output-file requirements-test.txt requirements-test.in
+	pip-compile -U --output-file requirements-docs.txt requirements-docs.in
 
-examples: inplace  ## launch examples
-	$(MAKE) -C examples/notebooks
-	$(MAKE) -C examples/scripts
-	$(MAKE) -C examples/ska_simulations
+install_requirements: upgrade_pip
+	pip install -r requirements-docs.txt
+	pip install -r requirements-test.txt
+	pip install -r requirements.txt
+	pip freeze
+
+update_requirements: requirements install_requirements
+
+release-patch: ## Make patch release
+	bumpver update --patch -n
+
+release-minor: ## Make minor release
+	bumpver update --minor -n
+
+release-major: ## Make major release
+	bumpver update --major -n

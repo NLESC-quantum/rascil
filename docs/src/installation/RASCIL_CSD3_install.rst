@@ -1,4 +1,4 @@
-.. _RASCIL_CSD3_install:
+.. _rascil_CSD3_install:
 
 Installation of RASCIL on CSD3
 ==============================

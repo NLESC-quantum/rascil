@@ -1,55 +1,132 @@
-image: "python:3.7"
+image: python:3.7
 
 variables:
   MPLBACKEND: "agg"
 
 workflow:
   rules:
-    - if: $CI_MERGE_REQUEST_ID
     - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
 
 stages:
+  - linting
   - test
   - build
   - publish
+  - prepost
 
-unittests:
+compile_requirements:
+  only:
+    - schedules
+  variables:
+    GIT_LFS_SKIP_SMUDGE: "1"  # do not download LFS related files
+  before_script:
+    - apt-get -y update
+    - apt-get -y install git-lfs
+    - git lfs fetch --all  # without this, the job complains about not finding a file, that doesn't actually exist..
+    - pip3 install --upgrade pip
+    - pip install gitpython python-gitlab
+    - pip install importlib-metadata numpy  # importlib-metadata is needed for python<=3.7; numpy is needed for bdsf
+    - make requirements
+  script:
+    - python3 create_mr.py
+  after_script:
+    - git remote rm new_origin
+
+linting:
+  image: artefact.skao.int/ska-tango-images-pytango-builder:9.3.11
+  stage: linting
+  before_script:
+    - pip3 install -r requirements-test.txt
+    - pip3 install black
+  script:
+    - make lint
+  artifacts:
+    paths:
+      - linting.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG'
+
+# Always run the unittests
+test:
   stage: test
   before_script:
     - apt-get update
     - apt-get -y install rsync ca-certificates pybind11-dev
+    - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
-    - git clone https://gitlab.mpcdf.mpg.de/ift/nifty_gridder.git
-    - cd nifty_gridder
-    - pip3 install .
-    - cd ..
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
+#    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
     - mkdir -p test_results
   script:
-    - pip install pytest pytest-xdist pytest-cov
-    - HOME=`pwd` py.test tests/workflows/test*rsexecute.py --verbose --cov=rascil --cov-report=html:coverage --durations=30 --forked
-    - HOME=`pwd` py.test -n 4 tests/data_models tests/processing_components tests/workflows/test*serial.py --verbose --cov=rascil --cov-report=html:coverage --cov-append --durations=30 --forked
+    - PYTHONPATH=`pwd` HOME=`pwd` make test
+  after_script:
+    - mv .coverage coverage_test
+  coverage: '/^TOTAL.+?(\d+\%)$/'
   artifacts:
     paths:
+      - coverage_test
       - coverage
-    expire_in: 1 week
+      - unit-tests-other.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
+test-dask:
+  stage: test
+  before_script:
+    - apt-get update
+    - apt-get -y install rsync ca-certificates pybind11-dev
+    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
+    - mkdir -p test_results
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make test-dask
+  after_script:
+    - mv .coverage coverage_dask
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+      - coverage_dask
+      - coverage
+      - unit-tests-dask.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+
+# Always try to build the docs since this catches errors via the notebook
 docs:
-  stage: build
+  stage: test
   before_script:
     - apt-get update
     - apt-get -y install pandoc rsync
-    - pip install -r requirements.txt -r requirements-docs.txt
+    - pip install -r requirements.txt
+    - pip install -r requirements-docs.txt
     - mkdir -p docs/build/html
     - mkdir -p test_results
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
   script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make -k -C docs/src html
-  after_script:
-    - mv docs/build/html html
+    - PYTHONPATH=`pwd` HOME=`pwd` make docs
   artifacts:
     paths:
-      - html/
+      - docs/build/html/
     expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
+# Build the data file only if on the master
 data:
   stage: build
   script:
@@ -58,47 +135,117 @@ data:
     paths:
       - rascil_data.tgz
     expire_in: 6 months
-  only:
-    - master
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
-publish_to_nexus:
-  stage: publish
-  tags:
-    - docker-executor
-  variables:
-    TWINE_USERNAME: $TWINE_USERNAME
-    TWINE_PASSWORD: $TWINE_PASSWORD
+# output used for publishing the package and building the docker images
+build_package:
+  stage: build
   script:
-    - pip install setuptools
-    - python setup.py egg_info -b+$CI_COMMIT_SHORT_SHA sdist bdist_wheel # --universal option to used for pure python packages
-    - pip3 install twine
-    - twine upload --repository-url $PYPI_REPOSITORY_URL dist/*
-  only:
-    variables:
-       - $CI_COMMIT_MESSAGE =~ /^.+$/ # Confirm tag message exists
-       - $CI_COMMIT_TAG =~ /^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$/ # Confirm semantic versioning of tag
+    - python3 setup.py egg_info sdist bdist_wheel # --universal option to used for pure
+  artifacts:
+    paths:
+      - dist
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG'
 
-
-staging: # Start the construction of dockers files in rascil-docker
+# Publish package to Central Artefact Repository only if this is a tagged build of the master
+publish_to_car:
   stage: publish
-  trigger: ska-telescope/rascil-docker
-  only:
-    - master
+  image: $SKA_K8S_TOOLS_DEPLOY_IMAGE
+  script:
+    - echo "Commit tag is ${CI_COMMIT_TAG}"
+    - echo "Commit message is ${CI_COMMIT_MESSAGE}"
+    - /usr/local/bin/extract-metadata.sh MANIFEST.skao.int
+    - for filename in dist/*.whl dist/*.tar.gz; do
+    -   /usr/local/bin/patch-metadata.sh $filename MANIFEST.skao.int
+    - done
+    - TWINE_USERNAME=${CAR_PYPI_USERNAME} TWINE_PASSWORD=${CAR_PYPI_PASSWORD} twine upload --repository-url $CAR_PYPI_REPOSITORY_URL dist/*
+  rules:
+    - if: '$CI_COMMIT_TAG'
 
+# COMMENTED UNTIL DECISION IS MADE ABOUT LATEST TAGS
+## Publish docker:latest to Central Artefact Repository if it's master and there isn't a tag.
+#docker_latest:
+#  stage: publish
+#  image: docker:20.10.7
+#  services:
+#    - docker:20.10.7-dind
+#  variables:
+#    GIT_VERSION: $CI_COMMIT_SHORT_SHA
+#  before_script:
+#    - apk add make git
+#    - cp dist/*whl docker/rascil-base
+#    - cd docker
+#    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
+#  script:
+#    - make build_all_latest
+#    - make test_all
+#    - make push_all
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+
+# Publish docker:<version> (release) to Central Artefact Repository if this is a tagged build of the master
+docker_release:
+  stage: publish
+  image: docker:20.10.7
+  services:
+    - docker:20.10.7-dind
+  variables:
+    GIT_VERSION: $CI_COMMIT_SHORT_SHA
+  before_script:
+    - apk add make git
+    - cp dist/*whl docker/rascil-base
+    - cd docker
+    - echo $CAR_OCI_REGISTRY_PASSWORD | docker login --username $CAR_OCI_REGISTRY_USERNAME --password-stdin $CAR_OCI_REGISTRY_HOST
+  script:
+    - make build_all_latest
+    - make test_all
+    - make push_all_release
+  rules:
+    - if: '$CI_COMMIT_TAG'
+
+# Publish the docs, data, and coverage if this is a build of the master
 pages:
   stage: publish
   dependencies:
     - docs
-    - unittests
+    - test
     - data
   script:
-    - mv html public
+    - rm -rf public
+    - mkdir -p public
+    - mv docs/build/html/* public
+    - mv coverage public
     - mv rascil_data.tgz public
-    - mv coverage/ public/coverage
+    - ls -l public
   artifacts:
     paths:
       - public
-      - public/coverage
-    expire_in: 1 month
-  only:
-    - master
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+
+prepare ci metrics:
+  stage: prepost
+  image: artefact.skao.int/ska-tango-images-pytango-builder:9.3.11
+  script:
+    - mkdir -p build/reports
+    - coverage combine coverage_* && coverage xml && coverage html -d coverage && coverage report
+    - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
+    - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
+    - python3 util/xmlcombine.py unit-tests-dask.xml unit-tests-other.xml > unit-tests.xml
+    - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
+  artifacts:
+    paths:
+      - coverage
+      - ./build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+
+# Create Gitlab CI badges from CI metrics
+# https://developer.skatelescope.org/en/latest/tools/continuousintegration.html#automated-collection-of-ci-health-metrics-as-part-of-the-ci-pipeline
+include:
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/post_step.yml'

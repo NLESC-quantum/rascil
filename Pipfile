@@ -3,6 +3,14 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
+[[source]]
+url = 'https://artefact.skao.int/repository/pypi-all/simple'
+verify_ssl = true
+name = 'nexus'
+
+[packages]
+'skaskeleton' = {version='*', index='nexus'}
+
 [dev-packages]
 
 [packages]

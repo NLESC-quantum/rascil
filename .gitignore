@@ -1,5 +1,6 @@
 
 /.idea
+/docker/.idea
 /examples/numba experiments
 
 /docs/build
@@ -7,7 +8,6 @@
 
 .cache
 /workspace
-/algorithm_reference_library.egg-info/
 
 dask-worker-space
 */notebooks/*_files
@@ -21,7 +21,6 @@ dask-worker-space
 *.so
 *.egg
 /rascil/data_models/.idea
-*.fits
 /sourcetree.txt
 /docs/api
 */*/notebooks/*_files
@@ -29,17 +28,9 @@ dask-worker-space
 */*/scripts/*.rst
 /docs/src/examples/notebooks
 
-examples/ska_simulations/surface_simulation.rst
+examples/ska_simulations/mid_simulation.rst
 
-examples/ska_simulations/pointing_simulation.rst
-
-docs/src/examples/ska_simulations/pointing_simulation.rst
-
-docs/src/examples/ska_simulations/surface_simulation.rst
-
-examples/ska_simulations/atmospheric_simulation.rst
-
-docs/src/examples/ska_simulations/atmospheric_simulation.rst
+docs/src/examples/ska_simulations/mid_simulation.rst
 
 dist/
 
@@ -49,10 +40,59 @@ rascil.egg-info/
 
 examples/random/
 
-tests/workflows/voltage_pattern_gaintable.png
-
 *.img
 
 docs/src/api/
 
 test_results/
+
+venv/
+
+.astropy/
+
+.config/
+
+.matplotlib/
+
+coverage/
+
+rtd-docs/build/
+
+examples/*/*.fits
+
+
+docs/src/examples/scripts/imaging.rst
+
+docs/src/examples/scripts/dprepb_rsexecute_pipeline.rst
+
+docs/src/examples/scripts/imaging_sim2.rst
+
+docs/src/examples/scripts/primary_beam_zernikes.rst
+
+examples/scripts/random_zernikes.png
+
+examples/scripts/dprepb_rsexecute_pipeline.txt
+
+examples/scripts/imaging.txt
+
+examples/scripts/imaging_sim2.txt
+
+examples/scripts/primary_beam_zernikes.txt
+
+test_results_master/
+
+.run/
+
+*.html
+
+tests/workflows/gaintable.png
+
+examples/mcve/xarray/mydask.png
+
+.git-blame-ignore-revs.txt
+
+*.nbc
+
+*.nbi
+
+performance/

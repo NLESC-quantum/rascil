@@ -1,4 +1,4 @@
-.. Background
+.. _rascil_background:
 
 .. toctree::
    :maxdepth: 3
@@ -6,7 +6,8 @@
 Background
 ==========
 
-[This is the original motivation. Some shift in emphasis has occured.]
+This outlines the original motivation for the ARL. Some shift in emphasis has occurred as a result of the expansion of
+RASCIL beyond the original purpose of a reference library.
 
 Core motivations
 ----------------
@@ -106,17 +107,19 @@ Requirements
   upon the processes to maintain the library being stringently defined and applied.
 
 - No optimization: No optimization should be performed on algorithms in the library if doing so obscures the
-  fundamentals of the algorithm.  Runtime of the testsuite should not be consideration except in so far as it prevents
+  fundamentals of the algorithm. Runtime of the testsuite should not be consideration except in so far as it prevents
   effective use.
 
 - V&V begins here: Validation and verification of the pipeline processing begins in the algorithm reference library.
   That means that it should be held to high standards of submission, testing, curation, and documentation.
 
-- Single threaded: All algorithms should be single threaded unless multithreading is absolutely required to  achieve
+- Single threaded: All algorithms should be single threaded unless multi-threading is absolutely required to  achieve
   acceptable performance. However, as distributed execution is going to be vital for the SDP, special take should be
   taken to document and demonstrate parallelism opportunities.
 
 - Memory limit: The memory used should be compatible with execution on a personal computer or laptop.
+
+- How we maintain the requirements: :ref:`RASCIL_requirements_management`
 
 Algorithms to be defined
 ------------------------

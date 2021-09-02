@@ -2,7 +2,7 @@
 # Disable built in rules
 .SUFFIXES:
 
-SCs = atmospheric_simulation.py pointing_simulation.py surface_simulation.py
+SCs = mid_simulation.py
 
 RSTs=  $(SCs:.py=.rst)
 
@@ -16,10 +16,6 @@ rst: $(RSTs)
 	echo "\nThe shell script to run is:\n" >> $@
 	echo "\n.. code:: sh\n" >> $@
 	sed  's/^/     /'  $<.sh >> $@
-	echo "\nThe SLURM batch file is:\n" >> $@
-	echo "\n.. code:: sh\n" >> $@
-	sed  's/^/     /'  $<.slurm >> $@
-	echo "\n" >> $@
 
 %.html: %.rst
 	${RST2HTML} $(<:.rstw=.rst)  > $@

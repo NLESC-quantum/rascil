@@ -1,4 +1,4 @@
-.. _RASCIL_GALAHAD_install:
+.. _rascil_GALAHAD_install:
 
 Installation of RASCIL on galahad
 =================================

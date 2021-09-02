@@ -24,7 +24,7 @@ Function parameters should obey a consistent naming convention:
 =======  =======
 Name     Meaning
 =======  =======
-vis      Name of Visibility
+vis      Name of BlockVisibility
 sc       Name of Skycomponent
 gt       Name of GainTable
 conf     Name of Configuration
@@ -48,17 +48,17 @@ fractional_threshold    Threshold as fraction of e.g. peak  0.1
 G_solution_interval     Solution interval for G term        100
 phaseonly               Do phase-only solutions             True
 phasecentre             Phase centre (usually as SkyCoord)  SkyCoord("-1.0d", "37.0d", frame='icrs', equinox='J2000')
-spectral_mode           Visibility processing mode          'mfs' or 'channel'
+spectral_mode           BlockVisibility processing mode          'mfs' or 'channel'
 ====================    ==================================  ========================================================
 
 """
 
-__all__ = ['rascil_path', 'rascil_data_path', 'get_parameter']
+__all__ = ["rascil_path", "rascil_data_path", "get_parameter"]
 
 import logging
 import os
 
-log = logging.getLogger('logger')
+log = logging.getLogger("rascil-logger")
 
 
 def rascil_path(path):
@@ -71,8 +71,10 @@ def rascil_path(path):
     :param path:
     :return: absolute path
     """
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)) + "/../../")
-    rascilhome = os.getenv('RASCIL', project_root)
+    project_root = os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)) + "/../../"
+    )
+    rascilhome = os.getenv("RASCIL", project_root)
     return os.path.join(rascilhome, path)
 
 
@@ -85,12 +87,13 @@ def rascil_data_path(path, check=True):
 
     The data path default is rascil_path('data') but may be overriden with the environment variable RASCIL_DATA.
 
+    :param check: Check path exists
     :param path:
     :return: absolute path
     """
-    rascil_data_home = os.getenv('RASCIL_DATA', None)
+    rascil_data_home = os.getenv("RASCIL_DATA", None)
     if rascil_data_home is None:
-        dp = rascil_path('data/')
+        dp = rascil_path("data/")
     else:
         dp = rascil_data_home
     if check:
@@ -101,7 +104,7 @@ def rascil_data_path(path, check=True):
 
 
 def get_parameter(kwargs, key, default=None):
-    """ Get a specified named value for this (calling) function
+    """Get a specified named value for this (calling) function
 
     The parameter is searched for in kwargs
 

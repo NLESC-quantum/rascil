@@ -9,25 +9,10 @@ such as image, visibility table, gaintable, etc. The python source
 code is directly accessible from these documentation pages: see the
 source link in the top right corner.
 
-To acheive sufficient performance we take a dual pronged approach -
-using threaded libraries for shared memory processing, and the Dask
-library for distributed processing.
+[![Documentation Status](https://readthedocs.org/projects/rascil/badge/?version=latest)](https://developer.skatelescope.org/projects/rascil/en/latest/?badge=latest)
 
-Documentation is [here](https://ska-telescope.gitlab.io/rascil/)
 
-RASCIL can be installed using pip::
+The [Documentation](https://ska-telescope.gitlab.io/external/rascil/) includes usage 
+examples, API, and installation directions.
 
-    pip install rascil
-    
-You may also need the rascil data for simulations:
-
-    curl https://ska-telescope.gitlab.io/rascil/rascil_data.tgz -o rascil.data.tgz
-    tar zxf rascil_data.tgz
-    export RASCIL_DATA=`pwd`/rascil_data
-
-Alternatively, if you wish to develop using RASCIL then you can 
-clone from the GitHub repository:
- 
-    git clone https://gitlab.com/ska-telescope/rascil
-    
-RASCIL CI/CD occurs on  [Gitlab](https://gitlab.com/ska-telescope/rascil)
+RASCIL CI/CD occurs on  [Gitlab](https://gitlab.com/ska-telescope/external/rascil)

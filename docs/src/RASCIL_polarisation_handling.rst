@@ -1,4 +1,4 @@
-.. _polarisation_handling:
+.. _rascil_polarisation_handling:
 
 Polarisation handling
 *********************
@@ -13,7 +13,7 @@ For imaging:
  * To convert from Stokes image to polarised image see :py:func:`rascil.processing_components.image.operations.convert_stokes_to_polimage`
  * To convert from polarised image to Stokes image :py:func:`rascil.processing_components.image.operations.convert_polimage_to_stokes`
  * Skycomponents may be defined as stokesI, stokesIQUV, linear, or circular
- * Visibility/BlockVisibility may be defined as stokesI, stokesIQUV, linear, or circular.
+ * BlockVisibility may be defined as stokesI, stokesIQUV, linear, or circular.
  * Dish/station voltage patterns are described by images in which each pixel is a 2 x 2 complex matrix.
 
 For calibration, the Jones matrices allowed are:

@@ -1,4 +1,4 @@
-.. _rascil_workflows:
+.. _rascil_workflows_lower:
 
 .. py:currentmodule:: rascil.workflows
 

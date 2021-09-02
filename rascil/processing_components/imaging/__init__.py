@@ -7,11 +7,12 @@ The functions include 2D prediction and inversion operations. A very simple exam
 
 The call to create_image_from_visibility step constructs a template image. The dirty image is constructed according to this template.
 
-AW projection is supported by the predict_2d and invert_2d methods, provided the gridding kernel is constructed and passed in. For example::
+AW projection is supported by the predict_2d and invert_2d methods, provided the gridding kernel is constructed and
+passed in as a partial. For example::
 
-    gcfcf = create_awterm_convolutionfunction(model, nw=100, wstep=8.0, oversampling=8,
+    gcfcf = functools.partial(create_awterm_convolutionfunction, nw=100, wstep=8.0, oversampling=8,
         support=100, use_aaf=True)
-    dirty, sumwt = invert_2d(vis, model, gcfcf = gcfcf)
+    dirty, sumwt = invert_2d(vis, model, gcfcf=gcfcf)
 
 If installed, the nifty gridder (https://gitlab.mpcdf.mpg.de/ift/nifty_gridder) can also be used::
 
@@ -30,8 +31,6 @@ The convolutional gridding functions are to be found in griddata module
 from .base import *
 from .primary_beams import *
 from .imaging_params import *
-from .timeslice_single import *
 from .weighting import *
-from .wstack_single import *
 from .dft import *
-
+from .ng import *

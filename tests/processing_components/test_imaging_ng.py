@@ -144,16 +144,18 @@ class TestImagingNG(unittest.TestCase):
             len(self.components),
             len(comps),
         )
-        cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
+        cellsize = numpy.deg2rad(abs(dirty.image_acc.wcs.wcs.cdelt[0]))
 
         for comp in comps:
             # Check for agreement in direction
             ocomp, separation = find_nearest_skycomponent(
                 comp.direction, self.components
             )
-            assert separation / cellsize < positionthreshold, (
-                "Component differs in position %.3f pixels" % separation / cellsize
-            )
+            if separation / cellsize > positionthreshold:
+                raise ValueError(
+                    "Component differs in position %.3f pixels"
+                    % (separation / cellsize)
+                )
 
     def _predict_base(self, fluxthreshold=1.0, name="predict_ng", **kwargs):
 

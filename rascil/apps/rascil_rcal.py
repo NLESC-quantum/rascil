@@ -162,24 +162,24 @@ def rcal_simulator(args):
     )[0]
 
     if args.ingest_components_file is not None:
-        if ".hdf" in args.ingest_components_file:
+
+        try:
             log.info(f"Reading HDF components file {args.ingest_components_file}")
-            try:
-                model_components = import_skycomponent_from_hdf5(
-                    args.ingest_components_file
-                )
-            except IOError:
-                raise FileFormatError(
-                    "You have indicated hdf format but the file is not."
-                )
-        elif ".txt" in args.ingest_components_file:
-            log.info(f"Reading text components file {args.ingest_components_file}")
-            pol = bvis.blockvisibility_acc.polarisation_frame
-            model_components = read_skycomponent_from_txt_with_external_frequency(
-                args.ingest_components_file, bvis.frequency, pol
+            model_components = import_skycomponent_from_hdf5(
+                args.ingest_components_file
             )
-        else:
-            raise FileFormatError("Input file must be of format: hdf or txt.")
+
+        except OSError:
+            # file is not HDF-compatible, trying txt
+            if ".txt" in args.ingest_components_file:
+                log.info(f"Reading text components file {args.ingest_components_file}")
+                pol = bvis.blockvisibility_acc.polarisation_frame
+                model_components = read_skycomponent_from_txt_with_external_frequency(
+                    args.ingest_components_file, bvis.frequency, pol
+                )
+
+            else:
+                raise FileFormatError("Input file must be of format: hdf or txt.")
 
     else:
         log.info(f"Using point source model")
@@ -203,7 +203,7 @@ def rcal_simulator(args):
     )
 
     base = os.path.basename(args.ingest_msname)
-    plotfile = plot_dir + base.replace(".ms", "_plot")
+    plotfile = plot_dir + "/" + base.replace(".ms", "_plot")
     log.info(f"Write plots into : \n{plotfile}\n")
 
     do_plotting = args.do_plotting == "True"
@@ -408,7 +408,7 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     flux = data[2]
 
     # Single element.
-    if not isinstance(ra, list):
+    if numpy.isscalar(ra):
         direc = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000")
         flux_array = numpy.zeros((nchan, npol))
         flux_array[:, 0] = flux

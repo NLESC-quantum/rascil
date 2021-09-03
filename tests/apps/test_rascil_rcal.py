@@ -179,7 +179,7 @@ class TestRASCILRcal(unittest.TestCase):
         self.args.ingest_components_file = rascil_path(
             "test_results/test_rascil_rcal_components.hdf"
         )
-        self.args.do_plotting = "True"
+        self.args.do_plotting = "False"
         self.args.plot_dir = rascil_path("test_results/")
 
     # Regression test
@@ -205,7 +205,12 @@ class TestRASCILRcal(unittest.TestCase):
         assert qa.data["maxabs"] < 1e-12, str(qa)
         assert qa.data["minabs"] < 1e-12, str(qa)
 
+        # Test the plotting
         plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        assert os.path.exists(plotfile) == False
+
+        self.args.do_plotting = "True"
+        gtfile_new = rcal_simulator(self.args)
         assert os.path.exists(plotfile)
 
         if self.persist is False:

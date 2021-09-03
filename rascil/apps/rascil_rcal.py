@@ -2,6 +2,7 @@
 
 """
 
+import os
 import sys
 import argparse
 import logging
@@ -11,9 +12,21 @@ from typing import Iterable
 import numpy
 import xarray
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib import animation
+
+from astropy import units as u
+from astropy.time import Time
+from astropy.visualization import time_support
+from astropy.coordinates import SkyCoord
+
 from rascil.data_models import (
     BlockVisibility,
     GainTable,
+    PolarisationFrame,
     export_gaintable_to_hdf5,
     import_skycomponent_from_hdf5,
 )
@@ -23,11 +36,18 @@ from rascil.processing_components import (
     dft_skycomponent_visibility,
     copy_visibility,
     copy_gaintable,
+    create_skycomponent,
+    create_gaintable_from_blockvisibility,
 )
+
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
+
+
+class FileFormatError(Exception):
+    pass
 
 
 def cli_parser():
@@ -64,11 +84,28 @@ def cli_parser():
         default=None,
         help="Name of components file (HDF5) format",
     )
-
+    parser.add_argument(
+        "--do_plotting",
+        type=str,
+        default=False,
+        help="If yes, plot the gain table values over time",
+    )
+    parser.add_argument(
+        "--plot_dir",
+        type=str,
+        default=None,
+        help="Full path of the directory to save the gain plots into (default is the same directory the MS file is located)",
+    )
+    parser.add_argument(
+        "--plot_dynamic",
+        type=str,
+        default=False,
+        help="If yes, enable dynamic plotting and save animation; if no, just save the final gain table",
+    )
     parser.add_argument(
         "--use_previous_gaintable",
         type=str,
-        default="True",
+        default="False",
         help="Use previous gaintable as starting point for solution",
     )
 
@@ -125,13 +162,38 @@ def rcal_simulator(args):
     )[0]
 
     if args.ingest_components_file is not None:
-        model_components = import_skycomponent_from_hdf5(args.ingest_components_file)
+
+        try:
+            log.info(f"Reading HDF components file {args.ingest_components_file}")
+            model_components = import_skycomponent_from_hdf5(
+                args.ingest_components_file
+            )
+
+        except OSError:
+            # file is not HDF-compatible, trying txt
+            if ".txt" in args.ingest_components_file:
+                log.info(f"Reading text components file {args.ingest_components_file}")
+                pol = bvis.blockvisibility_acc.polarisation_frame
+                model_components = read_skycomponent_from_txt_with_external_frequency(
+                    args.ingest_components_file, bvis.frequency, pol
+                )
+
+            else:
+                raise FileFormatError("Input file must be of format: hdf or txt.")
+
     else:
+        log.info(f"Using point source model")
         model_components = None
+
+    if args.plot_dir is None:
+        plot_dir = os.getcwd()
+    else:
+        plot_dir = args.plot_dir
 
     log.info(f"\nMS loaded into BlockVisibility:\n{bvis}\n")
 
     bvis_gen = bvis_source(bvis)
+
     gt_gen = bvis_solver(
         bvis_gen,
         model_components,
@@ -139,10 +201,18 @@ def rcal_simulator(args):
         use_previous=args.use_previous_gaintable == "True",
         tol=args.solution_tolerance,
     )
-    full_gt = gt_sink(gt_gen)
+
+    base = os.path.basename(args.ingest_msname)
+    plotfile = plot_dir + "/" + base.replace(".ms", "_plot")
+    log.info(f"Write plots into : \n{plotfile}\n")
+
+    do_plotting = args.do_plotting == "True"
+    plot_dynamic = args.plot_dynamic == "True"
+    full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
+
     return gtfile
 
 
@@ -174,22 +244,27 @@ def bvis_solver(
     previous = None
     for bv in bvis_gen:
         if model_components is not None:
-            modelvis = copy_visibility(bv)
+            modelvis = copy_visibility(bv, zero=True)
             modelvis = dft_skycomponent_visibility(modelvis, model_components)
             gt = solve_gaintable(bv, modelvis=modelvis, gt=previous, **kwargs)
-            if use_previous:
-                copy_gaintable(gt, previous)
         else:
             gt = solve_gaintable(bv, gt=previous, **kwargs)
+
         if use_previous:
-            copy_gaintable(gt, previous)
+            newgt = create_gaintable_from_blockvisibility(bv)
+            previous = copy_gaintable(gt)
+            previous["time"].data = newgt["time"].data
         yield gt
 
 
-def gt_sink(gt_gen: Iterable[GainTable]):
+def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
     """Iterate through the gaintables, logging resisual, combine into single GainTable
 
     :param gt_gen: Generator of GainTables
+    :param do_plotting: Option to plot gain tables
+    :param plot_dynamic: Option to make it a dynamic plot
+    :param plot_name: File name for the plot (contains directory name)
+
     :return: GainTable
     """
     gt_list = list()
@@ -200,8 +275,172 @@ def gt_sink(gt_gen: Iterable[GainTable]):
         )
         gt_list.append(gt)
 
+        # Tentative dynamic plotting routine
+    #        if do_plotting and plot_dynamic and len(gt_list) > 1:
+    #            dynamic_update(gt_list, plot_name)
+    #            log.info(f"Done dynamic plotting for {datetime}.")
+
+    if do_plotting:
+
+        gt_single_plot(gt_list, plot_name)
+        log.info("Save final plot.")
+
     full_gt = xarray.concat(gt_list, "time")
     return full_gt
+
+
+def get_gain_data(gt_list):
+
+    """Get data from a list of GainTables used for plotting.
+
+    :param gt_list: GainTable list to plot
+
+    :return: List of arrays in format of [time, amplitude-1, phase-phase(antenna0), residual]
+
+    """
+
+    def angle_wrap(angle):
+
+        if angle > 180.0:
+            angle = 360.0 - angle
+        if angle < -180.0:
+            angle = 360.0 + angle
+
+        return angle
+
+    if not isinstance(gt_list, list):
+        gt_list = [gt_list]
+
+    with time_support(format="iso", scale="utc"):
+
+        gains = []
+        residual = []
+        time = []
+
+        # We only look at the central channel at the moment
+        for gt in gt_list:
+
+            time.append(gt.time.data[0] / 86400.0)
+            current_gain = gt.gain.data[0]
+            nchan = current_gain.shape[1]
+            gains.append(current_gain[:, nchan // 2, 0, 0])
+            residual.append(gt.residual.data[0, nchan // 2, 0, 0])
+
+        gains = numpy.array(gains)
+        amp = numpy.abs(gains) - 1.0
+        amp = amp.reshape(amp.shape[1], amp.shape[0])
+        phase = numpy.angle(gains, deg=True)
+
+        phase_rel = []
+        for i in range(len(phase[0])):
+            phase_now = phase[:, i] - phase[:, 0]
+            phase_now = [angle_wrap(element) for element in phase_now]
+            phase_rel.append(phase_now)
+        phase_rel = numpy.array(phase_rel)
+
+        timeseries = Time(time, format="mjd", out_subfmt="str")
+
+        return [timeseries, amp, phase_rel, residual]
+
+
+def gt_single_plot(gt_list, plot_name=None):
+
+    """Plot gaintable (gain and residual values) over time
+       Used to generate a single plot only
+
+    :param gt_list: GainTable list to plot
+    :param plot_name: File name for the plot (contains directory name)
+
+    :return
+    """
+
+    if not isinstance(gt_list, list):
+        gt_list = [gt_list]
+
+    with time_support(format="iso", scale="utc"):
+
+        plt.cla()
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
+        fig.subplots_adjust(hspace=0)
+
+        datetime = gt_list[0]["datetime"][0].data
+
+        timeseries, amp, phase_rel, residual = get_gain_data(gt_list)
+
+        for i in range(amp.shape[0]):
+            ax1.plot(timeseries, amp[i], "-", label=f"Antenna {i}")
+            ax2.plot(timeseries, phase_rel[i], "-", label=f"Antenna {i}")
+
+        ax1.set_ylabel("Gain Amplitude - 1")
+        ax2.set_ylabel("Gain Phase (Antenna - Antenna 0)")
+        ax2.legend(loc="best")
+
+        ax3.plot(timeseries, residual, "-")
+        ax3.set_ylabel("Residual")
+        ax3.set_xlabel("Time (UTC)")
+        ax3.set_yscale("log")
+        plt.xticks(rotation=30)
+
+        fig.suptitle(f"Updated GainTable at {datetime}")
+        plt.savefig(plot_name + ".png")
+
+    return
+
+
+def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
+    """
+    Read source input from a txt file and make them into skycomponents
+
+    :param filename: Name of input file
+    :param freq: External frequency data
+    :param pol: Polarization frame
+    :return comp: List of skycomponents
+    """
+
+    nchan = len(freq)
+    npol = pol.npol
+    log.info(f" nchan = {nchan}, npol = {npol}")
+
+    # The txt file needs to have the first three columns in the format of (RA, Dec, flux)
+    data = numpy.loadtxt(filename, delimiter=",", unpack=True)
+    ra = data[0]
+    dec = data[1]
+    flux = data[2]
+
+    # Single element.
+    if numpy.isscalar(ra):
+        direc = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs", equinox="J2000")
+        flux_array = numpy.zeros((nchan, npol))
+        flux_array[:, 0] = flux
+        comp = create_skycomponent(
+            direction=direc,
+            flux=flux_array,
+            frequency=freq,
+            polarisation_frame=pol,
+        )
+    else:
+        comp = []
+        for i, row in enumerate(ra):
+
+            direc = SkyCoord(
+                ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
+            )
+
+            # Temporary: Currently doesn't do frequency correction for flux
+            # This should be fixed.
+            flux_array = numpy.zeros((nchan, npol))
+            flux_array[:, 0] = flux[i]
+
+            comp.append(
+                create_skycomponent(
+                    direction=direc,
+                    flux=flux_array,
+                    frequency=freq,
+                    polarisation_frame=pol,
+                )
+            )
+
+    return comp
 
 
 if __name__ == "__main__":

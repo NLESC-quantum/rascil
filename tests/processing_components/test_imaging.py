@@ -148,7 +148,7 @@ class TestImaging2D(unittest.TestCase):
             len(self.components),
             len(comps),
         )
-        cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
+        cellsize = numpy.deg2rad(abs(dirty.image_acc.wcs.wcs.cdelt[0]))
 
         for comp in comps:
             # Check for agreement in direction

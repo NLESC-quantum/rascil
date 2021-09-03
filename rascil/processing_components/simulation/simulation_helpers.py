@@ -103,18 +103,29 @@ def plot_visibility(
         colors = numpy.repeat(["b"], len(vis_list))
 
     for ivis, vis in enumerate(vis_list):
+        ntimes, nbaselines, nchan, npol = vis["vis"].data.shape
+        if x == "time":
+            xvalue = numpy.repeat(vis["time"].data, nbaselines)
+        else:
+            xvalue = vis.blockvisibility_acc.uvdist.data.flat
         if y == "amp":
             yvalue = numpy.abs(vis.blockvisibility_acc.flagged_vis[..., chan, 0]).flat
+            plt.plot(
+                xvalue[yvalue > 0.0],
+                yvalue[yvalue > 0.0],
+                ".",
+                color=colors[ivis],
+                markersize=markersize,
+            )
         else:
             yvalue = numpy.angle(vis.blockvisibility_acc.flagged_vis[..., chan, 0]).flat
-        xvalue = vis.blockvisibility_acc.uvdist.data.flat
-        plt.plot(
-            xvalue[yvalue > 0.0],
-            yvalue[yvalue > 0.0],
-            ".",
-            color=colors[ivis],
-            markersize=markersize,
-        )
+            plt.plot(
+                xvalue,
+                yvalue,
+                ".",
+                color=colors[ivis],
+                markersize=markersize,
+            )
 
     plt.xlabel(x)
     plt.ylabel(y)

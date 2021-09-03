@@ -169,12 +169,8 @@ class TestCalibrationOperations(unittest.TestCase):
             gt["gain"].data *= 0.0
             original = copy_visibility(self.vis)
             vis = apply_gaintable(self.vis, gt, inverse=True)
-            error = numpy.max(
-                numpy.abs(
-                    vis["vis"].data[:, 0, 1, ...] - original["vis"].data[:, 0, 1, ...]
-                )
-            )
-            assert error < 1e-12, "Error = %s" % (error)
+            error = numpy.max(numpy.abs(vis["vis"].data[:, 0, 1, ...]))
+            assert error < 1e-12, f"{spf} {dpf} Error = {error}"
 
 
 if __name__ == "__main__":

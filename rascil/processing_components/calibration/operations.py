@@ -195,6 +195,10 @@ def apply_gaintable(
                                     ).reshape(
                                         [2]
                                     )
+                                else:
+                                    applied[sub_vis_row, ibaseline, chan, 0] = 0.0
+                                    appliedwt[sub_vis_row, ibaseline, chan, 0] = 0.0
+
                 else:
                     for sub_vis_row in range(original.shape[0]):
                         for ibaseline, (a1, a2) in enumerate(baselines):
@@ -241,6 +245,7 @@ def apply_gaintable(
                                     ).reshape([4])
                                 else:
                                     applied[sub_vis_row, ibaseline, chan, ...] = 0.0
+                                    appliedwt[sub_vis_row, ibaseline, chan, ...] = 0.0
                 else:
                     for sub_vis_row in range(original.shape[0]):
                         for ibaseline, baseline in enumerate(baselines):
@@ -263,6 +268,7 @@ def apply_gaintable(
                 )
 
             vis["vis"].data[vis_rows] = applied
+            vis["weight"].data[vis_rows] = appliedwt
 
     return vis
 
@@ -408,6 +414,9 @@ def qa_gaintable(gt: GainTable, context=None) -> QA:
     :param gt:
     :return: QA
     """
+    if not numpy.max(gt.weight.data) > 0.0:
+        raise ValueError("qa_gaintable: All gaintable weights are zero")
+
     agt = numpy.abs(gt.gain.data[gt.weight.data > 0.0])
     pgt = numpy.angle(gt.gain.data[gt.weight.data > 0.0])
     rgt = gt.residual.data[numpy.sum(gt.weight.data, axis=1) > 0.0]

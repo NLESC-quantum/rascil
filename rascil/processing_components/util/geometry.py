@@ -107,11 +107,6 @@ def utc_to_ms_epoch(ts):
     :param ts:  A timestamp object.
     :result: The epoch time ``t`` in seconds suitable for fields in measurement sets.
     """
-    # Use the casa measures
-    from casacore.measures import measures
-
-    dm = measures()
-    epoch = dm.epoch(rf="utc", v0=ts.iso)
-    epoch_d = epoch["m0"]["value"]
-    epoch_s = epoch_d * 24 * 60 * 60.0
+    # Use astropy Time
+    epoch_s = ts.mjd * 24 * 60 * 60.0
     return epoch_s

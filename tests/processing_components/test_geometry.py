@@ -13,6 +13,7 @@ from rascil.processing_components.util.geometry import (
     calculate_azel,
     calculate_hourangles,
     calculate_transit_time,
+    utc_to_ms_epoch,
 )
 
 
@@ -55,6 +56,11 @@ class TestGeometry(unittest.TestCase):
             self.location, self.utc_time, self.phasecentre
         )
         numpy.testing.assert_array_almost_equal(transit_time.mjd, 58849.895804)
+
+    def test_utc_to_ms_epoch(self):
+        utc_time = Time("2020-01-01T00:00:00", format="isot", scale="utc")
+        ms_epoch = utc_to_ms_epoch(utc_time)
+        numpy.testing.assert_array_almost_equal(ms_epoch, 5084553600.0)
 
 
 if __name__ == "__main__":

@@ -57,12 +57,6 @@ test:
     - apt-get -y install rsync ca-certificates gfortran libboost-dev libboost-python-dev libboost-numpy-dev
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
-    - mkdir -p /usr/share/casacore/data/
-    - cd /usr/share/casacore/data
-    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
-    - tar xfz WSRT_Measures.ztar
-    - cd -
-#    - rsync -avz4 rsync://casa-rsync.nrao.edu/casa-data/geodetic /usr/share/casacore/data/
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test
@@ -85,11 +79,6 @@ test-dask:
     - apt-get -y install rsync ca-certificates gfortran libboost-dev libboost-python-dev libboost-numpy-dev
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
-    - mkdir -p /usr/share/casacore/data/
-    - cd /usr/share/casacore/data
-    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
-    - tar xfz WSRT_Measures.ztar
-    - cd -
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test-dask
@@ -115,11 +104,6 @@ docs:
     - pip install -r requirements-docs.txt
     - mkdir -p docs/build/html
     - mkdir -p test_results
-    - mkdir -p /usr/share/casacore/data/
-    - cd /usr/share/casacore/data
-    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
-    - tar xfz WSRT_Measures.ztar
-    - cd -
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make docs
   artifacts:

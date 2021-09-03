@@ -28,7 +28,7 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 
 
-@unittest.skip("Fails when ran after other tests - Under investigation")
+# @unittest.skip("Fails when ran after other tests - Under investigation")
 class TestRFIRegression(unittest.TestCase):
     def setUp(self):
         self.persist = os.getenv("RASCIL_PERSIST", False)

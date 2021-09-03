@@ -8,7 +8,6 @@ import argparse
 import logging
 import pprint
 from typing import Iterable
-import os
 
 import numpy
 import xarray
@@ -45,6 +44,10 @@ from rascil.processing_components import (
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
+
+
+class FileFormatError(Exception):
+    pass
 
 
 def cli_parser():
@@ -91,7 +94,7 @@ def cli_parser():
         "--plot_dir",
         type=str,
         default=None,
-        help="Directory to save the gain plots into (default is the same directory the MS file is located)",
+        help="Full path of the directory to save the gain plots into (default is the same directory the MS file is located)",
     )
     parser.add_argument(
         "--plot_dynamic",
@@ -171,15 +174,14 @@ def rcal_simulator(args):
                 args.ingest_components_file, bvis.frequency, pol
             )
         else:
-            log.error("File format not supported.")
-            model_components = None
+            raise FileFormatError("Input file must be of format: hdf or txt.")
 
     else:
         log.info(f"Using point source model")
         model_components = None
 
     if args.plot_dir is None:
-        plot_dir = os.getcwd() + "/plots/"
+        plot_dir = os.getcwd()
     else:
         plot_dir = args.plot_dir
 
@@ -299,9 +301,7 @@ def get_gain_data(gt_list):
 
         return angle
 
-    single = not isinstance(gt_list, list)
-
-    if single:
+    if not isinstance(gt_list, list):
         gt_list = [gt_list]
 
     with time_support(format="iso", scale="utc"):
@@ -367,7 +367,7 @@ def gt_single_plot(gt_list, plot_name=None):
 
         ax3.plot(timeseries, residual, "-")
         ax3.set_ylabel("Residual")
-        ax3.set_xlabel("Time(UTC)")
+        ax3.set_xlabel("Time (UTC)")
         ax3.set_yscale("log")
         plt.xticks(rotation=30)
 
@@ -391,6 +391,7 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     npol = pol.npol
     log.info(f" nchan = {nchan}, npol = {npol}")
 
+    # The txt file needs to have the first three columns in the format of (RA, Dec, flux)
     data = numpy.loadtxt(filename, delimiter=",", unpack=True)
     ra = data[0]
     dec = data[1]

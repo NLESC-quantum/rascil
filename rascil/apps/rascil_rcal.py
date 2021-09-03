@@ -164,9 +164,14 @@ def rcal_simulator(args):
     if args.ingest_components_file is not None:
         if ".hdf" in args.ingest_components_file:
             log.info(f"Reading HDF components file {args.ingest_components_file}")
-            model_components = import_skycomponent_from_hdf5(
-                args.ingest_components_file
-            )
+            try:
+                model_components = import_skycomponent_from_hdf5(
+                    args.ingest_components_file
+                )
+            except IOError:
+                raise FileFormatError(
+                    "You have indicated hdf format but the file is not."
+                )
         elif ".txt" in args.ingest_components_file:
             log.info(f"Reading text components file {args.ingest_components_file}")
             pol = bvis.blockvisibility_acc.polarisation_frame
@@ -348,6 +353,9 @@ def gt_single_plot(gt_list, plot_name=None):
 
     :return
     """
+
+    if not isinstance(gt_list, list):
+        gt_list = [gt_list]
 
     with time_support(format="iso", scale="utc"):
 

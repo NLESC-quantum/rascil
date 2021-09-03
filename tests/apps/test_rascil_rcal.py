@@ -18,6 +18,7 @@ from rascil.apps.rascil_rcal import (
     cli_parser,
     rcal_simulator,
     get_gain_data,
+    gt_single_plot,
     read_skycomponent_from_txt_with_external_frequency,
 )
 from rascil.data_models import (
@@ -205,13 +206,21 @@ class TestRASCILRcal(unittest.TestCase):
         assert qa.data["maxabs"] < 1e-12, str(qa)
         assert qa.data["minabs"] < 1e-12, str(qa)
 
-        # Test the plotting
-        plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
-        assert os.path.exists(plotfile) == False
+        # Test the plot does not exist
+        self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        assert os.path.exists(self.plotfile) == False
 
-        self.args.do_plotting = "True"
-        gtfile_new = rcal_simulator(self.args)
-        assert os.path.exists(plotfile)
+    def test_rcal_plot(self):
+
+        self.pre_setup()
+        comp = self.create_dft_components(self.flux)
+        self.bvis_error = self.create_apply_gains()
+
+        self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        plot_name = self.plotfile.replace(".png", "")
+        gt_single_plot(self.gt, plot_name=plot_name)
+
+        assert os.path.exists(self.plotfile)
 
         if self.persist is False:
             self.cleanup_data_files()

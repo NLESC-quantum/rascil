@@ -1,3 +1,9 @@
+latest
+------
+
+* Added Mid beam calculations to RFI code ([MR204](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/204))
+* RASCIL is running on python3.9 (docker images and CI pipelines are also updated) ([MR219](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/219))
+
 0.3.0
 -----
 

@@ -201,7 +201,9 @@ def rcal_simulator(args):
     plotfile = plot_dir + base.replace(".ms", "_plot")
     log.info(f"Write plots into : \n{plotfile}\n")
 
-    full_gt = gt_sink(gt_gen, args.do_plotting, args.plot_dynamic, plotfile)
+    do_plotting = args.do_plotting == "True"
+    plot_dynamic = args.plot_dynamic == "True"
+    full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -269,11 +271,11 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
         gt_list.append(gt)
 
         # Tentative dynamic plotting routine
-    #        if do_plotting == "True" and plot_dynamic == "True" and len(gt_list) > 1:
+    #        if do_plotting and plot_dynamic and len(gt_list) > 1:
     #            dynamic_update(gt_list, plot_name)
     #            log.info(f"Done dynamic plotting for {datetime}.")
 
-    if do_plotting == "True":
+    if do_plotting:
 
         gt_single_plot(gt_list, plot_name)
         log.info("Save final plot.")

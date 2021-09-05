@@ -10,15 +10,15 @@ install python-casacore in a separate step. The steps required are::
     conda create -n rascil_env python=3.7
     conda activate rascil_env
     conda install -c conda-forge python-casacore=3.3.1
-    git clone https://gitlab.com/ska-telescope/rascil
+    git clone https://gitlab.com/ska-telescope/external/rascil.git
     cd rascil
-    pip install -r requirements.txt
+    pip3 install -r requirements.txt
 
 We have specified python 3.7 since this currently is the preferred and supported version.
 
 Then at the top level directory, do::
 
-    pip install -e .
+    pip3 install -e .
 
 This will install it as a development package (this adds it into the path in situ).
 

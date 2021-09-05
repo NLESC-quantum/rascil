@@ -6,12 +6,21 @@ import os
 import logging
 import unittest
 import shutil
+import glob
 
 import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.time import Time
+from astropy.visualization import time_support
 
-from rascil.apps.rascil_rcal import cli_parser, rcal_simulator
+from rascil.apps.rascil_rcal import (
+    cli_parser,
+    rcal_simulator,
+    get_gain_data,
+    gt_single_plot,
+    read_skycomponent_from_txt_with_external_frequency,
+)
 from rascil.data_models import (
     rascil_path,
     Skycomponent,
@@ -37,13 +46,13 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestRASCILRcal(unittest.TestCase):
-    def make_MS(self, dopol=False):
+    def pre_setup(self, dopol=False):
         """Create and fill values into the MeassurementSet
 
         :param dopol: Use polarisation?
         """
 
-        self.cleanup_data_files()
+        self.persist = os.getenv("RASCIL_PERSIST", False)
 
         self.low = create_named_configuration("LOW-AA0.5")
         self.freqwin = 200
@@ -67,7 +76,7 @@ class TestRASCILRcal(unittest.TestCase):
             self.image_pol = PolarisationFrame("stokesI")
             f = [100.0]
 
-        flux = numpy.array(self.freqwin * [f])
+        self.flux = numpy.array(self.freqwin * [f])
 
         self.phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -81,14 +90,27 @@ class TestRASCILRcal(unittest.TestCase):
             self.phasecentre,
         )
 
-        self.create_dft_components(flux)
+    def makeMS(self, flux):
 
-        self.create_apply_gains()
+        comp = self.create_dft_components(flux)
+
+        export_skycomponent_to_hdf5(
+            [comp],
+            rascil_path("test_results/test_rascil_rcal_components.hdf"),
+        )
+
+        self.bvis_error = self.create_apply_gains()
+
+        export_blockvisibility_to_ms(
+            rascil_path("test_results/test_rascil_rcal.ms"), [self.bvis_error]
+        )
 
     def create_dft_components(self, flux):
         """Create the components, save to file, dft into visibility
 
         :param flux:
+
+        :return pointsource: Point source skycomponent
         """
         pointsource = Skycomponent(
             direction=self.phasecentre,
@@ -99,40 +121,56 @@ class TestRASCILRcal(unittest.TestCase):
         self.bvis_original = dft_skycomponent_visibility(
             self.bvis_original, pointsource
         )
-        export_skycomponent_to_hdf5(
-            [pointsource],
-            rascil_path("test_results/test_rascil_rcal_components.hdf"),
+
+        return pointsource
+
+    def write_to_txt(self, comp):
+
+        self.txtfile = rascil_path("test_results/test_rascil_rcal_components.txt")
+
+        coord_ra = comp.direction.ra.degree
+        coord_dec = comp.direction.dec.degree
+        f = open(self.txtfile, "w")
+        f.write(
+            "%.6f, %.6f, %10.6e, %10.6e, %10.6e, %10.6e\n"
+            % (
+                coord_ra,
+                coord_dec,
+                comp.flux[0][0],
+                0.0,
+                0.0,
+                0.0,
+            )
         )
+        f.close()
 
     def create_apply_gains(self):
         """Create the gaintable, apply to the visibility, write as MeasurementSet
 
-        :return:
+        :return: bvis_error: BlockVisibility
         """
         self.gt = create_gaintable_from_blockvisibility(self.bvis_original)
         self.gt = simulate_gaintable(self.gt, phase_error=0.1)
         qa_gt = qa_gaintable(self.gt)
         assert qa_gt.data["rms-amp"] < 1e-12, str(qa_gt)
         assert qa_gt.data["rms-phase"] > 0.0, str(qa_gt)
-        self.bvis_error = apply_gaintable(self.bvis_original, self.gt)
-        assert numpy.std(numpy.angle(self.bvis_error["vis"].data)) > 0.0
-        export_blockvisibility_to_ms(
-            rascil_path("test_results/test_rascil_rcal.ms"), [self.bvis_error]
-        )
+        bvis_error = apply_gaintable(self.bvis_original, self.gt)
+        assert numpy.std(numpy.angle(bvis_error["vis"].data)) > 0.0
+
+        return bvis_error
 
     def cleanup_data_files(self):
         """Cleanup the temporary data files"""
-        shutil.rmtree(
-            rascil_path("test_results/test_rascil_rcal_components.hdf"),
-            ignore_errors=True,
-        )
-        shutil.rmtree(
-            rascil_path("test_results/test_rascil_rcal_gaintable.hdf"),
-            ignore_errors=True,
-        )
+
+        # First remove the measurement set
         shutil.rmtree(
             rascil_path("test_results/test_rascil_rcal.ms"), ignore_errors=True
         )
+
+        to_remove = rascil_path("test_results/test_rascil_rcal*")
+        for f in glob.glob(to_remove):
+            if os.path.exists(f):
+                os.remove(f)
 
     def setUp(self) -> None:
 
@@ -142,13 +180,14 @@ class TestRASCILRcal(unittest.TestCase):
         self.args.ingest_components_file = rascil_path(
             "test_results/test_rascil_rcal_components.hdf"
         )
+        self.args.do_plotting = "False"
+        self.args.plot_dir = rascil_path("test_results/")
 
-    def tearDown(self) -> None:
-        self.cleanup_data_files()
-
+    # Regression test
     def test_rcal(self):
 
-        self.make_MS()
+        self.pre_setup()
+        self.makeMS(self.flux)
         gtfile = rcal_simulator(self.args)
 
         # Check that the gaintable exists and is correct by applying it to
@@ -166,6 +205,58 @@ class TestRASCILRcal(unittest.TestCase):
         qa = qa_visibility(bvis_difference)
         assert qa.data["maxabs"] < 1e-12, str(qa)
         assert qa.data["minabs"] < 1e-12, str(qa)
+
+        # Test the plot does not exist
+        self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        assert os.path.exists(self.plotfile) == False
+
+    def test_rcal_plot(self):
+
+        self.pre_setup()
+        comp = self.create_dft_components(self.flux)
+        self.bvis_error = self.create_apply_gains()
+
+        self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        plot_name = self.plotfile.replace(".png", "")
+        gt_single_plot(self.gt, plot_name=plot_name)
+
+        assert os.path.exists(self.plotfile)
+
+        if self.persist is False:
+            self.cleanup_data_files()
+
+        # Unit tests for additional functions
+
+    def test_read_txtfile(self):
+        "Test for read_skycomponent_from_txt_with_external_frequency"
+
+        self.pre_setup()
+        comp = self.create_dft_components(self.flux)
+        self.write_to_txt(comp)
+
+        components_read = read_skycomponent_from_txt_with_external_frequency(
+            self.txtfile, self.frequency, self.vis_pol
+        )
+        assert components_read.direction == self.phasecentre
+        assert components_read.flux[:, 0].all() == self.flux.all()
+
+        if self.persist is False:
+            self.cleanup_data_files()
+
+    def test_get_gain_data(self):
+
+        self.pre_setup()
+        comp = self.create_dft_components(self.flux)
+        self.bvis_error = self.create_apply_gains()
+
+        gain_data = get_gain_data(self.gt)
+        assert len(gain_data[0]) == 1  # time dimension
+        assert len(gain_data[1]) == 6  # gain dimension (number of antennas)
+        assert len(gain_data[2]) == 6  # phase dimension
+        assert len(gain_data[3]) == 1  # residual dimension
+
+        if self.persist is False:
+            self.cleanup_data_files()
 
 
 if __name__ == "__main__":

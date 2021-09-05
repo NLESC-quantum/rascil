@@ -64,7 +64,7 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         self.channel_bandwidth = numpy.array([1e6])
         self.phasecentre = SkyCoord(
-            ra=+180.0 * u.deg, dec=-0.0 * u.deg, frame="icrs", equinox="J2000"
+            ra=+89.0 * u.deg, dec=-5.0 * u.deg, frame="icrs", equinox="J2000"
         )
 
         self.components = create_low_test_skycomponents_from_gleam(

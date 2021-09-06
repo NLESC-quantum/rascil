@@ -263,3 +263,14 @@ Inside a SLURM file singularity can be used by prefacing dask and python command
 The docker images described here are ones we have found useful. However,
 if you have the RASCIL code tree installed then you can also make your own versions
 working from these Dockerfiles.
+
+## Important updates
+
+Starting with version 0.3.0, RASCIL is installed as a package into the docker images and
+the repository is not cloned anymore. Hence, every python script 
+(except the ones in the `examples` directory) within the image has to be
+called with the ``-m`` switch in the following format, when running within the docker container, e.g.:
+
+.. code-block:: 
+
+    python -m rascil.apps.rascil_advise <args>

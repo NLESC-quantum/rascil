@@ -56,7 +56,7 @@ class TestPlotSkycomponent(unittest.TestCase):
 
         self.dir = rascil_path("test_results")
 
-        self.persist = os.getenv("RASCIL_PERSIST", True)
+        self.persist = os.getenv("RASCIL_PERSIST", False)
 
         self.central_frequency = numpy.array([1e8])
 

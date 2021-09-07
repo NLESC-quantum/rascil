@@ -51,37 +51,58 @@ def plot_skycomponents_positions(
     :return: [ra_error, dec_error]:
              The error array for users to check
     """
+    # This wraps the angles larger than 180 degrees to (-180, 180]
     angle_wrap = 180.0 * u.deg
 
+    # If the angle values cross over -180 OR 180 degrees, don't apply wrapping
+    # Input a list of astropy Angle object
+    def unwrap_around_180(angles):
+
+        angles_degree = [angle.degree for angle in angles]
+        if (
+            max(angles_degree) > 180.0
+            and max(angles_degree) < 270.0
+            and min(angles_degree) < 180.0
+            and min(angles_degree) > 90.0
+        ) or (
+            max(angles_degree) > -180.0
+            and max(angles_degree) < -90.0
+            and min(angles_degree) < -180.0
+            and min(angles_degree) > -270.0
+        ):
+            return numpy.array(angles_degree)
+        else:
+            log.info("Wrap angles to (-180, 180]")
+            wrap = [angle.wrap_at(angle_wrap).degree for angle in angles]
+            return numpy.array(wrap)
+
     if comps_ref is None:  # No comparison needed
-        ra_test = [comp.direction.ra.wrap_at(angle_wrap).degree for comp in comps_test]
+        ra_test = [comp.direction.ra for comp in comps_test]
         dec_test = [comp.direction.dec.degree for comp in comps_test]
 
+        ra_test = unwrap_around_180(ra_test)
         plt.plot(ra_test, dec_test, "o", color="b", markersize=5, label="Components")
 
     else:
 
         matches = find_skycomponent_matches(comps_test, comps_ref, tol)
-        ra_test = numpy.zeros(len(matches))
+        ra_test = [None] * len(matches)
         dec_test = numpy.zeros(len(matches))
-        ra_ref = numpy.zeros(len(matches))
+        ra_ref = [None] * len(matches)
         dec_ref = numpy.zeros(len(matches))
         ra_error = numpy.zeros(len(matches))
         dec_error = numpy.zeros(len(matches))
         for i, match in enumerate(matches):
             m_comp = comps_test[match[0]]
-            ra_test[i] = m_comp.direction.ra.wrap_at(angle_wrap).degree
+            ra_test[i] = m_comp.direction.ra
             dec_test[i] = m_comp.direction.dec.degree
             m_ref = comps_ref[match[1]]
-            ra_ref[i] = m_ref.direction.ra.wrap_at(angle_wrap).degree
+            ra_ref[i] = m_ref.direction.ra
             dec_ref[i] = m_ref.direction.dec.degree
 
             if img_size > 0.0:
                 ra_error[i] = (
-                    (
-                        m_comp.direction.ra.wrap_at(angle_wrap).degree
-                        - m_ref.direction.ra.wrap_at(angle_wrap).degree
-                    )
+                    (m_comp.direction.ra.degree - m_ref.direction.ra.degree)
                     * numpy.cos(m_ref.direction.dec.rad)
                     / img_size
                 )
@@ -93,11 +114,13 @@ def plot_skycomponents_positions(
             else:
                 log.info("Wrong input image resolution. Plot absolute values instead.")
                 ra_error[i] = (
-                    m_comp.direction.ra.wrap_at(angle_wrap).degree
-                    - m_ref.direction.ra.wrap_at(angle_wrap).degree
+                    m_comp.direction.ra.degree - m_ref.direction.ra.degree
                 ) * numpy.cos(m_ref.direction.dec.rad)
 
                 dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
+
+        ra_test = unwrap_around_180(ra_test)
+        ra_ref = unwrap_around_180(ra_ref)
 
         ax = plt.gca()
         ax.set_aspect(1.0)
@@ -107,7 +130,13 @@ def plot_skycomponents_positions(
         ax = plt.gca()
         ax.set_aspect(1.0)
         ax.plot(
-            ra_ref, dec_ref, "x", color="r", markersize=8, label="Original components"
+            ra_ref,
+            dec_ref,
+            "x",
+            color="r",
+            markersize=8,
+            alpha=0.5,
+            label="Original components",
         )
 
     plt.title("Positions of sources")
@@ -125,7 +154,7 @@ def plot_skycomponents_positions(
         else:
             ax = plt.gca()
             ax.set_aspect(1.0)
-            ax.plot(ra_error, dec_error, "o", markersize=5)
+            ax.plot(ra_error, dec_error, "o", markersize=5, alpha=0.5)
         err_r = max(numpy.max(ra_error), numpy.max(dec_error))
         err_l = min(numpy.min(ra_error), numpy.min(dec_error))
 
@@ -190,8 +219,8 @@ def plot_skycomponents_position_distance(
 
     fig, (ax1, ax2) = plt.subplots(2, sharex=True)
     fig.suptitle("Position error vs. Distance")
-    ax1.plot(dist, ra_error, "o", color="b", markersize=5)
-    ax2.plot(dist, dec_error, "o", color="b", markersize=5)
+    ax1.plot(dist, ra_error, "o", color="b", markersize=5, alpha=0.5)
+    ax2.plot(dist, dec_error, "o", color="b", markersize=5, alpha=0.5)
 
     ax1.set_ylabel(r"$\Delta\ RA/ \Delta x$")
     ax2.set_ylabel(r"$\Delta\ Dec/ \Delta x$")
@@ -234,7 +263,7 @@ def plot_skycomponents_flux(
             flux_in[i] = m_ref.flux[refchan]
             flux_out[i] = m_comp.flux[refchan]
 
-    plt.loglog(flux_in, flux_out, "o", color="b", markersize=5)
+    plt.loglog(flux_in, flux_out, "o", color="b", markersize=5, alpha=0.5)
 
     plt.title("Flux in vs. flux out")
     plt.xlabel("Flux in (Jy)")
@@ -291,7 +320,7 @@ def plot_skycomponents_flux_ratio(
     if len(dist) == 0:
         raise ValueError("No valid points found for flux ratio plot")
 
-    plt.plot(dist, flux_ratio, "o", color="b", markersize=5)
+    plt.plot(dist, flux_ratio, "o", color="b", markersize=5, alpha=0.5)
 
     plt.title("Flux ratio vs. distance")
     plt.xlabel("Distance to center (Deg)")
@@ -486,15 +515,15 @@ def plot_gaussian_beam_position(
     beam_l = min(numpy.min(bmin), numpy.min(bmin))
 
     ax1 = plt.subplot(212)
-    ax1.plot(dist, bmaj, "o", color="b", markersize=5, label="Bmaj")
-    ax1.plot(dist, bmin, "o", color="r", markersize=5, label="Bmin")
+    ax1.plot(dist, bmaj, "o", color="b", markersize=5, alpha=0.5, label="Bmaj")
+    ax1.plot(dist, bmin, "o", color="r", markersize=5, alpha=0.5, label="Bmin")
     ax1.legend(loc="best")
     ax1.set_ylabel("Beam size (deg)")
     ax1.set_xlabel(r"Distance to phase centre (deg)")
 
     ax2 = plt.subplot(221)
-    ax2.plot(ra_dist, bmaj, "o", color="b", markersize=5, label="Bmaj")
-    ax2.plot(ra_dist, bmin, "o", color="r", markersize=5, label="Bmin")
+    ax2.plot(ra_dist, bmaj, "o", color="b", markersize=5, alpha=0.5, label="Bmaj")
+    ax2.plot(ra_dist, bmin, "o", color="r", markersize=5, alpha=0.5, label="Bmin")
     ax2.set_ylabel(r"Beam size (deg)")
     ax2.set_title(r"$\Delta RA (deg)$")
     ax2.set_xlim([dist_l, dist_r])
@@ -572,7 +601,7 @@ def plot_multifreq_spectral_index(
     flux_in = flux_in[mask_spec & mask_cutoff]
     dist = dist[mask_spec & mask_cutoff]
 
-    plt.plot(spec_in, spec_out, "o", color="b", markersize=5)
+    plt.plot(spec_in, spec_out, "o", color="b", markersize=5, alpha=0.5)
 
     plt.title("Spectral Indexes")
     plt.xlabel("Spectral index in")
@@ -585,7 +614,7 @@ def plot_multifreq_spectral_index(
     # Plot diagnostics plots: spectral index out vs flux in and vs distance
     if plot_diagnostics:
 
-        plt.plot(flux_in, spec_out, "o", color="b", markersize=5)
+        plt.plot(flux_in, spec_out, "o", color="b", markersize=5, alpha=0.5)
 
         plt.xlabel("Flux In (Jy)")
         plt.ylabel("Spectral Index")
@@ -594,7 +623,7 @@ def plot_multifreq_spectral_index(
         plt.show(block=False)
         plt.clf()
 
-        plt.plot(dist, spec_out - spec_in, "o", color="b", markersize=5)
+        plt.plot(dist, spec_out - spec_in, "o", color="b", markersize=5, alpha=0.5)
 
         plt.xlabel("Distance to centre (Deg)")
         plt.ylabel("Spectral Index Out-In")

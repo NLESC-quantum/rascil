@@ -125,12 +125,12 @@ class TestRFIRegression(unittest.TestCase):
 
         numpy.testing.assert_approx_equal(
             qa.data["max"],
-            458854.2087080175,
+            989659.894695817,
             8,
             err_msg=str(qa),
         )
         numpy.testing.assert_approx_equal(
-            qa.data["min"], -317039.1555572104, 8, err_msg=str(qa)
+            qa.data["min"], -822572.7384395137, 8, err_msg=str(qa)
         )
 
     def test_simulate_rfi_block_prop_image_beam_false(self):

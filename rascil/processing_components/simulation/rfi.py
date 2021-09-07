@@ -211,6 +211,9 @@ def apply_beam_gain_for_mid(
     az_centre, el_centre = calculate_azel(
         sub_vis.configuration.location, utc_time, sub_vis.phasecentre
     )
+    az_centre = az_centre.to("rad").value
+    el_centre = el_centre.to("rad").value
+
     # The nominal pointing is the phasecentre in az, el. This is the same value
     # calculated by simulate_gaintable_from_pointingtable
     pointing_table["nominal"][0, :, :, :, 0] = az_centre[

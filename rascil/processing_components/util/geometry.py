@@ -12,16 +12,12 @@ __all__ = [
 
 import logging
 
-import numpy
+from astroplan import Observer
 
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, Angle
 
 log = logging.getLogger("rascil-logger")
-
-
-def angle_to_quanta(angle):
-    return {"value": angle.rad, "unit": "rad"}
 
 
 def calculate_parallactic_angles(location, utc_time, direction):
@@ -36,8 +32,6 @@ def calculate_parallactic_angles(location, utc_time, direction):
     assert isinstance(location, EarthLocation)
     assert isinstance(utc_time, Time)
     assert isinstance(direction, SkyCoord)
-
-    from astroplan import Observer
 
     site = Observer(location=location)
     return site.target_hour_angle(utc_time, direction).wrap_at("180d")
@@ -56,8 +50,6 @@ def calculate_hourangles(location, utc_time, direction):
     assert isinstance(utc_time, Time)
     assert isinstance(direction, SkyCoord)
 
-    from astroplan import Observer
-
     site = Observer(location=location)
     return site.target_hour_angle(utc_time, direction).wrap_at("180d")
 
@@ -71,10 +63,6 @@ def calculate_transit_time(location, utc_time, direction, fraction_day=1e-7):
     :param direction: SkyCoord source
     :return: astropy Time
     """
-    import scipy.optimize._minimize
-
-    from astroplan import Observer
-
     site = Observer(location)
     return site.target_meridian_transit_time(
         utc_time, direction, which="next", n_grid_points=100
@@ -89,12 +77,6 @@ def calculate_azel(location, utc_time, direction):
     :param direction: SkyCoord source
     :return: astropy Angle, Angle
     """
-    # assert isinstance(location, EarthLocation)
-    # assert isinstance(utc_time, Time)
-    # assert isinstance(direction, SkyCoord)
-
-    from astroplan import Observer
-
     site = Observer(location=location)
     altaz = site.altaz(utc_time, direction)
     return altaz.az.wrap_at("180d"), altaz.alt
@@ -104,7 +86,7 @@ def utc_to_ms_epoch(ts):
     """Convert an timestamp to seconds (epoch values)
         epoch suitable for using in a Measurement Set
 
-    :param ts:  A timestamp object.
+    :param ts:  An astropy Time object.
     :result: The epoch time ``t`` in seconds suitable for fields in measurement sets.
     """
     # Use astropy Time

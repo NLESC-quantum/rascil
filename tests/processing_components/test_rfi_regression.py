@@ -28,7 +28,6 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 
 
-# @unittest.skip("Fails when ran after other tests - Under investigation")
 class TestRFIRegression(unittest.TestCase):
     def setUp(self):
         self.persist = os.getenv("RASCIL_PERSIST", False)
@@ -92,7 +91,6 @@ class TestRFIRegression(unittest.TestCase):
             + numpy.linspace(-5000.0, 5000.0, 5)[numpy.newaxis, numpy.newaxis, :]
         )
 
-    @unittest.skip("Known to fail - astropy wrap?")
     def test_simulate_rfi_block_prop_image_beam_true(self):
         """
         regression to test that simulate_rfi_block_prop correctly updates the

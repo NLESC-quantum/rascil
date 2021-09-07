@@ -5,6 +5,7 @@
 __all__ = [
     "calculate_blockvisibility_transit_time",
     "calculate_blockvisibility_hourangles",
+    "calculate_blockvisibility_parallactic_angles",
     "calculate_blockvisibility_azel",
 ]
 
@@ -18,6 +19,7 @@ from rascil.processing_components.util.geometry import (
     calculate_azel,
     calculate_transit_time,
     calculate_hourangles,
+    calculate_parallactic_angles,
 )
 
 
@@ -50,7 +52,18 @@ def calculate_blockvisibility_hourangles(bvis):
     return calculate_hourangles(location, utc_time, direction)
 
 
-def calculate_blockvisibility_transit_time(bvis):
+def calculate_blockvisibility_parallactic_angles(bvis):
+    """Return parallactic angles for location, utc_time, and direction
+
+    :param bvis:
+    :return:
+    """
+
+    location, utc_time, direction = get_direction_time_location(bvis)
+    return calculate_parallactic_angles(location, utc_time, direction)
+
+
+def calculate_blockvisibility_transit_time(bvis, fraction_day=1e-10):
     """Find the UTC time of the nearest transit
 
     :param fraction_day:
@@ -61,9 +74,7 @@ def calculate_blockvisibility_transit_time(bvis):
     """
     location, utc_time, direction = get_direction_time_location(bvis)
     return calculate_transit_time(
-        location,
-        utc_time[0],
-        direction,
+        location, utc_time[0], direction, fraction_day=fraction_day
     )
 
 

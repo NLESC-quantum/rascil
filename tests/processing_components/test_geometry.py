@@ -13,6 +13,7 @@ from rascil.processing_components.util.geometry import (
     calculate_azel,
     calculate_hourangles,
     calculate_transit_time,
+    calculate_parallactic_angles,
     utc_to_ms_epoch,
 )
 
@@ -41,6 +42,12 @@ class TestGeometry(unittest.TestCase):
     def test_hourangles(self):
         ha = calculate_hourangles(self.location, self.utc_time, self.phasecentre)
         numpy.testing.assert_array_almost_equal(ha[0].deg, 36.881315)
+
+    def test_parallacticangles(self):
+        pa = calculate_parallactic_angles(
+            self.location, self.utc_time, self.phasecentre
+        )
+        numpy.testing.assert_array_almost_equal(pa[0].deg, 85.756057)
 
     def test_transit_time(self):
         transit_time = calculate_transit_time(

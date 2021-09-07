@@ -15,6 +15,7 @@ from rascil.processing_components.visibility.visibility_geometry import (
     calculate_blockvisibility_azel,
     calculate_blockvisibility_hourangles,
     calculate_blockvisibility_transit_time,
+    calculate_blockvisibility_parallactic_angles,
 )
 
 
@@ -45,6 +46,10 @@ class TestGeometry(unittest.TestCase):
     def test_hourangle(self):
         ha = calculate_blockvisibility_hourangles(self.bvis)
         numpy.testing.assert_array_almost_equal(ha[0].deg, -89.743265)
+
+    def test_parallactic_angle(self):
+        pa = calculate_blockvisibility_parallactic_angles(self.bvis)
+        numpy.testing.assert_array_almost_equal(pa[0].deg, -101.836911)
 
     def test_transit_time(self):
         transit_time = calculate_blockvisibility_transit_time(self.bvis)

@@ -170,7 +170,7 @@ def simulate_gaintable_from_pointingtable(
                                 azimuth_comp -= 2.0 * numpy.pi
                             elif azimuth_comp <= -numpy.pi:
                                 azimuth_comp += 2.0 * numpy.pi
-    
+
                             for gchan in range(gnchan):
                                 gain = numpy.zeros([npol], dtype="complex")
                                 worldloc = [

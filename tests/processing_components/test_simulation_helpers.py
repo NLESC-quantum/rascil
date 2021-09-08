@@ -12,6 +12,7 @@ from astropy.coordinates import SkyCoord
 
 from rascil.processing_components.simulation import (
     create_named_configuration,
+    plot_pa,
     plot_azel,
     plot_uvcoverage,
     plot_uwcoverage,
@@ -48,6 +49,20 @@ class TestSimulationHelpers(unittest.TestCase):
         )
         plt.clf()
         plot_azel([self.vis])
+        plt.show(block=False)
+
+    def test_plotpa(self):
+        self.vis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+            elevation_limit=0.0,
+        )
+        plt.clf()
+        plot_pa([self.vis])
         plt.show(block=False)
 
     def test_plot_uvcoverage(self):

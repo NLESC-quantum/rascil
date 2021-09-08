@@ -28,7 +28,6 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 
 
-@unittest.skip("Fails when ran after other tests - Under investigation")
 class TestRFIRegression(unittest.TestCase):
     def setUp(self):
         self.persist = os.getenv("RASCIL_PERSIST", False)
@@ -124,12 +123,12 @@ class TestRFIRegression(unittest.TestCase):
 
         numpy.testing.assert_approx_equal(
             qa.data["max"],
-            458854.2087080175,
+            989659.894695817,
             8,
             err_msg=str(qa),
         )
         numpy.testing.assert_approx_equal(
-            qa.data["min"], -317039.1555572104, 8, err_msg=str(qa)
+            qa.data["min"], -822572.7384395137, 8, err_msg=str(qa)
         )
 
     def test_simulate_rfi_block_prop_image_beam_false(self):
@@ -163,10 +162,10 @@ class TestRFIRegression(unittest.TestCase):
         qa = qa_image(dirty)
 
         numpy.testing.assert_approx_equal(
-            qa.data["max"], 999980.5470391798, 8, err_msg=str(qa)
+            qa.data["max"], 999970.6372219505, 8, err_msg=str(qa)
         )
         numpy.testing.assert_approx_equal(
-            qa.data["min"], -999991.7435593636, 8, err_msg=str(qa)
+            qa.data["min"], -999998.5406000488, 8, err_msg=str(qa)
         )
 
 

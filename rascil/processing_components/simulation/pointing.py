@@ -161,13 +161,18 @@ def simulate_gaintable_from_pointingtable(
                         wcs_azel.wcs.ctype[1] = "DEC--SIN"
 
                         try:
+                            # Unwrap azimuths
+                            if azimuth_comp - az_comp > numpy.pi:
+                                azimuth_comp -= 2.0 * numpy.pi
+                            elif azimuth_comp - az_comp <= -numpy.pi:
+                                azimuth_comp += 2.0 * numpy.pi
+                            if azimuth_comp > numpy.pi:
+                                azimuth_comp -= 2.0 * numpy.pi
+                            elif azimuth_comp <= -numpy.pi:
+                                azimuth_comp += 2.0 * numpy.pi
+
                             for gchan in range(gnchan):
                                 gain = numpy.zeros([npol], dtype="complex")
-                                # Unwrap azimuths
-                                if azimuth_comp - az_comp > numpy.pi:
-                                    azimuth_comp -= 2.0 * numpy.pi
-                                if azimuth_comp - az_comp <= -numpy.pi:
-                                    azimuth_comp += 2.0 * numpy.pi
                                 worldloc = [
                                     azimuth_comp * r2d,
                                     elevation_comp * r2d,

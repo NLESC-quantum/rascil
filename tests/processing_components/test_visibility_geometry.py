@@ -32,6 +32,7 @@ class TestGeometry(unittest.TestCase):
             self.lowcore,
             self.times,
             self.frequency,
+            utc_time=Time(["2020-01-01T00:00:00"], format="isot", scale="utc"),
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             weight=1.0,
@@ -39,20 +40,20 @@ class TestGeometry(unittest.TestCase):
 
     def test_azel(self):
         azel = calculate_blockvisibility_azel(self.bvis)
-        numpy.testing.assert_array_almost_equal(azel[0][0].deg, 152.436, 3)
-        numpy.testing.assert_array_almost_equal(azel[1][0].deg, 24.003, 3)
+        numpy.testing.assert_array_almost_equal(azel[0][0].deg, 152.523126)
+        numpy.testing.assert_array_almost_equal(azel[1][0].deg, 24.163175)
 
     def test_hourangle(self):
         ha = calculate_blockvisibility_hourangles(self.bvis)
-        numpy.testing.assert_array_almost_equal(ha[0].deg, -90.00, 3)
+        numpy.testing.assert_array_almost_equal(ha[0].deg, -89.743265)
 
     def test_parallactic_angle(self):
         pa = calculate_blockvisibility_parallactic_angles(self.bvis)
-        numpy.testing.assert_array_almost_equal(pa[0].deg, -101.985, 3)
+        numpy.testing.assert_array_almost_equal(pa[0].deg, -101.836911)
 
     def test_transit_time(self):
         transit_time = calculate_blockvisibility_transit_time(self.bvis)
-        numpy.testing.assert_array_almost_equal(transit_time.mjd, 51544.896, 3)
+        numpy.testing.assert_array_almost_equal(transit_time.mjd, 58849.895812)
 
 
 if __name__ == "__main__":

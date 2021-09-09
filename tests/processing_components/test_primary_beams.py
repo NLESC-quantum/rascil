@@ -23,6 +23,7 @@ from rascil.processing_components import (
     convert_azelvp_to_radec,
     create_low_test_vp,
     qa_image,
+    create_mid_allsky,
 )
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
@@ -172,6 +173,25 @@ class TestPrimaryBeams(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 beam, "%s/test_voltage_pattern_imag_%s.fits" % (self.dir, telescope)
+            )
+
+    def test_create_voltage_pattern_MID_allsky(self):
+        self.createVis()
+        telescope = "MID_GAUSS"
+        beam = create_mid_allsky(self.vis.frequency)
+
+        beam_data = beam["pixels"].data
+        beam["pixels"].data = numpy.real(beam_data)
+        check_max_min(beam, 1.0, -0.13220304339601227, telescope)
+        if self.persist:
+            export_image_to_fits(
+                beam, "%s/test_voltage_pattern_real_mid_allsky.fits" % (self.dir)
+            )
+        beam["pixels"].data = numpy.imag(beam_data)
+        check_max_min(beam, 0.0, 0.0, telescope)
+        if self.persist:
+            export_image_to_fits(
+                beam, "%s/test_voltage_pattern_imag_mid_allsky.fits" % (self.dir)
             )
 
     def test_create_voltage_patterns_MID(self):

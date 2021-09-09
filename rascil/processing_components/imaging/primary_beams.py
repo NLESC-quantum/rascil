@@ -11,6 +11,7 @@ __all__ = [
     "create_vp_generic_numeric",
     "create_low_test_beam",
     "create_low_test_vp",
+    "create_mid_allsky",
     "convert_azelvp_to_radec",
     "normalise_vp",
 ]
@@ -21,12 +22,16 @@ import copy
 
 import numpy
 
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+
 from rascil.data_models import Image, PolarisationFrame
 from rascil.data_models.parameters import rascil_data_path
 from rascil.processing_components.image.operations import (
     import_image_from_fits,
     reproject_image,
     scale_and_rotate_image,
+    create_image,
 )
 from rascil.processing_components.image.operations import (
     create_image_from_array,
@@ -541,6 +546,45 @@ def create_low_test_beam(model: Image, use_local=True, azel=None) -> Image:
 
     set_pb_header(beam, use_local=use_local)
     return beam
+
+
+def create_mid_allsky(frequency=None, npixel=None, cellsize=None):
+    """Approximate all sky MID beam
+
+    Unlocked 15m dish with no taper. Actual sidelobes are likely to be lower than this model implies.
+
+    :param frequency: Frequencies to use
+    :return:
+    """
+
+    if frequency is None:
+        frequency = numpy.array([1.0e9])
+
+    if npixel is None:
+        npixel = 1024
+
+    if cellsize is None:
+        cellsize = numpy.pi / npixel
+
+    if len(frequency) > 1:
+        channel_bandwidth = numpy.array(len(frequency) * [frequency[1] - frequency[0]])
+    else:
+        channel_bandwidth = numpy.array([1e6])
+
+    # Phase centre will be overridden
+    phasecentre = SkyCoord(
+        ra=+0.0 * u.deg, dec=-90.0 * u.deg, frame="icrs", equinox="J2000"
+    )
+
+    vp = create_image(
+        npixel=npixel,
+        cellsize=cellsize,
+        frequency=frequency,
+        channel_bandwidth=channel_bandwidth,
+        phasecentre=phasecentre,
+        polarisation_frame=PolarisationFrame("linear"),
+    )
+    return create_vp(vp, "MID", use_local=True)
 
 
 def create_low_test_vp(model: Image, use_local=True, azel=None) -> Image:

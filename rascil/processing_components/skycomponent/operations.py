@@ -424,7 +424,7 @@ def apply_beam_to_skycomponent(
         if not numpy.isnan(pixloc).any():
             x, y = int(round(float(pixloc[0]))), int(round(float(pixloc[1])))
             if 0 <= x < nx and 0 <= y < ny:
-                if inverse and beam["pixels"].data[:, :, y, x] != 0.0:
+                if inverse and (beam["pixels"].data[:, :, y, x] != 0.0).all():
                     comp_flux = comp.flux / beam["pixels"].data[:, :, y, x]
                 else:
                     comp_flux = comp.flux * beam["pixels"].data[:, :, y, x]

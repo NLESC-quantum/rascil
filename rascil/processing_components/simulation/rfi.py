@@ -142,8 +142,7 @@ def match_frequencies(rfi_signal, rfi_frequencies, bvis_freq_channels, bvis_band
 
 def apply_beam_gain_for_low(
     isotropic_emitter_power,
-    beam_gain_value,
-    beam_gain_context,
+    beam_gain_for_low,
     rfi_source,
 ):
     """
@@ -152,28 +151,27 @@ def apply_beam_gain_for_low(
 
     :param isotropic_emitter_power: apparent emitter power level as received by an isotropic antenna
                 [ntimes x nantennas x nchannels]
-    :param beam_gain_value: either a directory or a file containing beam gain values, or an actual beam gain value
-    :param beam_gain_context: this specifies the type of `beamgain_value`
-    :param rfi_source: name or ID of the RFI source
+    :param beam_gain_for_low: beam gain data / information
+                if None, beam_gain = 1.0 is used
+                if provided, it is either a single value,
+                or a numpy array with dimensions [nsources x nstations x nchannels]
+    :param rfi_source: integer indicating where in the beam array the correct data for the source can be found
     """
-    if beam_gain_context == "bg_dir":
-        # specific to OSKAR-produced data
-        beamgain = (
-            beam_gain_value
-            + rfi_source
-            + "_beam_gain_TIME_SEP_CHAN_SEP_CROSS_POWER_AMP_I_I.txt"
+    if beam_gain_for_low is None:
+        log.warning(
+            "Beam gain wasn't provided for Low calculations. Not applying beam gain."
         )
-    elif beam_gain_context == "bg_file":
-        beamgain = beam_gain_value
+        beam_gain_for_low = 1.0
+
+    if isinstance(beam_gain_for_low, numpy.ndarray):
+        # get the right values for the current source
+        beam_gain = beam_gain_for_low[rfi_source, ...]
     else:
-        beamgain = beam_gain_value
+        beam_gain = beam_gain_for_low
 
-    if isinstance(beamgain, str):
-        beamgain = numpy.loadtxt(beamgain)
-
-    # apply the beamgain to the input apparent emitter power
+    # apply the beam gain to the input apparent emitter power
     rfi_at_station = isotropic_emitter_power.copy() * numpy.sqrt(
-        beamgain
+        beam_gain
     )  # shape of rfi_at_station = [ntimes, nants, n_rfi_channels]
 
     return rfi_at_station
@@ -264,7 +262,7 @@ def simulate_rfi_block_prop(
     apparent_emitter_coordinates,
     rfi_sources,
     rfi_frequencies,
-    beam_gain_state=None,
+    low_beam_gain=None,
     apply_primary_beam=True,
 ):
     """Simulate RFI in a BlockVisility
@@ -277,8 +275,10 @@ def simulate_rfi_block_prop(
     :param rfi_sources: RFI source names or IDs
     :param rfi_frequencies: frequency channels where there is RFI information
                 length = nchannels
-    :param beam_gain_state: tuple of beam gains to apply to the signal or file containing values,
-                           and flag to declare which; only needed for LOW; for Mid, use None
+    :param low_beam_gain: beam gain data / information for Low.
+                If provided, it is either a single value,
+                or a numpy array with dimensions [nrfi_sources x nstations x nchannels];
+                for Mid, use None
     :param apply_primary_beam: Apply the primary beam, not used for Low
     :return: BlockVisibility
     """
@@ -289,13 +289,6 @@ def simulate_rfi_block_prop(
             "Telescope configuration is neither for SKA Mid nor for SKA Low."
             "Please specify correct configuration."
         )
-
-    if beam_gain_state is None:
-        beamgain_value = 1.0
-        bg_context = "bg_value"
-    else:
-        beamgain_value = beam_gain_state[0]
-        bg_context = beam_gain_state[1]
 
     # temporary copy to calculate contribution for each RFI source
     bvis_data_copy = copy.copy(bvis["vis"].data)
@@ -311,10 +304,7 @@ def simulate_rfi_block_prop(
         if "LOW" in mid_or_low:
             # Apply beam gain for Low RFI data
             rfi_at_station = apply_beam_gain_for_low(
-                apparent_emitter_power[i],
-                beamgain_value,
-                bg_context,
-                source,
+                apparent_emitter_power[i], low_beam_gain, i
             )
             rfi_at_station_all_chans = match_frequencies(
                 rfi_at_station,

@@ -390,8 +390,8 @@ def restore_centre_rsexecute_workflow(
             model,
             clean_beam=clean_beam,
         )
-
-    return restored
+    # optimize the graph to reduce size
+    return rsexecute.optimize(restored)
 
 
 def deconvolve_list_singlefacet_rsexecute_workflow(
@@ -645,7 +645,8 @@ def deconvolve_list_rsexecute_workflow(
         )
         for chan in range(nchan)
     ]
-    return result
+    # optimize the graph to reduce size
+    return rsexecute.optimize(result)
 
 
 def scatter_facets_and_transpose(

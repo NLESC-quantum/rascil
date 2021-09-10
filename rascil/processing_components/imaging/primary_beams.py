@@ -21,6 +21,7 @@ import logging
 import copy
 
 import numpy
+import xarray
 
 from astropy.coordinates import SkyCoord
 import astropy.units as u
@@ -559,7 +560,9 @@ def create_mid_allsky(frequency=numpy.array([1.0e9]), npixel=512, cellsize=None)
     :return: Image
     """
 
-    if not isinstance(frequency, numpy.ndarray):
+    if not (
+        isinstance(frequency, numpy.ndarray) or isinstance(frequency, xarray.DataArray)
+    ):
         raise ValueError("frequency must be an array")
 
     if cellsize is None:

@@ -178,7 +178,7 @@ class TestPrimaryBeams(unittest.TestCase):
     def test_create_voltage_pattern_MID_allsky(self):
         self.createVis()
         telescope = "MID_GAUSS"
-        beam = create_mid_allsky(self.vis.frequency)
+        beam = create_mid_allsky(frequency=self.vis.frequency)
 
         beam_data = beam["pixels"].data
         beam["pixels"].data = numpy.real(beam_data)

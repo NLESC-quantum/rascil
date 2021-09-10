@@ -548,17 +548,22 @@ def create_low_test_beam(model: Image, use_local=True, azel=None) -> Image:
     return beam
 
 
-def create_mid_allsky(frequency=None, npixel=None, cellsize=None):
+def create_mid_allsky(frequency=None, npixel=512, cellsize=None):
     """Approximate all sky MID beam
 
     Unlocked 15m dish with no taper. Actual sidelobes are likely to be lower than this model implies.
 
-    :param frequency: Frequencies to use
-    :return:
+    :param frequency: Frequencies to use array(float) (Hz) default is [1e9]
+    :param npixel: Number of pixels per axis (int) Default is 512
+    :param cellsize: Cellsize in radians. Default is pi/npixels
+    :return: Image
     """
 
     if frequency is None:
         frequency = numpy.array([1.0e9])
+
+    if not isinstance(frequency, numpy.array):
+        raise ValueError("frequency must be an array")
 
     if npixel is None:
         npixel = 1024

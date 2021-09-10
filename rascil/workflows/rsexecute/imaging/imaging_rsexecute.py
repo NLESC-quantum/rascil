@@ -677,7 +677,7 @@ def scatter_facets_and_transpose(
         )
         for chan in range(nchan)
     ]
-    # Tranpose from [channel][facet] to [facet][channel]
+    # Transpose from [channel][facet] to [facet][channel]
     scattered_facets_channels_list = [
         [scattered_channels_facets_list[chan][facet] for chan in range(nchan)]
         for facet in range(deconvolve_number_facets)

@@ -214,6 +214,15 @@ def ical_skymodel_list_rsexecute_workflow(
                 **kwargs,
             )
 
+            # Most of the heavy lifting is done in the deconvolution. We
+            # noticed that the graph size increases non-linearly for each
+            # major cycle. We faced issues on computing the entire graph at
+            # once and so here we are persisting the computations so that
+            # graph size will be smaller and graph starts executing as it
+            # gets constructed. More details can be found here:
+            # https://jira.skatelescope.org/browse/SIM-1015
+            skymodel_list = rsexecute.persist(skymodel_list)
+
     # We've finished so now we update the residual images and calculate the restored image
     residual_imagelist = residual_skymodel_list_rsexecute_workflow(
         cal_vis_list,

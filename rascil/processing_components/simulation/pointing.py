@@ -173,12 +173,14 @@ def simulate_gaintable_from_pointingtable(
 
                             for gchan in range(gnchan):
                                 gain = numpy.zeros([npol], dtype="complex")
+                                # World coordinates of this component
                                 worldloc = [
                                     azimuth_comp * r2d,
                                     elevation_comp * r2d,
                                     vp.image_acc.wcs.wcs.crval[2],
-                                    frequency[gchan],
+                                    frequency[gchan].data,
                                 ]
+                                # Pixel coordinates of this component. Note that the polarisation coordinate is not used here
                                 pixloc = wcs_azel.wcs_world2pix([worldloc], 0)[0]
                                 assert pixloc[0] > 2
                                 assert pixloc[0] < nx - 3

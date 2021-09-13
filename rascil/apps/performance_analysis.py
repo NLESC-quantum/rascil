@@ -440,7 +440,7 @@ def plot_performance_lines(parameter, functions, performances, tag="", results="
         plt.title(f"{title} {parameter} {tag}")
         plt.xlabel(parameter)
         plt.legend()
-        if title is not "" or tag is not "":
+        if title != "" or tag != "":
             if tag == "":
                 figure = f"{results}/{title}_{parameter}_{axis_type_short}_line.png"
             else:
@@ -486,7 +486,7 @@ def plot_memory_histogram(functions, memory, tag="", results="./"):
             )
             plt.title(f"{function} {tag}")
             plt.xlabel(value_type)
-            if title is not "" or tag is not "":
+            if title != "" or tag != "":
                 if tag == "":
                     figure = (
                         f"{results}/{title}_{function}_{value_short_type}_histogram.png"
@@ -540,7 +540,7 @@ def plot_summary_contour(parameters, performances, tag="", results="./"):
             plt.xlabel(parameters[0])
             plt.ylabel(parameters[1])
             plt.colorbar()
-            if title is not "" or tag is not "":
+            if title != "" or tag != "":
                 if tag == "":
                     figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
                 else:
@@ -660,7 +660,7 @@ def plot_performance_contour(parameters, functions, performances, tag="", result
                     plt.xlabel(parameters[0])
                     plt.ylabel(parameters[1])
                     plt.colorbar()
-                    if title is not "" or tag is not "":
+                    if title != "" or tag != "":
                         if tag == "":
                             figure = f"{results}/{title}_{func}_{value_type_short}_contour.png"
                         else:
@@ -803,7 +803,7 @@ def plot_performance_barchart(
 
                 plt.tight_layout()
                 plt.show(block=False)
-                if title is not "" or tag is not "":
+                if title != "" or tag != "":
                     if tag == "":
                         figure = f"{results}/{title}_{axis_type_short}_bar.png"
                     else:

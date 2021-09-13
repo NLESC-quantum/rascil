@@ -107,7 +107,7 @@ class TestRFIRegression(unittest.TestCase):
             self.emitter_coordinates,
             ["source1"],
             bvis.frequency.values,
-            beam_gain_state=None,
+            low_beam_gain=None,
             apply_primary_beam=True,
         )
 
@@ -147,7 +147,7 @@ class TestRFIRegression(unittest.TestCase):
             self.emitter_coordinates,
             ["source1"],
             bvis.frequency.values,
-            beam_gain_state=None,
+            low_beam_gain=None,
             apply_primary_beam=False,
         )
 

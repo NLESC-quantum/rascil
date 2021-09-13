@@ -3,7 +3,7 @@
 Installation
 ============
 
-RASCIL can be run on a Linux or macOS machine or cluster of machines, using python 3.7 or 3.8. At least 16GB physical
+RASCIL can be run on a Linux or macOS machine or cluster of machines, using python 3.8 or 3.9. At least 16GB physical
 memory is necessary to run the full test suite. In general more memory is better. RASCIL uses Dask for
 multi-processing and can make good use of multi-core and multi-node machines.
 
@@ -82,23 +82,6 @@ In this case, git-lfs can be installed via :code:`sudo apt install git-lfs` or f
 :code:`python setup.py install` installs in the correct site-packages location so the definition of PYTHONPATH is not needed
 if you only don't intend to update or edit rascil in place. If you do intend to make changes, you will need the
 definition of PYTHONPATH.
-
-CASA measures data
-++++++++++++++++++
-
-We use casacore for some coordinate conversions. As a result the CASA measures data files are needed. Depending on
-your setup, these may already be in the right place. If not, you can download a copy and tell casacore where it is::
-
-    echo 'measures.directory: ~/casacore_data' > ~/.casarc
-    rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic ~/casacore_data
-
-If you get errors about the UTC table being out of date, typically of the form::
-
-    2020-08-07 15:37:59 SEVERE MeasTable:...+ Leap second table TAI_UTC seems out-of-date.
-    2020-08-07 15:37:59 SEVERE MeasTable:...+ Until the table is updated (see the CASA documentation or your system admin),
-    2020-08-07 15:37:59 SEVERE MeasTable:...+ times and coordinates derived from UTC could be wrong by 1s or more.
-
-you should repeat the rsync.
 
 Installation on specific machines
 +++++++++++++++++++++++++++++++++

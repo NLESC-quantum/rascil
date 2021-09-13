@@ -169,7 +169,9 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.ylabel("Flux (Jy)")
         plt.legend()
         if self.persist:
-            plt.savefig("%s/test_primary_beams_pol_rsexecute_stokes_errors.png" % self.test_dir)
+            plt.savefig(
+                "%s/test_primary_beams_pol_rsexecute_stokes_errors.png" % self.test_dir
+            )
         plt.show(block=False)
 
         bvis_list = [bvis]

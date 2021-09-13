@@ -211,6 +211,17 @@ class TestPipelineGraphs(unittest.TestCase):
         ]
         self.model_imagelist = rsexecute.persist(self.model_imagelist, sync=True)
 
+        # Initialise save statistics method
+        rsexecute.init_statistics(
+            one_shot_funcs=[
+                "ingest_unittest_visibility",
+                "create_unittest_model",
+                "create_unittest_components",
+                "dft_skycomponent_visibility",
+                "insert_skycomponent",
+            ]  # Functions that should be counted only once in runtime stats
+        )
+
     def test_continuum_imaging_pipeline_taylor_terms(self):
         self.actualSetUp()
 

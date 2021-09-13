@@ -34,7 +34,10 @@ from rascil.processing_components.skycomponent import (
     apply_voltage_pattern_to_skycomponent,
     filter_skycomponents_by_flux,
 )
-from rascil.processing_components.visibility import create_blockvisibility
+from rascil.processing_components.visibility import (
+    create_blockvisibility,
+    qa_visibility,
+)
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines import (
     continuum_imaging_list_rsexecute_workflow,
@@ -135,6 +138,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         vpcomp = apply_voltage_pattern_to_skycomponent(s3_components, vpbeam)
         bvis["vis"].data[...] = 0.0 + 0.0j
         bvis = dft_skycomponent_visibility(bvis, vpcomp)
+        print(qa_visibility(bvis))
 
         rec_comp = idft_visibility_skycomponent(bvis, vpcomp)[0]
 
@@ -176,7 +180,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
 
         bvis_list = [bvis]
 
-        bvis_list = rsexecute.scatter(bvis_list)
+        # bvis_list = rsexecute.scatter(bvis_list)
 
         model_list = [
             rsexecute.execute(create_image_from_visibility, nout=1)(
@@ -197,12 +201,12 @@ class VoltagePatternsPolGraph(unittest.TestCase):
             bvis_list,
             model_list,
             context="ng",
-            do_wstacking=False,
-            algorithm="msclean",
+            algorithm="hogbom",
+            nmoment=1,
             niter=1000,
             fractional_threshold=0.1,
             threshold=1e-4,
-            nmajor=5,
+            nmajor=0,
             gain=0.1,
         )
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
@@ -226,8 +230,8 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.show(block=False)
 
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data["max"] - 0.49695741458324955) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.0231425246713768) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 0.5004345556923077) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.02315480617259965) < 1.0e-7, str(qa)
 
 
 if __name__ == "__main__":

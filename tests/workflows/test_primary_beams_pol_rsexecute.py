@@ -52,7 +52,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.test_dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def tearDown(self):
@@ -75,7 +75,6 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         assert len(self.config.names) == nants
         assert len(self.config.mount) == nants
 
-    @unittest.skip("Too large for CI/CD")
     def test_apply_voltage_pattern_image_pointsource(self):
         self.createVis(rmax=1e3)
         telescope = "MID_FEKO_B2"
@@ -169,7 +168,8 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.xlabel("Stokes Flux I (Jy)")
         plt.ylabel("Flux (Jy)")
         plt.legend()
-        plt.savefig("%s/test_primary_beams_pol_rsexecute_stokes_errors.png" % self.dir)
+        if self.persist:
+            plt.savefig("%s/test_primary_beams_pol_rsexecute_stokes_errors.png" % self.test_dir)
         plt.show(block=False)
 
         bvis_list = [bvis]
@@ -208,15 +208,15 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 clean[centre],
-                "%s/test_primary_beams_pol_rsexecute_clean.fits" % self.dir,
+                "%s/test_primary_beams_pol_rsexecute_clean.fits" % self.test_dir,
             )
             export_image_to_fits(
                 residual[centre][0],
-                "%s/test_primary_beams_pol_rsexecute_residual.fits" % self.dir,
+                "%s/test_primary_beams_pol_rsexecute_residual.fits" % self.test_dir,
             )
             export_image_to_fits(
                 restored[centre],
-                "%s/test_primary_beams_pol_rsexecute_restored.fits" % self.dir,
+                "%s/test_primary_beams_pol_rsexecute_restored.fits" % self.test_dir,
             )
 
         plt.clf()

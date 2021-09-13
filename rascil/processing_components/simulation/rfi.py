@@ -36,7 +36,14 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.util.array_functions import average_chunks2
 from rascil.processing_components.util.geometry import calculate_azel
 
-from rascil.processing_components.imaging.primary_beams import create_vp
+from rascil.processing_components.imaging.primary_beams import (
+    create_vp,
+    create_mid_allsky,
+)
+from rascil.processing_components.image.operations import (
+    create_image,
+    export_image_to_fits,
+)
 from rascil.processing_components.util.coordinate_support import (
     simulate_point_antenna,
     xyz_to_uvw,
@@ -242,7 +249,11 @@ def apply_beam_gain_for_mid(
     )
     # Now calculate and apply the gains
     gt = simulate_gaintable_from_pointingtable(
-        vis=sub_vis, pt=pointing_table, sc=[emitter_comp], vp=voltage_pattern
+        vis=sub_vis,
+        pt=pointing_table,
+        sc=[emitter_comp],
+        vp=voltage_pattern,
+        elevation_limit=0.0,
     )
 
     # apply the beam gain --> it updates subvis in place
@@ -295,7 +306,7 @@ def simulate_rfi_block_prop(
     ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
     if "MID" in mid_or_low:
-        vp = create_vp(telescope="MID_B2")
+        vp = create_mid_allsky(bvis.frequency)
 
     for i, source in enumerate(
         rfi_sources

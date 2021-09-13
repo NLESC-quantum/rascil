@@ -6,13 +6,7 @@
 #
 aotools==1.0.4
     # via -r requirements.in
-appnope==0.1.2
-    # via
-    #   ipykernel
-    #   ipython
-argcomplete==1.12.3
-    # via ipykernel
-argon2-cffi==20.1.0
+argon2-cffi==21.1.0
     # via notebook
 argparse==1.4.0
     # via python-casacore
@@ -57,7 +51,7 @@ click==8.0.1
     # via
     #   dask-memusage
     #   distributed
-cloudpickle==1.6.0
+cloudpickle==2.0.0
     # via
     #   dask
     #   distributed
@@ -73,9 +67,9 @@ dask==2021.09.0
     #   distributed
 dask-memusage==1.1
     # via -r requirements.in
-debugpy==1.4.1
+debugpy==1.4.3
     # via ipykernel
-decorator==5.0.9
+decorator==5.1.0
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
@@ -109,7 +103,7 @@ idna==3.2
     # via requests
 imageio==2.9.0
     # via scikit-image
-ipykernel==6.3.1
+ipykernel==6.4.1
     # via
     #   ipywidgets
     #   jupyter
@@ -195,7 +189,7 @@ matplotlib==3.4.3
     #   -r requirements.in
     #   aotools
     #   scikit-image
-matplotlib-inline==0.1.2
+matplotlib-inline==0.1.3
     # via
     #   ipykernel
     #   ipython
@@ -223,7 +217,7 @@ nest-asyncio==1.5.1
     # via
     #   jupyter-client
     #   nbclient
-networkx==2.6.2
+networkx==2.6.3
     # via scikit-image
 notebook==6.4.3
     # via
@@ -270,7 +264,7 @@ packaging==21.0
     #   bleach
     #   bokeh
     #   dask
-pandas==1.3.2
+pandas==1.3.3
     # via
     #   -r requirements.in
     #   xarray
@@ -380,7 +374,6 @@ seqfile==0.2.0
     # via -r requirements.in
 six==1.16.0
     # via
-    #   argon2-cffi
     #   astroplan
     #   bcrypt
     #   bleach
@@ -398,7 +391,7 @@ tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
     # via distributed
-terminado==0.11.1
+terminado==0.12.1
     # via notebook
 testpath==0.5.0
     # via nbconvert

@@ -679,12 +679,17 @@ def scatter_facets_and_transpose(
         for chan in range(nchan)
     ]
     # Transpose from [channel][facet] to [facet][channel]
+    # A direct would create too many (channel*facet) tasks. We double
+    # delay it to reduce number of tasks.
     scattered_facets_channels_list = [
-        [scattered_channels_facets_list[chan][facet] for chan in range(nchan)]
+        rsexecute.execute(
+            [scattered_channels_facets_list[chan][facet] for chan in range(nchan)],
+            nout=nchan,
+        )
         for facet in range(deconvolve_number_facets)
     ]
 
-    return scattered_facets_channels_list
+    return rsexecute.optimize(scattered_facets_channels_list)
 
 
 def deconvolve_list_channel_rsexecute_workflow(

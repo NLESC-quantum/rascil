@@ -171,7 +171,9 @@ def imager(args):
         raise ValueError("Unknown mode {}".format(args.mode))
 
     # Save the processing statistics from Dask
-    dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
+    dask_info = rsexecute.save_statistics(
+        name=logfile.replace(".log", ""), print_stats=True
+    )
 
     perf_save_dask_profile(args, dask_info)
 
@@ -219,7 +221,21 @@ def setup_rsexecute(args):
             )
             rsexecute.set_client(use_dask=True, client=client)
 
-        rsexecute.init_statistics()
+        rsexecute.init_statistics(
+            one_shot_funcs=[
+                "create_blockvisibility_from_ms",
+                "convert_blockvisibility_to_stokesI",
+                "create_image_from_visibility",
+                "SkyModel",
+                "imaging_grid_weights",
+                "griddata_merge_weights",
+                "imaging_re_weight",
+                "taper_visibility_gaussian",
+                "imaging_zero_vis",
+                "invert_ng",
+            ]  # Functions that should be counted only once in runtime stats
+        )
+
         # Sample the memory usage with a scheduler plugin
         if rsexecute.using_dask and args.dask_memory_usage_file is not None:
             rsexecute.memusage(args.dask_memory_usage_file)
@@ -293,7 +309,7 @@ def weight_blockvis(args, bvis_list, model_list):
         bvis_list = taper_list_rsexecute_workflow(
             bvis_list, args.imaging_gaussian_taper
         )
-    return bvis_list
+    return rsexecute.persist(bvis_list)
 
 
 def create_model_image_list(args, bvis_list, cellsize, npixel):
@@ -307,7 +323,7 @@ def create_model_image_list(args, bvis_list, cellsize, npixel):
         )
         for bvis in bvis_list
     ]
-    return model_list
+    return rsexecute.persist(model_list)
 
 
 def convert_to_stokesI(args, bvis_list):

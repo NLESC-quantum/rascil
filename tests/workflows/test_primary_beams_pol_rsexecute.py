@@ -91,7 +91,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
             phasecentre=self.phasecentre,
             weight=1.0,
             polarisation_frame=vpol,
-            zerow=True,
+            zerow=False,
         )
         cellsize = advise_wide_field(bvis)["cellsize"]
 
@@ -138,7 +138,6 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         vpcomp = apply_voltage_pattern_to_skycomponent(s3_components, vpbeam)
         bvis["vis"].data[...] = 0.0 + 0.0j
         bvis = dft_skycomponent_visibility(bvis, vpcomp)
-        print(qa_visibility(bvis))
 
         rec_comp = idft_visibility_skycomponent(bvis, vpcomp)[0]
 
@@ -195,7 +194,6 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         ]
 
         model_list = rsexecute.persist(model_list)
-        bvis_list = weight_list_rsexecute_workflow(bvis_list, model_list)
 
         continuum_imaging_list = continuum_imaging_list_rsexecute_workflow(
             bvis_list,
@@ -206,7 +204,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
             niter=1000,
             fractional_threshold=0.1,
             threshold=1e-4,
-            nmajor=0,
+            nmajor=5,
             gain=0.1,
         )
         clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
@@ -225,13 +223,9 @@ class VoltagePatternsPolGraph(unittest.TestCase):
                 "%s/test_primary_beams_pol_rsexecute_restored.fits" % self.test_dir,
             )
 
-        plt.clf()
-        show_image(restored[centre])
-        plt.show(block=False)
-
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data["max"] - 0.5004345556923077) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.02315480617259965) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 0.5218341896809336) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.0018946845434820575) < 1.0e-7, str(qa)
 
 
 if __name__ == "__main__":

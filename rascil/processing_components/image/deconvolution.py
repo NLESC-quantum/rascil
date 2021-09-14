@@ -75,7 +75,7 @@ def deconvolve_list(
     psf_list: List[Image],
     sensitivity_list: List[Image] = None,
     prefix="",
-    **kwargs
+    **kwargs,
 ) -> (List[Image], List[Image]):
     """Clean using a variety of algorithms
 
@@ -125,7 +125,11 @@ def deconvolve_list(
     window_shape = get_parameter(kwargs, "window_shape", None)
     window_list = find_window_list(dirty_list, prefix, window_shape=window_shape)
 
+    check_psf_peak(psf_list)
+
     psf_list = bound_psf_list(dirty_list, prefix, psf_list, **kwargs)
+
+    check_psf_peak(psf_list)
 
     algorithm = get_parameter(kwargs, "algorithm", "msclean")
     if algorithm == "msclean":
@@ -154,6 +158,23 @@ def deconvolve_list(
     log.info("deconvolve_cube %s: Deconvolution finished" % (prefix))
 
     return comp_image_list, residual_image_list
+
+
+def check_psf_peak(psf_list):
+    """Check that all PSFs have unit peak
+
+    :param psf_list:
+    :return:
+    """
+    for ipsf, psf in enumerate(psf_list):
+        pmax = psf["pixels"].data.max()
+        # psf["pixels"] /= pmax
+        # pmax = psf["pixels"].data.max()
+        numpy.testing.assert_approx_equal(
+            pmax,
+            1.0,
+            err_msg=f"check_psf_peak: PSF {ipsf} does not have unit peak {pmax}",
+        )
 
 
 def find_window_list(dirty_list, prefix, window_shape=None, **kwargs):
@@ -424,7 +445,7 @@ def hogbom_kernel_list(
     prefix,
     psf_list: List[Image],
     window_list: List[Image],
-    **kwargs
+    **kwargs,
 ):
     """Hogbom Clean, operating of lists of single frequency images
 
@@ -516,7 +537,7 @@ def mmclean_kernel_list(
     psf_list: List[Image],
     window_list: List[Image] = None,
     sensitivity_list: List[Image] = None,
-    **kwargs
+    **kwargs,
 ):
     """mfsmsclean, msmfsclean, mmclean: MultiScale Multi-Frequency CLEAN
 
@@ -680,7 +701,7 @@ def msclean_kernel_list(
     psf_list: List[Image],
     window_list: List[Image],
     sensitivity_list=None,
-    **kwargs
+    **kwargs,
 ):
     """MultiScale CLEAN, operating of lists of single frequency images
 

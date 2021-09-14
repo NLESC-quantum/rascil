@@ -138,7 +138,7 @@ def invert_ng(
     model: Image,
     dopsf: bool = False,
     normalise: bool = True,
-    **kwargs
+    **kwargs,
 ) -> (Image, numpy.ndarray):
     """Invert using nifty-gridder module
 

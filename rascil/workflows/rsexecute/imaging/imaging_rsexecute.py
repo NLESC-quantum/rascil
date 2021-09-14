@@ -271,8 +271,8 @@ def restore_list_rsexecute_workflow(
 
     if clean_beam is None:
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
-        psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
-        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
+        # We don't need to normalise the PSF for this to work
+        clean_beam = rsexecute.execute(fit_psf, nout=1)(clean_beam_list[0])
 
         # Scatter each list element into a list. We will then run restore_cube on each
     facet_model_list = [

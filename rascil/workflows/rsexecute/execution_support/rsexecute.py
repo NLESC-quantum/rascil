@@ -445,8 +445,7 @@ class _rsexecutebase:
                 dask_info = dict()
                 for t in ts:
                     name = t["key"].split("-")[0]
-                    elapsed = t["startstops"][0]["stop"] - t["startstops"][0][
-                        "start"]
+                    elapsed = t["startstops"][0]["stop"] - t["startstops"][0]["start"]
                     if name not in summary.keys():
                         summary[name] = elapsed
                         number[name] = 1

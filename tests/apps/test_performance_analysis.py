@@ -182,9 +182,9 @@ def test_fit_2d_plane(p, q):
         xx, yy = numpy.meshgrid(x, y)
         return xx, yy, p_actual * xx + q_actual * yy
 
-        x, y, z = sim(p, q)
+    x, y, z = sim(p, q)
 
-        p_estimate, q_estimate = fit_2d_plane(x, y, z)
+    p_estimate, q_estimate = fit_2d_plane(x, y, z)
 
-        numpy.testing.assert_almost_equal(p, p_estimate)
-        numpy.testing.assert_almost_equal(q, q_estimate)
+    numpy.testing.assert_almost_equal(p, p_estimate)
+    numpy.testing.assert_almost_equal(q, q_estimate)

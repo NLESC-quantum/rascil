@@ -47,7 +47,9 @@ def hogbom(dirty, psf, window, gain, thresh, niter, fracthresh, prefix=""):
     comps = numpy.zeros(dirty.shape)
     res = numpy.array(dirty)
     pmax = psf.max()
-    assert pmax > 0.0
+    numpy.testing.assert_approx_equal(
+        pmax, 1.0, err_msg=f"PSF does not have unit peak {pmax}"
+    )
     log.info(
         "hogbom %s: Timing for setup: %.3f (s) for dirty shape %s, PSF shape %s"
         % (prefix, time.time() - starttime, str(dirty.shape), str(psf.shape))

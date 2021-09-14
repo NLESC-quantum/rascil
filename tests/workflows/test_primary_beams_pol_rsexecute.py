@@ -34,7 +34,10 @@ from rascil.processing_components.skycomponent import (
     apply_voltage_pattern_to_skycomponent,
     filter_skycomponents_by_flux,
 )
-from rascil.processing_components.visibility import create_blockvisibility
+from rascil.processing_components.visibility import (
+    create_blockvisibility,
+    qa_visibility,
+)
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines import (
     continuum_imaging_list_rsexecute_workflow,
@@ -52,7 +55,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.test_dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def tearDown(self):
@@ -75,7 +78,6 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         assert len(self.config.names) == nants
         assert len(self.config.mount) == nants
 
-    @unittest.skip("Too large for CI/CD")
     def test_apply_voltage_pattern_image_pointsource(self):
         self.createVis(rmax=1e3)
         telescope = "MID_FEKO_B2"
@@ -89,7 +91,7 @@ class VoltagePatternsPolGraph(unittest.TestCase):
             phasecentre=self.phasecentre,
             weight=1.0,
             polarisation_frame=vpol,
-            zerow=True,
+            zerow=False,
         )
         cellsize = advise_wide_field(bvis)["cellsize"]
 
@@ -169,12 +171,13 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         plt.xlabel("Stokes Flux I (Jy)")
         plt.ylabel("Flux (Jy)")
         plt.legend()
-        plt.savefig("%s/test_primary_beams_pol_rsexecute_stokes_errors.png" % self.dir)
+        if self.persist:
+            plt.savefig(
+                "%s/test_primary_beams_pol_rsexecute_stokes_errors.png" % self.test_dir
+            )
         plt.show(block=False)
 
         bvis_list = [bvis]
-
-        bvis_list = rsexecute.scatter(bvis_list)
 
         model_list = [
             rsexecute.execute(create_image_from_visibility, nout=1)(
@@ -189,14 +192,13 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         ]
 
         model_list = rsexecute.persist(model_list)
-        bvis_list = weight_list_rsexecute_workflow(bvis_list, model_list)
 
         continuum_imaging_list = continuum_imaging_list_rsexecute_workflow(
             bvis_list,
             model_list,
             context="ng",
-            do_wstacking=False,
-            algorithm="msclean",
+            algorithm="hogbom",
+            nmoment=1,
             niter=1000,
             fractional_threshold=0.1,
             threshold=1e-4,
@@ -208,24 +210,20 @@ class VoltagePatternsPolGraph(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 clean[centre],
-                "%s/test_primary_beams_pol_rsexecute_clean.fits" % self.dir,
+                "%s/test_primary_beams_pol_rsexecute_clean.fits" % self.test_dir,
             )
             export_image_to_fits(
                 residual[centre][0],
-                "%s/test_primary_beams_pol_rsexecute_residual.fits" % self.dir,
+                "%s/test_primary_beams_pol_rsexecute_residual.fits" % self.test_dir,
             )
             export_image_to_fits(
                 restored[centre],
-                "%s/test_primary_beams_pol_rsexecute_restored.fits" % self.dir,
+                "%s/test_primary_beams_pol_rsexecute_restored.fits" % self.test_dir,
             )
 
-        plt.clf()
-        show_image(restored[centre])
-        plt.show(block=False)
-
         qa = qa_image(restored[centre])
-        assert numpy.abs(qa.data["max"] - 0.49695741458324955) < 1.0e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 0.0231425246713768) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 0.5218341896809336) < 1.0e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.0018946845434820575) < 1.0e-7, str(qa)
 
 
 if __name__ == "__main__":

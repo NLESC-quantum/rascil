@@ -209,8 +209,7 @@ def restore_list_singlefacet_rsexecute_workflow(
 
     if clean_beam is None:
         psf_list = sum_invert_results_rsexecute(psf_imagelist)
-        psf = rsexecute.execute(normalise_sumwt)(psf_list[0], psf_list[1])
-        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
+        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf_list[0])
 
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(

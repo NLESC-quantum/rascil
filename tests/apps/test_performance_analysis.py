@@ -168,18 +168,19 @@ def test_performance_analysis(mode, parameters, functions):
                 results["speedup"]["q"], 1.3078320080729133e-6, err_msg=str(results)
             )
 
-    @pytest.mark.parametrize(
-        "p, q",
-        [(1.0, 2.0), (0.0, 2.0), (-1001.0, 2.0), (-1e7, 1.0), (-1e7, 2e7)],
-    )
-    def test_fit_2d_plane(p, q):
-        """Test the fit of a 2D plane z = p * x + q + y for a range of inputs"""
 
-        def sim(p_actual, q_actual):
-            x = numpy.linspace(1e5, 1e6, 10)
-            y = numpy.linspace(1e5, 1e6, 10)
-            xx, yy = numpy.meshgrid(x, y)
-            return xx, yy, p_actual * xx + q_actual * yy
+@pytest.mark.parametrize(
+    "p, q",
+    [(1.0, 2.0), (0.0, 2.0), (-1001.0, 2.0), (-1e7, 1.0), (-1e7, 2e7)],
+)
+def test_fit_2d_plane(p, q):
+    """Test the fit of a 2D plane z = p * x + q + y for a range of inputs"""
+
+    def sim(p_actual, q_actual):
+        x = numpy.linspace(1e5, 1e6, 10)
+        y = numpy.linspace(1e5, 1e6, 10)
+        xx, yy = numpy.meshgrid(x, y)
+        return xx, yy, p_actual * xx + q_actual * yy
 
         x, y, z = sim(p, q)
 

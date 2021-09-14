@@ -411,96 +411,82 @@ class _rsexecutebase:
             self._client.close()
             self._client = None
 
-    def init_statistics(self, one_shot_funcs=None):
+    def init_statistics(self):
         """Initialise the profile and task stream info
 
         rsexecute can save the Dask profile and Task Stream information for later saving
 
-        :param one_shot_funcs: list of functions that should be counted only once
         :return:
         """
-        # One shot functions are functions which are computed once and
-        # persisted in the memory. We should avoid counting them in
-        # statistics for every cycle.
-        if one_shot_funcs is None:
-            one_shot_funcs = []
-
         self.start_time = time.time()
         if self._using_dask:
             self._client.profile()
             self._client.get_task_stream()
-            self.one_shot_funcs = one_shot_funcs
-            self.summary = {}
-            self.number = {}
-            self.dask_info = dict()
 
-    def save_statistics(self, name="dask", print_stats=False, cycle=10000):
+    def save_statistics(self, name="dask"):
         """Save the statistics to html files
 
         rsexecute can save the Dask profile and Task Stream information for later saving. This
         saves the current statistics to html files.
 
         :param name: prefix to name e.g. dask
-        :param print_stats: boolean to print statistics to stdout
-        :param cycle: major cycle number
         """
 
         if self._using_dask:
             task_stream, graph = self.client.get_task_stream(
                 plot="save", filename="%s_task_stream.html" % name
             )
-            if print_stats:
-                self.client.profile(plot="save", filename="%s_profile.html" % name)
+            self.client.profile(plot="save", filename="%s_profile.html" % name)
 
             def print_ts(ts):
+                log.info("Processor time used in each function")
+                summary = {}
+                number = {}
+                dask_info = dict()
                 for t in ts:
                     name = t["key"].split("-")[0]
-                    elapsed = t["startstops"][0]["stop"] - t["startstops"][0]["start"]
-                    if name not in self.summary.keys():
-                        self.summary[name] = elapsed
-                        self.number[name] = 1
+                    elapsed = t["startstops"][0]["stop"] - t["startstops"][0][
+                        "start"]
+                    if name not in summary.keys():
+                        summary[name] = elapsed
+                        number[name] = 1
                     else:
-                        if cycle == 0 or (
-                            name not in self.one_shot_funcs and cycle > 0
-                        ):
-                            self.summary[name] += elapsed
-                            self.number[name] += 1
+                        summary[name] += elapsed
+                        number[name] += 1
                 total = 0.0
-                for key in self.summary.keys():
-                    total += self.summary[key]
-                if print_stats:
-                    log.info("Processor time used in each function")
-                    table = []
-                    headers = ["Function", "Time (s)", "Percent", "Number calls"]
-                    for key in self.summary.keys():
-                        percent = 100.0 * self.summary[key] / total
-                        table.append(
-                            [
-                                key,
-                                "{0:.3f}".format(self.summary[key]),
-                                "{0:.3f}".format(percent),
-                                self.number[key],
-                            ]
-                        )
-                        self.dask_info[key] = {
-                            "time": self.summary[key],
-                            "fraction": percent,
-                            "number_calls": self.number[key],
-                        }
-                    log.info("\n" + tabulate(table, headers=headers))
-                    duration = time.time() - self.start_time
-                    speedup = total / duration
-                    log.info(
-                        "Total processor time {0:.3f} (s), total wallclock time {1:.3f} (s), speedup {2:.2f}".format(
-                            total, duration, speedup
-                        )
+                for key in summary.keys():
+                    total += summary[key]
+                table = []
+                headers = ["Function", "Time (s)", "Percent", "Number calls"]
+                for key in summary.keys():
+                    percent = 100.0 * summary[key] / total
+                    table.append(
+                        [
+                            key,
+                            "{0:.3f}".format(summary[key]),
+                            "{0:.3f}".format(percent),
+                            number[key],
+                        ]
                     )
-                    self.dask_info["summary"] = {
-                        "total": total,
-                        "duration": duration,
-                        "speedup": speedup,
+                    dask_info[key] = {
+                        "time": summary[key],
+                        "fraction": percent,
+                        "number_calls": number[key],
                     }
-                return self.dask_info
+                log.info("\n" + tabulate(table, headers=headers))
+                duration = time.time() - self.start_time
+                speedup = total / duration
+                log.info(
+                    "Total processor time {0:.3f} (s), total wallclock time {1:.3f} (s), speedup {2:.2f}".format(
+                        total, duration, speedup
+                    )
+                )
+                dask_info["summary"] = {
+                    "total": total,
+                    "duration": duration,
+                    "speedup": speedup,
+                }
+                return dask_info
 
             try:
                 return print_ts(task_stream)

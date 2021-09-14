@@ -71,8 +71,6 @@ def ical_skymodel_list_rsexecute_workflow(
     psf_imagelist_trimmed = [
         rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
     ]
-    # Persist to keep it in memory
-    psf_imagelist_trimmed = rsexecute.persist(psf_imagelist_trimmed)
 
     # Create a list of copied input visibilities
     model_vislist = [
@@ -221,13 +219,12 @@ def ical_skymodel_list_rsexecute_workflow(
             # Most of the computations are done here. We noticed that the
             # graph size increases non-linearly for each major cycle. We
             # faced issues on computing the entire graph at once and so here
-            # we are forcing the computations so that a smaller graph size
+            # we are persisting the graph so that a smaller graph size
             # starts executing as it gets constructed for each major cycle.
             # The idea is to introduce a convergence criteria so that we can
             # break the loop when criteria is met. More details can
             # be found here: https://jira.skatelescope.org/browse/SIM-1015
-            skymodel_list = rsexecute.compute(skymodel_list)
-            rsexecute.save_statistics(cycle=cycle)
+            skymodel_list = rsexecute.persist(skymodel_list)
 
     # We've finished so now we update the residual images and calculate the restored image
     residual_imagelist = residual_skymodel_list_rsexecute_workflow(

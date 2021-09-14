@@ -161,15 +161,12 @@ def deconvolve_list(
 
 
 def check_psf_peak(psf_list):
-    """Check that all PSFs have unit peak
+    """Check that all PSFs in a list have unit peak
 
-    :param psf_list:
-    :return:
+    :param psf_list: List of PSF images
     """
     for ipsf, psf in enumerate(psf_list):
         pmax = psf["pixels"].data.max()
-        # psf["pixels"] /= pmax
-        # pmax = psf["pixels"].data.max()
         numpy.testing.assert_approx_equal(
             pmax,
             1.0,

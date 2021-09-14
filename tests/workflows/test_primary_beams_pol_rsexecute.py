@@ -179,8 +179,6 @@ class VoltagePatternsPolGraph(unittest.TestCase):
 
         bvis_list = [bvis]
 
-        # bvis_list = rsexecute.scatter(bvis_list)
-
         model_list = [
             rsexecute.execute(create_image_from_visibility, nout=1)(
                 bv,

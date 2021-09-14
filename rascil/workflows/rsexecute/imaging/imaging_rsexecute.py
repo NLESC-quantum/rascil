@@ -209,7 +209,8 @@ def restore_list_singlefacet_rsexecute_workflow(
 
     if clean_beam is None:
         psf_list = sum_invert_results_rsexecute(psf_imagelist)
-        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf_list[0])
+        psf = rsexecute.execute(normalise_sumwt)(psf_list[0], psf_list[1])
+        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
 
     if residual_imagelist is not None:
         residual_list = rsexecute.execute(remove_sumwt, nout=len(residual_imagelist))(
@@ -270,8 +271,8 @@ def restore_list_rsexecute_workflow(
 
     if clean_beam is None:
         clean_beam_list = sum_invert_results_rsexecute(psf_imagelist)
-        # We don't need to normalise the PSF for this to work
-        clean_beam = rsexecute.execute(fit_psf, nout=1)(clean_beam_list[0])
+        psf = rsexecute.execute(normalise_sumwt)(clean_beam_list[0], clean_beam_list[1])
+        clean_beam = rsexecute.execute(fit_psf, nout=1)(psf)
 
         # Scatter each list element into a list. We will then run restore_cube on each
     facet_model_list = [
@@ -878,6 +879,8 @@ def sum_predict_results_rsexecute(bvis_list, split=2):
 
 def sum_invert_results_rsexecute(image_list, split=2):
     """Sum a set of invert results with appropriate weighting
+
+    Note that in the case of a single element of image_list a copy is made
 
     :param image_list: List of (image, sum weights) tuples
     :param split: Split into

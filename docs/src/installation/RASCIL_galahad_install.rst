@@ -8,7 +8,7 @@ We strongly recommend the use of a python virtual environment. Be sure to load t
 bare python base module and the gcc modules (in the supported versions) before 
 installing RASCIL, e.g. ::
 
-    module load python37base gcc920
+    module load python39base gcc920
 
 Follow the generic installation steps.
 

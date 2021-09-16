@@ -205,12 +205,12 @@ The cluster is created using the docker-compose up command. To scale to e.g. 4 d
 The scheduler, 4 workers and a notebook should now be running. To connect to the cluster, run the
 following into another window::
 
-    docker run -it --network host --volume $HOME:$HOME artefact.skao.int/rascil-full
+    docker run -it --network host --volume $HOME:$HOME artefact.skao.int/rascil-full:<version>
 
 Then at the docker prompt, do e.g.::
 
     cd /<your home directory>
-    python3 /rascil/cluster_tests/ritoy/cluster_test_ritoy.py localhost:8786
+    python3 /rascil/examples/cluster_tests/ritoy/cluster_test_ritoy.py localhost:8786
 
 A Jupyter lab notebook is also started by this docker-compose. The URL will be output during the
 initial set up, e.g.::

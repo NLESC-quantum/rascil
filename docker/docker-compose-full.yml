@@ -5,7 +5,7 @@ services:
     build:
       context: ./rascil-full
       dockerfile: Dockerfile
-    image: artefact.skao.int/rascil-full
+    image: artefact.skao.int/rascil-full:0.3.0
     hostname: dask-scheduler
     volumes:
       - "${HOME}:${HOME}"
@@ -18,7 +18,7 @@ services:
     build:
       context: ./rascil-full
       dockerfile: Dockerfile
-    image: artefact.skao.int/rascil-full
+    image: artefact.skao.int/rascil-full:0.3.0
     hostname: dask-worker
     volumes:
       - "${HOME}:${HOME}"
@@ -28,7 +28,7 @@ services:
     build:
       context: ./rascil-notebook
       dockerfile: Dockerfile
-    image: artefact.skao.int/rascil-notebook
+    image: artefact.skao.int/rascil-notebook:0.3.0-7416b075
     hostname: notebook
     volumes:
       - "${HOME}:${HOME}"

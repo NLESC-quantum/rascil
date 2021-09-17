@@ -110,7 +110,6 @@ class TestDataModelHelpers(unittest.TestCase):
         )
         assert data_model_equals(newvis, self.vis)
 
-    @unittest.skip("Not relevant for xarray")
     def test_readwritegaintable(self):
         self.vis = create_blockvisibility(
             self.mid,
@@ -176,7 +175,6 @@ class TestDataModelHelpers(unittest.TestCase):
         )
         assert data_model_equals(newpt, pt)
 
-    @unittest.skip("Not relevant for xarray")
     def test_readwriteimage(self):
         im = create_image(
             phasecentre=self.phasecentre,
@@ -185,14 +183,10 @@ class TestDataModelHelpers(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         im["pixels"][...] = 1.0
-        if self.verbose:
-            print(im)
         export_image_to_hdf5(im, "%s/test_data_model_helpers_image.hdf" % self.dir)
         newim = import_image_from_hdf5(
             "%s/test_data_model_helpers_image.hdf" % self.dir
         )
-        print(newim["x"].data[:10], im["x"].data[:10])
-        print(newim["y"].data[:10], im["y"].data[:10])
         assert data_model_equals(newim, im, verbose=False)
 
     @unittest.skip("netcdf too restrictive")
@@ -226,7 +220,6 @@ class TestDataModelHelpers(unittest.TestCase):
         assert newsc.flux.shape == self.comp.flux.shape
         assert numpy.max(numpy.abs(newsc.flux - self.comp.flux)) < 1e-15
 
-    @unittest.skip("Not relevant for xarray")
     def test_readwriteskymodel(self):
         self.vis = create_blockvisibility(
             self.mid,
@@ -254,7 +247,7 @@ class TestDataModelHelpers(unittest.TestCase):
 
         assert newsm.components[0].flux.shape == self.comp.flux.shape
 
-    @unittest.skip("Not relevant for xarray")
+    @unittest.skip("TODO: fix unknown fail")
     def test_readwritegriddata(self):
 
         im = create_image(
@@ -276,7 +269,7 @@ class TestDataModelHelpers(unittest.TestCase):
             print(newgd)
         assert data_model_equals(newgd, gd)
 
-    @unittest.skip("Not relevant for xarray")
+    @unittest.skip("TODO: fix unknown fail")
     def test_readwriteconvolutionfunction(self):
         im = create_image(
             phasecentre=self.phasecentre,

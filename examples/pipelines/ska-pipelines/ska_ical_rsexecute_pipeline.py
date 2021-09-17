@@ -21,7 +21,10 @@ from rascil.processing_components.calibration.chain_calibration import (
     create_calibration_controls,
 )
 
-from rascil.workflows import ical_list_rsexecute_workflow
+from rascil.workflows import (
+    ical_list_rsexecute_workflow,
+    weight_list_rsexecute_workflow,
+)
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
@@ -76,6 +79,8 @@ if __name__ == "__main__":
     print("Creating model images")
     model_list = rsexecute.persist(model_list)
 
+    vis_list = weight_list_rsexecute_workflow(vis_list, model_list)
+
     imaging_context = "ng"
     vis_slices = 1
 
@@ -96,17 +101,18 @@ if __name__ == "__main__":
         model_imagelist=model_list,
         context=imaging_context,
         vis_slice=vis_slices,
-        scales=[0, 3, 10],
+        scales=[0],
         algorithm="mmclean",
         nmoment=2,
         niter=1000,
-        fractional_threshold=0.1,
-        threshold=0.1,
+        fractional_threshold=0.3,
+        threshold=0.02,
         nmajor=5,
         gain=0.25,
         deconvolve_facets=1,
         deconvolve_overlap=0,
-        restore_facets=8,
+        restore_facets=1,
+        restored_output="list",
         timeslice="auto",
         psf_support=128,
         global_solution=False,

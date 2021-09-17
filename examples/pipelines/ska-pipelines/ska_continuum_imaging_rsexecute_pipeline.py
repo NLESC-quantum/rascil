@@ -17,7 +17,10 @@ from rascil.processing_components import (
     create_blockvisibility_from_ms,
 )
 
-from rascil.workflows import continuum_imaging_list_rsexecute_workflow
+from rascil.workflows import (
+    continuum_imaging_list_rsexecute_workflow,
+    weight_list_rsexecute_workflow,
+)
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
@@ -69,6 +72,8 @@ if __name__ == "__main__":
         for v in vis_list
     ]
 
+    vis_list = weight_list_rsexecute_workflow(vis_list, model_list)
+
     print("Creating model images")
     model_list = rsexecute.persist(model_list)
 
@@ -79,20 +84,19 @@ if __name__ == "__main__":
         model_imagelist=model_list,
         context=imaging_context,
         vis_slice=vis_slices,
-        scales=[0, 3, 10],
+        scales=[0],
         algorithm="mmclean",
         nmoment=2,
         niter=1000,
-        fractional_threshold=0.1,
+        fractional_threshold=0.3,
         threshold=0.1,
         nmajor=5,
         gain=0.25,
         deconvolve_facets=1,
         deconvolve_overlap=0,
-        deconvolve_taper="tukey",
-        restore_facets=8,
         timeslice="auto",
         psf_support=128,
+        restored_output="list",
     )
 
     log.info("About to run continuum imaging workflow")
@@ -116,5 +120,6 @@ if __name__ == "__main__":
 
     print(qa_image(residual[0], context="Residual clean image"))
     export_image_to_fits(
-        residual[0], "%s/ska-continuum-imaging_rsexecute_residual.fits" % (results_dir)
+        residual[0],
+        "%s/ska-continuum-imaging_rsexecute_residual.fits" % (results_dir),
     )

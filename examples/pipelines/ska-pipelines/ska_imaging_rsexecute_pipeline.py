@@ -17,7 +17,10 @@ from rascil.processing_components import (
     create_blockvisibility_from_ms,
 )
 
-from rascil.workflows import invert_list_rsexecute_workflow
+from rascil.workflows import (
+    invert_list_rsexecute_workflow,
+    weight_list_rsexecute_workflow,
+)
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
@@ -71,8 +74,10 @@ if __name__ == "__main__":
 
     model_list = rsexecute.persist(model_list)
 
+    vis_list = weight_list_rsexecute_workflow(vis_list, model_list)
+
     imaging_context = "ng"
-    vis_slices = 1
+
     dirty_list = invert_list_rsexecute_workflow(
         vis_list, template_model_imagelist=model_list, context=imaging_context
     )

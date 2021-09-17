@@ -46,6 +46,7 @@ def ical_skymodel_list_rsexecute_workflow(
     context,
     skymodel_list=None,
     calibration_context="TG",
+    controls=None,
     do_selfcal=True,
     pipeline_name="ical",
     **kwargs,
@@ -106,6 +107,7 @@ def ical_skymodel_list_rsexecute_workflow(
             predicted_model_vislist,
             gt_list,
             calibration_context=calibration_context,
+            controls=controls,
             **kwargs,
         )
 
@@ -175,6 +177,7 @@ def ical_skymodel_list_rsexecute_workflow(
                     model_vislist,
                     gt_list,
                     calibration_context=calibration_context,
+                    controls=controls,
                     iteration=cycle,
                     **kwargs,
                 )

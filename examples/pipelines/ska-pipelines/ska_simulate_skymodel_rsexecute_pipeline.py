@@ -36,7 +36,7 @@ def init_logging():
 
 if __name__ == "__main__":
     log = logging.getLogger("rascil-logger")
-    print("Starting ska-pipelines simulation pipeline")
+    log.info("Starting ska-pipelines simulation pipeline")
 
     os.makedirs(results_dir, exist_ok=True)
 
@@ -90,12 +90,7 @@ if __name__ == "__main__":
         for f, freq in enumerate(frequency)
     ]
 
-    def print_max(v):
-        print(numpy.max(numpy.abs(v.vis.data)))
-        return v
-
     imaging_context = "ng"
-    print("Using {}".format(imaging_context))
     predicted_vislist = predict_skymodel_list_rsexecute_workflow(
         vis_list,
         skymodel_list,
@@ -105,7 +100,6 @@ if __name__ == "__main__":
     corrupted_vislist = corrupt_list_rsexecute_workflow(
         predicted_vislist, phase_error=1.0, seed=180555
     )
-    corrupted_vislist = [rsexecute.execute(print_max)(v) for v in corrupted_vislist]
     export_list = [
         rsexecute.execute(export_blockvisibility_to_ms)(
             "%s/ska-pipeline_simulation_vislist_%d.ms" % (results_dir, v),
@@ -114,7 +108,7 @@ if __name__ == "__main__":
         for v, _ in enumerate(corrupted_vislist)
     ]
 
-    print(
+    log.info(
         "About to run predict and corrupt to get corrupted visibility, and write files"
     )
     rsexecute.compute(export_list, sync=True)

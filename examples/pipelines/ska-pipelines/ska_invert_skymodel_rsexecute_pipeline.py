@@ -44,7 +44,7 @@ if __name__ == "__main__":
     logging.info("Starting Imaging pipeline")
 
     rsexecute.set_client(use_dask=True)
-    print(rsexecute.client)
+    log.info(rsexecute.client)
     rsexecute.run(init_logging)
 
     nfreqwin = 8
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     )
 
     dirty_cube = image_gather_channels([r[0] for r in result])
-    print(qa_image(dirty_cube, context="Dirty image cube"))
+    log.info(qa_image(dirty_cube, context="Dirty image cube"))
     export_image_to_fits(
         dirty_cube, "%s/ska-imaging_rsexecute_dirty_cube.fits" % (results_dir)
     )

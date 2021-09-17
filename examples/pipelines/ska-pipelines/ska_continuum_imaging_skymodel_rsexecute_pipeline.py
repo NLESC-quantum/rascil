@@ -105,19 +105,19 @@ if __name__ == "__main__":
         [result[2][chan].image for chan in range(nfreqwin)]
     )
 
-    print(qa_image(deconvolved, context="Clean image cube"))
+    log.info(qa_image(deconvolved, context="Clean image cube"))
     export_image_to_fits(
         deconvolved,
         "%s/ska-continuum-imaging_rsexecute_deconvolved_cube.fits" % (results_dir),
     )
 
-    print(qa_image(restored, context="Restored clean image cube"))
+    log.info(qa_image(restored, context="Restored clean image cube"))
     export_image_to_fits(
         restored,
         "%s/ska-continuum-imaging_rsexecute_restored_cube.fits" % (results_dir),
     )
 
-    print(qa_image(residual, context="Residual clean image cube"))
+    log.info(qa_image(residual, context="Residual clean image cube"))
     export_image_to_fits(
         residual,
         "%s/ska-continuum-imaging_rsexecute_residual_cube.fits" % (results_dir),

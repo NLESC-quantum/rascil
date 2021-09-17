@@ -2,10 +2,6 @@
 ICAL pipeline
 """
 
-# # Pipeline processing using Dask
-
-from rascil.data_models.parameters import rascil_path
-
 results_dir = "./results"
 
 from rascil.data_models import PolarisationFrame, export_gaintable_to_hdf5
@@ -61,28 +57,31 @@ if __name__ == "__main__":
 
     vis_list = rsexecute.persist(vis_list)
 
+    # Define image properties
     cellsize = 0.0005
     npixel = 1024
     pol_frame = PolarisationFrame("stokesI")
-
     model_list = [
         rsexecute.execute(create_image_from_visibility)(
             v, npixel=npixel, cellsize=cellsize, polarisation_frame=pol_frame
         )
         for v in vis_list
     ]
-
     model_list = rsexecute.persist(model_list)
 
+    # Weight the data
     vis_list = weight_list_rsexecute_workflow(vis_list, model_list)
 
     imaging_context = "ng"
 
+    # The calibration sequence is defined in a dictionary. A default
+    # version is constructed using create_calibration_controls()
     controls = create_calibration_controls()
     controls["T"]["first_selfcal"] = 1
     controls["T"]["phase_only"] = True
     controls["T"]["timeslice"] = "auto"
 
+    # Now we can define the graph for ICAL
     ical_list = ical_skymodel_list_rsexecute_workflow(
         vis_list,
         model_imagelist=model_list,
@@ -110,7 +109,7 @@ if __name__ == "__main__":
     result = rsexecute.compute(ical_list, sync=True)
     rsexecute.close()
 
-    # The return is:
+    # The result is:
     #    (nchan * (residual_image, sumwt), nchan * restored_image, nchan * skymodel)
     residual = image_gather_channels([result[0][chan][0] for chan in range(nfreqwin)])
     restored = image_gather_channels([result[1][chan] for chan in range(nfreqwin)])
@@ -119,23 +118,23 @@ if __name__ == "__main__":
     )
     gt_list = result[3]
 
-    print(qa_image(deconvolved, context="Clean image cube"))
+    log.info(qa_image(deconvolved, context="Clean image cube"))
     export_image_to_fits(
         deconvolved, "%s/ska-ical_rsexecute_deconvolved_cube.fits" % (results_dir)
     )
 
-    print(qa_image(restored, context="Restored clean image cube"))
+    log.info(qa_image(restored, context="Restored clean image cube"))
     export_image_to_fits(
         restored, "%s/ska-ical_rsexecute_restored_cube.fits" % (results_dir)
     )
 
-    print(qa_image(residual, context="Residual clean image cube"))
+    log.info(qa_image(residual, context="Residual clean image cube"))
     export_image_to_fits(
         residual, "%s/ska-ical_rsexecute_residual_cube.fits" % (results_dir)
     )
 
     # The gaintable are nchan*{"T":gt}
-    print(qa_gaintable(gt_list[0]["T"]))
+    log.info(qa_gaintable(gt_list[0]["T"]))
     agt_list = [gt_list[chan]["T"] for chan in range(nfreqwin)]
     export_gaintable_to_hdf5(
         agt_list, "%s/ska-ical_rsexecute_gaintable.hdf" % (results_dir)

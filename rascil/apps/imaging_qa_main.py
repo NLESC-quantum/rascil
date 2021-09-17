@@ -357,7 +357,9 @@ def analyze_image(args):
     if args.use_frequency_moment == "True" and len(moment_images) != 0:
 
         log.info("Calculate spectral index from frequency moment images.")
-        out = calculate_spec_index_from_moment(out, moment_images)
+        out = calculate_spec_index_from_moment(
+            out, moment_images, flux_limit=args.flux_limit
+        )
 
     # Compensate for primary beam correction
     # Note this should be applied to source out when it is division, source in when multiplication
@@ -595,12 +597,13 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     return comp
 
 
-def calculate_spec_index_from_moment(comp_list, moment_images):
+def calculate_spec_index_from_moment(comp_list, moment_images, flux_limit=1.0e-3):
     """
     Calculate spectral index using frequency moment images.
 
     :param comp_list: Source list in skycomponents format
     :param moment_images: Frequency moment images in FITS format
+    :param flux_limit: The lower limit of flux (for the sources) over which spectral index is calculated
 
     :return newcomp: New lists of skycomponents with updated spectral index.
 
@@ -611,13 +614,14 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
         return comp_list
 
     else:
+
         moment_data = import_image_from_fits(moment_images[0])
 
         # This applies to multiple Taylor images (not tested now)
-        if len(moment_images) > 1:
-            for moment_image in moment_images:
-                moment_data_now = import_image_from_fits(moment_image)
-                moment_data = add_image(moment_data, moment_data_now)
+        #        if len(moment_images) > 1:
+        #            for moment_image in moment_images:
+        #                moment_data_now = import_image_from_fits(moment_image)
+        #                moment_data = add_image(moment_data, moment_data_now)
 
         image_frequency = moment_data.frequency.data
         ras = [comp.direction.ra.degree for comp in comp_list]
@@ -643,17 +647,21 @@ def calculate_spec_index_from_moment(comp_list, moment_images):
                 and np.max(np.abs(comp.frequency.data - image_frequency)) < 1e-7
             ):
                 flux = moment_data["pixels"].data[nchan // 2, 0, pixloc[1], pixloc[0]]
-                log.debug(
-                    "Taylor flux:{} for skycomponent {}, {}, compared to original flux {}".format(
-                        flux, ras[icomp], decs[icomp], comp.flux[nchan // 2][0]
+
+                if flux > flux_limit and central_fluxes[icomp] > flux_limit:
+
+                    log.info(
+                        "Taylor flux:{} for skycomponent {}, {}, compared to original flux {}".format(
+                            flux, ras[icomp], decs[icomp], central_fluxes[icomp]
+                        )
                     )
-                )
-                if comp.flux.all() > 0.0:
-                    spec_indx[icomp] = flux / comp.flux[nchan // 2][0]
+                    spec_indx[icomp] = flux / central_fluxes[icomp]
+                else:
+                    spec_indx[icomp] = 0.0
             else:
                 spec_indx[icomp] = 0.0
 
-            log.debug("Spectral index calculated is {}".format(spec_indx[icomp]))
+            log.info("Spectral index calculated is {}".format(spec_indx[icomp]))
             fluxes = [
                 comp.flux[i][0]
                 * (f / comp.frequency.data[nchan // 2]) ** spec_indx[icomp]

@@ -2,7 +2,7 @@
 ICAL pipeline
 """
 
-results_dir = "./results"
+results_dir = "./"
 
 from rascil.data_models import PolarisationFrame, export_gaintable_to_hdf5
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # Load data from previous simulation
     vis_list = [
         rsexecute.execute(create_blockvisibility_from_ms)(
-            "%s/ska-pipeline_simulation_vislist_%d.ms" % (results_dir, v)
+            "%s/ska-pipeline_simulation_%d.ms" % (results_dir, v)
         )[0]
         for v in range(nfreqwin)
     ]
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     vis_list = rsexecute.persist(vis_list)
 
     # Define image properties
-    cellsize = 0.0005
+    cellsize = 0.0003
     npixel = 1024
     pol_frame = PolarisationFrame("stokesI")
     model_list = [

@@ -2,7 +2,8 @@
 Simulation of observation for subsequent processing
 
 """
-results_dir = "./results/"
+results_dir = "./"
+
 
 import os
 import numpy
@@ -82,7 +83,7 @@ if __name__ == "__main__":
             cellsize=cellsize,
             phasecentre=phasecentre,
             polarisation_frame=PolarisationFrame("stokesI"),
-            flux_limit=0.3,
+            flux_limit=1.0,
             flux_threshold=0.0,
             radius=10.0,
             applybeam=True,
@@ -91,21 +92,19 @@ if __name__ == "__main__":
     ]
 
     imaging_context = "ng"
-    predicted_vislist = predict_skymodel_list_rsexecute_workflow(
+    predicted = predict_skymodel_list_rsexecute_workflow(
         vis_list,
         skymodel_list,
         context=imaging_context,
         verbosity=2,
     )
-    corrupted_vislist = corrupt_list_rsexecute_workflow(
-        predicted_vislist, phase_error=1.0, seed=180555
-    )
+    corrupted = corrupt_list_rsexecute_workflow(predicted, phase_error=1.0, seed=180555)
     export_list = [
         rsexecute.execute(export_blockvisibility_to_ms)(
-            "%s/ska-pipeline_simulation_vislist_%d.ms" % (results_dir, v),
-            [corrupted_vislist[v]],
+            "%s/ska-pipeline_simulation_%d.ms" % (results_dir, v),
+            [corrupted[v]],
         )
-        for v, _ in enumerate(corrupted_vislist)
+        for v, _ in enumerate(corrupted)
     ]
 
     log.info(

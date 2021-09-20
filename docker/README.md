@@ -195,12 +195,12 @@ matching those on your system.
 
 ##Running RASCIL as a cluster
 
-The file docker-compose in the `docker` code directory a simple way to
+The file docker compose in the `docker` code directory a simple way to
 create a local cluster of a Dask scheduler and a number of workers. 
 
-The cluster is created using the docker-compose up command. To scale to e.g. 4 dask workers::
+The cluster is created using the docker compose up command. To scale to e.g. 4 dask workers::
 
-    docker-compose up -f docker-compose-base.yml --scale worker=4
+    docker compose up -f docker-compose-base.yml --scale worker=4
 
 The scheduler, 4 workers and a notebook should now be running. To connect to the cluster, run the
 following into another window::
@@ -212,7 +212,7 @@ Then at the docker prompt, do e.g.::
     cd /<your home directory>
     python3 /rascil/examples/cluster_tests/ritoy/cluster_test_ritoy.py localhost:8786
 
-A Jupyter lab notebook is also started by this docker-compose. The URL will be output during the
+A Jupyter lab notebook is also started by this docker compose. The URL will be output during the
 initial set up, e.g.::
 
     notebook_1   | [I 15:17:05.681 NotebookApp] The Jupyter Notebook is running at:

@@ -12,6 +12,9 @@ fullnameOverride: rascil-dask
 image: "artefact.skao.int/rascil-full:0.3.0"
 imagePullPolicy: IfNotPresent
 
+worker:
+  replicas: 2
+
 jupyter:
   enabled: true  # Enable/disable the bundled Jupyter notebook.
   image:

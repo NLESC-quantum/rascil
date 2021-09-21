@@ -195,6 +195,44 @@ matching those on your system.
 
 ##Running RASCIL as a cluster
 
+The following methods of running RASCIL as a cluster, will provide a set of 
+docker-based environments, which host a Dask scheduler, various Dask workers 
+(numbers can be customized), and a Jupyter lab notebook, which directly
+connects to the scheduler.
+
+###Kubernetes
+
+RASCIL can be run as a cluster in [Kubernetes](https://kubernetes.io/) using 
+[helm](https://helm.sh/) and [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) 
+(you need to have these two installed). If you want to run it in a local developer environment 
+(e.g. a laptop), we recommend using [Minikube](https://minikube.sigs.k8s.io/docs/start/).
+
+A custom `values.yaml` files is provided in 
+[/rascil/docker/kubernetes](https://gitlab.com/ska-telescope/external/rascil/-/tree/master/docker/kubernetes/values.yaml).
+It is meant to be used with a custom Dask Helm chart maintained by SKA developers, 
+hosted in a [GitLab repository](https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/tree/master/chart-repo).
+The documentation and details of the SKA Dask Helm chart can be found at
+https://developer.skao.int/projects/ska-sdp-helmdeploy-charts/en/latest/charts/dask.html.
+
+You can modify the `values.yaml` file, if needed, e.g. you can change the number of 
+worker replicas, or the docker image used (e.g. the version that should be run).
+
+Start Minikube and add the helm repository::
+
+    helm repo add ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
+    helm repo update
+
+`cd` into the `/rascil/docker/kubernetes` directory and install the RASCIL cluster::
+
+    helm install ska-helm/dask -f values.yaml
+
+Instructions on how to connect to the Dask dashboard and the Jupyter lab notebook are printed in the screen,
+please follow those. You can follow the deployment process and access logs using `kubectl` or via
+[`k9s`](https://k9scli.io/).
+    
+
+###docker-compose
+
 The file docker compose in the `docker` code directory a simple way to
 create a local cluster of a Dask scheduler and a number of workers. 
 

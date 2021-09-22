@@ -22,8 +22,8 @@ cluster-test:
     - curl -s https://gitlab.com/ska-telescope/templates-repository/-/raw/master/scripts/namespace_auth.sh | bash -s $SERVICE_ACCOUNT $NAMESPACE || true
     - helm repo add tmp-ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
     - helm repo update
-    - helm install ${RELEASE} tmp-ska-helm/dask -n ${NAMESPACE} --wait
-    - kubctl get pods -n ${NAMESPACE}
+    - helm install ${RELEASE} tmp-ska-helm/dask -n ${NAMESPACE} -f docker/kubernetes/values.yaml #--wait
+    - kubctl watch pods -n ${NAMESPACE}
     # TODO: what would be the test?
     # TODO: check this set up with Nijin or Mark
   environment:
@@ -31,7 +31,7 @@ cluster-test:
     kubernetes:
       namespace: $NAMESPACE
     on_stop: test-cleanup
-    auto_stop_in: 2 hours
+    auto_stop_in: 1 hours
 
 test-cleanup:
   extends: .k8s-test

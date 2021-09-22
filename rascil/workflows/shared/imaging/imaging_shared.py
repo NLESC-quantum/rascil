@@ -110,6 +110,8 @@ def sum_invert_results(image_list):
                 )
                 sumwt += arg[1]
 
+        im = normalise_sumwt(im, sumwt)
+
         return im, sumwt
 
 

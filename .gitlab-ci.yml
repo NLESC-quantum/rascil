@@ -237,5 +237,4 @@ include:
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/post_step.yml'
 
-#  - project: 'ska-telescope/external/rascil'
-#    file: 'docker/kubernetes/ci_test.yaml'
+  - local: 'docker/kubernetes/ci_test.yaml'

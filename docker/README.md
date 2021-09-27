@@ -195,42 +195,41 @@ matching those on your system.
 
 ##Running RASCIL as a cluster
 
-The file docker-compose in the `docker` code directory a simple way to
-create a local cluster of a Dask scheduler and a number of workers. 
+The following methods of running RASCIL as a cluster, will provide a set of 
+docker-based environments, which host a Dask scheduler, various Dask workers 
+(numbers can be customized), and a Jupyter lab notebook, which directly
+connects to the scheduler.
 
-The cluster is created using the docker-compose up command. To scale to e.g. 4 dask workers::
+###Kubernetes
 
-    docker-compose up -f docker-compose-base.yml --scale worker=4
+RASCIL can be run as a cluster in [Kubernetes](https://kubernetes.io/) using 
+[helm](https://helm.sh/) and [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) 
+(you need to have these two installed). If you want to run it in a local developer environment 
+(e.g. a laptop), we recommend using [Minikube](https://minikube.sigs.k8s.io/docs/start/).
 
-The scheduler, 4 workers and a notebook should now be running. To connect to the cluster, run the
-following into another window::
+A custom `values.yaml` files is provided in 
+[/rascil/docker/kubernetes](https://gitlab.com/ska-telescope/external/rascil/-/tree/master/docker/kubernetes/values.yaml).
+It is meant to be used with a custom Dask Helm chart maintained by SKA developers, 
+hosted in a [GitLab repository](https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/tree/master/chart-repo).
+The documentation and details of the SKA Dask Helm chart can be found at
+https://developer.skao.int/projects/ska-sdp-helmdeploy-charts/en/latest/charts/dask.html.
 
-    docker run -it --network host --volume $HOME:$HOME artefact.skao.int/rascil-full
+You can modify the `values.yaml` file, if needed, e.g. you can change the number of 
+worker replicas, or the docker image used (e.g. the version that should be run).
 
-Then at the docker prompt, do e.g.::
+Start Minikube and add the helm repository::
 
-    cd /<your home directory>
-    python3 /rascil/cluster_tests/ritoy/cluster_test_ritoy.py localhost:8786
+    helm repo add ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
+    helm repo update
 
-A Jupyter lab notebook is also started by this docker-compose. The URL will be output during the
-initial set up, e.g.::
+`cd` into the `/rascil/docker/kubernetes` directory and install the RASCIL cluster::
 
-    notebook_1   | [I 15:17:05.681 NotebookApp] The Jupyter Notebook is running at:
-    notebook_1   | [I 15:17:05.682 NotebookApp] http://notebook:8888/?token=0e77cf0e214fb0f5827b35fa5de8bbc5ebed6d4159e3d31e
-    notebook_1   | [I 15:17:05.682 NotebookApp]  or http://127.0.0.1:8888/?token=0e77cf0e214fb0f5827b35fa5de8bbc5ebed6d4159e3d31e
-    notebook_1   | [I 15:17:05.682 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+    helm install ska-helm/dask -f values.yaml
 
-Click on the 127.0.0.1 URL. We have used the jupyter lab interface instead of jupyter notebook interface
-because the former allows control of Dask from the interface. This can be changed in the docker-compose.yml
-file. Note also that the classic notebook interface can be selected at the lab interface.
+Instructions on how to connect to the Dask dashboard and the Jupyter lab notebook are printed in the screen,
+please follow those. You can follow the deployment process and access logs using `kubectl` or via
+[`k9s`](https://k9scli.io/).
 
-If the RASCIL data is already locally available then the images can be built without data using a slightly
-different compose file. This assumes that the environment variable RASCIL_DATA points to the
-data::
-
-    docker-compose --file docker-compose-base.yml up --scale worker=4
-
-The scheduler, 4 workers and notebook should now be running and can be accessed as above.
 
 ## CASA Measures Tables
 

@@ -1,6 +1,7 @@
 latest
 ------
 
+* Replaced running RASCIL-as-a-cluster via docker-compose with kubernetes/minikube ([MR238](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/238))
 * Use astropy instead of casacore for geometry ([MR227](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/227))
 * Added Mid beam calculations to RFI code ([MR204](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/204))
 * RASCIL is running on python3.9 (docker images and CI pipelines are also updated) ([MR219](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/219))

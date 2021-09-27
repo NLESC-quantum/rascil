@@ -170,6 +170,18 @@ class Configuration(xarray.Dataset):
 
         super().__init__(datavars, coords=coords, attrs=attrs)
 
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+        return int(self.nbytes)
+
 
 @xarray.register_dataset_accessor("configuration_acc")
 class ConfigurationAccessor(XarrayAccessorMixin):
@@ -277,6 +289,18 @@ class GainTable(xarray.Dataset):
         attrs["configuration"] = configuration
 
         super().__init__(datavars, coords=coords, attrs=attrs)
+
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+        return int(self.nbytes)
 
 
 @xarray.register_dataset_accessor("gaintable_acc")
@@ -410,6 +434,18 @@ class PointingTable(xarray.Dataset):
         attrs["configuration"] = configuration
 
         super().__init__(datavars, coords=coords, attrs=attrs)
+
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+        return int(self.nbytes)
 
 
 @xarray.register_dataset_accessor("pointingtable_acc")
@@ -551,6 +587,18 @@ class Image(xarray.Dataset):
 
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+        return int(self.nbytes)
+
 
 @xarray.register_dataset_accessor("image_acc")
 class ImageAccessor(XarrayAccessorMixin):
@@ -690,6 +738,18 @@ class GridData(xarray.Dataset):
         data_vars = dict()
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         super().__init__(data_vars, coords=coords, attrs=attrs)
+
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+        return int(self.nbytes)
 
 
 @xarray.register_dataset_accessor("griddata_acc")
@@ -862,6 +922,18 @@ class ConvolutionFunction(xarray.Dataset):
         data_vars["pixels"] = xarray.DataArray(data, dims=dims, coords=coords)
         super().__init__(data_vars, coords=coords, attrs=attrs)
 
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+        return int(self.nbytes)
+
 
 @xarray.register_dataset_accessor("convolutionfunction_acc")
 class ConvolutionFunctionAccessor(XarrayAccessorMixin):
@@ -1017,6 +1089,32 @@ class SkyModel:
         self.mask = mask
 
         self.fixed = fixed
+
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+
+        # Get size of reference tables
+        obj_size = int(super().__sizeof__())
+
+        # Add size of image data object
+        if self.image is not None:
+            obj_size += int(self.image.nbytes)
+
+        # Add size of gaintable data object
+        if self.gaintable is not None:
+            obj_size += int(self.gaintable.nbytes)
+
+        # I am not sure about type of mask. If it is derived type of xarray
+        # too, we should add that here
+        return obj_size
 
     def __str__(self):
         """Default printer for SkyModel"""
@@ -1210,6 +1308,18 @@ class BlockVisibility(xarray.Dataset):
 
         super().__init__(datavars, coords=coords, attrs=attrs)
 
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+        return int(self.nbytes)
+
 
 @xarray.register_dataset_accessor("blockvisibility_acc")
 class BlockVisibilityAccessor(XarrayAccessorMixin):
@@ -1387,6 +1497,18 @@ class FlagTable(xarray.Dataset):
         attrs["configuration"] = configuration  # Antenna/station configuration
 
         super().__init__(datavars, coords=coords, attrs=attrs)
+
+    def __sizeof__(self):
+        """Override default method to return size of dataset
+        :return: int
+        """
+        # Dask uses sizeof() class to get memory occupied by various data
+        # objects. For custom data objects like this one, dask falls back to
+        # sys.getsizeof() function to get memory usage. sys.getsizeof() in
+        # turns calls __sizeof__() magic method to get memory size. Here we
+        # override the default method (which gives size of reference table)
+        # to return size of Dataset.
+        return int(self.nbytes)
 
 
 @xarray.register_dataset_accessor("flagtable_acc")

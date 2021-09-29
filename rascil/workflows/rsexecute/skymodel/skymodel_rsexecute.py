@@ -577,7 +577,9 @@ def deconvolve_skymodel_list_rsexecute_workflow(
         )(dirty_image_list, skymodel_list, **kwargs)
         return skymodel_list
     else:
-        deconvolve_model_imagelist = [sm.image for sm in skymodel_list]
+        deconvolve_model_imagelist = [
+            rsexecute.execute(lambda s: s.image, nout=1)(sm) for sm in skymodel_list
+        ]
 
         deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(
             dirty_image_list,
@@ -596,7 +598,8 @@ def deconvolve_skymodel_list_rsexecute_workflow(
             rsexecute.execute(skymodel_update_image, nout=1)(skymodel_list[i], m)
             for i, m in enumerate(deconvolve_model_imagelist)
         ]
-        return skymodel_list
+        # Optimize to reduce the size of graph
+        return rsexecute.optimize(skymodel_list)
 
 
 def convert_skycomponents_taylor_terms_list(dirty_image_list, skymodel_list, **kwargs):

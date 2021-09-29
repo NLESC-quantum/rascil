@@ -95,7 +95,7 @@ def predict_skymodel_list_rsexecute_workflow(
 
                 pb = get_pb(vis_slice, sm.image)
 
-                # First do the DFT or the components
+                # First do the DFT for the components
                 if len(sm.components) > 0:
                     if sm.mask is not None or pb is not None:
                         comps = copy_skycomponent(sm.components)

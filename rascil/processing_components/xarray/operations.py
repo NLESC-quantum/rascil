@@ -25,16 +25,23 @@ def xarray_to_fits_header(xa: xarray.DataArray):
     :return: fits_header
     """
     try:
-        wcs = xa.attrs["wcs"]
+        if xa.attrs["rascil_data_model"] == "GridData":
+            wcs = xa.griddata_acc.griddata_wcs
+        elif xa.attrs["rascil_data_model"] == "ConvolutionFunction":
+            wcs = xa.cf_acc.cf_wcs
+        else:
+            wcs = xa.attrs["wcs"]
     except:
-        wcs = WCS(naxis=len(xa.shape))
+        log.debug("xarray_to_fits_header: No WCS - will make generic WCS")
+        xa_shape = xa["pixels"].data.shape
+        wcs = WCS(naxis=len(xa_shape))
 
         # This assumes that the coordinate system is linear!
         for icoord, coord in enumerate(xa.coords):
             fcoord = wcs.naxis - icoord - 1
             wcs.wcs.crpix[fcoord] = 0.0
             wcs.wcs.crval[fcoord] = xa.coords[coord].data[0]
-            if xa.shape[icoord] > 1:
+            if xa_shape[icoord] > 1:
                 wcs.wcs.cdelt[icoord] = (
                     xa.coords[coord].data[1] - xa.coords[coord].data[0]
                 )
@@ -63,23 +70,32 @@ def export_xarray_to_fits(
     ##assert isinstance(xa, xarray.DataArray), xa
     if xa["pixels"].data.dtype == "complex":
         assert len(fitsfile) == 2, "Need file names for real, imaginary parts"
-        return fits.writeto(
-            filename=fitsfile[0],
-            data=numpy.real(xa["pixels"].data),
-            header=xarray_to_fits_header(xa),
-            overwrite=True,
-        ) and fits.writeto(
-            filename=fitsfile[1],
-            data=numpy.imag(xa["pixels"].data),
-            header=xarray_to_fits_header(xa),
-            overwrite=True,
+        return (
+            fits.writeto(
+                filename=fitsfile[0],
+                data=numpy.real(xa["pixels"].data),
+                header=xarray_to_fits_header(xa),
+                overwrite=True,
+            )
+            is None
+        ) and (
+            fits.writeto(
+                filename=fitsfile[1],
+                data=numpy.imag(xa["pixels"].data),
+                header=xarray_to_fits_header(xa),
+                overwrite=True,
+            )
+            is None
         )
     else:
-        return fits.writeto(
-            filename=fitsfile,
-            data=xa["pixels"].data,
-            header=xarray_to_fits_header(xa),
-            overwrite=True,
+        return (
+            fits.writeto(
+                filename=fitsfile,
+                data=xa["pixels"].data,
+                header=xarray_to_fits_header(xa),
+                overwrite=True,
+            )
+            is None
         )
 
 

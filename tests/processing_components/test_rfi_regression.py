@@ -107,7 +107,7 @@ class TestRFIRegression(unittest.TestCase):
             self.emitter_coordinates,
             ["source1"],
             bvis.frequency.values,
-            beam_gain_state=None,
+            low_beam_gain=None,
             apply_primary_beam=True,
         )
 
@@ -123,12 +123,12 @@ class TestRFIRegression(unittest.TestCase):
 
         numpy.testing.assert_approx_equal(
             qa.data["max"],
-            989659.894695817,
+            222615.10285324417,
             8,
             err_msg=str(qa),
         )
         numpy.testing.assert_approx_equal(
-            qa.data["min"], -822572.7384395137, 8, err_msg=str(qa)
+            qa.data["min"], -140011.02278718806, 8, err_msg=str(qa)
         )
 
     def test_simulate_rfi_block_prop_image_beam_false(self):
@@ -147,7 +147,7 @@ class TestRFIRegression(unittest.TestCase):
             self.emitter_coordinates,
             ["source1"],
             bvis.frequency.values,
-            beam_gain_state=None,
+            low_beam_gain=None,
             apply_primary_beam=False,
         )
 

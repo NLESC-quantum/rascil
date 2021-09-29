@@ -3,7 +3,6 @@
 """
 
 import logging
-from unittest.mock import patch
 
 import astropy.units as u
 import numpy
@@ -117,34 +116,74 @@ def test_match_frequencies_multi_rfi_in_single_bvis_chan():
     assert (result[:, :, 4] == 6.0).all()
 
 
-def test_calculate_rfi_at_station_single_beam_gain():
+def test_apply_beam_gain_for_low_beam_none():
+    """
+    When no beam_gain information is provided,
+    the function sets it automatically to 1.0,
+    which is the equivalent of not applying the beam gain.
+
+    Expected output == input
+    """
+    apparent_power = numpy.ones((2, 3, 4))  # 2 times, 3 antennas, 4 channels
+    beam_gain_value = None
+    source = "NA"  # not relevant when beam gain is none
+
+    result = apply_beam_gain_for_low(apparent_power, beam_gain_value, source)
+    # function multiplies the given apparent power with the sqrt of beam gain
+    assert (result == apparent_power).all()
+
+
+def test_apply_beam_gain_for_low_single_beam_gain():
+    """
+    When the beam gain is an integer, that is applied to the
+    apparent_power.
+
+    Expected output == input * beam integer
+    """
     apparent_power = numpy.ones((2, 3, 4))  # 2 times, 3 antennas, 4 channels
     beam_gain_value = 9
-    beam_gain_ctx = "bg_value"
+    source = "NA"  # not relevant when beam gain is a single number
 
-    result = apply_beam_gain_for_low(
-        apparent_power, beam_gain_value, beam_gain_ctx, None
-    )
+    result = apply_beam_gain_for_low(apparent_power, beam_gain_value, source)
     # function multiplies the given apparent power with the sqrt of beam gain
     assert (result == apparent_power * 3).all()
 
 
-@patch("rascil.processing_components.simulation.rfi.numpy.loadtxt")
-def test_calculate_rfi_at_station_beam_gain_array(mock_load):
+def test_apply_beam_gain_for_low_beam_gain_array_single_station():
+    """
+    apparent_power is for 3 stations, but beam gain
+    was only calculated for station centre
+    (scenario when Low simulations provide Numpy files
+    for beam gain, produced by OSKAR for the station centre)
+    """
     apparent_power = numpy.ones((2, 3, 4))  # 2 times, 3 antennas, 4 channels
-    beam_gain_value = "some-file"
-    beam_gain_ctx = "bg_file"
-    # file contains a value of beam gain per channel
-    mock_load.return_value = numpy.array([9, 4, 16, 25])
+    beam_gain = numpy.array([[[9, 4, 16, 25]]])  # 1 source, 1 antenna, 4 channels
+    source = 0
 
-    result = apply_beam_gain_for_low(
-        apparent_power, beam_gain_value, beam_gain_ctx, None
-    )
+    result = apply_beam_gain_for_low(apparent_power, beam_gain, source)
     # function multiplies the given apparent power with the sqrt of beam gain
     assert (result[:, :, 0] == apparent_power[:, :, 0] * 3).all()
     assert (result[:, :, 1] == apparent_power[:, :, 1] * 2).all()
     assert (result[:, :, 2] == apparent_power[:, :, 2] * 4).all()
     assert (result[:, :, 3] == apparent_power[:, :, 3] * 5).all()
+
+
+def test_apply_beam_gain_for_low_beam_gain_array_per_station():
+    """
+    apparent_power and beam gain are both for the same 3 stations
+    (scenario when Low simulations provide an HDF5 file
+    for beam gain, produced by OSKAR for each station that's part of the simulation)
+    """
+    apparent_power = numpy.ones((2, 3, 4))  # 2 times, 3 antennas, 4 channels
+    beam_gain = numpy.array(
+        [[[9, 4, 16, 25], [4, 25, 36, 9], [25, 16, 9, 36]]]
+    )  # 1 source, 3 stations, 4 channels
+    source = 0
+
+    expected_power = numpy.array([[3, 2, 4, 5], [2, 5, 6, 3], [5, 4, 3, 6]])
+    result = apply_beam_gain_for_low(apparent_power, beam_gain, source)
+
+    assert (result == expected_power).all()
 
 
 def test_rfi_correlation():
@@ -158,11 +197,8 @@ def test_rfi_correlation():
     apparent_power = numpy.ones((NTIMES, nants, NCHANNELS)) * 1.0e-10
 
     beam_gain_value = 3.0e-8
-    beam_gain_ctx = "bg_value"
     # Now calculate the RFI at the stations, based on the emitter and the propagators
-    rfi_at_station = apply_beam_gain_for_low(
-        apparent_power, beam_gain_value, beam_gain_ctx, None
-    )
+    rfi_at_station = apply_beam_gain_for_low(apparent_power, beam_gain_value, 0)
     assert rfi_at_station.shape == (
         NTIMES,
         nants,
@@ -215,7 +251,7 @@ def test_simulate_rfi_block_prop_use_pol(telescope, apply_beam):
         emitter_coordinates,
         ["source1"],
         bvis.frequency.values,
-        beam_gain_state=None,
+        low_beam_gain=None,
         apply_primary_beam=apply_beam,
     )
 

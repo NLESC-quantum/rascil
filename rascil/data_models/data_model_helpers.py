@@ -96,7 +96,7 @@ __all__ = [
 import ast
 import logging
 import collections
-from typing import Union
+from typing import Union, List
 
 import astropy.units as u
 import h5py
@@ -517,7 +517,7 @@ def convert_hdf_to_gaintable(f):
     return gt
 
 
-def export_gaintable_to_hdf5(gt: GainTable, filename):
+def export_gaintable_to_hdf5(gt: Union[GainTable, List[GainTable]], filename):
     """Export a GainTable or list to HDF5 format
 
     :param gt: GainTable or list

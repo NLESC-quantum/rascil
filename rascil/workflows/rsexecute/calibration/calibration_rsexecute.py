@@ -24,6 +24,7 @@ def calibrate_list_rsexecute_workflow(
     model_vislist,
     gt_list=None,
     calibration_context="TG",
+    controls=None,
     global_solution=True,
     **kwargs
 ):
@@ -36,6 +37,7 @@ def calibrate_list_rsexecute_workflow(
     :param vis_list: list of visibilities (or graph)
     :param model_vislist: list of model visibilities (or graph)
     :param calibration_context: String giving terms to be calibrated e.g. 'TGB'
+    :param controls: Calibration controls dictionary
     :param global_solution: Solve for global gains
     :param kwargs: Parameters for functions in components
     :return: list of calibrated vis, list of dictionaries of gaintables
@@ -43,13 +45,22 @@ def calibrate_list_rsexecute_workflow(
 
     def calibration_solve(vis, modelvis=None, gt=None):
         return solve_calibrate_chain(
-            vis, modelvis, gt, calibration_context=calibration_context, **kwargs
+            vis,
+            modelvis,
+            gt,
+            calibration_context=calibration_context,
+            controls=controls,
+            **kwargs
         )
 
     def calibration_apply(vis, gt):
         assert gt is not None
         return apply_calibration_chain(
-            vis, gt, calibration_context=calibration_context, **kwargs
+            vis,
+            gt,
+            calibration_context=calibration_context,
+            controls=controls,
+            **kwargs
         )
 
     if global_solution and (len(vis_list) > 1):

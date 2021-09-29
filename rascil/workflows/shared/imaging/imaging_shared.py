@@ -87,30 +87,32 @@ def sum_invert_results_local(image_list):
     return im, sumwt
 
 
-def sum_invert_results(image_list, normalise=True):
+def sum_invert_results(image_list):
     """Sum a set of invert results with appropriate weighting
 
-    :param normalise:
     :param image_list: List of [image, sum weights] pairs
     :return: image, sum of weights
     """
     if len(image_list) == 1:
-        return image_list[0]
+        im = image_list[0][0].copy(deep=True)
+        sumwt = image_list[0][1]
+        return im, sumwt
+    else:
 
-    im = create_empty_image_like(image_list[0][0])
-    sumwt = image_list[0][1].copy()
-    sumwt *= 0.0
+        im = create_empty_image_like(image_list[0][0])
+        sumwt = image_list[0][1].copy()
+        sumwt *= 0.0
 
-    for i, arg in enumerate(image_list):
-        if arg is not None:
-            im["pixels"].data += (
-                arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0]["pixels"].data
-            )
-            sumwt += arg[1]
+        for i, arg in enumerate(image_list):
+            if arg is not None:
+                im["pixels"].data += (
+                    arg[1][..., numpy.newaxis, numpy.newaxis] * arg[0]["pixels"].data
+                )
+                sumwt += arg[1]
 
-    if normalise:
         im = normalise_sumwt(im, sumwt)
-    return im, sumwt
+
+        return im, sumwt
 
 
 def remove_sumwt(results):

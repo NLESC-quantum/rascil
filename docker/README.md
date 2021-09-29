@@ -224,11 +224,17 @@ Start Minikube and add the helm repository::
 
 `cd` into the `/rascil/docker/kubernetes` directory and install the RASCIL cluster::
 
-    helm install ska-helm/dask -f values.yaml
+    helm install test ska-helm/dask -f values.yaml
 
 Instructions on how to connect to the Dask dashboard and the Jupyter lab notebook are printed in the screen,
 please follow those. You can follow the deployment process and access logs using `kubectl` or via
 [`k9s`](https://k9scli.io/).
+
+To uninstall the chart and clean out all pods, run::
+
+    helm uninstall test
+
+Note: this will remove changes you might have made in the Jupyter notebooks.
 
 
 ## CASA Measures Tables

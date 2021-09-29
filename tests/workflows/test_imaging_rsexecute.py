@@ -558,8 +558,8 @@ class TestImaging(unittest.TestCase):
                 % (self.dir, rsexecute.type()),
             )
         qa = qa_image(restored_2facets_image_list[centre])
-        assert numpy.abs(qa.data["max"] - 0.0013772581716870525) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 4.2921636357042816e-05) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 0.012401241830647329) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.0010159473717538114) < 1e-7, str(qa)
 
     def test_sum_invert_list(self):
         self.actualSetUp(zerow=True)

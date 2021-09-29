@@ -160,16 +160,16 @@ class TestImageDeconvolution(unittest.TestCase):
                 self.cmodel, "%s/test_restore_skycomponent.fits" % (self.dir)
             )
         assert (
-            numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.993507929741906) < 1e-7
+            numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.9959046879055156) < 1e-7
         ), numpy.max(self.cmodel["pixels"].data)
 
     def test_fit_psf(self):
         clean_beam = fit_psf(self.psf)
         if self.persist:
             export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.dir))
-
-        assert numpy.abs(clean_beam["bmaj"] - 0.291887735747749) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 0.2792104878182067) < 1.0e-7, clean_beam
+        # Sanity check: by eyeball the FHWM = 4 pixels = 0.004 rad = 0.229 deg
+        assert numpy.abs(clean_beam["bmaj"] - 0.24790661720727178) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 0.2371395541730553) < 1.0e-7, clean_beam
         assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):

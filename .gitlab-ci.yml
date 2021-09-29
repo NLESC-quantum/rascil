@@ -236,3 +236,5 @@ prepare ci metrics:
 include:
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/post_step.yml'
+
+  - local: 'docker/kubernetes/ci_test.yaml'

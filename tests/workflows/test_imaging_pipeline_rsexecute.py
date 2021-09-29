@@ -48,7 +48,7 @@ log.setLevel(logging.WARNING)
 # These tests probe whether the results depend on whether Dask is used and also whether
 # optimisation in Dask is used.
 
-default_run = False
+default_run = True
 
 
 @unittest.skip("Too expensive for CI/CD")
@@ -56,7 +56,7 @@ default_run = False
     "default_run, use_dask, optimise, test_max, test_min, sensitivity, tag, rmax",
     [
         (
-            not default_run,
+            default_run,
             True,
             True,
             6.787887014253024,

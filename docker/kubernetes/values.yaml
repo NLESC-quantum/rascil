@@ -1,0 +1,23 @@
+# This file works with the SKA version of the Dask Helm chart.
+# Add the helm repository:
+#   helm repo add ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
+#   helm repo update
+# Install the chart using this custom values file
+#   helm install test ska-helm/dask -f values.yaml
+---
+nameOverride: rascil-dask
+fullnameOverride: rascil-dask
+
+# image used by the scheduler and workers
+image: "artefact.skao.int/rascil-full:0.3.0"
+imagePullPolicy: IfNotPresent
+
+worker:
+  replicas: 2
+
+jupyter:
+  enabled: true  # Enable/disable the bundled Jupyter notebook.
+  image:
+    repository: "artefact.skao.int/rascil-notebook"
+    tag: 0.3.0
+    pullPolicy: IfNotPresent

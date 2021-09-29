@@ -1112,8 +1112,10 @@ class SkyModel:
         if self.gaintable is not None:
             obj_size += int(self.gaintable.nbytes)
 
-        # I am not sure about type of mask. If it is derived type of xarray
-        # too, we should add that here
+        # Add size of gaintable data object
+        if self.mask is not None:
+            obj_size += int(self.mask.nbytes)
+
         return obj_size
 
     def __str__(self):

@@ -1,13 +1,3 @@
-FROM python:3.9-slim AS first
-
-WORKDIR /
-
-RUN apt-get update -y && apt-get install -y git rsync
-RUN git clone https://gitlab.com/ska-telescope/external/rascil.git
-
-RUN mkdir -p /usr/share/casacore/data/ && \
-    rsync -avz --timeout=120 rsync://casa-rsync.nrao.edu/casa-data/geodetic  /usr/share/casacore/data/
-
 FROM python:3.9
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
@@ -28,10 +18,7 @@ RUN apt-get update -y && apt-get install -y gosu && \
 WORKDIR /
 USER root
 
-COPY --from=first /usr/share/casacore/data /usr/share/casacore/data
-
 # Install RASCIL from wheel built in the "build" stage of the CI pipeline
-# The data directory will not be loaded correctly until LFS is enabled
 COPY rascil-*whl .
 
 # these are needed for bdsf to install

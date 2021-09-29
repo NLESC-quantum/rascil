@@ -2,7 +2,7 @@
 Simulation of observation for subsequent processing
 
 """
-results_dir = "./"
+results_dir = "./results/"
 
 
 import os

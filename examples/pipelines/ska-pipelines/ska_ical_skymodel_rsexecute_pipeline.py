@@ -2,7 +2,7 @@
 ICAL pipeline
 """
 
-results_dir = "./"
+results_dir = "./results/"
 
 from rascil.data_models import PolarisationFrame, export_gaintable_to_hdf5
 

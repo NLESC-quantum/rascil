@@ -2,22 +2,27 @@
 # Disable built in rules
 .SUFFIXES:
 
-MS = ska-pipeline_simulation_0.ms ska-pipeline_simulation_1.ms ska-pipeline_simulation_2.ms \
-ska-pipeline_simulation_3.ms ska-pipeline_simulation_4.ms ska-pipeline_simulation_5.ms \
-ska-pipeline_simulation_6.ms ska-pipeline_simulation_7.ms
+MS = results/ska-pipeline_simulation_0.ms \
+results/ska-pipeline_simulation_1.ms \
+results/ska-pipeline_simulation_2.ms \
+results/ska-pipeline_simulation_3.ms \
+results/ska-pipeline_simulation_4.ms \
+results/ska-pipeline_simulation_5.ms \
+results/ska-pipeline_simulation_6.ms \
+results/ska-pipeline_simulation_7.ms
 
-FITS = ska-continuum-imaging_rsexecute_deconvolved_cube.fits \
-ska-continuum-imaging_rsexecute_residual_cube.fits \
-ska-continuum-imaging_rsexecute_restored_cube.fits \
-ska-ical_rsexecute_deconvolved_cube.fits \
-ska-ical_rsexecute_residual_cube.fits \
-ska-ical_rsexecute_restored_cube.fits \
-ska-imaging_rsexecute_dirty_centre.fits \
-ska-imaging_rsexecute_dirty_cube.fits 
+FITS = results/ska-continuum-imaging_rsexecute_deconvolved_cube.fits \
+results/ska-continuum-imaging_rsexecute_residual_cube.fits \
+results/ska-continuum-imaging_rsexecute_restored_cube.fits \
+results/ska-ical_rsexecute_deconvolved_cube.fits \
+results/ska-ical_rsexecute_residual_cube.fits \
+results/ska-ical_rsexecute_restored_cube.fits \
+results/ska-imaging_rsexecute_dirty_centre.fits \
+results/ska-imaging_rsexecute_dirty_cube.fits 
 
-HDF = ska-ical_rsexecute_gaintable.hdf
+HDF = results/ska-ical_rsexecute_gaintable.hdf
 
-LOG = ska-pipeline.log
+LOG = results/ska-pipeline.log
 
 .PHONY: clean
 clean:

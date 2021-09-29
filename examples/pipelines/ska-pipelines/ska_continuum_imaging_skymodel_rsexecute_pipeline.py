@@ -5,7 +5,7 @@ Continuum processing pipeline
 
 from rascil.data_models.parameters import rascil_path
 
-results_dir = "./"
+results_dir = "./results/"
 
 
 from rascil.data_models import PolarisationFrame

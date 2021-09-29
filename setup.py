@@ -28,7 +28,7 @@ reqs = [
     for line in open("requirements.txt").readlines()
     if not line.strip().startswith("#")
     and line.strip() != ""
-    and not line.startswith("git")
+    and not line.startswith("git+")
 ]
 
 reqs.append("bdsf @ git+https://github.com/lofar-astron/PyBDSF.git@master#egg=bdsf")

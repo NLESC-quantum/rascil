@@ -160,7 +160,7 @@ class TestImageDeconvolution(unittest.TestCase):
                 self.cmodel, "%s/test_restore_skycomponent.fits" % (self.dir)
             )
         assert (
-            numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.993507929741906) < 1e-7
+            numpy.abs(numpy.max(self.cmodel["pixels"].data) - 0.9959046879055156) < 1e-7
         ), numpy.max(self.cmodel["pixels"].data)
 
     def test_fit_psf(self):

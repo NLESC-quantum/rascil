@@ -21,9 +21,5 @@ RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
 #RUN pip3 install dask-labextension jupyterlab \
 #    && jupyter labextension install @jupyter-widgets/jupyterlab-manager dask-labextension
 
-# Use entrypoint script to create a user on the fly and avoid running as root.
-COPY entrypoint.sh .
-RUN chmod +x /rascil/entrypoint.sh
-ENTRYPOINT ["/rascil/entrypoint.sh"]
 CMD ["/bin/bash"]
 

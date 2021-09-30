@@ -390,8 +390,8 @@ def restore_centre_rsexecute_workflow(
             model,
             clean_beam=clean_beam,
         )
-
-    return restored
+    # optimize the graph to reduce size
+    return rsexecute.optimize(restored)
 
 
 def deconvolve_list_singlefacet_rsexecute_workflow(
@@ -645,7 +645,8 @@ def deconvolve_list_rsexecute_workflow(
         )
         for chan in range(nchan)
     ]
-    return result
+    # optimize the graph to reduce size
+    return rsexecute.optimize(result)
 
 
 def scatter_facets_and_transpose(
@@ -677,13 +678,18 @@ def scatter_facets_and_transpose(
         )
         for chan in range(nchan)
     ]
-    # Tranpose from [channel][facet] to [facet][channel]
+    # Transpose from [channel][facet] to [facet][channel]
+    # A direct would create too many (channel*facet) tasks. We double
+    # delay it to reduce number of tasks.
     scattered_facets_channels_list = [
-        [scattered_channels_facets_list[chan][facet] for chan in range(nchan)]
+        rsexecute.execute(
+            [scattered_channels_facets_list[chan][facet] for chan in range(nchan)],
+            nout=nchan,
+        )
         for facet in range(deconvolve_number_facets)
     ]
 
-    return scattered_facets_channels_list
+    return rsexecute.optimize(scattered_facets_channels_list)
 
 
 def deconvolve_list_channel_rsexecute_workflow(
@@ -877,16 +883,16 @@ def sum_predict_results_rsexecute(bvis_list, split=2):
         return rsexecute.execute(sum_predict_results, nout=2)(bvis_list)
 
 
-def sum_invert_results_rsexecute(image_list, split=2):
+def sum_invert_results_rsexecute(image_list):
     """Sum a set of invert results with appropriate weighting
 
     Note that in the case of a single element of image_list a copy is made
 
     :param image_list: List of (image, sum weights) tuples
-    :param split: Split into
     :return: image, sum of weights
     """
-    if len(image_list) > split:
+    split = 2
+    if len(image_list) >= split:
         centre = len(image_list) // split
         result = [
             sum_invert_results_rsexecute(image_list[:centre]),

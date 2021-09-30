@@ -171,7 +171,7 @@ def imager(args):
         raise ValueError("Unknown mode {}".format(args.mode))
 
     # Save the processing statistics from Dask
-    dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
+    dask_info = rsexecute.save_statistics(name=logfile.replace(".log", ""))
 
     perf_save_dask_profile(args, dask_info)
 
@@ -220,6 +220,7 @@ def setup_rsexecute(args):
             rsexecute.set_client(use_dask=True, client=client)
 
         rsexecute.init_statistics()
+
         # Sample the memory usage with a scheduler plugin
         if rsexecute.using_dask and args.dask_memory_usage_file is not None:
             rsexecute.memusage(args.dask_memory_usage_file)

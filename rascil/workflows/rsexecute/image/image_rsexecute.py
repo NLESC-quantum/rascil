@@ -58,7 +58,6 @@ def sum_images_rsexecute(image_list, split=2):
     """Sum a set of images, using a tree reduction
 
     :param image_list: List of images
-    :param split: Order of split i.e. 2 is binary
     :return: graph for summed image
 
     """

@@ -4,7 +4,7 @@ These are tests of the ability to run dask in various contexts. These are intend
   scripts.
 
  - cluster_dask_test is python + Dask
- - cluster_image_test is python + Dask + ARL
+ - cluster_image_test is python + Dask + RASCIL
  - ritoy is python + Dask
  - ritoy_numba is python + Dask + numba
  
@@ -13,4 +13,4 @@ These are tests of the ability to run dask in various contexts. These are intend
  - ritoy_numba fails on P3 if the number of workers per node is greater than one. For this reason we do not currently
   recommend using numba.
  
- Tim Cornwell 12/11/2019
+ Tim Cornwell

@@ -96,7 +96,7 @@ __all__ = [
 import ast
 import logging
 import collections
-from typing import Union
+from typing import Union, List
 
 import astropy.units as u
 import h5py
@@ -517,7 +517,7 @@ def convert_hdf_to_gaintable(f):
     return gt
 
 
-def export_gaintable_to_hdf5(gt: GainTable, filename):
+def export_gaintable_to_hdf5(gt: Union[GainTable, List[GainTable]], filename):
     """Export a GainTable or list to HDF5 format
 
     :param gt: GainTable or list
@@ -791,11 +791,7 @@ def convert_hdf_to_image(f):
     ):
         polarisation_frame = PolarisationFrame(f.attrs["polarisation_frame"])
         wcs = WCS(f.attrs["wcs"])
-        frequency = numpy.array(f.attrs["frequency"])
         data = numpy.array(f["data"])
-        s = f.attrs["phasecentre_coords"].split()
-        ss = [float(s[0]), float(s[1])] * u.deg
-        phasecentre = SkyCoord(ra=ss[0], dec=ss[1], frame=f.attrs["phasecentre_frame"])
         im = Image(data=data, polarisation_frame=polarisation_frame, wcs=wcs)
         return im
     else:
@@ -995,7 +991,7 @@ def export_griddata_to_hdf5(gd, filename):
             f.attrs["number_data_models"] = len(gd)
             for i, v in enumerate(gd):
                 vf = f.create_group("GridData%d" % i)
-                convert_image_to_hdf(v, vf)
+                convert_griddata_to_hdf(v, vf)
         else:
             f.attrs["number_data_models"] = 1
             vf = f.create_group("GridData%d" % 0)

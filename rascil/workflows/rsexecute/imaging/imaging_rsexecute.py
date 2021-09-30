@@ -390,8 +390,8 @@ def restore_centre_rsexecute_workflow(
             model,
             clean_beam=clean_beam,
         )
-
-    return restored
+    # optimize the graph to reduce size
+    return rsexecute.optimize(restored)
 
 
 def deconvolve_list_singlefacet_rsexecute_workflow(
@@ -645,7 +645,8 @@ def deconvolve_list_rsexecute_workflow(
         )
         for chan in range(nchan)
     ]
-    return result
+    # optimize the graph to reduce size
+    return rsexecute.optimize(result)
 
 
 def scatter_facets_and_transpose(
@@ -677,13 +678,18 @@ def scatter_facets_and_transpose(
         )
         for chan in range(nchan)
     ]
-    # Tranpose from [channel][facet] to [facet][channel]
+    # Transpose from [channel][facet] to [facet][channel]
+    # A direct would create too many (channel*facet) tasks. We double
+    # delay it to reduce number of tasks.
     scattered_facets_channels_list = [
-        [scattered_channels_facets_list[chan][facet] for chan in range(nchan)]
+        rsexecute.execute(
+            [scattered_channels_facets_list[chan][facet] for chan in range(nchan)],
+            nout=nchan,
+        )
         for facet in range(deconvolve_number_facets)
     ]
 
-    return scattered_facets_channels_list
+    return rsexecute.optimize(scattered_facets_channels_list)
 
 
 def deconvolve_list_channel_rsexecute_workflow(
@@ -728,6 +734,24 @@ def deconvolve_list_channel_rsexecute_workflow(
     return rsexecute.optimize(result)
 
 
+def griddata_merge_weights_rsexecute(gd_list):
+    """Merge weights into one grid using a reduction
+
+    :param gd_list: List of griddatas or graph
+    :return:
+    """
+    split = 2
+    if len(gd_list) >= split:
+        centre = len(gd_list) // split
+        result = [
+            griddata_merge_weights_rsexecute(gd_list[:centre]),
+            griddata_merge_weights_rsexecute(gd_list[centre:]),
+        ]
+        return rsexecute.execute(griddata_merge_weights, nout=1)(result)
+    else:
+        return rsexecute.execute(griddata_merge_weights, nout=1)(gd_list)
+
+
 def weight_list_rsexecute_workflow(
     vis_list, model_imagelist, weighting="uniform", robustness=0.0, **kwargs
 ):
@@ -769,7 +793,7 @@ def weight_list_rsexecute_workflow(
         for i in range(len(vis_list))
     ]
 
-    merged_weight_grid = rsexecute.execute(griddata_merge_weights, nout=1)(weight_list)
+    merged_weight_grid = griddata_merge_weights_rsexecute(weight_list)
 
     def imaging_re_weight(vis, model, gd):
         if gd is not None:

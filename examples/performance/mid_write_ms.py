@@ -107,7 +107,7 @@ def simulation(args):
     ms_createtime = time.time() - start_time
     log.info("Time to create BlockVisibility = {:.3f} seconds".format(ms_createtime))
 
-    print("Size of BlockVisibility = {:.3f} GB".format(entire_bvis.size()))
+    print("Size of BlockVisibility = {:.3f} GB".format(entire_bvis.nbytes * 2 ** -30))
 
     log.info("Writing BlockVisibility to HDF5")
     start_time = time.time()

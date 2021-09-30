@@ -3,7 +3,7 @@
 #   helm repo add ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
 #   helm repo update
 # Install the chart using this custom values file
-#   helm install ska-helm/dask -f values.yaml
+#   helm install test ska-helm/dask -f values.yaml
 ---
 nameOverride: rascil-dask
 fullnameOverride: rascil-dask

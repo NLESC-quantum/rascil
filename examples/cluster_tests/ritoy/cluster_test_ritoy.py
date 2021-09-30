@@ -39,7 +39,7 @@ if __name__ == "__main__":
     len_chunk = 16384 * 4
     nchunks = 256
     nreduce = 16
-    shape = [512, 512]
+    shape = [4096, 4096]
     skip = 1
 
     # We pass in the scheduler from the invoking script

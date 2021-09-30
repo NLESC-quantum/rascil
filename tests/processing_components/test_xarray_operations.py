@@ -11,6 +11,9 @@ from rascil.processing_components.xarray.operations import (
     import_xarray_from_fits,
     export_xarray_to_fits,
 )
+from rascil.processing_components.simulation.testing_support import create_test_image
+
+from rascil.processing_components import fft_image_to_griddata
 
 log = logging.getLogger("rascil-logger")
 
@@ -32,9 +35,12 @@ class TestXarrayOperations(unittest.TestCase):
         assert numpy.unravel_index(
             numpy.argmax(screen["pixels"].data), screen["pixels"].data.shape
         ) == (0, 2, 79, 1814)
+        fitsfile = rascil_path("test_results/test_export_xarray.fits")
         export_xarray_to_fits(
-            screen, rascil_path("test_results/test_export_xarray.fits")
+            screen,
+            fitsfile,
         )
+        assert os.path.isfile(fitsfile)
 
     def test_read_write_screen_complex_fails(self):
         screen = import_xarray_from_fits(
@@ -46,13 +52,14 @@ class TestXarrayOperations(unittest.TestCase):
                 screen, rascil_path("test_results/test_export_xarray.fits")
             )
 
-    def test_read_write_screen_complex(self):
-        screen = import_xarray_from_fits(
-            rascil_data_path("models/test_mpc_screen.fits")
-        )
-        screen = screen.astype("complex")
+    def test_write_griddata(self):
+        model = create_test_image()
+        gd = fft_image_to_griddata(model)
         fitsfiles = [
-            rascil_path("test_results/test_export_xarray_real.fits"),
-            rascil_path("test_results/test_export_xarray_imag.fits"),
+            rascil_path("test_results/test_export_xarray_griddata_real.fits"),
+            rascil_path("test_results/test_export_xarray_griddata_imag.fits"),
         ]
-        export_xarray_to_fits(screen, fitsfiles)
+
+        export_xarray_to_fits(gd, fitsfiles)
+        for fitsfile in fitsfiles:
+            assert os.path.isfile(fitsfile)

@@ -54,7 +54,7 @@ class TestFlaggingOperations(unittest.TestCase):
         bvis = flagging_blockvisibility(bvis, antenna=[1])
         assert bvis["flags"].data[0, 1, 0, 0] == 1
 
-    @unittest.skip("Rewrite with xarray format")
+    @unittest.skip("TODO: Rewrite with xarray format")
     def test_flagging_blockvisibility_multiple(self):
         bvis = create_blockvisibility(
             self.lowcore,

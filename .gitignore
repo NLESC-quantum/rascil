@@ -96,3 +96,5 @@ examples/mcve/xarray/mydask.png
 *.nbi
 
 performance/
+
+examples/pipelines/ska-pipelines/results/

@@ -284,7 +284,7 @@ class TestPrimaryBeams(unittest.TestCase):
             if self.persist:
                 export_image_to_fits(
                     beam,
-                    f"{self.dir}/test_voltage_pattern_low_real_az{az}_el{el}.fits",
+                    f"{self.results_dir}/test_voltage_pattern_low_real_az{az}_el{el}.fits",
                 )
             check_max_min(beam, flux_max, flux_min, f"{az} {el}")
 

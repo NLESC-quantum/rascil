@@ -283,7 +283,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         im = create_test_image()
 
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "image": {"name": "test_bufferimage.hdf", "data_model": "Image"},
         }
         bdm = BufferImage(config["buffer"], config["image"], im)
@@ -301,7 +301,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
 
         with self.assertRaises(AssertionError):
             config = {
-                "buffer": {"directory": self.dir},
+                "buffer": {"directory": self.results_dir},
                 "image": {
                     "name": "test_bufferskyimage_assertion.hdf",
                     "data_model": "Image",
@@ -317,7 +317,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         im = create_test_image()
         gd = create_griddata_from_image(im)
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "griddata": {"name": "test_buffergriddata.hdf", "data_model": "GridData"},
         }
         bdm = BufferGridData(config["buffer"], config["griddata"], gd)
@@ -333,7 +333,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         im = create_test_image()
         cf = create_convolutionfunction_from_image(im)
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "convolutionfunction": {
                 "name": "test_bufferconvolutionfunction.hdf",
                 "data_model": "ConvolutionFunction",

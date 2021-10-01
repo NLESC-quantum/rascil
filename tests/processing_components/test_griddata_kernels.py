@@ -123,7 +123,7 @@ class TestGridDataKernels(unittest.TestCase):
                 gcf, "%s/test_convolutionfunction_wterm_gcf.fits" % self.results_dir
             )
             export_convolutionfunction_to_fits(
-                cf, "%s/test_convolutionfunction_wterm_cf.fits" % self.dir
+                cf, "%s/test_convolutionfunction_wterm_cf.fits" % self.results_dir
             )
 
         peak_location = numpy.unravel_index(
@@ -164,7 +164,7 @@ class TestGridDataKernels(unittest.TestCase):
         pb = make_pb(self.image)
         if self.persist:
             export_image_to_fits(
-                pb, "%s/test_convolutionfunction_awterm_pb.fits" % self.dir
+                pb, "%s/test_convolutionfunction_awterm_pb.fits" % self.results_dir
             )
         gcf, cf = create_awterm_convolutionfunction(
             self.image,
@@ -180,10 +180,10 @@ class TestGridDataKernels(unittest.TestCase):
         assert numpy.max(numpy.abs(cf["pixels"].data)) > 0.0
         if self.persist:
             export_image_to_fits(
-                gcf, "%s/test_convolutionfunction_awterm_gcf.fits" % self.dir
+                gcf, "%s/test_convolutionfunction_awterm_gcf.fits" % self.results_dir
             )
             export_convolutionfunction_to_fits(
-                cf, "%s/test_convolutionfunction_awterm_cf.fits" % self.dir
+                cf, "%s/test_convolutionfunction_awterm_cf.fits" % self.results_dir
             )
 
         peak_location = numpy.unravel_index(
@@ -224,7 +224,7 @@ class TestGridDataKernels(unittest.TestCase):
         pb = make_pb(self.image)
         if self.persist:
             export_image_to_fits(
-                pb, "%s/test_convolutionfunction_aterm_pb.fits" % self.dir
+                pb, "%s/test_convolutionfunction_aterm_pb.fits" % self.results_dir
             )
         gcf, cf = create_awterm_convolutionfunction(
             self.image,
@@ -238,10 +238,10 @@ class TestGridDataKernels(unittest.TestCase):
         )
         if self.persist:
             export_image_to_fits(
-                gcf, "%s/test_convolutionfunction_aterm_gcf.fits" % self.dir
+                gcf, "%s/test_convolutionfunction_aterm_gcf.fits" % self.results_dir
             )
             export_convolutionfunction_to_fits(
-                cf, "%s/test_convolutionfunction_aterm_cf.fits" % self.dir
+                cf, "%s/test_convolutionfunction_aterm_cf.fits" % self.results_dir
             )
 
         peak_location = numpy.unravel_index(

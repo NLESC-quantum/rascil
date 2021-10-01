@@ -295,16 +295,16 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
             comp = image_gather_channels(self.comp)
             export_image_to_fits(
                 comp,
-                f"{self.dir}/test_deconvolve_{tag}_deconvolved.fits",
+                f"{self.results_dir}/test_deconvolve_{tag}_deconvolved.fits",
             )
             residual = image_gather_channels(self.residual)
             export_image_to_fits(
                 residual,
-                f"{self.dir}/test_deconvolve_{tag}_residual.fits",
+                f"{self.results_dir}/test_deconvolve_{tag}_residual.fits",
             )
             export_image_to_fits(
                 cmodel,
-                f"{self.dir}/test_deconvolve_{tag}_restored.fits",
+                f"{self.results_dir}/test_deconvolve_{tag}_restored.fits",
             )
         qa = qa_image(cmodel)
         numpy.testing.assert_allclose(

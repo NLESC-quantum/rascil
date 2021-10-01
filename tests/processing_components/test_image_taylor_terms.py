@@ -81,13 +81,15 @@ class TestImage(unittest.TestCase):
         )
         if self.persist:
             export_image_to_fits(
-                original_cube, fitsfile="%s/test_moments_1_cube.fits" % (self.dir)
+                original_cube,
+                fitsfile="%s/test_moments_1_cube.fits" % (self.results_dir),
             )
         cube = create_empty_image_like(original_cube)
         moment_cube = calculate_image_frequency_moments(cube, nmoment=1)
         if self.persist:
             export_image_to_fits(
-                moment_cube, fitsfile="%s/test_moments_1_moment_cube.fits" % (self.dir)
+                moment_cube,
+                fitsfile="%s/test_moments_1_moment_cube.fits" % (self.results_dir),
             )
         reconstructed_cube = calculate_image_from_frequency_taylor_terms(
             cube, moment_cube
@@ -95,7 +97,8 @@ class TestImage(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 reconstructed_cube,
-                fitsfile="%s/test_moments_1_reconstructed_cube.fits" % (self.dir),
+                fitsfile="%s/test_moments_1_reconstructed_cube.fits"
+                % (self.results_dir),
             )
         error = numpy.std(
             reconstructed_cube["pixels"].data - original_cube["pixels"].data

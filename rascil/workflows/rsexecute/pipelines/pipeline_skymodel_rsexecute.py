@@ -290,7 +290,7 @@ def restore_skymodel_pipeline_rsexecute_workflow(
             return s.image
 
         deconvolve_model_imagelist = [
-            rsexecute.execute(extract_sm_image)(sm, nout=1)(sm) for sm in skymodel_list
+            rsexecute.execute(extract_sm_image, nout=1)(sm)(sm) for sm in skymodel_list
         ]
         deconvolve_model_imagelist = rsexecute.execute(
             calculate_frequency_taylor_terms_from_image_list, nout=nmoment

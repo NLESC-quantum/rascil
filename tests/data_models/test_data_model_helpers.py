@@ -64,7 +64,7 @@ class TestDataModelHelpers(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.mid = create_named_configuration("MID", rmax=1000.0)
         self.times = (numpy.pi / 43200.0) * numpy.arange(0.0, 300.0, 100.0)
@@ -103,10 +103,11 @@ class TestDataModelHelpers(unittest.TestCase):
             print(self.vis)
             print(self.vis.configuration)
         export_blockvisibility_to_hdf5(
-            self.vis, "%s/test_data_model_helpers_blockvisibility.hdf" % self.dir
+            self.vis,
+            "%s/test_data_model_helpers_blockvisibility.hdf" % self.results_dir,
         )
         newvis = import_blockvisibility_from_hdf5(
-            "%s/test_data_model_helpers_blockvisibility.hdf" % self.dir
+            "%s/test_data_model_helpers_blockvisibility.hdf" % self.results_dir
         )
         assert data_model_equals(newvis, self.vis)
 
@@ -125,10 +126,10 @@ class TestDataModelHelpers(unittest.TestCase):
         if self.verbose:
             print(gt)
         export_gaintable_to_hdf5(
-            gt, "%s/test_data_model_helpers_gaintable.hdf" % self.dir
+            gt, "%s/test_data_model_helpers_gaintable.hdf" % self.results_dir
         )
         newgt = import_gaintable_from_hdf5(
-            "%s/test_data_model_helpers_gaintable.hdf" % self.dir
+            "%s/test_data_model_helpers_gaintable.hdf" % self.results_dir
         )
         assert data_model_equals(newgt, gt)
 
@@ -146,10 +147,10 @@ class TestDataModelHelpers(unittest.TestCase):
         if self.verbose:
             print(ft)
         export_flagtable_to_hdf5(
-            ft, "%s/test_data_model_helpers_flagtable.hdf" % self.dir
+            ft, "%s/test_data_model_helpers_flagtable.hdf" % self.results_dir
         )
         newft = import_flagtable_from_hdf5(
-            "%s/test_data_model_helpers_flagtable.hdf" % self.dir
+            "%s/test_data_model_helpers_flagtable.hdf" % self.results_dir
         )
         assert data_model_equals(newft, ft)
 
@@ -168,10 +169,10 @@ class TestDataModelHelpers(unittest.TestCase):
         if self.verbose:
             print(pt)
         export_pointingtable_to_hdf5(
-            pt, "%s/test_data_model_helpers_pointingtable.hdf" % self.dir
+            pt, "%s/test_data_model_helpers_pointingtable.hdf" % self.results_dir
         )
         newpt = import_pointingtable_from_hdf5(
-            "%s/test_data_model_helpers_pointingtable.hdf" % self.dir
+            "%s/test_data_model_helpers_pointingtable.hdf" % self.results_dir
         )
         assert data_model_equals(newpt, pt)
 
@@ -183,9 +184,11 @@ class TestDataModelHelpers(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         im["pixels"][...] = 1.0
-        export_image_to_hdf5(im, "%s/test_data_model_helpers_image.hdf" % self.dir)
+        export_image_to_hdf5(
+            im, "%s/test_data_model_helpers_image.hdf" % self.results_dir
+        )
         newim = import_image_from_hdf5(
-            "%s/test_data_model_helpers_image.hdf" % self.dir
+            "%s/test_data_model_helpers_image.hdf" % self.results_dir
         )
         assert data_model_equals(newim, im, verbose=False)
 
@@ -203,7 +206,9 @@ class TestDataModelHelpers(unittest.TestCase):
             print(im)
         import os
 
-        store = os.path.expanduser("%s/test_data_model_helpers_image.zarr" % self.dir)
+        store = os.path.expanduser(
+            "%s/test_data_model_helpers_image.zarr" % self.results_dir
+        )
         im.to_zarr(store=store, chunk_store=store, mode="w")
         del im
         newim = xarray.open_zarr(store, chunk_store=store)
@@ -211,10 +216,10 @@ class TestDataModelHelpers(unittest.TestCase):
 
     def test_readwriteskycomponent(self):
         export_skycomponent_to_hdf5(
-            self.comp, "%s/test_data_model_helpers_skycomponent.hdf" % self.dir
+            self.comp, "%s/test_data_model_helpers_skycomponent.hdf" % self.results_dir
         )
         newsc = import_skycomponent_from_hdf5(
-            "%s/test_data_model_helpers_skycomponent.hdf" % self.dir
+            "%s/test_data_model_helpers_skycomponent.hdf" % self.results_dir
         )
 
         assert newsc.flux.shape == self.comp.flux.shape
@@ -239,10 +244,10 @@ class TestDataModelHelpers(unittest.TestCase):
         gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
         sm = SkyModel(components=[self.comp], image=im, gaintable=gt)
         export_skymodel_to_hdf5(
-            sm, "%s/test_data_model_helpers_skymodel.hdf" % self.dir
+            sm, "%s/test_data_model_helpers_skymodel.hdf" % self.results_dir
         )
         newsm = import_skymodel_from_hdf5(
-            "%s/test_data_model_helpers_skymodel.hdf" % self.dir
+            "%s/test_data_model_helpers_skymodel.hdf" % self.results_dir
         )
 
         assert newsm.components[0].flux.shape == self.comp.flux.shape
@@ -260,10 +265,10 @@ class TestDataModelHelpers(unittest.TestCase):
         if self.verbose:
             print(gd)
         export_griddata_to_hdf5(
-            gd, "%s/test_data_model_helpers_griddata.hdf" % self.dir
+            gd, "%s/test_data_model_helpers_griddata.hdf" % self.results_dir
         )
         newgd = import_griddata_from_hdf5(
-            "%s/test_data_model_helpers_griddata.hdf" % self.dir
+            "%s/test_data_model_helpers_griddata.hdf" % self.results_dir
         )
         if self.verbose:
             print(newgd)
@@ -281,10 +286,10 @@ class TestDataModelHelpers(unittest.TestCase):
         if self.verbose:
             print(cf)
         export_convolutionfunction_to_hdf5(
-            cf, "%s/test_data_model_helpers_convolutionfunction.hdf" % self.dir
+            cf, "%s/test_data_model_helpers_convolutionfunction.hdf" % self.results_dir
         )
         newcf = import_convolutionfunction_from_hdf5(
-            "%s/test_data_model_helpers_convolutionfunction.hdf" % self.dir
+            "%s/test_data_model_helpers_convolutionfunction.hdf" % self.results_dir
         )
 
         assert data_model_equals(newcf, cf)

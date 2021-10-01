@@ -41,7 +41,7 @@ class TestImagingNG(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -123,10 +123,12 @@ class TestImagingNG(unittest.TestCase):
 
         self.cmodel = smooth_image(self.model)
         if self.persist:
-            export_image_to_fits(self.model, "%s/test_imaging_ng_model.fits" % self.dir)
+            export_image_to_fits(
+                self.model, "%s/test_imaging_ng_model.fits" % self.results_dir
+            )
         if self.persist:
             export_image_to_fits(
-                self.cmodel, "%s/test_imaging_ng_cmodel.fits" % self.dir
+                self.cmodel, "%s/test_imaging_ng_cmodel.fits" % self.results_dir
             )
 
         if mfs:
@@ -183,7 +185,8 @@ class TestImagingNG(unittest.TestCase):
 
         if self.persist:
             export_image_to_fits(
-                dirty[0], "%s/test_imaging_ng_%s_residual.fits" % (self.dir, name)
+                dirty[0],
+                "%s/test_imaging_ng_%s_residual.fits" % (self.results_dir, name),
             )
 
         # assert numpy.max(numpy.abs(dirty[0].data)), "Residual image is empty"
@@ -216,7 +219,7 @@ class TestImagingNG(unittest.TestCase):
 
         if self.persist:
             export_image_to_fits(
-                dirty[0], "%s/test_imaging_ng_%s_dirty.fits" % (self.dir, name)
+                dirty[0], "%s/test_imaging_ng_%s_dirty.fits" % (self.results_dir, name)
             )
 
         # import matplotlib.pyplot as plt

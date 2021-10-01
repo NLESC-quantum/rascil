@@ -23,7 +23,7 @@ log.setLevel(logging.WARNING)
 class TestXarrayOperations(unittest.TestCase):
     def setUp(self):
         self.persist = os.getenv("RASCIL_PERSIST", False)
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
     def test_read_write_screen(self):
         screen = import_xarray_from_fits(

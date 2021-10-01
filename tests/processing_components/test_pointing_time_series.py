@@ -38,7 +38,7 @@ class TestPointing(unittest.TestCase):
 
         self.midcore = create_named_configuration("MID", rmax=100.0)
         self.nants = len(self.midcore.names)
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.ntimes = 100
         interval = 10.0
         self.times = numpy.arange(0.0, float(self.ntimes)) * interval

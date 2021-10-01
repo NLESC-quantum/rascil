@@ -37,7 +37,7 @@ class TestPrimaryBeams(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -97,7 +97,7 @@ class TestPrimaryBeams(unittest.TestCase):
                 export_image_to_fits(
                     vp,
                     "%s/test_voltage_pattern_real_%s_NOLL%d.fits"
-                    % (self.dir, "MID_ZERNIKES", noll),
+                    % (self.results_dir, "MID_ZERNIKES", noll),
                 )
             # row = (noll-1)//7
             # col = (noll-1) - 7 * row

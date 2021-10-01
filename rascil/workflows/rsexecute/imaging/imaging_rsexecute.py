@@ -96,7 +96,7 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, **kwargs
     """
 
     # Predict_2d does not clear the vis so we have to do it here.
-    vis_list = zero_list_rsexecute_workflow(vis_list)
+    vis_list = zero_list_rsexecute_workflow(vis_list, copy=False)
 
     c = imaging_context(context)
     predict = c["predict"]
@@ -795,17 +795,11 @@ def weight_list_rsexecute_workflow(
 
     merged_weight_grid = griddata_merge_weights_rsexecute(weight_list)
 
-    def imaging_re_weight(vis, model, gd):
+    def imaging_re_weight(vis, gd):
         if gd is not None:
             if vis is not None:
-                # Ensure that the griddata has the right axes so that the convolution
-                # function mapping works
-                agd = create_griddata_from_image(
-                    model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
-                )
-                agd["pixels"].data = gd[0]["pixels"].data
                 vis = griddata_blockvisibility_reweight(
-                    vis, agd, weighting=weighting, robustness=robustness
+                    vis, gd[0], weighting=weighting, robustness=robustness
                 )
                 return vis
             else:
@@ -814,9 +808,7 @@ def weight_list_rsexecute_workflow(
             return vis
 
     result = [
-        rsexecute.execute(imaging_re_weight, nout=1)(
-            v, model_imagelist[i], merged_weight_grid
-        )
+        rsexecute.execute(imaging_re_weight, nout=1)(v, merged_weight_grid)
         for i, v in enumerate(vis_list)
     ]
 
@@ -837,17 +829,22 @@ def taper_list_rsexecute_workflow(vis_list, size_required):
     return rsexecute.optimize(result)
 
 
-def zero_list_rsexecute_workflow(vis_list):
+def zero_list_rsexecute_workflow(vis_list, copy=True):
     """Creates a new vis_list and initialises all to zero
 
     :param vis_list: List of vis (or graph)
+    :param copy: Make a new copy?
     :return: List of vis (or graph)
     """
 
     def imaging_zero_vis(vis):
         if vis is not None:
-            zerovis = copy_visibility(vis, zero=True)
-            return zerovis
+            if copy:
+                zerovis = copy_visibility(vis, zero=True)
+                return zerovis
+            else:
+                vis["vis"][...] = 0.0
+                return vis
         else:
             return None
 

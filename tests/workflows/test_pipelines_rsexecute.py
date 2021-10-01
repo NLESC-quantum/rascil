@@ -65,7 +65,7 @@ class TestPipelineGraphs(unittest.TestCase):
         rsexecute.set_client(use_dask=True)
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def tearDown(self):
@@ -160,10 +160,11 @@ class TestPipelineGraphs(unittest.TestCase):
             self.cmodel = smooth_image(model)
 
             export_image_to_fits(
-                model, "%s/test_pipelines_rsexecute_model.fits" % self.dir
+                model, "%s/test_pipelines_rsexecute_model.fits" % self.results_dir
             )
             export_image_to_fits(
-                self.cmodel, "%s/test_pipelines_rsexecute_cmodel.fits" % self.dir
+                self.cmodel,
+                "%s/test_pipelines_rsexecute_cmodel.fits" % self.results_dir,
             )
 
         if add_errors:
@@ -218,15 +219,15 @@ class TestPipelineGraphs(unittest.TestCase):
             if self.persist:
                 export_image_to_fits(
                     clean,
-                    f"{self.dir}/test_pipelines_{tag}_rsexecute_deconvolved.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_deconvolved.fits",
                 )
                 export_image_to_fits(
                     residual,
-                    f"{self.dir}/test_pipelines_{tag}_rsexecute_residual.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_residual.fits",
                 )
                 export_image_to_fits(
                     restored,
-                    f"{self.dir}/test_pipelines_{tag}_rsexecute_restored.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_restored.fits",
                 )
             qa = qa_image(restored)
             assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)
@@ -236,17 +237,17 @@ class TestPipelineGraphs(unittest.TestCase):
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         clean[moment],
-                        f"{self.dir}/test_pipelines_{tag}_rsexecute_deconvolved_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_deconvolved_taylor{moment}.fits",
                     )
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         residual[moment][0],
-                        f"{self.dir}/test_pipelines_{tag}_rsexecute_residual_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_residual_taylor{moment}.fits",
                     )
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         restored[moment],
-                        f"{self.dir}/test_pipelines_{tag}_rsexecute_restored_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_restored_taylor{moment}.fits",
                     )
             qa = qa_image(restored[0])
             assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)
@@ -296,7 +297,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
                 "%s/test_pipelines_ical_skymodel_pipeline_rsexecute_gaintable.hdf5"
-                % self.dir,
+                % self.results_dir,
             )
         self.save_and_check(
             "ical_skymodel_pipeline_empty",
@@ -352,7 +353,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
                 "%s/test_pipelines_ical_skymodel_pipeline_empty_threshold_rsexecute_gaintable.hdf5"
-                % self.dir,
+                % self.results_dir,
             )
         self.save_and_check(
             "ical_skymodel_pipeline_empty_threshold",
@@ -411,7 +412,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
                 "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable.hdf5"
-                % self.dir,
+                % self.results_dir,
             )
         self.save_and_check(
             "ical_skymodel_pipeline_exact",
@@ -480,7 +481,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
                 "%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_gaintable.hdf5"
-                % self.dir,
+                % self.results_dir,
             )
         self.save_and_check(
             "ical_skymodel_pipeline_partial",

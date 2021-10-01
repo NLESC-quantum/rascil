@@ -44,7 +44,7 @@ class TestCIChecker(unittest.TestCase):
 
         # Generate mock objects for functions in imaging_qa,
         # including skycomponents, primary beam image, restored image
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -93,11 +93,11 @@ class TestCIChecker(unittest.TestCase):
         )
 
         self.restored_image_multi = (
-            self.dir + "/test_imaging_qa_functions_nchan8_restored.fits"
+            self.results_dir + "/test_imaging_qa_functions_nchan8_restored.fits"
         )
         export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
 
-        self.txtfile = self.dir + "/test_imaging_qa_functions.txt"
+        self.txtfile = self.results_dir + "/test_imaging_qa_functions.txt"
 
         pbmodel = create_image(
             npixel=self.pb_npixel,
@@ -120,7 +120,9 @@ class TestCIChecker(unittest.TestCase):
         # Test using sensitivity image
         # After adding and dividing primary beam, the flux should stay roughly the same
 
-        sensitivity_image = self.dir + "/test_imaging_qa_functions_sensitivity.fits"
+        sensitivity_image = (
+            self.results_dir + "/test_imaging_qa_functions_sensitivity.fits"
+        )
         export_image_to_fits(self.pb, sensitivity_image)
 
         reversed_comp = correct_primary_beam(

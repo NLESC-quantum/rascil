@@ -22,7 +22,7 @@ class TestGradients(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.show = False
         self.persist = False
@@ -54,10 +54,10 @@ class TestGradients(unittest.TestCase):
             plt.show(block=False)
         if self.persist:
             export_image_to_fits(
-                gradx, "%s/test_image_gradients_gradx.fits" % (self.dir)
+                gradx, "%s/test_image_gradients_gradx.fits" % (self.results_dir)
             )
             export_image_to_fits(
-                grady, "%s/test_image_gradients_grady.fits" % (self.dir)
+                grady, "%s/test_image_gradients_grady.fits" % (self.results_dir)
             )
 
         if self.show:
@@ -77,16 +77,16 @@ class TestGradients(unittest.TestCase):
             plt.show(block=False)
         if self.persist:
             export_image_to_fits(
-                gradxx, "%s/test_image_gradients_gradxx.fits" % (self.dir)
+                gradxx, "%s/test_image_gradients_gradxx.fits" % (self.results_dir)
             )
             export_image_to_fits(
-                gradxy, "%s/test_image_gradients_gradxy.fits" % (self.dir)
+                gradxy, "%s/test_image_gradients_gradxy.fits" % (self.results_dir)
             )
             export_image_to_fits(
-                gradyx, "%s/test_image_gradients_gradyx.fits" % (self.dir)
+                gradyx, "%s/test_image_gradients_gradyx.fits" % (self.results_dir)
             )
             export_image_to_fits(
-                gradyy, "%s/test_image_gradients_gradyy.fits" % (self.dir)
+                gradyy, "%s/test_image_gradients_gradyy.fits" % (self.results_dir)
             )
 
 

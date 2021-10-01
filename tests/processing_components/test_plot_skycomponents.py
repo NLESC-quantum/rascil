@@ -54,7 +54,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 class TestPlotSkycomponent(unittest.TestCase):
     def setUp(self):
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -95,11 +95,11 @@ class TestPlotSkycomponent(unittest.TestCase):
         )
         if self.persist:
             export_image_to_fits(
-                self.model, self.dir + "/test_plot_skycomponents_model.fits"
+                self.model, self.results_dir + "/test_plot_skycomponents_model.fits"
             )
 
         self.noise = 1.0e-6
-        self.plot_file = self.dir + "/test_plot_skycomponents"
+        self.plot_file = self.results_dir + "/test_plot_skycomponents"
 
     def test_plot_positions(self):
 

@@ -577,8 +577,12 @@ def deconvolve_skymodel_list_rsexecute_workflow(
         )(dirty_image_list, skymodel_list, **kwargs)
         return skymodel_list
     else:
+
+        def extract_sm_image(s):
+            return s.image
+
         deconvolve_model_imagelist = [
-            rsexecute.execute(lambda s: s.image, nout=1)(sm) for sm in skymodel_list
+            rsexecute.execute(extract_sm_image, nout=1)(sm) for sm in skymodel_list
         ]
 
         deconvolve_model_imagelist = deconvolve_list_rsexecute_workflow(

@@ -19,7 +19,7 @@ class TestGridData(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.m31image = create_test_image(cellsize=0.0001)
         self.cellsize = 180.0 * 0.0001 / numpy.pi

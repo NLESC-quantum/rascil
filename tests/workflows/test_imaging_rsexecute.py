@@ -62,7 +62,7 @@ class TestImaging(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -176,9 +176,13 @@ class TestImaging(unittest.TestCase):
 
         self.cmodel = smooth_image(self.model)
         if self.persist:
-            export_image_to_fits(self.model, "%s/test_imaging_model.fits" % self.dir)
+            export_image_to_fits(
+                self.model, "%s/test_imaging_model.fits" % self.results_dir
+            )
         if self.persist:
-            export_image_to_fits(self.cmodel, "%s/test_imaging_cmodel.fits" % self.dir)
+            export_image_to_fits(
+                self.cmodel, "%s/test_imaging_cmodel.fits" % self.results_dir
+            )
 
         if add_errors:
             self.bvis_list = [
@@ -248,7 +252,7 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 dirty[0],
                 "%s/test_imaging_predict_%s%s_%s_dirty.fits"
-                % (self.dir, context, extra, rsexecute.type()),
+                % (self.results_dir, context, extra, rsexecute.type()),
             )
 
         maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
@@ -286,13 +290,13 @@ class TestImaging(unittest.TestCase):
                 export_image_to_fits(
                     dirty[0],
                     "%s/test_imaging_invert_%s%s_%s_psf.fits"
-                    % (self.dir, context, extra, rsexecute.type()),
+                    % (self.results_dir, context, extra, rsexecute.type()),
                 )
             else:
                 export_image_to_fits(
                     dirty[0],
                     "%s/test_imaging_invert_%s%s_%s_dirty.fits"
-                    % (self.dir, context, extra, rsexecute.type()),
+                    % (self.results_dir, context, extra, rsexecute.type()),
                 )
 
         assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Image is empty"
@@ -447,7 +451,7 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 restored_image_list[centre],
                 "%s/test_imaging_invert_%s_restored.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
 
         qa = qa_image(restored_image_list[centre])
@@ -473,7 +477,7 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 restored_image_list[centre],
                 "%s/test_imaging_invert_%s_restored_noresidual.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
 
         qa = qa_image(restored_image_list[centre])
@@ -536,12 +540,12 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 restored_1facets_image_list[0],
                 "%s/test_imaging_invert_%s_restored_1facets.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
             export_image_to_fits(
                 restored_2facets_image_list[0],
                 "%s/test_imaging_invert_%s_restored_2facets.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
 
         qa = qa_image(restored_2facets_image_list[centre])
@@ -555,7 +559,7 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 restored_2facets_image_list[centre],
                 "%s/test_imaging_invert_%s_restored_2facets_error.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
         qa = qa_image(restored_2facets_image_list[centre])
         assert numpy.abs(qa.data["max"] - 0.012401241830647329) < 1e-7, str(qa)

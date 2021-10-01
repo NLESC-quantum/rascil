@@ -35,7 +35,7 @@ class TestImageGraph(unittest.TestCase):
     def setUp(self):
         rsexecute.set_client(use_dask=True)
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.frequency = numpy.linspace(1e8, 1.5e8, 3)
         self.channel_bandwidth = numpy.array([2.5e7, 2.5e7, 2.5e7])
@@ -88,10 +88,10 @@ class TestImageGraph(unittest.TestCase):
 
         if self.persist:
             export_image_to_fits(
-                beam_2, "%s/test_image_map_create_pb_beam_2.fits" % (self.dir)
+                beam_2, "%s/test_image_map_create_pb_beam_2.fits" % (self.results_dir)
             )
             export_image_to_fits(
-                beam_4, "%s/test_image_map_create_pb_beam_4.fits" % (self.dir)
+                beam_4, "%s/test_image_map_create_pb_beam_4.fits" % (self.results_dir)
             )
 
         assert numpy.max(beam_4["pixels"].data) > 0.0

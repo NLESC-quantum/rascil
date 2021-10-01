@@ -51,7 +51,7 @@ class TestImage(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.m31image = create_test_image()
 

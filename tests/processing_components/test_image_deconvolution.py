@@ -46,7 +46,7 @@ class TestImageDeconvolution(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.lowcore = create_named_configuration("LOWBD2-CORE")
         self.times = (numpy.pi / (12.0)) * numpy.linspace(-3.0, 3.0, 7)
         self.frequency = numpy.array([1e8])
@@ -106,7 +106,9 @@ class TestImageDeconvolution(unittest.TestCase):
             self.cmodel["pixels"].data
         )
         if self.persist:
-            export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
+            export_image_to_fits(
+                self.cmodel, "%s/test_restore.fits" % (self.results_dir)
+            )
 
     def test_restore_list(self):
         self.model["pixels"].data[0, 0, 256, 256] = 1.0
@@ -115,7 +117,9 @@ class TestImageDeconvolution(unittest.TestCase):
             self.cmodel["pixels"].data
         )
         if self.persist:
-            export_image_to_fits(self.cmodel, "%s/test_restore.fits" % (self.dir))
+            export_image_to_fits(
+                self.cmodel, "%s/test_restore.fits" % (self.results_dir)
+            )
 
     def test_restore_clean_beam(self):
         """Test restoration with specified beam beam

@@ -30,7 +30,7 @@ class TestWeighting(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.npixel = 512
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
@@ -113,7 +113,7 @@ class TestWeighting(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 psf,
-                "%s/test_weighting_gaussian_taper_psf.fits" % (self.dir),
+                "%s/test_weighting_gaussian_taper_psf.fits" % (self.results_dir),
             )
         fit = fit_psf(psf)
 
@@ -135,7 +135,7 @@ class TestWeighting(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 psf,
-                "%s/test_weighting_tukey_taper_psf.fits" % (self.dir),
+                "%s/test_weighting_tukey_taper_psf.fits" % (self.results_dir),
             )
         fit = fit_psf(psf)
         assert (

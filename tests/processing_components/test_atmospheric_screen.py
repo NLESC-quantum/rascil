@@ -49,7 +49,7 @@ class TestAtmosphericScreen(unittest.TestCase):
     def setUp(self):
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
     def actualSetup(self, atmosphere="ionosphere"):
         dec = -40.0 * u.deg

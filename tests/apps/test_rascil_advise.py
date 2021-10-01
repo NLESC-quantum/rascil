@@ -76,7 +76,7 @@ class TestRASCILAdvise(unittest.TestCase):
 
     def setUp(self) -> None:
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         parser = cli_parser()
         self.args = parser.parse_args([])

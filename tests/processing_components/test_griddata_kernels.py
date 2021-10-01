@@ -37,7 +37,7 @@ class TestGridDataKernels(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -58,10 +58,10 @@ class TestGridDataKernels(unittest.TestCase):
         assert numpy.max(numpy.abs(cf["pixels"].data)) > 0.0
         if self.persist:
             export_image_to_fits(
-                gcf, "%s/test_convolutionfunction_box_gcf.fits" % self.dir
+                gcf, "%s/test_convolutionfunction_box_gcf.fits" % self.results_dir
             )
             export_convolutionfunction_to_fits(
-                cf, "%s/test_convolutionfunction_box_cf.fits" % self.dir
+                cf, "%s/test_convolutionfunction_box_cf.fits" % self.results_dir
             )
 
         peak_location = numpy.unravel_index(
@@ -85,10 +85,10 @@ class TestGridDataKernels(unittest.TestCase):
         assert numpy.max(numpy.abs(cf["pixels"].data)) > 0.0
         if self.persist:
             export_image_to_fits(
-                gcf, "%s/test_convolutionfunction_pswf_gcf.fits" % self.dir
+                gcf, "%s/test_convolutionfunction_pswf_gcf.fits" % self.results_dir
             )
             export_convolutionfunction_to_fits(
-                cf, "%s/test_convolutionfunction_pswf_cf.fits" % self.dir
+                cf, "%s/test_convolutionfunction_pswf_cf.fits" % self.results_dir
             )
 
         peak_location = numpy.unravel_index(
@@ -120,7 +120,7 @@ class TestGridDataKernels(unittest.TestCase):
         assert gcf["pixels"].data.dtype == "float", gcf["pixels"].data.dtype
         if self.persist:
             export_image_to_fits(
-                gcf, "%s/test_convolutionfunction_wterm_gcf.fits" % self.dir
+                gcf, "%s/test_convolutionfunction_wterm_gcf.fits" % self.results_dir
             )
             export_convolutionfunction_to_fits(
                 cf, "%s/test_convolutionfunction_wterm_cf.fits" % self.dir

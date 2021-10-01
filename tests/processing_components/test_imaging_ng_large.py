@@ -55,8 +55,7 @@ class TestImagingNGLarge(unittest.TestCase):
 
         self.low = create_named_configuration("LOWBD2", rmax=rmax)
         self.low = decimate_configuration(self.low, skip=6)
-        self.ntimes = 5
-        self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
+        self.times = numpy.array([0.0])
 
         self.frequency = numpy.array([1e8])
         self.channelwidth = numpy.array([1e6])

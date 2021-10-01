@@ -333,7 +333,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 restored,
-                f"{self.results_dir }/test_imaging_deconvolve_rsexecute_{tag}_restored.fits",
+                f"{self.results_dir}/test_imaging_deconvolve_rsexecute_{tag}_restored.fits",
             )
         qa = qa_image(restored)
         numpy.testing.assert_allclose(

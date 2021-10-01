@@ -219,15 +219,15 @@ class TestPipelineGraphs(unittest.TestCase):
             if self.persist:
                 export_image_to_fits(
                     clean,
-                    f"{self.results_dir }/test_pipelines_{tag}_rsexecute_deconvolved.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_deconvolved.fits",
                 )
                 export_image_to_fits(
                     residual,
-                    f"{self.results_dir }/test_pipelines_{tag}_rsexecute_residual.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_residual.fits",
                 )
                 export_image_to_fits(
                     restored,
-                    f"{self.results_dir }/test_pipelines_{tag}_rsexecute_restored.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_restored.fits",
                 )
             qa = qa_image(restored)
             assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)
@@ -237,17 +237,17 @@ class TestPipelineGraphs(unittest.TestCase):
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         clean[moment],
-                        f"{self.results_dir }/test_pipelines_{tag}_rsexecute_deconvolved_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_deconvolved_taylor{moment}.fits",
                     )
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         residual[moment][0],
-                        f"{self.results_dir }/test_pipelines_{tag}_rsexecute_residual_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_residual_taylor{moment}.fits",
                     )
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         restored[moment],
-                        f"{self.results_dir }/test_pipelines_{tag}_rsexecute_restored_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_restored_taylor{moment}.fits",
                     )
             qa = qa_image(restored[0])
             assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)

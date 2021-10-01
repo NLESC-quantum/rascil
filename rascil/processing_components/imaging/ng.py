@@ -166,13 +166,16 @@ def invert_ng(
     do_wstacking = get_parameter(kwargs, "do_wstacking", True)
     verbosity = get_parameter(kwargs, "verbosity", 0)
 
-    bvis = shift_vis_to_image(bvis, im, tangent=True, inverse=False)
+    sbvis = copy_visibility(bvis)
+    sbvis = shift_vis_to_image(sbvis, im, tangent=True, inverse=False)
 
-    freq = bvis.frequency.data  # frequency, Hz
+    freq = sbvis.frequency.data  # frequency, Hz
 
-    nrows, nbaselines, vnchan, vnpol = bvis.vis.shape
+    nrows, nbaselines, vnchan, vnpol = sbvis.vis.shape
+    # if dopsf:
+    #     sbvis = fill_vis_for_psf(sbvis)
 
-    ms = bvis.blockvisibility_acc.flagged_vis
+    ms = sbvis.blockvisibility_acc.flagged_vis
     ms = ms.reshape([nrows * nbaselines, vnchan, vnpol])
     ms = convert_pol_frame(
         ms,
@@ -181,10 +184,10 @@ def invert_ng(
         polaxis=2,
     ).astype("c16")
 
-    uvw = copy.deepcopy(bvis.uvw.data)
+    uvw = copy.deepcopy(sbvis.uvw.data)
     uvw = uvw.reshape([nrows * nbaselines, 3])
 
-    wgt = bvis.blockvisibility_acc.flagged_imaging_weight.astype("f8")
+    wgt = sbvis.blockvisibility_acc.flagged_imaging_weight.astype("f8")
     wgt = wgt.reshape([nrows * nbaselines, vnchan, vnpol])
 
     # if epsilon > 5.0e-6:

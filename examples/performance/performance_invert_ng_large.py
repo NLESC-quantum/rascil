@@ -1,4 +1,13 @@
-""" Unit tests for imaging using nifty gridder
+""" Test of performance of nifty gridder when running on a MID data set.
+
+Typical usage:
+
+time python examples/performance/performance_invert_ng_large.py --scale 16 --threads 64
+Scale 16.0 threads 64 duration 424.721 s
+
+real	7m13.111s
+user	412m0.181s
+sys	1m10.731s
 
 """
 import logging

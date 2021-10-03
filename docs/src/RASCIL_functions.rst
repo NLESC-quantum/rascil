@@ -19,12 +19,6 @@ Casacore must be installed for MS reading and writing:
 * List contents of a MeasurementSet: :py:func:`rascil.processing_components.visibility.base.list_ms`
 * Creates a list of BlockVisibilities, one per FIELD_ID and DATA_DESC_ID: :py:func:`rascil.processing_components.visibility.base.create_blockvisibility_from_ms`
 
-Visibility gridding and degridding
-----------------------------------
-
-* Convolutional gridding: :py:func:`rascil.processing_components.griddata.gridding.grid_visibility_to_griddata`
-* Convolutional degridding: :py:func:`rascil.processing_components.griddata.gridding.degrid_visibility_from_griddata`
-
 Visibility weighting and tapering
 ---------------------------------
 
@@ -35,11 +29,10 @@ Visibility weighting and tapering
 Visibility predict and invert
 -----------------------------
 
-* Predict BlockVisibility for Skycomponent :py:func:`rascil.processing_components.imaging.base.predict_skycomponent_visibility`
-* Predict by de-gridding visibilities :py:func:`rascil.processing_components.imaging.base.predict_2d`
-* Invert by gridding visibilities :py:func:`rascil.processing_components.imaging.base.invert_2d`
 * Predict by de-gridding visibilities with Nifty Gridder :py:func:`rascil.processing_components.imaging.ng.predict_ng`
 * Invert by gridding visibilities with Nifty Gridder :py:func:`rascil.processing_components.imaging.ng.invert_ng`
+* Predict BlockVisibility for Skycomponent :py:func:`rascil.processing_components.imaging.dft.dft_skycomponent_visibility`
+* Predict Skycomponent from BlockVisibility :py:func:`rascil.processing_components.imaging.dft.idft_visibility_skycomponent`
 
 Deconvolution
 -------------

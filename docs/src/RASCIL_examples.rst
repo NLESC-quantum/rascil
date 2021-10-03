@@ -38,15 +38,6 @@ Some example scripts are found in the directory examples/scripts.
 SKA simulations
 ***************
 
-The SKA simulations make full use of the capabilities of RASCIL. The surface simulation and atmosphere simulation
-both require special large data files that are not part of the repository. However, the pointing simulation can be run
-using data files in the RASCIL data repository.
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/ska_simulations/mid_simulation.rst
-
 * :ref:`genindex`
 * :ref:`modindex`
 

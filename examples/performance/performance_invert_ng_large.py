@@ -44,6 +44,7 @@ def main():
     parser.add_argument(
         "--threads", type=int, default=16, help="Number of threads for ng"
     )
+    parser.add_argument("--nchannels", type=int, default=1, help="Number of channels")
     parser.add_argument(
         "--scale",
         type=float,
@@ -60,9 +61,13 @@ def main():
     low = create_named_configuration("MID", rmax=rmax)
     times = numpy.arange(-4 * 3600.0, +4 * 3600, 1800.0) * numpy.pi / 43200.0
 
-    nchan = 8
-    frequency = numpy.linspace(1.3e9, 1.36e9, nchan)
-    channelwidth = numpy.array(nchan * [frequency[1] - frequency[0]])
+    nchan = args.nchannels
+    if nchan > 1:
+        frequency = numpy.linspace(1.3e9, 1.36e9, nchan)
+        channelwidth = numpy.array(nchan * [frequency[1] - frequency[0]])
+    else:
+        frequency = numpy.array([1.3e9])
+        channelwidth = numpy.array([frequency[0] / 100.0])
 
     blockvis_pol = PolarisationFrame("stokesI")
     image_pol = PolarisationFrame("stokesI")
@@ -109,7 +114,9 @@ def main():
     )[0]
     duration = time.time() - start
     assert numpy.abs(dirty["pixels"]).any() > 0.0, str(dirty)
-    print(f"Scale {args.scale} threads {args.threads} duration {duration:.3f} s")
+    print(
+        f"Scale {args.scale} nchannels {nchan} threads {args.threads} duration {duration:.3f} s"
+    )
 
 
 if __name__ == "__main__":

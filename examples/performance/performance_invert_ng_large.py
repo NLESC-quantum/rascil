@@ -51,6 +51,13 @@ def main():
         default=1.0,
         help="Scaling factor",
     )
+    parser.add_argument(
+        "--zerow",
+        type=str,
+        default="False",
+        help="Zero w in the creation of the datar",
+    )
+
     args = parser.parse_args()
 
     scale = int(args.scale)
@@ -83,6 +90,7 @@ def main():
         times,
         blockvis_pol,
         phasecentre,
+        zerow=args.zerow == "True",
     )
 
     model = create_unittest_model(
@@ -115,7 +123,7 @@ def main():
     duration = time.time() - start
     assert numpy.abs(dirty["pixels"]).any() > 0.0, str(dirty)
     print(
-        f"Scale {args.scale} nchannels {nchan} threads {args.threads} duration {duration:.3f} s"
+        f"Scale {args.scale} nchannels {nchan} threads {args.threads} zerow {args.zerow}: duration {duration:.3f} s"
     )
 
 

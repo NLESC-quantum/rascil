@@ -173,22 +173,6 @@ publish_to_car:
 #  rules:
 #    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
-master_merge:
-  stage: test
-  image: docker:20.10.7
-  services:
-    - docker:20.10.7-dind
-  variables:
-    GIT_VERSION: $CI_COMMIT_SHORT_SHA
-  before_script:
-    - apk add make git
-    - cd docker
-  script:
-    - make build_all_latest
-    - make test_all
-#  rules:
-#      - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
-
 # Publish docker:<version> (release) to Central Artefact Repository if this is a tagged build of the master
 docker_release:
   stage: publish

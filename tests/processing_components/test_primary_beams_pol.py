@@ -53,7 +53,7 @@ class TestPrimaryBeamsPol(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -277,7 +277,9 @@ class TestPrimaryBeamsPol(unittest.TestCase):
             polimage, sumwt = invert_2d(bvis, model, dopsf=False)
             export_image_to_fits(
                 polimage,
-                "{0}/test_primary_beams_pol_case{1}.fits".format(self.dir, case),
+                "{0}/test_primary_beams_pol_case{1}.fits".format(
+                    self.results_dir, case
+                ),
             )
 
             # Check out the path via components
@@ -304,7 +306,7 @@ class TestPrimaryBeamsPol(unittest.TestCase):
             export_image_to_fits(
                 polimage_corrected,
                 "{0}/test_primary_beams_pol_corrected_case{1}.fits".format(
-                    self.dir, case
+                    self.results_dir, case
                 ),
             )
             found_components = find_skycomponents(

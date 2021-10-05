@@ -48,7 +48,7 @@ class TestPlotConfigurations(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.frequency = numpy.array([1e8])
         self.channel_bandwidth = numpy.array([1e7])

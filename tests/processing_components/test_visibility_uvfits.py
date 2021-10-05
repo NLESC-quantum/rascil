@@ -33,7 +33,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 class TestCreateMS(unittest.TestCase):
     def setUp(self):
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -116,7 +116,7 @@ class TestCreateMS(unittest.TestCase):
                 plt.show(block=False)
             if self.persist:
                 export_image_to_fits(
-                    dirty, "%s/test_visibility_uvfits_dirty.fits" % self.dir
+                    dirty, "%s/test_visibility_uvfits_dirty.fits" % self.results_dir
                 )
 
 

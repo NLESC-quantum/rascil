@@ -43,7 +43,7 @@ class TestSkymodelMPC(unittest.TestCase):
         dec = -40.0 * u.deg
 
         self.lowcore = create_named_configuration("LOWBD2", rmax=300.0)
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.times = numpy.linspace(-10.0, 10.0, 3) * numpy.pi / (3600.0 * 12.0)
 
         self.frequency = numpy.array([1e8])

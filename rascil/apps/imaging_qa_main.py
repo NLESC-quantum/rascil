@@ -189,6 +189,18 @@ def cli_parser():
         help="Minimum flux where comparison plots are generated",
     )
     parser.add_argument(
+        "--trim_image",
+        type=str,
+        default="False",
+        help="For spectral index calculation, do we trim the image to avoid the edge effects?",
+    )
+    parser.add_argument(
+        "--trim_box",
+        type=float,
+        default=1.0e-1,
+        help="If trim_image is true, proportion of the box that is trimmed (default is 10%)",
+    )
+    parser.add_argument(
         "--quiet_bdsf",
         type=str,
         default="False",
@@ -357,8 +369,13 @@ def analyze_image(args):
     if args.use_frequency_moment == "True" and len(moment_images) != 0:
 
         log.info("Calculate spectral index from frequency moment images.")
+
+        if args.trim_image == "True":
+            box_size = 1.0 - args.trim_box
+        else:
+            box_size = 1.0
         out = calculate_spec_index_from_moment(
-            out, moment_images, flux_limit=args.flux_limit
+            out, moment_images, box_size=box_size, flux_limit=args.flux_limit
         )
 
     # Compensate for primary beam correction
@@ -597,17 +614,22 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     return comp
 
 
-def calculate_spec_index_from_moment(comp_list, moment_images, flux_limit=1.0e-3):
+def calculate_spec_index_from_moment(
+    comp_list, moment_images, box_size=1.0, flux_limit=1.0e-3
+):
     """
     Calculate spectral index using frequency moment images.
 
     :param comp_list: Source list in skycomponents format
     :param moment_images: Frequency moment images in FITS format
+    :param box_size: Size of the box to perform the calculation
     :param flux_limit: The lower limit of flux (for the sources) over which spectral index is calculated
 
     :return newcomp: New lists of skycomponents with updated spectral index.
 
     """
+
+    log.info("Use box: {} and flux_limit: {}".format(box_size, flux_limit))
 
     if len(moment_images) == 0:
         log.info("No moment images found, no csv file written.")
@@ -624,68 +646,78 @@ def calculate_spec_index_from_moment(comp_list, moment_images, flux_limit=1.0e-3
         #                moment_data = add_image(moment_data, moment_data_now)
 
         image_frequency = moment_data.frequency.data
-        ras = [comp.direction.ra.degree for comp in comp_list]
-        decs = [comp.direction.dec.degree for comp in comp_list]
-        skycoords = SkyCoord(ras * u.deg, decs * u.deg, frame="icrs")
-        pixlocs = skycoord_to_pixel(
-            skycoords, moment_data.image_acc.wcs, origin=0, mode="wcs"
-        )
-
-        # TODO: Needs update for multiple polarizations
         nchan = len(comp_list[0].frequency.data)
-        npol = 1
-        freqs = [comp.frequency.data[nchan // 2] for comp in comp_list]
-        central_fluxes = [comp.flux[nchan // 2][0] for comp in comp_list]
+        if nchan != len(image_frequency):
+            log.info("The frequencies don't match.")
+            return comp_list
 
-        spec_indx = np.zeros(len(comp_list))
-        for icomp, comp in enumerate(comp_list):
+        else:
+            ras = [comp.direction.ra.degree for comp in comp_list]
+            decs = [comp.direction.dec.degree for comp in comp_list]
+            skycoords = SkyCoord(ras * u.deg, decs * u.deg, frame="icrs")
+            pixlocs = skycoord_to_pixel(
+                skycoords, moment_data.image_acc.wcs, origin=0, mode="wcs"
+            )
 
-            pixloc = (round(pixlocs[0][icomp]), round(pixlocs[1][icomp]))
+            # TODO: Needs update for multiple polarizations
+            npol = 1
+            npixel = moment_data["pixels"].data.shape[2]
+            freqs = [comp.frequency.data[nchan // 2] for comp in comp_list]
+            central_fluxes = [comp.flux[nchan // 2][0] for comp in comp_list]
 
-            if (
-                nchan == len(image_frequency)
-                and np.max(np.abs(comp.frequency.data - image_frequency)) < 1e-7
-            ):
-                flux = moment_data["pixels"].data[nchan // 2, 0, pixloc[1], pixloc[0]]
+            spec_indx = np.zeros(len(comp_list))
 
-                if flux > flux_limit and central_fluxes[icomp] > flux_limit:
+            # Calculate spectral index when
+            # 1) The flux is above flux_limit
+            # 2) The frequency matches
+            # 3) The pixel is within box_size
+            for icomp, comp in enumerate(comp_list):
 
-                    log.info(
-                        "Taylor flux:{} for skycomponent {}, {}, compared to original flux {}".format(
-                            flux, ras[icomp], decs[icomp], central_fluxes[icomp]
+                if central_fluxes[icomp] > flux_limit:
+
+                    pixloc = (round(pixlocs[0][icomp]), round(pixlocs[1][icomp]))
+
+                    if (
+                        np.max(np.abs(comp.frequency.data - image_frequency)) < 1e-7
+                        and pixloc[0] < box_size * npixel
+                        and pixloc[1] < box_size * npixel
+                    ):
+                        flux = moment_data["pixels"].data[
+                            nchan // 2, 0, pixloc[1], pixloc[0]
+                        ]
+
+                        log.info(
+                            "Taylor flux:{} for skycomponent {}, {}, compared to original flux {}".format(
+                                flux, ras[icomp], decs[icomp], central_fluxes[icomp]
+                            )
                         )
-                    )
-                    spec_indx[icomp] = flux / central_fluxes[icomp]
-                else:
-                    spec_indx[icomp] = 0.0
-            else:
-                spec_indx[icomp] = 0.0
+                        spec_indx[icomp] = flux / central_fluxes[icomp]
 
-            log.info("Spectral index calculated is {}".format(spec_indx[icomp]))
-            fluxes = [
-                comp.flux[i][0]
-                * (f / comp.frequency.data[nchan // 2]) ** spec_indx[icomp]
-                for i, f in enumerate(comp.frequency.data)
-            ]
-            flux_array = np.reshape(np.array(fluxes), (nchan, npol))
-            comp.flux = flux_array
+                log.info("Spectral index calculated is {}".format(spec_indx[icomp]))
+                fluxes = [
+                    comp.flux[i][0]
+                    * (f / comp.frequency.data[nchan // 2]) ** spec_indx[icomp]
+                    for i, f in enumerate(comp.frequency.data)
+                ]
+                flux_array = np.reshape(np.array(fluxes), (nchan, npol))
+                comp.flux = flux_array
 
-        # Write to new csv file
-        ds = pd.DataFrame(
-            {
-                "RA (deg)": ras,
-                "Dec (deg)": decs,
-                "Central freq (Hz)": freqs,
-                "Central flux (Jy)": central_fluxes,
-                "Spectral index": spec_indx,
-            }
-        )
-        csv_name = moment_images[0].replace(".fits", "_corrected.csv")
-        log.info("Writing source data to {}".format(csv_name))
+                # Write to new csv file
+            ds = pd.DataFrame(
+                {
+                    "RA (deg)": ras,
+                    "Dec (deg)": decs,
+                    "Central freq (Hz)": freqs,
+                    "Central flux (Jy)": central_fluxes,
+                    "Spectral index": spec_indx,
+                }
+            )
+            csv_name = moment_images[0].replace(".fits", "_corrected.csv")
+            log.info("Writing source data to {}".format(csv_name))
 
-        ds.to_csv(csv_name, index=True)
+            ds.to_csv(csv_name, index=True)
 
-        return comp_list
+            return comp_list
 
 
 def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):

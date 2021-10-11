@@ -26,7 +26,7 @@ class TestPerformance(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.json_file = rascil_path("test_results/test_performance.json")
 
         self.m31image = create_test_image()

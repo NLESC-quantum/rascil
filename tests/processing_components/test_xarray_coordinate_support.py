@@ -30,7 +30,7 @@ class TestXarrayCoordinateSupport(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path
 
         self.lowcore = create_named_configuration("LOWBD2-CORE")
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
     def actualSetup(self, dopol=False):
 

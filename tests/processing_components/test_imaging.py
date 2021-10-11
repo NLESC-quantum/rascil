@@ -54,7 +54,7 @@ class TestImaging2D(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -134,9 +134,13 @@ class TestImaging2D(unittest.TestCase):
 
         self.cmodel = smooth_image(self.model)
         if self.persist:
-            export_image_to_fits(self.model, "%s/test_imaging_model.fits" % self.dir)
+            export_image_to_fits(
+                self.model, "%s/test_imaging_model.fits" % self.results_dir
+            )
         if self.persist:
-            export_image_to_fits(self.cmodel, "%s/test_imaging_cmodel.fits" % self.dir)
+            export_image_to_fits(
+                self.cmodel, "%s/test_imaging_cmodel.fits" % self.results_dir
+            )
 
     def _checkcomponents(self, dirty, fluxthreshold=0.6, positionthreshold=0.1):
         comps = find_skycomponents(
@@ -170,7 +174,7 @@ class TestImaging2D(unittest.TestCase):
 
         if self.persist:
             export_image_to_fits(
-                dirty[0], "%s/test_imaging_%s_residual.fits" % (self.dir, name)
+                dirty[0], "%s/test_imaging_%s_residual.fits" % (self.results_dir, name)
             )
         for pol in range(dirty[0].image_acc.npol):
             assert numpy.max(
@@ -205,7 +209,7 @@ class TestImaging2D(unittest.TestCase):
 
         if self.persist:
             export_image_to_fits(
-                dirty[0], "%s/test_imaging_%s_dirty.fits" % (self.dir, name)
+                dirty[0], "%s/test_imaging_%s_dirty.fits" % (self.results_dir, name)
             )
 
         for pol in range(dirty[0].image_acc.npol):
@@ -555,7 +559,9 @@ class TestImaging2D(unittest.TestCase):
         error = numpy.max(psf[0]["pixels"].data) - 1.0
         assert abs(error) < 1.0e-12, error
         if self.persist:
-            export_image_to_fits(psf[0], "%s/test_imaging_2d_psf.fits" % self.dir)
+            export_image_to_fits(
+                psf[0], "%s/test_imaging_2d_psf.fits" % self.results_dir
+            )
 
         assert numpy.max(numpy.abs(psf[0]["pixels"].data)), "Image is empty"
 
@@ -568,7 +574,8 @@ class TestImaging2D(unittest.TestCase):
             assert abs(error) < 1.0e-12, error
             if self.persist:
                 export_image_to_fits(
-                    psf[0], "%s/test_imaging_2d_psf_%s.fits" % (self.dir, weighting)
+                    psf[0],
+                    "%s/test_imaging_2d_psf_%s.fits" % (self.results_dir, weighting),
                 )
             assert numpy.max(numpy.abs(psf[0]["pixels"].data)), "Image is empty"
 

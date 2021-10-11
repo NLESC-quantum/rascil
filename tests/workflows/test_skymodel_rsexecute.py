@@ -46,7 +46,7 @@ class TestSkyModel(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -245,11 +245,12 @@ class TestSkyModel(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 skymodel_list[0][0],
-                "%s/test_skymodel_invert_flat_noise_dirty.fits" % (self.dir),
+                "%s/test_skymodel_invert_flat_noise_dirty.fits" % (self.results_dir),
             )
             export_image_to_fits(
                 skymodel_list[0][1],
-                "%s/test_skymodel_invert_flat_noise_sensitivity.fits" % (self.dir),
+                "%s/test_skymodel_invert_flat_noise_sensitivity.fits"
+                % (self.results_dir),
             )
         qa = qa_image(skymodel_list[0][0])
 
@@ -272,11 +273,12 @@ class TestSkyModel(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 skymodel_list[0][0],
-                "%s/test_skymodel_invert_flat_sky_dirty.fits" % (self.dir),
+                "%s/test_skymodel_invert_flat_sky_dirty.fits" % (self.results_dir),
             )
             export_image_to_fits(
                 skymodel_list[0][0],
-                "%s/test_skymodel_invert_flat_sky_sensitivity.fits" % (self.dir),
+                "%s/test_skymodel_invert_flat_sky_sensitivity.fits"
+                % (self.results_dir),
             )
         qa = qa_image(skymodel_list[0][0])
 

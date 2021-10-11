@@ -47,7 +47,7 @@ class TestMSTests(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
     def actualSetUp(self, freqwin=1, dopol=False):
 
@@ -102,20 +102,26 @@ class TestMSTests(unittest.TestCase):
     @unittest.skipUnless(run_ms_tests, "requires the 'casacore' module")
     def test_export_ms(self):
         self.actualSetUp()
-        msoutfile = "%s/test_imaging_ms_%dfreqwin.ms" % (self.dir, len(self.frequency))
+        msoutfile = "%s/test_imaging_ms_%dfreqwin.ms" % (
+            self.results_dir,
+            len(self.frequency),
+        )
         export_blockvisibility_to_ms(msoutfile, [self.bvis], source_name="M31")
 
     @unittest.skipUnless(run_ms_tests, "requires the 'casacore' module")
     def test_export_ms_7freqwin(self):
         self.actualSetUp(freqwin=7)
-        msoutfile = "%s/test_imaging_ms_%dfreqwin.ms" % (self.dir, len(self.frequency))
+        msoutfile = "%s/test_imaging_ms_%dfreqwin.ms" % (
+            self.results_dir,
+            len(self.frequency),
+        )
         export_blockvisibility_to_ms(msoutfile, [self.bvis], source_name="M31")
 
     @unittest.skipUnless(run_ms_tests, "requires the 'casacore' module")
     def test_export_ms_pol(self):
         self.actualSetUp(dopol=True)
         msoutfile = "%s/test_imaging_ms_pol_%dfreqwin.ms" % (
-            self.dir,
+            self.results_dir,
             len(self.frequency),
         )
         export_blockvisibility_to_ms(msoutfile, [self.bvis], source_name="M31")
@@ -124,7 +130,7 @@ class TestMSTests(unittest.TestCase):
     def test_export_ms_7freqwin_pol(self):
         self.actualSetUp(freqwin=7, dopol=True)
         msoutfile = "%s/test_imaging_ms_pol_%dfreqwin.ms" % (
-            self.dir,
+            self.results_dir,
             len(self.frequency),
         )
         export_blockvisibility_to_ms(msoutfile, [self.bvis], source_name="M31")

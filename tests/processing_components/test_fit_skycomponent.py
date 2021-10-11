@@ -33,7 +33,7 @@ class TestFitSkycomponent(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path
 
         self.lowcore = create_named_configuration("LOWBD2-CORE")
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
     def actualSetup(self, dopol=False):
 
@@ -88,10 +88,10 @@ class TestFitSkycomponent(unittest.TestCase):
 
         if self.persist:
             export_image_to_fits(
-                self.model, "%s/test_fit_skycomponent.fits" % (self.dir)
+                self.model, "%s/test_fit_skycomponent.fits" % (self.results_dir)
             )
             export_skycomponent_to_hdf5(
-                newsc, "%s/test_fit_skycomponent.hdf" % (self.dir)
+                newsc, "%s/test_fit_skycomponent.hdf" % (self.results_dir)
             )
 
     def test_fit_skycomponent_spectral_index(self):

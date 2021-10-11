@@ -23,9 +23,5 @@ RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - && \
 
 RUN pip install jupyterlab
 
-# Use entrypoint script to create a user on the fly and avoid running as root.
-COPY entrypoint.sh .
-RUN chmod +x /rascil/entrypoint.sh
-ENTRYPOINT ["/rascil/entrypoint.sh"]
 CMD ["/bin/bash"]
 

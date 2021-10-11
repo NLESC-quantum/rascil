@@ -39,7 +39,7 @@ class TestPointing(unittest.TestCase):
 
         self.midcore = create_named_configuration("MID", rmax=300.0)
         self.nants = len(self.midcore.names)
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.ntimes = 31
         self.times = numpy.linspace(-6.0, 6.0, self.ntimes) * numpy.pi / (12.0)
 

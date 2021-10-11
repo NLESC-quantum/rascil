@@ -6,7 +6,7 @@ WORKDIR /
 
 RUN apt-get update -y && apt-get install -y git-lfs git
 
-RUN git clone https://gitlab.com/ska-telescope/external/rascil.git && \
+RUN git clone  --depth 1 https://gitlab.com/ska-telescope/external/rascil.git && \
     cd rascil && git lfs install && \
     git lfs pull
 
@@ -27,8 +27,4 @@ ENV RASCIL_DATA=/rascil/data
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-# Use entrypoint script to create a user on the fly and avoid running as root.
-COPY entrypoint.sh .
-RUN chmod +x /rascil/entrypoint.sh
-ENTRYPOINT ["/rascil/entrypoint.sh"]
 CMD ["/bin/bash"]

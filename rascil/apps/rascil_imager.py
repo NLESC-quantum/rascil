@@ -232,11 +232,24 @@ def setup_rsexecute(args):
                 {"distributed.comm.timeouts.tcp": args.dask_connect_timeout}
             )
 
+        if args.dask_malloc_trim_threshold is not None:
+            log.info(
+                f"Dask nanny: set mem_alloc_trim_={args.dask_malloc_trim_threshold}"
+            )
+            dask.config.set(
+                {
+                    "distributed.nanny.environ.MALLOC_TRIM_THRESHOLD_": {
+                        args.dask_malloc_trim_threshold
+                    }
+                }
+            )
+
         tcp_timeout = dask.config.get("distributed.comm.timeouts.tcp")
         connect_timeout = dask.config.get("distributed.comm.timeouts.connect")
 
         log.info(f"Dask timeouts: connect {connect_timeout} tcp: {tcp_timeout}")
         performance_dask_configuration(args.performance_file, rsexecute)
+
     else:
         rsexecute.set_client(use_dask=False)
 

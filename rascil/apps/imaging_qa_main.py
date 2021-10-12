@@ -197,8 +197,8 @@ def cli_parser():
     parser.add_argument(
         "--trim_box",
         type=float,
-        default=1.0e-1,
-        help="If trim_image is true, proportion of the box that is trimmed (default is 10%)",
+        default=3.0e-2,
+        help="If trim_image is true, proportion of the box that is trimmed (default is 3%)",
     )
     parser.add_argument(
         "--quiet_bdsf",
@@ -686,14 +686,14 @@ def calculate_spec_index_from_moment(
                             nchan // 2, 0, pixloc[1], pixloc[0]
                         ]
 
-                        log.info(
+                        log.debug(
                             "Taylor flux:{} for skycomponent {}, {}, compared to original flux {}".format(
                                 flux, ras[icomp], decs[icomp], central_fluxes[icomp]
                             )
                         )
                         spec_indx[icomp] = flux / central_fluxes[icomp]
 
-                log.info("Spectral index calculated is {}".format(spec_indx[icomp]))
+                log.debug("Spectral index calculated is {}".format(spec_indx[icomp]))
                 fluxes = [
                     comp.flux[i][0]
                     * (f / comp.frequency.data[nchan // 2]) ** spec_indx[icomp]

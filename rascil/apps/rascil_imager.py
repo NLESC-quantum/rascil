@@ -238,9 +238,7 @@ def setup_rsexecute(args):
             )
             dask.config.set(
                 {
-                    "distributed.nanny.environ.MALLOC_TRIM_THRESHOLD_": {
-                        args.dask_malloc_trim_threshold
-                    }
+                    "distributed.nanny.environ.MALLOC_TRIM_THRESHOLD_": args.dask_malloc_trim_threshold
                 }
             )
 

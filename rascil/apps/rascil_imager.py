@@ -246,8 +246,11 @@ def setup_rsexecute(args):
 
         tcp_timeout = dask.config.get("distributed.comm.timeouts.tcp")
         connect_timeout = dask.config.get("distributed.comm.timeouts.connect")
+        dask_nanny_environ = dask.config.get("distributed.nanny.environ")
 
         log.info(f"Dask timeouts: connect {connect_timeout} tcp: {tcp_timeout}")
+        log.info(f"Dask nanny environment {dask_nanny_environ}")
+
         performance_dask_configuration(args.performance_file, rsexecute)
 
     else:

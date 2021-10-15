@@ -255,13 +255,15 @@ def plot_skycomponents_flux(
     for i, match in enumerate(matches):
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
+
+        # Take the first polarisation
         if refchan is None:
             nchan, _ = m_ref.flux.shape
-            flux_in[i] = m_ref.flux[nchan // 2]
-            flux_out[i] = m_comp.flux[nchan // 2]
+            flux_in[i] = m_ref.flux[nchan // 2, 0]
+            flux_out[i] = m_comp.flux[nchan // 2, 0]
         else:
-            flux_in[i] = m_ref.flux[refchan]
-            flux_out[i] = m_comp.flux[refchan]
+            flux_in[i] = m_ref.flux[refchan, 0]
+            flux_out[i] = m_comp.flux[refchan, 0]
 
     plt.loglog(flux_in, flux_out, "o", color="b", markersize=5, alpha=0.5)
 
@@ -307,15 +309,18 @@ def plot_skycomponents_flux_ratio(
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
 
-        if m_ref.flux.all() > 0.0:
-            if refchan is None:
-                nchan, _ = m_ref.flux.shape
-                fr = m_comp.flux[nchan // 2] / m_ref.flux[nchan // 2]
-            else:
-                fr = m_comp.flux[refchan] / m_ref.flux[refchan]
-            if fr < max_ratio:
-                flux_ratio.append(fr)
-                dist.append(m_comp.direction.separation(phasecentre).degree)
+        # Take the first polarisation
+        if refchan is None:
+            nchan, _ = m_ref.flux.shape
+            if m_ref.flux[nchan // 2, 0] > 0.0:
+                fr = m_comp.flux[nchan // 2, 0] / m_ref.flux[nchan // 2, 0]
+        else:
+            if m_ref.flux[refchan, 0] > 0.0:
+                fr = m_comp.flux[refchan, 0] / m_ref.flux[refchan, 0]
+
+        if fr > 0.0 and fr < max_ratio:
+            flux_ratio.append(fr)
+            dist.append(m_comp.direction.separation(phasecentre).degree)
 
     if len(dist) == 0:
         raise ValueError("No valid points found for flux ratio plot")

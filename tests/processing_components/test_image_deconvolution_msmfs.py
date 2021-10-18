@@ -45,7 +45,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
         self.niter = 1000
         self.lowcore = create_named_configuration("LOWBD2-CORE")
@@ -83,12 +83,13 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         beam = create_low_test_beam(self.test_model)
         if self.persist:
             export_image_to_fits(
-                beam, "%s/test_deconvolve_mmclean_beam.fits" % self.dir
+                beam, "%s/test_deconvolve_mmclean_beam.fits" % self.results_dir
             )
         self.test_model["pixels"].data *= beam["pixels"].data
         if self.persist:
             export_image_to_fits(
-                self.test_model, "%s/test_deconvolve_mmclean_model.fits" % self.dir
+                self.test_model,
+                "%s/test_deconvolve_mmclean_model.fits" % self.results_dir,
             )
         self.vis = predict_2d(self.vis, self.test_model)
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
@@ -104,11 +105,11 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)
         if self.persist:
             export_image_to_fits(
-                self.dirty, "%s/test_deconvolve_mmclean-dirty.fits" % self.dir
+                self.dirty, "%s/test_deconvolve_mmclean-dirty.fits" % self.results_dir
             )
         if self.persist:
             export_image_to_fits(
-                self.psf, "%s/test_deconvolve_mmclean-psf.fits" % self.dir
+                self.psf, "%s/test_deconvolve_mmclean-psf.fits" % self.results_dir
             )
         self.dirty = image_scatter_channels(self.dirty)
         self.psf = image_scatter_channels(self.psf)
@@ -219,7 +220,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
             sensitivity = image_gather_channels(self.sensitivity)
             export_image_to_fits(
                 sensitivity,
-                "%s/test_deconvolve_mmclean_linear_sensitivity.fits" % self.dir,
+                "%s/test_deconvolve_mmclean_linear_sensitivity.fits" % self.results_dir,
             )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
@@ -294,16 +295,16 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
             comp = image_gather_channels(self.comp)
             export_image_to_fits(
                 comp,
-                f"{self.dir}/test_deconvolve_{tag}_deconvolved.fits",
+                f"{self.results_dir}/test_deconvolve_{tag}_deconvolved.fits",
             )
             residual = image_gather_channels(self.residual)
             export_image_to_fits(
                 residual,
-                f"{self.dir}/test_deconvolve_{tag}_residual.fits",
+                f"{self.results_dir}/test_deconvolve_{tag}_residual.fits",
             )
             export_image_to_fits(
                 cmodel,
-                f"{self.dir}/test_deconvolve_{tag}_restored.fits",
+                f"{self.results_dir}/test_deconvolve_{tag}_restored.fits",
             )
         qa = qa_image(cmodel)
         numpy.testing.assert_allclose(

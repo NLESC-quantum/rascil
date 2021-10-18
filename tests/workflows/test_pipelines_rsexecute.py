@@ -43,10 +43,6 @@ from rascil.processing_components.skycomponent import (
     copy_skycomponent,
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.workflows.rsexecute.pipelines.pipeline_rsexecute import (
-    ical_list_rsexecute_workflow,
-    continuum_imaging_list_rsexecute_workflow,
-)
 from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import (
     ical_skymodel_list_rsexecute_workflow,
     continuum_imaging_skymodel_list_rsexecute_workflow,
@@ -69,7 +65,7 @@ class TestPipelineGraphs(unittest.TestCase):
         rsexecute.set_client(use_dask=True)
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def tearDown(self):
@@ -164,10 +160,11 @@ class TestPipelineGraphs(unittest.TestCase):
             self.cmodel = smooth_image(model)
 
             export_image_to_fits(
-                model, "%s/test_pipelines_rsexecute_model.fits" % self.dir
+                model, "%s/test_pipelines_rsexecute_model.fits" % self.results_dir
             )
             export_image_to_fits(
-                self.cmodel, "%s/test_pipelines_rsexecute_cmodel.fits" % self.dir
+                self.cmodel,
+                "%s/test_pipelines_rsexecute_cmodel.fits" % self.results_dir,
             )
 
         if add_errors:
@@ -211,74 +208,6 @@ class TestPipelineGraphs(unittest.TestCase):
         ]
         self.model_imagelist = rsexecute.persist(self.model_imagelist, sync=True)
 
-    def test_continuum_imaging_pipeline_taylor_terms(self):
-        self.actualSetUp()
-
-        continuum_imaging_list = continuum_imaging_list_rsexecute_workflow(
-            self.bvis_list,
-            model_imagelist=self.model_imagelist,
-            context="ng",
-            algorithm="mmclean",
-            scales=[0],
-            niter=100,
-            fractional_threshold=0.1,
-            threshold=0.01,
-            nmoment=2,
-            nmajor=3,
-            gain=0.7,
-            deconvolve_facets=2,
-            deconvolve_overlap=32,
-            deconvolve_taper="tukey",
-            psf_support=64,
-            do_wstacking=True,
-            restored_output="taylor",
-        )
-
-        clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
-
-        self.save_and_check(
-            "continuum_imaging_pipeline_taylor",
-            clean,
-            residual,
-            restored,
-            101.20612449807774,
-            -0.05374166540972031,
-            taylor=True,
-        )
-
-    def test_continuum_imaging_pipeline(self):
-        self.actualSetUp()
-
-        continuum_imaging_list = continuum_imaging_list_rsexecute_workflow(
-            self.bvis_list,
-            model_imagelist=self.model_imagelist,
-            context="ng",
-            algorithm="mmclean",
-            scales=[0],
-            niter=100,
-            fractional_threshold=0.1,
-            threshold=0.01,
-            nmoment=2,
-            nmajor=3,
-            gain=0.7,
-            deconvolve_facets=2,
-            deconvolve_overlap=32,
-            deconvolve_taper="tukey",
-            psf_support=64,
-            do_wstacking=True,
-        )
-
-        clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
-
-        self.save_and_check(
-            "continuum_imaging_pipeline",
-            clean,
-            residual,
-            restored,
-            116.80897017399957,
-            -0.184302867869548,
-        )
-
     def save_and_check(
         self, tag, clean, residual, restored, flux_max, flux_min, taylor=False
     ):
@@ -290,15 +219,15 @@ class TestPipelineGraphs(unittest.TestCase):
             if self.persist:
                 export_image_to_fits(
                     clean,
-                    f"{self.dir}/test_pipelines_{tag}_rsexecute_deconvolved.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_deconvolved.fits",
                 )
                 export_image_to_fits(
                     residual,
-                    f"{self.dir}/test_pipelines_{tag}_rsexecute_residual.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_residual.fits",
                 )
                 export_image_to_fits(
                     restored,
-                    f"{self.dir}/test_pipelines_{tag}_rsexecute_restored.fits",
+                    f"{self.results_dir}/test_pipelines_{tag}_rsexecute_restored.fits",
                 )
             qa = qa_image(restored)
             assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)
@@ -308,188 +237,21 @@ class TestPipelineGraphs(unittest.TestCase):
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         clean[moment],
-                        f"{self.dir}/test_pipelines_{tag}_rsexecute_deconvolved_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_deconvolved_taylor{moment}.fits",
                     )
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         residual[moment][0],
-                        f"{self.dir}/test_pipelines_{tag}_rsexecute_residual_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_residual_taylor{moment}.fits",
                     )
                 for moment, _ in enumerate(clean):
                     export_image_to_fits(
                         restored[moment],
-                        f"{self.dir}/test_pipelines_{tag}_rsexecute_restored_taylor{moment}.fits",
+                        f"{self.results_dir}/test_pipelines_{tag}_rsexecute_restored_taylor{moment}.fits",
                     )
             qa = qa_image(restored[0])
             assert numpy.abs(qa.data["max"] - flux_max) < 1.0e-7, str(qa)
             assert numpy.abs(qa.data["min"] - flux_min) < 1.0e-7, str(qa)
-
-    def test_continuum_imaging_pipeline_pol(self):
-        self.actualSetUp(add_errors=False, dopol=True)
-
-        continuum_imaging_list = continuum_imaging_list_rsexecute_workflow(
-            self.bvis_list,
-            model_imagelist=self.model_imagelist,
-            context="ng",
-            algorithm="mmclean",
-            scales=[0],
-            niter=100,
-            fractional_threshold=0.1,
-            threshold=0.01,
-            nmoment=2,
-            nmajor=3,
-            gain=0.7,
-            deconvolve_facets=2,
-            deconvolve_overlap=32,
-            deconvolve_taper="tukey",
-            psf_support=64,
-            do_wstacking=True,
-        )
-
-        clean, residual, restored = rsexecute.compute(continuum_imaging_list, sync=True)
-
-        self.save_and_check(
-            "continuum_imaging_pipeline_pol",
-            clean,
-            residual,
-            restored,
-            116.80897017399958,
-            -0.1843028678695493,
-        )
-
-    def test_ical_pipeline(self):
-        self.actualSetUp(add_errors=True)
-
-        controls = create_calibration_controls()
-        controls["T"]["first_selfcal"] = 1
-        controls["T"]["timeslice"] = "auto"
-
-        ical_list = ical_list_rsexecute_workflow(
-            self.bvis_list,
-            model_imagelist=self.model_imagelist,
-            context="ng",
-            algorithm="mmclean",
-            facets=1,
-            scales=[0],
-            niter=100,
-            fractional_threshold=0.1,
-            threshold=0.01,
-            nmoment=2,
-            nmajor=3,
-            gain=0.7,
-            deconvolve_facets=2,
-            deconvolve_overlap=32,
-            deconvolve_taper="tukey",
-            psf_support=64,
-            restore_facets=1,
-            calibration_context="T",
-            controls=controls,
-            do_selfcal=True,
-            global_solution=False,
-        )
-        clean, residual, restored, gt_list = rsexecute.compute(ical_list, sync=True)
-        if self.persist:
-            export_gaintable_to_hdf5(
-                gt_list[0]["T"],
-                "%s/test_pipelines_ical_pipeline_rsexecute_gaintable.hdf5" % self.dir,
-            )
-        self.save_and_check(
-            "ical_pipeline",
-            clean,
-            residual,
-            restored,
-            116.76942026395898,
-            -0.18831493036973812,
-        )
-
-    def test_ical_pipeline_pol(self):
-        self.actualSetUp(add_errors=True, dopol=True)
-        controls = create_calibration_controls()
-        controls["T"]["first_selfcal"] = 1
-        controls["T"]["timeslice"] = "auto"
-
-        ical_list = ical_list_rsexecute_workflow(
-            self.bvis_list,
-            model_imagelist=self.model_imagelist,
-            context="ng",
-            algorithm="mmclean",
-            facets=1,
-            scales=[0],
-            niter=100,
-            fractional_threshold=0.1,
-            threshold=0.01,
-            nmoment=2,
-            nmajor=3,
-            gain=0.7,
-            deconvolve_facets=2,
-            deconvolve_overlap=32,
-            deconvolve_taper="tukey",
-            psf_support=64,
-            restore_facets=1,
-            calibration_context="T",
-            controls=controls,
-            do_selfcal=True,
-            global_solution=False,
-        )
-        clean, residual, restored, gt_list = rsexecute.compute(ical_list, sync=True)
-        if self.persist:
-            export_gaintable_to_hdf5(
-                gt_list[0]["T"],
-                "%s/test_pipelines_ical_pipeline_pol_rsexecute_gaintable.hdf5"
-                % self.dir,
-            )
-        self.save_and_check(
-            "ical_pipeline_pol",
-            clean,
-            residual,
-            restored,
-            116.81156678963731,
-            -0.1896770243353241,
-        )
-
-    def test_ical_pipeline_global(self):
-        self.actualSetUp(add_errors=True)
-        controls = create_calibration_controls()
-        controls["T"]["first_selfcal"] = 1
-        controls["T"]["timeslice"] = "auto"
-
-        ical_list = ical_list_rsexecute_workflow(
-            self.bvis_list,
-            model_imagelist=self.model_imagelist,
-            context="ng",
-            algorithm="mmclean",
-            facets=1,
-            scales=[0],
-            niter=100,
-            fractional_threshold=0.1,
-            threshold=0.01,
-            nmoment=2,
-            nmajor=3,
-            gain=0.7,
-            deconvolve_facets=2,
-            deconvolve_overlap=32,
-            deconvolve_taper="tukey",
-            psf_support=64,
-            restore_facets=1,
-            calibration_context="T",
-            controls=controls,
-            do_selfcal=True,
-            global_solution=True,
-        )
-        clean, residual, restored, gt_list = rsexecute.compute(ical_list, sync=True)
-        if self.persist:
-            export_gaintable_to_hdf5(
-                gt_list[0]["T"],
-                "%s/test_pipelines_ical_pipeline_rsexecute_gaintable.hdf5" % self.dir,
-            )
-        self.save_and_check(
-            "ical_pipeline_global",
-            clean,
-            residual,
-            restored,
-            116.11321512224491,
-            -2.0247334424296333,
-        )
 
     def test_ical_skymodel_pipeline_empty(self):
         self.actualSetUp(add_errors=True)
@@ -535,7 +297,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
                 "%s/test_pipelines_ical_skymodel_pipeline_rsexecute_gaintable.hdf5"
-                % self.dir,
+                % self.results_dir,
             )
         self.save_and_check(
             "ical_skymodel_pipeline_empty",
@@ -591,7 +353,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
                 "%s/test_pipelines_ical_skymodel_pipeline_empty_threshold_rsexecute_gaintable.hdf5"
-                % self.dir,
+                % self.results_dir,
             )
         self.save_and_check(
             "ical_skymodel_pipeline_empty_threshold",
@@ -650,7 +412,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
                 "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable.hdf5"
-                % self.dir,
+                % self.results_dir,
             )
         self.save_and_check(
             "ical_skymodel_pipeline_exact",
@@ -719,7 +481,7 @@ class TestPipelineGraphs(unittest.TestCase):
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
                 "%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_gaintable.hdf5"
-                % self.dir,
+                % self.results_dir,
             )
         self.save_and_check(
             "ical_skymodel_pipeline_partial",

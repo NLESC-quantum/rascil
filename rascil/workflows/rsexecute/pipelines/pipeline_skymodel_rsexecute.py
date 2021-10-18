@@ -46,6 +46,7 @@ def ical_skymodel_list_rsexecute_workflow(
     context,
     skymodel_list=None,
     calibration_context="TG",
+    controls=None,
     do_selfcal=True,
     pipeline_name="ical",
     **kwargs,
@@ -68,9 +69,11 @@ def ical_skymodel_list_rsexecute_workflow(
     psf_imagelist = invert_list_rsexecute_workflow(
         vis_list, model_imagelist, context=context, dopsf=True, **kwargs
     )
-    psf_imagelist_trimmed = [
-        rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
-    ]
+
+    def trim(x):
+        return x[0]
+
+    psf_imagelist_trimmed = [rsexecute.execute(trim)(d) for d in psf_imagelist]
 
     # Create a list of copied input visibilities
     model_vislist = [
@@ -106,6 +109,7 @@ def ical_skymodel_list_rsexecute_workflow(
             predicted_model_vislist,
             gt_list,
             calibration_context=calibration_context,
+            controls=controls,
             **kwargs,
         )
 
@@ -142,8 +146,11 @@ def ical_skymodel_list_rsexecute_workflow(
             **kwargs,
         )
 
+    def trim(x):
+        return x[0]
+
     residual_imagelist_trimmed = [
-        rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+        rsexecute.execute(trim)(d) for d in residual_imagelist
     ]
     skymodel_list = deconvolve_skymodel_list_rsexecute_workflow(
         residual_imagelist_trimmed,
@@ -153,6 +160,7 @@ def ical_skymodel_list_rsexecute_workflow(
         fit_skymodel=True,
         **kwargs,
     )
+
     # Next major cycles, if nmajor>1
     nmajor = get_parameter(kwargs, "nmajor", 5)
     if nmajor > 1:
@@ -175,6 +183,7 @@ def ical_skymodel_list_rsexecute_workflow(
                     model_vislist,
                     gt_list,
                     calibration_context=calibration_context,
+                    controls=controls,
                     iteration=cycle,
                     **kwargs,
                 )
@@ -202,9 +211,13 @@ def ical_skymodel_list_rsexecute_workflow(
                     **kwargs,
                 )
 
+            def trim(x):
+                return x[0]
+
             residual_imagelist_trimmed = [
-                rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+                rsexecute.execute(trim)(d) for d in residual_imagelist
             ]
+
             # Deconvolve to get an updated skymodel
             skymodel_list = deconvolve_skymodel_list_rsexecute_workflow(
                 residual_imagelist_trimmed,
@@ -213,6 +226,16 @@ def ical_skymodel_list_rsexecute_workflow(
                 prefix=f"{pipeline_name} cycle {cycle + 1}",
                 **kwargs,
             )
+
+            # Most of the computations are done here. We noticed that the
+            # graph size increases non-linearly for each major cycle. We
+            # faced issues on computing the entire graph at once and so here
+            # we are persisting the graph so that a smaller graph size
+            # starts executing as it gets constructed for each major cycle.
+            # The idea is to introduce a convergence criteria so that we can
+            # break the loop when criteria is met. More details can
+            # be found here: https://jira.skatelescope.org/browse/SIM-1015
+            skymodel_list = rsexecute.persist(skymodel_list)
 
     # We've finished so now we update the residual images and calculate the restored image
     residual_imagelist = residual_skymodel_list_rsexecute_workflow(
@@ -262,20 +285,31 @@ def restore_skymodel_pipeline_rsexecute_workflow(
     elif output == "taylor":
         # In this case, we overwrite the originals with Taylor term versions
         nmoment = get_parameter(kwargs, "nmoment", 1)
-        deconvolve_model_imagelist = [s.image for s in skymodel_list]
+
+        def extract_sm_image(s):
+            return s.image
+
+        deconvolve_model_imagelist = [
+            rsexecute.execute(extract_sm_image, nout=1)(sm) for sm in skymodel_list
+        ]
         deconvolve_model_imagelist = rsexecute.execute(
             calculate_frequency_taylor_terms_from_image_list, nout=nmoment
         )(deconvolve_model_imagelist, nmoment=nmoment)
 
+        def trim(x):
+            return x[0]
+
         residual_imagelist_trimmed = [
-            rsexecute.execute(lambda x: x[0])(d) for d in residual_imagelist
+            rsexecute.execute(trim)(d) for d in residual_imagelist
         ]
         residual_imagelist = rsexecute.execute(
             calculate_frequency_taylor_terms_from_image_list, nout=nmoment
         )(residual_imagelist_trimmed, nmoment=nmoment)
-        residual_imagelist = [
-            rsexecute.execute(lambda x: (x, 0.0))(d) for d in residual_imagelist
-        ]
+
+        def untrim(x):
+            return (x, 0.0)
+
+        residual_imagelist = [rsexecute.execute(untrim)(d) for d in residual_imagelist]
         # Now we need to create a skymodel in Taylor space
         skymodel_list = rsexecute.execute(
             convert_skycomponents_taylor_terms_list, nout=nmoment

@@ -96,7 +96,7 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, **kwargs
     """
 
     # Predict_2d does not clear the vis so we have to do it here.
-    vis_list = zero_list_rsexecute_workflow(vis_list)
+    vis_list = zero_list_rsexecute_workflow(vis_list, copy=False)
 
     c = imaging_context(context)
     predict = c["predict"]
@@ -390,8 +390,8 @@ def restore_centre_rsexecute_workflow(
             model,
             clean_beam=clean_beam,
         )
-
-    return restored
+    # optimize the graph to reduce size
+    return rsexecute.optimize(restored)
 
 
 def deconvolve_list_singlefacet_rsexecute_workflow(
@@ -645,7 +645,8 @@ def deconvolve_list_rsexecute_workflow(
         )
         for chan in range(nchan)
     ]
-    return result
+    # optimize the graph to reduce size
+    return rsexecute.optimize(result)
 
 
 def scatter_facets_and_transpose(
@@ -677,13 +678,18 @@ def scatter_facets_and_transpose(
         )
         for chan in range(nchan)
     ]
-    # Tranpose from [channel][facet] to [facet][channel]
+    # Transpose from [channel][facet] to [facet][channel]
+    # A direct would create too many (channel*facet) tasks. We double
+    # delay it to reduce number of tasks.
     scattered_facets_channels_list = [
-        [scattered_channels_facets_list[chan][facet] for chan in range(nchan)]
+        rsexecute.execute(
+            [scattered_channels_facets_list[chan][facet] for chan in range(nchan)],
+            nout=nchan,
+        )
         for facet in range(deconvolve_number_facets)
     ]
 
-    return scattered_facets_channels_list
+    return rsexecute.optimize(scattered_facets_channels_list)
 
 
 def deconvolve_list_channel_rsexecute_workflow(
@@ -728,6 +734,24 @@ def deconvolve_list_channel_rsexecute_workflow(
     return rsexecute.optimize(result)
 
 
+def griddata_merge_weights_rsexecute(gd_list):
+    """Merge weights into one grid using a reduction
+
+    :param gd_list: List of griddatas or graph
+    :return:
+    """
+    split = 2
+    if len(gd_list) >= split:
+        centre = len(gd_list) // split
+        result = [
+            griddata_merge_weights_rsexecute(gd_list[:centre]),
+            griddata_merge_weights_rsexecute(gd_list[centre:]),
+        ]
+        return rsexecute.execute(griddata_merge_weights, nout=1)(result)
+    else:
+        return rsexecute.execute(griddata_merge_weights, nout=1)(gd_list)
+
+
 def weight_list_rsexecute_workflow(
     vis_list, model_imagelist, weighting="uniform", robustness=0.0, **kwargs
 ):
@@ -769,19 +793,13 @@ def weight_list_rsexecute_workflow(
         for i in range(len(vis_list))
     ]
 
-    merged_weight_grid = rsexecute.execute(griddata_merge_weights, nout=1)(weight_list)
+    merged_weight_grid = griddata_merge_weights_rsexecute(weight_list)
 
-    def imaging_re_weight(vis, model, gd):
+    def imaging_re_weight(vis, gd):
         if gd is not None:
             if vis is not None:
-                # Ensure that the griddata has the right axes so that the convolution
-                # function mapping works
-                agd = create_griddata_from_image(
-                    model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
-                )
-                agd["pixels"].data = gd[0]["pixels"].data
                 vis = griddata_blockvisibility_reweight(
-                    vis, agd, weighting=weighting, robustness=robustness
+                    vis, gd[0], weighting=weighting, robustness=robustness
                 )
                 return vis
             else:
@@ -790,9 +808,7 @@ def weight_list_rsexecute_workflow(
             return vis
 
     result = [
-        rsexecute.execute(imaging_re_weight, nout=1)(
-            v, model_imagelist[i], merged_weight_grid
-        )
+        rsexecute.execute(imaging_re_weight, nout=1)(v, merged_weight_grid)
         for i, v in enumerate(vis_list)
     ]
 
@@ -813,17 +829,22 @@ def taper_list_rsexecute_workflow(vis_list, size_required):
     return rsexecute.optimize(result)
 
 
-def zero_list_rsexecute_workflow(vis_list):
+def zero_list_rsexecute_workflow(vis_list, copy=True):
     """Creates a new vis_list and initialises all to zero
 
     :param vis_list: List of vis (or graph)
+    :param copy: Make a new copy?
     :return: List of vis (or graph)
     """
 
     def imaging_zero_vis(vis):
         if vis is not None:
-            zerovis = copy_visibility(vis, zero=True)
-            return zerovis
+            if copy:
+                zerovis = copy_visibility(vis, zero=True)
+                return zerovis
+            else:
+                vis["vis"][...] = 0.0
+                return vis
         else:
             return None
 
@@ -877,14 +898,16 @@ def sum_predict_results_rsexecute(bvis_list, split=2):
         return rsexecute.execute(sum_predict_results, nout=2)(bvis_list)
 
 
-def sum_invert_results_rsexecute(image_list, split=2):
+def sum_invert_results_rsexecute(image_list):
     """Sum a set of invert results with appropriate weighting
 
+    Note that in the case of a single element of image_list a copy is made
+
     :param image_list: List of (image, sum weights) tuples
-    :param split: Split into
     :return: image, sum of weights
     """
-    if len(image_list) > split:
+    split = 2
+    if len(image_list) >= split:
         centre = len(image_list) // split
         result = [
             sum_invert_results_rsexecute(image_list[:centre]),

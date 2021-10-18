@@ -28,8 +28,11 @@ reqs = [
     for line in open("requirements.txt").readlines()
     if not line.strip().startswith("#")
     and line.strip() != ""
-    and not line.startswith("git")
+    and not line.startswith("git+")
 ]
+
+reqs.append("bdsf @ git+https://github.com/lofar-astron/PyBDSF.git@master#egg=bdsf")
+
 
 # MF. This is a workaround to be able to build the library with MacOS
 if sys.platform == "darwin":
@@ -71,6 +74,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
     packages=(packages + packages_data),
     install_requires=reqs,

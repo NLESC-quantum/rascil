@@ -28,7 +28,7 @@ class TestVPGridDataKernels(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -80,7 +80,7 @@ class TestVPGridDataKernels(unittest.TestCase):
 
         if self.persist:
             export_image_to_fits(
-                gcf, "%s/test_convolutionfunction_aterm_vp_gcf.fits" % self.dir
+                gcf, "%s/test_convolutionfunction_aterm_vp_gcf.fits" % self.results_dir
             )
 
 

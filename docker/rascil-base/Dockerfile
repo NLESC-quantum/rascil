@@ -1,14 +1,12 @@
-FROM python:3.7-slim AS first
+FROM python:3.9-slim AS first
 
 WORKDIR /
 
-RUN apt-get update -y && apt-get install -y git rsync
-RUN git clone https://gitlab.com/ska-telescope/external/rascil.git
+RUN apt-get update -y && apt-get install -y git
+RUN git clone --depth 1 https://gitlab.com/ska-telescope/external/rascil.git
 
-RUN mkdir -p /usr/share/casacore/data/ && \
-    rsync -avz --timeout=120 rsync://casa-rsync.nrao.edu/casa-data/geodetic  /usr/share/casacore/data/
 
-FROM python:3.7
+FROM python:3.9
 
 LABEL author="Tim Cornwell <realtimcornwell@gmail.com>" \
       description="SKA Telescope RASCIL base root reference image" \
@@ -28,11 +26,12 @@ RUN apt-get update -y && apt-get install -y gosu && \
 WORKDIR /
 USER root
 
-COPY --from=first /usr/share/casacore/data /usr/share/casacore/data
-
 # Install RASCIL from wheel built in the "build" stage of the CI pipeline
-# The data directory will not be loaded correctly until LFS is enabled
 COPY rascil-*whl .
+
+# these are needed for bdsf to install
+RUN apt-get update -y && apt-get install -y gfortran libboost-dev libboost-python-dev libboost-numpy-dev
+
 RUN pip install --upgrade pip && \
     DUCC0_OPTIMIZATION=portable-debug pip install rascil-*.whl && \
     rm -rf /root/.cache

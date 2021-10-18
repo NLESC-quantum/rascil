@@ -171,7 +171,7 @@ def imager(args):
         raise ValueError("Unknown mode {}".format(args.mode))
 
     # Save the processing statistics from Dask
-    dask_info = rsexecute.save_statistics(logfile.replace(".log", ""))
+    dask_info = rsexecute.save_statistics(name=logfile.replace(".log", ""))
 
     perf_save_dask_profile(args, dask_info)
 
@@ -220,6 +220,7 @@ def setup_rsexecute(args):
             rsexecute.set_client(use_dask=True, client=client)
 
         rsexecute.init_statistics()
+
         # Sample the memory usage with a scheduler plugin
         if rsexecute.using_dask and args.dask_memory_usage_file is not None:
             rsexecute.memusage(args.dask_memory_usage_file)
@@ -231,11 +232,25 @@ def setup_rsexecute(args):
                 {"distributed.comm.timeouts.tcp": args.dask_connect_timeout}
             )
 
+        if args.dask_malloc_trim_threshold is not None:
+            log.info(
+                f"Dask nanny: set mem_alloc_trim_={args.dask_malloc_trim_threshold}"
+            )
+            dask.config.set(
+                {
+                    "distributed.nanny.environ.MALLOC_TRIM_THRESHOLD_": args.dask_malloc_trim_threshold
+                }
+            )
+
         tcp_timeout = dask.config.get("distributed.comm.timeouts.tcp")
         connect_timeout = dask.config.get("distributed.comm.timeouts.connect")
+        dask_nanny_environ = dask.config.get("distributed.nanny.environ")
 
         log.info(f"Dask timeouts: connect {connect_timeout} tcp: {tcp_timeout}")
+        log.info(f"Dask nanny environment {dask_nanny_environ}")
+
         performance_dask_configuration(args.performance_file, rsexecute)
+
     else:
         rsexecute.set_client(use_dask=False)
 

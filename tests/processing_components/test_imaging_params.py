@@ -25,7 +25,7 @@ class TestImagingParams(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.vnchan = 7
         self.lowcore = create_named_configuration("LOWBD2", rmax=300.0)

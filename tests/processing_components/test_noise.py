@@ -30,7 +30,7 @@ class TestNoise(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.frequency = numpy.linspace(0.8e8, 1.2e8, 5)
         self.channel_bandwidth = numpy.array([1e7, 1e7, 1e7, 1e7, 1e7])

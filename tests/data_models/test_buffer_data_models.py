@@ -51,7 +51,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-        self.dir = rascil_path("test_results/")
+        self.results_dir = rascil_path("test_results/")
 
         self.midcore = create_named_configuration("MID", rmax=3000.0)
         self.times = (numpy.pi / 43200.0) * numpy.arange(0.0, 300.0, 100.0)
@@ -87,7 +87,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
 
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "vislist": {
                 "name": "test_bufferblockvisibility.hdf",
                 "data_model": "BlockVisibility",
@@ -145,7 +145,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
 
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "gaintable": {
                 "name": "test_buffergaintable.hdf",
                 "data_model": "GainTable",
@@ -173,7 +173,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         ft = create_flagtable_from_blockvisibility(self.vis, timeslice="auto")
 
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "flagtable": {
                 "name": "test_bufferflagtable.hdf",
                 "data_model": "FlagTable",
@@ -202,7 +202,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         pt = simulate_pointingtable(pt, pointing_error=0.1)
 
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "pointingtable": {
                 "name": "test_bufferpointingtable.hdf",
                 "data_model": "PointingTable",
@@ -233,7 +233,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         sm = SkyModel(components=[self.comp], image=im, gaintable=gt)
 
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "skymodel": {"name": "test_bufferskymodel.hdf", "data_model": "SkyModel"},
         }
         bdm = BufferSkyModel(config["buffer"], config["skymodel"], sm)
@@ -264,7 +264,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         sm = SkyModel(components=[self.comp], gaintable=gt)
 
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "skymodel": {
                 "name": "test_bufferskymodel_no_image.hdf",
                 "data_model": "SkyModel",
@@ -283,7 +283,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         im = create_test_image()
 
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "image": {"name": "test_bufferimage.hdf", "data_model": "Image"},
         }
         bdm = BufferImage(config["buffer"], config["image"], im)
@@ -301,7 +301,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
 
         with self.assertRaises(AssertionError):
             config = {
-                "buffer": {"directory": self.dir},
+                "buffer": {"directory": self.results_dir},
                 "image": {
                     "name": "test_bufferskyimage_assertion.hdf",
                     "data_model": "Image",
@@ -317,7 +317,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         im = create_test_image()
         gd = create_griddata_from_image(im)
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "griddata": {"name": "test_buffergriddata.hdf", "data_model": "GridData"},
         }
         bdm = BufferGridData(config["buffer"], config["griddata"], gd)
@@ -333,7 +333,7 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         im = create_test_image()
         cf = create_convolutionfunction_from_image(im)
         config = {
-            "buffer": {"directory": self.dir},
+            "buffer": {"directory": self.results_dir},
             "convolutionfunction": {
                 "name": "test_bufferconvolutionfunction.hdf",
                 "data_model": "ConvolutionFunction",

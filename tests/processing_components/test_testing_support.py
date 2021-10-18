@@ -45,7 +45,7 @@ class TestTesting_Support(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
         self.frequency = numpy.linspace(0.8e8, 1.2e8, 5)
@@ -116,7 +116,9 @@ class TestTesting_Support(unittest.TestCase):
         assert im["pixels"].data.shape[2] == 256
         assert im["pixels"].data.shape[3] == 256
         if self.persist:
-            export_image_to_fits(im, "%s/test_test_support_low_gleam.fits" % (self.dir))
+            export_image_to_fits(
+                im, "%s/test_test_support_low_gleam.fits" % (self.results_dir)
+            )
 
         comp = sm.components
         assert len(comp) == 38, len(comp)
@@ -138,7 +140,9 @@ class TestTesting_Support(unittest.TestCase):
         assert im["pixels"].data.shape[2] == 256
         assert im["pixels"].data.shape[3] == 256
         if self.persist:
-            export_image_to_fits(im, "%s/test_test_support_low_gleam.fits" % (self.dir))
+            export_image_to_fits(
+                im, "%s/test_test_support_low_gleam.fits" % (self.results_dir)
+            )
 
     def test_create_low_test_image_from_gleam_with_pb(self):
         im = create_low_test_image_from_gleam(
@@ -157,7 +161,7 @@ class TestTesting_Support(unittest.TestCase):
         assert im["pixels"].data.shape[3] == 256
         if self.persist:
             export_image_to_fits(
-                im, "%s/test_test_support_low_gleam_with_pb.fits" % (self.dir)
+                im, "%s/test_test_support_low_gleam_with_pb.fits" % (self.results_dir)
             )
 
     def test_create_low_test_skycomponents_from_gleam(self):
@@ -213,7 +217,9 @@ class TestTesting_Support(unittest.TestCase):
         assert im["pixels"].data.shape[2] == 1024
         assert im["pixels"].data.shape[3] == 1024
         if self.persist:
-            export_image_to_fits(im, "%s/test_test_support_low_s3.fits" % (self.dir))
+            export_image_to_fits(
+                im, "%s/test_test_support_low_s3.fits" % (self.results_dir)
+            )
 
     def test_create_test_image_from_s3_mid(self):
         im = create_test_image_from_s3(
@@ -228,7 +234,9 @@ class TestTesting_Support(unittest.TestCase):
         assert im["pixels"].data.shape[2] == 1024
         assert im["pixels"].data.shape[3] == 1024
         if self.persist:
-            export_image_to_fits(im, "%s/test_test_support_mid_s3.fits" % (self.dir))
+            export_image_to_fits(
+                im, "%s/test_test_support_mid_s3.fits" % (self.results_dir)
+            )
 
     def test_create_test_image_s3_spectral(self):
         im = create_test_image_from_s3(
@@ -258,7 +266,9 @@ class TestTesting_Support(unittest.TestCase):
         assert im["pixels"].data.shape[2] == 1024
         assert im["pixels"].data.shape[3] == 1024
         if self.persist:
-            export_image_to_fits(im, "%s/test_test_support_low_s3.fits" % (self.dir))
+            export_image_to_fits(
+                im, "%s/test_test_support_low_s3.fits" % (self.results_dir)
+            )
 
     def test_create_low_test_beam(self):
         im = create_test_image(
@@ -270,7 +280,9 @@ class TestTesting_Support(unittest.TestCase):
         )
         bm = create_low_test_beam(model=im)
         if self.persist:
-            export_image_to_fits(bm, "%s/test_test_support_low_beam.fits" % (self.dir))
+            export_image_to_fits(
+                bm, "%s/test_test_support_low_beam.fits" % (self.results_dir)
+            )
 
         bmshape = bm["pixels"].data.shape
         assert bmshape[0] == 3

@@ -29,7 +29,7 @@ class TestImageGatherScatters(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def test_scatter_gather_facet(self):
@@ -168,13 +168,13 @@ class TestImageGatherScatters(unittest.TestCase):
                     export_image_to_fits(
                         m31reconstructed,
                         "%s/test_image_gather_scatter_%dnraster_%doverlap_%s_reconstructed.fits"
-                        % (self.dir, nraster, overlap, taper),
+                        % (self.results_dir, nraster, overlap, taper),
                     )
                 if self.persist:
                     export_image_to_fits(
                         flat,
                         "%s/test_image_gather_scatter_%dnraster_%doverlap_%s_flat.fits"
-                        % (self.dir, nraster, overlap, taper),
+                        % (self.results_dir, nraster, overlap, taper),
                     )
 
                 assert numpy.max(numpy.abs(flat["pixels"].data)), (

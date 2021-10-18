@@ -31,7 +31,7 @@ class TestSimSkycomponents(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.central_frequency = numpy.array([1e8])
         self.component_frequency = numpy.linspace(0.8e8, 1.2e8, 7)

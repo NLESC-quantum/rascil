@@ -47,7 +47,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 class TestImagingDeconvolveGraph(unittest.TestCase):
     def setUp(self):
         rsexecute.set_client(use_dask=True)
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
     def tearDown(self):
@@ -143,11 +143,12 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
 
             self.cmodel = smooth_image(model)
             export_image_to_fits(
-                model, "%s/test_imaging_deconvolve_rsexecute_model.fits" % self.dir
+                model,
+                "%s/test_imaging_deconvolve_rsexecute_model.fits" % self.results_dir,
             )
             export_image_to_fits(
                 self.cmodel,
-                "%s/test_imaging_deconvolve_rsexecute_cmodel.fits" % self.dir,
+                "%s/test_imaging_deconvolve_rsexecute_cmodel.fits" % self.results_dir,
             )
 
         if add_errors:
@@ -332,7 +333,7 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         if self.persist:
             export_image_to_fits(
                 restored,
-                f"{self.dir}/test_imaging_deconvolve_rsexecute_{tag}_restored.fits",
+                f"{self.results_dir}/test_imaging_deconvolve_rsexecute_{tag}_restored.fits",
             )
         qa = qa_image(restored)
         numpy.testing.assert_allclose(

@@ -121,7 +121,7 @@ def create_gaintable_from_screen(
             scr = numpy.zeros([nant, vis.blockvisibility_acc.nchan])
             pp = find_pierce_points(
                 station_locations,
-                (comp.direction.ra.rad + t2r * ha) * units.rad,
+                (comp.direction.ra.rad + ha) * units.rad,
                 comp.direction.dec,
                 height=height,
                 phasecentre=vis.phasecentre,
@@ -129,7 +129,7 @@ def create_gaintable_from_screen(
             for ant in range(nant):
                 pp0 = pp[ant][0:2]
                 try:
-                    worldloc = [pp0[0], pp0[1], ha, 0]
+                    worldloc = [pp0[0], pp0[1], 43200.0 * ha / numpy.pi, 0]
                     pixloc = screen_wcs.wcs_world2pix([worldloc], 0).astype("int")[0]
                     if type_atmosphere == "ionosphere":
                         # In the ionosphere file, the units are dTEC.
@@ -229,7 +229,7 @@ def grid_gaintable_to_screen(
             )
             pp = find_pierce_points(
                 station_locations,
-                (gt.phasecentre.ra.rad + t2r * ha) * units.rad,
+                (gt.phasecentre.ra.rad + ha) * units.rad,
                 gt.phasecentre.dec,
                 height=height,
                 phasecentre=vis.phasecentre,
@@ -247,7 +247,7 @@ def grid_gaintable_to_screen(
                     else:
                         # In the ionosphere file, the units are dTEC.
                         screen_to_phase = -scale * 8.44797245e9 / freq
-                    worldloc = [pp0[0], pp0[1], ha, freq]
+                    worldloc = [pp0[0], pp0[1], 43200 * ha / numpy.pi, freq]
                     pixloc = newscreen.wcs.wcs_world2pix([worldloc], 0)[0].astype("int")
                     assert pixloc[0] >= 0
                     assert pixloc[0] < nx

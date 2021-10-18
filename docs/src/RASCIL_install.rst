@@ -3,7 +3,7 @@
 Installation
 ============
 
-RASCIL can be run on a Linux or macOS machine or cluster of machines, using python 3.7 or 3.8. At least 16GB physical
+RASCIL can be run on a Linux or macOS machine or cluster of machines, using python 3.8 or 3.9. At least 16GB physical
 memory is necessary to run the full test suite. In general more memory is better. RASCIL uses Dask for
 multi-processing and can make good use of multi-core and multi-node machines.
 
@@ -21,7 +21,7 @@ in a separate step::
 
     mkdir rascil_data
     cd rascil_data
-    curl https://ska-telescope.gitlab.io/rascil/rascil_data.tgz -o rascil_data.tgz
+    curl https://ska-telescope.gitlab.io/external/rascil/rascil_data.tgz -o rascil_data.tgz
     tar zxf rascil_data.tgz
     cd data
     export RASCIL_DATA=`pwd`
@@ -50,7 +50,7 @@ The installation steps are:
 
 - Use git to make a local clone of the Github repository::
 
-   git clone https://gitlab.com/ska-telescope/rascil
+   git clone https://gitlab.com/ska-telescope/external/rascil.git
 
 - Change into that directory::
 
@@ -83,23 +83,6 @@ In this case, git-lfs can be installed via :code:`sudo apt install git-lfs` or f
 if you only don't intend to update or edit rascil in place. If you do intend to make changes, you will need the
 definition of PYTHONPATH.
 
-CASA measures data
-++++++++++++++++++
-
-We use casacore for some coordinate conversions. As a result the CASA measures data files are needed. Depending on
-your setup, these may already be in the right place. If not, you can download a copy and tell casacore where it is::
-
-    echo 'measures.directory: ~/casacore_data' > ~/.casarc
-    rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic ~/casacore_data
-
-If you get errors about the UTC table being out of date, typically of the form::
-
-    2020-08-07 15:37:59 SEVERE MeasTable:...+ Leap second table TAI_UTC seems out-of-date.
-    2020-08-07 15:37:59 SEVERE MeasTable:...+ Until the table is updated (see the CASA documentation or your system admin),
-    2020-08-07 15:37:59 SEVERE MeasTable:...+ times and coordinates derived from UTC could be wrong by 1s or more.
-
-you should repeat the rsync.
-
 Installation on specific machines
 +++++++++++++++++++++++++++++++++
 
@@ -119,7 +102,7 @@ Testing
 
 Check your installation by running a subset of the tests::
 
-   pip install pytest pytest-xdist
+   pip3 install pytest pytest-xdist
    py.test -n 4 tests/processing_components
 
 Or the full set::

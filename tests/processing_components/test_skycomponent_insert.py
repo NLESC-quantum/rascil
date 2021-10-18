@@ -39,7 +39,7 @@ class TestSkycomponentInsert(unittest.TestCase):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
         self.lowcore = create_named_configuration("LOWBD2-CORE")
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
     def actualSetup(self, dopol=False):
 
@@ -164,7 +164,7 @@ class TestSkycomponentInsert(unittest.TestCase):
         self.vis = dft_skycomponent_visibility(self.vis, self.sc)
         im, sumwt = invert_2d(self.vis, self.model)
         if self.persist:
-            export_image_to_fits(im, "%s/test_skycomponent_dft.fits" % self.dir)
+            export_image_to_fits(im, "%s/test_skycomponent_dft.fits" % self.results_dir)
         assert numpy.max(numpy.abs(self.vis.vis.imag)) < 1e-3
 
     def test_insert_skycomponent_nearest(self):

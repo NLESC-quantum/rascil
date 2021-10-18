@@ -71,7 +71,7 @@ test-singlepass:
 
 test:
 	HOME=`pwd` py.test -n `python3 -c "import multiprocessing;print(multiprocessing.cpu_count());exit(0)"` \
-    tests/apps tests/data_models tests/processing_components --verbose \
+	tests/apps tests/data_models tests/processing_components --verbose \
 	--cov=rascil \
 	--junitxml unit-tests-other.xml \
 	--pylint --pylint-error-types=EF --durations=30

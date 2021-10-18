@@ -340,6 +340,12 @@ def apps_parser_dask(parser):
         default=None,
         help="Dask connect timeout",
     )
+    parser.add_argument(
+        "--dask_malloc_trim_threshold",
+        type=int,
+        default=0,
+        help="Threshold for trimming memory on release (0 is aggressive)",
+    )
 
     return parser
 

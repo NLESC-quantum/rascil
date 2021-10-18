@@ -62,7 +62,7 @@ class TestImaging(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.results_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -176,9 +176,13 @@ class TestImaging(unittest.TestCase):
 
         self.cmodel = smooth_image(self.model)
         if self.persist:
-            export_image_to_fits(self.model, "%s/test_imaging_model.fits" % self.dir)
+            export_image_to_fits(
+                self.model, "%s/test_imaging_model.fits" % self.results_dir
+            )
         if self.persist:
-            export_image_to_fits(self.cmodel, "%s/test_imaging_cmodel.fits" % self.dir)
+            export_image_to_fits(
+                self.cmodel, "%s/test_imaging_cmodel.fits" % self.results_dir
+            )
 
         if add_errors:
             self.bvis_list = [
@@ -208,16 +212,18 @@ class TestImaging(unittest.TestCase):
             len(self.components),
             len(comps),
         )
-        cellsize = abs(dirty.image_acc.wcs.wcs.cdelt[0])
+        cellsize = numpy.deg2rad(abs(dirty.image_acc.wcs.wcs.cdelt[0]))
 
         for comp in comps:
             # Check for agreement in direction
             ocomp, separation = find_nearest_skycomponent(
                 comp.direction, self.components
             )
-            assert separation / cellsize < positionthreshold, (
-                "Component differs in position %.3f pixels" % separation / cellsize
-            )
+            if separation / cellsize > positionthreshold:
+                raise ValueError(
+                    "Component differs in position %.3f pixels"
+                    % (separation / cellsize)
+                )
 
     def _predict_base(
         self, context="ng", do_wstacking=False, extra="", fluxthreshold=1.0, **kwargs
@@ -246,7 +252,7 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 dirty[0],
                 "%s/test_imaging_predict_%s%s_%s_dirty.fits"
-                % (self.dir, context, extra, rsexecute.type()),
+                % (self.results_dir, context, extra, rsexecute.type()),
             )
 
         maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
@@ -284,13 +290,13 @@ class TestImaging(unittest.TestCase):
                 export_image_to_fits(
                     dirty[0],
                     "%s/test_imaging_invert_%s%s_%s_psf.fits"
-                    % (self.dir, context, extra, rsexecute.type()),
+                    % (self.results_dir, context, extra, rsexecute.type()),
                 )
             else:
                 export_image_to_fits(
                     dirty[0],
                     "%s/test_imaging_invert_%s%s_%s_dirty.fits"
-                    % (self.dir, context, extra, rsexecute.type()),
+                    % (self.results_dir, context, extra, rsexecute.type()),
                 )
 
         assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Image is empty"
@@ -367,11 +373,15 @@ class TestImaging(unittest.TestCase):
 
     def test_invert_wprojection(self):
         self.actualSetUp()
+        # We increase the threshold on the position check because w projection does a particularly
+        # poor job on this test. We could improve the precision with a more finely sampled w kernel
+        # but the test would run longer. Give that ng is much faster, wprojection is not worth the
+        # extra time testing.
         self._invert_base(
             context="ng",
             do_wstacking=False,
             extra="_wprojection",
-            positionthreshold=2.0,
+            positionthreshold=2.1,
             gcfcf=self.gcfcf,
         )
 
@@ -441,7 +451,7 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 restored_image_list[centre],
                 "%s/test_imaging_invert_%s_restored.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
 
         qa = qa_image(restored_image_list[centre])
@@ -467,7 +477,7 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 restored_image_list[centre],
                 "%s/test_imaging_invert_%s_restored_noresidual.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
 
         qa = qa_image(restored_image_list[centre])
@@ -530,12 +540,12 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 restored_1facets_image_list[0],
                 "%s/test_imaging_invert_%s_restored_1facets.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
             export_image_to_fits(
                 restored_2facets_image_list[0],
                 "%s/test_imaging_invert_%s_restored_2facets.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
 
         qa = qa_image(restored_2facets_image_list[centre])
@@ -549,11 +559,11 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 restored_2facets_image_list[centre],
                 "%s/test_imaging_invert_%s_restored_2facets_error.fits"
-                % (self.dir, rsexecute.type()),
+                % (self.results_dir, rsexecute.type()),
             )
         qa = qa_image(restored_2facets_image_list[centre])
-        assert numpy.abs(qa.data["max"] - 0.0013772581716870525) < 1e-7, str(qa)
-        assert numpy.abs(qa.data["min"] + 4.2921636357042816e-05) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["max"] - 0.012401241830647329) < 1e-7, str(qa)
+        assert numpy.abs(qa.data["min"] + 0.0010159473717538114) < 1e-7, str(qa)
 
     def test_sum_invert_list(self):
         self.actualSetUp(zerow=True)

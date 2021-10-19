@@ -1,5 +1,5 @@
 
-NBs = bandpass-calibration_serial.ipynb simple-dask_rsexecute.ipynb imaging.ipynb \
+NBs = bandpass-calibration.ipynb simple-dask_rsexecute.ipynb imaging.ipynb \
 demo_visibility_xarray.ipynb
 # demo_image_xarray.ipynb
 

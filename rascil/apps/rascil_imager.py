@@ -46,7 +46,7 @@ from rascil.workflows import (
     sum_invert_results_rsexecute,
     taper_list_rsexecute_workflow,
 )
-from processing_components.imaging.imaging_helpers import remove_sumwt
+from rascil.processing_components.imaging.imaging_helpers import remove_sumwt
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
     rsexecute,

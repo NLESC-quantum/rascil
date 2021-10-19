@@ -8,7 +8,7 @@ The functions include 2D prediction and inversion operations. A very simple exam
 The call to create_image_from_visibility step constructs a template image. The dirty image is constructed according to this template.
 
 AW projection is supported by the predict_blockvisibility and invert_blockvisibility methods, provided the gridding
-kernel is constructed andpassed in as a partial. For example::
+kernel is constructed and passed in as a partial. For example::
 
     gcfcf = functools.partial(create_awterm_convolutionfunction, nw=100, wstep=8.0, oversampling=8,
         support=100, use_aaf=True)
@@ -17,11 +17,6 @@ kernel is constructed andpassed in as a partial. For example::
 If installed, the nifty gridder (https://gitlab.mpcdf.mpg.de/ift/nifty_gridder) can also be used::
 
     dirty, sumwt = invert_blockvisibility(vis, model, verbosity=2, context="ng")
-
-These functions can be used directly. For distribution, these functions can be orchestrated by the rsexecute/Dask framework. This allows w stacking, timeslicing, and a wprojection/w stacking hybrid. See
-
-    :py:mod:`rascil.workflows.rsexecute.imaging`
-    :py:mod:`rascil.workflows.serial.imaging`
 
 The convolutional gridding functions are to be found in griddata module
 

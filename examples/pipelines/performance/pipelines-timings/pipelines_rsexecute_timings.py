@@ -39,7 +39,7 @@ from rascil.workflows import (
     corrupt_list_rsexecute_workflow,
     predict_skymodel_list_rsexecute_workflow,
 )
-from processing_components.imaging.imaging_helpers import remove_sumwt
+from rascil.processing_components.imaging.imaging_helpers import remove_sumwt
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
     rsexecute,
     get_dask_client,

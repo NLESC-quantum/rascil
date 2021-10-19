@@ -31,7 +31,10 @@ from rascil.processing_components.visibility import (
 def skymodel_predict_calibrate(
     bvis, skymodel, context="ng", docal=False, inverse=True, get_pb=None, **kwargs
 ):
-    """Predict visibility for a skymodel
+    """Predict visibility for a skymodel, optionally apply calibration
+
+    A skymodel consists of an image and a list of components, each optionally with
+    its own gaintable.
 
     The function get_pb should have the signature:
 
@@ -39,13 +42,13 @@ def skymodel_predict_calibrate(
 
     and should return the primary beam for the blockvisibility.
 
-    :param skymodel: Skymodel
     :param bvis: Input visibility
+    :param skymodel: Skymodel
     :param context: Imaging context 2d or ng or awprojection
     :param get_pb: Function to get a primary beam
     :param docal: Apply calibration table in skymodel
     :param kwargs: Parameters for functions in components
-    :return: Visibility with dft of components, fft of image, gaintable
+    :return: Visibility with dft of components, fft of image, gaintable applied (optional)
     """
     v = copy_visibility(bvis, zero=True)
 

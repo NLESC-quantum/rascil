@@ -14,10 +14,13 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.data_models import Skycomponent
 
 from rascil.processing_components.arrays.cleaners import overlapIndices
+from rascil.processing_components.image.deconvolution import (
+    hogbom_kernel_list,
+    find_window_list,
+)
 from rascil.processing_components.skycomponent.operations import restore_skycomponent
 
 from rascil.processing_components import (
-    deconvolve_list,
     restore_list,
     deconvolve_cube,
     restore_cube,
@@ -337,6 +340,87 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             self.save_results("msclean_subpsf")
         assert numpy.max(self.residual["pixels"].data[..., 56:456, 56:456]) < 1.0
+
+    def _check_hogbom_kernel_list_test_results(self, component, residual):
+        result_comp_data = component["pixels"].data
+        non_zero_idx_comp = numpy.where(result_comp_data != 0.0)
+        expected_comp_non_zero_data = numpy.array(
+            [
+                0.50775148,
+                0.589943,
+                0.53373994,
+                0.57914845,
+                0.54880106,
+                0.62232049,
+                0.53790934,
+                0.71712148,
+                0.71630954,
+                0.84058119,
+            ]
+        )
+        result_residual_data = residual["pixels"].data
+        non_zero_idx_residual = numpy.where(result_residual_data != 0.0)
+        expected_residual_non_zero_data = numpy.array(
+            [
+                -0.04197186,
+                0.03037433,
+                0.05768045,
+                0.05909848,
+                0.06043628,
+                0.07943856,
+                0.11716213,
+                0.15968158,
+                0.1893675,
+                0.19787602,
+            ]
+        )
+
+        # number of non-zero values
+        assert len(result_comp_data[non_zero_idx_comp]) == 82
+        assert len(result_residual_data[non_zero_idx_residual]) == 262144
+        # test first 10 non-zero values don't change with each run of test
+        numpy.testing.assert_array_almost_equal(
+            result_comp_data[non_zero_idx_comp][:10], expected_comp_non_zero_data
+        )
+        numpy.testing.assert_array_almost_equal(
+            result_residual_data[non_zero_idx_residual][:10],
+            expected_residual_non_zero_data,
+        )
+
+    def test_hogbom_kernel_list_single_dirty(self):
+        prefix = "test_hogbom_list"
+        dirty_list = [self.dirty]
+        psf_list = [self.psf]
+        window_list = find_window_list(dirty_list, prefix)
+
+        comp_list, residual_list = hogbom_kernel_list(
+            dirty_list, prefix, psf_list, window_list
+        )
+
+        assert len(comp_list) == 1
+        assert len(residual_list) == 1
+        self._check_hogbom_kernel_list_test_results(comp_list[0], residual_list[0])
+
+    def test_hogbom_kernel_list_multiple_dirty(self):
+        """
+        Bugfix: hogbom_kernel_list produced an IndexError, when dirty_list has more than
+        one elements, and those elements are for a single frequency each.
+        """
+
+        prefix = "test_hogbom_list"
+        dirty_list = [self.dirty, self.dirty]
+        psf_list = [self.psf, self.psf]
+        window_list = find_window_list(dirty_list, prefix)
+
+        comp_list, residual_list = hogbom_kernel_list(
+            dirty_list, prefix, psf_list, window_list
+        )
+
+        assert len(comp_list) == 2
+        assert len(residual_list) == 2
+        # because the two dirty images and psfs are the same, the expected results are also the same
+        self._check_hogbom_kernel_list_test_results(comp_list[0], residual_list[0])
+        self._check_hogbom_kernel_list_test_results(comp_list[1], residual_list[1])
 
 
 if __name__ == "__main__":

@@ -41,10 +41,10 @@ from rascil.workflows.rsexecute import (
     deconvolve_list_rsexecute_workflow,
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.workflows.serial.imaging.imaging_serial import (
-    remove_sumwt,
-    invert_list_serial_workflow,
-    predict_list_serial_workflow,
+from rascil.processing_components.imaging.imaging_helpers import remove_sumwt
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -122,13 +122,13 @@ def predict_skymodel_list_rsexecute_workflow(
                                 model["pixels"].data *= sm.mask["pixels"].data
                             if pb is not None:
                                 model["pixels"].data *= pb["pixels"].data
-                            imgv = predict_list_serial_workflow(
-                                [imgv], [model], context=context, **kwargs
-                            )[0]
+                            imgv = predict_blockvisibility(
+                                imgv, model, context=context, **kwargs
+                            )
                         else:
-                            imgv = predict_list_serial_workflow(
-                                [imgv], [sm.image], context=context, **kwargs
-                            )[0]
+                            imgv = predict_blockvisibility(
+                                imgv, sm.image, context=context, **kwargs
+                            )
                         vis_slice["vis"].data += imgv["vis"].data
 
                 vis_slices.append(vis_slice)
@@ -159,13 +159,13 @@ def predict_skymodel_list_rsexecute_workflow(
                     if sm.mask is not None:
                         model = sm.image.copy(deep=True)
                         model["pixels"].data *= sm.mask["pixels"].data
-                        imgv = predict_list_serial_workflow(
-                            [imgv], [model], context=context, **kwargs
-                        )[0]
+                        imgv = predict_blockvisibility(
+                            imgv, model, context=context, **kwargs
+                        )
                     else:
-                        imgv = predict_list_serial_workflow(
-                            [imgv], [sm.image], context=context, **kwargs
-                        )[0]
+                        imgv = predict_blockvisibility(
+                            imgv, sm.image, context=context, **kwargs
+                        )
                     v["vis"].data += imgv["vis"].data
 
             if docal and sm.gaintable is not None:
@@ -244,9 +244,9 @@ def invert_skymodel_list_rsexecute_workflow(
                 # and then apply the mask and primary beam if present
                 # The return value result contains the weighted image and
                 # the weights as an image (including mask and primary beam)
-                result = invert_list_serial_workflow(
-                    [vis_slice], [sm.image], context=context, normalise=False, **kwargs
-                )[0]
+                result = invert_blockvisibility(
+                    vis_slice, sm.image, context=context, normalise=False, **kwargs
+                )
                 flat = numpy.ones_like(result[0]["pixels"].data)
                 if sm.mask is not None:
                     flat *= sm.mask["pixels"].data
@@ -266,9 +266,7 @@ def invert_skymodel_list_rsexecute_workflow(
             return (sum_dirtys, sum_flats)
 
         else:
-            result = invert_list_serial_workflow(
-                [v], [sm.image], context=context, **kwargs
-            )[0]
+            result = invert_blockvisibility(v, sm.image, context=context, **kwargs)
             if sm.mask is not None:
                 result[0]["pixels"].data *= sm.mask["pixels"].data
 

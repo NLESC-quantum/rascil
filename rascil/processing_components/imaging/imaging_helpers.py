@@ -1,90 +1,16 @@
-""" Imaging context definitions, potentially shared by other workflows
+""" Functions to aid operations on imaging results
 
 """
 
-__all__ = [
-    "imaging_context",
-    "imaging_contexts",
-    "sum_invert_results",
-    "remove_sumwt",
-    "threshold_list",
-    "sum_predict_results",
-]
-
+import numpy
 import logging
 
-import numpy
-
+from rascil.processing_components import create_empty_image_like, normalise_sumwt
 from rascil.processing_components.image.taylor_terms import (
     calculate_image_frequency_moments,
 )
-from rascil.processing_components.image.operations import create_empty_image_like
-from rascil.processing_components.imaging import normalise_sumwt
-from rascil.processing_components.imaging import (
-    predict_2d,
-    invert_2d,
-    predict_awprojection,
-    invert_awprojection,
-)
-from rascil.processing_components.visibility import copy_visibility
 
 log = logging.getLogger("rascil-logger")
-
-
-def imaging_contexts():
-    """Contains all the context information for imaging
-
-    The fields are:
-        predict: Predict function to be used
-        invert: Invert function to be used
-        inner: The innermost axis
-
-    :return:
-    """
-    from rascil.processing_components.imaging.ng import predict_ng, invert_ng
-
-    contexts = {
-        "2d": {"predict": predict_2d, "invert": invert_2d},
-        "ng": {"predict": predict_ng, "invert": invert_ng},
-        "wprojection": {"predict": predict_awprojection, "invert": invert_awprojection},
-    }
-
-    return contexts
-
-
-def imaging_context(context="2d"):
-    contexts = imaging_contexts()
-    assert context in contexts.keys(), context
-    return contexts[context]
-
-
-def sum_invert_results_local(image_list):
-    """Sum a set of invert results with appropriate weighting
-    without normalise_sumwt at the end
-    :param image_list: List of [image, sum weights] pairs
-    :return: image, sum of weights
-    """
-
-    first = True
-    sumwt = 0.0
-    im = None
-    for i, arg in enumerate(image_list):
-        if arg is not None:
-            if isinstance(arg[1], numpy.ndarray):
-                scale = arg[1][..., numpy.newaxis, numpy.newaxis]
-            else:
-                scale = arg[1]
-            if first:
-                im = arg[0].copy(deep=True)
-                im["pixels"].data *= scale
-                sumwt = arg[1].copy(deep=True)
-                first = False
-            else:
-                im["pixels"].data += scale * arg[0].data
-                sumwt += arg[1]
-
-    assert not first, "No invert results"
-    return im, sumwt
 
 
 def sum_invert_results(image_list):

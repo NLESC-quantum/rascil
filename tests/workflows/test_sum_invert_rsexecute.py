@@ -16,7 +16,8 @@ from rascil.processing_components import (
     create_image,
     qa_image,
 )
-from rascil.workflows import sum_invert_results, sum_invert_results_rsexecute
+from rascil.workflows import sum_invert_results_rsexecute
+from processing_components.imaging.imaging_helpers import sum_invert_results
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")

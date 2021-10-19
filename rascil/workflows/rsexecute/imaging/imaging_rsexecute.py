@@ -48,6 +48,8 @@ from rascil.processing_components import (
     image_scatter_facets,
     image_gather_facets,
     image_scatter_channels,
+    invert_blockvisibility,
+    predict_blockvisibility,
 )
 from rascil.processing_components.imaging.base import normalise_sumwt
 from rascil.processing_components import taper_visibility_gaussian
@@ -58,11 +60,10 @@ from rascil.workflows.rsexecute.image import (
     sum_images_rsexecute,
 )
 
-from rascil.workflows.shared import (
-    imaging_context,
+from rascil.processing_components.imaging.imaging_helpers import (
+    sum_invert_results,
     remove_sumwt,
     sum_predict_results,
-    sum_invert_results,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -95,17 +96,14 @@ def predict_list_rsexecute_workflow(vis_list, model_imagelist, context, **kwargs
 
     """
 
-    # Predict_2d does not clear the vis so we have to do it here.
+    # Predict_blockvisibility does not clear the vis so we have to do it here.
     vis_list = zero_list_rsexecute_workflow(vis_list, copy=False)
-
-    c = imaging_context(context)
-    predict = c["predict"]
 
     # Loop over all windows
     assert len(model_imagelist) == len(vis_list)
     predict_results = [
-        rsexecute.execute(predict, pure=True, nout=1)(
-            vis, model_imagelist[ivis], **kwargs
+        rsexecute.execute(predict_blockvisibility, pure=True, nout=1)(
+            vis, model_imagelist[ivis], context=context, **kwargs
         )
         for ivis, vis in enumerate(vis_list)
     ]
@@ -142,17 +140,15 @@ def invert_list_rsexecute_workflow(
     if not isinstance(template_model_imagelist, collections.abc.Iterable):
         template_model_imagelist = [template_model_imagelist]
 
-    c = imaging_context(context)
-    invert = c["invert"]
-
     # Loop over all vis_lists independently
     assert len(template_model_imagelist) == len(vis_list)
     invert_results = [
-        rsexecute.execute(invert, nout=2)(
+        rsexecute.execute(invert_blockvisibility, nout=2)(
             vis,
             template_model_imagelist[ivis],
             dopsf=dopsf,
             normalise=normalise,
+            context=context,
             **kwargs,
         )
         for ivis, vis in enumerate(vis_list)

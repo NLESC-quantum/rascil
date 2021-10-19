@@ -176,9 +176,9 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.results_dir))
         # Sanity check: by eyeball the FHWM = 4 pixels = 0.004 rad = 0.229 deg
-        assert numpy.abs(clean_beam["bmaj"] - 0.24790661720727178) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 0.2371395541730553) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmaj"] - 0.24790689057765794) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 0.2371401153972545) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bpa"] + -1.0126425267576515) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(
@@ -238,10 +238,10 @@ class TestImageDeconvolution(unittest.TestCase):
 
         qa = qa_image(self.residual)
         numpy.testing.assert_allclose(
-            qa.data["max"], 0.885413708649923, atol=1e-7, err_msg=f"{qa}"
+            qa.data["max"], 0.8040729590477751, atol=1e-7, err_msg=f"{qa}"
         )
         numpy.testing.assert_allclose(
-            qa.data["min"], -0.9840797231429542, atol=1e-7, err_msg=f"{qa}"
+            qa.data["min"], -0.9044553283128349, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_msclean_1scale(self):

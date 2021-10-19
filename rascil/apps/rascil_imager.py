@@ -15,6 +15,7 @@ matplotlib.use("Agg")
 
 from distributed import Client, SSHCluster
 import dask
+import sys
 
 from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
 from rascil.processing_components.util.sizeof import get_size
@@ -64,6 +65,7 @@ from rascil.apps.apps_parser import (
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cli_parser():

@@ -73,7 +73,7 @@ def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, **kwargs):
         ]
     else:
         return [
-            rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm, *kwargs)
+            rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm, **kwargs)
             for ism, sm in enumerate(skymodel_list)
         ]
 

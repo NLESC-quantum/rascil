@@ -10,7 +10,10 @@ import numpy
 
 from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-from rascil.processing_components import create_image_from_visibility
+from rascil.processing_components import (
+    create_image_from_visibility,
+    predict_blockvisibility,
+)
 
 log = logging.getLogger("rascil-logger")
 

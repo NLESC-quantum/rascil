@@ -178,7 +178,7 @@ class TestImageDeconvolution(unittest.TestCase):
         # Sanity check: by eyeball the FHWM = 4 pixels = 0.004 rad = 0.229 deg
         assert numpy.abs(clean_beam["bmaj"] - 0.24790689057765794) < 1.0e-7, clean_beam
         assert numpy.abs(clean_beam["bmin"] - 0.2371401153972545) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bpa"] + -1.0126425267576515) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bpa"] + 1.0126425267576473) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(

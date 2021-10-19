@@ -13,12 +13,13 @@ from astropy.coordinates import SkyCoord
 from numpy.testing import assert_array_almost_equal
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image import (
+from rascil.processing_components import (
     export_image_to_fits,
     reproject_image,
     apply_voltage_pattern_to_image,
     qa_image,
     create_image_from_array,
+    invert_blockvisibility,
 )
 from rascil.processing_components.imaging import (
     create_image_from_visibility,

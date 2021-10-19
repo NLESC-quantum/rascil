@@ -24,6 +24,10 @@ from rascil.processing_components.skycomponent.operations import (
 )
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
+)
 
 log = logging.getLogger("rascil-logger")
 

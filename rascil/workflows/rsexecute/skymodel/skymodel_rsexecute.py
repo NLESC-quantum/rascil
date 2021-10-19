@@ -42,161 +42,43 @@ from rascil.workflows.rsexecute import (
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.processing_components.imaging.imaging_helpers import remove_sumwt
-from rascil.processing_components.imaging.imaging import (
-    predict_blockvisibility,
-    invert_blockvisibility,
+from rascil.processing_components.skymodel.skymodel_imaging import (
+    skymodel_predict_calibrate,
+    skymodel_calibrate_invert,
 )
 
 log = logging.getLogger("rascil-logger")
 
 
-def predict_skymodel_list_rsexecute_workflow(
-    obsvis,
-    skymodel_list,
-    context="ng",
-    docal=False,
-    inverse=True,
-    get_pb=None,
-    **kwargs
-):
+def predict_skymodel_list_rsexecute_workflow(obsvis, skymodel_list, **kwargs):
     """Predict from a list of skymodels
 
     If obsvis is a list then we pair obsvis element and skymodel_list element and predict
     If obvis is BlockVisibility then we calculate BlockVisibility for each skymodel
 
-    The function get_pb should have the signature:
-
-        get_pb(BlockVisibility, Image)
-
-    and should return the primary beam for the blockvisibility e.g. using average
-    parallactic angle
-
     :param obsvis: Observed Block Visibility or list or graph
     :param skymodel_list: skymodel list
-    :param context: Type of processing e.g. 2d, wstack, timeslice or facets
-    :param docal: Apply calibration table in skymodel
-    :param get_pb: Function to get the primary beam for a given image and vis
     :param kwargs: Parameters for functions in components
     :return: List of vis_lists
     """
-
-    def skymodel_predict_calibrate(ov, sm):
-        """Predict visibility for a skymodel
-
-        :param sm: Skymodel
-        :param ov: Input visibility
-        :return: Visibility with dft of components, fft of image, gaintable
-        """
-        v = copy_visibility(ov, zero=True)
-
-        vis_slices = []
-        if get_pb is not None:
-            for time, vis_slice in v.groupby("time", squeeze=False):
-
-                pb = get_pb(vis_slice, sm.image)
-
-                # First do the DFT for the components
-                if len(sm.components) > 0:
-                    if sm.mask is not None or pb is not None:
-                        comps = copy_skycomponent(sm.components)
-                        if sm.mask is not None:
-                            comps = apply_beam_to_skycomponent(comps, sm.mask)
-                        if pb is not None:
-                            comps = apply_beam_to_skycomponent(comps, pb)
-                        vis_slice = dft_skycomponent_visibility(
-                            vis_slice, comps, **kwargs
-                        )
-                    else:
-                        vis_slice = dft_skycomponent_visibility(
-                            vis_slice, sm.components, **kwargs
-                        )
-
-                # Now do the FFT of the image, after multiplying by the mask and primary
-                # beam
-                if sm.image is not None:
-                    if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
-                        imgv = copy_visibility(vis_slice, zero=True)
-                        if sm.mask is not None or pb is not None:
-                            model = sm.image.copy(deep=True)
-                            if sm.mask is not None:
-                                model["pixels"].data *= sm.mask["pixels"].data
-                            if pb is not None:
-                                model["pixels"].data *= pb["pixels"].data
-                            imgv = predict_blockvisibility(
-                                imgv, model, context=context, **kwargs
-                            )
-                        else:
-                            imgv = predict_blockvisibility(
-                                imgv, sm.image, context=context, **kwargs
-                            )
-                        vis_slice["vis"].data += imgv["vis"].data
-
-                vis_slices.append(vis_slice)
-
-            v = concatenate_visibility(vis_slices, "time")
-
-            if docal and sm.gaintable is not None:
-                v = apply_gaintable(v, sm.gaintable, inverse=inverse)
-
-            return v
-
-        else:
-
-            # First do the DFT or the components
-            if len(sm.components) > 0:
-                if sm.mask is not None:
-                    comps = copy_skycomponent(sm.components)
-                    comps = apply_beam_to_skycomponent(comps, sm.mask)
-                    v = dft_skycomponent_visibility(v, comps, **kwargs)
-                else:
-                    v = dft_skycomponent_visibility(v, sm.components, **kwargs)
-
-            # Now do the FFT of the image, after multiplying by the mask and primary
-            # beam
-            if sm.image is not None:
-                if numpy.max(numpy.abs(sm.image["pixels"].data)) > 0.0:
-                    imgv = copy_visibility(v, zero=True)
-                    if sm.mask is not None:
-                        model = sm.image.copy(deep=True)
-                        model["pixels"].data *= sm.mask["pixels"].data
-                        imgv = predict_blockvisibility(
-                            imgv, model, context=context, **kwargs
-                        )
-                    else:
-                        imgv = predict_blockvisibility(
-                            imgv, sm.image, context=context, **kwargs
-                        )
-                    v["vis"].data += imgv["vis"].data
-
-            if docal and sm.gaintable is not None:
-                v = apply_gaintable(v, sm.gaintable, inverse=inverse)
-
-            return v
 
     if isinstance(obsvis, list):
         if len(obsvis) != len(skymodel_list):
             raise ValueError("Obsvis and skymodel lists should have the same length")
         return [
-            rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis[ism], sm)
+            rsexecute.execute(skymodel_predict_calibrate, nout=1)(
+                obsvis[ism], sm, **kwargs
+            )
             for ism, sm in enumerate(skymodel_list)
         ]
     else:
         return [
-            rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm)
+            rsexecute.execute(skymodel_predict_calibrate, nout=1)(obsvis, sm, *kwargs)
             for ism, sm in enumerate(skymodel_list)
         ]
 
 
-def invert_skymodel_list_rsexecute_workflow(
-    vis_list,
-    skymodel_list,
-    context="ng",
-    docal=False,
-    get_pb=None,
-    normalise=True,
-    flat_sky=False,
-    **kwargs
-):
+def invert_skymodel_list_rsexecute_workflow(vis_list, skymodel_list, **kwargs):
     """Calibrate and invert from a skymodel, iterating over the skymodel
 
     The function get_pb should have the signature:
@@ -209,71 +91,12 @@ def invert_skymodel_list_rsexecute_workflow(
 
     :param vis_list: List of Visibility data models
     :param skymodel_list: skymodel list
-    :param context: Imaging context 2d or ng
-    :param get_pb: Function to get a primary beam
-    :param docal: Apply calibration table in skymodel
     :param kwargs: Parameters for functions in components
     :return: List of (image, weight) tuples)
     """
 
-    def skymodel_calibrate_invert(v, sm):
-        """Inverse Fourier sum of visibility to image and components
-
-        :param v: Visibility to be transformed
-        :param sm: Skymodel
-        :return: Skymodel containing transforms
-        """
-
-        if docal and sm.gaintable is not None:
-            v = apply_gaintable(v, sm.gaintable)
-
-        if sm.image is None:
-            raise ValueError("skymodel image is None")
-
-        sum_flats = sm.image.copy(deep=True)
-        sum_flats["pixels"][...] = 0.0
-        sum_dirtys = sm.image.copy(deep=True)
-        sum_dirtys["pixels"][...] = 0.0
-
-        if get_pb is not None:
-            for time, vis_slice in v.groupby("time", squeeze=False):
-
-                pb = get_pb(vis_slice, sm.image)
-
-                # Just do a straightforward invert for just this blockvis
-                # and then apply the mask and primary beam if present
-                # The return value result contains the weighted image and
-                # the weights as an image (including mask and primary beam)
-                result = invert_blockvisibility(
-                    vis_slice, sm.image, context=context, normalise=False, **kwargs
-                )
-                flat = numpy.ones_like(result[0]["pixels"].data)
-                if sm.mask is not None:
-                    flat *= sm.mask["pixels"].data
-                if pb is not None:
-                    flat *= pb["pixels"].data
-
-                # We need to apply the flat to the dirty image
-                sum_dirtys["pixels"].data += flat * result[0]["pixels"].data
-                # The sum_flats should contain the weights and the square of the PB
-                sum_flats["pixels"].data += (
-                    flat * flat * result[1][:, :, numpy.newaxis, numpy.newaxis]
-                )
-            if normalise:
-                sum_dirtys = normalise_sumwt(sum_dirtys, sum_flats, flat_sky=flat_sky)
-                sum_flats["pixels"].data = numpy.sqrt(sum_flats["pixels"].data)
-
-            return (sum_dirtys, sum_flats)
-
-        else:
-            result = invert_blockvisibility(v, sm.image, context=context, **kwargs)
-            if sm.mask is not None:
-                result[0]["pixels"].data *= sm.mask["pixels"].data
-
-            return result
-
     return [
-        rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm)
+        rsexecute.execute(skymodel_calibrate_invert, nout=1)(vis_list[i], sm, **kwargs)
         for i, sm in enumerate(skymodel_list)
     ]
 

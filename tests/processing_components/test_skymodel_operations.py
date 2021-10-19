@@ -1,4 +1,4 @@
-""" Unit tests for mpc
+""" Unit tests for
 
 """
 
@@ -36,7 +36,7 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 
 
-class TestSkymodelMPC(unittest.TestCase):
+class TestSkymodelOperations(unittest.TestCase):
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 

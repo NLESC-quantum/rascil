@@ -5,7 +5,8 @@
 import numpy
 import logging
 
-from rascil.processing_components import create_empty_image_like, normalise_sumwt
+from rascil.processing_components.image.operations import create_empty_image_like
+from rascil.processing_components.imaging.base import normalise_sumwt
 from rascil.processing_components.image.taylor_terms import (
     calculate_image_frequency_moments,
 )

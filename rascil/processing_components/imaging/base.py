@@ -294,7 +294,7 @@ def predict_awprojection(
     """
 
     assert gcfcf is not None, "gcfcf is required for awprojection"
-    return predict_2d(vis, model, **kwargs)
+    return predict_2d(vis, model, gcfcf=gcfcf, **kwargs)
 
 
 def invert_awprojection(

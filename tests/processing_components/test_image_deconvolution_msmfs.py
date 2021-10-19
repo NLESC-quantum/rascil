@@ -24,10 +24,13 @@ from rascil.processing_components import (
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.base import (
-    predict_2d,
-    invert_2d,
     create_image_from_visibility,
 )
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
+)
+
 from rascil.processing_components.imaging.primary_beams import create_low_test_beam
 from rascil.processing_components.simulation import create_low_test_image_from_gleam
 from rascil.processing_components.simulation import (
@@ -91,7 +94,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
                 self.test_model,
                 "%s/test_deconvolve_mmclean_model.fits" % self.results_dir,
             )
-        self.vis = predict_2d(self.vis, self.test_model)
+        self.vis = predict_blockvisibility(self.vis, self.test_model, context="2d")
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
         self.model = create_image_from_visibility(
             self.vis,
@@ -101,8 +104,10 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.vis = weight_visibility(self.vis, self.model)
         self.vis = taper_visibility_gaussian(self.vis, 0.002)
-        self.dirty, sumwt = invert_2d(self.vis, self.model)
-        self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)
+        self.dirty, sumwt = invert_blockvisibility(self.vis, self.model, context="2d")
+        self.psf, sumwt = invert_blockvisibility(
+            self.vis, self.model, context="2d", dopsf=True
+        )
         if self.persist:
             export_image_to_fits(
                 self.dirty, "%s/test_deconvolve_mmclean-dirty.fits" % self.results_dir

@@ -3,20 +3,20 @@
 The functions include 2D prediction and inversion operations. A very simple example, given a model Image to specify the image size, sampling, and phasecentre::
 
     model = create_image_from_visibility(vis, npixel=1024, nchan=1)
-    dirty, sumwt = invert_2d(vis, model)
+    dirty, sumwt = invert_blockvisibility(vis, model, context="2d")
 
 The call to create_image_from_visibility step constructs a template image. The dirty image is constructed according to this template.
 
-AW projection is supported by the predict_2d and invert_2d methods, provided the gridding kernel is constructed and
-passed in as a partial. For example::
+AW projection is supported by the predict_blockvisibility and invert_blockvisibility methods, provided the gridding
+kernel is constructed andpassed in as a partial. For example::
 
     gcfcf = functools.partial(create_awterm_convolutionfunction, nw=100, wstep=8.0, oversampling=8,
         support=100, use_aaf=True)
-    dirty, sumwt = invert_2d(vis, model, gcfcf=gcfcf)
+    dirty, sumwt = invert_blockvisibility(vis, model, context="awprojection", gcfcf=gcfcf)
 
 If installed, the nifty gridder (https://gitlab.mpcdf.mpg.de/ift/nifty_gridder) can also be used::
 
-    dirty, sumwt = invert_ng(vis, model, verbosity=2)
+    dirty, sumwt = invert_blockvisibility(vis, model, verbosity=2, context="ng")
 
 These functions can be used directly. For distribution, these functions can be orchestrated by the rsexecute/Dask framework. This allows w stacking, timeslicing, and a wprojection/w stacking hybrid. See
 
@@ -34,3 +34,4 @@ from .imaging_params import *
 from .weighting import *
 from .dft import *
 from .ng import *
+from .imaging import *

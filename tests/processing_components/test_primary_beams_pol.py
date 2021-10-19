@@ -274,7 +274,9 @@ class TestPrimaryBeamsPol(unittest.TestCase):
             )
             bvis["vis"].data[...] = 0.0 + 0.0j
             bvis = dft_skycomponent_visibility(bvis, vpcomp)
-            polimage, sumwt = invert_2d(bvis, model, dopsf=False)
+            polimage, sumwt = invert_blockvisibility(
+                bvis, model, dopsf=False, context="2d"
+            )
             export_image_to_fits(
                 polimage,
                 "{0}/test_primary_beams_pol_case{1}.fits".format(

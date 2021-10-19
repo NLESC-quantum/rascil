@@ -13,8 +13,8 @@ The standard deconvolution algorithms are provided:
 For example to make dirty image and PSF, deconvolve, and then restore::
 
     model = create_image_from_visibility(vt, cellsize=0.001, npixel=256)
-    dirty, sumwt = invert_2d(vt, model)
-    psf, sumwt = invert_2d(vt, model, dopsf=True)
+    dirty, sumwt = invert_blockvisibility(vt, model, context="2d")
+    psf, sumwt = invert_blockvisibility(vt, model, context="2d", dopsf=True)
 
     comp, residual = deconvolve_cube(dirty, psf, niter=1000, threshold=0.001, fracthresh=0.01, window_shape='quarter',
                                  gain=0.7, algorithm='msclean', scales=[0, 3, 10, 30])

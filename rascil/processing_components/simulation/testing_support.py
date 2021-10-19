@@ -79,6 +79,7 @@ from rascil.processing_components.imaging.base import (
     create_image_from_visibility,
     advise_wide_field,
 )
+from rascil.processing_components.imaging.imaging import predict_blockvisibility
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 
 from rascil.processing_components.imaging.primary_beams import create_pb
@@ -898,7 +899,7 @@ def create_blockvisibility_iterator(
     polarisation_frame=PolarisationFrame("stokesI"),
     integration_time=1.0,
     number_integrations=1,
-    predict=predict_2d,
+    predict=predict_blockvisibility,
     model=None,
     components=None,
     phase_error=0.0,

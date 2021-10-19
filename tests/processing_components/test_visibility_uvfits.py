@@ -105,7 +105,7 @@ class TestCreateMS(unittest.TestCase):
             model = create_image_from_visibility(
                 vis, npixel=256, polarisation_frame=PolarisationFrame("stokesI")
             )
-            dirty, sumwt = invert_2d(vis, model, context="2d")
+            dirty, sumwt = invert_blockvisibility(vis, model, context="2d")
             assert (numpy.max(numpy.abs(dirty.data))) > 0.0
             assert dirty.shape == (nchan_ave, 1, 256, 256)
             if self.doplot:

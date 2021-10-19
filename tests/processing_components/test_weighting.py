@@ -18,6 +18,11 @@ from rascil.processing_components import (
     taper_visibility_tukey,
     fit_psf,
 )
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
+)
+
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
 
@@ -109,7 +114,9 @@ class TestWeighting(unittest.TestCase):
         self.componentvis = taper_visibility_gaussian(
             self.componentvis, beam=size_required
         )
-        psf, sumwt = invert_2d(self.componentvis, self.model, dopsf=True)
+        psf, sumwt = invert_blockvisibility(
+            self.componentvis, self.model, dopsf=True, context="2d"
+        )
         if self.persist:
             export_image_to_fits(
                 psf,
@@ -131,7 +138,9 @@ class TestWeighting(unittest.TestCase):
             self.componentvis, self.model, algorithm="uniform"
         )
         self.componentvis = taper_visibility_tukey(self.componentvis, tukey=0.1)
-        psf, sumwt = invert_2d(self.componentvis, self.model, dopsf=True)
+        psf, sumwt = invert_blockvisibility(
+            self.componentvis, self.model, dopsf=True, context="2d"
+        )
         if self.persist:
             export_image_to_fits(
                 psf,

@@ -28,9 +28,11 @@ from rascil.processing_components.image.operations import export_image_to_fits, 
 from rascil.processing_components.simulation import create_test_image
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
+)
 from rascil.processing_components.imaging.base import (
-    predict_2d,
-    invert_2d,
     create_image_from_visibility,
 )
 
@@ -70,7 +72,7 @@ class TestImageDeconvolution(unittest.TestCase):
         self.test_model = create_test_image(
             cellsize=0.001, frequency=self.frequency, phasecentre=self.vis.phasecentre
         )
-        self.vis = predict_2d(self.vis, self.test_model)
+        self.vis = predict_blockvisibility(self.vis, self.test_model, context="2d")
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
         self.model = create_image_from_visibility(
             self.vis,
@@ -78,8 +80,10 @@ class TestImageDeconvolution(unittest.TestCase):
             cellsize=0.001,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
-        self.dirty = invert_2d(self.vis, self.model)[0]
-        self.psf = invert_2d(self.vis, self.model, dopsf=True)[0]
+        self.dirty = invert_blockvisibility(self.vis, self.model, context="2d")[0]
+        self.psf = invert_blockvisibility(
+            self.vis, self.model, context="2d", dopsf=True
+        )[0]
         self.sensitivity = create_pb(self.model, "LOW")
 
     def overlaptest(self, a1, a2, s1, s2):

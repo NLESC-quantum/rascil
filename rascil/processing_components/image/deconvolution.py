@@ -484,7 +484,7 @@ def hogbom_kernel_list(
                     % (prefix, pol, channel)
                 )
                 if window_list is None or window_list[channel] is None:
-                    (comp_array[:, pol, :, :], residual_array[:, pol, :, :],) = hogbom(
+                    (comp_array[0, pol, :, :], residual_array[0, pol, :, :],) = hogbom(
                         dirty["pixels"].data[0, pol, :, :],
                         psf["pixels"].data[0, pol, :, :],
                         None,

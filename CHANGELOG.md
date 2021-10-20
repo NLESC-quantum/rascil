@@ -1,10 +1,15 @@
 latest
 ------
 
+* Fixed issue within flux plots in plot_skycomponent for multiple polarisations ([MR263](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/263))
+* Updated imaging_qa to improve the spectral index calculation ([MR261](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/261))
 * Replaced running RASCIL-as-a-cluster via docker-compose with kubernetes/minikube ([MR238](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/238))
 * Use astropy instead of casacore for geometry ([MR227](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/227))
+* Fixed angle wrap problem in plot_skycomponents ([MR225](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/225))
+* Updated documentation on installation to reflect recent changes ([MR223](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/223), [MR232](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/232))
 * Added Mid beam calculations to RFI code ([MR204](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/204))
 * RASCIL is running on python3.9 (docker images and CI pipelines are also updated) ([MR219](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/219))
+* Further development of RCAL app including the gaintable plot functions ([MR212](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/212))
 
 0.3.0
 -----

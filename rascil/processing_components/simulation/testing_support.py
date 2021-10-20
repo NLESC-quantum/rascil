@@ -75,7 +75,6 @@ from rascil.processing_components.calibration.operations import (
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.image.operations import import_image_from_fits
 from rascil.processing_components.imaging.base import (
-    predict_2d,
     create_image_from_visibility,
     advise_wide_field,
 )

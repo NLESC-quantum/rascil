@@ -23,17 +23,22 @@ log = logging.getLogger("rascil-logger")
 
 
 def predict_blockvisibility(
-    vis: BlockVisibility, model: Image, context="ng", **kwargs
+    vis: BlockVisibility, model: Image, context="ng", gcfcf=None, **kwargs
 ) -> BlockVisibility:
     """Predict blockvisibility from an image
 
+    For awprojection, the gridding details must be supplied via a tuple of
+    (gridding correction function, convolution function) or a partial
+    to calculate it.
+
     :param vis: blockvisibility to be predicted
     :param model: model image
-    :param context: Type: 2d or awprojection or ng (ng)
+    :param context: Type: 2d or awprojection or ng (default: ng)
+    :param gcfcf: Tuple of (grid correction function, convolution function) or partial function
     :return: resulting visibility (in place works)
     """
     if context == "awprojection":
-        return predict_awprojection(vis, model, **kwargs)
+        return predict_awprojection(vis, model, gcfcf=gcfcf, **kwargs)
     elif context == "2d":
         return predict_ng(vis, model, do_wstacking=False, **kwargs)
     elif context == "ng":
@@ -48,22 +53,30 @@ def invert_blockvisibility(
     dopsf: bool = False,
     normalise: bool = True,
     context="ng",
+    gcfcf=None,
     **kwargs,
 ) -> (Image, numpy.ndarray):
     """Invert blockvisibility to make an (image, sum weights) tuple
 
     Use the image im as a template. Do PSF in a separate call.
 
+    For awprojection, the gridding details must be supplied via a tuple of
+    (gridding correction function, convolution function) or a partial
+    to calculate it.
+
     :param vis: blockvisibility to be inverted
     :param im: image template (not changed)
-    :param dopsf: Make the psf instead of the dirty image (False)
-    :param normalise: normalise by the sum of weights (True)
-    :param context: Type: 2d or awprojection or ng (ng)
+    :param dopsf: Make the psf instead of the dirty image (default: False)
+    :param normalise: normalise by the sum of weights (default: True)
+    :param context: Type: 2d or awprojection or ng (default: ng)
+    :param gcfcf: Tuple of (grid correction function, convolution function) or partial function
     :return: (resulting image, sum of weights)
     """
 
     if context == "awprojection":
-        return invert_awprojection(vis, im, dopsf=dopsf, normalise=normalise, **kwargs)
+        return invert_awprojection(
+            vis, im, dopsf=dopsf, normalise=normalise, gcfcf=gcfcf, **kwargs
+        )
     elif context == "2d":
         return invert_ng(
             vis, im, dopsf=dopsf, normalise=normalise, do_wstacking=False, **kwargs

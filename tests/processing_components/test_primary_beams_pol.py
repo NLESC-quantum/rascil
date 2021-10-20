@@ -23,9 +23,6 @@ from rascil.processing_components import (
 )
 from rascil.processing_components.imaging import (
     create_image_from_visibility,
-    invert_2d,
-    advise_wide_field,
-    weight_visibility,
 )
 from rascil.processing_components.imaging.dft import (
     dft_skycomponent_visibility,

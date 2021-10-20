@@ -1,7 +1,9 @@
-import numpy
+"""Functions to invert and predict from skymodels
 
+"""
 __all__ = ["skymodel_calibrate_invert", "skymodel_predict_calibrate"]
 
+import numpy
 from rascil.processing_components import (
     copy_skycomponent,
     apply_beam_to_skycomponent,
@@ -38,7 +40,7 @@ def skymodel_predict_calibrate(
     :param context: Imaging context 2d or ng or awprojection
     :param get_pb: Function to get a primary beam
     :param docal: Apply calibration table in skymodel
-    :param inverse: Sense of calibration application
+    :param inverse: True means correction of calibration, False means application of calibration
     :param kwargs: Parameters for functions in components
     :return: Visibility with dft of components, fft of image, gaintable applied (optional)
     """
@@ -140,7 +142,7 @@ def skymodel_calibrate_invert(
 ):
     """Inverse Fourier sum of visibility to image and components
 
-    If the get_pb function is defined, the sum of weights will be the
+    If the get_pb function is defined, the sum of weights will be
     an image
 
     :param bvis: Visibility to be transformed

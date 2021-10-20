@@ -11,7 +11,6 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import create_image_from_visibility
 from rascil.processing_components import export_image_to_fits
-from rascil.processing_components import invert_2d
 from rascil.processing_components import (
     weight_visibility,
     taper_visibility_gaussian,
@@ -19,7 +18,6 @@ from rascil.processing_components import (
     fit_psf,
 )
 from rascil.processing_components.imaging.imaging import (
-    predict_blockvisibility,
     invert_blockvisibility,
 )
 

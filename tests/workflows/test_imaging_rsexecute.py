@@ -323,51 +323,52 @@ class TestImaging(unittest.TestCase):
         )
 
     def test_invert_2d(self):
+        # This uses the nifty gridder with do_wstacking=False
         self.actualSetUp(zerow=True)
         self._invert_base(
-            context="ng",
-            do_wstacking=False,
+            context="2d",
             positionthreshold=2.0,
             check_components=False,
         )
 
     def test_invert_2d_psf(self):
+        # This uses the nifty gridder with do_wstacking=False
         self.actualSetUp(zerow=True)
         self._invert_base(
-            context="ng",
-            do_wstacking=False,
+            context="2d",
             positionthreshold=2.0,
             check_components=False,
             dopsf=True,
         )
 
     def test_invert_2d_uniform(self):
+        # This uses the nifty gridder with do_wstacking=False
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(
             self.bvis_list, self.model_list, weighting="uniform"
         )
         self._invert_base(
-            context="ng",
-            do_wstacking=False,
+            context="2d",
             extra="_uniform",
             positionthreshold=2.0,
             check_components=False,
         )
 
     def test_invert_2d_robust(self):
+        # This uses the nifty gridder with do_wstacking=False
         self.actualSetUp(zerow=True)
         self.bvis_list = weight_list_rsexecute_workflow(
             self.bvis_list, self.model_list, weighting="robust", robustness=0.0
         )
         self._invert_base(
-            context="ng",
-            do_wstacking=False,
+            context="2d",
             extra="_uniform",
             positionthreshold=2.0,
             check_components=False,
         )
 
     def test_invert_ng(self):
+        # This uses the nifty gridder
         self.actualSetUp()
         self._invert_base(context="ng", positionthreshold=2.0, check_components=True)
 
@@ -378,9 +379,7 @@ class TestImaging(unittest.TestCase):
         # but the test would run longer. Give that ng is much faster, wprojection is not worth the
         # extra time testing.
         self._invert_base(
-            context="ng",
-            do_wstacking=False,
-            extra="_wprojection",
+            context="awprojection",
             positionthreshold=2.1,
             gcfcf=self.gcfcf,
         )
@@ -421,7 +420,9 @@ class TestImaging(unittest.TestCase):
 
         centre = self.freqwin // 2
         residual_image_list = residual_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="ng", do_wstacking=False
+            self.bvis_list,
+            self.model_list,
+            context="2d",
         )
         residual_image_list = rsexecute.compute(residual_image_list, sync=True)
         qa = qa_image(residual_image_list[centre][0])
@@ -435,8 +436,7 @@ class TestImaging(unittest.TestCase):
         psf_image_list = invert_list_rsexecute_workflow(
             self.bvis_list,
             self.model_list,
-            context="ng",
-            do_wstacking=False,
+            context="2d",
             dopsf=True,
         )
         residual_image_list = residual_list_rsexecute_workflow(
@@ -465,8 +465,7 @@ class TestImaging(unittest.TestCase):
         psf_image_list = invert_list_rsexecute_workflow(
             self.bvis_list,
             self.model_list,
-            context="ng",
-            do_wstacking=False,
+            context="2d",
             dopsf=True,
         )
         restored_image_list = restore_list_rsexecute_workflow(
@@ -498,14 +497,15 @@ class TestImaging(unittest.TestCase):
         ]
 
         residual_image_list = residual_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="ng", do_wstacking=False
+            self.bvis_list,
+            self.model_list,
+            context="2d",
         )
         centre = self.freqwin // 2
         psf_image_list = invert_list_rsexecute_workflow(
             self.bvis_list,
             self.model_list,
-            context="ng",
-            do_wstacking=False,
+            context="2d",
             dopsf=True,
         )
         psf_image_list = rsexecute.compute(psf_image_list, sync=True)
@@ -569,7 +569,9 @@ class TestImaging(unittest.TestCase):
         self.actualSetUp(zerow=True)
 
         residual_image_list = residual_list_rsexecute_workflow(
-            self.bvis_list, self.model_list, context="ng", do_wstacking=False
+            self.bvis_list,
+            self.model_list,
+            context="2d",
         )
         residual_image_list = rsexecute.compute(residual_image_list, sync=True)
         route2 = sum_invert_results(residual_image_list)

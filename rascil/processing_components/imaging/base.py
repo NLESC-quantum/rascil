@@ -22,8 +22,6 @@ extra phase term in the Fourier transform cannot be ignored.
 __all__ = [
     "shift_vis_to_image",
     "normalise_sumwt",
-    "predict_2d",
-    "invert_2d",
     "predict_awprojection",
     "invert_awprojection",
     "create_image_from_visibility",
@@ -164,12 +162,14 @@ def normalise_sumwt(im: Image, sumwt, min_weight=0.1, flat_sky=False) -> Image:
     return im
 
 
-def predict_2d(vis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
-    """Predict using convolutional degridding.
+def predict_awprojection(
+    vis: BlockVisibility, model: Image, gcfcf=None, **kwargs
+) -> BlockVisibility:
+    """Predict using convolutional degridding and an AW kernel
 
     Note that the gridding correction function (gcf) and convolution function (cf) can be passed
-    as a partial function via the **kwargs. So the caller must supply a partial function to
-    calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
+    as a partial function. So the caller must supply a partial function to
+    calculate the gcf, cf tuple for an image model.
 
     :param vis: blockvisibility to be predicted
     :param model: model image
@@ -185,20 +185,10 @@ def predict_2d(vis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
 
     _, _, ny, nx = model["pixels"].data.shape
 
-    gcfcf = get_parameter(kwargs, "gcfcf", None)
     if gcfcf is None:
-        from rascil.processing_components.griddata.kernels import (
-            create_pswf_convolutionfunction,
-        )
+        raise ValueError("predict_awprojection: gcfcf not specified")
 
-        gcf, cf = create_pswf_convolutionfunction(
-            model,
-            support=get_parameter(kwargs, "support", 8),
-            oversampling=get_parameter(kwargs, "oversampling", 127),
-            polarisation_frame=vis.blockvisibility_acc.polarisation_frame,
-        )
-    else:
-        gcf, cf = gcfcf(model)
+    gcf, cf = gcfcf(model)
 
     griddata = create_griddata_from_image(
         model, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
@@ -213,88 +203,6 @@ def predict_2d(vis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility:
     svis = shift_vis_to_image(vis, model, tangent=True, inverse=True)
 
     return svis
-
-
-def invert_2d(
-    vis: BlockVisibility,
-    im: Image,
-    dopsf: bool = False,
-    normalise: bool = True,
-    **kwargs
-) -> (Image, numpy.ndarray):
-    """Invert using 2D convolution function, using the specified convolution function
-
-    Use the image im as a template. Do PSF in a separate call.
-
-    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
-    as a partial function via the **kwargs. So the caller must supply a partial function to
-    calculate the gcf, cf tuple for an image model. This mechanism is mainly used for AWProjection.
-
-    :param vis: blockvisibility to be inverted
-    :param im: image template (not changed)
-    :param dopsf: Make the psf instead of the dirty image
-    :param normalise: normalise by the sum of weights (True)
-    :return: (resulting image, sum of weights)
-    """
-
-    svis = copy_visibility(vis)
-
-    if dopsf:
-        svis = fill_blockvis_for_psf(svis)
-
-    svis = shift_vis_to_image(svis, im, tangent=True, inverse=False)
-
-    gcfcf = get_parameter(kwargs, "gcfcf", None)
-    if gcfcf is None:
-        from rascil.processing_components.griddata.kernels import (
-            create_pswf_convolutionfunction,
-        )
-
-        gcfcf = functools.partial(
-            create_pswf_convolutionfunction,
-            support=get_parameter(kwargs, "support", 8),
-            oversampling=get_parameter(kwargs, "oversampling", 127),
-            polarisation_frame=vis.blockvisibility_acc.polarisation_frame,
-        )
-
-    griddata = create_griddata_from_image(
-        im, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
-    )
-    gcf, cf = gcfcf(im)
-    griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
-    result = fft_griddata_to_image(griddata, im, gcf)
-
-    if normalise:
-        result = normalise_sumwt(result, sumwt)
-
-    result = convert_polimage_to_stokes(result, **kwargs)
-
-    assert not numpy.isnan(
-        numpy.sum(result["pixels"].data)
-    ), "NaNs present in output image"
-
-    return result, sumwt
-
-
-def predict_awprojection(
-    vis: BlockVisibility, model: Image, gcfcf=None, **kwargs
-) -> BlockVisibility:
-    """Predict using convolutional degridding and an AW kernel
-
-    This is at the bottom of the layering i.e. all transforms are eventually expressed in terms of
-    this function. Any shifting needed is performed here.
-
-    Note that the gridding correction function (gcf) and convolution function (cf) can be passed
-    as a partial function. So the caller must supply a partial function to
-    calculate the gcf, cf tuple for an image model.
-
-    :param vis: blockvisibility to be predicted
-    :param model: model image
-    :return: resulting visibility (in place works)
-    """
-
-    assert gcfcf is not None, "gcfcf is required for awprojection"
-    return predict_2d(vis, model, gcfcf=gcfcf, **kwargs)
 
 
 def invert_awprojection(
@@ -321,8 +229,34 @@ def invert_awprojection(
     :return: resulting image
 
     """
-    assert gcfcf is not None, "gcfcf is required for awprojection"
-    return invert_2d(vis, im, dopsf=dopsf, normalise=normalise, gcfcf=gcfcf, **kwargs)
+
+    svis = copy_visibility(vis)
+
+    if dopsf:
+        svis = fill_blockvis_for_psf(svis)
+
+    svis = shift_vis_to_image(svis, im, tangent=True, inverse=False)
+
+    griddata = create_griddata_from_image(
+        im, polarisation_frame=vis.blockvisibility_acc.polarisation_frame
+    )
+    if gcfcf is None:
+        raise ValueError("invert_awprojection: gcfcf not specified")
+
+    gcf, cf = gcfcf(im)
+    griddata, sumwt = grid_blockvisibility_to_griddata(svis, griddata=griddata, cf=cf)
+    result = fft_griddata_to_image(griddata, im, gcf)
+
+    if normalise:
+        result = normalise_sumwt(result, sumwt)
+
+    result = convert_polimage_to_stokes(result, **kwargs)
+
+    assert not numpy.isnan(
+        numpy.sum(result["pixels"].data)
+    ), "NaNs present in output image"
+
+    return result, sumwt
 
 
 def fill_blockvis_for_psf(svis):

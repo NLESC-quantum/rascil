@@ -1,4 +1,4 @@
-""" Unit tests for
+""" Unit tests for skymodel operations
 
 """
 

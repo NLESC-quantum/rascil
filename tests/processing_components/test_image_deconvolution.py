@@ -350,32 +350,32 @@ class TestImageDeconvolution(unittest.TestCase):
         non_zero_idx_comp = numpy.where(result_comp_data != 0.0)
         expected_comp_non_zero_data = numpy.array(
             [
-                0.50775148,
-                0.589943,
-                0.53373994,
-                0.57914845,
-                0.54880106,
-                0.62232049,
-                0.53790934,
-                0.71712148,
-                0.71630954,
-                0.84058119,
+                0.508339,
+                0.590298,
+                0.533506,
+                0.579212,
+                0.549127,
+                0.622576,
+                0.538019,
+                0.717473,
+                0.716564,
+                0.840854,
             ]
         )
         result_residual_data = residual["pixels"].data
         non_zero_idx_residual = numpy.where(result_residual_data != 0.0)
         expected_residual_non_zero_data = numpy.array(
             [
-                -0.04197186,
-                0.03037433,
-                0.05768045,
-                0.05909848,
-                0.06043628,
-                0.07943856,
-                0.11716213,
-                0.15968158,
-                0.1893675,
-                0.19787602,
+                0.214978,
+                0.181119,
+                0.145942,
+                0.115912,
+                0.100664,
+                0.106727,
+                0.132365,
+                0.167671,
+                0.200349,
+                0.222765,
             ]
         )
 

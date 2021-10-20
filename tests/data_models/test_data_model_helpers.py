@@ -192,8 +192,8 @@ class TestDataModelHelpers(unittest.TestCase):
         )
         assert data_model_equals(newim, im, verbose=False)
 
-    @unittest.skip("netcdf too restrictive")
     def test_readwriteimage_zarr(self):
+        """Test to see if an image can be written to and read from a zarr file"""
         im = create_image(
             phasecentre=self.phasecentre,
             frequency=self.frequency,
@@ -206,10 +206,17 @@ class TestDataModelHelpers(unittest.TestCase):
             print(im)
         import os
 
+        # We cannot save dicts to a netcdf file
+        im.attrs["clean_beam"] = ""
+
         store = os.path.expanduser(
             "%s/test_data_model_helpers_image.zarr" % self.results_dir
         )
-        im.to_zarr(store=store, chunk_store=store, mode="w")
+        im.to_zarr(
+            store=store,
+            chunk_store=store,
+            mode="w",
+        )
         del im
         newim = xarray.open_zarr(store, chunk_store=store)
         assert newim["pixels"].data.compute().all() == rand.all()

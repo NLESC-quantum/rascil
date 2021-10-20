@@ -13,16 +13,15 @@ from rascil.data_models.polarisation import PolarisationFrame
 
 from rascil.processing_components.visibility.base import (
     create_blockvisibility_from_uvfits,
-    create_blockvisibility_from_uvfits,
 )
 from rascil.processing_components.visibility.operations import (
     integrate_visibility_by_channel,
 )
-from rascil.processing_components.imaging.base import (
-    invert_2d,
+from rascil.processing_components import (
+    invert_blockvisibility,
     create_image_from_visibility,
 )
-from rascil.processing_components.image.operations import export_image_to_fits
+from rascil.processing_components.image.operations import export_image_to_fits, qa_image
 
 
 log = logging.getLogger("rascil-logger")
@@ -41,15 +40,6 @@ class TestCreateMS(unittest.TestCase):
 
         return
 
-    # def test_create_list(self):
-    #     uvfitsfile = rascil_data_path("vis/xcasa.fits")
-    #     self.vis = create_blockvisibility_from_uvfits(uvfitsfile)
-
-    #     for v in self.vis:
-    #         assert v.vis.data.shape[-1] == 4
-    #         assert v.blockvisibility_acc.polarisation_frame.type == "circular"
-
-    @unittest.skip("Visibility with xarray not yet implemented")
     def test_create_list_spectral(self):
 
         uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")
@@ -85,7 +75,6 @@ class TestCreateMS(unittest.TestCase):
             assert v.vis.data.shape[-2] == 1
             assert v.blockvisibility_acc.polarisation_frame.type == "linear"
 
-    @unittest.skip("Visibility with xarray not yet implemented")
     def test_invert(self):
 
         uvfitsfile = rascil_data_path("vis/ASKAP_example.fits")
@@ -97,17 +86,12 @@ class TestCreateMS(unittest.TestCase):
             vis = create_blockvisibility_from_uvfits(
                 uvfitsfile, range(schan, max_chan)
             )[0]
-            from rascil.processing_components.visibility.operations import (
-                convert_blockvisibility_to_stokesI,
-            )
-
-            vis = convert_blockvisibility_to_stokesI(vis)
             model = create_image_from_visibility(
                 vis, npixel=256, polarisation_frame=PolarisationFrame("stokesI")
             )
             dirty, sumwt = invert_blockvisibility(vis, model, context="2d")
-            assert (numpy.max(numpy.abs(dirty.data))) > 0.0
-            assert dirty.shape == (nchan_ave, 1, 256, 256)
+            assert (numpy.max(numpy.abs(dirty["pixels"].data))) > 0.0
+            assert dirty["pixels"].shape == (nchan_ave, 1, 256, 256)
             if self.doplot:
                 import matplotlib.pyplot as plt
                 from rascil.processing_components.image.operations import show_image
@@ -117,6 +101,15 @@ class TestCreateMS(unittest.TestCase):
             if self.persist:
                 export_image_to_fits(
                     dirty, "%s/test_visibility_uvfits_dirty.fits" % self.results_dir
+                )
+
+            if schan == 0:
+                qa = qa_image(dirty)
+                numpy.testing.assert_allclose(
+                    qa.data["max"], 1.0668020958044764, atol=1e-7, err_msg=f"{qa}"
+                )
+                numpy.testing.assert_allclose(
+                    qa.data["min"], -0.6730247688717795, atol=1e-7, err_msg=f"{qa}"
                 )
 
 

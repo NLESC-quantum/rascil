@@ -1,6 +1,11 @@
 latest
 ------
 
+* imaging-pipelines notebook now larger, runs in a few minutes.([MR258](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/258))
+* The pipelines now consume less memory when running.([MR254](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/254))
+* All image-based pipelines have been removed in favour of skymodel-based pipelines ([MR250](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/250))
+* fit_psf was incorrectly converting stddev to FWHM, resulting in beams about 30% too big. ([MR246](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/246))
+* The ska-pipelines examples have been improved ([MR247](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/247))
 * Fixed issue within flux plots in plot_skycomponent for multiple polarisations ([MR263](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/263))
 * Updated imaging_qa to improve the spectral index calculation ([MR261](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/261))
 * Replaced running RASCIL-as-a-cluster via docker-compose with kubernetes/minikube ([MR238](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/238))

@@ -8,6 +8,7 @@ latest
 * The ska-pipelines examples have been improved ([MR247](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/247))
 * Fixed issue within flux plots in plot_skycomponent for multiple polarisations ([MR263](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/263))
 * Updated imaging_qa to improve the spectral index calculation ([MR261](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/261))
+* Persist dask graph at the end of each major cycle and add sizeof method to dask data objects ([MR249](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/249))
 * Replaced running RASCIL-as-a-cluster via docker-compose with kubernetes/minikube ([MR238](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/238))
 * Use astropy instead of casacore for geometry ([MR227](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/227))
 * Fixed angle wrap problem in plot_skycomponents ([MR225](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/225))

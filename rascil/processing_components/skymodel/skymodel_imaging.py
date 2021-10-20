@@ -1,27 +1,18 @@
-import logging
-
 import numpy
 
-from rascil.data_models import get_parameter
+__all__ = ["skymodel_calibrate_invert", "skymodel_predict_calibrate"]
+
 from rascil.processing_components import (
     copy_skycomponent,
     apply_beam_to_skycomponent,
     normalise_sumwt,
-    extract_skycomponents_from_skymodel,
-    image_scatter_facets,
-    image_gather_facets,
 )
-from rascil.processing_components.skycomponent.taylor_terms import (
-    find_skycomponents_frequency_taylor_terms,
-)
+from rascil.processing_components.calibration import apply_gaintable
+from rascil.processing_components.imaging import dft_skycomponent_visibility
 from rascil.processing_components.imaging.imaging import (
     predict_blockvisibility,
     invert_blockvisibility,
 )
-from rascil.processing_components.calibration import apply_gaintable
-from rascil.processing_components.image import restore_cube, fit_psf
-from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.skycomponent.operations import restore_skycomponent
 from rascil.processing_components.visibility import (
     copy_visibility,
     concatenate_visibility,
@@ -31,10 +22,10 @@ from rascil.processing_components.visibility import (
 def skymodel_predict_calibrate(
     bvis, skymodel, context="ng", docal=False, inverse=True, get_pb=None, **kwargs
 ):
-    """Predict visibility for a skymodel, optionally apply calibration
+    """Predict visibility for a skymodel, optionally applying calibration
 
-    A skymodel consists of an image and a list of components, each optionally with
-    its own gaintable.
+    A skymodel consists of an image and a list of components, optionally with
+    a gaintable.
 
     The function get_pb should have the signature:
 
@@ -47,6 +38,7 @@ def skymodel_predict_calibrate(
     :param context: Imaging context 2d or ng or awprojection
     :param get_pb: Function to get a primary beam
     :param docal: Apply calibration table in skymodel
+    :param inverse: Sense of calibration application
     :param kwargs: Parameters for functions in components
     :return: Visibility with dft of components, fft of image, gaintable applied (optional)
     """
@@ -54,6 +46,7 @@ def skymodel_predict_calibrate(
 
     vis_slices = []
     if get_pb is not None:
+        # TODO: Expand control of the grouping, coord and step
         for time, vis_slice in v.groupby("time", squeeze=False):
 
             pb = get_pb(vis_slice, skymodel.image)
@@ -147,16 +140,26 @@ def skymodel_calibrate_invert(
 ):
     """Inverse Fourier sum of visibility to image and components
 
+    If the get_pb function is defined, the sum of weights will be the
+    an image
+
     :param bvis: Visibility to be transformed
     :param skymodel: Skymodel
+    :param context: Type of processing e.g. 2d, wstack, timeslice or facets
+    :param docal: Apply calibration table in skymodel
+    :param get_pb: Function to get the primary beam for a given image and vis
+    :param normalise: Normalise the dirty image by sum of weights
+    :param flat_sky: Make the flux values correct (instead of noise)
     :return: Skymodel containing transforms
     """
 
-    if docal and skymodel.gaintable is not None:
-        bvis = apply_gaintable(bvis, skymodel.gaintable)
-
     if skymodel.image is None:
         raise ValueError("skymodel image is None")
+
+    bvis_cal = copy_visibility(bvis)
+
+    if docal and skymodel.gaintable is not None:
+        bvis_cal = apply_gaintable(bvis_cal, skymodel.gaintable)
 
     sum_flats = skymodel.image.copy(deep=True)
     sum_flats["pixels"][...] = 0.0
@@ -164,7 +167,8 @@ def skymodel_calibrate_invert(
     sum_dirtys["pixels"][...] = 0.0
 
     if get_pb is not None:
-        for time, vis_slice in bvis.groupby("time", squeeze=False):
+        # TODO: Expand control of the grouping, coord and step
+        for time, vis_slice in bvis_cal.groupby("time", squeeze=False):
 
             pb = get_pb(vis_slice, skymodel.image)
 
@@ -194,7 +198,9 @@ def skymodel_calibrate_invert(
         return (sum_dirtys, sum_flats)
 
     else:
-        result = invert_blockvisibility(bvis, skymodel.image, context=context, **kwargs)
+        result = invert_blockvisibility(
+            bvis_cal, skymodel.image, context=context, **kwargs
+        )
         if skymodel.mask is not None:
             result[0]["pixels"].data *= skymodel.mask["pixels"].data
 

@@ -94,25 +94,25 @@ linting:
 #  rules:
 #    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
-# Always try to build the docs since this catches errors via the notebook
-docs:
-  stage: test
-  before_script:
-    - apt-get update
-    # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
-    - apt-get -y install pandoc rsync gfortran libboost-dev libboost-python-dev libboost-numpy-dev
-    - pip install -r requirements.txt
-    - pip install -r requirements-docs.txt
-    - mkdir -p docs/build/html
-    - mkdir -p test_results
-  script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make docs
-  artifacts:
-    paths:
-      - docs/build/html/
-    expire_in: 1 week
-  rules:
-    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+## Always try to build the docs since this catches errors via the notebook
+#docs:
+#  stage: test
+#  before_script:
+#    - apt-get update
+#    # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
+#    - apt-get -y install pandoc rsync gfortran libboost-dev libboost-python-dev libboost-numpy-dev
+#    - pip install -r requirements.txt
+#    - pip install -r requirements-docs.txt
+#    - mkdir -p docs/build/html
+#    - mkdir -p test_results
+#  script:
+#    - PYTHONPATH=`pwd` HOME=`pwd` make docs
+#  artifacts:
+#    paths:
+#      - docs/build/html/
+#    expire_in: 1 week
+#  rules:
+#    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Build the data file only if on the master
 data:
@@ -191,26 +191,26 @@ docker_release:
   rules:
     - if: '$CI_COMMIT_TAG'
 
-# Publish the docs, data, and coverage if this is a build of the master
-pages:
-  stage: publish
-  dependencies:
-    - docs
-#    - test
-    - data
-  script:
-    - rm -rf public
-    - mkdir -p public
-    - mv docs/build/html/* public
-    - mv coverage public
-    - mv rascil_data.tgz public
-    - ls -l public
-  artifacts:
-    paths:
-      - public
-    expire_in: 30 days
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+## Publish the docs, data, and coverage if this is a build of the master
+#pages:
+#  stage: publish
+#  dependencies:
+#    - docs
+##    - test
+#    - data
+#  script:
+#    - rm -rf public
+#    - mkdir -p public
+#    - mv docs/build/html/* public
+#    - mv coverage public
+#    - mv rascil_data.tgz public
+#    - ls -l public
+#  artifacts:
+#    paths:
+#      - public
+#    expire_in: 30 days
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 prepare ci metrics:
   stage: prepost

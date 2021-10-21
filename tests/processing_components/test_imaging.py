@@ -509,7 +509,7 @@ class TestImaging2D(unittest.TestCase):
             flux_min=-8.991729415360501,
         )
 
-    @unittest.skip("Takes too long to run regularly")
+    @unittest.skip("Too expensive for CI/CD")
     def test_invert_awterm_spec_IQUV(self):
         self.actualSetUp(
             zerow=False, freqwin=5, image_pol=PolarisationFrame("stokesIQUV")

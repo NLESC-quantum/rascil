@@ -70,7 +70,6 @@ class TestImageGraph(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesI"),
         )
 
-    # @unittest.skip("TODO: Stalls occasionally in CI - disable")
     def test_map_create_pb(self):
         """This tests the correctness of the coordinates of the facets"""
         self.createVis(config="LOWBD2", rmax=300.0)

@@ -190,7 +190,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newim = import_image_from_hdf5(
             "%s/test_data_model_helpers_image.hdf" % self.results_dir
         )
-        assert data_model_equals(newim, im, verbose=False)
+        assert data_model_equals(newim, im)
 
     def test_readwriteimage_zarr(self):
         """Test to see if an image can be written to and read from a zarr file"""
@@ -259,7 +259,6 @@ class TestDataModelHelpers(unittest.TestCase):
 
         assert newsm.components[0].flux.shape == self.comp.flux.shape
 
-    @unittest.skip("TODO: fix unknown fail")
     def test_readwritegriddata(self):
         # This fails on comparison of the v axis.
         im = create_image(
@@ -269,19 +268,14 @@ class TestDataModelHelpers(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         gd = create_griddata_from_image(im)
-        if self.verbose:
-            print(gd)
         export_griddata_to_hdf5(
             gd, "%s/test_data_model_helpers_griddata.hdf" % self.results_dir
         )
         newgd = import_griddata_from_hdf5(
             "%s/test_data_model_helpers_griddata.hdf" % self.results_dir
         )
-        if self.verbose:
-            print(newgd)
         assert data_model_equals(newgd, gd)
 
-    @unittest.skip("TODO: fix unknown fail")
     def test_readwriteconvolutionfunction(self):
         # This fails on comparison of the v axis.
         im = create_image(

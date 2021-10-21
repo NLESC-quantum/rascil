@@ -122,7 +122,7 @@ class TestCalibrationChain(unittest.TestCase):
         residual = numpy.max(gaintables["T"].residual)
         assert residual < 1e-8, "Max T residual = %s" % (residual)
 
-    @unittest.skip("G converges slowly")
+    @unittest.skip("TODO: G converges slowly")
     def test_calibrate_G_function(self):
         self.actualSetup("stokesIQUV", "linear", f=[100.0, 50.0, 0.0, 0.0])
         # Prepare the corrupted visibility data_models
@@ -140,7 +140,7 @@ class TestCalibrationChain(unittest.TestCase):
         residual = numpy.max(gaintables["G"].residual)
         assert residual < 1e-8, "Max G residual = %s" % residual
 
-    @unittest.skip("G converges slowly")
+    @unittest.skip("TODO: G converges slowly")
     def test_calibrate_TG_function(self):
         self.actualSetup("stokesI", "stokesI", f=[100.0])
         # Prepare the corrupted visibility data_models

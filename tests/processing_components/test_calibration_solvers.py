@@ -394,7 +394,7 @@ class TestCalibrationSolvers(unittest.TestCase):
             f=[100.0, 50.0],
         )
 
-    @unittest.skip("Cross hands with polarised source not working")
+    @unittest.skip("TODO: Cross hands with polarised source not working")
     def test_solve_gaintable_stokesIQUV_crosspol_both_linear_cross(self):
         self.core_solve(
             "stokesIQUV",
@@ -421,7 +421,7 @@ class TestCalibrationSolvers(unittest.TestCase):
             f=[100.0, 0.0, 0.0, 50.0],
         )
 
-    @unittest.skip("Cross hands with polarised source not working")
+    @unittest.skip("TODO: Cross hands with polarised source not working")
     def test_solve_gaintable_stokesIQUV_crosspol_both_circular_cross(self):
         self.core_solve(
             "stokesIQUV",

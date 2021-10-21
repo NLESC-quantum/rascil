@@ -1,10 +1,26 @@
 latest
 ------
 
-* Replaced running RASCIL-as-a-cluster via docker-compose with kubernetes/minikube ([MR238](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/238))
+* Fixed bug in hogbom clean ([MR265](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/265))
+* imaging-pipelines notebook now larger, runs in a few minutes.([MR258](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/258))
+* The pipelines now consume less memory when running.([MR254](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/254))
+* All image-based pipelines have been removed in favour of skymodel-based pipelines ([MR250](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/250))
+* fit_psf was incorrectly converting stddev to FWHM, resulting in beams about 30% too big. ([MR246](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/246))
+* The ska-pipelines examples have been improved ([MR247](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/247))
+* Fixed issue within flux plots in plot_skycomponent for multiple polarisations ([MR263](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/263))
+* Updated imaging_qa to improve the spectral index calculation ([MR261](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/261))
+* Persist dask graph at the end of each major cycle and add sizeof method to dask data objects ([MR249](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/249))
+* Replaced running RASCIL-as-a-cluster via docker-compose with kubernetes/minikube ([MR238](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/238), [MR244](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/244))
+* Updated RFI code to standardise Low beam gain inputs ([MR229](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/229))
 * Use astropy instead of casacore for geometry ([MR227](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/227))
+* Fixed angle wrap problem in plot_skycomponents ([MR225](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/225))
+* Updated documentation on installation to reflect recent changes ([MR223](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/223), [MR232](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/232))
 * Added Mid beam calculations to RFI code ([MR204](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/204))
 * RASCIL is running on python3.9 (docker images and CI pipelines are also updated) ([MR219](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/219))
+* Further development of RCAL app including the gaintable plot functions ([MR212](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/212))
+* Fixed docker make commands and update documentation with new skao links ([MR218](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/218))
+* Added script to download RASCIL and casacore data ([MR215](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/215))
+* Removed unused data from Docker images, removed redundant steps and fixed dependency checking ([MR251](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/251))
 
 0.3.0
 -----

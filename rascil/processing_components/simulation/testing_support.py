@@ -29,7 +29,6 @@ Functions that aid testing in various ways. A typical use would be::
 """
 
 __all__ = [
-    "create_blockvisibility_iterator",
     "create_low_test_image_from_gleam",
     "create_low_test_skycomponents_from_gleam",
     "create_low_test_skymodel_from_gleam",
@@ -886,96 +885,6 @@ def replicate_image(
             data[:, pol] = im["pixels"][:, 0]
 
     return Image(data=data, polarisation_frame=polarisation_frame, wcs=newwcs)
-
-
-def create_blockvisibility_iterator(
-    config: Configuration,
-    times: numpy.array,
-    frequency: numpy.array,
-    channel_bandwidth,
-    phasecentre: SkyCoord,
-    weight: float = 1,
-    polarisation_frame=PolarisationFrame("stokesI"),
-    integration_time=1.0,
-    number_integrations=1,
-    predict=predict_blockvisibility,
-    model=None,
-    components=None,
-    phase_error=0.0,
-    amplitude_error=0.0,
-    sleep=0.0,
-    seed=None,
-    **kwargs
-):
-    """Create a sequence of Visibilities and optionally predicting and coalescing
-
-    This is useful mainly for performing large simulations. Do something like::
-
-        vis_iter = create_blockvisibility_iterator(config, times, frequency, channel_bandwidth, phasecentre=phasecentre,
-                                              weight=1.0, integration_time=30.0, number_integrations=3)
-
-        for i, vis in enumerate(vis_iter):
-        if i == 0:
-            fullvis = vis
-        else:
-            fullvis = concatenate_visibility(fullvis, vis)
-
-
-    :param config: Configuration of antennas
-    :param times: hour angles in radians
-    :param frequency: frequencies (Hz] Shape [nchan]
-    :param weight: weight of a single sample
-    :param phasecentre: phasecentre of observation
-    :param npol: Number of polarizations
-    :param integration_time: Integration time ('auto' or value in s)
-    :param number_integrations: Number of integrations to be created at each time.
-    :param model: Model image to be inserted
-    :param components: Components to be inserted
-    :param sleep_time: Time to sleep between yields
-    :return: BlockVisibility
-
-    """
-    for time in times:
-        actualtimes = (
-            time
-            + numpy.arange(0, number_integrations)
-            * integration_time
-            * numpy.pi
-            / 43200.0
-        )
-        bvis = create_blockvisibility(
-            config,
-            actualtimes,
-            frequency=frequency,
-            phasecentre=phasecentre,
-            weight=weight,
-            polarisation_frame=polarisation_frame,
-            integration_time=integration_time,
-            channel_bandwidth=channel_bandwidth,
-        )
-
-        if model is not None:
-            bvis = predict(bvis, model, **kwargs)
-
-        if components is not None:
-            bvis = dft_skycomponent_visibility(bvis, components)
-
-        # Add phase errors
-        if phase_error > 0.0 or amplitude_error > 0.0:
-            gt = create_gaintable_from_blockvisibility(bvis)
-            gt = simulate_gaintable(
-                gt=gt,
-                phase_error=phase_error,
-                amplitude_error=amplitude_error,
-                seed=seed,
-            )
-            bvis = apply_gaintable(bvis, gt)
-
-        import time
-
-        time.sleep(sleep)
-
-        yield bvis
 
 
 def simulate_gaintable(

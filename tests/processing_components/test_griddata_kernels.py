@@ -1,4 +1,4 @@
-""" Unit tests for image operations
+""" Unit tests for gridding kernels
 
 
 """

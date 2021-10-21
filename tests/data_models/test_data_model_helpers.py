@@ -261,7 +261,7 @@ class TestDataModelHelpers(unittest.TestCase):
 
     @unittest.skip("TODO: fix unknown fail")
     def test_readwritegriddata(self):
-
+        # This fails on comparison of the v axis.
         im = create_image(
             phasecentre=self.phasecentre,
             frequency=self.frequency,
@@ -283,6 +283,7 @@ class TestDataModelHelpers(unittest.TestCase):
 
     @unittest.skip("TODO: fix unknown fail")
     def test_readwriteconvolutionfunction(self):
+        # This fails on comparison of the v axis.
         im = create_image(
             phasecentre=self.phasecentre,
             frequency=self.frequency,

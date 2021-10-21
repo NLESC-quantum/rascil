@@ -102,7 +102,10 @@ def plot_skycomponents_positions(
 
             if img_size > 0.0:
                 ra_error[i] = (
-                    (m_comp.direction.ra.degree - m_ref.direction.ra.degree)
+                    (
+                        m_comp.direction.ra.wrap_at(angle_wrap).degree
+                        - m_ref.direction.ra.wrap_at(angle_wrap).degree
+                    )
                     * numpy.cos(m_ref.direction.dec.rad)
                     / img_size
                 )
@@ -114,7 +117,8 @@ def plot_skycomponents_positions(
             else:
                 log.info("Wrong input image resolution. Plot absolute values instead.")
                 ra_error[i] = (
-                    m_comp.direction.ra.degree - m_ref.direction.ra.degree
+                    m_comp.direction.ra.wrap_at(angle_wrap).degree
+                    - m_ref.direction.ra.wrap_at(angle_wrap).degree
                 ) * numpy.cos(m_ref.direction.dec.rad)
 
                 dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
@@ -186,6 +190,8 @@ def plot_skycomponents_position_distance(
              The error array for users to check
     """
 
+    angle_wrap = 180.0 * u.deg
+
     matches = find_skycomponent_matches(comps_test, comps_ref, tol)
     ra_error = numpy.zeros(len(matches))
     dec_error = numpy.zeros(len(matches))
@@ -196,7 +202,10 @@ def plot_skycomponents_position_distance(
 
         if img_size > 0.0:
             ra_error[i] = (
-                (m_comp.direction.ra.degree - m_ref.direction.ra.degree)
+                (
+                    m_comp.direction.ra.wrap_at(angle_wrap).degree
+                    - m_ref.direction.ra.wrap_at(angle_wrap).degree
+                )
                 * numpy.cos(m_ref.direction.dec.rad)
                 / img_size
             )
@@ -208,7 +217,8 @@ def plot_skycomponents_position_distance(
         else:
             log.info("Wrong input image resolution. Plot absolute values instead.")
             ra_error[i] = (
-                m_comp.direction.ra.degree - m_ref.direction.ra.degree
+                m_comp.direction.ra.wrap_at(angle_wrap).degree
+                - m_ref.direction.ra.wrap_at(angle_wrap).degree
             ) * numpy.cos(m_ref.direction.dec.rad)
 
             dec_error[i] = m_comp.direction.dec.degree - m_ref.direction.dec.degree
@@ -535,8 +545,8 @@ def plot_gaussian_beam_position(
     ax2.set_ylim([beam_l, beam_r])
 
     ax3 = plt.subplot(222)
-    ax3.plot(dec_dist, bmaj, "o", color="b", markersize=5, label="Bmaj")
-    ax3.plot(dec_dist, bmin, "o", color="r", markersize=5, label="Bmin")
+    ax3.plot(dec_dist, bmaj, "o", color="b", markersize=5, alpha=0.5, label="Bmaj")
+    ax3.plot(dec_dist, bmin, "o", color="r", markersize=5, alpha=0.5, label="Bmin")
     ax3.set_title(r"$\Delta Dec (deg)$")
     ax3.set_xlim([dist_l, dist_r])
     ax3.set_ylim([beam_l, beam_r])

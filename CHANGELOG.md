@@ -1,5 +1,5 @@
-latest
-------
+0.4.0
+-----
 
 * Fixed bug in hogbom clean ([MR265](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/265))
 * imaging-pipelines notebook now larger, runs in a few minutes.([MR258](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/258))

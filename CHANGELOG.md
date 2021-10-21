@@ -19,6 +19,7 @@ latest
 * RASCIL is running on python3.9 (docker images and CI pipelines are also updated) ([MR219](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/219))
 * Further development of RCAL app including the gaintable plot functions ([MR212](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/212))
 * Fixed docker make commands and update documentation with new skao links ([MR218](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/218))
+* Added script to download RASCIL and casacore data ([MR215](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/215))
 
 0.3.0
 -----

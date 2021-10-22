@@ -13,18 +13,16 @@ from astropy.coordinates import SkyCoord
 from numpy.testing import assert_array_almost_equal
 
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.image import (
+from rascil.processing_components import (
     export_image_to_fits,
     reproject_image,
     apply_voltage_pattern_to_image,
     qa_image,
     create_image_from_array,
+    invert_blockvisibility,
 )
 from rascil.processing_components.imaging import (
     create_image_from_visibility,
-    invert_2d,
-    advise_wide_field,
-    weight_visibility,
 )
 from rascil.processing_components.imaging.dft import (
     dft_skycomponent_visibility,
@@ -206,113 +204,6 @@ class TestPrimaryBeamsPol(unittest.TestCase):
                 print("{0} {1} failed".format(vpol, str(flux)))
                 nfailures += 1
         assert nfailures == 0, "{} tests failed".format(nfailures)
-
-    def test_apply_voltage_pattern_skycomponent(self):
-        self.createVis()
-        telescope = "MID_FEKO_B2"
-        vpbeam = create_vp(telescope=telescope, use_local=False)
-        vpol = PolarisationFrame("linear")
-        bvis = create_blockvisibility(
-            self.config,
-            self.times,
-            self.frequency,
-            channel_bandwidth=self.channel_bandwidth,
-            phasecentre=self.phasecentre,
-            weight=1.0,
-            polarisation_frame=vpol,
-        )
-        cellsize = advise_wide_field(bvis)["cellsize"]
-        component_centre = SkyCoord(
-            ra=+15.25 * u.deg, dec=-35.0 * u.deg, frame="icrs", equinox="J2000"
-        )
-        model = create_image_from_visibility(
-            bvis,
-            cellsize=cellsize,
-            npixel=self.npixel,
-            phasecentre=component_centre,
-            override_cellsize=False,
-            polarisation_frame=PolarisationFrame("linear"),
-        )
-        bvis = weight_visibility(bvis, model)
-
-        pbmodel = create_image_from_visibility(
-            bvis,
-            cellsize=self.cellsize,
-            npixel=self.npixel,
-            override_cellsize=False,
-            polarisation_frame=PolarisationFrame("stokesIQUV"),
-        )
-        vpbeam = create_vp(pbmodel, telescope=telescope, use_local=False)
-        vpbeam_wcs = vpbeam.image_acc.wcs
-        vpbeam_wcs.wcs.ctype[0] = "RA---SIN"
-        vpbeam_wcs.wcs.ctype[1] = "DEC--SIN"
-        vpbeam_wcs.wcs.crval[0] = pbmodel.image_acc.wcs.wcs.crval[0]
-        vpbeam_wcs.wcs.crval[1] = pbmodel.image_acc.wcs.wcs.crval[1]
-        vpbeam = create_image_from_array(
-            vpbeam["pixels"],
-            wcs=vpbeam_wcs,
-            polarisation_frame=vpbeam.image_acc.polarisation_frame,
-        )
-
-        for case, flux in enumerate(
-            (
-                numpy.array([[100.0, 0.0, 0.0, 0.0]]),
-                numpy.array([[100.0, 100.0, 0.0, 0.0]]),
-                numpy.array([[100.0, 0.0, 100.0, 0.0]]),
-                numpy.array([[100.0, 0.0, 0.0, 100.0]]),
-                numpy.array([[100.0, 1.0, -10.0, +60.0]]),
-            )
-        ):
-            component = create_skycomponent(
-                direction=component_centre,
-                flux=flux,
-                frequency=self.frequency,
-                polarisation_frame=PolarisationFrame("stokesIQUV"),
-            )
-            vpcomp = apply_voltage_pattern_to_skycomponent(
-                component, vpbeam, phasecentre=vpbeam.image_acc.phasecentre
-            )
-            bvis["vis"].data[...] = 0.0 + 0.0j
-            bvis = dft_skycomponent_visibility(bvis, vpcomp)
-            polimage, sumwt = invert_2d(bvis, model, dopsf=False)
-            export_image_to_fits(
-                polimage,
-                "{0}/test_primary_beams_pol_case{1}.fits".format(
-                    self.results_dir, case
-                ),
-            )
-
-            # Check out the path via components
-            found_components = find_skycomponents(polimage, threshold=20.0, npixels=5)
-            assert len(found_components) == 1
-            inv_vpcomp = apply_voltage_pattern_to_skycomponent(
-                found_components[0], vpbeam, inverse=True
-            )
-            assert_array_almost_equal(flux, numpy.real(inv_vpcomp.flux), 1)
-
-            # Now check out the path via images
-            vpbeam.image_acc.wcs.wcs.ctype[0] = polimage.image_acc.wcs.wcs.ctype[0]
-            vpbeam.image_acc.wcs.wcs.ctype[1] = polimage.image_acc.wcs.wcs.ctype[1]
-            vpbeam.image_acc.wcs.wcs.crval[0] = polimage.image_acc.wcs.wcs.crval[0]
-            vpbeam.image_acc.wcs.wcs.crval[1] = polimage.image_acc.wcs.wcs.crval[1]
-
-            vpbeam_regrid, footprint = reproject_image(
-                vpbeam, polimage.image_acc.wcs, polimage["pixels"].shape
-            )
-            polimage_corrected = apply_voltage_pattern_to_image(
-                polimage, vpbeam_regrid, inverse=True, min_det=0.3
-            )
-
-            export_image_to_fits(
-                polimage_corrected,
-                "{0}/test_primary_beams_pol_corrected_case{1}.fits".format(
-                    self.results_dir, case
-                ),
-            )
-            found_components = find_skycomponents(
-                polimage_corrected, threshold=20.0, npixels=5
-            )
-            assert len(found_components) == 1
 
 
 if __name__ == "__main__":

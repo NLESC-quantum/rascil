@@ -368,7 +368,6 @@ class TestGridDataGridding(unittest.TestCase):
             griddata.griddata_acc.griddata_wcs.wcs.cdel[:2]
         )
 
-    @unittest.skip("Not reliable")
     def test_griddata_predict_aterm(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         make_pb = functools.partial(
@@ -394,7 +393,12 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         qa = qa_visibility(newvis)
-        assert qa.data["rms"] < 160.0, str(qa)
+        numpy.testing.assert_allclose(
+            qa.data["maxabs"], 1091.515280627418, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["minabs"], 0.00023684744483300332, atol=1e-7, err_msg=f"{qa}"
+        )
 
     def test_griddata_predict_wterm(self):
         self.actualSetUp(zerow=False, image_pol=PolarisationFrame("stokesIQUV"))
@@ -418,9 +422,14 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         newvis["vis"].data[...] -= self.vis["vis"].data[...]
-        qa = qa_visibility(newvis)
         self.plot_vis(newvis, "wterm")
-        assert qa.data["rms"] < 27.0, str(qa)
+        qa = qa_visibility(newvis)
+        numpy.testing.assert_allclose(
+            qa.data["maxabs"], 224.28478109440636, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["minabs"], 0.012386229250739898, atol=1e-7, err_msg=f"{qa}"
+        )
 
     def test_griddata_predict_awterm(self):
         self.actualSetUp(zerow=False, image_pol=PolarisationFrame("stokesIQUV"))
@@ -453,7 +462,12 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         qa = qa_visibility(newvis)
-        assert qa.data["rms"] < 160.5, str(qa)
+        numpy.testing.assert_allclose(
+            qa.data["maxabs"], 1086.4705273529883, atol=1e-7, err_msg=f"{qa}"
+        )
+        numpy.testing.assert_allclose(
+            qa.data["minabs"], 0.05699706072350753, atol=1e-7, err_msg=f"{qa}"
+        )
         self.plot_vis(newvis, "awterm")
 
     def test_griddata_blockvisibility_weight(self):

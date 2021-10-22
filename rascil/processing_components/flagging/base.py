@@ -42,7 +42,7 @@ def copy_flagtable(ft: FlagTable, zero=False) -> FlagTable:
     newft = copy.copy(ft)
     newft.data = numpy.copy(ft.data)
     if zero:
-        ft.data["flags"][...] = 0.0
+        ft.data["flags"][...] = 0
     return newft
 
 

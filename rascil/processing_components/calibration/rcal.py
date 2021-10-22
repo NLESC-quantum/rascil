@@ -30,7 +30,7 @@ def rcal(vis: BlockVisibility, components, **kwargs) -> GainTable:
     # Import here to avoid a circular dependency
     from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 
-    for ichunk, vischunk in enumerate(vis):
+    for time, vischunk in vis.groupby("time", squeeze=False):
         vispred = copy_visibility(vischunk, zero=True)
         vispred = dft_skycomponent_visibility(vispred, components)
         gt = solve_gaintable(vischunk, vispred, **kwargs)

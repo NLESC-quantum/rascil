@@ -15,6 +15,7 @@ matplotlib.use("Agg")
 
 from distributed import Client, SSHCluster
 import dask
+import sys
 
 from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
 from rascil.processing_components.util.sizeof import get_size
@@ -40,13 +41,13 @@ from rascil.processing_components.util.performance import (
 from rascil.workflows import (
     weight_list_rsexecute_workflow,
     continuum_imaging_skymodel_list_rsexecute_workflow,
-    remove_sumwt,
     create_blockvisibility_from_ms_rsexecute,
     ical_skymodel_list_rsexecute_workflow,
     invert_list_rsexecute_workflow,
     sum_invert_results_rsexecute,
     taper_list_rsexecute_workflow,
 )
+from rascil.processing_components.imaging.imaging_helpers import remove_sumwt
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
     rsexecute,
@@ -64,6 +65,7 @@ from rascil.apps.apps_parser import (
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cli_parser():

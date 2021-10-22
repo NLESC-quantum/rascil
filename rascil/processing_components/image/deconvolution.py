@@ -13,8 +13,8 @@ The standard deconvolution algorithms are provided:
 For example to make dirty image and PSF, deconvolve, and then restore::
 
     model = create_image_from_visibility(vt, cellsize=0.001, npixel=256)
-    dirty, sumwt = invert_2d(vt, model)
-    psf, sumwt = invert_2d(vt, model, dopsf=True)
+    dirty, sumwt = invert_blockvisibility(vt, model, context="2d")
+    psf, sumwt = invert_blockvisibility(vt, model, context="2d", dopsf=True)
 
     comp, residual = deconvolve_cube(dirty, psf, niter=1000, threshold=0.001, fracthresh=0.01, window_shape='quarter',
                                  gain=0.7, algorithm='msclean', scales=[0, 3, 10, 30])
@@ -484,10 +484,7 @@ def hogbom_kernel_list(
                     % (prefix, pol, channel)
                 )
                 if window_list is None or window_list[channel] is None:
-                    (
-                        comp_array[channel, pol, :, :],
-                        residual_array[channel, pol, :, :],
-                    ) = hogbom(
+                    (comp_array[0, pol, :, :], residual_array[0, pol, :, :],) = hogbom(
                         dirty["pixels"].data[0, pol, :, :],
                         psf["pixels"].data[0, pol, :, :],
                         None,

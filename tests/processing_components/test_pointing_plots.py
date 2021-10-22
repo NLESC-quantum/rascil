@@ -147,34 +147,6 @@ class TestPointing(unittest.TestCase):
             plt.show(block=False)
         assert gt[0].gain.shape == (self.ntimes, self.nants, 1, 2, 2), gt[0].gain.shape
 
-    @unittest.skip("No longer supported")
-    def test_create_gaintable_from_pointingtable_dynamic_radec(self):
-        comp = create_skycomponent(
-            direction=self.phasecentre,
-            flux=[[1.0, 0.0, 0.0, 0.0]],
-            frequency=self.frequency,
-            polarisation_frame=PolarisationFrame("stokesIQUV"),
-        )
-
-        pt = create_pointingtable_from_blockvisibility(self.vis)
-        pt = simulate_pointingtable(
-            pt,
-            pointing_error=0.01,
-            static_pointing_error=None,
-            global_pointing_error=[0.0, 0.0],
-        )
-        vp = create_vp(self.model, "MID", use_local=False)
-        gt = simulate_gaintable_from_pointingtable(self.vis, [comp], pt, vp)
-        if self.doplot:
-            import matplotlib.pyplot as plt
-
-            plt.clf()
-            plt.plot(gt[0].time, numpy.real(1.0 / gt[0].gain[:, 0, 0, 0, 0]), ".")
-            plt.plot(gt[0].time, numpy.imag(1.0 / gt[0].gain[:, 0, 0, 0, 0]), ".")
-            plt.title("test_create_gaintable_from_pointingtable_dynamic_radec")
-            plt.show(block=False)
-        assert gt[0].gain.shape == (self.ntimes, self.nants, 1, 2, 2), gt[0].gain.shape
-
     def test_create_gaintable_from_pointingtable_static(self):
         comp = create_skycomponent(
             direction=self.phasecentre,

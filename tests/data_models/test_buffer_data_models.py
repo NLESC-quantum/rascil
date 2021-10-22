@@ -295,21 +295,24 @@ class TestBufferDataModelHelpers(unittest.TestCase):
         assert newim["pixels"].data.shape == im["pixels"].data.shape
         assert numpy.max(numpy.abs(im["pixels"].data - newim["pixels"].data)) < 1e-15
 
-    @unittest.skip("Assertion not implemented yet")
     def test_readwriteimage_assertion(self):
         im = create_test_image()
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(FileNotFoundError):
             config = {
                 "buffer": {"directory": self.results_dir},
                 "image": {
                     "name": "test_bufferskyimage_assertion.hdf",
                     "data_model": "Image",
                 },
+                "wrong_image": {
+                    "name": "test_bufferskyimage_assertion_wrong.hdf",
+                    "data_model": "Image",
+                },
             }
             bdm = BufferImage(config["buffer"], config["image"], im)
             bdm.sync()
-            new_bdm = BufferSkyModel(config["buffer"], config["image"])
+            new_bdm = BufferSkyModel(config["buffer"], config["wrong_image"])
             new_bdm.sync()
             newim = bdm.memory_data_model
 

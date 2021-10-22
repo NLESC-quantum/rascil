@@ -14,10 +14,13 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.data_models import Skycomponent
 
 from rascil.processing_components.arrays.cleaners import overlapIndices
+from rascil.processing_components.image.deconvolution import (
+    hogbom_kernel_list,
+    find_window_list,
+)
 from rascil.processing_components.skycomponent.operations import restore_skycomponent
 
 from rascil.processing_components import (
-    deconvolve_list,
     restore_list,
     deconvolve_cube,
     restore_cube,
@@ -28,9 +31,11 @@ from rascil.processing_components.image.operations import export_image_to_fits, 
 from rascil.processing_components.simulation import create_test_image
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
+)
 from rascil.processing_components.imaging.base import (
-    predict_2d,
-    invert_2d,
     create_image_from_visibility,
 )
 
@@ -70,7 +75,7 @@ class TestImageDeconvolution(unittest.TestCase):
         self.test_model = create_test_image(
             cellsize=0.001, frequency=self.frequency, phasecentre=self.vis.phasecentre
         )
-        self.vis = predict_2d(self.vis, self.test_model)
+        self.vis = predict_blockvisibility(self.vis, self.test_model, context="2d")
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
         self.model = create_image_from_visibility(
             self.vis,
@@ -78,8 +83,10 @@ class TestImageDeconvolution(unittest.TestCase):
             cellsize=0.001,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
-        self.dirty = invert_2d(self.vis, self.model)[0]
-        self.psf = invert_2d(self.vis, self.model, dopsf=True)[0]
+        self.dirty = invert_blockvisibility(self.vis, self.model, context="2d")[0]
+        self.psf = invert_blockvisibility(
+            self.vis, self.model, context="2d", dopsf=True
+        )[0]
         self.sensitivity = create_pb(self.model, "LOW")
 
     def overlaptest(self, a1, a2, s1, s2):
@@ -172,9 +179,9 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.results_dir))
         # Sanity check: by eyeball the FHWM = 4 pixels = 0.004 rad = 0.229 deg
-        assert numpy.abs(clean_beam["bmaj"] - 0.24790661720727178) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 0.2371395541730553) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmaj"] - 0.24790689057765794) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 0.2371401153972545) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bpa"] + 1.0126425267576473) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(
@@ -234,10 +241,10 @@ class TestImageDeconvolution(unittest.TestCase):
 
         qa = qa_image(self.residual)
         numpy.testing.assert_allclose(
-            qa.data["max"], 0.885413708649923, atol=1e-7, err_msg=f"{qa}"
+            qa.data["max"], 0.8040729590477751, atol=1e-7, err_msg=f"{qa}"
         )
         numpy.testing.assert_allclose(
-            qa.data["min"], -0.9840797231429542, atol=1e-7, err_msg=f"{qa}"
+            qa.data["min"], -0.9044553283128349, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_msclean_1scale(self):
@@ -337,6 +344,87 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             self.save_results("msclean_subpsf")
         assert numpy.max(self.residual["pixels"].data[..., 56:456, 56:456]) < 1.0
+
+    def _check_hogbom_kernel_list_test_results(self, component, residual):
+        result_comp_data = component["pixels"].data
+        non_zero_idx_comp = numpy.where(result_comp_data != 0.0)
+        expected_comp_non_zero_data = numpy.array(
+            [
+                0.508339,
+                0.590298,
+                0.533506,
+                0.579212,
+                0.549127,
+                0.622576,
+                0.538019,
+                0.717473,
+                0.716564,
+                0.840854,
+            ]
+        )
+        result_residual_data = residual["pixels"].data
+        non_zero_idx_residual = numpy.where(result_residual_data != 0.0)
+        expected_residual_non_zero_data = numpy.array(
+            [
+                0.214978,
+                0.181119,
+                0.145942,
+                0.115912,
+                0.100664,
+                0.106727,
+                0.132365,
+                0.167671,
+                0.200349,
+                0.222765,
+            ]
+        )
+
+        # number of non-zero values
+        assert len(result_comp_data[non_zero_idx_comp]) == 82
+        assert len(result_residual_data[non_zero_idx_residual]) == 262144
+        # test first 10 non-zero values don't change with each run of test
+        numpy.testing.assert_array_almost_equal(
+            result_comp_data[non_zero_idx_comp][:10], expected_comp_non_zero_data
+        )
+        numpy.testing.assert_array_almost_equal(
+            result_residual_data[non_zero_idx_residual][:10],
+            expected_residual_non_zero_data,
+        )
+
+    def test_hogbom_kernel_list_single_dirty(self):
+        prefix = "test_hogbom_list"
+        dirty_list = [self.dirty]
+        psf_list = [self.psf]
+        window_list = find_window_list(dirty_list, prefix)
+
+        comp_list, residual_list = hogbom_kernel_list(
+            dirty_list, prefix, psf_list, window_list
+        )
+
+        assert len(comp_list) == 1
+        assert len(residual_list) == 1
+        self._check_hogbom_kernel_list_test_results(comp_list[0], residual_list[0])
+
+    def test_hogbom_kernel_list_multiple_dirty(self):
+        """
+        Bugfix: hogbom_kernel_list produced an IndexError, when dirty_list has more than
+        one elements, and those elements are for a single frequency each.
+        """
+
+        prefix = "test_hogbom_list"
+        dirty_list = [self.dirty, self.dirty]
+        psf_list = [self.psf, self.psf]
+        window_list = find_window_list(dirty_list, prefix)
+
+        comp_list, residual_list = hogbom_kernel_list(
+            dirty_list, prefix, psf_list, window_list
+        )
+
+        assert len(comp_list) == 2
+        assert len(residual_list) == 2
+        # because the two dirty images and psfs are the same, the expected results are also the same
+        self._check_hogbom_kernel_list_test_results(comp_list[0], residual_list[0])
+        self._check_hogbom_kernel_list_test_results(comp_list[1], residual_list[1])
 
 
 if __name__ == "__main__":

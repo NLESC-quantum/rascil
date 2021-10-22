@@ -18,7 +18,6 @@ from rascil.processing_components.imaging.primary_beams import create_low_test_b
 from rascil.processing_components.simulation import (
     create_test_image_from_s3,
     create_test_image,
-    create_blockvisibility_iterator,
     create_low_test_image_from_gleam,
     create_low_test_skycomponents_from_gleam,
     create_low_test_skymodel_from_gleam,
@@ -192,17 +191,20 @@ class TestTesting_Support(unittest.TestCase):
 
     @unittest.skip("Too expensive for CI/CD")
     def test_create_test_skycomponents_from_s3_deep(self):
+        # Takes about 3 minutes to run so we keep it for running by hand.
         self.frequency = numpy.linspace(0.8e9, 1.2e9, 5)
-        sc = create_test_skycomponents_from_s3(
+        sc_unsorted = create_test_skycomponents_from_s3(
             flux_limit=1e-5,
             phasecentre=self.phasecentre,
             polarisation_frame=PolarisationFrame("stokesI"),
             frequency=self.frequency,
             radius=0.0003,
         )
-        assert len(sc) == 6, "Expected 103 sources, actually found %d" % len(sc)
-        assert sc[0].name == "S3_40130498"
-        self.assertAlmostEqual(sc[0].flux[0, 0], 4.20562639e-05, 7)
+        sc = sorted(sc_unsorted, key=lambda cmp: numpy.max(cmp.flux))
+
+        assert len(sc) == 6, f"Expected 6 sources, actually found {len(sc)}: {sc}"
+        assert sc[0].name == "S3_155080789"
+        self.assertAlmostEqual(sc[0].flux[0, 0], 2.00858007e-05, 7)
 
     def test_create_test_image_from_s3_low(self):
         im = create_test_image_from_s3(
@@ -327,70 +329,6 @@ class TestTesting_Support(unittest.TestCase):
                 )
                 < 0.02
             )
-
-    def test_create_vis_iter(self):
-        vis_iter = create_blockvisibility_iterator(
-            self.config,
-            self.times,
-            self.frequency,
-            channel_bandwidth=self.channel_bandwidth,
-            phasecentre=self.phasecentre,
-            weight=1.0,
-            polarisation_frame=PolarisationFrame("stokesI"),
-            integration_time=30.0,
-            number_integrations=3,
-        )
-
-        fullvis = None
-        totalnvis = 0
-        for i, vis in enumerate(vis_iter):
-            assert vis.blockvisibility_acc.nvis
-            if i == 0:
-                fullvis = copy_visibility(vis)
-                totalnvis = vis.blockvisibility_acc.ntimes
-            else:
-                fullvis = concatenate_visibility([fullvis, vis])
-                totalnvis += vis.blockvisibility_acc.ntimes
-
-        assert fullvis.blockvisibility_acc.ntimes == totalnvis
-
-    def test_create_vis_iter_with_model(self):
-        model = create_test_image(
-            cellsize=0.001, frequency=self.frequency, phasecentre=self.phasecentre
-        )
-        comp = Skycomponent(
-            direction=self.phasecentre,
-            frequency=self.frequency,
-            flux=self.flux,
-            polarisation_frame=PolarisationFrame("stokesI"),
-        )
-        vis_iter = create_blockvisibility_iterator(
-            self.config,
-            self.times,
-            self.frequency,
-            channel_bandwidth=self.channel_bandwidth,
-            phasecentre=self.phasecentre,
-            weight=1.0,
-            polarisation_frame=PolarisationFrame("stokesI"),
-            integration_time=30.0,
-            number_integrations=3,
-            model=model,
-            components=comp,
-        )
-
-        fullvis = None
-        totalnvis = 0
-        for i, bvis in enumerate(vis_iter):
-            assert bvis.phasecentre.separation(self.phasecentre).value < 1e-15
-            assert bvis.blockvisibility_acc.nvis
-            if i == 0:
-                fullvis = bvis
-                totalnvis = bvis.blockvisibility_acc.ntimes
-            else:
-                fullvis = concatenate_visibility([fullvis, bvis])
-                totalnvis += bvis.blockvisibility_acc.ntimes
-
-        assert fullvis.blockvisibility_acc.ntimes == totalnvis
 
 
 if __name__ == "__main__":

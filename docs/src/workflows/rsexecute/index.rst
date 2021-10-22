@@ -36,7 +36,6 @@ continuum_imaging_list_rsexecute_workflow are built from lower level functions s
 invert_list_rsexecute_workflow.
 
 In this example, changing use_dask to False will cause the definitions to be executed immediately.
-Only a few workflows are available in both serial and rsexecute versions.
 
 The rsexecute framework relies upon a singleton object called rsexecute. This is documented below
 as the class _rsexecutebase.

@@ -19,9 +19,9 @@ Calibration workflows
 Imaging workflows
 -----------------
 
-* Invert: :py:func:`rascil.workflows.rsexecute.imaging.invert_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.imaging.invert_list_serial_workflow`
-* Predict: :py:func:`rascil.workflows.rsexecute.imaging.predict_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.imaging.predict_list_serial_workflow`
-* Deconvolve: :py:func:`rascil.workflows.rsexecute.imaging.deconvolve_list_rsexecute_workflow` :py:func:`rascil.workflows.serial.imaging.deconvolve_list_serial_workflow`
+* Invert: :py:func:`rascil.workflows.rsexecute.imaging.invert_list_rsexecute_workflow`
+* Predict: :py:func:`rascil.workflows.rsexecute.imaging.predict_list_rsexecute_workflow`
+* Deconvolve: :py:func:`rascil.workflows.rsexecute.imaging.deconvolve_list_rsexecute_workflow`
 
 Pipeline workflows
 ------------------

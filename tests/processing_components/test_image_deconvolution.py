@@ -31,9 +31,11 @@ from rascil.processing_components.image.operations import export_image_to_fits, 
 from rascil.processing_components.simulation import create_test_image
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
+)
 from rascil.processing_components.imaging.base import (
-    predict_2d,
-    invert_2d,
     create_image_from_visibility,
 )
 
@@ -73,7 +75,7 @@ class TestImageDeconvolution(unittest.TestCase):
         self.test_model = create_test_image(
             cellsize=0.001, frequency=self.frequency, phasecentre=self.vis.phasecentre
         )
-        self.vis = predict_2d(self.vis, self.test_model)
+        self.vis = predict_blockvisibility(self.vis, self.test_model, context="2d")
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
         self.model = create_image_from_visibility(
             self.vis,
@@ -81,8 +83,10 @@ class TestImageDeconvolution(unittest.TestCase):
             cellsize=0.001,
             polarisation_frame=PolarisationFrame("stokesI"),
         )
-        self.dirty = invert_2d(self.vis, self.model)[0]
-        self.psf = invert_2d(self.vis, self.model, dopsf=True)[0]
+        self.dirty = invert_blockvisibility(self.vis, self.model, context="2d")[0]
+        self.psf = invert_blockvisibility(
+            self.vis, self.model, context="2d", dopsf=True
+        )[0]
         self.sensitivity = create_pb(self.model, "LOW")
 
     def overlaptest(self, a1, a2, s1, s2):
@@ -175,9 +179,9 @@ class TestImageDeconvolution(unittest.TestCase):
         if self.persist:
             export_image_to_fits(self.psf, "%s/test_fit_psf.fits" % (self.results_dir))
         # Sanity check: by eyeball the FHWM = 4 pixels = 0.004 rad = 0.229 deg
-        assert numpy.abs(clean_beam["bmaj"] - 0.24790661720727178) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bmin"] - 0.2371395541730553) < 1.0e-7, clean_beam
-        assert numpy.abs(clean_beam["bpa"] + 1.0098903330636544) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmaj"] - 0.24790689057765794) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bmin"] - 0.2371401153972545) < 1.0e-7, clean_beam
+        assert numpy.abs(clean_beam["bpa"] + 1.0126425267576473) < 1.0e-7, clean_beam
 
     def test_deconvolve_hogbom(self):
         self.comp, self.residual = deconvolve_cube(
@@ -237,10 +241,10 @@ class TestImageDeconvolution(unittest.TestCase):
 
         qa = qa_image(self.residual)
         numpy.testing.assert_allclose(
-            qa.data["max"], 0.885413708649923, atol=1e-7, err_msg=f"{qa}"
+            qa.data["max"], 0.8040729590477751, atol=1e-7, err_msg=f"{qa}"
         )
         numpy.testing.assert_allclose(
-            qa.data["min"], -0.9840797231429542, atol=1e-7, err_msg=f"{qa}"
+            qa.data["min"], -0.9044553283128349, atol=1e-7, err_msg=f"{qa}"
         )
 
     def test_deconvolve_msclean_1scale(self):
@@ -346,32 +350,32 @@ class TestImageDeconvolution(unittest.TestCase):
         non_zero_idx_comp = numpy.where(result_comp_data != 0.0)
         expected_comp_non_zero_data = numpy.array(
             [
-                0.50775148,
-                0.589943,
-                0.53373994,
-                0.57914845,
-                0.54880106,
-                0.62232049,
-                0.53790934,
-                0.71712148,
-                0.71630954,
-                0.84058119,
+                0.508339,
+                0.590298,
+                0.533506,
+                0.579212,
+                0.549127,
+                0.622576,
+                0.538019,
+                0.717473,
+                0.716564,
+                0.840854,
             ]
         )
         result_residual_data = residual["pixels"].data
         non_zero_idx_residual = numpy.where(result_residual_data != 0.0)
         expected_residual_non_zero_data = numpy.array(
             [
-                -0.04197186,
-                0.03037433,
-                0.05768045,
-                0.05909848,
-                0.06043628,
-                0.07943856,
-                0.11716213,
-                0.15968158,
-                0.1893675,
-                0.19787602,
+                0.214978,
+                0.181119,
+                0.145942,
+                0.115912,
+                0.100664,
+                0.106727,
+                0.132365,
+                0.167671,
+                0.200349,
+                0.222765,
             ]
         )
 

@@ -178,11 +178,6 @@ def initialize_skymodel_voronoi(model, comps, gt=None):
     :param gt: Gaintable
     :return:
 
-    For example::
-
-        gaintable = create_gaintable_from_blockvisibility(block_vis)
-        mpccal_skymodel = initialize_skymodel_voronoi(model, ical_components, gaintable)
-
     """
     skymodel_images = list()
     for i, mask in enumerate(image_voronoi_iter(model, comps)):

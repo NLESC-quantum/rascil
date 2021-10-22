@@ -11,7 +11,6 @@ from astropy.coordinates import SkyCoord
 
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
-
 from rascil.processing_components.calibration import apply_gaintable
 from rascil.processing_components.calibration.chain_calibration import (
     create_calibration_controls,
@@ -22,8 +21,8 @@ from rascil.processing_components.calibration.operations import (
     gaintable_summary,
 )
 from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.simulation import create_named_configuration
+from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.visibility.base import (
     copy_visibility,
     create_blockvisibility,
@@ -122,42 +121,51 @@ class TestCalibrationChain(unittest.TestCase):
         residual = numpy.max(gaintables["T"].residual)
         assert residual < 1e-8, "Max T residual = %s" % (residual)
 
-    @unittest.skip("G converges slowly")
     def test_calibrate_G_function(self):
         self.actualSetup("stokesIQUV", "linear", f=[100.0, 50.0, 0.0, 0.0])
         # Prepare the corrupted visibility data_models
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
-        gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
-        original = copy_visibility(self.vis)
-        self.vis = apply_gaintable(self.vis, gt)
+        gt = simulate_gaintable(
+            gt,
+            phase_error=1.0,
+            amplitude_error=0.1,
+        )
+        corrupted = copy_visibility(self.vis)
+        corrupted = apply_gaintable(corrupted, gt)
         # Now get the control dictionary and calibrate
         controls = create_calibration_controls()
         controls["G"]["first_selfcal"] = 0
+        controls["G"]["timeslice"] = 0.0
+        controls["G"]["phase_only"] = False
         calibrated_vis, gaintables = calibrate_chain(
-            self.vis, original, calibration_context="G", controls=controls
+            corrupted, self.vis, calibration_context="G", controls=controls
         )
         residual = numpy.max(gaintables["G"].residual)
-        assert residual < 1e-8, "Max G residual = %s" % residual
+        assert residual < 1e-8, "Max T residual = %s" % (residual)
 
-    @unittest.skip("G converges slowly")
     def test_calibrate_TG_function(self):
-        self.actualSetup("stokesI", "stokesI", f=[100.0])
+        self.actualSetup("stokesIQUV", "linear", f=[100.0, 50, 0.0, 0.0])
         # Prepare the corrupted visibility data_models
         gt = create_gaintable_from_blockvisibility(self.vis)
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
         gt = simulate_gaintable(gt, phase_error=10.0, amplitude_error=0.1)
         original = copy_visibility(self.vis)
         self.vis = apply_gaintable(self.vis, gt)
+
         # Now get the control dictionary and calibrate
         controls = create_calibration_controls()
         controls["T"]["first_selfcal"] = 0
+        controls["T"]["timeslice"] = 0.0
+        controls["T"]["phase_only"] = True
         controls["G"]["first_selfcal"] = 0
+        controls["G"]["timeslice"] = 0.0
+        controls["G"]["phase_only"] = False
+
         calibrated_vis, gaintables = calibrate_chain(
             self.vis, original, calibration_context="TG", controls=controls
         )
-        residual = numpy.max(gaintables["T"].residual)
-        assert residual < 1e-8, "Max T residual = %s" % residual
+        # We test the G residual because it is calibrated last
         residual = numpy.max(gaintables["G"].residual)
         assert residual < 1e-8, "Max T residual = %s" % residual
 

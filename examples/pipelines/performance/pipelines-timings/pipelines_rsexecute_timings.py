@@ -34,12 +34,12 @@ from rascil.workflows import (
     invert_list_rsexecute_workflow,
     weight_list_rsexecute_workflow,
     taper_list_rsexecute_workflow,
-    remove_sumwt,
     ical_list_rsexecute_workflow,
     simulate_list_rsexecute_workflow,
     corrupt_list_rsexecute_workflow,
     predict_skymodel_list_rsexecute_workflow,
 )
+from rascil.processing_components.imaging.imaging_helpers import remove_sumwt
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
     rsexecute,
     get_dask_client,

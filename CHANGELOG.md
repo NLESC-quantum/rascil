@@ -1,3 +1,12 @@
+
+* Large number of test fixes and improvements ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
+* create_blockvisibility_iterator removed in favor of xarray.groupby ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
+* skymodel_predict_calibrate and skymodel_calibrate_image functions added ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
+* Two dimensional transforms done with nifty gridder, do_wstacking=False ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
+* Model Partition Calibration Proof-Of-Concept code removed ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
+* Shared, serial workflow types removed, functionality moved to processing_components ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
+* Restructuring of invert, predict to invert_blockvisibility, predict_blockvisibility, context added ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
+
 0.4.0
 -----
 

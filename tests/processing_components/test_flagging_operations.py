@@ -51,12 +51,20 @@ class TestFlaggingOperations(unittest.TestCase):
             polarisation_frame=self.polarisation_frame,
             weight=1.0,
         )
+        baselines = [100, 199]
         antennas = [1, 3]
         channels = [0, 1]
         pols = [0]
         bvis = flagging_blockvisibility(
-            bvis, antennas=antennas, channels=channels, polarisations=pols
+            bvis,
+            baselines=baselines,
+            antennas=antennas,
+            channels=channels,
+            polarisations=pols,
         )
+        # Check flagging on baselines
+        for baseline in baselines:
+            assert bvis["flags"].data[:, baseline, ...].all() == 1
         # Check flagging on channels
         for channel in channels:
             assert bvis["flags"].data[..., channel, :].all() == 1

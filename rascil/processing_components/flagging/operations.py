@@ -20,16 +20,28 @@ log = logging.getLogger("rascil-logger")
 
 
 def flagging_blockvisibility(
-    bvis, baselines=[], antennas=[], channels=[], polarisations=[]
+    bvis, baselines=None, antennas=None, channels=None, polarisations=None
 ):
     """Flagging BlockVisibility
 
     :param bvis: BlockVisibility
-    :param antennas: The list of antenna number
-    :param channels: The list of Channel number
-    :param polarisations: The list of polarisations
+    :param baselines: The list of baseline numbers to flag
+    :param antennas: The list of antenna number to flag
+    :param channels: The list of Channel number to flag
+    :param polarisations: The list of polarisations to flag
     :return: BlockVisibility
     """
+    if polarisations is None:
+        polarisations = []
+    if antennas is None:
+        antennas = []
+    if channels is None:
+        channels = []
+    if baselines is None:
+        baselines = []
+
+    for baseline in baselines:
+        bvis["flags"].data[:, baseline, ...] = 1
     for channel in channels:
         bvis["flags"].data[..., channel, :] = 1
     for pol in polarisations:

@@ -31,7 +31,6 @@ from rascil.data_models.data_model_helpers import (
     export_griddata_to_hdf5,
     import_convolutionfunction_from_hdf5,
     export_convolutionfunction_to_hdf5,
-    data_model_equals,
 )
 
 from rascil.data_models.xarray_coordinate_support import image_wcs, griddata_wcs, cf_wcs
@@ -61,6 +60,33 @@ log.setLevel(logging.INFO)
 
 
 class TestDataModelHelpers(unittest.TestCase):
+    def _data_model_equals(self, ds_new, ds_ref):
+        """Check if two xarray objects are identical except to values
+
+        Precision in lost in HDF files at close to the machine precision so we cannot
+        reliably use xarray.equals(). So this function is specific to this set of tests
+
+        Throws AssertionError or returns True
+
+        :param ds_ref: xarray Dataset or DataArray
+        :param ds_new: xarray Dataset or DataArray
+        :return: True or False
+        """
+        for coord in ds_ref.coords:
+            assert coord in ds_new.coords
+        for coord in ds_new.coords:
+            assert coord in ds_ref.coords
+        for var in ds_ref.data_vars:
+            assert var in ds_new.data_vars
+        for var in ds_new.data_vars:
+            assert var in ds_ref.data_vars
+        for attr in ds_ref.attrs.keys():
+            assert attr in ds_new.attrs.keys()
+        for attr in ds_new.attrs.keys():
+            assert attr in ds_ref.attrs.keys()
+
+        return True
+
     def setUp(self):
         from rascil.data_models.parameters import rascil_path, rascil_data_path
 
@@ -109,7 +135,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newvis = import_blockvisibility_from_hdf5(
             "%s/test_data_model_helpers_blockvisibility.hdf" % self.results_dir
         )
-        assert data_model_equals(newvis, self.vis)
+        assert self._data_model_equals(newvis, self.vis)
 
     def test_readwritegaintable(self):
         self.vis = create_blockvisibility(
@@ -131,7 +157,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newgt = import_gaintable_from_hdf5(
             "%s/test_data_model_helpers_gaintable.hdf" % self.results_dir
         )
-        assert data_model_equals(newgt, gt)
+        assert self._data_model_equals(newgt, gt)
 
     def test_readwriteflagtable(self):
         self.vis = create_blockvisibility(
@@ -152,7 +178,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newft = import_flagtable_from_hdf5(
             "%s/test_data_model_helpers_flagtable.hdf" % self.results_dir
         )
-        assert data_model_equals(newft, ft)
+        assert self._data_model_equals(newft, ft)
 
     def test_readwritepointingtable(self):
         self.vis = create_blockvisibility(
@@ -174,7 +200,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newpt = import_pointingtable_from_hdf5(
             "%s/test_data_model_helpers_pointingtable.hdf" % self.results_dir
         )
-        assert data_model_equals(newpt, pt)
+        assert self._data_model_equals(newpt, pt)
 
     def test_readwriteimage(self):
         im = create_image(
@@ -190,7 +216,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newim = import_image_from_hdf5(
             "%s/test_data_model_helpers_image.hdf" % self.results_dir
         )
-        assert data_model_equals(newim, im)
+        assert self._data_model_equals(newim, im)
 
     def test_readwriteimage_zarr(self):
         """Test to see if an image can be written to and read from a zarr file"""
@@ -274,7 +300,7 @@ class TestDataModelHelpers(unittest.TestCase):
         newgd = import_griddata_from_hdf5(
             "%s/test_data_model_helpers_griddata.hdf" % self.results_dir
         )
-        assert data_model_equals(newgd, gd)
+        assert self._data_model_equals(newgd, gd)
 
     def test_readwriteconvolutionfunction(self):
         # This fails on comparison of the v axis.
@@ -294,7 +320,7 @@ class TestDataModelHelpers(unittest.TestCase):
             "%s/test_data_model_helpers_convolutionfunction.hdf" % self.results_dir
         )
 
-        assert data_model_equals(newcf, cf)
+        assert self._data_model_equals(newcf, cf)
 
 
 if __name__ == "__main__":

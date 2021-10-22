@@ -8,30 +8,22 @@ __all__ = [
 
 import logging
 
-import numpy
-
 from rascil.data_models import get_parameter
 from rascil.processing_components import (
-    copy_skycomponent,
-    apply_beam_to_skycomponent,
     normalise_sumwt,
-    extract_skycomponents_from_skymodel,
     image_scatter_facets,
     image_gather_facets,
 )
+from rascil.processing_components.image import restore_cube, fit_psf
+from rascil.processing_components.imaging.imaging_helpers import remove_sumwt
+from rascil.processing_components.skycomponent.operations import restore_skycomponent
 from rascil.processing_components.skycomponent.taylor_terms import (
     find_skycomponents_frequency_taylor_terms,
 )
-from rascil.processing_components.calibration import apply_gaintable
-from rascil.processing_components.image import restore_cube, fit_psf
-from rascil.processing_components.imaging import dft_skycomponent_visibility
-from rascil.processing_components.skycomponent.operations import restore_skycomponent
-from rascil.processing_components.visibility import (
-    copy_visibility,
-    concatenate_visibility,
+from rascil.processing_components.skymodel.skymodel_imaging import (
+    skymodel_predict_calibrate,
+    skymodel_calibrate_invert,
 )
-
-# ToDo - remove non-SkyModel parts
 from rascil.workflows.rsexecute import (
     invert_list_rsexecute_workflow,
     predict_list_rsexecute_workflow,
@@ -41,11 +33,6 @@ from rascil.workflows.rsexecute import (
     deconvolve_list_rsexecute_workflow,
 )
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
-from rascil.processing_components.imaging.imaging_helpers import remove_sumwt
-from rascil.processing_components.skymodel.skymodel_imaging import (
-    skymodel_predict_calibrate,
-    skymodel_calibrate_invert,
-)
 
 log = logging.getLogger("rascil-logger")
 
@@ -428,7 +415,6 @@ def deconvolve_skymodel_list_rsexecute_workflow(
 
 
 def convert_skycomponents_taylor_terms_list(dirty_image_list, skymodel_list, **kwargs):
-
     skycomponent_list = find_skycomponents_frequency_taylor_terms(
         dirty_image_list, **kwargs
     )

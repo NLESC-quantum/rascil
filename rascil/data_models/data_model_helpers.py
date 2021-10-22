@@ -90,7 +90,6 @@ __all__ = [
     "import_convolutionfunction_from_hdf5",
     "memory_data_model_to_buffer",
     "buffer_data_model_to_memory",
-    "data_model_equals",
 ]
 
 import ast
@@ -1166,28 +1165,3 @@ def buffer_data_model_to_memory(jbuff, dm):
         return import_convolutionfunction_from_hdf5(name)
     else:
         raise ValueError("Data model %s not supported" % dm["data_model"])
-
-
-def data_model_equals(ds_new, ds_ref):
-    """Check if the data models are identical except to values
-
-    Precision in lost in HDF files so we cannot use xarray.equals()
-
-    :param ds_ref:
-    :param ds_new:
-    :return:
-    """
-    for coord in ds_ref.coords:
-        assert coord in ds_new.coords
-    for coord in ds_new.coords:
-        assert coord in ds_ref.coords
-    for var in ds_ref.data_vars:
-        assert var in ds_new.data_vars
-    for var in ds_new.data_vars:
-        assert var in ds_ref.data_vars
-    for attr in ds_ref.attrs.keys():
-        assert attr in ds_new.attrs.keys()
-    for attr in ds_new.attrs.keys():
-        assert attr in ds_ref.attrs.keys()
-
-    return True

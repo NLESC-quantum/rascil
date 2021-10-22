@@ -424,7 +424,6 @@ class TestGridDataGridding(unittest.TestCase):
         newvis["vis"].data[...] -= self.vis["vis"].data[...]
         self.plot_vis(newvis, "wterm")
         qa = qa_visibility(newvis)
-        print(qa)
         numpy.testing.assert_allclose(
             qa.data["maxabs"], 224.28478109440636, atol=1e-7, err_msg=f"{qa}"
         )
@@ -463,7 +462,6 @@ class TestGridDataGridding(unittest.TestCase):
             self.vis, griddata=griddata, cf=cf
         )
         qa = qa_visibility(newvis)
-        print(qa)
         numpy.testing.assert_allclose(
             qa.data["maxabs"], 1086.4705273529883, atol=1e-7, err_msg=f"{qa}"
         )

@@ -368,6 +368,9 @@ def griddata_blockvisibility_reweight(
     ).T
 
     if weighting == "uniform":
+        sumlocwt = numpy.sum(real_gd ** 2)
+        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight)
+        f2 = sumwt / sumlocwt
         for pol in range(nvpol):
             for vchan in range(nvchan):
                 imchan = vis_to_im[vchan]
@@ -376,7 +379,7 @@ def griddata_blockvisibility_reweight(
                     pv_grid,
                 ) = convolution_mapping_blockvisibility(vis, griddata, vchan)
                 wt = real_gd[imchan, pol, pv_grid[...], pu_grid[...]]
-                fwtt[pol, vchan, :][wt > 0.0] /= wt[wt > 0.0]
+                fwtt[pol, vchan, :][wt > 0.0] /= f2 * wt[wt > 0.0]
 
         vis["imaging_weight"].data[...] = fwtt.T.reshape(
             [nrows, nbaselines, nvchan, nvpol]
@@ -387,6 +390,7 @@ def griddata_blockvisibility_reweight(
         sumlocwt = numpy.sum(real_gd ** 2)
         sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight)
         # Larger +ve robustness tends to natural weighting
+        # Larger -ve robustness tends to uniform weighting
         f2 = (5.0 * numpy.power(10.0, -robustness)) ** 2 * sumwt / sumlocwt
         for pol in range(nvpol):
             for vchan in range(nvchan):

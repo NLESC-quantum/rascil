@@ -2,7 +2,7 @@
 
 Run as e.g.
 
-    python $RASCIL/rascil/apps/sensitivity.py --imaging_cellsize 2e-7 --imaging_npixel 1024 \
+    python $RASCIL/rascil/apps/rascil_sensitivity.py --imaging_cellsize 2e-7 --imaging_npixel 1024 \
         --imaging_weighting uniform --rmax 1e5 --imaging_taper 6e-7
 """
 import logging
@@ -10,11 +10,13 @@ import pprint
 import sys
 import argparse
 import datetime
+import pandas as pd
 
 import matplotlib.pyplot as plt
 import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from scipy.constants import Boltzmann as k_B
 
 from rascil.data_models import PolarisationFrame
 
@@ -26,6 +28,7 @@ from rascil.processing_components import (
     qa_image,
     export_image_to_fits,
     fit_psf,
+    advise_wide_field,
 )
 
 from rascil.workflows import (
@@ -75,7 +78,7 @@ def cli_parser():
     parser.add_argument(
         "--imaging_npixel",
         type=int,
-        default=None,
+        default=1024,
         help="Number of pixels in ra, dec: Should be a composite of 2, 3, 5",
     )
     parser.add_argument(
@@ -87,17 +90,19 @@ def cli_parser():
     parser.add_argument(
         "--imaging_weighting",
         type=str,
-        default="uniform",
+        default="robust",
         help="Type of weighting: uniform or robust or natural",
     )
     parser.add_argument(
         "--imaging_robustness",
         type=float,
-        default=0.0,
+        nargs="*",
+        default=[-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0],
         help="Robustness for robust weighting",
     )
     parser.add_argument(
         "--imaging_taper",
+        nargs="*",
         type=float,
         default=None,
         help="If set, use value for Gaussian taper, "
@@ -106,6 +111,9 @@ def cli_parser():
 
     parser.add_argument(
         "--ra", type=float, default=+15.0, help="Right ascension (degrees)"
+    )
+    parser.add_argument(
+        "--tsys", type=float, default=20.0, help="System temperature (K)"
     )
     parser.add_argument(
         "--declination", type=float, default=-45.0, help="Declination (degrees)"
@@ -129,13 +137,20 @@ def cli_parser():
         default=[-4.0, 4.0],
         help="Hour angle range in hours",
     )
-    parser.add_argument("--nchan", type=int, default=12, help="Number of channels")
+    parser.add_argument("--nchan", type=int, default=1, help="Number of channels")
 
     parser.add_argument(
-        "--channel_width", type=float, default=1.2e7, help="Channel bandwidth (Hz)"
+        "--channel_width", type=float, default=1e6, help="Channel bandwidth (Hz)"
     )
 
     parser.add_argument("--verbose", type=str, default="False", help="Verbose output?")
+
+    parser.add_argument(
+        "--results",
+        type=str,
+        default="rascil_sensitivity",
+        help="Root name for output files",
+    )
 
     return parser
 
@@ -144,24 +159,11 @@ def simulate_bvis(args):
     band = "B2"
     vis_polarisation_frame = PolarisationFrame("stokesI")
 
-    import pprint
-
     pp = pprint.PrettyPrinter()
 
-    def init_logging():
-        logging.basicConfig(
-            filename="sensitivity.log",
-            filemode="a",
-            format="%(asctime)s.%(msecs)d %(name)s %(levelname)s %(message)s",
-            datefmt="%d/%m/%Y %I:%M:%S %p",
-            level=logging.INFO,
-        )
+    rsexecute.set_client(use_dask=args.use_dask == "True")
 
-    init_logging()
-
-    rsexecute.set_client(use_dask=args.use_dask)
-
-    log.info("sensitivity: Starting MID sensitivity simulation\n")
+    log.info("rascil_sensitivity: Starting MID sensitivity simulation\n")
     pp.pprint(vars(args))
 
     starttime = datetime.datetime.now()
@@ -189,6 +191,7 @@ def simulate_bvis(args):
         ra=args.ra * u.deg, dec=args.declination * u.deg, frame="icrs", equinox="J2000"
     )
 
+    # Set up configuration and observing times
     config = create_named_configuration("MIDR5", rmax=args.rmax)
     time_rad = numpy.array(args.time_range) * numpy.pi / 12.0
     times = numpy.arange(
@@ -233,58 +236,169 @@ def image_bvis(args, bvis_list):
     :return: Results in dictionary
     """
 
-    results = vars(args)
+    # If the cellsize has not been specified, calculate it.
+    if args.imaging_cellsize is None:
+        advice = [
+            rsexecute.execute(advise_wide_field)(bvis, verbose=False)
+            for bvis in bvis_list
+        ]
+        advice = rsexecute.compute(advice, sync=True)
+        cellsize = min(advice[0]["cellsize"], advice[-1]["cellsize"])
+    else:
+        cellsize = args.imaging_cellsize
 
     # Now make the model images (actually a graph)
-
     model_list = [
         rsexecute.execute(create_image_from_visibility)(
             bvis,
             npixel=args.imaging_npixel,
-            cellsize=args.imaging_cellsize,
+            cellsize=cellsize,
         )
         for bvis in bvis_list
     ]
 
-    # Apply weighting
-    if args.imaging_weighting is not None:
-        bvis_list = weight_list_rsexecute_workflow(
-            bvis_list, model_list, weighting=args.imaging_weighting
+    # Handle input arguments
+    results = list()
+    robustnesses = args.imaging_robustness
+    if robustnesses is None:
+        robustnesses = [None]
+    tapers = args.imaging_taper
+    if tapers is None:
+        tapers = [0.0]
+
+    for taper in tapers:
+        result = robustness_taper_scenario(
+            args, "uniform", 0.0, taper, bvis_list, model_list
         )
+        results.append(result)
+        for robustness in robustnesses:
+            result = robustness_taper_scenario(
+                args, "robust", robustness, taper, bvis_list, model_list
+            )
+            results.append(result)
+        result = robustness_taper_scenario(
+            args, "natural", 0.0, taper, bvis_list, model_list
+        )
+        results.append(result)
+
+    log.info("Finished : {}".format(datetime.datetime.now()))
+
+    return results
+
+
+def robustness_taper_scenario(
+    args,
+    weighting,
+    robustness,
+    taper,
+    bvis_list,
+    model_list,
+):
+    """Grid the data, form the PSF, and calculate the noise characteristics
+
+    :param args:
+    :param bvis_list: List of blockvisibility's
+    :param model_list: List of models, one for each blockvisibility
+    :return: Results in a dict
+    """
+    results = dict()
+
+    # Apply weighting, first we reset the weights to natural
+    if weighting == "natural":
+        bvis_list = weight_list_rsexecute_workflow(
+            bvis_list,
+            model_list,
+            weighting="natural",
+        )
+        results["weighting"] = "natural"
+        results["robustness"] = 0.0
+    else:
+        bvis_list = weight_list_rsexecute_workflow(
+            bvis_list,
+            model_list,
+            weighting="natural",
+        )
+        bvis_list = weight_list_rsexecute_workflow(
+            bvis_list,
+            model_list,
+            weighting=weighting,
+            robustness=robustness,
+        )
+        results["weighting"] = weighting
+        results["robustness"] = robustness
 
     # Apply Gaussian taper
-    if args.imaging_taper is not None:
+
+    if taper > 0.0:
         bvis_list = taper_list_rsexecute_workflow(
             bvis_list,
-            size_required=args.imaging_taper,
+            size_required=taper,
         )
+    results["taper"] = taper
 
     # Now we can make the PSF
     psf_list = invert_list_rsexecute_workflow(
         bvis_list, model_list, context="ng", dopsf=True, do_wstacking=False
     )
-    result = sum_invert_results_rsexecute(psf_list, split=2)
-
+    result = sum_invert_results_rsexecute(psf_list)
     psf, sumwt = rsexecute.compute(result, sync=True)
-
-    qa_psf = qa_image(psf)
-    log.info(f"PSF QA = {qa_psf}")
-    for key in qa_psf.data:
-        results[f"psf_{key}"] = qa_psf.data[key]
-    log.info(f"Total time-bandwidth product = {sumwt[0][0]:.3f}")
-
-    results["tb_product"] = sumwt[0][0]
-
+    log.info(f"\nWeighting {weighting} robustness {robustness}, taper {taper} (radian)")
     if args.verbose == "True":
-        export_image_to_fits(psf, "sensitivity_psf.fits")
+        export_image_to_fits(
+            psf,
+            f"{args.results}_weighting{weighting}__robustness{robustness}_taper{taper}.fits",
+        )
 
     clean_beam = fit_psf(psf)
+    log.info(f"\tClean beam {clean_beam} (degrees)")
+    for key in clean_beam:
+        results[f"\tcleanbeam_{key}"] = clean_beam[key]
 
-    log.info(f"Clean beam {clean_beam}")
+    results["sum_weights"] = sumwt
+    qa_psf = qa_image(psf)
+    for key in qa_psf.data:
+        results[f"psf_{key}"] = qa_psf.data[key]
 
-    log.info("Finished : {}".format(datetime.datetime.now()))
+    # Time-bandwidth product
+    tb = sumwt[0][0] + sumwt[-1][0]
+    log.info(f"\tTime-Bandwidth product (tb) = {tb:.4g} (Hz.s)")
+
+    # Point source sensitivty
+    # Equation 6.50 of Thompson, Moran, and Swenson
+    d = rsexecute.execute(lambda bv: bv.configuration.diameter[0].data)(bvis_list[0])
+    d = rsexecute.compute(d, sync=True)
+
+    area = numpy.pi * (d / 2.0) ** 2
+    efficiency = 1.0
+
+    pss = (
+        numpy.sqrt(2.0) * 1e26 * k_B * args.tsys / (area * efficiency * numpy.sqrt(tb))
+    )
+    results["pss"] = pss
+    log.info(f"\tPoint source sensitivity (pss) = {pss:.4g} (Jy/(clean beam))")
+
+    solid_angle = (
+        1.1331 * numpy.deg2rad(clean_beam["bmaj"]) * numpy.deg2rad(clean_beam["bmaj"])
+    )
+    sbs = pss / solid_angle
+    results["sa"] = solid_angle
+    log.info(
+        f"\tSolid angle of clean beam (sa) = {solid_angle:.4g} (steradian/(clean beam))"
+    )
+
+    results["sbs"] = sbs
+    log.info(f"\tSurface brightness sensitivity (sbs) = {sbs:.4g} (Jy/steradian)")
+    results["tb"] = tb
 
     return results
+
+
+def save_results(args, results):
+
+    df = pd.DataFrame(results)
+    log.info(df)
+    df.to_csv(f"{args.results}.csv")
+    return df
 
 
 if __name__ == "__main__":
@@ -293,4 +407,4 @@ if __name__ == "__main__":
     bvis_list = simulate_bvis(args)
     results = image_bvis(args, bvis_list)
     log.info("Final results:")
-    pp.pprint(results)
+    save_results(args, results)

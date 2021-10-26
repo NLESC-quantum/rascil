@@ -10,10 +10,9 @@ workflow:
 
 stages:
   - linting
-  - test
   - build
+  - test
   - publish
-  - docker-test
   - prepost
 
 compile_requirements:
@@ -114,6 +113,24 @@ linting:
 #  rules:
 #    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
+# test docker images upon each merge to master
+docker_test:
+  stage: test
+  image: docker:20.10.7
+  services:
+    - docker:20.10.7-dind
+  variables:
+    GIT_VERSION: $CI_COMMIT_SHORT_SHA
+  before_script:
+    - apk add make git
+    - cp dist/*whl docker/rascil-base
+    - cd docker
+  script:
+    - make build_all_latest
+    - make test_all
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+
 # Build the data file only if on the master
 data:
   stage: build
@@ -137,24 +154,6 @@ build_package:
 #  rules:
 #    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
 #    - if: '$CI_COMMIT_TAG'
-
-# test docker images upon each merge to master
-docker_test:
-  stage: docker-test
-  image: docker:20.10.7
-  services:
-    - docker:20.10.7-dind
-  variables:
-    GIT_VERSION: $CI_COMMIT_SHORT_SHA
-  before_script:
-    - apk add make git
-    - cp dist/*whl docker/rascil-base
-    - cd docker
-  script:
-    - make build_all_latest
-    - make test_all
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master
 publish_to_car:

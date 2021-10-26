@@ -279,7 +279,6 @@ def create_blockvisibility(
     )
 
     log.debug("create_blockvisibility: %s" % (vis_summary(vis)))
-    # assert isinstance(vis, BlockVisibility), "vis is not a BlockVisibility: %r" % vis
 
     return vis
 

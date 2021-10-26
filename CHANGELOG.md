@@ -1,4 +1,7 @@
+master
+------
 
+* Added a CI job to build and test the docker images upon every merge to master ([MR270](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/270))
 * Large number of test fixes and improvements ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
 * create_blockvisibility_iterator removed in favor of xarray.groupby ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
 * skymodel_predict_calibrate and skymodel_calibrate_image functions added ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))

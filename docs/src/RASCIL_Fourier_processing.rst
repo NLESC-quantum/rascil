@@ -38,4 +38,3 @@ The full layering is:
 + The core imaging functions are defined in :py:mod:`processing_components.imaging.base`.
 + Nifty Gridder provides optimised wstack/wprojection imaging and should be the default.
 + AW projection is also possible using the 2d gridder and a suitable gridding convolution function.
-+ Other algorithms (e.g. timeslice and wstack) are implemented as workflows using the core 2d imaging functions. These are defined in :py:mod:`workflows.serial.imaging.imaging_serial` and :py:mod:`workflows.rsexecute.imaging.imaging_rsexecute`

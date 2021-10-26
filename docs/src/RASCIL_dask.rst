@@ -177,7 +177,7 @@ On P3, each node has 16 cores, and each core has 8GB. Usually this is sometimes 
     --amplitude_loss 0.02 --deconvolve_facets 8 --deconvolve_overlap 16 --restore_facets 4 \
     --msname /mnt/storage-ssd/tim/Code/sim-low-imaging/data/noniso/GLEAM_A-team_EoR1_160_MHz_no_errors.ms \
     --time_coal 0.0 --frequency_coal 0.0 --channels 0 1 \
-    --use_serial_invert True --use_serial_predict True --plot False --fov 2.5 --single False | tee clean_ms.log"
+    --plot False --fov 2.5 --single False | tee clean_ms.log"
 
     eval $CMD
 

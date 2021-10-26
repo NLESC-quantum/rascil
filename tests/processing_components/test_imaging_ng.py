@@ -158,6 +158,13 @@ class TestImagingNG(unittest.TestCase):
                     "Component differs in position %.3f pixels"
                     % (separation / cellsize)
                 )
+            # Check that the polarisation values agree after normalisation
+            numpy.testing.assert_array_almost_equal(
+                ocomp.flux / ocomp.flux[0, 0],
+                comp.flux / comp.flux[0, 0],
+                err_msg=f"Original flux {ocomp.flux}, recovered flux {comp.flux}",
+                decimal=6,
+            )
 
     def _predict_base(self, fluxthreshold=1.0, name="predict_ng", **kwargs):
 
@@ -172,7 +179,7 @@ class TestImagingNG(unittest.TestCase):
             dopsf=False,
             normalise=True,
             verbosity=self.verbosity,
-            **kwargs
+            **kwargs,
         )
 
         # import matplotlib.pyplot as plt
@@ -203,7 +210,7 @@ class TestImagingNG(unittest.TestCase):
         positionthreshold=1.0,
         check_components=True,
         name="predict_ng",
-        **kwargs
+        **kwargs,
     ):
 
         # dirty = invert_ng(self.blockvis, self.model, dopsf=False, normalise=True, **kwargs)
@@ -214,7 +221,7 @@ class TestImagingNG(unittest.TestCase):
             self.model,
             normalise=True,
             verbosity=self.verbosity,
-            **kwargs
+            **kwargs,
         )
 
         if self.persist:

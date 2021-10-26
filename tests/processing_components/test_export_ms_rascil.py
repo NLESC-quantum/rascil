@@ -10,7 +10,10 @@ import numpy
 
 from rascil.data_models.parameters import rascil_path, rascil_data_path
 
-from rascil.processing_components import create_image_from_visibility
+from rascil.processing_components import (
+    create_image_from_visibility,
+    predict_blockvisibility,
+)
 
 log = logging.getLogger("rascil-logger")
 
@@ -65,7 +68,6 @@ class export_ms_RASCIL_test(unittest.TestCase):
         from rascil.processing_components.simulation import create_test_image
         from rascil.processing_components.imaging.base import (
             advise_wide_field,
-            predict_2d,
         )
 
         from rascil.data_models.polarisation import PolarisationFrame
@@ -102,7 +104,7 @@ class export_ms_RASCIL_test(unittest.TestCase):
         m31image = create_test_image(cellsize=cellsize, frequency=frequency)
         nchan, npol, ny, nx = m31image["pixels"].data.shape
         m31image = create_image_from_visibility(bvis, cellsize=cellsize, npixel=nx)
-        bvis = predict_2d(bvis, m31image)
+        bvis = predict_blockvisibility(bvis, m31image, context="2d")
         export_blockvisibility_to_ms(msoutfile, [bvis], source_name="M31")
 
 

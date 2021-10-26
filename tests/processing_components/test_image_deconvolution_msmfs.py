@@ -24,10 +24,13 @@ from rascil.processing_components import (
 from rascil.processing_components.image.operations import create_image_from_array
 from rascil.processing_components.image.operations import export_image_to_fits
 from rascil.processing_components.imaging.base import (
-    predict_2d,
-    invert_2d,
     create_image_from_visibility,
 )
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
+)
+
 from rascil.processing_components.imaging.primary_beams import create_low_test_beam
 from rascil.processing_components.simulation import create_low_test_image_from_gleam
 from rascil.processing_components.simulation import (
@@ -91,7 +94,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
                 self.test_model,
                 "%s/test_deconvolve_mmclean_model.fits" % self.results_dir,
             )
-        self.vis = predict_2d(self.vis, self.test_model)
+        self.vis = predict_blockvisibility(self.vis, self.test_model, context="2d")
         assert numpy.max(numpy.abs(self.vis.vis)) > 0.0
         self.model = create_image_from_visibility(
             self.vis,
@@ -101,8 +104,10 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.vis = weight_visibility(self.vis, self.model)
         self.vis = taper_visibility_gaussian(self.vis, 0.002)
-        self.dirty, sumwt = invert_2d(self.vis, self.model)
-        self.psf, sumwt = invert_2d(self.vis, self.model, dopsf=True)
+        self.dirty, sumwt = invert_blockvisibility(self.vis, self.model, context="2d")
+        self.psf, sumwt = invert_blockvisibility(
+            self.vis, self.model, context="2d", dopsf=True
+        )
         if self.persist:
             export_image_to_fits(
                 self.dirty, "%s/test_deconvolve_mmclean-dirty.fits" % self.results_dir
@@ -140,7 +145,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_no_taylor", 12.83132201796593, -0.21753290759634075
+            "mmclean_no_taylor", 12.806085871833158, -0.14297206892008504
         )
 
     def test_deconvolve_mmclean_no_taylor_edge(self):
@@ -160,7 +165,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_no_taylor_edge", 12.83132201796593, -0.21753290759634075
+            "mmclean_no_taylor_edge", 12.806085871833158, -0.1429720689200851
         )
 
     def test_deconvolve_mmclean_no_taylor_noscales(self):
@@ -179,7 +184,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_notaylor_noscales", 12.898452279699837, -0.22360559983625633
+            "mmclean_notaylor_noscales", 12.874215203967717, -0.14419436344642067
         )
 
     def test_deconvolve_mmclean_linear(self):
@@ -198,7 +203,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_linear", 15.236120295710574, -0.23057756976100433
+            "mmclean_linear", 15.207396524333546, -0.14224980487729696
         )
 
     def test_deconvolve_mmclean_linear_sensitivity(self):
@@ -224,7 +229,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
             )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_linear_sensitivity", 15.236120295710574, -0.23057756976100433
+            "mmclean_linear_sensitivity", 15.207396524333546, -0.14224980487729716
         )
 
     def test_deconvolve_mmclean_linear_noscales(self):
@@ -243,7 +248,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_linear_noscales", 15.583368985102487, -0.2679011639279194
+            "mmclean_linear_noscales", 15.554039669750269, -0.14697685168807129
         )
 
     def test_deconvolve_mmclean_quadratic(self):
@@ -262,7 +267,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_quadratic", 15.319544793852556, -0.22479010940705282
+            "mmclean_quadratic", 15.302992891627193, -0.15373682171426403
         )
 
     def test_deconvolve_mmclean_quadratic_noscales(self):
@@ -281,7 +286,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_quadratic_noscales", 15.720129943597925, -0.2586769383287613
+            "mmclean_quadratic_noscales", 15.69172353540307, -0.1654330930047646
         )
 
     def save_and_check_images(self, tag, flux_max=0.0, flux_min=0.0):
@@ -331,7 +336,7 @@ class TestImageDeconvolutionMSMFS(unittest.TestCase):
         )
         self.cmodel = restore_list(self.comp, self.psf, self.residual)
         self.save_and_check_images(
-            "mmclean_quadratic_psf", 15.355950917002277, -0.2544138382929106
+            "mmclean_quadratic_psf", 15.322874439605584, -0.23892365313457908
         )
 
 

@@ -94,9 +94,9 @@ def cli_parser():
         "--ingest_fitsname_moment",
         type=str,
         default=None,
-        help="FITS file of the frequency moment images to be read \
-		(Note: Use the prefix of the fits files, e.g. if the restored image is test_image_restored.fits \
-		here should input test_image)",
+        help="FITS file of the frequency moment images to be read "
+        "(Note: Use the prefix of the fits files, e.g. if the restored image is "
+        "test_image_restored.fits here should input test_image)",
     )
     parser.add_argument(
         "--finder_beam_maj",
@@ -198,7 +198,7 @@ def cli_parser():
         "--trim_box",
         type=float,
         default=3.0e-2,
-        help="If trim_image is true, proportion of the box that is trimmed (default is 3%)",
+        help="If trim_image is true, proportion of the box that is trimmed (default is 3%%)",
     )
     parser.add_argument(
         "--quiet_bdsf",
@@ -229,7 +229,8 @@ def cli_parser():
         "--restart",
         type=str,
         default="False",
-        help="If true, surpass BDSF when the output already exists. The checker will start from reading the BDSF csv file",
+        help="If true, surpass BDSF when the output already exists. "
+        "The checker will start from reading the BDSF csv file",
     )
 
     return parser

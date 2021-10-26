@@ -17,11 +17,14 @@ from rascil.processing_components import (
     create_test_image,
     create_image_from_visibility,
     advise_wide_field,
-    invert_2d,
-    predict_2d,
     export_blockvisibility_to_ms,
     create_blockvisibility_from_ms,
 )
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
+)
+
 
 try:
     import casacore
@@ -91,10 +94,10 @@ class measurementset_tests(unittest.TestCase):
         )
 
         # Predict the visibility for the Image
-        vt = predict_2d(vt, m31image, context="2d")
+        vt = predict_blockvisibility(vt, m31image, context="2d")
 
         model = create_image_from_visibility(vt, cellsize=cellsize, npixel=512)
-        dirty_before, sumwt = invert_2d(vt, model, context="2d")
+        dirty_before, sumwt = invert_blockvisibility(vt, model, context="2d")
         export_image_to_fits(
             dirty_before,
             "{dir}/test_roundtrip_dirty_before.fits".format(dir=results_dir),
@@ -114,7 +117,7 @@ class measurementset_tests(unittest.TestCase):
 
         # Make the dirty image and point spread function
         model = create_image_from_visibility(vt_after, cellsize=cellsize, npixel=512)
-        dirty_after, sumwt = invert_2d(vt_after, model, context="2d")
+        dirty_after, sumwt = invert_blockvisibility(vt_after, model, context="2d")
         export_image_to_fits(
             dirty_after, "{dir}/test_roundtrip_dirty_after.fits".format(dir=results_dir)
         )

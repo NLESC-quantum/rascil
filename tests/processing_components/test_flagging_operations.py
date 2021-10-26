@@ -41,20 +41,6 @@ class TestFlaggingOperations(unittest.TestCase):
             direction=self.compreldirection, frequency=self.frequency, flux=self.flux
         )
 
-    def test_flagging_blockvisibility(self):
-        bvis = create_blockvisibility(
-            self.lowcore,
-            self.times,
-            self.frequency,
-            channel_bandwidth=self.channel_bandwidth,
-            phasecentre=self.phasecentre,
-            polarisation_frame=self.polarisation_frame,
-            weight=1.0,
-        )
-        bvis = flagging_blockvisibility(bvis, antenna=[1])
-        assert bvis["flags"].data[0, 1, 0, 0] == 1
-
-    @unittest.skip("TODO: Rewrite with xarray format")
     def test_flagging_blockvisibility_multiple(self):
         bvis = create_blockvisibility(
             self.lowcore,
@@ -65,17 +51,30 @@ class TestFlaggingOperations(unittest.TestCase):
             polarisation_frame=self.polarisation_frame,
             weight=1.0,
         )
+        baselines = [100, 199]
+        antennas = [1, 3]
+        channels = [0, 1]
+        pols = [0]
         bvis = flagging_blockvisibility(
-            bvis, antenna=[1, 3], channel=[0, 1], polarization=[0]
+            bvis,
+            baselines=baselines,
+            antennas=antennas,
+            channels=channels,
+            polarisations=pols,
         )
-        assert bvis["flags"].data[0, 1, 2, 0, 0] == 1
-        assert bvis["flags"].data[0, 2, 1, 0, 0] == 1
-        assert bvis["flags"].data[0, 2, 3, 0, 0] == 1
-        assert bvis["flags"].data[0, 4, 3, 2, 0] == 0
-
-        # ft = create_flagtable_from_blockvisibility(bvis)
-        # print(ft)
-        # assert len(ft.data) == len(bvis.data)
+        # Check flagging on baselines
+        for baseline in baselines:
+            assert bvis["flags"].data[:, baseline, ...].all() == 1
+        # Check flagging on channels
+        for channel in channels:
+            assert bvis["flags"].data[..., channel, :].all() == 1
+        # Check flagging on pols
+        for pol in pols:
+            assert (bvis["flags"].data[..., pol] == 1).all()
+        # Check flagging on antennas
+        for ibaseline, (a1, a2) in enumerate(bvis.baselines.data):
+            if a1 in antennas or a2 in antennas:
+                assert (bvis["flags"].data[:, ibaseline, ...] == 1).all()
 
 
 if __name__ == "__main__":

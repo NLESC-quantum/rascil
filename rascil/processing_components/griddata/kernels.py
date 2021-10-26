@@ -147,7 +147,9 @@ def create_pswf_convolutionfunction(
     )
 
     assert cf["pixels"].data.dtype == "complex", cf["pixels"].data.dtype
-    assert gcf_image["pixels"].data.dtype == "float", gcf["pixels"].data.dtype
+    assert gcf_image["pixels"].data.dtype == im["pixels"].data.dtype, gcf[
+        "pixels"
+    ].data.dtype
     return gcf_image, cf
 
 
@@ -304,7 +306,9 @@ def create_awterm_convolutionfunction(
         pswf_gcf["pixels"].data[...] = 1.0
 
     assert cf["pixels"].data.dtype == "complex", cf["pixels"].data.dtype
-    assert pswf_gcf["pixels"].data.dtype == "float", pswf_gcf["pixels"].data.dtype
+    assert pswf_gcf["pixels"].data.dtype == im["pixels"].data.dtype, pswf_gcf[
+        "pixels"
+    ].data.dtype
     return pswf_gcf, cf
 
 

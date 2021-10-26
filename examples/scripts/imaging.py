@@ -18,8 +18,10 @@ from rascil.processing_components import (
     create_test_image,
     create_image_from_visibility,
     advise_wide_field,
-    invert_2d,
-    predict_2d,
+)
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -63,12 +65,12 @@ m31image = create_test_image(
 )
 
 # Predict the visibility for the Image
-vt = predict_2d(vt, m31image, context="2d")
+vt = predict_blockvisibility(vt, m31image, context="2d")
 
 # Make the dirty image and point spread function
 model = create_image_from_visibility(vt, cellsize=cellsize, npixel=512)
-dirty, sumwt = invert_2d(vt, model, context="2d")
-psf, sumwt = invert_2d(vt, model, context="2d", dopsf=True)
+dirty, sumwt = invert_blockvisibility(vt, model, context="2d")
+psf, sumwt = invert_blockvisibility(vt, model, context="2d", dopsf=True)
 
 print(
     "Max, min in dirty image = %.6f, %.6f, sumwt = %f"

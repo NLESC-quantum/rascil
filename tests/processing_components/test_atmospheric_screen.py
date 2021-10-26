@@ -1,4 +1,4 @@
-""" Unit tests for mpc
+""" Unit tests for atmospheric screens
 
 """
 import logging

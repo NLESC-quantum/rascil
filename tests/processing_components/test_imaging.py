@@ -1,4 +1,4 @@
-""" Unit tests for pipelines expressed via dask.delayed
+""" Unit tests for imaging functions
 
 
 """
@@ -13,6 +13,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 
 from rascil.data_models.polarisation import PolarisationFrame
+from rascil.data_models import get_parameter
 from rascil.processing_components import weight_visibility
 from rascil.processing_components.griddata.kernels import (
     create_awterm_convolutionfunction,
@@ -22,9 +23,9 @@ from rascil.processing_components.image.operations import (
     smooth_image,
     qa_image,
 )
-from rascil.processing_components.imaging.base import (
-    predict_2d,
-    invert_2d,
+from rascil.processing_components.imaging.imaging import (
+    predict_blockvisibility,
+    invert_blockvisibility,
 )
 from rascil.processing_components.imaging.dft import dft_skycomponent_visibility
 from rascil.processing_components.imaging.primary_beams import create_pb_generic
@@ -70,7 +71,6 @@ class TestImaging2D(unittest.TestCase):
         self.low = create_named_configuration("LOWBD2", rmax=750.0)
         self.low = decimate_configuration(self.low, skip=3)
         self.freqwin = freqwin
-        self.vis = list()
         self.ntimes = 5
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
 
@@ -164,17 +164,35 @@ class TestImaging2D(unittest.TestCase):
             )
 
     def _predict_base(
-        self, fluxthreshold=1.0, name="predict_2d", flux_max=0.0, flux_min=0.0, **kwargs
+        self,
+        fluxthreshold=1.0,
+        flux_max=0.0,
+        flux_min=0.0,
+        context="2d",
+        gcfcf=None,
+        **kwargs,
     ):
 
-        vis = predict_2d(self.vis, self.model, **kwargs)
+        if gcfcf is not None:
+            context = "awprojection"
+
+        vis = predict_blockvisibility(
+            self.vis, self.model, context=context, gcfcf=gcfcf, **kwargs
+        )
 
         vis["vis"].data = self.vis["vis"].data - vis["vis"].data
-        dirty = invert_2d(vis, self.model, dopsf=False, normalise=True)
+        dirty = invert_blockvisibility(
+            vis,
+            self.model,
+            dopsf=False,
+            normalise=True,
+            context="2d",
+        )
 
         if self.persist:
             export_image_to_fits(
-                dirty[0], "%s/test_imaging_%s_residual.fits" % (self.results_dir, name)
+                dirty[0],
+                "%s/test_imaging_%s_residual.fits" % (self.results_dir, context),
             )
         for pol in range(dirty[0].image_acc.npol):
             assert numpy.max(
@@ -199,17 +217,29 @@ class TestImaging2D(unittest.TestCase):
         fluxthreshold=1.0,
         positionthreshold=1.0,
         check_components=True,
-        name="invert_2d",
         flux_max=0.0,
         flux_min=0.0,
+        context="2d",
+        gcfcf=None,
         **kwargs,
     ):
 
-        dirty = invert_2d(self.vis, self.model, dopsf=False, normalise=True, **kwargs)
+        if gcfcf is not None:
+            context = "awprojection"
+
+        dirty = invert_blockvisibility(
+            self.vis,
+            self.model,
+            dopsf=False,
+            normalise=True,
+            context=context,
+            gcfcf=gcfcf,
+            **kwargs,
+        )
 
         if self.persist:
             export_image_to_fits(
-                dirty[0], "%s/test_imaging_%s_dirty.fits" % (self.results_dir, name)
+                dirty[0], "%s/test_imaging_%s_dirty.fits" % (self.results_dir, context)
             )
 
         for pol in range(dirty[0].image_acc.npol):
@@ -232,80 +262,82 @@ class TestImaging2D(unittest.TestCase):
             qa.data["min"], flux_min, atol=1e-7, err_msg=f"{qa}"
         )
 
-    def test_predict_2d(self):
+    def test_predict_blockvisibility(self):
         self.actualSetUp(zerow=True)
         self._predict_base(
-            name="predict_2d",
-            flux_max=0.07221939460567486,
-            flux_min=-0.434717474892552754,
+            name="predict_blockvisibility",
+            flux_max=1.7506686178796016e-11,
+            flux_min=-1.6386206755947555e-11,
         )
 
-    def test_predict_2d_point(self):
+    def test_predict_blockvisibility_point(self):
         self.actualSetUp(zerow=True)
         self.model["pixels"].data[...] = 0.0
         nchan, npol, ny, nx = self.model.image_acc.shape
         self.model["pixels"].data[0, 0, ny // 2, nx // 2] = 1.0
-        vis = predict_2d(self.vis, self.model)
+        vis = predict_blockvisibility(self.vis, self.model, context="2d")
         assert numpy.max(numpy.abs(vis.vis - 1.0)) < 1e-12, numpy.max(
             numpy.abs(vis.vis - 1.0)
         )
 
-    def test_predict_2d_point_IQUV(self):
+    def test_predict_blockvisibility_point_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         self.model["pixels"].data[...] = 0.0
         nchan, npol, ny, nx = self.model.image_acc.shape
         self.model["pixels"].data[0, 0, ny // 2, nx // 2] = 1.0
-        vis = predict_2d(self.vis, self.model)
+        vis = predict_blockvisibility(self.vis, self.model, context="2d")
         assert numpy.max(numpy.abs(vis.vis[..., 0] - 1.0)) < 1e-12
         assert numpy.max(numpy.abs(vis.vis[..., 1])) < 1e-12
         assert numpy.max(numpy.abs(vis.vis[..., 2])) < 1e-12
         assert numpy.max(numpy.abs(vis.vis[..., 3] - 1.0)) < 1e-12
 
-    def test_predict_2d_IQUV(self):
+    def test_predict_blockvisibility_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         self._predict_base(
-            name="predict_2d_IQUV",
-            flux_max=0.0722193946056726,
-            flux_min=-0.4347174748925693,
+            name="predict_blockvisibility_IQUV",
+            flux_max=1.7506197334688512e-11,
+            flux_min=-1.6385712182817783e-11,
         )
 
-    def test_predict_2d_IQ(self):
+    def test_predict_blockvisibility_IQ(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQ"))
         self._predict_base(
-            name="predict_2d_IQ",
-            flux_max=0.0722193946056726,
-            flux_min=-0.434717474892569,
+            name="predict_blockvisibility_IQ",
+            flux_max=1.7506197334688512e-11,
+            flux_min=-1.6385712182817783e-11,
         )
 
-    def test_predict_2d_IV(self):
+    def test_predict_blockvisibility_IV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIV"))
         self._predict_base(
-            name="predict_2d_IV",
-            flux_max=0.0722193946056726,
-            flux_min=-0.4347174748925693,
+            name="predict_blockvisibility_IV",
+            flux_max=1.7506197334688512e-11,
+            flux_min=-1.6385712182817783e-11,
         )
 
-    def test_invert_2d(self):
+    def test_invert_blockvisibility(self):
         self.actualSetUp(zerow=True)
         self._invert_base(
-            name="invert_2d",
+            name="blockvisibility",
             positionthreshold=2.0,
             check_components=False,
-            flux_max=100.9654697773242,
-            flux_min=-8.103733961660813,
+            context="ng",
+            flux_max=100.92845444332372,
+            flux_min=-8.116286458566002,
         )
 
-    def test_invert_2d_IQUV(self):
+    def test_invert_blockvisibility_IQUV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQUV"))
         self._invert_base(
-            name="invert_2d_IQUV",
+            context="ng",
+            name="invert_blockvisibility_IQUV",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=100.96546977732424,
-            flux_min=-10.096546977732427,
+            flux_max=100.92845444332372,
+            flux_min=-10.092845444332372,
         )
 
-    def test_invert_2d_spec_I(self):
+    def test_invert_blockvisibility_spec_I(self):
         self.actualSetUp(
             zerow=True,
             freqwin=4,
@@ -313,43 +345,46 @@ class TestImaging2D(unittest.TestCase):
             dospectral=True,
         )
         self._invert_base(
-            name="invert_2d_spec_I",
+            name="invert_blockvisibility_spec_I",
+            context="ng",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=115.82172186951361,
-            flux_min=-12.352221472031786,
+            flux_max=116.02263375798192,
+            flux_min=-9.130114249590807,
         )
 
-    def test_invert_2d_spec_IQUV(self):
+    def test_invert_blockvisibility_spec_IQUV(self):
         self.actualSetUp(
             zerow=True, freqwin=4, image_pol=PolarisationFrame("stokesIQUV")
         )
         self._invert_base(
-            name="invert_2d_IQUV",
+            name="invert_blockvisibility_IQUV",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=115.82172186951371,
-            flux_min=-12.352221472032312,
+            flux_max=115.83426630535374,
+            flux_min=-11.583426630535378,
         )
 
-    def test_invert_2d_IQ(self):
+    def test_invert_blockvisibility_IQ(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIQ"))
         self._invert_base(
-            name="invert_2d_IQ",
+            name="invert_blockvisibility_IQ",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=100.96546977732424,
-            flux_min=-8.103733961660813,
+            context="ng",
+            flux_max=100.92845444332372,
+            flux_min=-8.116286458566002,
         )
 
-    def test_invert_2d_IV(self):
+    def test_invert_blockvisibility_IV(self):
         self.actualSetUp(zerow=True, image_pol=PolarisationFrame("stokesIV"))
         self._invert_base(
-            name="invert_2d_IV",
+            name="invert_blockvisibility_IV",
+            context="ng",
             positionthreshold=2.0,
             check_components=True,
-            flux_max=100.96546977732424,
-            flux_min=-8.103733961660813,
+            flux_max=100.92845444332372,
+            flux_min=-8.116286458566002,
         )
 
     def test_predict_awterm(self):
@@ -370,9 +405,10 @@ class TestImaging2D(unittest.TestCase):
         self._predict_base(
             fluxthreshold=62.0,
             name="predict_awterm",
+            context="awprojection",
             gcfcf=gcfcf,
-            flux_max=61.7962762969381,
-            flux_min=-5.420056174913808,
+            flux_max=61.82267373099863,
+            flux_min=-4.188093872633347,
         )
 
     def test_predict_awterm_spec(self):
@@ -393,12 +429,12 @@ class TestImaging2D(unittest.TestCase):
         self._predict_base(
             fluxthreshold=61.0,
             name="predict_awterm_spec",
+            context="awprojection",
             gcfcf=gcfcf,
-            flux_max=59.59422693950642,
-            flux_min=-5.0391706517957955,
+            flux_max=59.62485809400428,
+            flux_min=-3.793824033959449,
         )
 
-    @unittest.skip("Takes too long to run regularly")
     def test_predict_awterm_spec_IQUV(self):
         self.actualSetUp(
             zerow=False, freqwin=5, image_pol=PolarisationFrame("stokesIQUV")
@@ -417,7 +453,12 @@ class TestImaging2D(unittest.TestCase):
             polarisation_frame=self.vis_pol,
         )
         self._predict_base(
-            fluxthreshold=61.0, name="predict_awterm_spec_IQUV", gcfcf=gcfcf
+            fluxthreshold=61.0,
+            flux_max=59.62485809400428,
+            flux_min=-5.9624858094004285,
+            name="predict_awterm_spec_IQUV",
+            gcfcf=gcfcf,
+            context="awprojection",
         )
 
     def test_invert_awterm(self):
@@ -468,7 +509,7 @@ class TestImaging2D(unittest.TestCase):
             flux_min=-8.991729415360501,
         )
 
-    @unittest.skip("Takes too long to run regularly")
+    @unittest.skip("Too expensive for CI/CD")
     def test_invert_awterm_spec_IQUV(self):
         self.actualSetUp(
             zerow=False, freqwin=5, image_pol=PolarisationFrame("stokesIQUV")
@@ -507,9 +548,10 @@ class TestImaging2D(unittest.TestCase):
         self._predict_base(
             fluxthreshold=5.0,
             name="predict_wterm",
+            context="awprojection",
             gcfcf=gcfcf,
-            flux_max=1.563253192648258,
-            flux_min=-1.8992207460723078,
+            flux_max=1.542478111903605,
+            flux_min=-1.9124378846946475,
         )
 
     def test_invert_wterm(self):
@@ -525,6 +567,7 @@ class TestImaging2D(unittest.TestCase):
         )
         self._invert_base(
             name="invert_wterm",
+            context="awprojection",
             positionthreshold=35.0,
             check_components=False,
             gcfcf=gcfcf,
@@ -546,6 +589,7 @@ class TestImaging2D(unittest.TestCase):
         )
         self._invert_base(
             name="invert_spec_wterm",
+            context="awprojection",
             positionthreshold=1.0,
             check_components=False,
             gcfcf=gcfcf,
@@ -555,12 +599,12 @@ class TestImaging2D(unittest.TestCase):
 
     def test_invert_psf(self):
         self.actualSetUp(zerow=False)
-        psf = invert_2d(self.vis, self.model, dopsf=True)
+        psf = invert_blockvisibility(self.vis, self.model, dopsf=True)
         error = numpy.max(psf[0]["pixels"].data) - 1.0
         assert abs(error) < 1.0e-12, error
         if self.persist:
             export_image_to_fits(
-                psf[0], "%s/test_imaging_2d_psf.fits" % self.results_dir
+                psf[0], "%s/test_imaging_blockvisibility_psf.fits" % self.results_dir
             )
 
         assert numpy.max(numpy.abs(psf[0]["pixels"].data)), "Image is empty"
@@ -569,13 +613,14 @@ class TestImaging2D(unittest.TestCase):
         self.actualSetUp(zerow=False)
         for weighting in ["natural", "uniform", "robust"]:
             self.vis = weight_visibility(self.vis, self.model, weighting=weighting)
-            psf = invert_2d(self.vis, self.model, dopsf=True)
+            psf = invert_blockvisibility(self.vis, self.model, dopsf=True)
             error = numpy.max(psf[0]["pixels"].data) - 1.0
             assert abs(error) < 1.0e-12, error
             if self.persist:
                 export_image_to_fits(
                     psf[0],
-                    "%s/test_imaging_2d_psf_%s.fits" % (self.results_dir, weighting),
+                    "%s/test_imaging_blockvisibility_psf_%s.fits"
+                    % (self.results_dir, weighting),
                 )
             assert numpy.max(numpy.abs(psf[0]["pixels"].data)), "Image is empty"
 

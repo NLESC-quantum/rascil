@@ -90,7 +90,6 @@ __all__ = [
     "import_convolutionfunction_from_hdf5",
     "memory_data_model_to_buffer",
     "buffer_data_model_to_memory",
-    "data_model_equals",
 ]
 
 import ast
@@ -1166,49 +1165,3 @@ def buffer_data_model_to_memory(jbuff, dm):
         return import_convolutionfunction_from_hdf5(name)
     else:
         raise ValueError("Data model %s not supported" % dm["data_model"])
-
-
-def data_model_equals(ds_new, ds_ref, verbose=False):
-    """
-
-    :param ds_ref:
-    :param ds_new:
-    :return:
-    """
-    equal = True
-    for coord in ds_ref.coords:
-        if not ds_new[coord].equals(ds_ref[coord]):
-            equal = False
-            log.warning("data_model_equals: Coordinate {} differs".format(coord))
-            if verbose:
-                log.warning(
-                    "data_model_equals: New {}\ndata_model_equals: Reference {}".format(
-                        ds_new[coord], ds_ref[coord]
-                    )
-                )
-    if equal:
-        for var in ds_ref.data_vars:
-            if not ds_new[var].equals(ds_ref[var]):
-                equal = False
-                log.warning("data_model_equals: Data variable {} differs".format(var))
-                if verbose:
-                    log.warning(
-                        "data_model_equals: New {}\ndata_model_equals: Reference {}".format(
-                            ds_new[var], ds_ref[var]
-                        )
-                    )
-    if equal:
-        for attr in ds_ref.attrs.keys():
-            if not attr in ds_new.attrs.keys():
-                equal = False
-                log.warning("Attribute {} missing in ds_new".format(attr))
-            # The attribute may not have a comparison operator
-            try:
-                if not ds_ref.attrs[attr] == ds_new.attrs[attr]:
-                    log.warning("data_model_equals: Attribute {} differs".format(attr))
-            except:
-                log.warning(
-                    "data_model_equals: Attribute {} cannot be compared".format(attr)
-                )
-
-    return equal and ds_ref.equals(ds_new)

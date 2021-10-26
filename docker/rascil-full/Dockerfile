@@ -6,7 +6,7 @@ WORKDIR /
 
 RUN apt-get update -y && apt-get install -y git-lfs git
 
-RUN git clone --depth 1 --branch orc-1078-fix-docker-build-and-release https://gitlab.com/ska-telescope/external/rascil.git && \
+RUN git clone --depth 1 https://gitlab.com/ska-telescope/external/rascil.git && \
     cd rascil && git lfs install && \
     git lfs pull
 

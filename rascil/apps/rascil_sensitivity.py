@@ -303,8 +303,9 @@ def robustness_taper_scenario(
     """
     results = dict()
 
-    # Apply weighting, first we reset the weights to natural
+    # Apply weighting
     if weighting == "natural":
+        # Natural
         bvis_list = weight_list_rsexecute_workflow(
             bvis_list,
             model_list,
@@ -313,6 +314,7 @@ def robustness_taper_scenario(
         results["weighting"] = "natural"
         results["robustness"] = 0.0
     else:
+        # Robust: first we reset the weights to natural
         bvis_list = weight_list_rsexecute_workflow(
             bvis_list,
             model_list,
@@ -338,7 +340,12 @@ def robustness_taper_scenario(
 
     # Now we can make the PSF
     psf_list = invert_list_rsexecute_workflow(
-        bvis_list, model_list, context="ng", dopsf=True, do_wstacking=False
+        bvis_list,
+        model_list,
+        context="ng",
+        dopsf=True,
+        do_wstacking=False,
+        normalise=False,
     )
     result = sum_invert_results_rsexecute(psf_list)
     psf, sumwt = rsexecute.compute(result, sync=True)
@@ -352,7 +359,7 @@ def robustness_taper_scenario(
     clean_beam = fit_psf(psf)
     log.info(f"\tClean beam {clean_beam} (degrees)")
     for key in clean_beam:
-        results[f"\tcleanbeam_{key}"] = clean_beam[key]
+        results[f"cleanbeam_{key}"] = clean_beam[key]
 
     results["sum_weights"] = sumwt
     qa_psf = qa_image(psf)
@@ -367,16 +374,15 @@ def robustness_taper_scenario(
     # Equation 6.50 of Thompson, Moran, and Swenson
     d = rsexecute.execute(lambda bv: bv.configuration.diameter[0].data)(bvis_list[0])
     d = rsexecute.compute(d, sync=True)
-
     area = numpy.pi * (d / 2.0) ** 2
     efficiency = 1.0
-
     pss = (
         numpy.sqrt(2.0) * 1e26 * k_B * args.tsys / (area * efficiency * numpy.sqrt(tb))
     )
     results["pss"] = pss
     log.info(f"\tPoint source sensitivity (pss) = {pss:.4g} (Jy/(clean beam))")
 
+    # Calculate solid angle of clean beam
     solid_angle = (
         1.1331 * numpy.deg2rad(clean_beam["bmaj"]) * numpy.deg2rad(clean_beam["bmaj"])
     )
@@ -386,6 +392,7 @@ def robustness_taper_scenario(
         f"\tSolid angle of clean beam (sa) = {solid_angle:.4g} (steradian/(clean beam))"
     )
 
+    # Calculate surface brightness visibility
     results["sbs"] = sbs
     log.info(f"\tSurface brightness sensitivity (sbs) = {sbs:.4g} (Jy/steradian)")
     results["tb"] = tb

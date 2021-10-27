@@ -287,6 +287,7 @@ def grid_blockvisibility_weight_to_griddata(vis, griddata: GridData):
 
     nrows, nbaselines, nvchan, nvpol = vis.vis.shape
 
+    # Note that we are gridding with the imaging_weight, not the weight
     # Transpose to get row varying fastest
     fwtt = vis.blockvisibility_acc.flagged_imaging_weight.reshape(
         [nrows * nbaselines, nvchan, nvpol]
@@ -363,11 +364,19 @@ def griddata_blockvisibility_reweight(
     ).astype("int")
 
     nrows, nbaselines, nvchan, nvpol = vis.vis.shape
-    fwtt = vis.blockvisibility_acc.flagged_imaging_weight.reshape(
+    fimwtt = vis.blockvisibility_acc.flagged_imaging_weight.reshape(
+        [nrows * nbaselines, nvchan, nvpol]
+    ).T
+    fwtt = vis.blockvisibility_acc.flagged_weight.reshape(
         [nrows * nbaselines, nvchan, nvpol]
     ).T
 
+    # All cases preserve the scaling such that a signal point in a grid cell
+    # is unaffected. This means that the sensitivity may be calculated from
+    # the sum of gridded weights
     if weighting == "uniform":
+        sumlocwt = numpy.sum(real_gd ** 2)
+        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight)
         for pol in range(nvpol):
             for vchan in range(nvchan):
                 imchan = vis_to_im[vchan]
@@ -375,17 +384,21 @@ def griddata_blockvisibility_reweight(
                     pu_grid,
                     pv_grid,
                 ) = convolution_mapping_blockvisibility(vis, griddata, vchan)
-                wt = real_gd[imchan, pol, pv_grid[...], pu_grid[...]]
-                fwtt[pol, vchan, :][wt > 0.0] /= wt[wt > 0.0]
+                gdwt = real_gd[imchan, pol, pv_grid[...], pu_grid[...]]
+                # This is the asymptotic version of the robust equation for infinite robustness
+                fimwtt[pol, vchan, :][gdwt > 0.0] *= (
+                    fimwtt[pol, vchan, :][gdwt > 0.0] / gdwt[gdwt > 0.0]
+                )
+                fimwtt[pol, vchan, :][gdwt <= 0.0] = 0.0
 
-        vis["imaging_weight"].data[...] = fwtt.T.reshape(
+        vis["imaging_weight"].data[...] = fimwtt.T.reshape(
             [nrows, nbaselines, nvchan, nvpol]
         )
 
     elif weighting == "robust":
         # Equation 3.15, 3.16 in Briggs thesis
         sumlocwt = numpy.sum(real_gd ** 2)
-        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight)
+        sumwt = numpy.sum(vis.blockvisibility_acc.flagged_imaging_weight)
         # Larger +ve robustness tends to natural weighting
         # Larger -ve robustness tends to uniform weighting
         f2 = (5.0 * numpy.power(10.0, -robustness)) ** 2 * sumwt / sumlocwt
@@ -395,10 +408,13 @@ def griddata_blockvisibility_reweight(
                 pu_grid, pv_grid = convolution_mapping_blockvisibility(
                     vis, griddata, vchan
                 )
-                wt = real_gd[imchan, pol, pv_grid[...], pu_grid[...]]
-                fwtt[pol, vchan, :] /= 1 + f2 * wt
+                gdwt = real_gd[imchan, pol, pv_grid[...], pu_grid[...]]
+                fimwtt[pol, vchan, :][gdwt > 0.0] *= (
+                    1 + f2 * fimwtt[pol, vchan, :][gdwt > 0.0]
+                ) / (1 + f2 * gdwt[gdwt > 0.0])
+                fimwtt[pol, vchan, :][gdwt <= 0.0] = 0.0
 
-        vis["imaging_weight"].data[...] = fwtt.T.reshape(
+        vis["imaging_weight"].data[...] = fimwtt.T.reshape(
             [nrows, nbaselines, nvchan, nvpol]
         )
 

@@ -1,9 +1,9 @@
-"""Simulation to calculate sensitivity
+"""Simulate MID observations to calculate point source and surface brightness sensitivity
 
 Run as e.g.
 
     python $RASCIL/rascil/apps/rascil_sensitivity.py --imaging_cellsize 2e-7 --imaging_npixel 1024 \
-        --imaging_weighting uniform --rmax 1e5 --imaging_taper 6e-7
+        --imaging_weighting robust --imaging_robustness -2 -1 0 1 2 --rmax 1e5 --imaging_taper 0.0 6e-7 1.2e-6
 """
 import logging
 import pprint
@@ -116,6 +116,12 @@ def cli_parser():
         "--tsys", type=float, default=20.0, help="System temperature (K)"
     )
     parser.add_argument(
+        "--efficiency", type=float, default=1.0, help="Correlator efficiency"
+    )
+    parser.add_argument(
+        "--diameter", type=float, default=15.0, help="MID antenna diameter (m)"
+    )
+    parser.add_argument(
         "--declination", type=float, default=-45.0, help="Declination (degrees)"
     )
     parser.add_argument(
@@ -124,10 +130,12 @@ def cli_parser():
         default=2e5,
         help="Maximum distance of station from centre (m)",
     )
-    parser.add_argument("--band", type=str, default="B2", help="Band")
+    parser.add_argument(
+        "--band", type=str, default="B2", help="Band name one of B1LOW B1 B2 Ku"
+    )
 
     parser.add_argument(
-        "--integration_time", type=float, default=740, help="Integration time (s)"
+        "--integration_time", type=float, default=600, help="Integration time (s)"
     )
 
     parser.add_argument(
@@ -140,7 +148,7 @@ def cli_parser():
     parser.add_argument("--nchan", type=int, default=1, help="Number of channels")
 
     parser.add_argument(
-        "--channel_width", type=float, default=1e6, help="Channel bandwidth (Hz)"
+        "--channel_width", type=float, default=1e8, help="Channel bandwidth (Hz)"
     )
 
     parser.add_argument("--verbose", type=str, default="False", help="Verbose output?")
@@ -155,8 +163,14 @@ def cli_parser():
     return parser
 
 
-def simulate_bvis(args):
-    band = "B2"
+def calculate_sensitivity(args):
+    """Perform the full calculation of sensitivity, write results to csv file
+
+    :param args:
+    :return:
+    """
+    band = args.band
+
     vis_polarisation_frame = PolarisationFrame("stokesI")
 
     pp = pprint.PrettyPrinter()
@@ -173,7 +187,9 @@ def simulate_bvis(args):
     rsexecute.run(init_logging)
 
     # Set up details of simulated observation
-    if band == "B1":
+    if band == "B1LOW":
+        start_frequency = 0.350e9
+    elif band == "B1":
         start_frequency = 0.765e9
     elif band == "B2":
         start_frequency = 1.36e9
@@ -226,13 +242,15 @@ def simulate_bvis(args):
             f"Size of BlockVisibility for first channel: {local_bvis_list[0].nbytes * 2**-30:.6f}GB "
         )
 
-    return bvis_list
+    results = image_bvis(args, bvis_list)
+
+    return results
 
 
 def image_bvis(args, bvis_list):
     """Construct the PSF and calculate statistics
 
-    :param args:
+    :param args: CLI arguments
     :return: Results in dictionary
     """
 
@@ -281,9 +299,13 @@ def image_bvis(args, bvis_list):
         )
         results.append(result)
 
-    log.info("Finished : {}".format(datetime.datetime.now()))
+    log.info("Final results:")
+    results_file = save_results(args, results)
 
-    return results
+    log.info("Finished : {}".format(datetime.datetime.now()))
+    log.info(f"Results are in {results_file}")
+
+    return results_file
 
 
 def robustness_taper_scenario(
@@ -296,7 +318,7 @@ def robustness_taper_scenario(
 ):
     """Grid the data, form the PSF, and calculate the noise characteristics
 
-    :param args:
+    :param args: CLI args
     :param bvis_list: List of blockvisibility's
     :param model_list: List of models, one for each blockvisibility
     :return: Results in a dict
@@ -338,22 +360,21 @@ def robustness_taper_scenario(
         )
     results["taper"] = taper
 
-    # Now we can make the PSF
+    # Now we can make the PSF.
     psf_list = invert_list_rsexecute_workflow(
         bvis_list,
         model_list,
         context="ng",
         dopsf=True,
-        do_wstacking=False,
-        normalise=False,
     )
+    # Sum all PSFs into one PSF
     result = sum_invert_results_rsexecute(psf_list)
     psf, sumwt = rsexecute.compute(result, sync=True)
     log.info(f"\nWeighting {weighting} robustness {robustness}, taper {taper} (radian)")
     if args.verbose == "True":
         export_image_to_fits(
             psf,
-            f"{args.results}_weighting{weighting}__robustness{robustness}_taper{taper}.fits",
+            f"{args.results}_sensitivity_{weighting}_robustness{robustness}_taper{taper}.fits",
         )
 
     clean_beam = fit_psf(psf)
@@ -366,16 +387,15 @@ def robustness_taper_scenario(
     for key in qa_psf.data:
         results[f"psf_{key}"] = qa_psf.data[key]
 
-    # Time-bandwidth product
+    # The effective time-bandwidth product (i.. accounting for weighting and taper)
     tb = sumwt[0][0] + sumwt[-1][0]
     log.info(f"\tTime-Bandwidth product (tb) = {tb:.4g} (Hz.s)")
 
-    # Point source sensitivty
+    # Point source sensitivity
     # Equation 6.50 of Thompson, Moran, and Swenson
-    d = rsexecute.execute(lambda bv: bv.configuration.diameter[0].data)(bvis_list[0])
-    d = rsexecute.compute(d, sync=True)
+    d = args.diameter
     area = numpy.pi * (d / 2.0) ** 2
-    efficiency = 1.0
+    efficiency = args.efficiency
     pss = (
         numpy.sqrt(2.0) * 1e26 * k_B * args.tsys / (area * efficiency * numpy.sqrt(tb))
     )
@@ -386,13 +406,13 @@ def robustness_taper_scenario(
     solid_angle = (
         1.1331 * numpy.deg2rad(clean_beam["bmaj"]) * numpy.deg2rad(clean_beam["bmaj"])
     )
-    sbs = pss / solid_angle
     results["sa"] = solid_angle
     log.info(
         f"\tSolid angle of clean beam (sa) = {solid_angle:.4g} (steradian/(clean beam))"
     )
 
     # Calculate surface brightness visibility
+    sbs = pss / solid_angle
     results["sbs"] = sbs
     log.info(f"\tSurface brightness sensitivity (sbs) = {sbs:.4g} (Jy/steradian)")
     results["tb"] = tb
@@ -401,17 +421,21 @@ def robustness_taper_scenario(
 
 
 def save_results(args, results):
+    """Save the results to a CSV file
+
+    :param args:
+    :param results:
+    :return:
+    """
 
     df = pd.DataFrame(results)
     log.info(df)
-    df.to_csv(f"{args.results}.csv")
-    return df
+    results_file = f"{args.results}_sensitivity.csv"
+    df.to_csv(results_file)
+    return results_file
 
 
 if __name__ == "__main__":
     parser = cli_parser()
     args = parser.parse_args()
-    bvis_list = simulate_bvis(args)
-    results = image_bvis(args, bvis_list)
-    log.info("Final results:")
-    save_results(args, results)
+    results_file = calculate_sensitivity(args)

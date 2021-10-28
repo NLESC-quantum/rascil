@@ -10,6 +10,9 @@ import pprint
 import time
 
 import matplotlib
+import numpy
+
+from rascil.apps.imaging_qa_main import read_skycomponent_from_txt, FileFormatError
 
 matplotlib.use("Agg")
 
@@ -17,7 +20,13 @@ from distributed import Client, SSHCluster
 import dask
 import sys
 
-from rascil.data_models import PolarisationFrame, export_skymodel_to_hdf5
+from rascil.data_models import (
+    PolarisationFrame,
+    export_skymodel_to_hdf5,
+    Skycomponent,
+    SkyModel,
+    import_skycomponent_from_hdf5,
+)
 from rascil.processing_components.util.sizeof import get_size
 
 from rascil.processing_components import (
@@ -553,6 +562,63 @@ def write_results(restored_output, imagename, result, performance_file):
     return (deconvolvedname, residualname, restoredname, skymodelname)
 
 
+def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
+    """"""
+    skymodel_list = []
+    if input_file is None:
+        for model in model_list:
+            phasecentre = model.image_acc.phasecentre
+
+            image_polarisation_frame = PolarisationFrame(model._polarisation_frame)
+            npol = len(model.polarisation.data)
+            frequency = model.frequency.data
+            nchan = len(frequency)
+            flux = numpy.ones((nchan, npol))
+            components = [
+                Skycomponent(
+                    direction=phasecentre,
+                    flux=flux,
+                    polarisation_frame=image_polarisation_frame,
+                    frequency=frequency,
+                )
+            ]
+
+            skymodel = SkyModel(image=model, components=components)
+            skymodel_list.append(skymodel)
+
+        return skymodel_list
+
+    else:
+        if ".h5" in input_file or ".hdf" in input_file:
+            components = import_skycomponent_from_hdf5(input_file)
+        elif ".txt" in input_file:
+            # TODO: Need to figure out how to get flux for correct freq for each model image
+            #   and what to do if model image is not stokesI
+            components = read_skycomponent_from_txt(input_file)
+        else:
+            raise FileFormatError("Input file must be of format: hdf5 or txt.")
+
+        sorted_skycomps = sorted(
+            components, key=lambda comp: numpy.sum(comp.flux), reverse=True
+        )
+
+        if n_bright_sources is None:
+            log.info("SkyModel will use all of the sources from input component list.")
+            sky_comp_list = sorted_skycomps.copy()
+        else:
+            log.info(
+                "SkyModel will use the first %s brightest sources from "
+                "input component list.",
+                n_bright_sources,
+            )
+            sky_comp_list = sorted_skycomps[:n_bright_sources]
+
+        skymodel_list = [
+            SkyModel(image=model, components=sky_comp_list) for model in model_list
+        ]
+        return skymodel_list
+
+
 def ical(args, bvis_list, model_list, msname, clean_beam=None):
     """Run ICAL pipeline
 
@@ -581,9 +647,15 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
     # Next we define a graph to run the continuum imaging pipeline
     start = time.time()
 
+    skymodel_list = rsexecute.execute(generate_skymodel_list)(
+        model_list,
+        input_file=args.input_skycomponent_file,
+        n_bright_sources=args.num_bright_sources,
+    )
     result = ical_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
+        skymodel_list=skymodel_list,
         context=args.imaging_context,  # Use nifty-gridder
         threads=args.imaging_ng_threads,
         wstacking=args.imaging_w_stacking == "True",  # Correct for w term in gridding

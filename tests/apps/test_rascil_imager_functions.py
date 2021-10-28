@@ -16,7 +16,10 @@ from rascil.processing_components.image.operations import create_image
 
 
 @pytest.fixture(scope="module")
-def skycomp_file():
+def sky_comp_file():
+    """
+    Create a temporary HDF file with three SkyComponents.
+    """
     phase_centre = SkyCoord(
         ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
     )
@@ -53,6 +56,9 @@ def skycomp_file():
 
 @pytest.fixture(scope="module")
 def mock_image():
+    """
+    Create a mock image for testing.
+    """
     phase_centre = SkyCoord(
         ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
     )
@@ -68,6 +74,9 @@ def mock_image():
 
 def test_generate_skymodel_list(mock_image):
     """
+    Function correctly generates a list of SkyModels when there isn't
+    an inout component file, using a source at the phase centre.
+
     Component and image frequencies will match because we create
     the component using information from the image
     """
@@ -90,12 +99,12 @@ def test_generate_skymodel_list(mock_image):
     assert result[0].components[0].polarisation_frame.names == ["I"]
 
 
-def test_generate_skymodel_list_from_hdf(mock_image, skycomp_file):
+def test_generate_skymodel_list_from_hdf_one_comp(mock_image, sky_comp_file):
     """
     Note: frequency of image and components may not match!
     """
     result = generate_skymodel_list(
-        [mock_image[0]], input_file=skycomp_file, n_bright_sources=1
+        [mock_image[0]], input_file=sky_comp_file, n_bright_sources=1
     )
 
     assert len(result) == 1
@@ -103,12 +112,12 @@ def test_generate_skymodel_list_from_hdf(mock_image, skycomp_file):
     assert (result[0].components[0].flux == numpy.array([[1.1], [2.2], [2.5]])).all()
 
 
-def test_generate_skymodel_list_from_hdf_two_comps(mock_image, skycomp_file):
+def test_generate_skymodel_list_from_hdf_two_comps(mock_image, sky_comp_file):
     """
     Note: frequency of image and components may not match!
     """
     result = generate_skymodel_list(
-        [mock_image[0]], input_file=skycomp_file, n_bright_sources=2
+        [mock_image[0]], input_file=sky_comp_file, n_bright_sources=2
     )
 
     assert len(result) == 1
@@ -117,12 +126,12 @@ def test_generate_skymodel_list_from_hdf_two_comps(mock_image, skycomp_file):
     assert (result[0].components[1].flux == numpy.array([[1.0], [2.0], [2.5]])).all()
 
 
-def test_generate_skymodel_list_from_hdf_all_comps(mock_image, skycomp_file):
+def test_generate_skymodel_list_from_hdf_all_comps(mock_image, sky_comp_file):
     """
     Note: frequency of image and components may not match!
     """
     result = generate_skymodel_list(
-        [mock_image[0]], input_file=skycomp_file, n_bright_sources=None
+        [mock_image[0]], input_file=sky_comp_file, n_bright_sources=None
     )
 
     assert len(result) == 1

@@ -563,30 +563,42 @@ def write_results(restored_output, imagename, result, performance_file):
 
 
 def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
-    """"""
-    skymodel_list = []
+    """
+    Generate an initial SkyModel (from model images and SkyComponents) to be supplied to ICAL.
+    Used SkyComponent(s):
+        - Either use a single source at the phase centre (flux = 1Jy)
+        - Or use the brightest source from a component file
+        - Or use the n brightest sources from a component file
+
+    :param model_list: list of model Images
+    :param input_file: path to input component file (hdf or txt)
+    :param n_bright_sources: how many of the brightest sources to use from file;
+                             if None: use all of the components
+    :return: list of SkyModels (same number as input model Images)
+    """
+    sky_model_list = []
     if input_file is None:
         for model in model_list:
-            phasecentre = model.image_acc.phasecentre
-
+            phase_centre = model.image_acc.phasecentre
             image_polarisation_frame = PolarisationFrame(model._polarisation_frame)
-            npol = len(model.polarisation.data)
             frequency = model.frequency.data
             nchan = len(frequency)
+            npol = len(model.polarisation.data)
             flux = numpy.ones((nchan, npol))
+
             components = [
                 Skycomponent(
-                    direction=phasecentre,
+                    direction=phase_centre,
                     flux=flux,
                     polarisation_frame=image_polarisation_frame,
                     frequency=frequency,
                 )
             ]
 
-            skymodel = SkyModel(image=model, components=components)
-            skymodel_list.append(skymodel)
+            sky_model = SkyModel(image=model, components=components)
+            sky_model_list.append(sky_model)
 
-        return skymodel_list
+        return sky_model_list
 
     else:
         if ".h5" in input_file or ".hdf" in input_file:
@@ -598,25 +610,25 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
         else:
             raise FileFormatError("Input file must be of format: hdf5 or txt.")
 
-        sorted_skycomps = sorted(
-            components, key=lambda comp: numpy.sum(comp.flux), reverse=True
-        )
-
         if n_bright_sources is None:
             log.info("SkyModel will use all of the sources from input component list.")
-            sky_comp_list = sorted_skycomps.copy()
+            sky_comp_list = components.copy()
         else:
             log.info(
                 "SkyModel will use the first %s brightest sources from "
                 "input component list.",
                 n_bright_sources,
             )
-            sky_comp_list = sorted_skycomps[:n_bright_sources]
+            # sort SkyComponents based on the sum of their fluxes
+            sorted_sky_comps = sorted(
+                components, key=lambda comp: numpy.sum(comp.flux), reverse=True
+            )
+            sky_comp_list = sorted_sky_comps[:n_bright_sources]
 
-        skymodel_list = [
+        sky_model_list = [
             SkyModel(image=model, components=sky_comp_list) for model in model_list
         ]
-        return skymodel_list
+        return sky_model_list
 
 
 def ical(args, bvis_list, model_list, msname, clean_beam=None):
@@ -652,6 +664,7 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         input_file=args.input_skycomponent_file,
         n_bright_sources=args.num_bright_sources,
     )
+
     result = ical_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images

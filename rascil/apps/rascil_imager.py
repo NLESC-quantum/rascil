@@ -604,9 +604,11 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
         if ".h5" in input_file or ".hdf" in input_file:
             components = import_skycomponent_from_hdf5(input_file)
         elif ".txt" in input_file:
+            # Currently only works with one set of frequencies and StokesI
             # TODO: Need to figure out how to get flux for correct freq for each model image
             #   and what to do if model image is not stokesI
-            components = read_skycomponent_from_txt(input_file)
+            frequency = model_list[0].frequency.data
+            components = read_skycomponent_from_txt(input_file, frequency)
         else:
             raise FileFormatError("Input file must be of format: hdf5 or txt.")
 

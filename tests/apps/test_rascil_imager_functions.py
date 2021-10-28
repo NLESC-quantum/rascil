@@ -134,8 +134,11 @@ def test_generate_skymodel_list_from_hdf_all_comps(mock_image, sky_comp_file):
         [mock_image[0]], input_file=sky_comp_file, n_bright_sources=None
     )
 
+    print(result[0].components[1].flux)
+
     assert len(result) == 1
     assert len(result[0].components) == 3
-    assert (result[0].components[0].flux == numpy.array([[1.1], [2.2], [2.5]])).all()
-    assert (result[0].components[1].flux == numpy.array([[1.0], [2.0], [2.5]])).all()
+    # The flux won't be sorted
+    assert (result[0].components[1].flux == numpy.array([[1.1], [2.2], [2.5]])).all()
+    assert (result[0].components[0].flux == numpy.array([[1.0], [2.0], [2.5]])).all()
     assert (result[0].components[2].flux == numpy.array([[0.4], [1.1], [1.6]])).all()

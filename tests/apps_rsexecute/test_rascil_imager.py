@@ -474,6 +474,8 @@ def test_rascil_imager(
         "True",
         "--calibration_context",
         "TG",
+        "--use_initial_skymodel",
+        "True",
     ]
 
     parser = cli_parser()

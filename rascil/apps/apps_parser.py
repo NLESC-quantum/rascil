@@ -451,6 +451,12 @@ def apps_parser_calibration(parser):
         help="Terms to solve (in order e.g. TGB)",
     )
     parser.add_argument(
+        "--use_initial_skymodel",
+        type=str,
+        default=False,
+        help="Whether to use an initial SkyModel in ICAL or not",
+    )
+    parser.add_argument(
         "--input_skycomponent_file",
         type=str,
         default=None,

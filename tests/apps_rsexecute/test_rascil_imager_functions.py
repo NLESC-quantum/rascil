@@ -21,7 +21,7 @@ from rascil.workflows.rsexecute.execution_support import rsexecute
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 
-USE_DASK = False
+USE_DASK = True
 
 
 def write_to_txt(filename, components):

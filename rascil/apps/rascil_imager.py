@@ -692,11 +692,14 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
     # Next we define a graph to run the continuum imaging pipeline
     start = time.time()
 
-    skymodel_list = generate_skymodel_list(
-        model_list,
-        input_file=args.input_skycomponent_file,
-        n_bright_sources=args.num_bright_sources,
-    )
+    if args.use_initial_skymodel == "True":
+        skymodel_list = generate_skymodel_list(
+            model_list,
+            input_file=args.input_skycomponent_file,
+            n_bright_sources=args.num_bright_sources,
+        )
+    else:
+        skymodel_list = None
 
     result = ical_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilities

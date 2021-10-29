@@ -460,13 +460,14 @@ def apps_parser_calibration(parser):
         "--input_skycomponent_file",
         type=str,
         default=None,
-        help="Input name of skycomponents file (in hdf or txt format)",
+        help="Input name of skycomponents file (in hdf or txt format) "
+        "for initial SkyModel in ICAL",
     )
     parser.add_argument(
         "--num_bright_sources",
         type=int,
         default=None,
-        help="Number of brightest sources to select for initial skymodel "
+        help="Number of brightest sources to select for initial SkyModel "
         "(if None, use all sources from input file)",
     )
 

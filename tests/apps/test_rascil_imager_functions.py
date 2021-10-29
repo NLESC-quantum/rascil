@@ -1,6 +1,8 @@
 import os
 import numpy
 import pytest
+import logging
+
 from numpy.testing import assert_almost_equal
 from astropy.coordinates import SkyCoord
 from astropy import units as u
@@ -14,6 +16,9 @@ from rascil.data_models import (
 )
 from rascil.processing_components.image.operations import create_image
 from rascil.processing_components.skycomponent import fit_skycomponent_spectral_index
+
+log = logging.getLogger("rascil-logger")
+log.setLevel(logging.WARNING)
 
 
 def write_to_txt(filename, components):
@@ -112,9 +117,6 @@ def test_generate_skymodel_list(mock_image):
     """
     Function correctly generates a list of SkyModels when there isn't
     an inout component file, using a source at the phase centre.
-
-    Component and image frequencies will match because we create
-    the component using information from the image
     """
     image = mock_image[0]
     phase_centre = mock_image[1]
@@ -137,7 +139,8 @@ def test_generate_skymodel_list(mock_image):
 
 def test_generate_skymodel_list_from_hdf_one_comp(mock_image, sky_comp_file):
     """
-    Note: frequency of image and components may not match!
+    Test that the code correctly chooses the brightest component read
+    from an HDF file, when n_bright_sources=1
     """
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=1
@@ -150,7 +153,8 @@ def test_generate_skymodel_list_from_hdf_one_comp(mock_image, sky_comp_file):
 
 def test_generate_skymodel_list_from_hdf_two_comps(mock_image, sky_comp_file):
     """
-    Note: frequency of image and components may not match!
+    Test that the code correctly chooses the n brightest components read
+    from an HDF file, when n_bright_sources=n (n>1)
     """
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=2
@@ -164,7 +168,8 @@ def test_generate_skymodel_list_from_hdf_two_comps(mock_image, sky_comp_file):
 
 def test_generate_skymodel_list_from_hdf_all_comps(mock_image, sky_comp_file):
     """
-    Note: frequency of image and components may not match!
+    Test that the code uses all of the components read
+    from an HDF file, when n_bright_sources=None and there is an input file.
     """
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=None
@@ -180,7 +185,10 @@ def test_generate_skymodel_list_from_hdf_all_comps(mock_image, sky_comp_file):
 
 def test_generate_skymodel_list_from_txt_one_comp(mock_image, sky_comp_file):
     """
-    Note: frequency of components are scaled to image frequency
+    Test that the code correctly chooses the brightest component read
+    from a TXT file, when n_bright_sources=1
+
+    Frequency of components are scaled to image frequency.
     """
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[1], n_bright_sources=1
@@ -194,7 +202,10 @@ def test_generate_skymodel_list_from_txt_one_comp(mock_image, sky_comp_file):
 
 def test_generate_skymodel_list_from_txt_two_comps(mock_image, sky_comp_file):
     """
-    Note: frequency of components are scaled to image frequency
+    Test that the code correctly chooses the n brightest components read
+    from a TXT file, when n_bright_sources=n (n>1)
+
+    Frequency of components are scaled to image frequency.
     """
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[1], n_bright_sources=2
@@ -211,7 +222,10 @@ def test_generate_skymodel_list_from_txt_two_comps(mock_image, sky_comp_file):
 
 def test_generate_skymodel_list_from_txt_all_comps(mock_image, sky_comp_file):
     """
-    Note: frequency of components are scaled to image frequency
+    Test that the code code uses all of the components read
+    from a TXT file, when n_bright_sources=None
+
+    Frequency of components are scaled to image frequency.
     """
     result = generate_skymodel_list(
         [mock_image[0]],

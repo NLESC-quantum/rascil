@@ -47,6 +47,7 @@ from rascil.processing_components.util.performance import (
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
+log.setLevel(logging.WARNING)
 
 default_run = True
 

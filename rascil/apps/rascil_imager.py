@@ -601,12 +601,17 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
         return sky_model_list
 
     else:
+        # When components are read from am HDF file (relevant for Mid),
+        # there is a chance that their frequencies do not match the frequencies
+        # of model images. SkyModel can still be created this way.
+        # For the time being, we ignore this possibility.
+        # When components are read from a TXT file (relevant for Low),
+        # frequencies of components are scaled to image frequency.
+
         if ".h5" in input_file or ".hdf" in input_file:
             components = import_skycomponent_from_hdf5(input_file)
         elif ".txt" in input_file:
             # Currently only works with one set of frequencies and StokesI
-            # TODO: Need to figure out how to get flux for correct freq for each model image
-            #   and what to do if model image is not stokesI
             frequency = model_list[0].frequency.data
             components = read_skycomponent_from_txt(input_file, frequency)
         else:
@@ -666,9 +671,10 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         input_file=args.input_skycomponent_file,
         n_bright_sources=args.num_bright_sources,
     )
+    skymodel_list = rsexecute.persist(skymodel_list)
 
     result = ical_skymodel_list_rsexecute_workflow(
-        bvis_list,  # List of BlockVisibilitys
+        bvis_list,  # List of BlockVisibilities
         model_list,  # List of model images
         skymodel_list=skymodel_list,
         context=args.imaging_context,  # Use nifty-gridder

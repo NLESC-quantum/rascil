@@ -562,6 +562,66 @@ def write_results(restored_output, imagename, result, performance_file):
     return (deconvolvedname, residualname, restoredname, skymodelname)
 
 
+def _skymodel_from_point_source_in_phase_centre(model):
+    """
+    Generate SkyModel from input model image and a SkyComponent of a
+    single point source at the phase centre with 1 Jy flux.
+
+    :param model: input model Image
+    :return SkyModel
+    """
+    phase_centre = model.image_acc.phasecentre
+    image_polarisation_frame = PolarisationFrame(model._polarisation_frame)
+    frequency = model.frequency.data
+    nchan = len(frequency)
+    npol = len(model.polarisation.data)
+    flux = numpy.ones((nchan, npol))
+    components = [
+        Skycomponent(
+            direction=phase_centre,
+            flux=flux,
+            polarisation_frame=image_polarisation_frame,
+            frequency=frequency,
+        )
+    ]
+    sky_model = SkyModel(image=model, components=components)
+    return sky_model
+
+
+def _sky_components_from_file(input_file, n_bright_sources, frequency_data):
+    """
+    Generate a list of SkyComponents from a file.
+
+    :param input_file: input file to read SkyComponents from
+    :param n_bright_sources: how many of the brightest sources to add to the SkyComponents list
+    :param frequency_data: array of frequencies to generate SkyComponents for, when input is a TXT file
+    """
+    if ".h5" in input_file or ".hdf" in input_file:
+        components = import_skycomponent_from_hdf5(input_file)
+    elif ".txt" in input_file:
+        # Currently only works with one set of frequencies and StokesI
+        components = read_skycomponent_from_txt(input_file, frequency_data)
+    else:
+        raise FileFormatError("Input file must be of format: hdf5 or txt.")
+
+    if n_bright_sources is None:
+        log.info("SkyModel will use all of the sources from input component list.")
+        sky_comp_list = components.copy()
+    else:
+        log.info(
+            "SkyModel will use the first %s brightest sources from "
+            "input component list.",
+            n_bright_sources,
+        )
+        # sort SkyComponents based on the sum of their fluxes
+        sorted_sky_comps = sorted(
+            components, key=lambda comp: numpy.sum(comp.flux), reverse=True
+        )
+        sky_comp_list = sorted_sky_comps[:n_bright_sources]
+
+    return sky_comp_list
+
+
 def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
     """
     Generate an initial SkyModel (from model images and SkyComponents) to be supplied to ICAL.
@@ -576,28 +636,13 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
                              if None: use all of the components
     :return: list of SkyModels (same number as input model Images)
     """
-    sky_model_list = []
     if input_file is None:
-        for model in model_list:
-            phase_centre = model.image_acc.phasecentre
-            image_polarisation_frame = PolarisationFrame(model._polarisation_frame)
-            frequency = model.frequency.data
-            nchan = len(frequency)
-            npol = len(model.polarisation.data)
-            flux = numpy.ones((nchan, npol))
-
-            components = [
-                Skycomponent(
-                    direction=phase_centre,
-                    flux=flux,
-                    polarisation_frame=image_polarisation_frame,
-                    frequency=frequency,
-                )
-            ]
-
-            sky_model = SkyModel(image=model, components=components)
-            sky_model_list.append(sky_model)
-
+        sky_model_list = [
+            rsexecute.execute(_skymodel_from_point_source_in_phase_centre, nout=1)(
+                model
+            )
+            for model in model_list
+        ]
         return sky_model_list
 
     else:
@@ -608,32 +653,13 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
         # When components are read from a TXT file (relevant for Low),
         # frequencies of components are scaled to image frequency.
 
-        if ".h5" in input_file or ".hdf" in input_file:
-            components = import_skycomponent_from_hdf5(input_file)
-        elif ".txt" in input_file:
-            # Currently only works with one set of frequencies and StokesI
-            frequency = model_list[0].frequency.data
-            components = read_skycomponent_from_txt(input_file, frequency)
-        else:
-            raise FileFormatError("Input file must be of format: hdf5 or txt.")
-
-        if n_bright_sources is None:
-            log.info("SkyModel will use all of the sources from input component list.")
-            sky_comp_list = components.copy()
-        else:
-            log.info(
-                "SkyModel will use the first %s brightest sources from "
-                "input component list.",
-                n_bright_sources,
-            )
-            # sort SkyComponents based on the sum of their fluxes
-            sorted_sky_comps = sorted(
-                components, key=lambda comp: numpy.sum(comp.flux), reverse=True
-            )
-            sky_comp_list = sorted_sky_comps[:n_bright_sources]
+        sky_comp_list = _sky_components_from_file(
+            input_file, n_bright_sources, model_list[0].frequency.data
+        )
 
         sky_model_list = [
-            SkyModel(image=model, components=sky_comp_list) for model in model_list
+            rsexecute.execute(SkyModel, nout=1)(image=model, components=sky_comp_list)
+            for model in model_list
         ]
         return sky_model_list
 
@@ -666,12 +692,11 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
     # Next we define a graph to run the continuum imaging pipeline
     start = time.time()
 
-    skymodel_list = rsexecute.execute(generate_skymodel_list)(
+    skymodel_list = generate_skymodel_list(
         model_list,
         input_file=args.input_skycomponent_file,
         n_bright_sources=args.num_bright_sources,
     )
-    skymodel_list = rsexecute.persist(skymodel_list)
 
     result = ical_skymodel_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilities

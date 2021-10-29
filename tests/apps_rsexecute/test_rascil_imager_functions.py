@@ -16,9 +16,12 @@ from rascil.data_models import (
 )
 from rascil.processing_components.image.operations import create_image
 from rascil.processing_components.skycomponent import fit_skycomponent_spectral_index
+from rascil.workflows.rsexecute.execution_support import rsexecute
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
+
+USE_DASK = False
 
 
 def write_to_txt(filename, components):
@@ -50,6 +53,13 @@ def write_to_txt(filename, components):
     f.close()
 
     return
+
+
+@pytest.fixture(scope="module")
+def set_up_dask():
+    rsexecute.set_client(use_dask=USE_DASK)
+    yield
+    rsexecute.close()
 
 
 @pytest.fixture(scope="module")
@@ -113,7 +123,7 @@ def mock_image():
     return image, phase_centre
 
 
-def test_generate_skymodel_list(mock_image):
+def test_generate_skymodel_list(mock_image, set_up_dask):
     """
     Function correctly generates a list of SkyModels when there isn't
     an inout component file, using a source at the phase centre.
@@ -122,6 +132,7 @@ def test_generate_skymodel_list(mock_image):
     phase_centre = mock_image[1]
 
     result = generate_skymodel_list([image])
+    result = rsexecute.compute(result, sync=True)
 
     assert len(result) == 1
     assert len(result[0].components) == 1
@@ -137,7 +148,9 @@ def test_generate_skymodel_list(mock_image):
     assert result[0].components[0].polarisation_frame.names == ["I"]
 
 
-def test_generate_skymodel_list_from_hdf_one_comp(mock_image, sky_comp_file):
+def test_generate_skymodel_list_from_hdf_one_comp(
+    mock_image, sky_comp_file, set_up_dask
+):
     """
     Test that the code correctly chooses the brightest component read
     from an HDF file, when n_bright_sources=1
@@ -145,13 +158,16 @@ def test_generate_skymodel_list_from_hdf_one_comp(mock_image, sky_comp_file):
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=1
     )
+    result = rsexecute.compute(result, sync=True)
 
     assert len(result) == 1
     assert len(result[0].components) == 1
     assert (result[0].components[0].flux == numpy.array([[1.1], [2.2], [2.5]])).all()
 
 
-def test_generate_skymodel_list_from_hdf_two_comps(mock_image, sky_comp_file):
+def test_generate_skymodel_list_from_hdf_two_comps(
+    mock_image, sky_comp_file, set_up_dask
+):
     """
     Test that the code correctly chooses the n brightest components read
     from an HDF file, when n_bright_sources=n (n>1)
@@ -159,6 +175,7 @@ def test_generate_skymodel_list_from_hdf_two_comps(mock_image, sky_comp_file):
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=2
     )
+    result = rsexecute.compute(result, sync=True)
 
     assert len(result) == 1
     assert len(result[0].components) == 2
@@ -166,7 +183,9 @@ def test_generate_skymodel_list_from_hdf_two_comps(mock_image, sky_comp_file):
     assert (result[0].components[1].flux == numpy.array([[1.0], [2.0], [2.5]])).all()
 
 
-def test_generate_skymodel_list_from_hdf_all_comps(mock_image, sky_comp_file):
+def test_generate_skymodel_list_from_hdf_all_comps(
+    mock_image, sky_comp_file, set_up_dask
+):
     """
     Test that the code uses all of the components read
     from an HDF file, when n_bright_sources=None and there is an input file.
@@ -174,6 +193,7 @@ def test_generate_skymodel_list_from_hdf_all_comps(mock_image, sky_comp_file):
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=None
     )
+    result = rsexecute.compute(result, sync=True)
 
     assert len(result) == 1
     assert len(result[0].components) == 3
@@ -183,7 +203,9 @@ def test_generate_skymodel_list_from_hdf_all_comps(mock_image, sky_comp_file):
     assert (result[0].components[2].flux == numpy.array([[0.4], [1.1], [1.6]])).all()
 
 
-def test_generate_skymodel_list_from_txt_one_comp(mock_image, sky_comp_file):
+def test_generate_skymodel_list_from_txt_one_comp(
+    mock_image, sky_comp_file, set_up_dask
+):
     """
     Test that the code correctly chooses the brightest component read
     from a TXT file, when n_bright_sources=1
@@ -193,6 +215,7 @@ def test_generate_skymodel_list_from_txt_one_comp(mock_image, sky_comp_file):
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[1], n_bright_sources=1
     )
+    result = rsexecute.compute(result, sync=True)
 
     expected = numpy.array([[1.34210651], [1.35848315], [1.37489533]])
     assert len(result) == 1
@@ -200,7 +223,9 @@ def test_generate_skymodel_list_from_txt_one_comp(mock_image, sky_comp_file):
     assert_almost_equal(result[0].components[0].flux, expected)
 
 
-def test_generate_skymodel_list_from_txt_two_comps(mock_image, sky_comp_file):
+def test_generate_skymodel_list_from_txt_two_comps(
+    mock_image, sky_comp_file, set_up_dask
+):
     """
     Test that the code correctly chooses the n brightest components read
     from a TXT file, when n_bright_sources=n (n>1)
@@ -210,6 +235,7 @@ def test_generate_skymodel_list_from_txt_two_comps(mock_image, sky_comp_file):
     result = generate_skymodel_list(
         [mock_image[0]], input_file=sky_comp_file[1], n_bright_sources=2
     )
+    result = rsexecute.compute(result, sync=True)
 
     expected1 = numpy.array([[1.34210651], [1.35848315], [1.37489533]])
     expected2 = numpy.array([[1.15816502], [1.1737968], [1.18948243]])
@@ -220,7 +246,9 @@ def test_generate_skymodel_list_from_txt_two_comps(mock_image, sky_comp_file):
     assert_almost_equal(result[0].components[1].flux, expected2)
 
 
-def test_generate_skymodel_list_from_txt_all_comps(mock_image, sky_comp_file):
+def test_generate_skymodel_list_from_txt_all_comps(
+    mock_image, sky_comp_file, set_up_dask
+):
     """
     Test that the code code uses all of the components read
     from a TXT file, when n_bright_sources=None
@@ -232,6 +260,7 @@ def test_generate_skymodel_list_from_txt_all_comps(mock_image, sky_comp_file):
         input_file=sky_comp_file[1],
         n_bright_sources=None,
     )
+    result = rsexecute.compute(result, sync=True)
 
     expected1 = numpy.array([[1.34210651], [1.35848315], [1.37489533]])
     expected2 = numpy.array([[1.15816502], [1.1737968], [1.18948243]])

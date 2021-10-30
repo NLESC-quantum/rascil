@@ -653,8 +653,9 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
         # When components are read from a TXT file (relevant for Low),
         # frequencies of components are scaled to image frequency.
 
+        frequency_data = dask.compute(model_list[0].frequency.data)[0]
         sky_comp_list = _sky_components_from_file(
-            input_file, n_bright_sources, model_list[0].frequency.data
+            input_file, n_bright_sources, frequency_data
         )
 
         sky_model_list = [

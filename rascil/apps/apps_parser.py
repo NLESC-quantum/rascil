@@ -450,6 +450,26 @@ def apps_parser_calibration(parser):
         default="T",
         help="Terms to solve (in order e.g. TGB)",
     )
+    parser.add_argument(
+        "--use_initial_skymodel",
+        type=str,
+        default=False,
+        help="Whether to use an initial SkyModel in ICAL or not",
+    )
+    parser.add_argument(
+        "--input_skycomponent_file",
+        type=str,
+        default=None,
+        help="Input name of skycomponents file (in hdf or txt format) "
+        "for initial SkyModel in ICAL",
+    )
+    parser.add_argument(
+        "--num_bright_sources",
+        type=int,
+        default=None,
+        help="Number of brightest sources to select for initial SkyModel "
+        "(if None, use all sources from input file)",
+    )
 
     return parser
 

@@ -47,8 +47,41 @@ from rascil.processing_components.util.performance import (
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
 log = logging.getLogger("rascil-logger")
+log.setLevel(logging.WARNING)
 
-default_run = True
+DEFAULT_RUN = True
+
+
+def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
+    seeds = [rng.integers(low=1, high=2 ** 32 - 1) for i in range(nfreqwin)]
+    if nfreqwin == 5:
+        assert seeds == [
+            3822708302,
+            2154889844,
+            3073218956,
+            3754981936,
+            3778183766,
+        ], seeds
+
+    def sim_and_apply(vis, seed):
+        gt = create_gaintable_from_blockvisibility(vis)
+        gt = simulate_gaintable(
+            gt,
+            phase_error=0.1,
+            amplitude_error=0.0,
+            smooth_channels=1,
+            leakage=0.0,
+            seed=seed,
+        )
+        return apply_gaintable(vis, gt)
+
+    # Do this without Dask since the random number generation seems to go wrong
+    bvis_list = [
+        rsexecute.execute(sim_and_apply)(bvis_list[i], seeds[i]) for i in range(freqwin)
+    ]
+    bvis_list = rsexecute.compute(bvis_list, sync=True)
+    bvis_list = rsexecute.scatter(bvis_list)
+    return bvis_list
 
 
 @pytest.mark.parametrize(
@@ -56,7 +89,7 @@ default_run = True
     "component_threshold, component_method, offset, flat_sky, restored_output",
     [
         (
-            default_run,
+            DEFAULT_RUN,
             "invert",
             True,
             0,
@@ -71,7 +104,7 @@ default_run = True
             "list",
         ),
         (
-            default_run,
+            DEFAULT_RUN,
             "invert_no_dask",
             False,
             0,
@@ -86,8 +119,23 @@ default_run = True
             "list",
         ),
         (
-            default_run,
+            DEFAULT_RUN,
+            "ical_init_sm",
+            True,
+            5,
             "ical",
+            True,
+            115.93821508971706,
+            -2.111405154646662,
+            None,
+            None,
+            5.0,
+            False,
+            "list",
+        ),
+        (
+            DEFAULT_RUN,
+            "ical_no_sm",
             True,
             5,
             "ical",
@@ -101,7 +149,7 @@ default_run = True
             "list",
         ),
         (
-            default_run,
+            DEFAULT_RUN,
             "cip",
             True,
             5,
@@ -116,7 +164,7 @@ default_run = True
             "list",
         ),
         (
-            default_run,
+            DEFAULT_RUN,
             "cip_offset",
             True,
             5,
@@ -131,7 +179,7 @@ default_run = True
             "list",
         ),
         (
-            default_run,
+            DEFAULT_RUN,
             "cip_fit_taylor",
             True,
             3,
@@ -146,7 +194,7 @@ default_run = True
             "taylor",
         ),
         (
-            default_run,
+            DEFAULT_RUN,
             "cip_offset_fit_taylor",
             True,
             3,
@@ -161,7 +209,7 @@ default_run = True
             "taylor",
         ),
         (
-            default_run,
+            DEFAULT_RUN,
             "cip_extract_fit_taylor",
             True,
             3,
@@ -176,7 +224,7 @@ default_run = True
             "taylor",
         ),
         (
-            default_run,
+            DEFAULT_RUN,
             "cip_taylor",
             True,
             5,
@@ -341,35 +389,7 @@ def test_rascil_imager(
         )
 
     if add_errors:
-        seeds = [rng.integers(low=1, high=2 ** 32 - 1) for i in range(nfreqwin)]
-        if nfreqwin == 5:
-            assert seeds == [
-                3822708302,
-                2154889844,
-                3073218956,
-                3754981936,
-                3778183766,
-            ], seeds
-
-        def sim_and_apply(vis, seed):
-            gt = create_gaintable_from_blockvisibility(vis)
-            gt = simulate_gaintable(
-                gt,
-                phase_error=0.1,
-                amplitude_error=0.0,
-                smooth_channels=1,
-                leakage=0.0,
-                seed=seed,
-            )
-            return apply_gaintable(vis, gt)
-
-        # Do this without Dask since the random number generation seems to go wrong
-        bvis_list = [
-            rsexecute.execute(sim_and_apply)(bvis_list[i], seeds[i])
-            for i in range(freqwin)
-        ]
-        bvis_list = rsexecute.compute(bvis_list, sync=True)
-        bvis_list = rsexecute.scatter(bvis_list)
+        bvis_list = _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng)
 
     shutil.rmtree(
         rascil_path(f"test_results/test_rascil_imager_{tag}.ms"), ignore_errors=True
@@ -474,6 +494,9 @@ def test_rascil_imager(
         "--calibration_context",
         "TG",
     ]
+
+    if tag == "ical_init_sm":
+        calibration_args = calibration_args + ["--use_initial_skymodel", "True"]
 
     parser = cli_parser()
     if mode == "invert":

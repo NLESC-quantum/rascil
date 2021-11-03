@@ -133,6 +133,28 @@ These will perform a phase only solution of the T term after the second major cy
 solution of G after 5 major cycles with timescale of 1200s, and solution of B after 8 major cycles, integrating
 across all frequencies where appropriate.
 
+SkyModel in ICAL
+++++++++++++++++
+
+When running rascil_imager in mode ical, optionally, an initial SkyModel can be used.
+To do this, set :code:`--use_initial_skymodel` to True.
+The SkyModel is made up of model images (created based on input BlockVisibilities),
+and SkyComponents. The kind of SkyComponent(s) to use in the initial SkyModel is controlled
+by the :code:`--input_skycomponent_file` and :code:`--num_bright_sources` arguments:
+
+1. If no input file is provided, a point source at the phase centre, with brightness of 1 Jy
+   is used as the component.
+2. If either an HDF file or a TXT file is provided, the components are read from the file.
+    a. if :code:`--num_bright_sources` is left as :code:`None`, all of the components are used
+       for the SkyModel
+    b. if :code:`--num_bright_sources` is an integer `n` (`n>0`), then `n` number of
+       the brightest components are used for the SkyModel
+
+This SkyModel is then overwritten during the remaining cycles of the run.
+
+By default, :code:`--use_initial_skymodel` is set to False, and hence no
+initial SkyModel is used.
+
 Dask
 ++++
 

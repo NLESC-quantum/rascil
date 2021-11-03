@@ -289,7 +289,9 @@ def analyze_image(args):
         log.info("This is a multiple channel image.")
         freq = np.array(im.frequency.data)
 
+    image_pol = im._polarisation_frame
     log.info("Frequencies of image:{} ".format(freq))
+    log.info("Image polarisation frame is: {}".format(image_pol))
 
     input_image_residual = args.ingest_fitsname_residual
     input_image_sensitivity = args.ingest_fitsname_sensitivity
@@ -389,6 +391,11 @@ def analyze_image(args):
         )
 
     if args.check_source == "True":
+
+        # Placeholder: Currently only supports comparsion for StokesI images
+        if image_pol != "stokesI":
+            log.error("Currently only supports StokesI images.")
+            results = None
 
         if ".h5" in args.input_source_filename or ".hdf" in args.input_source_filename:
             orig = import_skycomponent_from_hdf5(args.input_source_filename)

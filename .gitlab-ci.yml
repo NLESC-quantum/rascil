@@ -55,6 +55,7 @@ test:
     - apt-get update
     # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
     - apt-get -y install rsync ca-certificates gfortran libboost-dev libboost-python-dev libboost-numpy-dev
+    - pip3 install setuptools==58.4.0
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
     - mkdir -p test_results
@@ -77,6 +78,7 @@ test-dask:
     - apt-get update
     # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
     - apt-get -y install rsync ca-certificates gfortran libboost-dev libboost-python-dev libboost-numpy-dev
+    - pip3 install setuptools==58.4.0
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
     - mkdir -p test_results
@@ -100,6 +102,7 @@ docs:
     - apt-get update
     # gfortran libboost-dev libboost-python-dev libboost-numpy-dev are needed for bdsf to build
     - apt-get -y install pandoc rsync gfortran libboost-dev libboost-python-dev libboost-numpy-dev
+    - pip3 install setuptools==58.4.0
     - pip install -r requirements.txt
     - pip install -r requirements-docs.txt
     - mkdir -p docs/build/html

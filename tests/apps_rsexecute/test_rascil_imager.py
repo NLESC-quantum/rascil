@@ -281,7 +281,7 @@ def test_rascil_imager(
     dospectral = True
     zerow = False
     dopol = False
-    persist = True
+    persist = False
 
     # We always want the same numbers
     from numpy.random import default_rng

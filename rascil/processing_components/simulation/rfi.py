@@ -305,7 +305,7 @@ def simulate_rfi_block_prop(
     bvis_data_copy = copy.copy(bvis["vis"].data)
     ntimes, nbaselines, nchan, npol = bvis.vis.shape
 
-    if "MID" in mid_or_low:
+    if apply_primary_beam and "MID" in mid_or_low:
         vp = create_mid_allsky(bvis.frequency)
 
     for i, source in enumerate(
@@ -325,13 +325,12 @@ def simulate_rfi_block_prop(
             )
 
         else:
-            emitter_power_all_chans = match_frequencies(
+            rfi_at_station_all_chans = match_frequencies(
                 apparent_emitter_power[i],
                 rfi_frequencies,
                 bvis.frequency.values,
                 bvis.channel_bandwidth.values,
             )
-            rfi_at_station_all_chans = emitter_power_all_chans.copy()
 
         # Calculate the RFI correlation using the fringe rotation and the RFI at the station
         # [ntimes, nants, nants, nchan, npol]

@@ -368,7 +368,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
-        controls["T"]["first_selfcal"] = 1
+        controls["T"]["first_selfcal"] = 0
         controls["T"]["timeslice"] = "auto"
 
         skymodel_list = [
@@ -419,14 +419,14 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.9220347300889,
-            -0.03710122171894675,
+            116.81674314368591,
+            -0.18459199834803366,
         )
 
     def test_ical_skymodel_pipeline_partial(self):
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
-        controls["T"]["first_selfcal"] = 1
+        controls["T"]["first_selfcal"] = 0
         controls["T"]["timeslice"] = "auto"
 
         def downscale(comp):
@@ -488,8 +488,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.8877123742255,
-            -0.10058889464014169,
+            116.81674314368591,
+            -0.184591998348033,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):

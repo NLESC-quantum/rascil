@@ -118,6 +118,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             False,
             "list",
         ),
+        # Set a point source skymodel. We don't put in a shift for this case.
         (
             DEFAULT_RUN,
             "ical_init_sm",
@@ -125,11 +126,11 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5,
             "ical",
             True,
-            115.93821508971706,
-            -2.111405154646662,
+            115.83500246615166,
+            -2.0756604770187312,
             None,
             None,
-            5.0,
+            0.0,
             False,
             "list",
         ),
@@ -280,7 +281,7 @@ def test_rascil_imager(
     dospectral = True
     zerow = False
     dopol = False
-    persist = False
+    persist = True
 
     # We always want the same numbers
     from numpy.random import default_rng
@@ -470,9 +471,14 @@ def test_rascil_imager(
             "fit",
         ]
 
+    if tag == "ical_init_sm":
+        first_selfcal = "0"
+    else:
+        first_selfcal = "2"
+
     calibration_args = [
         "--calibration_T_first_selfcal",
-        "2",
+        first_selfcal,
         "--calibration_T_phase_only",
         "True",
         "--calibration_T_timeslice",

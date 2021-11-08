@@ -38,6 +38,7 @@ from rascil.processing_components import (
     copy_gaintable,
     create_skycomponent,
     create_gaintable_from_blockvisibility,
+    apply_gaintable,
 )
 
 
@@ -94,7 +95,8 @@ def cli_parser():
         "--plot_dir",
         type=str,
         default=None,
-        help="Full path of the directory to save the gain plots into (default is the same directory the MS file is located)",
+        help="Full path of the directory to save the gain plots into "
+        "(default is the same directory the MS file is located)",
     )
     parser.add_argument(
         "--plot_dynamic",
@@ -123,16 +125,49 @@ def cli_parser():
         help="Tolerance for solution: stops iteration when changes below this level",
     )
 
+    parser.add_argument(
+        "--flag_first",
+        type=str,
+        default="False",
+        help="Whether to do the RFI flagging before first calibration (True), or after (False).",
+    )
+
+    parser.add_argument(
+        "--calibrate_bvis",
+        type=str,
+        default="True",
+        help="Whether to apply calibration or not.",
+    )
+
     return parser
+
+
+def _rfi_flagger(bvis, to_flag=False):
+    """
+    Place holder function. It will be replaced with RFI flagger
+    once python interface is implemented.
+
+    Arbitrarily flags data (for testing purposes)
+    """
+    if not to_flag:
+        return bvis
+
+    else:
+        n_baselines = bvis.dims["baselines"]
+        bvis["flags"][:, : n_baselines // 2, ...] = 1
+        return bvis
 
 
 def rcal_simulator(args):
     """RCAL simulator
 
-    Delivers imaging advice for an MS
+    Generate real-time calibration tables and optionally apply gains to data.
+    RFI flagging also takes place as part of the pipeline (currently only place-holder for real function).
 
     :param args: argparse with appropriate arguments
-    :return: None
+    :return:
+        gtfile: file name containing all of the GainTables
+        bvis: list of BlockVisibilities read from input MeasurementSet, either calibrated or uncalibrated
     """
 
     assert args.ingest_msname is not None, "Input msname must be specified"
@@ -159,7 +194,14 @@ def rcal_simulator(args):
 
     bvis = create_blockvisibility_from_ms(
         args.ingest_msname, selected_dds=args.ingest_dd
-    )[0]
+    )[
+        0
+    ]  # Q: why is it taking the first one only?
+
+    flagged = False
+    if args.flag_first == "True":
+        bvis = _rfi_flagger(bvis)
+        flagged = True
 
     if args.ingest_components_file is not None:
 
@@ -199,8 +241,12 @@ def rcal_simulator(args):
         model_components,
         phase_only=args.phase_only_solution == "True",
         use_previous=args.use_previous_gaintable == "True",
+        calibrate=args.calibrate_bvis == "True",
         tol=args.solution_tolerance,
     )
+
+    if not flagged:
+        bvis = _rfi_flagger(bvis)
 
     base = os.path.basename(args.ingest_msname)
     plotfile = plot_dir + "/" + base.replace(".ms", "_plot")
@@ -213,7 +259,7 @@ def rcal_simulator(args):
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
 
-    return gtfile
+    return gtfile, bvis
 
 
 def bvis_source(bvis: BlockVisibility, dim="time") -> Iterable[BlockVisibility]:
@@ -230,14 +276,21 @@ def bvis_source(bvis: BlockVisibility, dim="time") -> Iterable[BlockVisibility]:
 
 
 def bvis_solver(
-    bvis_gen: Iterable[BlockVisibility], model_components, use_previous=True, **kwargs
+    bvis_gen: Iterable[BlockVisibility],
+    model_components,
+    use_previous=True,
+    calibrate=True,
+    **kwargs,
 ) -> Iterable[GainTable]:
     """Iterate through the block vis, solving for the gain, returning gaintable generator
 
     Optionally takes a list of skycomponents to use as a model
+    Optionally, apply calibration to input BlockVisibilities (done in place)
 
     :param bvis_gen: Generator of BlockVisibility
     :param model_components: Model components
+    :param use_previous: if True, use previous GainTable as starting point for solution
+    :param calibrate: if True, apply gain table to bvis; this is done in place with the input bvis
     :param kwargs: Optional keywords
     :return: generator of GainTables
     """
@@ -254,6 +307,10 @@ def bvis_solver(
             newgt = create_gaintable_from_blockvisibility(bv)
             previous = copy_gaintable(gt)
             previous["time"].data = newgt["time"].data
+
+        if calibrate:
+            apply_gaintable(bv, gt, inverse=True)
+
         yield gt
 
 

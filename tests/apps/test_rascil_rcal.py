@@ -7,12 +7,11 @@ import logging
 import unittest
 import shutil
 import glob
+from unittest.mock import patch
 
 import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
-from astropy.visualization import time_support
 
 from rascil.apps.rascil_rcal import (
     cli_parser,
@@ -20,6 +19,7 @@ from rascil.apps.rascil_rcal import (
     get_gain_data,
     gt_single_plot,
     read_skycomponent_from_txt_with_external_frequency,
+    _rfi_flagger,
 )
 from rascil.data_models import (
     rascil_path,
@@ -185,10 +185,9 @@ class TestRASCILRcal(unittest.TestCase):
 
     # Regression test
     def test_rcal(self):
-
         self.pre_setup()
         self.makeMS(self.flux)
-        gtfile = rcal_simulator(self.args)
+        gtfile, _ = rcal_simulator(self.args)
 
         # Check that the gaintable exists and is correct by applying it to
         # the corrupted visibility
@@ -210,8 +209,30 @@ class TestRASCILRcal(unittest.TestCase):
         self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
         assert os.path.exists(self.plotfile) == False
 
-    def test_rcal_plot(self):
+        if self.persist is False:
+            self.cleanup_data_files()
 
+    @patch("rascil.apps.rascil_rcal._rfi_flagger")
+    def test_rcal_with_flagging(self, mock_flagger):
+        """Test that rcal uses RFI flagging (the returned bvis has flags)."""
+        self.pre_setup()
+        self.makeMS(self.flux)
+
+        new_bvis = self.bvis_original.copy(deep=True)
+        mock_flagger.return_value = _rfi_flagger(new_bvis, to_flag=True)
+        n_baselines = self.bvis_original.dims["baselines"]
+
+        _, flagged_bvis = rcal_simulator(self.args)
+
+        assert new_bvis != self.bvis_original
+        assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
+        assert (new_bvis["flags"][:, : n_baselines // 2, ...] == 1).all()
+        assert (new_bvis["flags"][:, n_baselines // 2 :, ...] == 0).all()
+
+        if self.persist is False:
+            self.cleanup_data_files()
+
+    def test_rcal_plot(self):
         self.pre_setup()
         comp = self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
@@ -225,11 +246,9 @@ class TestRASCILRcal(unittest.TestCase):
         if self.persist is False:
             self.cleanup_data_files()
 
-        # Unit tests for additional functions
-
+    # Unit tests for additional functions
     def test_read_txtfile(self):
-        "Test for read_skycomponent_from_txt_with_external_frequency"
-
+        """Test for read_skycomponent_from_txt_with_external_frequency"""
         self.pre_setup()
         comp = self.create_dft_components(self.flux)
         self.write_to_txt(comp)
@@ -244,7 +263,6 @@ class TestRASCILRcal(unittest.TestCase):
             self.cleanup_data_files()
 
     def test_get_gain_data(self):
-
         self.pre_setup()
         comp = self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
@@ -257,6 +275,27 @@ class TestRASCILRcal(unittest.TestCase):
 
         if self.persist is False:
             self.cleanup_data_files()
+
+    def test_rfi_flagger_no_flag(self):
+        """Tests the placeholder function only. Option: Do not flag."""
+        self.pre_setup()
+        new_bvis = self.bvis_original.copy(deep=True)
+
+        _rfi_flagger(new_bvis)
+        assert new_bvis == self.bvis_original
+
+    def test_rfi_flagger_flag(self):
+        """Tests the placeholder function only. Option: flag."""
+        self.pre_setup()
+        new_bvis = self.bvis_original.copy(deep=True)
+
+        _rfi_flagger(new_bvis, to_flag=True)
+        n_baselines = self.bvis_original.dims["baselines"]
+
+        assert new_bvis != self.bvis_original
+        assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
+        assert (new_bvis["flags"][:, : n_baselines // 2, ...] == 1).all()
+        assert (new_bvis["flags"][:, n_baselines // 2 :, ...] == 0).all()
 
 
 if __name__ == "__main__":

@@ -16,10 +16,26 @@ assumed to be available or a point source model is used.
 
 In rascil_rcal an MeasurementSet is read in and then iterated through in time-order
 solving for the gains. The gaintables are accumulated into a single gain table that is written
-as an HDF file. There is also an additional plotting function that plots the gaintable values
-(gain amplitude, phase and residual) over time. 
+as an HDF file.
 
-If plotting is required, please make sure you have the correct path --plot_dir set up.
+There is also an additional plotting function that plots the gaintable values
+(gain amplitude, phase and residual) over time. If plotting is required,
+please make sure you have the correct path --plot_dir set up.
+
+RFI Flagger
++++++++++++
+
+rascil_rcal also implements reading RFI (Radio Frequency Interference) flags
+and using them as part of the pipeline. Flagging either occurs before any
+other operations are performed, or after first calibration.
+
+RASCIL's BlockVisibility object contains a "flags" data array with the same
+dimensions as the visibilities. This array is updated with the results of
+the SKA `Post-Correlation RFI Flagger <https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger/-/tree/master>`.
+
+Calibration (i.e. applying the gains to the input visibilities) is optional
+in rascil_rcal and can be turned on via the `--calibrate_bvis` CLI argument.
+
 
 Example script
 ++++++++++++++

@@ -55,25 +55,25 @@ cloudpickle==2.0.0
     # via
     #   dask
     #   distributed
-configparser==5.0.2
+configparser==5.1.0
     # via -r requirements.in
 cryptography==35.0.0
     # via paramiko
-cycler==0.10.0
+cycler==0.11.0
     # via matplotlib
-dask==2021.09.1
+dask==2021.11.0
     # via
     #   -r requirements.in
     #   distributed
 dask-memusage==1.1
     # via -r requirements.in
-debugpy==1.5.0
+debugpy==1.5.1
     # via ipykernel
 decorator==5.1.0
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.9.1
+distributed==2021.11.0
     # via
     #   -r requirements.in
     #   dask-memusage
@@ -85,32 +85,32 @@ entrypoints==0.3
     #   nbconvert
 fasteners==0.16.3
     # via zarr
-fsspec==2021.10.1
+fsspec==2021.11.0
     # via dask
 future==0.18.2
     # via python-casacore
-gitdb==4.0.7
+gitdb==4.0.9
     # via gitpython
 gitpython==3.1.24
     # via -r requirements.in
-graphviz==0.17
+graphviz==0.18
     # via -r requirements.in
-h5py==3.4.0
+h5py==3.5.0
     # via -r requirements.in
 heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-imageio==2.9.0
+imageio==2.10.3
     # via scikit-image
-ipykernel==6.4.1
+ipykernel==6.5.0
     # via
     #   ipywidgets
     #   jupyter
     #   jupyter-console
     #   notebook
     #   qtconsole
-ipython==7.28.0
+ipython==7.29.0
     # via
     #   ipykernel
     #   ipywidgets
@@ -118,7 +118,6 @@ ipython==7.28.0
     #   jupyter-latex-envs
 ipython-genutils==0.2.0
     # via
-    #   ipykernel
     #   ipywidgets
     #   jupyter-contrib-nbextensions
     #   nbformat
@@ -134,7 +133,7 @@ jinja2==3.0.2
     #   distributed
     #   nbconvert
     #   notebook
-jsonschema==4.1.0
+jsonschema==4.2.1
     # via nbformat
 jupyter==1.0.0
     # via -r requirements.in
@@ -153,7 +152,7 @@ jupyter-contrib-core==0.3.3
     #   jupyter-nbextensions-configurator
 jupyter-contrib-nbextensions==0.5.1
     # via -r requirements.in
-jupyter-core==4.8.1
+jupyter-core==4.9.1
     # via
     #   jupyter-client
     #   jupyter-contrib-core
@@ -180,7 +179,7 @@ llvmlite==0.37.0
     # via numba
 locket==0.2.1
     # via partd
-lxml==4.6.3
+lxml==4.6.4
     # via jupyter-contrib-nbextensions
 markupsafe==2.0.1
     # via jinja2
@@ -197,7 +196,7 @@ mistune==0.8.4
     # via nbconvert
 msgpack==1.0.2
     # via distributed
-natsort==7.1.1
+natsort==8.0.0
     # via seqfile
 nbclient==0.5.4
     # via nbconvert
@@ -219,7 +218,7 @@ nest-asyncio==1.5.1
     #   nbclient
 networkx==2.6.3
     # via scikit-image
-notebook==6.4.4
+notebook==6.4.5
     # via
     #   jupyter
     #   jupyter-contrib-core
@@ -259,7 +258,7 @@ numpy==1.20.3
     #   tifffile
     #   xarray
     #   zarr
-packaging==21.0
+packaging==21.2
     # via
     #   bleach
     #   bokeh
@@ -288,9 +287,9 @@ pillow==8.4.0
     #   imageio
     #   matplotlib
     #   scikit-image
-prometheus-client==0.11.0
+prometheus-client==0.12.0
     # via notebook
-prompt-toolkit==3.0.20
+prompt-toolkit==3.0.22
     # via
     #   ipython
     #   jupyter-console
@@ -300,9 +299,9 @@ ptyprocess==0.7.0
     # via
     #   pexpect
     #   terminado
-pycparser==2.20
+pycparser==2.21
     # via cffi
-pyerfa==2.0.0
+pyerfa==2.0.0.1
     # via astropy
 pygments==2.10.0
     # via
@@ -360,7 +359,7 @@ requests-toolbelt==0.9.1
     # via python-gitlab
 scikit-image==0.18.3
     # via -r requirements.in
-scipy==1.7.1
+scipy==1.7.2
     # via
     #   -r requirements.in
     #   aotools
@@ -376,12 +375,11 @@ six==1.16.0
     #   astroplan
     #   bcrypt
     #   bleach
-    #   cycler
     #   fasteners
     #   pynacl
     #   python-casacore
     #   python-dateutil
-smmap==4.0.0
+smmap==5.0.0
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
@@ -393,9 +391,9 @@ terminado==0.12.1
     # via notebook
 testpath==0.5.0
     # via nbconvert
-tifffile==2021.10.12
+tifffile==2021.11.2
     # via scikit-image
-toolz==0.11.1
+toolz==0.11.2
     # via
     #   dask
     #   distributed
@@ -411,7 +409,7 @@ tornado==6.1
     #   jupyter-nbextensions-configurator
     #   notebook
     #   terminado
-traitlets==5.1.0
+traitlets==5.1.1
     # via
     #   ipykernel
     #   ipython
@@ -438,11 +436,11 @@ wcwidth==0.2.5
     # via prompt-toolkit
 webencodings==0.5.1
     # via bleach
-widgetsnbextension==3.5.1
+widgetsnbextension==3.5.2
     # via ipywidgets
-xarray==0.19.0
+xarray==0.20.1
     # via -r requirements.in
-zarr==2.10.1
+zarr==2.10.2
     # via -r requirements.in
 zict==2.0.0
     # via distributed

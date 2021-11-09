@@ -254,6 +254,7 @@ class TestPipelineGraphs(unittest.TestCase):
             assert numpy.abs(qa.data["min"] - flux_min) < 1.0e-7, str(qa)
 
     def test_ical_skymodel_pipeline_empty(self):
+        # Run the ICAL pipeline starting with an empty model
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
         controls["T"]["first_selfcal"] = 1
@@ -304,11 +305,13 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.76942026395899,
-            -0.1883149303697396,
+            116.76942026395885,
+            -0.18831493036974006,
         )
 
     def test_ical_skymodel_pipeline_empty_threshold(self):
+        # Run the ICAL pipeline starting with an empty model and a component_threshold to
+        # find the brightest sources
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
         controls["T"]["first_selfcal"] = 1
@@ -365,6 +368,7 @@ class TestPipelineGraphs(unittest.TestCase):
         )
 
     def test_ical_skymodel_pipeline_exact(self):
+        # Run the ICAL pipeline starting with an exactly correct model
 
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
@@ -419,11 +423,12 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.81674314368591,
-            -0.18459199834803366,
+            116.81674314368578,
+            -0.18459199834803597,
         )
 
     def test_ical_skymodel_pipeline_partial(self):
+        # Run the ICAL pipeline starting with a model which is half the true model
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
         controls["T"]["first_selfcal"] = 0

@@ -128,7 +128,7 @@ def apply_calibration_chain(
     controls=None,
     iteration=0,
     tol=1e-6,
-    **kwargs
+    **kwargs,
 ):
     """Calibrate using algorithm specified by calibration_context and the calibration controls
 
@@ -175,7 +175,7 @@ def calibrate_chain(
     controls=None,
     iteration=0,
     tol=1e-8,
-    **kwargs
+    **kwargs,
 ):
     """Calibrate using algorithm specified by calibration_context
 
@@ -258,7 +258,7 @@ def solve_calibrate_chain(
     controls=None,
     iteration=0,
     tol=1e-6,
-    **kwargs
+    **kwargs,
 ):
     """Calibrate using algorithm specified by calibration_context
 
@@ -306,14 +306,12 @@ def solve_calibrate_chain(
                     crosspol=controls[c]["shape"] == "matrix",
                     tol=tol,
                 )
-                log.debug(
-                    "calibrate_chain: Jones matrix %s, iteration %d" % (c, iteration)
+                qa = qa_gaintable(
+                    gaintables[c],
+                    context="Jones matrix %s, iteration %d" % (c, iteration),
                 )
-                log.debug(
-                    qa_gaintable(
-                        gaintables[c],
-                        context="Jones matrix %s, iteration %d" % (c, iteration),
-                    )
+                log.info(
+                    f"calibrate_chain: Jones matrix {c}, iteration {iteration} gaintable qa {qa}"
                 )
             else:
                 log.debug(

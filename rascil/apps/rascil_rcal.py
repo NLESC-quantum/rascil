@@ -149,13 +149,9 @@ def _rfi_flagger(bvis, to_flag=False):
 
     Arbitrarily flags data (for testing purposes)
     """
-    if not to_flag:
-        return bvis
-
-    else:
-        n_baselines = bvis.dims["baselines"]
-        bvis["flags"][:, : n_baselines // 2, ...] = 1
-        return bvis
+    if to_flag:
+        n_freqs = bvis.dims["frequency"]
+        bvis["flags"][..., : n_freqs // 2, :] = 1
 
 
 def rcal_simulator(args):
@@ -200,7 +196,7 @@ def rcal_simulator(args):
 
     flagged = False
     if args.flag_first == "True":
-        bvis = _rfi_flagger(bvis)
+        _rfi_flagger(bvis)
         flagged = True
 
     if args.ingest_components_file is not None:
@@ -246,7 +242,7 @@ def rcal_simulator(args):
     )
 
     if not flagged:
-        bvis = _rfi_flagger(bvis)
+        _rfi_flagger(bvis)
 
     base = os.path.basename(args.ingest_msname)
     plotfile = plot_dir + "/" + base.replace(".ms", "_plot")
@@ -259,7 +255,7 @@ def rcal_simulator(args):
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
 
-    return gtfile, bvis
+    return gtfile
 
 
 def bvis_source(bvis: BlockVisibility, dim="time") -> Iterable[BlockVisibility]:

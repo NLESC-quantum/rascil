@@ -7,7 +7,7 @@ import logging
 import unittest
 import shutil
 import glob
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import numpy
 from astropy import units as u
@@ -43,6 +43,11 @@ from rascil.processing_components.simulation import ingest_unittest_visibility
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
+
+
+def _to_flag_flagger(bvis, to_flag=True):
+    """Need to be able to run the place-holder flagger in flagging mode."""
+    return _rfi_flagger(bvis, to_flag=to_flag)
 
 
 class TestRASCILRcal(unittest.TestCase):
@@ -187,12 +192,13 @@ class TestRASCILRcal(unittest.TestCase):
     def test_rcal(self):
         self.pre_setup()
         self.makeMS(self.flux)
-        gtfile, _ = rcal_simulator(self.args)
+        gtfile = rcal_simulator(self.args)
 
         # Check that the gaintable exists and is correct by applying it to
         # the corrupted visibility
         assert os.path.exists(gtfile)
         newgt = import_gaintable_from_hdf5(gtfile)
+        assert (newgt["weight"].data != 0).all()  # un-flagged data, all weights are non-zero
         log.info(f"\nFinal gaintable: {newgt}")
 
         qa_gt = qa_gaintable(newgt)
@@ -212,22 +218,21 @@ class TestRASCILRcal(unittest.TestCase):
         if self.persist is False:
             self.cleanup_data_files()
 
-    @patch("rascil.apps.rascil_rcal._rfi_flagger")
-    def test_rcal_with_flagging(self, mock_flagger):
+    @patch("rascil.apps.rascil_rcal._rfi_flagger", Mock(side_effect=_to_flag_flagger))
+    def test_rcal_with_flagging(self):
         """Test that rcal uses RFI flagging (the returned bvis has flags)."""
         self.pre_setup()
         self.makeMS(self.flux)
 
-        new_bvis = self.bvis_original.copy(deep=True)
-        mock_flagger.return_value = _rfi_flagger(new_bvis, to_flag=True)
-        n_baselines = self.bvis_original.dims["baselines"]
+        freq_border = self.bvis_original.dims["frequency"] // 2
+        self.args.flag_first = "True"  # flag before gains are calculated
 
-        _, flagged_bvis = rcal_simulator(self.args)
+        gtfile = rcal_simulator(self.args)
+        gain_table = import_gaintable_from_hdf5(gtfile)
 
-        assert new_bvis != self.bvis_original
-        assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
-        assert (new_bvis["flags"][:, : n_baselines // 2, ...] == 1).all()
-        assert (new_bvis["flags"][:, n_baselines // 2 :, ...] == 0).all()
+        # the flagged elements will not contribute to the GT weight --> they're 0
+        assert (gain_table["weight"].data[..., :freq_border, :, :] == 0).all()
+        assert (gain_table["weight"].data[..., freq_border:, :, :] != 0).all()
 
         if self.persist is False:
             self.cleanup_data_files()
@@ -290,12 +295,12 @@ class TestRASCILRcal(unittest.TestCase):
         new_bvis = self.bvis_original.copy(deep=True)
 
         _rfi_flagger(new_bvis, to_flag=True)
-        n_baselines = self.bvis_original.dims["baselines"]
+        n_freqs = self.bvis_original.dims["frequency"]
 
         assert new_bvis != self.bvis_original
         assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
-        assert (new_bvis["flags"][:, : n_baselines // 2, ...] == 1).all()
-        assert (new_bvis["flags"][:, n_baselines // 2 :, ...] == 0).all()
+        assert (new_bvis["flags"][..., : n_freqs // 2, :] == 1).all()
+        assert (new_bvis["flags"][..., n_freqs // 2 :, :] == 0).all()
 
 
 if __name__ == "__main__":

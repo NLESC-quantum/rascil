@@ -198,7 +198,9 @@ class TestRASCILRcal(unittest.TestCase):
         # the corrupted visibility
         assert os.path.exists(gtfile)
         newgt = import_gaintable_from_hdf5(gtfile)
-        assert (newgt["weight"].data != 0).all()  # un-flagged data, all weights are non-zero
+        assert (
+            newgt["weight"].data != 0
+        ).all()  # un-flagged data, all weights are non-zero
         log.info(f"\nFinal gaintable: {newgt}")
 
         qa_gt = qa_gaintable(newgt)

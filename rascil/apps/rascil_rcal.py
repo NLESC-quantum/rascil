@@ -163,7 +163,6 @@ def rcal_simulator(args):
     :param args: argparse with appropriate arguments
     :return:
         gtfile: file name containing all of the GainTables
-        bvis: list of BlockVisibilities read from input MeasurementSet, either calibrated or uncalibrated
     """
 
     assert args.ingest_msname is not None, "Input msname must be specified"

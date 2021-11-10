@@ -126,8 +126,8 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5,
             "ical",
             True,
-            115.83500246615166,
-            -2.0756604770187312,
+            116.01946340040713,
+            -2.073984423441475,
             None,
             None,
             0.0,
@@ -473,8 +473,10 @@ def test_rascil_imager(
 
     if tag == "ical_init_sm":
         first_selfcal = "0"
+        reset_skymodel = "False"
     else:
         first_selfcal = "2"
+        reset_skymodel = "True"
 
     calibration_args = [
         "--calibration_T_first_selfcal",
@@ -499,6 +501,8 @@ def test_rascil_imager(
         "True",
         "--calibration_context",
         "TG",
+        "--calibration_reset_skymodel",
+        reset_skymodel,
     ]
 
     if tag == "ical_init_sm":

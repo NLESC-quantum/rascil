@@ -189,9 +189,7 @@ def rcal_simulator(args):
 
     bvis = create_blockvisibility_from_ms(
         args.ingest_msname, selected_dds=args.ingest_dd
-    )[
-        0
-    ]
+    )[0]
 
     flagged = False
     if args.flag_first == "True":

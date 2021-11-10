@@ -215,10 +215,7 @@ class TestRASCILRcal(unittest.TestCase):
 
         # Test the plot does not exist
         self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
-        assert os.path.exists(self.plotfile) == False
-
-        if self.persist is False:
-            self.cleanup_data_files()
+        assert os.path.exists(self.plotfile) is False
 
     @patch("rascil.apps.rascil_rcal._rfi_flagger", Mock(side_effect=_to_flag_flagger))
     def test_rcal_with_flagging(self):

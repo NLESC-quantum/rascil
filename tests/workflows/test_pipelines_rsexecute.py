@@ -427,6 +427,70 @@ class TestPipelineGraphs(unittest.TestCase):
             -0.18459199834803597,
         )
 
+    def test_ical_skymodel_pipeline_exact_dont_reset(self):
+        # Run the ICAL pipeline starting with an exactly correct model, keep skymodel after initial calibration
+
+        self.actualSetUp(add_errors=True)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 0
+        controls["T"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(
+                components=comp_list, image=self.model_imagelist[icomp]
+            )
+            for icomp, comp_list in enumerate(self.components_list)
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="ng",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=3,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="T",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=False,
+            reset_skymodel=False,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable.hdf5"
+                % self.results_dir,
+            )
+        # Check that the residuals are very small
+        assert numpy.max(gt_list[0]["T"]["residual"].data) < 1.4e-7
+
+        self.save_and_check(
+            "ical_skymodel_pipeline_exact",
+            clean,
+            residual,
+            restored,
+            116.90605687884043,
+            -2.4246865322989384e-06,
+        )
+
     def test_ical_skymodel_pipeline_partial(self):
         # Run the ICAL pipeline starting with a model which is half the true model
         self.actualSetUp(add_errors=True)

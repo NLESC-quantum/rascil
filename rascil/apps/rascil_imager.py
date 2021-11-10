@@ -735,6 +735,7 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         component_method=args.clean_component_method,
         dft_compute_kernel=args.imaging_dft_kernel,
         clean_beam=clean_beam,
+        reset_skymodel=args.calibration_reset_model == "True",
     )
     perf_graph(result, "ical", start, args.performance_file)
 

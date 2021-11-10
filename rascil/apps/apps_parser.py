@@ -382,6 +382,12 @@ def apps_parser_calibration(parser):
     :return: argparse
     """
     parser.add_argument(
+        "--calibration_reset_skymodel",
+        type=str,
+        default="True",
+        help="Reset the initial skymodel after initial calibration?",
+    )
+    parser.add_argument(
         "--calibration_T_first_selfcal",
         type=int,
         default=1,

@@ -191,7 +191,7 @@ def rcal_simulator(args):
         args.ingest_msname, selected_dds=args.ingest_dd
     )[
         0
-    ]  # Q: why is it taking the first one only?
+    ]
 
     flagged = False
     if args.flag_first == "True":

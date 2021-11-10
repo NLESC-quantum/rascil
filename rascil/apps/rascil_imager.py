@@ -730,7 +730,7 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         restore_taper=args.clean_restore_taper,
         calibration_context=args.calibration_context,
         controls=controls,
-        global_solution=args.calibration_global_solution,
+        global_solution=args.calibration_global_solution == "True",
         component_threshold=args.clean_component_threshold,
         component_method=args.clean_component_method,
         dft_compute_kernel=args.imaging_dft_kernel,

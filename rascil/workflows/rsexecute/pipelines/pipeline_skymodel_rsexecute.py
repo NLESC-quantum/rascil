@@ -113,9 +113,9 @@ def ical_skymodel_list_rsexecute_workflow(
             **kwargs,
         )
 
-        # Erase data in the input skymodel_list
-        reset_calibration = get_parameter(kwargs, "reset_skymodel", True)
-        if reset_calibration:
+        # Erase data in the input skymodel_list?
+        reset_skymodel = get_parameter(kwargs, "reset_skymodel", True)
+        if reset_skymodel:
 
             def pipeline_zero_skymodel(sm):
                 log.info(

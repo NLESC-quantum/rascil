@@ -42,6 +42,7 @@ from rascil.processing_components.skycomponent import (
     insert_skycomponent,
     copy_skycomponent,
 )
+from rascil.processing_components import qa_gaintable
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import (
     ical_skymodel_list_rsexecute_workflow,
@@ -72,23 +73,40 @@ class TestPipelineGraphs(unittest.TestCase):
         rsexecute.close()
 
     def actualSetUp(
-        self, add_errors=False, nfreqwin=5, dospectral=True, dopol=False, zerow=False
+        self, add_errors=False, nfreqwin=5, dopol=False, zerow=False, vnchan=1
     ):
+        """Setup the blockvis
 
+        :param add_errors: Do we want to add errors?
+        :param nfreqwin: Number of frequency windows
+        :param vnchan: Number of frequencies in each window
+        :param dopol: Do polarisation?
+        :param zerow: Zero the w coordinates?
+        :return:
+        """
+        dospectral = vnchan > 1
         self.npixel = 512
         self.low = create_named_configuration("LOW", rmax=750.0)
         self.low = decimate_configuration(self.low, skip=3)
-        self.freqwin = nfreqwin
         self.ntimes = 3
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
-        self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
 
-        if self.freqwin > 1:
-            self.channelwidth = numpy.array(
-                self.freqwin * [self.frequency[1] - self.frequency[0]]
-            )
-        else:
-            self.channelwidth = numpy.array([1e6])
+        self.freqwin = nfreqwin
+        block_channel_width = (1.2e8 - 0.8e8) / self.freqwin
+        channel_width = (1.2e8 - 0.8e8) / (self.freqwin * vnchan)
+        self.frequency = numpy.array(
+            [
+                [
+                    0.8e8 + channel_width * vchan + freqwin * block_channel_width
+                    for vchan in range(vnchan)
+                ]
+                for freqwin in range(nfreqwin)
+            ]
+        )
+
+        self.channelwidth = numpy.array(
+            [[channel_width for vchan in range(vnchan)] for freqwin in range(nfreqwin)]
+        )
 
         if dopol:
             self.vis_pol = PolarisationFrame("linear")
@@ -99,12 +117,9 @@ class TestPipelineGraphs(unittest.TestCase):
             self.image_pol = PolarisationFrame("stokesI")
             f = numpy.array([100.0])
 
-        if dospectral:
-            flux = numpy.array(
-                [f * numpy.power(freq / 1e8, -0.7) for freq in self.frequency]
-            )
-        else:
-            flux = numpy.array([f])
+        flux = numpy.array(
+            [f * numpy.power(freq / 1e8, -0.7) for freq in self.frequency]
+        )
 
         self.phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -112,8 +127,8 @@ class TestPipelineGraphs(unittest.TestCase):
         self.bvis_list = [
             rsexecute.execute(ingest_unittest_visibility, nout=1)(
                 self.low,
-                [self.frequency[i]],
-                [self.channelwidth[i]],
+                self.frequency[i],
+                self.channelwidth[i],
                 self.times,
                 self.vis_pol,
                 self.phasecentre,
@@ -125,7 +140,11 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.model_imagelist = [
             rsexecute.execute(create_unittest_model, nout=1)(
-                self.bvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.001
+                self.bvis_list[i],
+                self.image_pol,
+                npixel=self.npixel,
+                cellsize=0.001,
+                nchan=vnchan,
             )
             for i in range(nfreqwin)
         ]
@@ -133,7 +152,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.components_list = [
             rsexecute.execute(create_unittest_components)(
-                self.model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :]
+                self.model_imagelist[freqwin], flux[freqwin][:, numpy.newaxis]
             )
             for freqwin, m in enumerate(self.model_imagelist)
         ]
@@ -305,8 +324,70 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.76942026395885,
-            -0.18831493036974006,
+            116.80924213494968,
+            -0.12700338113215193,
+        )
+
+    def test_ical_skymodel_pipeline_empty_4chan(self):
+        # Run the ICAL pipeline starting with an empty model
+        self.actualSetUp(add_errors=True, vnchan=4)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 1
+        controls["T"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="ng",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=3,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="T",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=False,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        for freqwin in range(self.freqwin):
+            qa = qa_gaintable(
+                gt_list[freqwin]["T"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 2.1e-2, str(qa)
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_4chan_gaintable.hdf5"
+                % self.results_dir,
+            )
+        self.save_and_check(
+            "ical_skymodel_pipeline_empty_4chan",
+            clean,
+            residual,
+            restored,
+            113.91619312932882,
+            -0.14386041143636635,
         )
 
     def test_ical_skymodel_pipeline_empty_threshold(self):
@@ -363,8 +444,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.76942026395895,
-            -0.18831493036973768,
+            116.8092421349497,
+            -0.12700338113215057,
         )
 
     def test_ical_skymodel_pipeline_exact(self):
@@ -423,8 +504,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.81674314368581,
-            -0.18459199834803672,
+            116.83666909213044,
+            -0.1272805973970848,
         )
 
     def test_ical_skymodel_pipeline_exact_dont_reset(self):
@@ -488,7 +569,7 @@ class TestPipelineGraphs(unittest.TestCase):
             residual,
             restored,
             116.90605687884043,
-            -2.4246865322989384e-06,
+            -2.287644886998181e-06,
         )
 
     def test_ical_skymodel_pipeline_partial(self):
@@ -557,8 +638,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.81674314368591,
-            -0.184591998348033,
+            116.83666909213042,
+            -0.12728059739708242,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):
@@ -594,8 +675,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.80897017399957,
-            -0.18430286786954833,
+            116.83913792559628,
+            -0.12738898297535658,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty_taylor_terms(self):
@@ -632,8 +713,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            101.20612449807776,
-            -0.05374166540972006,
+            103.75563532871399,
+            -0.040258320105007656,
             taylor=True,
         )
 
@@ -671,8 +752,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.84424764687517,
-            -0.18926129194462596,
+            116.8621697606808,
+            -0.12560801720818232,
         )
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
@@ -728,8 +809,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.87515181235142,
-            -0.09463064597231315,
+            116.88411286925424,
+            -0.06280400860409169,
         )
 
     def test_continuum_imaging_skymodel_pipeline_exact(self):

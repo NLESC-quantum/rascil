@@ -86,9 +86,9 @@ def calibrate_list_rsexecute_workflow(
         global_point_vis_list = rsexecute.execute(concatenate_visibility, nout=1)(
             point_vislist, dim="frequency"
         )
-        # global_point_vis_list = rsexecute.execute(
-        #     integrate_visibility_by_channel, nout=1
-        # )(global_point_vis_list)
+        global_point_vis_list = rsexecute.execute(
+            integrate_visibility_by_channel, nout=1
+        )(global_point_vis_list)
         # This is a global solution so we only compute one gain table
         if gt_list is None or len(gt_list) < 1:
             gt_list = [

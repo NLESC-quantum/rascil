@@ -390,6 +390,65 @@ class TestPipelineGraphs(unittest.TestCase):
             -0.14386041143636635,
         )
 
+    def test_ical_skymodel_pipeline_empty_4chan_global(self):
+        # Run the ICAL pipeline starting with an empty model
+        self.actualSetUp(add_errors=True, vnchan=4)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 1
+        controls["T"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="ng",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=3,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="T",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=True,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        qa = qa_gaintable(gt_list[0]["T"], context=f"Entire frequency window")
+        assert qa.data["residual"] < 3.2e-2, str(qa)
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_4chan_global_gaintable.hdf5"
+                % self.results_dir,
+            )
+        self.save_and_check(
+            "ical_skymodel_pipeline_empty_4chan_global",
+            clean,
+            residual,
+            restored,
+            113.22815190436802,
+            -1.0173526563931976,
+        )
+
     def test_ical_skymodel_pipeline_empty_threshold(self):
         # Run the ICAL pipeline starting with an empty model and a component_threshold to
         # find the brightest sources

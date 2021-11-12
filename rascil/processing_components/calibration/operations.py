@@ -310,11 +310,6 @@ def create_gaintable_from_blockvisibility(
         gain_interval = timeslice * numpy.ones_like(utimes)
 
     ntimes = len(utimes)
-
-    #    log.debug('create_gaintable_from_blockvisibility: times are %s' % str(utimes))
-    #    log.debug('create_gaintable_from_blockvisibility: intervals are %s' % str(gain_interval))
-
-    ntimes = len(utimes)
     ufrequency = numpy.unique(vis.frequency)
     nfrequency = len(ufrequency)
 

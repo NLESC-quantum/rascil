@@ -311,7 +311,7 @@ def solve_calibrate_chain(
                     context="Jones matrix %s, iteration %d" % (c, iteration),
                 )
                 log.info(
-                    f"calibrate_chain: Jones matrix {c}, iteration {iteration} gaintable qa {qa}"
+                    f"calibrate_chain: Jones matrix {c}, iteration {iteration} gaintable QA {qa}"
                 )
             else:
                 log.debug(

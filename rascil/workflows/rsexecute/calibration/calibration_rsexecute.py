@@ -52,7 +52,7 @@ def calibrate_list_rsexecute_workflow(
             )
         else:
             log.info(
-                "calibration_solve: Performing seperate solution of gains foe each blockvis"
+                "calibration_solve: Performing separate solution of gains for each blockvis"
             )
 
         return solve_calibrate_chain(
@@ -94,7 +94,7 @@ def calibrate_list_rsexecute_workflow(
             gt_list = [
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
                     global_point_vis_list,
-                    do_global=global_solution,
+                    do_global=True,
                 )
             ]
         else:
@@ -124,7 +124,9 @@ def calibrate_list_rsexecute_workflow(
         else:
             gt_list = [
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
-                    v, model_vislist[i]
+                    v,
+                    model_vislist[i],
+                    do_global=False,
                 )
                 for i, v in enumerate(vis_list)
             ]

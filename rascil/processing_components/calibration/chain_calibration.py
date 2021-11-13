@@ -306,13 +306,13 @@ def solve_calibrate_chain(
                     crosspol=controls[c]["shape"] == "matrix",
                     tol=tol,
                 )
+                fmin = gaintables[c].frequency.data[0]
+                fmax = gaintables[c].frequency.data[-1]
                 qa = qa_gaintable(
                     gaintables[c],
-                    context="Jones matrix %s, iteration %d" % (c, iteration),
+                    context=f"Jones matrix {c}, iteration {iteration}, frequency {fmin:4g} - {fmax:4g} Hz",
                 )
-                log.info(
-                    f"calibrate_chain: Jones matrix {c}, iteration {iteration} gaintable QA {qa}"
-                )
+                log.info(f"calibrate_chain: {qa}")
             else:
                 log.debug(
                     "calibrate_chain: Jones matrix %s not solved, iteration %d"

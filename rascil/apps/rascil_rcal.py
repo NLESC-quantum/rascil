@@ -39,8 +39,15 @@ from rascil.processing_components import (
     create_skycomponent,
     create_gaintable_from_blockvisibility,
     apply_gaintable,
+    create_low_test_beam,
+    create_image_from_visibility,
+    apply_beam_to_skycomponent,
 )
-
+from rascil.processing_components.util.coordinate_support import hadec_to_azel
+from rascil.processing_components.image.operations import (
+    import_image_from_fits,
+    export_image_to_fits,
+)
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
@@ -83,8 +90,21 @@ def cli_parser():
         "--ingest_components_file",
         type=str,
         default=None,
-        help="Name of components file (HDF5) format",
+        help="Name of components file (HDF5/txt) format",
     )
+    parser.add_argument(
+        "--apply_beam",
+        type=str,
+        default=False,
+        help="If yes, apply primary beam correction to the ingested components",
+    )
+    parser.add_argument(
+        "--ingest_beam_file",
+        type=str,
+        default=None,
+        help="Name of external beam file in FITS format",
+    )
+
     parser.add_argument(
         "--do_plotting",
         type=str,
@@ -190,6 +210,8 @@ def rcal_simulator(args):
     bvis = create_blockvisibility_from_ms(
         args.ingest_msname, selected_dds=args.ingest_dd
     )[0]
+    telescope_model = bvis.configuration.name
+    log.info(f"The data is from {telescope_model}.")
 
     flagged = False
     if args.flag_first == "True":
@@ -212,10 +234,19 @@ def rcal_simulator(args):
                 model_components = read_skycomponent_from_txt_with_external_frequency(
                     args.ingest_components_file, bvis.frequency, pol
                 )
+                telescope_model = "LOW"  # Set arbitrarily
 
             else:
                 raise FileFormatError("Input file must be of format: hdf or txt.")
 
+        if args.apply_beam == "True":
+
+            model_components = apply_beam_correction(
+                bvis,
+                model_components,
+                args.ingest_beam_file,
+                telescope_model=telescope_model,
+            )
     else:
         log.info(f"Using point source model")
         model_components = None
@@ -271,6 +302,7 @@ def bvis_source(bvis: BlockVisibility, dim="time") -> Iterable[BlockVisibility]:
 def bvis_solver(
     bvis_gen: Iterable[BlockVisibility],
     model_components,
+    phase_only=False,
     use_previous=True,
     calibrate=True,
     **kwargs,
@@ -282,6 +314,7 @@ def bvis_solver(
 
     :param bvis_gen: Generator of BlockVisibility
     :param model_components: Model components
+    :param phase_only: Solve for phase only? Otherwise, also solve for amplitude
     :param use_previous: if True, use previous GainTable as starting point for solution
     :param calibrate: if True, apply gain table to bvis; this is done in place with the input bvis
     :param kwargs: Optional keywords
@@ -292,9 +325,11 @@ def bvis_solver(
         if model_components is not None:
             modelvis = copy_visibility(bv, zero=True)
             modelvis = dft_skycomponent_visibility(modelvis, model_components)
-            gt = solve_gaintable(bv, modelvis=modelvis, gt=previous, **kwargs)
+            gt = solve_gaintable(
+                bv, modelvis=modelvis, gt=previous, phase_only=phase_only, **kwargs
+            )
         else:
-            gt = solve_gaintable(bv, gt=previous, **kwargs)
+            gt = solve_gaintable(bv, gt=previous, phase_only=phase_only, **kwargs)
 
         if use_previous:
             newgt = create_gaintable_from_blockvisibility(bv)
@@ -491,6 +526,59 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
             )
 
     return comp
+
+
+def apply_beam_correction(bvis, components, beam_file, telescope_model=None):
+
+    """Apply primary beam to skycomponents for a better skymodel
+
+    :param bvis: Blockvisibility for creating the test beam
+    :param components: Input list of skycomponents
+    :param beam_file: External FITS file of beam information (regardless of telescope)
+    :param telescope_model: Which telescope (MID or LOW)
+
+    :return comp_new: Corrected list of components
+
+    """
+
+    if beam_file is not None:
+
+        log.info("Use external beam image for correction.")
+        beam = import_image_from_fits(beam_file)
+        comp_new = apply_beam_to_skycomponent(components, beam, inverse=True)
+
+    else:
+        if "MID" not in telescope_model and "LOW" not in telescope_model:
+            raise ValueError(
+                "Telescope configuration is neither for SKA Mid nor for SKA Low."
+                "Please specify correct configuration."
+            )
+
+        # Placeholder: not sure what to do with MID
+        if "MID" in telescope_model:
+            comp_new = components
+
+        elif "LOW" in telescope_model:
+
+            # The latitude for LOW is -27 degrees
+            phasecentre = bvis.phasecentre
+            az, el = hadec_to_azel(phasecentre.ra, phasecentre.dec, -27.0 * u.deg)
+            log.info(f"The azimuth and elevation are: {az.to(u.deg), el.to(u.deg)}")
+
+            # Create a mock image, use the default npixel and cellsize
+            npixel = 512
+            fov_rad = 16.0 * numpy.pi / 180.0
+            cellsize = numpy.arcsin(2.0 * numpy.sin(0.5 * fov_rad) / npixel)
+            # cellsize = 16.0 * numpy.pi / (npixel * 180.0)
+            model = create_image_from_visibility(
+                bvis, cellsize=cellsize, override_cellsize=False
+            )
+            beam = create_low_test_beam(model, use_local=False, azel=(az, el))
+            export_image_to_fits(beam, "rascil_beam.fits")
+
+            comp_new = apply_beam_to_skycomponent(components, beam, inverse=False)
+
+    return comp_new
 
 
 if __name__ == "__main__":

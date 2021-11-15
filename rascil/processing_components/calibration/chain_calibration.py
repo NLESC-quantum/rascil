@@ -293,6 +293,8 @@ def solve_calibrate_chain(
             gaintables[c] = create_gaintable_from_blockvisibility(
                 avis, timeslice=controls[c]["timeslice"]
             )
+        fmin = gaintables[c].frequency.data[0]
+        fmax = gaintables[c].frequency.data[-1]
         if iteration >= controls[c]["first_selfcal"]:
             if numpy.max(numpy.abs(vis.blockvisibility_acc.flagged_weight)) > 0.0 and (
                 amvis is None or numpy.max(numpy.abs(amvis.vis)) > 0.0
@@ -306,22 +308,18 @@ def solve_calibrate_chain(
                     crosspol=controls[c]["shape"] == "matrix",
                     tol=tol,
                 )
-                fmin = gaintables[c].frequency.data[0]
-                fmax = gaintables[c].frequency.data[-1]
                 qa = qa_gaintable(
                     gaintables[c],
-                    context=f"Jones matrix {c}, iteration {iteration}, frequency {fmin:4g} - {fmax:4g} Hz",
+                    context=f"Model is non-zero: solving for Jones matrix {c}, iteration {iteration}, frequency {fmin:4g} - {fmax:4g} Hz",
                 )
                 log.info(f"calibrate_chain: {qa}")
             else:
-                log.debug(
-                    "calibrate_chain: Jones matrix %s not solved, iteration %d"
-                    % (c, iteration)
+                log.info(
+                    f"No model data: cannot solve for Jones matrix {c}, iteration {iteration}, frequency {fmin:4g} - {fmax:4g} Hz"
                 )
         else:
-            log.debug(
-                "calibrate_chain: Jones matrix %s not solved, iteration %d"
-                % (c, iteration)
+            log.info(
+                f"Not solving for Jones matrix {c} this iteration: iteration {iteration}, frequency {fmin:4g} - {fmax:4g} Hz"
             )
 
     return gaintables

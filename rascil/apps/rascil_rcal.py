@@ -2,21 +2,19 @@
 
 """
 
-import os
-import sys
 import argparse
 import logging
+import os
 import pprint
+import sys
 from typing import Iterable
 
+import matplotlib
 import numpy
 import xarray
 
-import matplotlib
-
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib import animation
 
 from astropy import units as u
 from astropy.time import Time
@@ -219,28 +217,29 @@ def rcal_simulator(args):
         flagged = True
 
     if args.ingest_components_file is not None:
+        log.info("Using components model for calibration")
 
         try:
-            log.info(f"Reading HDF components file {args.ingest_components_file}")
             model_components = import_skycomponent_from_hdf5(
                 args.ingest_components_file
             )
+            log.info(f"Read HDF components file {args.ingest_components_file}")
 
         except OSError:
             # file is not HDF-compatible, trying txt
             if ".txt" in args.ingest_components_file:
-                log.info(f"Reading text components file {args.ingest_components_file}")
-                pol = bvis.blockvisibility_acc.polarisation_frame
+                pol = PolarisationFrame("stokesIQUV")
                 model_components = read_skycomponent_from_txt_with_external_frequency(
                     args.ingest_components_file, bvis.frequency, pol
                 )
+                log.info(f"Read text components file {args.ingest_components_file}")
                 telescope_model = "LOW"  # Set arbitrarily
 
             else:
                 raise FileFormatError("Input file must be of format: hdf or txt.")
 
         if args.apply_beam == "True":
-
+            log.info("Apply beam correction to the components")
             model_components = apply_beam_correction(
                 bvis,
                 model_components,
@@ -248,7 +247,7 @@ def rcal_simulator(args):
                 telescope_model=telescope_model,
             )
     else:
-        log.info(f"Using point source model")
+        log.info(f"Using point source model for calibration")
         model_components = None
 
     if args.plot_dir is None:
@@ -366,7 +365,6 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
     #            log.info(f"Done dynamic plotting for {datetime}.")
 
     if do_plotting:
-
         gt_single_plot(gt_list, plot_name)
         log.info("Save final plot.")
 
@@ -375,7 +373,6 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
 
 
 def get_gain_data(gt_list):
-
     """Get data from a list of GainTables used for plotting.
 
     :param gt_list: GainTable list to plot
@@ -404,7 +401,6 @@ def get_gain_data(gt_list):
 
         # We only look at the central channel at the moment
         for gt in gt_list:
-
             time.append(gt.time.data[0] / 86400.0)
             current_gain = gt.gain.data[0]
             nchan = current_gain.shape[1]
@@ -429,7 +425,6 @@ def get_gain_data(gt_list):
 
 
 def gt_single_plot(gt_list, plot_name=None):
-
     """Plot gaintable (gain and residual values) over time
        Used to generate a single plot only
 
@@ -506,7 +501,6 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     else:
         comp = []
         for i, row in enumerate(ra):
-
             direc = SkyCoord(
                 ra=ra[i] * u.deg, dec=dec[i] * u.deg, frame="icrs", equinox="J2000"
             )
@@ -529,7 +523,6 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
 
 
 def apply_beam_correction(bvis, components, beam_file, telescope_model=None):
-
     """Apply primary beam to skycomponents for a better skymodel
 
     :param bvis: Blockvisibility for creating the test beam

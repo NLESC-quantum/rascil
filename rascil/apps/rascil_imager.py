@@ -26,6 +26,7 @@ from rascil.data_models import (
     Skycomponent,
     SkyModel,
     import_skycomponent_from_hdf5,
+    export_gaintable_to_hdf5,
 )
 from rascil.processing_components.util.sizeof import get_size
 
@@ -448,13 +449,14 @@ def perf_graph(result, name, start, performance_file):
     performance_store_dict(performance_file, "graph", graph)
 
 
-def write_results(restored_output, imagename, result, performance_file):
+def write_results(restored_output, imagename, result, performance_file, gt_list=None):
     """Write the results out to files
 
     :param restored_output: Type of output: list or taylor
     :param imagename: Root of image names
     :param result: Set of results i.e. deconvolved, residual, restored, skymodel
     :param performance_file: Name of performance file
+    :param gt_list: list of GainTables to export to HDF5
     :return:
     """
     residual, restored, skymodel = result
@@ -467,6 +469,10 @@ def write_results(restored_output, imagename, result, performance_file):
     skymodelname = imagename + "_skymodel.hdf"
     export_skymodel_to_hdf5(skymodel, skymodelname)
     del skymodel
+
+    if gt_list:
+        gt_file = imagename + "_gain_table.hdf"
+        export_gaintable_to_hdf5(gt_list, gt_file)
 
     if restored_output == "list":
         deconvolved_image = image_gather_channels(deconvolved)
@@ -750,6 +756,7 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         imagename,
         (residual, restored, skymodel),
         args.performance_file,
+        gt_list=gt_list,
     )
 
 

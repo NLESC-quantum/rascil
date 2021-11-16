@@ -152,6 +152,10 @@ def _rfi_flagger(bvis, to_flag=False):
     if to_flag:
         n_freqs = bvis.dims["frequency"]
         bvis["flags"][..., : n_freqs // 2, :] = 1
+        return bvis
+
+    else:
+        return bvis
 
 
 def rcal_simulator(args):
@@ -193,7 +197,7 @@ def rcal_simulator(args):
 
     flagged = False
     if args.flag_first == "True":
-        _rfi_flagger(bvis)
+        bvis = _rfi_flagger(bvis, to_flag=True)
         flagged = True
 
     if args.ingest_components_file is not None:
@@ -238,9 +242,6 @@ def rcal_simulator(args):
         tol=args.solution_tolerance,
     )
 
-    if not flagged:
-        _rfi_flagger(bvis)
-
     base = os.path.basename(args.ingest_msname)
     plotfile = plot_dir + "/" + base.replace(".ms", "_plot")
     log.info(f"Write plots into : \n{plotfile}\n")
@@ -248,6 +249,11 @@ def rcal_simulator(args):
     do_plotting = args.do_plotting == "True"
     plot_dynamic = args.plot_dynamic == "True"
     full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
+
+    # needs to run after gt_gen is called and GainTables are generated,
+    # else that result will be affected
+    if not flagged:
+        bvis = _rfi_flagger(bvis, to_flag=True)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)

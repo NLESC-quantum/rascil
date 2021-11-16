@@ -35,6 +35,7 @@ from rascil.processing_components.image.operations import (
     export_image_to_fits,
     create_image_from_array,
     add_image,
+    qa_image,
 )
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.plot_skycomponent import (
@@ -742,7 +743,9 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
     """
 
     if sensitivity_image is not None:
+        log.info("Use beam from {}".format(sensitivity_image))
         beam = import_image_from_fits(sensitivity_image)
+
     elif input_image is not None:
         # Use internally provided telescope primary beam
         image = import_image_from_fits(input_image)

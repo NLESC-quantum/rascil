@@ -545,7 +545,7 @@ def apply_beam_correction(bvis, components, beam_file, telescope_model=None):
 
         log.info("Use external beam image for correction.")
         beam = import_image_from_fits(beam_file)
-        comp_new = apply_beam_to_skycomponent(components, beam, inverse=True)
+        comp_new = apply_beam_to_skycomponent(components, beam, inverse=False)
 
     else:
         if "MID" not in telescope_model and "LOW" not in telescope_model:

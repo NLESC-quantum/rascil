@@ -11,6 +11,7 @@ import time
 
 import matplotlib
 import numpy
+import xarray
 
 from rascil.apps.imaging_qa_main import read_skycomponent_from_txt, FileFormatError
 
@@ -471,8 +472,12 @@ def write_results(restored_output, imagename, result, performance_file, gt_list=
     del skymodel
 
     if gt_list:
-        gt_file = imagename + "_gain_table.hdf"
-        export_gaintable_to_hdf5(gt_list, gt_file)
+        for context in gt_list[0]:
+            full_gt = xarray.concat(
+                [gt_dict[context] for i, gt_dict in enumerate(gt_list)], "frequency"
+            )
+            gt_file = f"{imagename}_gaintable_{context}.hdf"
+            export_gaintable_to_hdf5(full_gt, gt_file)
 
     if restored_output == "list":
         deconvolved_image = image_gather_channels(deconvolved)

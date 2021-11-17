@@ -116,7 +116,6 @@ def calibrate_list_rsexecute_workflow(
                     v,
                     model_vislist[i],
                     gt_list[i],
-                    do_global=False,
                 )
                 for i, v in enumerate(vis_list)
             ]
@@ -125,7 +124,6 @@ def calibrate_list_rsexecute_workflow(
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
                     v,
                     model_vislist[i],
-                    do_global=False,
                 )
                 for i, v in enumerate(vis_list)
             ]

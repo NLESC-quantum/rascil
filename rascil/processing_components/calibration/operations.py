@@ -9,7 +9,6 @@ __all__ = [
     "apply_gaintable",
     "append_gaintable",
     "create_gaintable_from_blockvisibility",
-    "create_gaintable_from_blockvisibility",
     "create_gaintable_from_rows",
     "copy_gaintable",
     "gaintable_plot",

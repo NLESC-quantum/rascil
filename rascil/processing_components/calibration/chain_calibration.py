@@ -213,7 +213,7 @@ def calibrate_chain(
                 if c not in gaintables.keys():
                     log.info("Creating new {} gaintable".format(c))
                     gaintables[c] = create_gaintable_from_blockvisibility(
-                        avis, timeslice=controls[c]["timeslice"]
+                        avis, timeslice=controls[c]["timeslice"], jones_type=c
                     )
                 gaintables[c] = solve_gaintable(
                     avis,

@@ -265,7 +265,7 @@ def setup_rsexecute(args):
         performance_dask_configuration(args.performance_file, rsexecute)
 
     else:
-        rsexecute.set_client(use_dask=False)
+        rsexecute.set_client(use_dask=True)
 
 
 def get_blockvis_list(args):
@@ -457,7 +457,7 @@ def write_results(restored_output, imagename, result, performance_file, gt_list=
     :param imagename: Root of image names
     :param result: Set of results i.e. deconvolved, residual, restored, skymodel
     :param performance_file: Name of performance file
-    :param gt_list: list of GainTables to export to HDF5
+    :param gt_list: list of dictionaries of GainTables to export to HDF5
     :return:
     """
     residual, restored, skymodel = result

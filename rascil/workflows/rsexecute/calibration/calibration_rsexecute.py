@@ -45,15 +45,16 @@ def calibrate_list_rsexecute_workflow(
     :return: list of calibrated vis, list of dictionaries of gaintables
     """
 
-    def calibration_solve(vis, modelvis=None, gt=None, do_global=None):
-        if do_global:
-            log.info(
-                "calibration_solve: Performing global solution of gains for all blockvis"
-            )
-        else:
-            log.info(
-                "calibration_solve: Performing separate solution of gains for each blockvis"
-            )
+    if global_solution:
+        log.info(
+            "calibration_solve: Performing global solution of gains for all blockvis"
+        )
+    else:
+        log.info(
+            "calibration_solve: Performing separate solution of gains for each blockvis"
+        )
+
+    def calibration_solve(vis, modelvis=None, gt=None):
 
         return solve_calibrate_chain(
             vis,
@@ -94,7 +95,6 @@ def calibrate_list_rsexecute_workflow(
             gt_list = [
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
                     global_point_vis_list,
-                    do_global=True,
                 )
             ]
         else:
@@ -102,7 +102,6 @@ def calibrate_list_rsexecute_workflow(
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
                     global_point_vis_list,
                     gt=gt_list[0],
-                    do_global=True,
                 )
             ]
 

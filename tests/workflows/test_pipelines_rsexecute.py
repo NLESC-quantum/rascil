@@ -75,7 +75,7 @@ class TestPipelineGraphs(unittest.TestCase):
     def actualSetUp(
         self, add_errors=False, nfreqwin=5, dopol=False, zerow=False, vnchan=1
     ):
-        """Setup the blockvis
+        """Setup the blockvis, model images, and components for use in the tests
 
         :param add_errors: Do we want to add errors?
         :param nfreqwin: Number of frequency windows
@@ -84,7 +84,6 @@ class TestPipelineGraphs(unittest.TestCase):
         :param zerow: Zero the w coordinates?
         :return:
         """
-        dospectral = vnchan > 1
         self.npixel = 512
         self.low = create_named_configuration("LOW", rmax=750.0)
         self.low = decimate_configuration(self.low, skip=3)

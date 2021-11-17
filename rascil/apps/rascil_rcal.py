@@ -273,7 +273,7 @@ def bvis_solver(
     model_components,
     use_previous=True,
     calibrate=True,
-    jones_type="T",
+    jones_type="B",
     **kwargs,
 ) -> Iterable[GainTable]:
     """Iterate through the block vis, solving for the gain, returning gaintable generator

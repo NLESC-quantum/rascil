@@ -35,6 +35,7 @@ def simulate_gaintable_from_pointingtable(
     scale=1.0,
     order=3,
     elevation_limit=15.0 * numpy.pi / 180.0,
+    jones_type="G",
     **kwargs,
 ):
     """Create gaintables from a pointing table
@@ -47,11 +48,15 @@ def simulate_gaintable_from_pointingtable(
     :param vp: Voltage pattern in AZELGEO frame
     :param scale: Multiply the screen by this factor
     :param order: order of spline (default is 3)
+    :param jones_type: Type of calibration matrix T or G or B
     :return:
     """
 
     nant = vis.blockvisibility_acc.nants
-    gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
+    gaintables = [
+        create_gaintable_from_blockvisibility(vis, jones_type=jones_type, **kwargs)
+        for i in sc
+    ]
 
     gnchan = gaintables[0].gaintable_acc.nchan
     frequency = gaintables[0].frequency

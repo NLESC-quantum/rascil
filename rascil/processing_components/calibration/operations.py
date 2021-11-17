@@ -297,7 +297,7 @@ def create_gaintable_from_blockvisibility(
     :param vis: BlockVisibilty
     :param timeslice: Time interval between solutions (s)
     :param frequencyslice: Frequency solution width (Hz) (NYI)
-    :param jones_type: T, G, B
+    :param jones_type: Type of calibration matrix T or G or B
     :return: GainTable
 
     """

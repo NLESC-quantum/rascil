@@ -291,7 +291,7 @@ def solve_calibrate_chain(
     for c in calibration_context:
         if c not in gaintables.keys():
             gaintables[c] = create_gaintable_from_blockvisibility(
-                avis, timeslice=controls[c]["timeslice"]
+                avis, timeslice=controls[c]["timeslice"], jones_type=c
             )
         if iteration >= controls[c]["first_selfcal"]:
             if numpy.max(numpy.abs(vis.blockvisibility_acc.flagged_weight)) > 0.0 and (

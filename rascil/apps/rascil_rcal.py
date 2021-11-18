@@ -278,16 +278,15 @@ def bvis_solver(
 ) -> Iterable[GainTable]:
     """Iterate through the block vis, solving for the gain, returning gaintable generator
 
-     Optionally takes a list of skycomponents to use as a model
-     Optionally, apply calibration to input BlockVisibilities (done in place)
+    Optionally takes a list of skycomponents to use as a model
+    Optionally, apply calibration to input BlockVisibilities (done in place)
 
-     :param bvis_gen: Generator of BlockVisibility
-     :param model_components: Model components
-     :param use_previous: if True, use previous GainTable as starting point for solution
-     :param calibrate: if True, apply gain table to bvis; this is done in place with the input bvis
-     :param jones_type: Type of calibration matrix T or G or B
-     :param kwargs: Optional keywords
-      :param jones_type: Type of calibration matrix T or G or B
+    :param bvis_gen: Generator of BlockVisibility
+    :param model_components: Model components
+    :param use_previous: if True, use previous GainTable as starting point for solution
+    :param calibrate: if True, apply gain table to bvis; this is done in place with the input bvis
+    :param jones_type: Type of calibration matrix T or G or B
+    :param kwargs: Optional keywords
     :return: generator of GainTables
     """
     previous = None

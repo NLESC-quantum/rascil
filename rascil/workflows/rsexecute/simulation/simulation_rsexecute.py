@@ -223,6 +223,7 @@ def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, jones_type="T", **kw
 
     :param vis_list: List of vis (or graph)
     :param gt_list: Optional gain table graph
+    :param jones_type: Type of calibration matrix T or G or B
     :param kwargs:
     :return: list of vis (or graph)
     """

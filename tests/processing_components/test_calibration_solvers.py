@@ -162,6 +162,18 @@ class TestCalibrationSolvers(unittest.TestCase):
             vnchan=32,
         )
 
+    def test_solve_gaintable_stokesIQUV_bandpass(self):
+        self.core_solve(
+            "stokesIQUV",
+            "linear",
+            amplitude_error=0.1,
+            phase_error=0.1,
+            phase_only=False,
+            leakage=0.0,
+            f=[100.0, 50.0, 0.0, 0.0],
+            vnchan=32,
+        )
+
     def core_solve(
         self,
         spf,

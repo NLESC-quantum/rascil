@@ -213,7 +213,7 @@ def calibrate_chain(
                 if c not in gaintables.keys():
                     log.info("Creating new {} gaintable".format(c))
                     gaintables[c] = create_gaintable_from_blockvisibility(
-                        avis, timeslice=controls[c]["timeslice"]
+                        avis, timeslice=controls[c]["timeslice"], jones_type=c
                     )
                 gaintables[c] = solve_gaintable(
                     avis,
@@ -291,7 +291,7 @@ def solve_calibrate_chain(
     for c in calibration_context:
         if c not in gaintables.keys():
             gaintables[c] = create_gaintable_from_blockvisibility(
-                avis, timeslice=controls[c]["timeslice"]
+                avis, timeslice=controls[c]["timeslice"], jones_type=c
             )
         fmin = gaintables[c].frequency.data[0]
         fmax = gaintables[c].frequency.data[-1]

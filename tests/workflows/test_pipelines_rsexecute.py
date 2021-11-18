@@ -199,7 +199,7 @@ class TestPipelineGraphs(unittest.TestCase):
                 ], seeds
 
             def sim_and_apply(vis, seed):
-                gt = create_gaintable_from_blockvisibility(vis)
+                gt = create_gaintable_from_blockvisibility(vis, jones_type="G")
                 gt = simulate_gaintable(
                     gt,
                     phase_error=0.1,

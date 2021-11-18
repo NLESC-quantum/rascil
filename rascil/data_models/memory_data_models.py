@@ -238,6 +238,7 @@ class GainTable(xarray.Dataset):
         receptor_frame: ReceptorFrame = ReceptorFrame("linear"),
         phasecentre=None,
         configuration=None,
+        jones_type="T",
     ):
         """Create a gaintable from arrays
 
@@ -254,6 +255,7 @@ class GainTable(xarray.Dataset):
         :param receptor_frame: Receptor frame
         :param phasecentre: Phasecentre (SkyCoord)
         :param configuration: Configuration
+        :param jones_type: Type of gain: T, G, B, etc
         """
 
         super().__init__()
@@ -287,6 +289,7 @@ class GainTable(xarray.Dataset):
         attrs["receptor_frame"] = receptor_frame
         attrs["phasecentre"] = phasecentre
         attrs["configuration"] = configuration
+        attrs["jones_type"] = jones_type
 
         super().__init__(datavars, coords=coords, attrs=attrs)
 

@@ -151,7 +151,7 @@ def _rfi_flagger(bvis, to_flag=False):
     """
     if to_flag:
         n_freqs = bvis.dims["frequency"]
-        bvis["flags"][..., : n_freqs // 2, :] = 1
+        bvis["flags"][..., : n_freqs // 2 + 1, :] = 1
         return bvis
 
     else:
@@ -372,20 +372,26 @@ def get_gain_data(gt_list):
         gains = []
         residual = []
         time = []
+        weight = []
 
+        chan_to_avg = 0
         # We only look at the central channel at the moment
         for gt in gt_list:
 
             time.append(gt.time.data[0] / 86400.0)
             current_gain = gt.gain.data[0]
             nchan = current_gain.shape[1]
-            gains.append(current_gain[:, nchan // 2, 0, 0])
-            residual.append(gt.residual.data[0, nchan // 2, 0, 0])
+            central_chan = nchan // 2
+            gains.append(numpy.mean(current_gain[:, central_chan-chan_to_avg:central_chan+chan_to_avg+1, 0, 0], axis=1))
+            residual.append(numpy.mean(gt.residual.data[0, central_chan-chan_to_avg:central_chan+chan_to_avg+1, 0, 0], axis=0))
+            weight.append(numpy.mean(gt.weight.data[0, :, central_chan-chan_to_avg:central_chan+chan_to_avg+1, 0, 0], axis=1))
 
         gains = numpy.array(gains)
-        amp = numpy.abs(gains) - 1.0
+        amp = numpy.abs(gains)
         amp = amp.reshape(amp.shape[1], amp.shape[0])
         phase = numpy.angle(gains, deg=True)
+        weight = numpy.array(weight)
+        weight = xarray.DataArray(weight.reshape(weight.shape[1], weight.shape[0]))
 
         phase_rel = []
         for i in range(len(phase[0])):
@@ -396,7 +402,7 @@ def get_gain_data(gt_list):
 
         timeseries = Time(time, format="mjd", out_subfmt="str")
 
-        return [timeseries, amp, phase_rel, residual]
+        return timeseries, amp, phase_rel, residual, weight
 
 
 def gt_single_plot(gt_list, plot_name=None):
@@ -414,27 +420,30 @@ def gt_single_plot(gt_list, plot_name=None):
         gt_list = [gt_list]
 
     with time_support(format="iso", scale="utc"):
+        timeseries, amp, phase_rel, residual, weight = get_gain_data(gt_list)
 
         plt.cla()
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(8, 12), sharex=True)
         fig.subplots_adjust(hspace=0)
 
         datetime = gt_list[0]["datetime"][0].data
 
-        timeseries, amp, phase_rel, residual = get_gain_data(gt_list)
-
         for i in range(amp.shape[0]):
-            ax1.plot(timeseries, amp[i], "-", label=f"Antenna {i}")
+            ax1.plot(timeseries, amp[i]-1, "-", label=f"Antenna {i}")
             ax2.plot(timeseries, phase_rel[i], "-", label=f"Antenna {i}")
+            ax3.plot(timeseries, weight[i], "-", label=f"Antenna {i}")
+
+        ax1.ticklabel_format(axis='y', style='scientific', useMathText=True)
 
         ax1.set_ylabel("Gain Amplitude - 1")
         ax2.set_ylabel("Gain Phase (Antenna - Antenna 0)")
-        ax2.legend(loc="best")
+        ax3.set_ylabel("Weight")
+        ax3.legend(loc="best")
 
-        ax3.plot(timeseries, residual, "-")
-        ax3.set_ylabel("Residual")
-        ax3.set_xlabel("Time (UTC)")
-        ax3.set_yscale("log")
+        ax4.plot(timeseries, residual, "-")
+        ax4.set_ylabel("Residual")
+        ax4.set_xlabel("Time (UTC)")
+        ax4.set_yscale("log")
         plt.xticks(rotation=30)
 
         fig.suptitle(f"Updated GainTable at {datetime}")

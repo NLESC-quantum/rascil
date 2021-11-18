@@ -265,7 +265,7 @@ def setup_rsexecute(args):
         performance_dask_configuration(args.performance_file, rsexecute)
 
     else:
-        rsexecute.set_client(use_dask=True)
+        rsexecute.set_client(use_dask=False)
 
 
 def get_blockvis_list(args):

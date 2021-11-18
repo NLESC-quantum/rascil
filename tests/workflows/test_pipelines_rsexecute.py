@@ -523,6 +523,83 @@ class TestPipelineGraphs(unittest.TestCase):
             -0.26329612618417786,
         )
 
+    def test_ical_skymodel_pipeline_empty_4chan_TGB(self):
+        # Run the ICAL pipeline starting with an empty model
+        self.actualSetUp(add_errors=True, vnchan=4)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 1
+        controls["T"]["phase_only"] = True
+        controls["T"]["timeslice"] = "auto"
+        controls["G"]["first_selfcal"] = 2
+        controls["G"]["phase_only"] = False
+        controls["G"]["timeslice"] = "auto"
+        controls["B"]["first_selfcal"] = 3
+        controls["B"]["phase_only"] = False
+        controls["B"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="ng",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=5,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="TGB",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=False,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        for freqwin in range(self.freqwin):
+            qa = qa_gaintable(
+                gt_list[freqwin]["T"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 3.3e-2, str(qa)
+            qa = qa_gaintable(
+                gt_list[freqwin]["G"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 3.3e-2, str(qa)
+            qa = qa_gaintable(
+                gt_list[freqwin]["B"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 5e-3, str(qa)
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_4chan_TGB_gaintable.hdf5"
+                % self.results_dir,
+            )
+        self.save_and_check(
+            "ical_skymodel_pipeline_empty_4chan_TGB",
+            clean,
+            residual,
+            restored,
+            113.8947579307751,
+            -0.3540250885871582,
+        )
+
     def test_ical_skymodel_pipeline_empty_4chan_global(self):
         # Run the ICAL pipeline starting with an empty model
         self.actualSetUp(add_errors=True, vnchan=4)

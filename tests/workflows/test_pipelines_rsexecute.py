@@ -705,7 +705,7 @@ class TestPipelineGraphs(unittest.TestCase):
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
-                "%s/test_pipelines_ical_skymodel_pipeline_empty_threshold_rsexecute_gaintable.hdf5"
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_threshold_rsexecute_gaintable_T.hdf5"
                 % self.results_dir,
             )
         self.save_and_check(
@@ -765,7 +765,7 @@ class TestPipelineGraphs(unittest.TestCase):
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
-                "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable.hdf5"
+                "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable_T.hdf5"
                 % self.results_dir,
             )
         self.save_and_check(
@@ -826,7 +826,7 @@ class TestPipelineGraphs(unittest.TestCase):
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
-                "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable.hdf5"
+                "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable_T.hdf5"
                 % self.results_dir,
             )
         # Check that the residuals are very small
@@ -899,7 +899,7 @@ class TestPipelineGraphs(unittest.TestCase):
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
-                "%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_gaintable.hdf5"
+                "%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_gaintable_T.hdf5"
                 % self.results_dir,
             )
         self.save_and_check(

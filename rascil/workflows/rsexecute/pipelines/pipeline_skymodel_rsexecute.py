@@ -124,6 +124,7 @@ def ical_skymodel_list_rsexecute_workflow(
                 if sm.image is not None:
                     sm.image["pixels"].data[...] = 0.0
                 sm.components = []
+                sm.gaintable = None
                 return sm
 
             skymodel_list = [

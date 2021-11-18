@@ -273,6 +273,7 @@ def bvis_solver(
     model_components,
     use_previous=True,
     calibrate=True,
+    jones_type="B",
     **kwargs,
 ) -> Iterable[GainTable]:
     """Iterate through the block vis, solving for the gain, returning gaintable generator
@@ -284,6 +285,7 @@ def bvis_solver(
     :param model_components: Model components
     :param use_previous: if True, use previous GainTable as starting point for solution
     :param calibrate: if True, apply gain table to bvis; this is done in place with the input bvis
+    :param jones_type: Type of calibration matrix T or G or B
     :param kwargs: Optional keywords
     :return: generator of GainTables
     """
@@ -292,12 +294,14 @@ def bvis_solver(
         if model_components is not None:
             modelvis = copy_visibility(bv, zero=True)
             modelvis = dft_skycomponent_visibility(modelvis, model_components)
-            gt = solve_gaintable(bv, modelvis=modelvis, gt=previous, **kwargs)
+            gt = solve_gaintable(
+                bv, modelvis=modelvis, gt=previous, jones_type=jones_type, **kwargs
+            )
         else:
             gt = solve_gaintable(bv, gt=previous, **kwargs)
 
         if use_previous:
-            newgt = create_gaintable_from_blockvisibility(bv)
+            newgt = create_gaintable_from_blockvisibility(bv, jones_type=jones_type)
             previous = copy_gaintable(gt)
             previous["time"].data = newgt["time"].data
 

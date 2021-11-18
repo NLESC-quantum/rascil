@@ -147,7 +147,9 @@ class TestDataModelHelpers(unittest.TestCase):
             polarisation_frame=PolarisationFrame("linear"),
             weight=1.0,
         )
-        gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
+        gt = create_gaintable_from_blockvisibility(
+            self.vis, timeslice="auto", jones_type="G"
+        )
         gt = simulate_gaintable(gt, phase_error=1.0, amplitude_error=0.1)
         if self.verbose:
             print(gt)

@@ -101,7 +101,7 @@ class TestCalibrationChain(unittest.TestCase):
             self.vis, original, calibration_context="T", controls=controls
         )
         residual = numpy.max(gaintables["T"].residual)
-        assert residual < 1e-6, "Max T residual = %s" % (residual)
+        assert residual < 1.3e-6, "Max T residual = %s" % (residual)
 
     def test_calibrate_T_function_phase_only(self):
         self.actualSetup("stokesI", "stokesI", f=[100.0])

@@ -382,9 +382,40 @@ def get_gain_data(gt_list):
             current_gain = gt.gain.data[0]
             nchan = current_gain.shape[1]
             central_chan = nchan // 2
-            gains.append(numpy.mean(current_gain[:, central_chan-chan_to_avg:central_chan+chan_to_avg+1, 0, 0], axis=1))
-            residual.append(numpy.mean(gt.residual.data[0, central_chan-chan_to_avg:central_chan+chan_to_avg+1, 0, 0], axis=0))
-            weight.append(numpy.mean(gt.weight.data[0, :, central_chan-chan_to_avg:central_chan+chan_to_avg+1, 0, 0], axis=1))
+            gains.append(
+                numpy.average(
+                    current_gain[
+                        :,
+                        central_chan - chan_to_avg : central_chan + chan_to_avg + 1,
+                        0,
+                        0,
+                    ],
+                    axis=1,
+                )
+            )
+            residual.append(
+                numpy.average(
+                    gt.residual.data[
+                        0,
+                        central_chan - chan_to_avg : central_chan + chan_to_avg + 1,
+                        0,
+                        0,
+                    ],
+                    axis=0,
+                )
+            )
+            weight.append(
+                numpy.average(
+                    gt.weight.data[
+                        0,
+                        :,
+                        central_chan - chan_to_avg : central_chan + chan_to_avg + 1,
+                        0,
+                        0,
+                    ],
+                    axis=1,
+                )
+            )
 
         gains = numpy.array(gains)
         amp = numpy.abs(gains)
@@ -429,11 +460,11 @@ def gt_single_plot(gt_list, plot_name=None):
         datetime = gt_list[0]["datetime"][0].data
 
         for i in range(amp.shape[0]):
-            ax1.plot(timeseries, amp[i]-1, "-", label=f"Antenna {i}")
+            ax1.plot(timeseries, amp[i] - 1, "-", label=f"Antenna {i}")
             ax2.plot(timeseries, phase_rel[i], "-", label=f"Antenna {i}")
             ax3.plot(timeseries, weight[i], "-", label=f"Antenna {i}")
 
-        ax1.ticklabel_format(axis='y', style='scientific', useMathText=True)
+        ax1.ticklabel_format(axis="y", style="scientific", useMathText=True)
 
         ax1.set_ylabel("Gain Amplitude - 1")
         ax2.set_ylabel("Gain Phase (Antenna - Antenna 0)")

@@ -223,7 +223,7 @@ class TestRASCILRcal(unittest.TestCase):
         self.pre_setup()
         self.makeMS(self.flux)
 
-        freq_border = self.bvis_original.dims["frequency"] // 2
+        freq_border = self.bvis_original.dims["frequency"] // 2 + 1
         self.args.flag_first = "True"  # flag before gains are calculated
 
         gtfile = rcal_simulator(self.args)
@@ -298,8 +298,8 @@ class TestRASCILRcal(unittest.TestCase):
 
         assert new_bvis != self.bvis_original
         assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
-        assert (new_bvis["flags"][..., : n_freqs // 2, :] == 1).all()
-        assert (new_bvis["flags"][..., n_freqs // 2 :, :] == 0).all()
+        assert (new_bvis["flags"][..., : n_freqs // 2 + 1, :] == 1).all()
+        assert (new_bvis["flags"][..., n_freqs // 2 + 1 :, :] == 0).all()
 
 
 if __name__ == "__main__":

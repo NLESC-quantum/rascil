@@ -39,6 +39,7 @@ from rascil.processing_components import (
     image_gather_channels,
     create_calibration_controls,
     advise_wide_field,
+    concatenate_gaintables,
 )
 
 from rascil.processing_components.util.performance import (
@@ -76,7 +77,6 @@ from rascil.apps.apps_parser import (
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cli_parser():
@@ -473,8 +473,9 @@ def write_results(restored_output, imagename, result, performance_file, gt_list=
 
     if gt_list:
         for context in gt_list[0]:
-            full_gt = xarray.concat(
-                [gt_dict[context] for i, gt_dict in enumerate(gt_list)], "frequency"
+            full_gt = concatenate_gaintables(
+                [gt_dict[context] for i, gt_dict in enumerate(gt_list)],
+                "frequency",
             )
             gt_file = f"{imagename}_gaintable_{context}.hdf"
             export_gaintable_to_hdf5(full_gt, gt_file)

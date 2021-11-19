@@ -32,8 +32,8 @@ def solve_gaintable(
     modelvis: BlockVisibility = None,
     gt=None,
     phase_only=True,
-    niter=30,
-    tol=1e-8,
+    niter=200,
+    tol=1e-6,
     crosspol=False,
     normalise_gains=True,
     jones_type="T",
@@ -206,7 +206,7 @@ def solve_gaintable(
 
 
 def solve_antenna_gains_itsubs_scalar(
-    gain, gwt, x, xwt, niter=30, tol=1e-8, phase_only=True, refant=0, damping=0.5
+    gain, gwt, x, xwt, niter=200, tol=1e-6, phase_only=True, refant=0, damping=0.5
 ):
     """Solve for the antenna gains
 
@@ -261,8 +261,9 @@ def solve_antenna_gains_itsubs_scalar(
                 gain[mask] = gain[mask] / numpy.abs(gain[mask])
             return gain, gwt, solution_residual_scalar(gain, x, xwt)
 
-    gain *= 0.0
-    gwt *= 0
+    log.warning(
+        "solve_antenna_gains_itsubs_scalar: gain solution failed, retaining gain solutions"
+    )
 
     if phase_only:
         mask = numpy.abs(gain) > 0.0
@@ -318,7 +319,7 @@ def gain_substitution_scalar(gain, x, xwt):
 
 
 def solve_antenna_gains_itsubs_nocrossdata(
-    gain, gwt, x, xwt, niter=30, tol=1e-8, phase_only=True, refant=0
+    gain, gwt, x, xwt, niter=200, tol=1e-6, phase_only=True, refant=0
 ):
     """Solve for the antenna gains using full matrix expressions, but no cross hands
 
@@ -372,7 +373,7 @@ def solve_antenna_gains_itsubs_nocrossdata(
 
 
 def solve_antenna_gains_itsubs_matrix(
-    gain, gwt, x, xwt, niter=30, tol=1e-8, phase_only=True, refant=0
+    gain, gwt, x, xwt, niter=200, tol=1e-6, phase_only=True, refant=0
 ):
     """Solve for the antenna gains using full matrix expressions
 
@@ -430,8 +431,10 @@ def solve_antenna_gains_itsubs_matrix(
         gain = 0.5 * (gain + gainLast)
         if change < tol:
             return gain, gwt, solution_residual_matrix(gain, x, xwt)
-    gain *= 0.0
-    gwt *= 0.0
+
+    log.warning(
+        "solve_antenna_gains_itsubs_scalar: gain solution failed, retaining gain solutions"
+    )
 
     return gain, gwt, solution_residual_matrix(gain, x, xwt)
 

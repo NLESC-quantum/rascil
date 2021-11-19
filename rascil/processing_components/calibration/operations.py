@@ -307,7 +307,7 @@ def create_gaintable_from_blockvisibility(
     nants = vis.blockvisibility_acc.nants
 
     # Set up times
-    if timeslice == "auto" or timeslice is None or timeslice < 0.0:
+    if timeslice == "auto" or timeslice is None or timeslice <= 0.0:
         utimes = vis.time
     else:
         nbins = max(

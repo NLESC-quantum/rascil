@@ -174,7 +174,7 @@ def calibrate_chain(
     calibration_context="T",
     controls=None,
     iteration=0,
-    tol=1e-8,
+    tol=1e-6,
     **kwargs,
 ):
     """Calibrate using algorithm specified by calibration_context

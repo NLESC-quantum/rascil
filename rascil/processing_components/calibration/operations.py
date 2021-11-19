@@ -13,12 +13,14 @@ __all__ = [
     "copy_gaintable",
     "gaintable_plot",
     "multiply_gaintables",
+    "concatenate_gaintables",
 ]
 
 import copy
 import logging
 from typing import Union
 
+import xarray
 import matplotlib.pyplot as plt
 import numpy.linalg
 
@@ -306,10 +308,7 @@ def create_gaintable_from_blockvisibility(
 
     # Set up times
     if timeslice == "auto" or timeslice is None or timeslice < 0.0:
-        timeslice = 0.0
-
-    if timeslice == 0.0:
-        nbins = len(vis.time)
+        utimes = vis.time
     else:
         nbins = max(
             1,
@@ -318,11 +317,12 @@ def create_gaintable_from_blockvisibility(
             ).astype("int"),
         )
 
-    utimes = [
-        numpy.average(times)
-        for time, times in vis.time.groupby_bins("time", nbins, squeeze=False)
-    ]
-    utimes = numpy.array(utimes)
+        utimes = [
+            numpy.average(times)
+            for time, times in vis.time.groupby_bins("time", nbins, squeeze=False)
+        ]
+        utimes = numpy.array(utimes)
+
     gain_interval = numpy.ones_like(utimes)
     if len(utimes) > 1:
         for time_index, _ in enumerate(utimes):
@@ -597,3 +597,17 @@ def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
         )
 
     return gt
+
+
+def concatenate_gaintables(gt_list, dim="time"):
+    """Concatenate a list of gaintables
+
+    :param gt_list: List of gaintables
+    :return: Concatendated gaintable
+    """
+
+    assert len(gt_list) > 0
+
+    return xarray.concat(
+        gt_list, dim=dim, data_vars="minimal", coords="minimal", compat="override"
+    )

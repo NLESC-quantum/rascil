@@ -88,7 +88,7 @@ def solve_gaintable(
             "time": slice(time - gt.interval[row] / 2, time + gt.interval[row] / 2)
         }
         pointvis_sel = pointvis.sel(time_slice)
-        if pointvis.blockvisibility_acc.ntimes > 0:
+        if pointvis_sel.blockvisibility_acc.ntimes > 0:
             x_b = numpy.sum(
                 (pointvis_sel.vis.data * pointvis_sel.weight.data)
                 * (1 - pointvis_sel.flags.data),
@@ -111,6 +111,7 @@ def solve_gaintable(
                 x[mask] = x[mask] / xwt[mask]
                 x[~mask] = 0.0
                 xwt[mask] = xwt[mask] / numpy.max(xwt[mask])
+                xwt[~mask] = 0.0
                 x = x.reshape(x_shape)
 
                 if vis.blockvisibility_acc.npol == 1:
@@ -259,6 +260,9 @@ def solve_antenna_gains_itsubs_scalar(
                 mask = numpy.abs(gain) > 0.0
                 gain[mask] = gain[mask] / numpy.abs(gain[mask])
             return gain, gwt, solution_residual_scalar(gain, x, xwt)
+
+    gain *= 0.0
+    gwt *= 0
 
     if phase_only:
         mask = numpy.abs(gain) > 0.0
@@ -426,6 +430,8 @@ def solve_antenna_gains_itsubs_matrix(
         gain = 0.5 * (gain + gainLast)
         if change < tol:
             return gain, gwt, solution_residual_matrix(gain, x, xwt)
+    gain *= 0.0
+    gwt *= 0.0
 
     return gain, gwt, solution_residual_matrix(gain, x, xwt)
 
@@ -514,10 +520,10 @@ def solution_residual_scalar(gain, x, xwt):
         error = x[:, :, chan, 0, 0] - smueller
         for i in range(nant):
             error[i, i] = 0.0
-        residual += numpy.sum(
+        residual[chan] += numpy.sum(
             error * xwt[:, :, chan, 0, 0] * numpy.conjugate(error)
         ).real
-        sumwt += numpy.sum(xwt[:, :, chan, 0, 0])
+        sumwt[chan] += numpy.sum(xwt[:, :, chan, 0, 0])
 
     residual[sumwt > 0.0] = numpy.sqrt(residual[sumwt > 0.0] / sumwt[sumwt > 0.0])
     residual[sumwt <= 0.0] = 0.0

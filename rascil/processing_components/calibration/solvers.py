@@ -36,7 +36,8 @@ def solve_gaintable(
     tol=1e-8,
     crosspol=False,
     normalise_gains=True,
-    **kwargs
+    jones_type="T",
+    **kwargs,
 ) -> GainTable:
     """Solve a gain table by fitting an observed visibility to a model visibility
 
@@ -49,6 +50,7 @@ def solve_gaintable(
     :param niter: Number of iterations (default 30)
     :param tol: Iteration stops when the fractional change in the gain solution is below this tolerance
     :param crosspol: Do solutions including cross polarisations i.e. XY, YX or RL, LR
+    :param jones_type: Type of calibration matrix T or G or B
     :return: GainTable containing solution
 
     """
@@ -64,7 +66,7 @@ def solve_gaintable(
 
     if gt is None:
         log.debug("solve_gaintable: creating new gaintable")
-        gt = create_gaintable_from_blockvisibility(vis, **kwargs)
+        gt = create_gaintable_from_blockvisibility(vis, jones_type=jones_type, **kwargs)
     else:
         log.debug("solve_gaintable: starting from existing gaintable")
 

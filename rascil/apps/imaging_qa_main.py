@@ -53,6 +53,11 @@ from rascil.apps.imaging_qa.imaging_qa_diagnostics import (
     imaging_qa_diagnostics,
 )
 
+from rascil.workflows.rsexecute.execution_support.rsexecute import (
+    rsexecute,
+)
+from dask.distributed import Client
+
 
 class FileFormatError(Exception):
     pass
@@ -232,6 +237,11 @@ def cli_parser():
         help="If true, surpass BDSF when the output already exists. "
         "The checker will start from reading the BDSF csv file",
     )
+    parser.add_argument("--use_dask", type=str, default="False", help="")
+    parser.add_argument("--dask_scheduler", type=str, default="noexisting", help="")
+    parser.add_argument("--dask_nworkers", type=int, default=32, help="")
+    parser.add_argument("--dask_nthreads", type=int, default=1, help="")
+    parser.add_argument("--dask_memory", type=str, default="30GiB", help="")
 
     return parser
 
@@ -269,6 +279,19 @@ def analyze_image(args):
         )
 
     init_logging()
+
+    if args.use_dask == "True":
+        if args.dask_scheduler == "existing":
+            rsexecute.set_client(use_dask=True)
+        else:
+            client = Client(
+                n_workers=args.dask_nworkers,
+                threads_per_worker=args.dask_nthreads,
+                memory_limit=args.dask_memory,
+                local_directory=".",
+            )
+            rsexecute.set_client(use_dask=True, client=client)
+        rsexecute.run(init_logging)
 
     log.info("\nRASCIL Continuum Imaging Checker\n")
 
@@ -317,7 +340,7 @@ def analyze_image(args):
 
     thresh_isl = args.finder_thresh_isl
     thresh_pix = args.finder_thresh_pix
-
+    use_dask = args.use_dask
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(thresh_isl, thresh_pix))
 
@@ -334,6 +357,7 @@ def analyze_image(args):
             perform_diagnostics=perform_diagnostics,
             quiet_bdsf=quiet_bdsf,
             saverms=saverms,
+            use_dask=use_dask,
         )
     else:
         log.info("Restart option is on. Will directly read from the source file.")
@@ -456,6 +480,7 @@ def imaging_qa_bdsf(
     perform_diagnostics=False,
     quiet_bdsf=False,
     saverms=False,
+    use_dask="False",
 ):
     """
     PyBDSF-based source finder
@@ -523,7 +548,9 @@ def imaging_qa_bdsf(
 
     if perform_diagnostics:
         log.info("Running diagnostics for the restored image")
-        imaging_qa_diagnostics(img_rest, input_image_restored, "restored")
+        imaging_qa_diagnostics(
+            img_rest, input_image_restored, "restored", use_dask=use_dask
+        )
 
     if input_image_residual is not None:
         log.info("Analysing the residual image")
@@ -568,7 +595,9 @@ def imaging_qa_bdsf(
         if perform_diagnostics:
 
             log.info("Running diagnostics for the residual image")
-            imaging_qa_diagnostics(img_resid, input_image_residual, "residual")
+            imaging_qa_diagnostics(
+                img_resid, input_image_residual, "residual", use_dask=use_dask
+            )
 
     return
 

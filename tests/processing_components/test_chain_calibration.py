@@ -101,7 +101,7 @@ class TestCalibrationChain(unittest.TestCase):
             self.vis, original, calibration_context="T", controls=controls
         )
         residual = numpy.max(gaintables["T"].residual)
-        assert residual < 1e-8, "Max T residual = %s" % (residual)
+        assert residual < 1e-6, "Max T residual = %s" % (residual)
 
     def test_calibrate_T_function_phase_only(self):
         self.actualSetup("stokesI", "stokesI", f=[100.0])
@@ -119,7 +119,7 @@ class TestCalibrationChain(unittest.TestCase):
             self.vis, original, calibration_context="T", controls=controls
         )
         residual = numpy.max(gaintables["T"].residual)
-        assert residual < 1e-8, "Max T residual = %s" % (residual)
+        assert residual < 1e-6, "Max T residual = %s" % (residual)
 
     def test_calibrate_G_function(self):
         self.actualSetup("stokesIQUV", "linear", f=[100.0, 50.0, 0.0, 0.0])
@@ -142,7 +142,7 @@ class TestCalibrationChain(unittest.TestCase):
             corrupted, self.vis, calibration_context="G", controls=controls
         )
         residual = numpy.max(gaintables["G"].residual)
-        assert residual < 1e-8, "Max G residual = %s" % (residual)
+        assert residual < 1e-6, "Max G residual = %s" % (residual)
 
     def test_calibrate_TG_function(self):
         self.actualSetup("stokesIQUV", "linear", f=[100.0, 50, 0.0, 0.0])
@@ -167,7 +167,7 @@ class TestCalibrationChain(unittest.TestCase):
         )
         # We test the G residual because it is calibrated last
         residual = numpy.max(gaintables["G"].residual)
-        assert residual < 1e-8, "Max T residual = %s" % residual
+        assert residual < 1e-6, "Max T residual = %s" % residual
 
     def test_calibrate_B_function(self):
         self.actualSetup("stokesIQUV", "linear", f=[100.0, 50, 0.0, 0.0], vnchan=32)
@@ -196,7 +196,7 @@ class TestCalibrationChain(unittest.TestCase):
             self.vis, original, calibration_context="B", controls=controls
         )
         residual = numpy.max(gaintables["B"].residual)
-        assert residual < 1e-8, "Max B residual = %s" % residual
+        assert residual < 1e-6, "Max B residual = %s" % residual
 
 
 if __name__ == "__main__":

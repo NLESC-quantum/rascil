@@ -35,7 +35,6 @@ from rascil.processing_components.image.operations import (
     export_image_to_fits,
     create_image_from_array,
     add_image,
-    qa_image,
 )
 from rascil.processing_components.imaging.primary_beams import create_pb
 from rascil.processing_components.skycomponent.plot_skycomponent import (
@@ -366,7 +365,9 @@ def analyze_image(args):
     log.info("Number of frequency moments image found: {}".format(len(moment_images)))
 
     log.info("Putting sources into skycomponents format.")
-    out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
+    out = create_source_to_skycomponent(
+        source_file, rascil_source_file, freq, PolarisationFrame(image_pol)
+    )
 
     # Correct and put into new csv file
     # Calculate spectral index from frequency moment images
@@ -402,7 +403,9 @@ def analyze_image(args):
             orig = import_skycomponent_from_hdf5(args.input_source_filename)
 
         elif ".txt" in args.input_source_filename:
-            orig = read_skycomponent_from_txt(args.input_source_filename, freq)
+            orig = read_skycomponent_from_txt(
+                args.input_source_filename, freq, PolarisationFrame(image_pol)
+            )
         else:
             raise FileFormatError("Input file must be of format: hdf5 or txt.")
 
@@ -574,7 +577,7 @@ def imaging_qa_bdsf(
     return
 
 
-def create_source_to_skycomponent(source_file, rascil_source_file, freq):
+def create_source_to_skycomponent(source_file, rascil_source_file, freq, pol):
     """
     Put the sources into RASCIL-readable skycomponents
 
@@ -582,16 +585,17 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     :param rascil_source_file: Output file name of the RASCIL skycomponents hdf file
     :param freq: List of frequencies in float
                  (if single frequency, pass it in a length one array)
+    :param pol: Polarisation frame
     :return comp: List of skycomponents
     """
 
     data = pd.read_csv(source_file, sep=r"\s*,\s*", skiprows=5, engine="python")
     comp = []
 
-    # TODO: Change this to multiple polarizaions
     nchan = len(freq)
-    npol = 1
+    npol = pol.npol
     centre = nchan // 2
+    log.info(f" nchan = {nchan}, npol = {npol}")
 
     for i, row in data.iterrows():
 
@@ -614,7 +618,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
                     direction=direc,
                     flux=flux_array,
                     frequency=freq,
-                    polarisation_frame=PolarisationFrame("stokesI"),
+                    polarisation_frame=pol,
                 )
             )
 
@@ -803,12 +807,13 @@ def check_source(orig, comp, match_sep):
     return matches
 
 
-def read_skycomponent_from_txt(filename, freq):
+def read_skycomponent_from_txt(filename, freq, pol):
     """
     Read source input from a txt file and make them into skycomponents
 
     :param filename: Name of input file
     :param freq: List of frequencies in float
+    :param pol: Polarisation frame
     :return comp: List of skycomponents
     """
 
@@ -822,7 +827,7 @@ def read_skycomponent_from_txt(filename, freq):
     spec_indx = data[7]
 
     nchan = len(freq)
-    npol = 1
+    npol = pol.npol
     for i, row in enumerate(ra):
 
         direc = SkyCoord(
@@ -841,7 +846,7 @@ def read_skycomponent_from_txt(filename, freq):
                 direction=direc,
                 flux=flux_array,
                 frequency=freq,
-                polarisation_frame=PolarisationFrame("stokesI"),
+                polarisation_frame=pol,
             )
         )
 

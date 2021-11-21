@@ -228,12 +228,12 @@ def rcal_simulator(args):
         except OSError:
             # file is not HDF-compatible, trying txt
             if ".txt" in args.ingest_components_file:
-                pol = PolarisationFrame("stokesIQUV")
+                pol = PolarisationFrame("stokesIQUV")  # Set arbitrarily for now
                 model_components = read_skycomponent_from_txt_with_external_frequency(
                     args.ingest_components_file, bvis.frequency, pol
                 )
                 log.info(f"Read text components file {args.ingest_components_file}")
-                telescope_model = "LOW"  # Set arbitrarily
+                telescope_model = "LOW"  # Since LOW doesn't write configuration, set arbitrarily for now
 
             else:
                 raise FileFormatError("Input file must be of format: hdf or txt.")
@@ -570,7 +570,9 @@ def apply_beam_correction(bvis, components, beam_file, telescope_model=None):
             beam_local = create_low_test_beam(model, use_local=True, azel=(az, el))
             beam = create_low_test_beam(model, use_local=False)
             beam["pixels"].data = beam_local["pixels"].data
-            export_image_to_fits(beam, "rascil_beam.fits")
+
+            # Output beam image itself for checking purposes
+            export_image_to_fits(beam, "rascil_low_beam.fits")
 
             comp_new = apply_beam_to_skycomponent(components, beam, inverse=False)
 

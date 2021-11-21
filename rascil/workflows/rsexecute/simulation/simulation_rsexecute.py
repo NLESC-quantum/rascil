@@ -218,18 +218,21 @@ def simulate_list_rsexecute_workflow(
     return vis_list
 
 
-def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, **kwargs):
+def corrupt_list_rsexecute_workflow(vis_list, gt_list=None, jones_type="T", **kwargs):
     """Create a graph to apply gain errors to a vis_list
 
     :param vis_list: List of vis (or graph)
     :param gt_list: Optional gain table graph
+    :param jones_type: Type of calibration matrix T or G or B
     :param kwargs:
     :return: list of vis (or graph)
     """
 
     def simulation_corrupt_vis(bvis, gt, **kwargs):
         if gt is None:
-            gt = create_gaintable_from_blockvisibility(bvis, **kwargs)
+            gt = create_gaintable_from_blockvisibility(
+                bvis, jones_type=jones_type, **kwargs
+            )
             gt = simulate_gaintable(gt, **kwargs)
             bvis = apply_gaintable(bvis, gt)
             return bvis
@@ -258,6 +261,7 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(
     height=3e5,
     type_atmosphere="iono",
     reference_component=None,
+    jones_type="B",
     **kwargs
 ):
     """Create gaintable for atmospheric errors
@@ -268,6 +272,7 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(
     :param screen:
     :param height: Height (in m) of screen above telescope e.g. 3e5
     :param type_atmosphere: 'ionosphere' or 'troposhere'
+    :param jones_type: Type of calibration matrix T or G or B
     :return: (list of error-free gaintables, list of error gaintables) or graph
     """
 
@@ -289,7 +294,9 @@ def create_atmospheric_errors_gaintable_rsexecute_workflow(
     # Create the gain tables, one per Visibility and per component
     nominal_gt_list = [
         [
-            rsexecute.execute(create_gaintable_from_blockvisibility)(bvis, **kwargs)
+            rsexecute.execute(create_gaintable_from_blockvisibility)(
+                bvis, jones_type=jones_type, **kwargs
+            )
             for cmp in sub_components
         ]
         for ibv, bvis in enumerate(sub_bvis_list)

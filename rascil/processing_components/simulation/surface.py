@@ -33,6 +33,7 @@ def simulate_gaintable_from_voltage_pattern(
     vis_slices=None,
     order=3,
     elevation_limit=15.0 * numpy.pi / 180.0,
+    jones_type="B",
     **kwargs,
 ):
     """Create gaintables from a list of components and voltage patterns
@@ -43,10 +44,14 @@ def simulate_gaintable_from_voltage_pattern(
     :param sc: Sky components for which pierce points are needed
     :param vp: Voltage pattern in AZELGEO frame, can also be a list of voltage patterns, indexed alphabeticallu
     :param order: order of spline (default is 3)
+    :param jones_type: Type of calibration matrix T or G or B
     :return:
     """
 
-    gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
+    gaintables = [
+        create_gaintable_from_blockvisibility(vis, jones_type=jones_type, **kwargs)
+        for i in sc
+    ]
 
     nant = gaintables[0].gaintable_acc.nants
     gnchan = gaintables[0].gaintable_acc.nchan
@@ -263,6 +268,7 @@ def simulate_gaintable_from_zernikes(
     vis_slices=None,
     order=3,
     elevation_limit=15.0 * numpy.pi / 180.0,
+    jones_type="B",
     **kwargs,
 ):
     """Create gaintables for a set of zernikes
@@ -272,12 +278,16 @@ def simulate_gaintable_from_zernikes(
     :param vp: List of Voltage patterns in AZELGEO frame
     :param vp_coeffs: Fractional contribution [nants, nvp]
     :param order: order of spline (default is 3)
+    :param jones_type: Type of calibration matrix T or G or B
     :return:
     """
 
     ntimes = vis.vis.shape[0]
     vp_coeffs = numpy.array(vp_coeffs)
-    gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
+    gaintables = [
+        create_gaintable_from_blockvisibility(vis, jones_type=jones_type, **kwargs)
+        for i in sc
+    ]
     nant = gaintables[0].gaintable_acc.nants
 
     # assert isinstance(vis, BlockVisibility)

@@ -254,6 +254,7 @@ def apply_beam_gain_for_mid(
         sc=[emitter_comp],
         vp=voltage_pattern,
         elevation_limit=0.0,
+        jones_type="B",
     )
 
     # apply the beam gain --> it updates subvis in place

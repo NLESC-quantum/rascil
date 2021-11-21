@@ -71,6 +71,7 @@ def create_gaintable_from_screen(
     r0=5e3,
     type_atmosphere="ionosphere",
     reference_component=None,
+    jones_type="T",
     **kwargs
 ):
     """Create gaintables from a screen calculated using ARatmospy
@@ -84,6 +85,7 @@ def create_gaintable_from_screen(
     :param r0: r0 in meters
     :param type_atmosphere: 'ionosphere' or 'troposphere'
     :param reference: Use the first component as a reference
+    :param jones_type: Type of calibration matrix T or G or B
     :return:
     """
     # assert isinstance(vis, BlockVisibility)
@@ -96,7 +98,10 @@ def create_gaintable_from_screen(
 
     nant = station_locations.shape[0]
     t2r = numpy.pi / 43200.0
-    gaintables = [create_gaintable_from_blockvisibility(vis, **kwargs) for i in sc]
+    gaintables = [
+        create_gaintable_from_blockvisibility(vis, jones_type=jones_type, **kwargs)
+        for i in sc
+    ]
 
     # Use memmap to speed up access and limit memory use
     warnings.simplefilter("ignore", FITSFixedWarning)

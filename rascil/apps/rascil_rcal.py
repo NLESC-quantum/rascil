@@ -555,7 +555,8 @@ def apply_beam_correction(bvis, components, beam_file, telescope_model=None):
 
             # The latitude for LOW is -27 degrees
             phasecentre = bvis.phasecentre
-            az, el = hadec_to_azel(phasecentre.ra, phasecentre.dec, -27.0 * u.deg)
+            # We want to make the beam for transit so we sett the HA to 0.0
+            az, el = hadec_to_azel(0.0 * u.deg, phasecentre.dec, -27.0 * u.deg)
             log.info(f"The azimuth and elevation are: {az.to(u.deg), el.to(u.deg)}")
 
             # Create a mock image, use the default npixel and cellsize
@@ -566,7 +567,9 @@ def apply_beam_correction(bvis, components, beam_file, telescope_model=None):
             model = create_image_from_visibility(
                 bvis, cellsize=cellsize, override_cellsize=False
             )
-            beam = create_low_test_beam(model, use_local=False, azel=(az, el))
+            beam_local = create_low_test_beam(model, use_local=True, azel=(az, el))
+            beam = create_low_test_beam(model, use_local=False)
+            beam["pixels"].data = beam_local["pixels"].data
             export_image_to_fits(beam, "rascil_beam.fits")
 
             comp_new = apply_beam_to_skycomponent(components, beam, inverse=False)

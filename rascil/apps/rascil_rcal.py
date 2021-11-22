@@ -145,14 +145,11 @@ def cli_parser():
         "--initial_threshold",
         type=float,
         default="8",
-        help="The initial threshold to be used by the flagger."
+        help="The initial threshold to be used by the flagger.",
     )
 
     parser.add_argument(
-        "--rho",
-        type=float,
-        default="1.5",
-        help="The initial rho used by flagger."
+        "--rho", type=float, default="1.5", help="The initial rho used by flagger."
     )
 
     return parser
@@ -169,9 +166,16 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
 
     ska_post_correlation_rfi_flagger.run_flagger_on_all_slices(
-        bvis.dims['time'], bvis.dims['frequency'], bvis.dims['baselines'],
-        bvis.dims['polarisation'], abs(bvis['vis'].values),
-        bvis['flags'].values, thresholds, sequence_length, sequence)
+        bvis.dims["time"],
+        bvis.dims["frequency"],
+        bvis.dims["baselines"],
+        bvis.dims["polarisation"],
+        abs(bvis["vis"].data.astype("float32")),
+        bvis["flags"].data.astype("int32"),
+        thresholds.astype("float32"),
+        sequence_length,
+        sequence,
+    )
 
 
 def rcal_simulator(args):
@@ -259,8 +263,6 @@ def rcal_simulator(args):
         calibrate=args.calibrate_bvis == "True",
         tol=args.solution_tolerance,
     )
-
-
 
     base = os.path.basename(args.ingest_msname)
     plotfile = plot_dir + "/" + base.replace(".ms", "_plot")

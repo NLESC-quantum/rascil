@@ -1087,7 +1087,7 @@ def insert_unittest_errors(
 
     for c in calibration_context:
         gaintable = create_gaintable_from_blockvisibility(
-            vt, timeslice=controls[c]["timeslice"]
+            vt, timeslice=controls[c]["timeslice"], jones_type=c
         )
         gaintable = simulate_gaintable(
             gaintable,

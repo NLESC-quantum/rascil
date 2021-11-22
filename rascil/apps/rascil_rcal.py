@@ -23,6 +23,8 @@ from astropy.time import Time
 from astropy.visualization import time_support
 from astropy.coordinates import SkyCoord
 
+import ska_post_correlation_rfi_flagger
+
 from rascil.data_models import (
     BlockVisibility,
     GainTable,
@@ -139,23 +141,37 @@ def cli_parser():
         help="Whether to apply calibration or not.",
     )
 
+    parser.add_argument(
+        "--initial_threshold",
+        type=float,
+        default="8",
+        help="The initial threshold to be used by the flagger."
+    )
+
+    parser.add_argument(
+        "--rho",
+        type=float,
+        default="1.5",
+        help="The initial rho used by flagger."
+    )
+
     return parser
 
 
-def _rfi_flagger(bvis, to_flag=False):
+def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     """
-    Place holder function. It will be replaced with RFI flagger
-    once python interface is implemented.
+    Wrapper function for the flagger, certain defaults are managed here.
 
-    Arbitrarily flags data (for testing purposes)
     """
-    if to_flag:
-        n_freqs = bvis.dims["frequency"]
-        bvis["flags"][..., : n_freqs // 2 + 1, :] = 1
-        return bvis
+    sequence = [1, 2, 4, 8, 16, 32]
+    sequence_length = len(sequence)
+    sequence = numpy.array(sequence, dtype=numpy.int32)
+    thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
 
-    else:
-        return bvis
+    ska_post_correlation_rfi_flagger.run_flagger_on_all_slices(
+        bvis.dims['time'], bvis.dims['frequency'], bvis.dims['baselines'],
+        bvis.dims['polarisation'], abs(bvis['vis'].values),
+        bvis['flags'].values, thresholds, sequence_length, sequence)
 
 
 def rcal_simulator(args):
@@ -196,8 +212,10 @@ def rcal_simulator(args):
     )[0]
 
     flagged = False
+    initial_threshold = args.initial_threshold
+    rho = args.rho
     if args.flag_first == "True":
-        bvis = _rfi_flagger(bvis, to_flag=True)
+        _rfi_flagger(bvis, initial_threshold, rho)
         flagged = True
 
     if args.ingest_components_file is not None:
@@ -242,6 +260,8 @@ def rcal_simulator(args):
         tol=args.solution_tolerance,
     )
 
+
+
     base = os.path.basename(args.ingest_msname)
     plotfile = plot_dir + "/" + base.replace(".ms", "_plot")
     log.info(f"Write plots into : \n{plotfile}\n")
@@ -250,10 +270,8 @@ def rcal_simulator(args):
     plot_dynamic = args.plot_dynamic == "True"
     full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
 
-    # needs to run after gt_gen is called and GainTables are generated,
-    # else that result will be affected
     if not flagged:
-        bvis = _rfi_flagger(bvis, to_flag=True)
+        _rfi_flagger(bvis, initial_threshold, rho)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -279,6 +297,7 @@ def bvis_solver(
     model_components,
     use_previous=True,
     calibrate=True,
+    jones_type="B",
     **kwargs,
 ) -> Iterable[GainTable]:
     """Iterate through the block vis, solving for the gain, returning gaintable generator
@@ -290,6 +309,7 @@ def bvis_solver(
     :param model_components: Model components
     :param use_previous: if True, use previous GainTable as starting point for solution
     :param calibrate: if True, apply gain table to bvis; this is done in place with the input bvis
+    :param jones_type: Type of calibration matrix T or G or B
     :param kwargs: Optional keywords
     :return: generator of GainTables
     """
@@ -298,12 +318,14 @@ def bvis_solver(
         if model_components is not None:
             modelvis = copy_visibility(bv, zero=True)
             modelvis = dft_skycomponent_visibility(modelvis, model_components)
-            gt = solve_gaintable(bv, modelvis=modelvis, gt=previous, **kwargs)
+            gt = solve_gaintable(
+                bv, modelvis=modelvis, gt=previous, jones_type=jones_type, **kwargs
+            )
         else:
             gt = solve_gaintable(bv, gt=previous, **kwargs)
 
         if use_previous:
-            newgt = create_gaintable_from_blockvisibility(bv)
+            newgt = create_gaintable_from_blockvisibility(bv, jones_type=jones_type)
             previous = copy_gaintable(gt)
             previous["time"].data = newgt["time"].data
 

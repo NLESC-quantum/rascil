@@ -47,10 +47,14 @@ class TestCalibrationSolvers(unittest.TestCase):
     ):
         self.lowcore = create_named_configuration("LOWBD2", rmax=rmax)
         self.times = (numpy.pi / 43200.0) * numpy.linspace(0.0, 30.0, 1 + ntimes)
-        self.frequency = numpy.linspace(1.0e8, 1.1e8, vnchan)
-        self.channel_bandwidth = numpy.array(
-            vnchan * [self.frequency[1] - self.frequency[0]]
-        )
+        if vnchan > 1:
+            self.frequency = numpy.linspace(1.0e8, 1.1e8, vnchan)
+            self.channel_bandwidth = numpy.array(
+                vnchan * [self.frequency[1] - self.frequency[0]]
+            )
+        else:
+            self.frequency = 1e8 * numpy.ones([1])
+            self.channel_bandwidth = 1e7 * numpy.ones([1])
 
         if f is None:
             f = [100.0, 50.0, -10.0, 40.0]
@@ -170,16 +174,26 @@ class TestCalibrationSolvers(unittest.TestCase):
         crosspol=False,
         residual_tol=1e-6,
         f=None,
-        vnchan=3,
-        timeslice="auto",
+        vnchan=1,
+        timeslice=None,
         ntimes=3,
         rmax=300,
         normalise_gains=False,
     ):
+        if vnchan > 1:
+            jones_type = "B"
+        else:
+            if amplitude_error > 0.0:
+                jones_type = "G"
+            else:
+                jones_type = "T"
+
         if f is None:
             f = [100.0, 50.0, -10.0, 40.0]
         self.actualSetup(spf, dpf, f=f, vnchan=vnchan, ntimes=ntimes, rmax=rmax)
-        gt = create_gaintable_from_blockvisibility(self.vis, timeslice=timeslice)
+        gt = create_gaintable_from_blockvisibility(
+            self.vis, timeslice=timeslice, jones_type=jones_type
+        )
         log.info("Created gain table: %s" % (gaintable_summary(gt)))
         gt = simulate_gaintable(
             gt,
@@ -197,6 +211,7 @@ class TestCalibrationSolvers(unittest.TestCase):
             crosspol=crosspol,
             tol=1e-8,
             normalise_gains=normalise_gains,
+            jones_type=jones_type,
         )
         cal_vis = apply_gaintable(vis, gtsol, inverse=True)
         assert numpy.max(numpy.abs(vis.vis - cal_vis.vis)) < residual_tol

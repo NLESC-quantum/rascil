@@ -13,11 +13,12 @@ import astropy.units as u
 from rascil.data_models.memory_data_models import Skycomponent, GainTable
 from rascil.data_models.polarisation import PolarisationFrame
 
-from rascil.processing_components.calibration.operations import (
+from rascil.processing_components import (
     gaintable_summary,
     apply_gaintable,
     create_gaintable_from_blockvisibility,
     create_gaintable_from_rows,
+    qa_visibility,
 )
 from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.simulation import create_named_configuration
@@ -76,24 +77,8 @@ class TestCalibrationOperations(unittest.TestCase):
         self.vis = dft_skycomponent_visibility(self.vis, self.comp)
 
     def test_create_gaintable_from_visibility(self):
-        for spf, dpf in [
-            ("stokesI", "stokesI"),
-            ("stokesIQUV", "linear"),
-            ("stokesIQUV", "circular"),
-        ]:
-            self.actualSetup(spf, dpf)
-            gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
-            log.info("Created gain table: %s" % (gaintable_summary(gt)))
-            gt = simulate_gaintable(gt, phase_error=1.0)
-            original = copy_visibility(self.vis)
-            vis = apply_gaintable(self.vis, gt)
-            assert numpy.max(numpy.abs(original.vis)) > 0.0
-            assert numpy.max(numpy.abs(vis.vis)) > 0.0
-            if numpy.max(numpy.abs(vis.vis.data - original.vis.data)) > 0.0:
-                assert numpy.max(numpy.abs(vis.vis.data - original.vis.data)) > 0.0
-
-    def test_create_gaintable_from_visibility_interval(self):
-        for timeslice in [10.0, "auto", 1e5]:
+        """Create the gaintable"""
+        for jones_type in ["T", "G", "B"]:
             for spf, dpf in [
                 ("stokesI", "stokesI"),
                 ("stokesIQUV", "linear"),
@@ -101,76 +86,117 @@ class TestCalibrationOperations(unittest.TestCase):
             ]:
                 self.actualSetup(spf, dpf)
                 gt = create_gaintable_from_blockvisibility(
-                    self.vis, timeslice=timeslice
+                    self.vis, timeslice="auto", jones_type=jones_type
                 )
                 log.info("Created gain table: %s" % (gaintable_summary(gt)))
                 gt = simulate_gaintable(gt, phase_error=1.0)
                 original = copy_visibility(self.vis)
                 vis = apply_gaintable(self.vis, gt)
-                assert numpy.max(numpy.abs(original.vis.data)) > 0.0
-                assert numpy.max(numpy.abs(vis.vis.data)) > 0.0
-                assert numpy.max(numpy.abs(vis.vis.data - original.vis.data)) > 0.0
+                corrected_vis = apply_gaintable(vis, gt, inverse=True)
+                assert (
+                    numpy.max(numpy.abs(corrected_vis.vis.data - original.vis.data))
+                    < 1e-12
+                )
+
+    def test_create_gaintable_from_visibility_interval(self):
+        """Apply the gaintable and inverse for different values of timeslice"""
+        for jones_type in ["T", "G", "B"]:
+            for timeslice in [10.0, "auto", 1e5]:
+                for spf, dpf in [
+                    ("stokesI", "stokesI"),
+                    ("stokesIQUV", "linear"),
+                    ("stokesIQUV", "circular"),
+                ]:
+                    self.actualSetup(spf, dpf)
+                    gt = create_gaintable_from_blockvisibility(
+                        self.vis, timeslice=timeslice, jones_type=jones_type
+                    )
+                    log.info("Created gain table: %s" % (gaintable_summary(gt)))
+                    gt = simulate_gaintable(gt, phase_error=1.0)
+                    original = copy_visibility(self.vis)
+                    vis = apply_gaintable(self.vis, gt)
+                    corrected_vis = apply_gaintable(vis, gt, inverse=True)
+                    assert (
+                        numpy.max(numpy.abs(corrected_vis.vis.data - original.vis.data))
+                        < 1e-12
+                    )
 
     def test_apply_gaintable_only(self):
-        for spf, dpf in [
-            ("stokesI", "stokesI"),
-            ("stokesIQUV", "linear"),
-            ("stokesIQUV", "circular"),
-        ]:
-            self.actualSetup(spf, dpf)
-            gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
-            log.info("Created gain table: %s" % (gaintable_summary(gt)))
-            gt = simulate_gaintable(gt, phase_error=0.1, amplitude_error=0.01)
-            original = copy_visibility(self.vis)
-            vis = apply_gaintable(self.vis, gt)
-            error = numpy.max(numpy.abs(vis.vis.data - original.vis.data))
-            assert 74 > error > 10.0, "Error = %f" % (error)
+        """Does applying the gaintable change the visibility?"""
+        for jones_type in ["T", "G", "B"]:
+            for spf, dpf in [
+                ("stokesI", "stokesI"),
+                ("stokesIQUV", "linear"),
+                ("stokesIQUV", "circular"),
+            ]:
+                self.actualSetup(spf, dpf)
+                gt = create_gaintable_from_blockvisibility(
+                    self.vis, timeslice="auto", jones_type=jones_type
+                )
+                log.info("Created gain table: %s" % (gaintable_summary(gt)))
+                gt = simulate_gaintable(gt, phase_error=0.1, amplitude_error=0.01)
+                original = copy_visibility(self.vis)
+                vis = apply_gaintable(self.vis, gt)
+                assert numpy.max(numpy.abs(vis.vis.data - original.vis.data)) > 0.0
 
     def test_apply_gaintable_and_inverse_phase_only(self):
-        for spf, dpf in [
-            ("stokesI", "stokesI"),
-            ("stokesIQUV", "linear"),
-            ("stokesIQUV", "circular"),
-        ]:
-            self.actualSetup(spf, dpf)
-            gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
-            log.info("Created gain table: %s" % (gaintable_summary(gt)))
-            gt = simulate_gaintable(gt, phase_error=0.1)
-            original = copy_visibility(self.vis)
-            vis = apply_gaintable(self.vis, gt)
-            vis = apply_gaintable(self.vis, gt, inverse=True)
-            error = numpy.max(numpy.abs(vis.vis.data - original.vis.data))
-            assert error < 1e-12, "Error = %s" % (error)
+        for jones_type in ["T", "G", "B"]:
+            for spf, dpf in [
+                ("stokesI", "stokesI"),
+                ("stokesIQUV", "linear"),
+                ("stokesIQUV", "circular"),
+            ]:
+                self.actualSetup(spf, dpf)
+                gt = create_gaintable_from_blockvisibility(
+                    self.vis, timeslice="auto", jones_type=jones_type
+                )
+                log.info("Created gain table: %s" % (gaintable_summary(gt)))
+                gt = simulate_gaintable(gt, phase_error=0.1)
+                original = copy_visibility(self.vis)
+                vis = apply_gaintable(self.vis, gt)
+                corrected_vis = apply_gaintable(vis, gt, inverse=True)
+                assert (
+                    numpy.max(numpy.abs(corrected_vis.vis.data - original.vis.data))
+                    < 1e-12
+                )
 
     def test_apply_gaintable_and_inverse_both(self):
-        for spf, dpf in [
-            ("stokesI", "stokesI"),
-            ("stokesIQUV", "linear"),
-            ("stokesIQUV", "circular"),
-        ]:
-            self.actualSetup(spf, dpf)
-            gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
-            log.info("Created gain table: %s" % (gaintable_summary(gt)))
-            gt = simulate_gaintable(gt, phase_error=0.1, amplitude_error=0.1)
-            original = copy_visibility(self.vis)
-            vis = apply_gaintable(self.vis, gt)
-            vis = apply_gaintable(self.vis, gt, inverse=True)
-            error = numpy.max(numpy.abs(vis.vis.data - original.vis.data))
-            assert error < 1e-12, "Error = %s" % (error)
+        for jones_type in ["T", "G", "B"]:
+            for spf, dpf in [
+                ("stokesI", "stokesI"),
+                ("stokesIQUV", "linear"),
+                ("stokesIQUV", "circular"),
+            ]:
+                self.actualSetup(spf, dpf)
+                gt = create_gaintable_from_blockvisibility(
+                    self.vis, timeslice="auto", jones_type=jones_type
+                )
+                log.info("Created gain table: %s" % (gaintable_summary(gt)))
+                gt = simulate_gaintable(gt, phase_error=0.1, amplitude_error=0.1)
+                original = copy_visibility(self.vis)
+                vis = apply_gaintable(self.vis, gt)
+                corrected_vis = apply_gaintable(vis, gt, inverse=True)
+                assert (
+                    numpy.max(numpy.abs(corrected_vis.vis.data - original.vis.data))
+                    < 1e-12
+                )
 
     def test_apply_gaintable_null(self):
-        for spf, dpf in [
-            ("stokesI", "stokesI"),
-            ("stokesIQUV", "linear"),
-            ("stokesIQUV", "circular"),
-        ]:
-            self.actualSetup(spf, dpf)
-            gt = create_gaintable_from_blockvisibility(self.vis, timeslice="auto")
-            gt["gain"].data *= 0.0
-            original = copy_visibility(self.vis)
-            vis = apply_gaintable(self.vis, gt, inverse=True)
-            error = numpy.max(numpy.abs(vis["vis"].data[:, 0, 1, ...]))
-            assert error < 1e-12, f"{spf} {dpf} Error = {error}"
+        """Check if applying zero gains is a no-op"""
+        for jones_type in ["T", "G", "B"]:
+            for spf, dpf in [
+                ("stokesI", "stokesI"),
+                ("stokesIQUV", "linear"),
+                ("stokesIQUV", "circular"),
+            ]:
+                self.actualSetup(spf, dpf)
+                gt = create_gaintable_from_blockvisibility(
+                    self.vis, timeslice="auto", jones_type=jones_type
+                )
+                gt["gain"].data *= 0.0
+                vis = apply_gaintable(self.vis, gt)
+                error = numpy.max(numpy.abs(vis["vis"].data - self.vis["vis"].data))
+                assert error < 1e-12, f"{spf} {dpf} Error = {error}"
 
 
 if __name__ == "__main__":

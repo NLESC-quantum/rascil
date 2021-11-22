@@ -9,7 +9,6 @@ __all__ = [
     "apply_gaintable",
     "append_gaintable",
     "create_gaintable_from_blockvisibility",
-    "create_gaintable_from_blockvisibility",
     "create_gaintable_from_rows",
     "copy_gaintable",
     "gaintable_plot",
@@ -284,7 +283,11 @@ def gaintable_summary(gt: GainTable):
 
 
 def create_gaintable_from_blockvisibility(
-    vis: BlockVisibility, timeslice=None, frequencyslice: float = None, **kwargs
+    vis: BlockVisibility,
+    timeslice=None,
+    frequencyslice: float = None,
+    jones_type="T",
+    **kwargs,
 ) -> GainTable:
     """Create gain table from visibility.
 
@@ -293,6 +296,7 @@ def create_gaintable_from_blockvisibility(
     :param vis: BlockVisibilty
     :param timeslice: Time interval between solutions (s)
     :param frequencyslice: Frequency solution width (Hz) (NYI)
+    :param jones_type: Type of calibration matrix T or G or B
     :return: GainTable
 
     """
@@ -300,23 +304,44 @@ def create_gaintable_from_blockvisibility(
 
     nants = vis.blockvisibility_acc.nants
 
-    if timeslice is None or timeslice == "auto" or timeslice == 0.0:
-        utimes = numpy.unique(vis.time)
-        gain_interval = vis.integration_time
+    # Set up times
+    if timeslice == "auto" or timeslice is None or timeslice < 0.0:
+        timeslice = 0.0
+
+    if timeslice == 0.0:
+        nbins = len(vis.time)
     else:
-        utimes = vis.time.data[0] + timeslice * numpy.unique(
-            numpy.round((vis.time.data - vis.time.data[0]) / timeslice)
+        nbins = max(
+            1,
+            numpy.ceil(
+                (numpy.max(vis.time.data) - numpy.min(vis.time.data)) / timeslice
+            ).astype("int"),
         )
-        gain_interval = timeslice * numpy.ones_like(utimes)
+
+    utimes = [
+        numpy.average(times)
+        for time, times in vis.time.groupby_bins("time", nbins, squeeze=False)
+    ]
+    utimes = numpy.array(utimes)
+    gain_interval = numpy.ones_like(utimes)
+    if len(utimes) > 1:
+        for time_index, _ in enumerate(utimes):
+            if time_index == 0:
+                gain_interval[0] = utimes[1] - utimes[0]
+            else:
+                gain_interval[time_index] = utimes[time_index] - utimes[time_index - 1]
+
+    # Set the frequency sampling
+    if jones_type == "B":
+        ufrequency = vis.frequency.data
+        nfrequency = len(ufrequency)
+    elif jones_type == "G" or jones_type == "T":
+        ufrequency = numpy.average(vis.frequency) * numpy.ones([1])
+        nfrequency = 1
+    else:
+        raise ValueError(f"Unknown Jones type {jones_type}")
 
     ntimes = len(utimes)
-
-    #    log.debug('create_gaintable_from_blockvisibility: times are %s' % str(utimes))
-    #    log.debug('create_gaintable_from_blockvisibility: intervals are %s' % str(gain_interval))
-
-    ntimes = len(utimes)
-    ufrequency = numpy.unique(vis.frequency)
-    nfrequency = len(ufrequency)
 
     receptor_frame = ReceptorFrame(vis.blockvisibility_acc.polarisation_frame.type)
     nrec = receptor_frame.nrec
@@ -342,6 +367,7 @@ def create_gaintable_from_blockvisibility(
         receptor_frame=receptor_frame,
         phasecentre=vis.phasecentre,
         configuration=vis.configuration,
+        jones_type=jones_type,
     )
 
     # assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
@@ -444,7 +470,7 @@ def gaintable_plot(
     label_max=0,
     min_amp=1e-5,
     cmap="rainbow",
-    **kwargs
+    **kwargs,
 ):
     """Standard plot of gain table
 

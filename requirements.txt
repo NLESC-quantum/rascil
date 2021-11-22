@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements.txt requirements.in
 #
-aotools==1.0.4
+aotools==1.0.5
     # via -r requirements.in
 argon2-cffi==21.1.0
     # via notebook
@@ -61,7 +61,7 @@ cryptography==35.0.0
     # via paramiko
 cycler==0.11.0
     # via matplotlib
-dask==2021.11.0
+dask==2021.11.1
     # via
     #   -r requirements.in
     #   distributed
@@ -73,7 +73,7 @@ decorator==5.1.0
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.11.0
+distributed==2021.11.1
     # via
     #   -r requirements.in
     #   dask-memusage
@@ -93,7 +93,7 @@ gitdb==4.0.9
     # via gitpython
 gitpython==3.1.24
     # via -r requirements.in
-graphviz==0.18
+graphviz==0.18.1
     # via -r requirements.in
 h5py==3.5.0
     # via -r requirements.in
@@ -101,7 +101,7 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-imageio==2.10.3
+imageio==2.10.4
     # via scikit-image
 ipykernel==6.5.0
     # via
@@ -127,7 +127,7 @@ ipywidgets==7.6.5
     # via jupyter
 jedi==0.18.0
     # via ipython
-jinja2==3.0.2
+jinja2==3.0.3
     # via
     #   bokeh
     #   distributed
@@ -198,9 +198,9 @@ msgpack==1.0.2
     # via distributed
 natsort==8.0.0
     # via seqfile
-nbclient==0.5.4
+nbclient==0.5.8
     # via nbconvert
-nbconvert==6.2.0
+nbconvert==6.3.0
     # via
     #   jupyter
     #   jupyter-contrib-nbextensions
@@ -331,7 +331,7 @@ pytz==2021.3
     # via
     #   astroplan
     #   pandas
-pywavelets==1.1.1
+pywavelets==1.2.0
     # via scikit-image
 pyyaml==6.0
     # via
@@ -345,7 +345,7 @@ pyzmq==22.3.0
     #   jupyter-client
     #   notebook
     #   qtconsole
-qtconsole==5.1.1
+qtconsole==5.2.0
     # via jupyter
 qtpy==1.11.2
     # via qtconsole

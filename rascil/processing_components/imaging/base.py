@@ -588,11 +588,10 @@ def advise_wide_field(
     # We will assume that the constraint holds at one quarter the entire FOV i.e. that
     # the full field of view includes the entire primary beam
 
-    log.info("")
     w_sampling_image = numpy.sqrt(2.0 * delA) / (numpy.pi * image_fov ** 2)
     if verbose:
         log.info(
-            "advice_wide_field: (w_sampling_image) W sampling for full image = %.1f (wavelengths)"
+            "\nadvice_wide_field: (w_sampling_image) W sampling for full image = %.1f (wavelengths)"
             % (w_sampling_image)
         )
 

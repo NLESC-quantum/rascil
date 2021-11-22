@@ -119,7 +119,7 @@ class TestCalibrateGraphs(unittest.TestCase):
             rsexecute.execute(copy_visibility(v)) for v in self.blockvis_list
         ]
         gt = rsexecute.execute(create_gaintable_from_blockvisibility)(
-            self.blockvis_list[0]
+            self.blockvis_list[0], jones_type="G"
         )
         gt = rsexecute.execute(simulate_gaintable)(
             gt,

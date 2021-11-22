@@ -757,7 +757,8 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
 
     elif input_image is not None:
         # Use internally provided telescope primary beam
-        if telescope == "MID":
+
+        if "MID" in telescope:
             image = import_image_from_fits(input_image)
             beam = create_pb(
                 image,
@@ -766,7 +767,7 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
                 use_local=False,
             )
 
-        if telescope == "LOW":
+        elif "LOW" in telescope:
 
             # We want to make the beam for transit so we sett the HA to 0.0
             image = import_image_from_fits(input_image)

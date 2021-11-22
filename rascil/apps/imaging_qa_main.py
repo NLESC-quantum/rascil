@@ -581,7 +581,7 @@ def imaging_qa_bdsf(
 
 
 def create_source_to_skycomponent(
-    source_file, rascil_source_file, freq, pol=PolarisationFrame("StokesI")
+    source_file, rascil_source_file, freq, pol=PolarisationFrame("stokesI")
 ):
     """
     Put the sources into RASCIL-readable skycomponents
@@ -831,7 +831,7 @@ def check_source(orig, comp, match_sep):
     return matches
 
 
-def read_skycomponent_from_txt(filename, freq, pol=PolarisationFrame("StokesI")):
+def read_skycomponent_from_txt(filename, freq, pol=PolarisationFrame("stokesI")):
     """
     Read source input from a txt file and make them into skycomponents
 

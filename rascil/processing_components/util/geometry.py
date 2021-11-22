@@ -43,7 +43,7 @@ def calculate_hourangles(location, utc_time, direction):
     :param utc_time: Time(Iterable)
     :param location: EarthLocation
     :param direction: SkyCoord source
-    :return: Angle
+    :return: hour angels as an astropy Longitude object [h]
     """
 
     assert isinstance(location, EarthLocation)

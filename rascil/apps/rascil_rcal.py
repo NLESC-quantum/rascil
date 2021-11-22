@@ -23,6 +23,8 @@ from astropy.time import Time
 from astropy.visualization import time_support
 from astropy.coordinates import SkyCoord
 
+import ska_post_correlation_rfi_flagger
+
 from rascil.data_models import (
     BlockVisibility,
     GainTable,
@@ -139,19 +141,37 @@ def cli_parser():
         help="Whether to apply calibration or not.",
     )
 
+    parser.add_argument(
+        "--initial_threshold",
+        type=float,
+        default="8",
+        help="The initial threshold to be used by the flagger."
+    )
+
+    parser.add_argument(
+        "--rho",
+        type=float,
+        default="1.5",
+        help="The initial rho used by flagger."
+    )
+
     return parser
 
 
-def _rfi_flagger(bvis, to_flag=False):
+def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     """
-    Place holder function. It will be replaced with RFI flagger
-    once python interface is implemented.
+    Wrapper function for the flagger, certain defaults are managed here.
 
-    Arbitrarily flags data (for testing purposes)
     """
-    if to_flag:
-        n_freqs = bvis.dims["frequency"]
-        bvis["flags"][..., : n_freqs // 2, :] = 1
+    sequence = [1, 2, 4, 8, 16, 32]
+    sequence_length = len(sequence)
+    sequence = numpy.array(sequence, dtype=numpy.int32)
+    thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
+
+    ska_post_correlation_rfi_flagger.run_flagger_on_all_slices(
+        bvis.dims['time'], bvis.dims['frequency'], bvis.dims['baselines'],
+        bvis.dims['polarisation'], abs(bvis['vis'].values),
+        bvis['flags'].values, thresholds, sequence_length, sequence)
 
 
 def rcal_simulator(args):
@@ -192,8 +212,10 @@ def rcal_simulator(args):
     )[0]
 
     flagged = False
+    initial_threshold = args.initial_threshold
+    rho = args.rho
     if args.flag_first == "True":
-        _rfi_flagger(bvis)
+        _rfi_flagger(bvis, initial_threshold, rho)
         flagged = True
 
     if args.ingest_components_file is not None:
@@ -239,7 +261,7 @@ def rcal_simulator(args):
     )
 
     if not flagged:
-        _rfi_flagger(bvis)
+        _rfi_flagger(bvis, initial_threshold, rho)
 
     base = os.path.basename(args.ingest_msname)
     plotfile = plot_dir + "/" + base.replace(".ms", "_plot")

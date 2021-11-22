@@ -238,7 +238,7 @@ def cli_parser():
         "The checker will start from reading the BDSF csv file",
     )
     parser.add_argument("--use_dask", type=str, default="False", help="")
-    parser.add_argument("--dask_scheduler", type=str, default="noexisting", help="")
+    parser.add_argument("--dask_scheduler", type=str, default="not_existing", help="")
     parser.add_argument("--dask_nworkers", type=int, default=32, help="")
     parser.add_argument("--dask_nthreads", type=int, default=1, help="")
     parser.add_argument("--dask_memory", type=str, default="30GiB", help="")
@@ -340,7 +340,10 @@ def analyze_image(args):
 
     thresh_isl = args.finder_thresh_isl
     thresh_pix = args.finder_thresh_pix
-    use_dask = args.use_dask
+    if args.use_dask == "True":
+        use_dask = True
+    else:
+        use_dask = False
     log.info("Use restoring beam: {}".format(beam_info))
     log.info("Use threshold: {}, {}".format(thresh_isl, thresh_pix))
 
@@ -480,7 +483,7 @@ def imaging_qa_bdsf(
     perform_diagnostics=False,
     quiet_bdsf=False,
     saverms=False,
-    use_dask="False",
+    use_dask=False,
 ):
     """
     PyBDSF-based source finder

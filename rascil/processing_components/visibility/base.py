@@ -182,6 +182,7 @@ def create_blockvisibility(
     )
     nbaselines = len(baselines)
 
+    # Find the number of integrations ab
     ntimes = 0
     n_flagged = 0
 
@@ -221,13 +222,12 @@ def create_blockvisibility(
     rintegrationtime = numpy.zeros([ntimes])
     ruvw = numpy.zeros([ntimes, nbaselines, 3])
 
-    # Do each hour angle in turn
-    itime = 0
     if utc_time is None:
         stime = calculate_transit_time(config.location, utc_time_zero, phasecentre)
         if stime.masked:
             stime = utc_time_zero
 
+    # Do each time filling in the actual values
     itime = 0
     for _, time in enumerate(times):
 
@@ -240,10 +240,7 @@ def create_blockvisibility(
         # and declination
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
-            if utc_time is None:
-                rtimes[itime] = stime.mjd * 86400.0 + time * 86400.0 / (2.0 * numpy.pi)
-            else:
-                rtimes[itime] = utc_to_ms_epoch(utc_time[itime])
+            rtimes[itime] = stime.mjd * 86400.0 + time * 86400.0 / (2.0 * numpy.pi)
             rweight[itime, ...] = 1.0
             rflags[itime, ...] = 1
 

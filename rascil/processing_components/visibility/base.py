@@ -58,6 +58,8 @@ from rascil.processing_components.visibility.visibility_geometry import (
 )
 from rascil import phyconst
 
+SIDEREAL_DAY_SECONDS = 86164.090530833
+
 log = logging.getLogger("rascil-logger")
 
 
@@ -132,6 +134,7 @@ def create_blockvisibility(
     source="unknown",
     meta=None,
     utc_time=None,
+    times_are_ha=False,
     **kwargs
 ) -> BlockVisibility:
     """Create a BlockVisibility from Configuration, hour angles, and direction of source
@@ -142,7 +145,8 @@ def create_blockvisibility(
     the approximate time.
 
     :param config: Configuration of antennas
-    :param times: hour angles in radians
+    :param times: time or hour angles in radians
+    :param times_are_ha: The times are hour angles instead of utc time (in radians)
     :param frequency: frequencies (Hz] [nchan]
     :param weight: weight of a single sample
     :param phasecentre: phasecentre of observation (SkyCoord)
@@ -181,10 +185,15 @@ def create_blockvisibility(
     ntimes = 0
     n_flagged = 0
 
-    for iha, ha in enumerate(times):
+    for itime, time in enumerate(times):
 
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination
+        if times_are_ha:
+            ha = time
+        else:
+            ha = time * (SIDEREAL_DAY_SECONDS / 86400.0)
+
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
             ntimes += 1
@@ -219,16 +228,22 @@ def create_blockvisibility(
         if stime.masked:
             stime = utc_time_zero
 
-    for iha, ha in enumerate(times):
+    itime = 0
+    for _, time in enumerate(times):
+
+        if times_are_ha:
+            ha = time
+        else:
+            ha = time * (SIDEREAL_DAY_SECONDS / 86400.0)
 
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
             if utc_time is None:
-                rtimes[itime] = stime.mjd * 86400.0 + ha * 86164.1 / (2.0 * numpy.pi)
+                rtimes[itime] = stime.mjd * 86400.0 + time * 86400.0 / (2.0 * numpy.pi)
             else:
-                rtimes[itime] = utc_to_ms_epoch(utc_time[iha])
+                rtimes[itime] = utc_to_ms_epoch(utc_time[itime])
             rweight[itime, ...] = 1.0
             rflags[itime, ...] = 1
 

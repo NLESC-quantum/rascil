@@ -398,7 +398,7 @@ def copy_gaintable(gt: GainTable, zero=False):
 
     ##assert isinstance(gt, GainTable), gt
 
-    newgt = copy.copy(gt)
+    newgt = gt.copy(deep=True)
     if zero:
         newgt["gain"].data[...] = 0.0
     return newgt
@@ -565,7 +565,9 @@ def gaintable_plot(
                 ax[1][1].legend()
 
 
-def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
+def multiply_gaintables(
+    gt: GainTable, dgt: GainTable, time_tolerance=1e-3
+) -> GainTable:
     """Multiply two gaintables
 
     Returns gt * dgt
@@ -577,6 +579,12 @@ def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
     # assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
     # assert isinstance(dgt, GainTable), "gtdgt is not a GainTable: %r" % dgt
 
+    # Test if times align
+    mismatch = numpy.max(numpy.abs(gt["time"].data - dgt["time"].data))
+    if mismatch > time_tolerance:
+        raise ValueError(
+            f"Gaintables not aligned in time: max mismatch {mismatch} seconds"
+        )
     if dgt.gaintable_acc.nrec == gt.gaintable_acc.nrec:
         if dgt.gaintable_acc.nrec == 2:
             gt["gain"].data = numpy.einsum(

@@ -1203,7 +1203,7 @@ class BlockVisibility(xarray.Dataset):
         imaging_weight=None,
         source="anonymous",
         meta=None,
-        low_precision="float32",
+        low_precision="float64",
     ):
         """BlockVisibility
 

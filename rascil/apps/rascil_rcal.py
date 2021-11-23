@@ -165,17 +165,27 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     sequence = numpy.array(sequence, dtype=numpy.int32)
     thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
 
+    new_dims = (
+        bvis.dims["time"] * bvis.dims["baselines"],
+        bvis.dims["frequency"],
+        bvis.dims["polarisation"],
+    )
+    vis_data = abs(bvis["vis"].data).reshape(new_dims).astype("float32")
+    flag_data = bvis["flags"].data.reshape(new_dims).astype("int32")
+
     ska_post_correlation_rfi_flagger.run_flagger_on_all_slices(
         bvis.dims["time"],
         bvis.dims["frequency"],
         bvis.dims["baselines"],
         bvis.dims["polarisation"],
-        abs(bvis["vis"].data.astype("float32")),
-        bvis["flags"].data.astype("int32"),
+        vis_data,
+        flag_data,
         thresholds.astype("float32"),
         sequence_length,
         sequence,
     )
+
+    bvis["flags"].data = flag_data.reshape(bvis["vis"].data.shape)
 
 
 def rcal_simulator(args):

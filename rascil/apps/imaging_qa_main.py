@@ -769,7 +769,7 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
 
         elif "LOW" in telescope:
 
-            # We want to make the beam for transit so we sett the HA to 0.0
+            # We want to make the beam for transit so we set the HA to 0.0
             image = import_image_from_fits(input_image)
             phasecentre = image.image_acc.phasecentre
             az, el = hadec_to_azel(0.0 * u.deg, phasecentre.dec, -27.0 * u.deg)

@@ -208,8 +208,8 @@ def rcal_simulator(args):
     bvis = create_blockvisibility_from_ms(
         args.ingest_msname, selected_dds=args.ingest_dd
     )[0]
-    telescope_model = bvis.configuration.name
-    log.info(f"The data is from {telescope_model}.")
+    telescope_name = bvis.configuration.name
+    log.info(f"The data is from {telescope_name}.")
 
     flagged = False
     if args.flag_first == "True":
@@ -228,12 +228,14 @@ def rcal_simulator(args):
         except OSError:
             # file is not HDF-compatible, trying txt
             if ".txt" in args.ingest_components_file:
-                pol = PolarisationFrame("stokesIQUV")  # Set arbitrarily for now
+                pol = PolarisationFrame(bvis._polarisation_frame)
+                log.info(f"Use Polarisation Frame {bvis._polarisation_frame}")
+
                 model_components = read_skycomponent_from_txt_with_external_frequency(
                     args.ingest_components_file, bvis.frequency, pol
                 )
                 log.info(f"Read text components file {args.ingest_components_file}")
-                telescope_model = "LOW"  # Since LOW doesn't write configuration, set arbitrarily for now
+                telescope_name = "LOW"  # Since LOW doesn't write configuration, set arbitrarily for now
 
             else:
                 raise FileFormatError("Input file must be of format: hdf or txt.")
@@ -244,7 +246,7 @@ def rcal_simulator(args):
                 bvis,
                 model_components,
                 args.ingest_beam_file,
-                telescope_model=telescope_model,
+                telescope_name=telescope_name,
             )
     else:
         log.info(f"Using point source model for calibration")
@@ -529,13 +531,13 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     return comp
 
 
-def apply_beam_correction(bvis, components, beam_file, telescope_model=None):
+def apply_beam_correction(bvis, components, beam_file, telescope_name=None):
     """Apply primary beam to skycomponents for a better skymodel
 
     :param bvis: Blockvisibility for creating the test beam
     :param components: Input list of skycomponents
     :param beam_file: External FITS file of beam information (regardless of telescope)
-    :param telescope_model: Which telescope (MID or LOW)
+    :param telescope_name: Which telescope (MID or LOW)
 
     :return comp_new: Corrected list of components
 
@@ -548,17 +550,17 @@ def apply_beam_correction(bvis, components, beam_file, telescope_model=None):
         comp_new = apply_beam_to_skycomponent(components, beam, inverse=False)
 
     else:
-        if "MID" not in telescope_model and "LOW" not in telescope_model:
+        if "MID" not in telescope_name and "LOW" not in telescope_name:
             raise ValueError(
                 "Telescope configuration is neither for SKA Mid nor for SKA Low."
                 "Please specify correct configuration."
             )
 
         # Placeholder: not sure what to do with MID
-        if "MID" in telescope_model:
+        if "MID" in telescope_name:
             comp_new = components
 
-        elif "LOW" in telescope_model:
+        elif "LOW" in telescope_name:
 
             # The latitude for LOW is -27 degrees
             phasecentre = bvis.phasecentre

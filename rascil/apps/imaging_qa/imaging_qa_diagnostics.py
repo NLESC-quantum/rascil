@@ -323,7 +323,7 @@ def source_region_mask(img, use_dask=False):
         indexing="ij",
     )
 
-    if use_dask == True:
+    if use_dask is True:
         num_worker = len(rsexecute.client.ncores())
         num_task_per_worker = len(img.gaussians) // num_worker
 

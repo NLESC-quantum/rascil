@@ -20,6 +20,7 @@ from rascil.apps.rascil_rcal import (
     gt_single_plot,
     read_skycomponent_from_txt_with_external_frequency,
     _rfi_flagger,
+    apply_beam_correction,
 )
 from rascil.data_models import (
     rascil_path,
@@ -267,6 +268,19 @@ class TestRASCILRcal(unittest.TestCase):
 
         if self.persist is False:
             self.cleanup_data_files()
+
+    def test_apply_beam_correction(self):
+        """Test for apply_beam_correction
+        Currently only test for LOW"""
+
+        self.pre_setup()
+        new_bvis = self.bvis_original.copy(deep=True)
+        comp = self.create_dft_components(self.flux)
+        new_comp = apply_beam_correction(new_bvis, [comp], None, telescope_name="LOW")
+
+        assert len(new_comp) == 1
+        assert new_comp[0].direction == self.phasecentre
+        assert numpy.any(numpy.not_equal(new_comp[0].flux, self.flux))
 
     def test_get_gain_data(self):
         self.pre_setup()

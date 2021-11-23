@@ -238,7 +238,12 @@ def cli_parser():
         "The checker will start from reading the BDSF csv file",
     )
     parser.add_argument("--use_dask", type=str, default="False", help="")
-    parser.add_argument("--dask_scheduler", type=str, default="not_existing", help="")
+    parser.add_argument(
+        "--dask_scheduler",
+        type=str,
+        default="not_existing",
+        help="Use the argument if the environmental varialbe of 'RASCIL_DASK_SCHEDULER' exists",
+    )
     parser.add_argument("--dask_nworkers", type=int, default=32, help="")
     parser.add_argument("--dask_nthreads", type=int, default=1, help="")
     parser.add_argument("--dask_memory", type=str, default="30GiB", help="")

@@ -273,7 +273,7 @@ def scatter_mask_list(gaussian_list, grid, beam_radius, image_shape):
 
 def gather_image_list(img_list):
     """
-    gather all images scattered before
+    gather all images scattered by function scatter_mask_list
 
     :param img_list : image list
 

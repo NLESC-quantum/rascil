@@ -166,8 +166,8 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
 
     shape = bvis["vis"].data.shape
-    flagger_shape = (shape[0], shape[1] * shape[2], shape[3])
-    data = abs(bvis["vis"].data.reshape(flagger_shape))
+    flagger_shape = (shape[0] * shape[1], shape[2], shape[3])
+    data = abs(bvis["vis"].data.reshape(flagger_shape)).astype("float32")
     flags = bvis["flags"].data.reshape(flagger_shape).astype("int32")
     ska_post_correlation_rfi_flagger.run_flagger_on_all_slices(
         bvis.dims["time"],

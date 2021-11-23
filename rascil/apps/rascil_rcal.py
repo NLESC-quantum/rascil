@@ -334,7 +334,7 @@ def bvis_solver(
                 bv, modelvis=modelvis, gt=previous, jones_type=jones_type, **kwargs
             )
         else:
-            gt = solve_gaintable(bv, gt=previous, **kwargs)
+            gt = solve_gaintable(bv, gt=previous, jones_type=jones_type, **kwargs)
 
         if use_previous:
             newgt = create_gaintable_from_blockvisibility(bv, jones_type=jones_type)

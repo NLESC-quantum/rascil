@@ -134,7 +134,7 @@ def create_blockvisibility(
     source="unknown",
     meta=None,
     utc_time=None,
-    times_are_ha=False,
+    times_are_ha=True,
     **kwargs
 ) -> BlockVisibility:
     """Create a BlockVisibility from Configuration, hour angles, and direction of source
@@ -146,7 +146,7 @@ def create_blockvisibility(
 
     :param config: Configuration of antennas
     :param times: time or hour angles in radians
-    :param times_are_ha: The times are hour angles instead of utc time (in radians)
+    :param times_are_ha: The times are hour angles (default) instead of utc time (in radians)
     :param frequency: frequencies (Hz] [nchan]
     :param weight: weight of a single sample
     :param phasecentre: phasecentre of observation (SkyCoord)

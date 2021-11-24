@@ -220,25 +220,6 @@ class TestRASCILRcal(unittest.TestCase):
         self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
         assert os.path.exists(self.plotfile) is False
 
-    @patch("rascil.apps.rascil_rcal._rfi_flagger", Mock(side_effect=_to_flag_flagger))
-    def test_rcal_with_flagging(self):
-        """Test that rcal uses RFI flagging (the returned bvis has flags)."""
-        self.pre_setup()
-        self.makeMS(self.flux)
-
-        freq_border = self.bvis_original.dims["frequency"] // 2
-        self.args.flag_first = "True"  # flag before gains are calculated
-
-        gtfile = rcal_simulator(self.args)
-        gain_table = import_gaintable_from_hdf5(gtfile)
-
-        # the flagged elements will not contribute to the GT weight --> they're 0
-        assert (gain_table["weight"].data[..., :freq_border, :, :] == 0).all()
-        assert (gain_table["weight"].data[..., freq_border:, :, :] != 0).all()
-
-        if self.persist is False:
-            self.cleanup_data_files()
-
     def test_rcal_plot(self):
         self.pre_setup()
         comp = self.create_dft_components(self.flux)

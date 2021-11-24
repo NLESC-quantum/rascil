@@ -1,7 +1,9 @@
 master
 ------
 
+* Developed the capability to apply realistic LOW beam for skymodle in the RCAL app and refined its application in imaging_qa ([MR284](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/284))
 * Added a CI job to build and test the docker images upon every merge to master ([MR270](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/270))
+* Fixed an issue in plot_skycomponent to deal with the angle wrap problem([MR269](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/269))
 * Large number of test fixes and improvements ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
 * create_blockvisibility_iterator removed in favor of xarray.groupby ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
 * skymodel_predict_calibrate and skymodel_calibrate_image functions added ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))

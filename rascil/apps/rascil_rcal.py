@@ -229,13 +229,8 @@ def rcal_simulator(args):
             # file is not HDF-compatible, trying txt
             if ".txt" in args.ingest_components_file:
 
-                # Arbitrarily change linear polarisation to StokesIQUV for LOW images
-                # Other cases juse use the polarisation from the BlockVisibility
-                vis_pol = bvis._polarisation_frame
-                if vis_pol == "linear":
-                    pol = PolarisationFrame("stokesIQUV")
-                else:
-                    pol = PolarisationFrame(vis_pol)
+                # Use the polarisation from the BlockVisibility
+                pol = PolarisationFrame(bvis._polarisation_frame)
                 log.info(f"Use Polarisation Frame {pol.names}")
 
                 model_components = read_skycomponent_from_txt_with_external_frequency(
@@ -498,7 +493,7 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     log.info(f" nchan = {nchan}, npol = {npol}")
 
     # The txt file needs to have the first three columns in the format of (RA, Dec, flux(stokesI))
-    # We currently only read in stokesI components 
+    # We currently only read in stokesI components
     # TODO: read in the full polarisation
     data = numpy.loadtxt(filename, delimiter=",", unpack=True)
     ra = data[0]
@@ -592,6 +587,13 @@ def apply_beam_correction(bvis, components, beam_file, telescope_name=None):
 
             # Output beam image itself for checking purposes
             export_image_to_fits(beam, "rascil_low_beam.fits")
+
+            # Check the polarisation match
+            # TODO: If they don't, try to use a different approach
+            comp_pol = components[0].polarisation_frame
+            log.info(
+                f"The beam's polarisation frame is {beam.image_acc.polarisation_frame}, and the skycomponents {comp_pol}"
+            )
 
             comp_new = apply_beam_to_skycomponent(components, beam, inverse=False)
 

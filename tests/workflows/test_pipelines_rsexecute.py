@@ -890,6 +890,7 @@ class TestPipelineGraphs(unittest.TestCase):
             controls=controls,
             do_selfcal=True,
             global_solution=False,
+            reset_skymodel=False,
         )
         residual, restored, sky_model_list, gt_list = rsexecute.compute(
             ical_list, sync=True
@@ -907,8 +908,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.83664739860735,
-            -0.12844575804794306,
+            116.87136533279478,
+            -0.06364171175002449,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):

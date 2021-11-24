@@ -773,8 +773,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.83664739860735,
-            -0.1284457580479425,
+            116.90605687884046,
+            -2.287644910440396e-06,
         )
 
     def test_ical_skymodel_pipeline_exact_dont_reset(self):

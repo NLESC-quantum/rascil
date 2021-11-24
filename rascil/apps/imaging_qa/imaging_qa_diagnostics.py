@@ -19,7 +19,10 @@ import numpy
 
 from rascil.processing_components import fft_image_to_griddata, import_image_from_fits
 from rascil.data_models.xarray_coordinate_support import griddata_wcs
-from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
+from rascil.workflows.rsexecute.execution_support.rsexecute import (
+    rsexecute,
+    get_dask_client,
+)
 
 log = logging.getLogger("rascil-logger")
 
@@ -255,7 +258,7 @@ def scatter_mask_list(gaussian_list, grid, beam_radius, image_shape):
     Scatter mask list to DASK workers.
 
     :param gaussian_list: list with Gaussian distribution sources
-    :param grid: grid of source location
+    :param grid: a numpy mesh grid object
     :param beam_radius: beam radius
     :param image_shape: image shape
 
@@ -325,7 +328,10 @@ def source_region_mask(img, use_dask=False):
 
     if use_dask is True:
         num_worker = len(rsexecute.client.ncores())
+        assert num_worker > 0
         num_task_per_worker = len(img.gaussians) // num_worker
+        if num_task_per_worker < 1:
+            num_task_per_worker = 1
 
         source_regions_list = []
         for i in range(0, len(img.gaussians), num_task_per_worker):

@@ -55,8 +55,8 @@ from rascil.apps.imaging_qa.imaging_qa_diagnostics import (
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
     rsexecute,
+    get_dask_client,
 )
-from dask.distributed import Client
 
 
 class FileFormatError(Exception):
@@ -238,15 +238,35 @@ def cli_parser():
         "The checker will start from reading the BDSF csv file",
     )
     parser.add_argument("--use_dask", type=str, default="False", help="")
+
     parser.add_argument(
         "--dask_scheduler",
         type=str,
-        default="not_existing",
-        help="Use the argument if the environmental varialbe of 'RASCIL_DASK_SCHEDULER' exists",
+        default=None,
+        help="Externally defined Dask scheduler e.g. 127.0.0.1:8786 or ssh for SSHCluster"
+        " or existing for current scheduler",
     )
-    parser.add_argument("--dask_nworkers", type=int, default=32, help="")
-    parser.add_argument("--dask_nthreads", type=int, default=1, help="")
-    parser.add_argument("--dask_memory", type=str, default="30GiB", help="")
+
+    parser.add_argument(
+        "--dask_memory",
+        type=str,
+        default=None,
+        help="Memory per Dask worker (GB), e.g. 5GB (None means Dask will choose)",
+    )
+
+    parser.add_argument(
+        "--dask_nworkers",
+        type=int,
+        default=None,
+        help="Number of workers (None means Dask will choose)",
+    )
+
+    parser.add_argument(
+        "--dask_nthreads",
+        type=int,
+        default=None,
+        help="Number of threads in each Dask worker (None means Dask will choose)",
+    )
 
     return parser
 
@@ -289,11 +309,10 @@ def analyze_image(args):
         if args.dask_scheduler == "existing":
             rsexecute.set_client(use_dask=True)
         else:
-            client = Client(
+            client = get_dask_client(
                 n_workers=args.dask_nworkers,
                 threads_per_worker=args.dask_nthreads,
                 memory_limit=args.dask_memory,
-                local_directory=".",
             )
             rsexecute.set_client(use_dask=True, client=client)
         rsexecute.run(init_logging)
@@ -473,6 +492,8 @@ def analyze_image(args):
     log.info("Started  : {}".format(starttime))
     log.info("Finished : {}".format(datetime.datetime.now()))
 
+    if args.use_dask == "True":
+        rsexecute.close()
     return out, results
 
 

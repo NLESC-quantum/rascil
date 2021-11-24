@@ -293,13 +293,14 @@ class TestRASCILRcal(unittest.TestCase):
     def test_rfi_flagger_flag(self):
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
-        new_bvis['vis'].data[0][0][0][0] = 100
+        new_bvis["vis"].data[0][0][0][0] = 100
 
         _rfi_flagger(new_bvis)
         n_freqs = self.bvis_original.dims["frequency"]
 
         assert new_bvis != self.bvis_original
         assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
+
 
 if __name__ == "__main__":
     unittest.main()

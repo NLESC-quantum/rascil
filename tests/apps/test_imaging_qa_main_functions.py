@@ -5,6 +5,7 @@
 import logging
 import unittest
 import os
+import glob
 from unittest.mock import patch, Mock
 
 import numpy
@@ -98,7 +99,6 @@ class TestCIChecker(unittest.TestCase):
         self.restored_image_multi = (
             self.results_dir + "/test_imaging_qa_functions_nchan8_restored.fits"
         )
-        export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
 
         self.txtfile = self.results_dir + "/test_imaging_qa_functions.txt"
 
@@ -151,6 +151,7 @@ class TestCIChecker(unittest.TestCase):
 
     def test_correct_primary_beam_restored_mid(self):
 
+        export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
         # Test using restored image
         reversed_comp_rest = correct_primary_beam(
             self.restored_image_multi,
@@ -165,6 +166,7 @@ class TestCIChecker(unittest.TestCase):
 
     def test_correct_primary_beam_restored_low(self):
 
+        export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
         # Test using restored image
         reversed_comp_rest = correct_primary_beam(
             self.restored_image_multi,
@@ -184,6 +186,9 @@ class TestCIChecker(unittest.TestCase):
             None, None, self.components_with_pb_mid, "MID"
         )
         assert self.components_with_pb_mid == reversed_comp_none
+
+        if self.persist is False:
+            self.cleanup_data_files()
 
     def test_read_skycomponent_from_txt_multi(self):
 
@@ -235,6 +240,9 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_flux, read_flux)
 
+        if self.persist is False:
+            self.cleanup_data_files()
+
     def test_wrong_restored(self):
 
         # This part tests for no image input
@@ -255,6 +263,14 @@ class TestCIChecker(unittest.TestCase):
 
         # Assert returning None values
         assert result == (None, None)
+
+    def cleanup_data_files(self):
+        """Cleanup the temporary data files"""
+
+        to_remove = rascil_path("test_results/test_imaging_qa_functions*")
+        for f in glob.glob(to_remove):
+            if os.path.exists(f):
+                os.remove(f)
 
 
 if __name__ == "__main__":

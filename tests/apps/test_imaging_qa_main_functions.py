@@ -118,9 +118,11 @@ class TestCIChecker(unittest.TestCase):
         )
 
         az, el = hadec_to_azel(0.0 * u.deg, self.phasecentre.dec, -27.0 * u.deg)
-        beam_local = create_low_test_beam(self.multi_chan_image, use_local=True, azel=(az, el))
+        beam_low_local = create_low_test_beam(
+            self.multi_chan_image, use_local=True, azel=(az, el)
+        )
         self.pb_low = create_low_test_beam(self.multi_chan_image, use_local=False)
-        self.pb_low["pixels"].data = beam_local["pixels"].data
+        self.pb_low["pixels"].data = beam_low_local["pixels"].data
         self.components_with_pb_low = apply_beam_to_skycomponent(
             self.components, self.pb_low
         )

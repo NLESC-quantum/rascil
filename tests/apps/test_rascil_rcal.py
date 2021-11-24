@@ -45,11 +45,6 @@ log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def _to_flag_flagger(bvis, initial_threshold=8, rho=1.5):
-    """Need to be able to run the place-holder flagger in flagging mode."""
-    return _rfi_flagger(bvis, initial_threshold, rho)
-
-
 class TestRASCILRcal(unittest.TestCase):
     def pre_setup(self, dopol=False):
         """Create and fill values into the MeassurementSet
@@ -219,28 +214,28 @@ class TestRASCILRcal(unittest.TestCase):
         self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
         assert os.path.exists(self.plotfile) is False
 
-    @patch("rascil.apps.rascil_rcal._rfi_flagger", Mock(side_effect=_to_flag_flagger))
     def test_rcal_with_flagging(self):
         """Test that rcal uses RFI flagging (the returned bvis has flags)."""
         self.pre_setup()
         self.makeMS(self.flux)
 
-        freq_border = self.bvis_original.dims["frequency"] // 2 + 1
-        self.args.flag_first = "True"  # flag before gains are calculated
+        self.args.flag_first = "False"  # flag before gains are calculated
 
         gtfile = rcal_simulator(self.args)
         gain_table = import_gaintable_from_hdf5(gtfile)
 
-        # the flagged elements will not contribute to the GT weight --> they're 0
-        assert (gain_table["weight"].data[..., :freq_border, :, :] == 0).all()
-        # assert (gain_table["weight"].data[..., freq_border:, :, :] != 0).all()
+        self.args.flag_first = "True"  # flag before gains are calculated
+        gtfile = rcal_simulator(self.args)
+        gain_table2 = import_gaintable_from_hdf5(gtfile)
+
+        assert(gain_table2["weight"].data != gain_table["weight"].data).any()
 
         if self.persist is False:
             self.cleanup_data_files()
 
     def test_rcal_plot(self):
         self.pre_setup()
-        comp = self.create_dft_components(self.flux)
+        self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
 
         self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
@@ -270,7 +265,7 @@ class TestRASCILRcal(unittest.TestCase):
 
     def test_get_gain_data(self):
         self.pre_setup()
-        comp = self.create_dft_components(self.flux)
+        self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
 
         gain_data = get_gain_data(self.gt)
@@ -282,24 +277,17 @@ class TestRASCILRcal(unittest.TestCase):
         if self.persist is False:
             self.cleanup_data_files()
 
-    def test_rfi_flagger_no_flag(self):
-        """Assert there is no flagging when data is zero."""
-        self.pre_setup()
-        new_bvis = self.bvis_original.copy(deep=True)
-
-        _rfi_flagger(new_bvis)
-        assert new_bvis == self.bvis_original
-
     def test_rfi_flagger_flag(self):
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
         new_bvis["vis"].data[0][0][0][0] = 100
 
         _rfi_flagger(new_bvis)
-        n_freqs = self.bvis_original.dims["frequency"]
 
         assert new_bvis != self.bvis_original
-        assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
+        assert new_bvis["flags"].data[0][0][0][0] == 1
+        new_bvis["vis"].data[0][0][0][0] = 0
+        assert (new_bvis["vis"].data == 0).all()
 
 
 if __name__ == "__main__":

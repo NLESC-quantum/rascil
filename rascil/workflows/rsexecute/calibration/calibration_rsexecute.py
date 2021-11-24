@@ -106,9 +106,9 @@ def calibrate_list_rsexecute_workflow(
             ]
 
         return [
-            rsexecute.execute(calibration_apply, nout=1)(v, gt_list[0])
+            rsexecute.execute(calibration_apply, nout=1)(v, new_gt_list[0])
             for v in vis_list
-        ], gt_list
+        ], new_gt_list
     else:
         if gt_list is not None and len(gt_list) > 0:
             new_gt_list = [

@@ -232,7 +232,7 @@ def rcal_simulator(args):
                 # Arbitrarily change linear polarisation to StokesIQUV for LOW images
                 # Other cases juse use the polarisation from the BlockVisibility
                 vis_pol = bvis._polarisation_frame
-                if vis_pol in "linear":
+                if vis_pol == "linear":
                     pol = PolarisationFrame("stokesIQUV")
                 else:
                     pol = PolarisationFrame(vis_pol)
@@ -497,7 +497,9 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     npol = pol.npol
     log.info(f" nchan = {nchan}, npol = {npol}")
 
-    # The txt file needs to have the first three columns in the format of (RA, Dec, flux)
+    # The txt file needs to have the first three columns in the format of (RA, Dec, flux(stokesI))
+    # We currently only read in stokesI components 
+    # TODO: read in the full polarisation
     data = numpy.loadtxt(filename, delimiter=",", unpack=True)
     ra = data[0]
     dec = data[1]

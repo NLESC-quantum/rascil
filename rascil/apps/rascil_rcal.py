@@ -228,8 +228,15 @@ def rcal_simulator(args):
         except OSError:
             # file is not HDF-compatible, trying txt
             if ".txt" in args.ingest_components_file:
-                pol = PolarisationFrame(bvis._polarisation_frame)
-                log.info(f"Use Polarisation Frame {bvis._polarisation_frame}")
+
+                # Arbitrarily change linear polarisation to StokesIQUV for LOW images
+                # Other cases juse use the polarisation from the BlockVisibility
+                vis_pol = bvis._polarisation_frame
+                if vis_pol in "linear":
+                    pol = PolarisationFrame("stokesIQUV")
+                else:
+                    pol = PolarisationFrame(vis_pol)
+                log.info(f"Use Polarisation Frame {pol.names}")
 
                 model_components = read_skycomponent_from_txt_with_external_frequency(
                     args.ingest_components_file, bvis.frequency, pol
@@ -556,7 +563,8 @@ def apply_beam_correction(bvis, components, beam_file, telescope_name=None):
                 "Please specify correct configuration."
             )
 
-        # Placeholder: not sure what to do with MID
+        # Currently don't do anything for MID components
+        # TODO: Generate primary beam for MID
         if "MID" in telescope_name:
             comp_new = components
 

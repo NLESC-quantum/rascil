@@ -20,7 +20,10 @@ from rascil.apps.imaging_qa_main import (
 )
 from rascil.data_models.parameters import rascil_path
 from rascil.data_models.polarisation import PolarisationFrame
-from rascil.processing_components.imaging.primary_beams import create_pb
+from rascil.processing_components.imaging.primary_beams import (
+    create_pb,
+    create_low_test_beam,
+)
 from rascil.processing_components.image import (
     create_image,
     export_image_to_fits,
@@ -33,7 +36,7 @@ from rascil.processing_components.skycomponent import (
     apply_beam_to_skycomponent,
     fit_skycomponent_spectral_index,
 )
-
+from rascil.processing_components.util.coordinate_support import hadec_to_azel
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
@@ -107,10 +110,20 @@ class TestCIChecker(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesI"),
         )
 
-        self.pb = create_pb(
+        self.pb_mid = create_pb(
             pbmodel, "MID", pointingcentre=self.phasecentre, use_local=False
         )
-        self.components_with_pb = apply_beam_to_skycomponent(self.components, self.pb)
+        self.components_with_pb_mid = apply_beam_to_skycomponent(
+            self.components, self.pb_mid
+        )
+
+        az, el = hadec_to_azel(0.0 * u.deg, self.phasecentre.dec, -27.0 * u.deg)
+        beam_local = create_low_test_beam(self.multi_chan_image, use_local=True, azel=(az, el))
+        self.pb_low = create_low_test_beam(self.multi_chan_image, use_local=False)
+        self.pb_low["pixels"].data = beam_local["pixels"].data
+        self.components_with_pb_low = apply_beam_to_skycomponent(
+            self.components, self.pb_low
+        )
 
         parser = cli_parser()
         self.args = parser.parse_args([])
@@ -123,10 +136,10 @@ class TestCIChecker(unittest.TestCase):
         sensitivity_image = (
             self.results_dir + "/test_imaging_qa_functions_sensitivity.fits"
         )
-        export_image_to_fits(self.pb, sensitivity_image)
+        export_image_to_fits(self.pb_mid, sensitivity_image)
 
         reversed_comp = correct_primary_beam(
-            None, sensitivity_image, self.components_with_pb, "MID"
+            None, sensitivity_image, self.components_with_pb_mid, "MID"
         )
 
         orig_flux = [c.flux[self.nchan // 2][0] for c in self.components]
@@ -134,11 +147,28 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_flux, reversed_flux, decimal=3)
 
-    def test_correct_primary_beam_restored(self):
+    def test_correct_primary_beam_restored_mid(self):
 
         # Test using restored image
         reversed_comp_rest = correct_primary_beam(
-            self.restored_image_multi, None, self.components_with_pb, telescope="MID"
+            self.restored_image_multi,
+            None,
+            self.components_with_pb_mid,
+            telescope="MID",
+        )
+        orig_flux = [c.flux[self.nchan // 2][0] for c in self.components]
+        reversed_flux_rest = [c.flux[self.nchan // 2][0] for c in reversed_comp_rest]
+
+        assert_array_almost_equal(orig_flux, reversed_flux_rest, decimal=1)
+
+    def test_correct_primary_beam_restored_low(self):
+
+        # Test using restored image
+        reversed_comp_rest = correct_primary_beam(
+            self.restored_image_multi,
+            None,
+            self.components_with_pb_low,
+            telescope="LOW",
         )
         orig_flux = [c.flux[self.nchan // 2][0] for c in self.components]
         reversed_flux_rest = [c.flux[self.nchan // 2][0] for c in reversed_comp_rest]
@@ -149,9 +179,9 @@ class TestCIChecker(unittest.TestCase):
 
         # If we don't feed either sensitivity or restored image, should return the same components back
         reversed_comp_none = correct_primary_beam(
-            None, None, self.components_with_pb, "MID"
+            None, None, self.components_with_pb_mid, "MID"
         )
-        assert self.components_with_pb == reversed_comp_none
+        assert self.components_with_pb_mid == reversed_comp_none
 
     def test_read_skycomponent_from_txt_multi(self):
 

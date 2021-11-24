@@ -67,8 +67,9 @@ def calibrate_list_rsexecute_workflow(
 
     def calibration_apply(vis, gt):
         assert gt is not None
+        new_vis = vis.copy(deep=True)
         return apply_calibration_chain(
-            vis,
+            new_vis,
             gt,
             calibration_context=calibration_context,
             controls=controls,

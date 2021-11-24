@@ -80,12 +80,6 @@ def ical_skymodel_list_rsexecute_workflow(
         rsexecute.execute(copy_visibility, nout=1)(v, zero=True) for v in vis_list
     ]
 
-    # Create a list of visibilities for the calibration (?)
-    if do_selfcal:
-        cal_vis_list = [rsexecute.execute(copy_visibility, nout=1)(v) for v in vis_list]
-    else:
-        cal_vis_list = vis_list
-
     # Ensure that we always have a skymodel to work with
     if skymodel_list is None:
         skymodel_list = [
@@ -105,7 +99,7 @@ def ical_skymodel_list_rsexecute_workflow(
         )
         # Selfcalibrate against it correcting the gains
         cal_vis_list, gt_list = calibrate_list_rsexecute_workflow(
-            cal_vis_list,
+            vis_list,
             predicted_model_vislist,
             gt_list,
             calibration_context=calibration_context,
@@ -141,6 +135,8 @@ def ical_skymodel_list_rsexecute_workflow(
             **kwargs,
         )
     else:
+
+        cal_vis_list = vis_list
 
         residual_imagelist = residual_skymodel_list_rsexecute_workflow(
             cal_vis_list,

@@ -287,6 +287,8 @@ def test_continuum_imaging_checker(
             "True",
             "--savefits_rmsim",
             "True",
+            "--use_dask",
+            use_dask,
         ]
     )
 

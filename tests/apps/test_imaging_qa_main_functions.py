@@ -130,6 +130,14 @@ class TestCIChecker(unittest.TestCase):
         parser = cli_parser()
         self.args = parser.parse_args([])
 
+    def cleanup_data_files(self):
+        """Cleanup the temporary data files"""
+
+        to_remove = rascil_path("test_results/test_imaging_qa_functions*")
+        for f in glob.glob(to_remove):
+            if os.path.exists(f):
+                os.remove(f)
+
     def test_correct_primary_beam_sensitivity(self):
 
         # Test using sensitivity image
@@ -164,6 +172,9 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_flux, reversed_flux_rest, decimal=1)
 
+        if self.persist is False:
+            self.cleanup_data_files()
+
     def test_correct_primary_beam_restored_low(self):
 
         export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
@@ -179,6 +190,9 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_flux, reversed_flux_rest, decimal=1)
 
+        if self.persist is False:
+            self.cleanup_data_files()
+
     def test_correct_primary_beam_none(self):
 
         # If we don't feed either sensitivity or restored image, should return the same components back
@@ -190,7 +204,7 @@ class TestCIChecker(unittest.TestCase):
         if self.persist is False:
             self.cleanup_data_files()
 
-    def test_read_skycomponent_from_txt_multi(self):
+    def write_txt_file(self):
 
         f = open(self.txtfile, "w")
         f.write(
@@ -215,6 +229,9 @@ class TestCIChecker(unittest.TestCase):
             )
         f.close()
 
+    def test_read_skycomponent_from_txt_multi(self):
+
+        self.write_txt_file()
         components_read = read_skycomponent_from_txt(
             self.txtfile, self.component_frequency
         )
@@ -224,8 +241,12 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_ra, read_ra)
 
+        if self.persist is False:
+            self.cleanup_data_files()
+
     def test_read_skycomponent_from_txt_single(self):
 
+        self.write_txt_file()
         # Test single channel components
         # The flux for each component should only have one value
         components_read_single = read_skycomponent_from_txt(
@@ -255,6 +276,8 @@ class TestCIChecker(unittest.TestCase):
         self.args.ingest_fitsname_restored = self.restored_image_multi
         self.args.restart = "False"
 
+        export_image_to_fits(self.multi_chan_image, self.restored_image_multi)
+
         result = analyze_image(self.args)
 
         # call_args_list returns the input for function imaging_qa_bdsf
@@ -264,13 +287,8 @@ class TestCIChecker(unittest.TestCase):
         # Assert returning None values
         assert result == (None, None)
 
-    def cleanup_data_files(self):
-        """Cleanup the temporary data files"""
-
-        to_remove = rascil_path("test_results/test_imaging_qa_functions*")
-        for f in glob.glob(to_remove):
-            if os.path.exists(f):
-                os.remove(f)
+        if self.persist is False:
+            self.cleanup_data_files()
 
 
 if __name__ == "__main__":

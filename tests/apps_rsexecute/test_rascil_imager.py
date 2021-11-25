@@ -471,6 +471,9 @@ def test_rascil_imager(
             "fit",
         ]
 
+    # In this case, we will specify a skymodel which is be used for the self-calibration
+    # before the major cycles begin. We keep the skymodel as a starting point for the
+    # major cycles
     if tag == "ical_init_sm":
         first_selfcal = "0"
         reset_skymodel = "False"

@@ -58,8 +58,6 @@ from rascil.processing_components.visibility.visibility_geometry import (
 )
 from rascil import phyconst
 
-SIDEREAL_DAY_SECONDS = 86164.090530833
-
 log = logging.getLogger("rascil-logger")
 
 
@@ -193,7 +191,7 @@ def create_blockvisibility(
         if times_are_ha:
             ha = time
         else:
-            ha = time * (SIDEREAL_DAY_SECONDS / 86400.0)
+            ha = time * (sidereal_day_seconds / 86400.0)
 
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
@@ -234,7 +232,7 @@ def create_blockvisibility(
         if times_are_ha:
             ha = time
         else:
-            ha = time * (SIDEREAL_DAY_SECONDS / 86400.0)
+            ha = time * (sidereal_day_seconds / 86400.0)
 
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination

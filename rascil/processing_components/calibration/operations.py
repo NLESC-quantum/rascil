@@ -614,7 +614,8 @@ def concatenate_gaintables(gt_list, dim="time"):
     :return: Concatendated gaintable
     """
 
-    assert len(gt_list) > 0
+    if len(gt_list) == 0:
+        raise ValueError("GainTable list is empty")
 
     return xarray.concat(
         gt_list, dim=dim, data_vars="minimal", coords="minimal", compat="override"

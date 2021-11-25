@@ -78,11 +78,12 @@ def solve_gaintable(
     nants = gt.gaintable_acc.nants
     nchan = gt.gaintable_acc.nchan
     npol = pointvis.blockvisibility_acc.npol
-    # Do we want to average over frequency?
+
     if nchan == 1:
         axes = (0, 2)
     else:
         axes = 0
+
     for row, time in enumerate(gt.time):
         time_slice = {
             "time": slice(time - gt.interval[row] / 2, time + gt.interval[row] / 2)

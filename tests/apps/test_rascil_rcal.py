@@ -20,6 +20,7 @@ from rascil.apps.rascil_rcal import (
     gt_single_plot,
     read_skycomponent_from_txt_with_external_frequency,
     _rfi_flagger,
+    apply_beam_correction,
 )
 from rascil.data_models import (
     rascil_path,
@@ -219,25 +220,6 @@ class TestRASCILRcal(unittest.TestCase):
         self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
         assert os.path.exists(self.plotfile) is False
 
-    @patch("rascil.apps.rascil_rcal._rfi_flagger", Mock(side_effect=_to_flag_flagger))
-    def test_rcal_with_flagging(self):
-        """Test that rcal uses RFI flagging (the returned bvis has flags)."""
-        self.pre_setup()
-        self.makeMS(self.flux)
-
-        freq_border = self.bvis_original.dims["frequency"] // 2
-        self.args.flag_first = "True"  # flag before gains are calculated
-
-        gtfile = rcal_simulator(self.args)
-        gain_table = import_gaintable_from_hdf5(gtfile)
-
-        # the flagged elements will not contribute to the GT weight --> they're 0
-        assert (gain_table["weight"].data[..., :freq_border, :, :] == 0).all()
-        assert (gain_table["weight"].data[..., freq_border:, :, :] != 0).all()
-
-        if self.persist is False:
-            self.cleanup_data_files()
-
     def test_rcal_plot(self):
         self.pre_setup()
         comp = self.create_dft_components(self.flux)
@@ -267,6 +249,19 @@ class TestRASCILRcal(unittest.TestCase):
 
         if self.persist is False:
             self.cleanup_data_files()
+
+    def test_apply_beam_correction(self):
+        """Test for apply_beam_correction
+        Currently only test for LOW"""
+
+        self.pre_setup()
+        new_bvis = self.bvis_original.copy(deep=True)
+        comp = self.create_dft_components(self.flux)
+        new_comp = apply_beam_correction(new_bvis, [comp], None, telescope_name="LOW")
+
+        assert len(new_comp) == 1
+        assert new_comp[0].direction == self.phasecentre
+        assert numpy.any(numpy.not_equal(new_comp[0].flux, self.flux))
 
     def test_get_gain_data(self):
         self.pre_setup()

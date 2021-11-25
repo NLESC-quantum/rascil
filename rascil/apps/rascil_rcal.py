@@ -159,7 +159,12 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     """
     Wrapper function for the flagger, certain defaults are managed here.
 
+    :param bvis: Block visibility
+    :param initial_threshold: The initial threshold to be used
+    :param rho: The roh to be used
+    :return: Block visibility with flags populated.
     """
+    # Sequence from https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger/-/blob/master/flagger_in_python.py#L25
     sequence = [1, 2, 4, 8, 16, 32]
     sequence_length = len(sequence)
     sequence = numpy.array(sequence, dtype=numpy.int32)

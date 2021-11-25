@@ -777,7 +777,7 @@ def invert(args, bvis_list, model_list, msname):
     """
     # Next we define a graph to run the continuum imaging pipeline
     start = time.time()
-    result = invert_list_rsexecute_workflow(
+    invert_result = invert_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
         context=args.imaging_context,
@@ -786,7 +786,7 @@ def invert(args, bvis_list, model_list, msname):
         wstacking=args.imaging_w_stacking == "True",
         dft_compute_kernel=args.imaging_dft_kernel,
     )
-    result = sum_invert_results_rsexecute(result)
+    result = sum_invert_results_rsexecute(invert_result)
     perf_graph(result, "invert", start, args.performance_file)
     # Execute the Dask graph
     log.info("rascil.imager.invert: Starting compute of invert graph ")

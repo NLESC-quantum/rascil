@@ -306,7 +306,7 @@ def analyze_image(args):
     init_logging()
 
     if args.use_dask == "True":
-        if args.dask_scheduler == "existing":
+        if args.dask_scheduler is not None:
             rsexecute.set_client(use_dask=True)
         else:
             client = get_dask_client(

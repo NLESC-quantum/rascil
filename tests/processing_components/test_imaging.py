@@ -118,6 +118,7 @@ class TestImaging2D(unittest.TestCase):
             self.vis_pol,
             self.phasecentre,
             zerow=zerow,
+            times_are_ha=True,
         )
 
         self.model = create_unittest_model(

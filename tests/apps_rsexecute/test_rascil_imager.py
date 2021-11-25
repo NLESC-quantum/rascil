@@ -118,18 +118,19 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             False,
             "list",
         ),
+        # Set a point source skymodel. We don't put in a shift for this case.
         (
             DEFAULT_RUN,
             "ical_init_sm",
-            True,
+            False,
             5,
             "ical",
             True,
-            115.93821508971706,
-            -2.111405154646662,
+            117.13928393725382,
+            -0.4491524712182347,
             None,
             None,
-            5.0,
+            0.0,
             False,
             "list",
         ),
@@ -140,8 +141,8 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5,
             "ical",
             True,
-            115.98653103606206,
-            -2.10896120811566,
+            116.75120243568688,
+            -0.3833508050042793,
             None,
             None,
             5.0,
@@ -470,9 +471,19 @@ def test_rascil_imager(
             "fit",
         ]
 
+    # In this case, we will specify a skymodel which is be used for the self-calibration
+    # before the major cycles begin. We keep the skymodel as a starting point for the
+    # major cycles
+    if tag == "ical_init_sm":
+        first_selfcal = "0"
+        reset_skymodel = "False"
+    else:
+        first_selfcal = "2"
+        reset_skymodel = "True"
+
     calibration_args = [
         "--calibration_T_first_selfcal",
-        "2",
+        first_selfcal,
         "--calibration_T_phase_only",
         "True",
         "--calibration_T_timeslice",
@@ -490,9 +501,11 @@ def test_rascil_imager(
         "--calibration_B_timeslice",
         "1.0e5",
         "--calibration_global_solution",
-        "True",
+        "False",
         "--calibration_context",
         "TG",
+        "--calibration_reset_skymodel",
+        reset_skymodel,
     ]
 
     if tag == "ical_init_sm":

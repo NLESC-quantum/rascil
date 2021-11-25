@@ -37,6 +37,7 @@ from rascil.processing_components import (
     create_skycomponent,
     create_gaintable_from_blockvisibility,
     apply_gaintable,
+    concatenate_gaintables,
     create_low_test_beam,
     create_image_from_visibility,
     apply_beam_to_skycomponent,
@@ -379,7 +380,7 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
         gt_single_plot(gt_list, plot_name)
         log.info("Save final plot.")
 
-    full_gt = xarray.concat(gt_list, "time")
+    full_gt = concatenate_gaintables(gt_list, "time")
     return full_gt
 
 

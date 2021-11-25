@@ -4,7 +4,7 @@
 
 __all__ = ["calibrate_list_rsexecute_workflow"]
 
-from rascil.data_models import get_parameter, BlockVisibility
+import logging
 
 from rascil.processing_components.calibration import (
     apply_calibration_chain,
@@ -18,6 +18,8 @@ from rascil.processing_components.visibility import concatenate_visibility
 
 from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 
+log = logging.getLogger("rascil-logger")
+
 
 def calibrate_list_rsexecute_workflow(
     vis_list,
@@ -26,7 +28,7 @@ def calibrate_list_rsexecute_workflow(
     calibration_context="TG",
     controls=None,
     global_solution=True,
-    **kwargs
+    **kwargs,
 ):
     """Create a set of components for (optionally global) calibration of a list of visibilities
 
@@ -43,26 +45,39 @@ def calibrate_list_rsexecute_workflow(
     :return: list of calibrated vis, list of dictionaries of gaintables
     """
 
+    if global_solution:
+        log.info(
+            "calibration_solve: Performing global solution of gains for all blockvis"
+        )
+    else:
+        log.info(
+            "calibration_solve: Performing separate solution of gains for each blockvis"
+        )
+
     def calibration_solve(vis, modelvis=None, gt=None):
+
         return solve_calibrate_chain(
             vis,
             modelvis,
             gt,
             calibration_context=calibration_context,
             controls=controls,
-            **kwargs
+            **kwargs,
         )
 
     def calibration_apply(vis, gt):
         assert gt is not None
+        new_vis = vis.copy(deep=True)
         return apply_calibration_chain(
-            vis,
+            new_vis,
             gt,
             calibration_context=calibration_context,
             controls=controls,
-            **kwargs
+            **kwargs,
         )
 
+    # Here we do a global solution over all blockvis and channels or
+    # just solutions per blockvis
     if global_solution and (len(vis_list) > 1):
         # The conversion is a no op if it's actually a blockvis
         point_vislist = [
@@ -78,38 +93,42 @@ def calibrate_list_rsexecute_workflow(
         )(global_point_vis_list)
         # This is a global solution so we only compute one gain table
         if gt_list is None or len(gt_list) < 1:
-            gt_list = [
+            new_gt_list = [
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
-                    global_point_vis_list
+                    global_point_vis_list,
                 )
             ]
         else:
-            gt_list = [
+            new_gt_list = [
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
-                    global_point_vis_list, gt=gt_list[0]
+                    global_point_vis_list,
+                    gt=gt_list[0],
                 )
             ]
 
         return [
-            rsexecute.execute(calibration_apply, nout=1)(v, gt_list[0])
+            rsexecute.execute(calibration_apply, nout=1)(v, new_gt_list[0])
             for v in vis_list
-        ], gt_list
+        ], new_gt_list
     else:
         if gt_list is not None and len(gt_list) > 0:
-            gt_list = [
+            new_gt_list = [
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
-                    v, model_vislist[i], gt_list[i]
+                    v,
+                    model_vislist[i],
+                    gt_list[i],
                 )
                 for i, v in enumerate(vis_list)
             ]
         else:
-            gt_list = [
+            new_gt_list = [
                 rsexecute.execute(calibration_solve, pure=True, nout=1)(
-                    v, model_vislist[i]
+                    v,
+                    model_vislist[i],
                 )
                 for i, v in enumerate(vis_list)
             ]
         return [
-            rsexecute.execute(calibration_apply)(v, gt_list[i])
+            rsexecute.execute(calibration_apply)(v, new_gt_list[i])
             for i, v in enumerate(vis_list)
-        ], gt_list
+        ], new_gt_list

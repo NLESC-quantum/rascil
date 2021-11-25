@@ -124,7 +124,7 @@ logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
     ],
 )
 def test_continuum_imaging_checker(
-    cellsize, npixel, nchan, flux_limit, insert_method, noise, tag
+    use_dask, cellsize, npixel, nchan, flux_limit, insert_method, noise, tag
 ):
 
     # Set true if we want to save the outputs

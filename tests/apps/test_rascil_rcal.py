@@ -228,7 +228,7 @@ class TestRASCILRcal(unittest.TestCase):
         gtfile = rcal_simulator(self.args)
         gain_table2 = import_gaintable_from_hdf5(gtfile)
 
-        assert(gain_table2["weight"].data != gain_table["weight"].data).any()
+        assert (gain_table2["weight"].data != gain_table["weight"].data).any()
 
         if self.persist is False:
             self.cleanup_data_files()

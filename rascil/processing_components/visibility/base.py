@@ -191,7 +191,7 @@ def create_blockvisibility(
         if times_are_ha:
             ha = time
         else:
-            ha = time * (sidereal_day_seconds / 86400.0)
+            ha = time * (phyconst.sidereal_day_seconds / 86400.0)
 
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
@@ -232,7 +232,7 @@ def create_blockvisibility(
         if times_are_ha:
             ha = time
         else:
-            ha = time * (sidereal_day_seconds / 86400.0)
+            ha = time * (phyconst.sidereal_day_seconds / 86400.0)
 
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination

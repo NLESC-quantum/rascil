@@ -607,7 +607,7 @@ def create_low_test_vp(model: Image, use_local=True, azel=None) -> Image:
         return vp_zenith
     else:
         return scale_and_rotate_image(
-            vp_zenith, scale=[numpy.cos(azel[1]), 1.0], angle=azel[0]
+            vp_zenith, scale=[numpy.sin(azel[1]), 1.0], angle=azel[0]
         )
 
 

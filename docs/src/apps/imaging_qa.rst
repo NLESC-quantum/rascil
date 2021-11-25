@@ -145,10 +145,13 @@ Plots for flux matching::
     ..._flux_value.png  # Values of output flux vs. input flux of sources
     ..._flux_ratio.png  # Ratio of flux out/flux in
     ..._flux_histogram.png  # Histogram of flux comparison
+    ..._flux_position.png # Flux vs. RA and Dec of the sources
  
 Plots for spectral index::
 
     ..._spec_index.png # Spectral index of input vs output fluxes over frequency.
+    ..._spec_index_diagnostics_dist.png # Spectral index out/in vs. distance to centre
+    ..._spec_index_diagnostics_flux.png # Spectral index out/in vs. input sources flux
 
 Command line arguments
 ++++++++++++++++++++++

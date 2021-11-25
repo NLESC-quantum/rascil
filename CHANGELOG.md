@@ -1,7 +1,17 @@
 master
 ------
 
+* Developed the capability to apply realistic LOW beam for skymodel in the RCAL app and refined its application in imaging_qa ([MR284](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/284))
+* The rascil_imager option for global solution was being ignored ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
+* The numba version of the DFT became unstable and is no longer part of the test suite ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
+* Solutions for Jones type T and G now integrate across BlockVisibility spectrum ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
+* Gaintables now labelled by Jones type (e.g. T, G, or B) ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
+* Reset of skymodel in ICAL now sets both image and components ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
+* create_blockvisibility can accepts time in UTC as well as HA (both in radians) ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
+* Pipelines produce more log info on calibration progress, also writes gaintables ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
+* Prototype of an app to calculate sensitivity for weightings and tapers ([MR273](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/273))
 * Added a CI job to build and test the docker images upon every merge to master ([MR270](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/270))
+* Fixed an issue in plot_skycomponent to deal with the angle wrap problem([MR269](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/269))
 * Large number of test fixes and improvements ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
 * create_blockvisibility_iterator removed in favor of xarray.groupby ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))
 * skymodel_predict_calibrate and skymodel_calibrate_image functions added ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))

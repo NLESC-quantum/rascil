@@ -170,8 +170,6 @@ class TestRASCILRcal(unittest.TestCase):
 
     def persist_data_files(self):
         """Persist the temporary data files"""
-
-        # First remove the measurement set
         try:
             shutil.copyfile(
                 self.tempdir + "/test_rascil_rcal.ms", rascil_path("test_results")
@@ -226,6 +224,9 @@ class TestRASCILRcal(unittest.TestCase):
         self.plotfile = self.tempdir + "/test_rascil_rcal_plot.png"
         assert os.path.exists(self.plotfile) is False
 
+        if self.persist is True:
+            self.persist_data_files()
+
     def test_rcal_plot(self):
         self.pre_setup()
         comp = self.create_dft_components(self.flux)
@@ -269,6 +270,9 @@ class TestRASCILRcal(unittest.TestCase):
         assert new_comp[0].direction == self.phasecentre
         assert numpy.any(numpy.not_equal(new_comp[0].flux, self.flux))
 
+        if self.persist is True:
+            self.persist_data_files()
+
     def test_get_gain_data(self):
         self.pre_setup()
         comp = self.create_dft_components(self.flux)
@@ -291,6 +295,9 @@ class TestRASCILRcal(unittest.TestCase):
         _rfi_flagger(new_bvis)
         assert new_bvis == self.bvis_original
 
+        if self.persist is True:
+            self.persist_data_files()
+
     def test_rfi_flagger_flag(self):
         """Tests the placeholder function only. Option: flag."""
         self.pre_setup()
@@ -303,6 +310,9 @@ class TestRASCILRcal(unittest.TestCase):
         assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
         assert (new_bvis["flags"][..., : n_freqs // 2, :] == 1).all()
         assert (new_bvis["flags"][..., n_freqs // 2 :, :] == 0).all()
+
+        if self.persist is True:
+            self.persist_data_files()
 
 
 if __name__ == "__main__":

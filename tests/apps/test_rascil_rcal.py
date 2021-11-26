@@ -181,8 +181,7 @@ class TestRASCILRcal(unittest.TestCase):
 
         to_copy = self.tempdir + "/test_rascil_rcal*"
         for f in glob.glob(to_copy):
-            if os.path.exists(f):
-                shutil.copy(f, rascil_path("test_results"))
+            shutil.copy(f, rascil_path("test_results"))
 
     def setUp(self) -> None:
 

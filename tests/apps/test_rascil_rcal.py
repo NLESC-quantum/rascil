@@ -6,6 +6,7 @@ import logging
 import unittest
 import shutil
 import glob
+import tempfile
 
 import numpy
 from astropy import units as u
@@ -21,10 +22,10 @@ from rascil.apps.rascil_rcal import (
     apply_beam_correction,
 )
 from rascil.data_models import (
-    rascil_path,
     Skycomponent,
     import_gaintable_from_hdf5,
     export_skycomponent_to_hdf5,
+    rascil_path,
 )
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import (
@@ -41,6 +42,7 @@ from rascil.processing_components.simulation import ingest_unittest_visibility
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestRASCILRcal(unittest.TestCase):
@@ -53,8 +55,8 @@ class TestRASCILRcal(unittest.TestCase):
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
         self.low = create_named_configuration("LOW-AA0.5")
-        self.freqwin = 200
-        self.ntimes = 240
+        self.freqwin = 20
+        self.ntimes = 24
         self.times = numpy.linspace(-2.0, +2.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
 
@@ -94,13 +96,13 @@ class TestRASCILRcal(unittest.TestCase):
 
         export_skycomponent_to_hdf5(
             [comp],
-            rascil_path("test_results/test_rascil_rcal_components.hdf"),
+            self.tempdir + "/test_rascil_rcal_components.hdf",
         )
 
         self.bvis_error = self.create_apply_gains()
 
         export_blockvisibility_to_ms(
-            rascil_path("test_results/test_rascil_rcal.ms"), [self.bvis_error]
+            self.tempdir + "/test_rascil_rcal.ms", [self.bvis_error]
         )
 
     def create_dft_components(self, flux):
@@ -124,7 +126,7 @@ class TestRASCILRcal(unittest.TestCase):
 
     def write_to_txt(self, comp):
 
-        self.txtfile = rascil_path("test_results/test_rascil_rcal_components.txt")
+        self.txtfile = self.tempdir + "/test_rascil_rcal_components.txt"
 
         coord_ra = comp.direction.ra.degree
         coord_dec = comp.direction.dec.degree
@@ -159,29 +161,32 @@ class TestRASCILRcal(unittest.TestCase):
 
         return bvis_error
 
-    def cleanup_data_files(self):
-        """Cleanup the temporary data files"""
+    def persist_data_files(self):
+        """Persist the temporary data files"""
+        try:
+            shutil.copyfile(
+                self.tempdir + "/test_rascil_rcal.ms", rascil_path("test_results")
+            )
+        except FileNotFoundError:
+            pass
 
-        # First remove the measurement set
-        shutil.rmtree(
-            rascil_path("test_results/test_rascil_rcal.ms"), ignore_errors=True
-        )
-
-        to_remove = rascil_path("test_results/test_rascil_rcal*")
-        for f in glob.glob(to_remove):
-            if os.path.exists(f):
-                os.remove(f)
+        to_copy = self.tempdir + "/test_rascil_rcal*"
+        for f in glob.glob(to_copy):
+            shutil.copy(f, rascil_path("test_results"))
 
     def setUp(self) -> None:
 
+        self.tempdir_root = tempfile.TemporaryDirectory(dir=rascil_path("test_results"))
+        self.tempdir = self.tempdir_root.name
+
         parser = cli_parser()
         self.args = parser.parse_args([])
-        self.args.ingest_msname = rascil_path("test_results/test_rascil_rcal.ms")
-        self.args.ingest_components_file = rascil_path(
-            "test_results/test_rascil_rcal_components.hdf"
+        self.args.ingest_msname = self.tempdir + "/test_rascil_rcal.ms"
+        self.args.ingest_components_file = (
+            self.tempdir + "/test_rascil_rcal_components.hdf"
         )
         self.args.do_plotting = "False"
-        self.args.plot_dir = rascil_path("test_results/")
+        self.args.plot_dir = self.tempdir + "/"
 
     # Regression test
     def test_rcal(self):
@@ -212,7 +217,7 @@ class TestRASCILRcal(unittest.TestCase):
         assert qa.data["minabs"] < 1e-12, str(qa)
 
         # Test the plot does not exist
-        self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        self.plotfile = self.tempdir + "/test_rascil_rcal_plot.png"
         assert os.path.exists(self.plotfile) is False
 
         # Test that when we flag first, the results are different from
@@ -224,22 +229,22 @@ class TestRASCILRcal(unittest.TestCase):
 
         assert (gain_table_w_flag["weight"].data != gain_table["weight"].data).any()
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist is True:
+            self.persist_data_files()
 
     def test_rcal_plot(self):
         self.pre_setup()
         self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
 
-        self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        self.plotfile = self.tempdir + "/test_rascil_rcal_plot.png"
         plot_name = self.plotfile.replace(".png", "")
         gt_single_plot(self.gt, plot_name=plot_name)
 
         assert os.path.exists(self.plotfile)
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist is True:
+            self.persist_data_files()
 
     # Unit tests for additional functions
     def test_read_txtfile(self):
@@ -254,8 +259,8 @@ class TestRASCILRcal(unittest.TestCase):
         assert components_read.direction == self.phasecentre
         assert components_read.flux[:, 0].all() == self.flux.all()
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist is True:
+            self.persist_data_files()
 
     def test_apply_beam_correction(self):
         """Test for apply_beam_correction
@@ -270,6 +275,9 @@ class TestRASCILRcal(unittest.TestCase):
         assert new_comp[0].direction == self.phasecentre
         assert numpy.any(numpy.not_equal(new_comp[0].flux, self.flux))
 
+        if self.persist is True:
+            self.persist_data_files()
+
     def test_get_gain_data(self):
         self.pre_setup()
         self.create_dft_components(self.flux)
@@ -282,8 +290,8 @@ class TestRASCILRcal(unittest.TestCase):
         assert len(gain_data[3]) == 1  # residual dimension
         assert len(gain_data[4]) == 6  # weight dimension
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist is True:
+            self.persist_data_files()
 
     def test_rfi_flagger(self):
         self.pre_setup()
@@ -299,6 +307,9 @@ class TestRASCILRcal(unittest.TestCase):
         # reset value, so we can check that now all are 0
         new_bvis["vis"].data[0, 0, 0, 0] = 0
         assert (new_bvis["vis"].data == 0).all()
+
+        if self.persist is True:
+            self.persist_data_files()
 
 
 if __name__ == "__main__":

@@ -132,6 +132,7 @@ def create_blockvisibility(
     source="unknown",
     meta=None,
     utc_time=None,
+    times_are_ha=True,
     **kwargs
 ) -> BlockVisibility:
     """Create a BlockVisibility from Configuration, hour angles, and direction of source
@@ -142,7 +143,8 @@ def create_blockvisibility(
     the approximate time.
 
     :param config: Configuration of antennas
-    :param times: hour angles in radians
+    :param times: time or hour angles in radians
+    :param times_are_ha: The times are hour angles (default) instead of utc time (in radians)
     :param frequency: frequencies (Hz] [nchan]
     :param weight: weight of a single sample
     :param phasecentre: phasecentre of observation (SkyCoord)
@@ -178,13 +180,19 @@ def create_blockvisibility(
     )
     nbaselines = len(baselines)
 
+    # Find the number of integrations ab
     ntimes = 0
     n_flagged = 0
 
-    for iha, ha in enumerate(times):
+    for itime, time in enumerate(times):
 
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination
+        if times_are_ha:
+            ha = time
+        else:
+            ha = time * (phyconst.sidereal_day_seconds / 86400.0)
+
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
             ntimes += 1
@@ -212,23 +220,25 @@ def create_blockvisibility(
     rintegrationtime = numpy.zeros([ntimes])
     ruvw = numpy.zeros([ntimes, nbaselines, 3])
 
-    # Do each hour angle in turn
-    itime = 0
     if utc_time is None:
         stime = calculate_transit_time(config.location, utc_time_zero, phasecentre)
         if stime.masked:
             stime = utc_time_zero
 
-    for iha, ha in enumerate(times):
+    # Do each time filling in the actual values
+    itime = 0
+    for _, time in enumerate(times):
+
+        if times_are_ha:
+            ha = time
+        else:
+            ha = time * (phyconst.sidereal_day_seconds / 86400.0)
 
         # Calculate the positions of the antennas as seen for this hour angle
         # and declination
         _, elevation = hadec_to_azel(ha, phasecentre.dec.rad, latitude)
         if elevation_limit is None or (elevation > elevation_limit):
-            if utc_time is None:
-                rtimes[itime] = stime.mjd * 86400.0 + ha * 86164.1 / (2.0 * numpy.pi)
-            else:
-                rtimes[itime] = utc_to_ms_epoch(utc_time[iha])
+            rtimes[itime] = stime.mjd * 86400.0 + time * 86400.0 / (2.0 * numpy.pi)
             rweight[itime, ...] = 1.0
             rflags[itime, ...] = 1
 

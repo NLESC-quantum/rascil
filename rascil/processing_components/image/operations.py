@@ -181,7 +181,7 @@ def import_image_from_fits(fitsfile: str, fixpol=True) -> Image:
 
     if len(data.shape) == 4:
         # RASCIL images are RA, DEC, STOKES, FREQ
-        if wcs.axis_type_names[3] == "STOKES":
+        if wcs.axis_type_names[3] == "STOKES" or wcs.axis_type_names[2] == "FREQ":
             wcs = wcs.swapaxes(2, 3)
             data = numpy.transpose(data, (1, 0, 2, 3))
         try:

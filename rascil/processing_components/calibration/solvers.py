@@ -32,8 +32,8 @@ def solve_gaintable(
     modelvis: BlockVisibility = None,
     gt=None,
     phase_only=True,
-    niter=30,
-    tol=1e-8,
+    niter=200,
+    tol=1e-6,
     crosspol=False,
     normalise_gains=True,
     jones_type="T",
@@ -77,21 +77,27 @@ def solve_gaintable(
 
     nants = gt.gaintable_acc.nants
     nchan = gt.gaintable_acc.nchan
+    npol = pointvis.blockvisibility_acc.npol
+
+    if nchan == 1:
+        axes = (0, 2)
+    else:
+        axes = 0
+
     for row, time in enumerate(gt.time):
         time_slice = {
             "time": slice(time - gt.interval[row] / 2, time + gt.interval[row] / 2)
         }
         pointvis_sel = pointvis.sel(time_slice)
-        if pointvis.blockvisibility_acc.ntimes > 0:
+        if pointvis_sel.blockvisibility_acc.ntimes > 0:
             x_b = numpy.sum(
                 (pointvis_sel.vis.data * pointvis_sel.weight.data)
                 * (1 - pointvis_sel.flags.data),
-                axis=0,
+                axis=axes,
             )
             xwt_b = numpy.sum(
-                pointvis_sel.weight.data * (1 - pointvis_sel.flags.data), axis=0
+                pointvis_sel.weight.data * (1 - pointvis_sel.flags.data), axis=axes
             )
-            npol = pointvis.blockvisibility_acc.npol
             x = numpy.zeros([nants, nants, nchan, npol], dtype="complex")
             xwt = numpy.zeros([nants, nants, nchan, npol])
             for ibaseline, (a1, a2) in enumerate(pointvis.baselines.data):
@@ -106,6 +112,7 @@ def solve_gaintable(
                 x[mask] = x[mask] / xwt[mask]
                 x[~mask] = 0.0
                 xwt[mask] = xwt[mask] / numpy.max(xwt[mask])
+                xwt[~mask] = 0.0
                 x = x.reshape(x_shape)
 
                 if vis.blockvisibility_acc.npol == 1:
@@ -200,7 +207,7 @@ def solve_gaintable(
 
 
 def solve_antenna_gains_itsubs_scalar(
-    gain, gwt, x, xwt, niter=30, tol=1e-8, phase_only=True, refant=0, damping=0.5
+    gain, gwt, x, xwt, niter=200, tol=1e-6, phase_only=True, refant=0, damping=0.5
 ):
     """Solve for the antenna gains
 
@@ -254,6 +261,10 @@ def solve_antenna_gains_itsubs_scalar(
                 mask = numpy.abs(gain) > 0.0
                 gain[mask] = gain[mask] / numpy.abs(gain[mask])
             return gain, gwt, solution_residual_scalar(gain, x, xwt)
+
+    log.warning(
+        "solve_antenna_gains_itsubs_scalar: gain solution failed, retaining gain solutions"
+    )
 
     if phase_only:
         mask = numpy.abs(gain) > 0.0
@@ -309,7 +320,7 @@ def gain_substitution_scalar(gain, x, xwt):
 
 
 def solve_antenna_gains_itsubs_nocrossdata(
-    gain, gwt, x, xwt, niter=30, tol=1e-8, phase_only=True, refant=0
+    gain, gwt, x, xwt, niter=200, tol=1e-6, phase_only=True, refant=0
 ):
     """Solve for the antenna gains using full matrix expressions, but no cross hands
 
@@ -363,7 +374,7 @@ def solve_antenna_gains_itsubs_nocrossdata(
 
 
 def solve_antenna_gains_itsubs_matrix(
-    gain, gwt, x, xwt, niter=30, tol=1e-8, phase_only=True, refant=0
+    gain, gwt, x, xwt, niter=200, tol=1e-6, phase_only=True, refant=0
 ):
     """Solve for the antenna gains using full matrix expressions
 
@@ -421,6 +432,10 @@ def solve_antenna_gains_itsubs_matrix(
         gain = 0.5 * (gain + gainLast)
         if change < tol:
             return gain, gwt, solution_residual_matrix(gain, x, xwt)
+
+    log.warning(
+        "solve_antenna_gains_itsubs_scalar: gain solution failed, retaining gain solutions"
+    )
 
     return gain, gwt, solution_residual_matrix(gain, x, xwt)
 
@@ -509,10 +524,10 @@ def solution_residual_scalar(gain, x, xwt):
         error = x[:, :, chan, 0, 0] - smueller
         for i in range(nant):
             error[i, i] = 0.0
-        residual += numpy.sum(
+        residual[chan] += numpy.sum(
             error * xwt[:, :, chan, 0, 0] * numpy.conjugate(error)
         ).real
-        sumwt += numpy.sum(xwt[:, :, chan, 0, 0])
+        sumwt[chan] += numpy.sum(xwt[:, :, chan, 0, 0])
 
     residual[sumwt > 0.0] = numpy.sqrt(residual[sumwt > 0.0] / sumwt[sumwt > 0.0])
     residual[sumwt <= 0.0] = 0.0

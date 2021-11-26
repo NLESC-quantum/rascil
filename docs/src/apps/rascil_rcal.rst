@@ -52,6 +52,13 @@ MID continuum imaging simulations (with an optional input components file)::
     --ingest_msname SKA_MID_SIM_custom_B2_dec_-45.0_nominal_nchan100_actual.ms \
     --ingest_components_file SKA_MID_SIM_custom_B2_dec_-45.0_nominal_nchan100_components.hdf
 
+There are also additional options if you want the sky model to have primary beams applied. Currently we support internal beam from MID and LOW, or additional beam file (in FITS format). An example::
+
+    #!/bin/bash
+    python3 $RASCIL/rascil/apps/rascil_rcal.py \
+    --ingest_msname myms.ms \
+    --ingest_components_file my_components.hdf \
+    --apply_beam True --ingest_beam_file my_beam.fits \
 
 Command line arguments
 ++++++++++++++++++++++

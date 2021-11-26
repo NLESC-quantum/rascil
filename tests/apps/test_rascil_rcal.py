@@ -7,6 +7,7 @@ import unittest
 import shutil
 import glob
 import tempfile
+import sys
 
 import numpy
 from astropy import units as u

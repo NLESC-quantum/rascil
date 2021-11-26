@@ -135,21 +135,27 @@ def cli_parser():
     )
 
     parser.add_argument(
+        "--initial_threshold",
+        type=float,
+        default=8.0,
+        help="The initial threshold to be used by the flagger. "
+        "Used for calculating a list of thresholds."
+        "Note: use default value since flagger is still under development",
+    )
+
+    parser.add_argument(
+        "--rho",
+        type=float,
+        default=1.5,
+        help="The initial rho used by flagger. Used for calculating a list of thresholds. "
+        "Note: use default value since flagger is still under development",
+    )
+
+    parser.add_argument(
         "--calibrate_bvis",
         type=str,
         default="True",
-        help="Whether to apply calibration or not.",
-    )
-
-    parser.add_argument(
-        "--initial_threshold",
-        type=float,
-        default="8",
-        help="The initial threshold to be used by the flagger.",
-    )
-
-    parser.add_argument(
-        "--rho", type=float, default="1.5", help="The initial rho used by flagger."
+        help="Whether to apply calibration to bvis or not.",
     )
 
     return parser
@@ -157,7 +163,9 @@ def cli_parser():
 
 def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     """
-    Wrapper function for the flagger, certain defaults are managed here.
+    Wrapper function for the SKA flagger
+    (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger),
+    certain defaults are managed here.
 
     :param bvis: Block visibility
     :param initial_threshold: The initial threshold to be used
@@ -366,7 +374,8 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
     for gt in gt_gen:
         datetime = gt["datetime"][0].data
         log.info(
-            f"rascil_rcal_gt_sink: Processing integration {datetime} residual: {numpy.max(gt.residual.data):.3g}"
+            f"rascil_rcal_gt_sink: Processing integration {datetime} "
+            f"residual: {numpy.max(gt.residual.data):.3g}"
         )
         gt_list.append(gt)
 
@@ -413,8 +422,8 @@ def get_gain_data(gt_list):
         time = []
         weight = []
 
-        chan_to_avg = 0
         # We only look at the central channel at the moment
+        half_of_chans_to_avg = 0
         for gt in gt_list:
 
             time.append(gt.time.data[0] / 86400.0)
@@ -425,7 +434,10 @@ def get_gain_data(gt_list):
                 numpy.average(
                     current_gain[
                         :,
-                        central_chan - chan_to_avg : central_chan + chan_to_avg + 1,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
                         0,
                         0,
                     ],
@@ -436,7 +448,10 @@ def get_gain_data(gt_list):
                 numpy.average(
                     gt.residual.data[
                         0,
-                        central_chan - chan_to_avg : central_chan + chan_to_avg + 1,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
                         0,
                         0,
                     ],
@@ -448,7 +463,10 @@ def get_gain_data(gt_list):
                     gt.weight.data[
                         0,
                         :,
-                        central_chan - chan_to_avg : central_chan + chan_to_avg + 1,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
                         0,
                         0,
                     ],
@@ -461,7 +479,7 @@ def get_gain_data(gt_list):
         amp = amp.reshape(amp.shape[1], amp.shape[0])
         phase = numpy.angle(gains, deg=True)
         weight = numpy.array(weight)
-        weight = xarray.DataArray(weight.reshape(weight.shape[1], weight.shape[0]))
+        weight = weight.reshape(weight.shape[1], weight.shape[0])
 
         phase_rel = []
         for i in range(len(phase[0])):
@@ -507,7 +525,7 @@ def gt_single_plot(gt_list, plot_name=None):
 
         ax1.set_ylabel("Gain Amplitude - 1")
         ax2.set_ylabel("Gain Phase (Antenna - Antenna 0)")
-        ax3.set_ylabel("Weight")
+        ax3.set_ylabel("Gain Weight")
         ax3.legend(loc="best")
 
         ax4.plot(timeseries, residual, "-")

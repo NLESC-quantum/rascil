@@ -455,6 +455,8 @@ zarr==2.10.3
     # via -r requirements.in
 zict==2.0.0
     # via distributed
+ska-post-correlation-rfi-flagger @ git+https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger.git@master
+
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

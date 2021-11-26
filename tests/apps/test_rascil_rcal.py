@@ -1,14 +1,13 @@
 """ Unit test for rascil_rcal app.
 
 """
-import sys
 import os
 import logging
 import unittest
 import shutil
 import glob
 import tempfile
-from unittest.mock import patch, Mock
+import sys
 
 import numpy
 from astropy import units as u
@@ -45,11 +44,6 @@ from rascil.processing_components.simulation import ingest_unittest_visibility
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
-
-
-def _to_flag_flagger(bvis, to_flag=True):
-    """Need to be able to run the place-holder flagger in flagging mode."""
-    return _rfi_flagger(bvis, to_flag=to_flag)
 
 
 class TestRASCILRcal(unittest.TestCase):
@@ -199,22 +193,25 @@ class TestRASCILRcal(unittest.TestCase):
     def test_rcal(self):
         self.pre_setup()
         self.makeMS(self.flux)
+
+        # flag only after gain tables are calculated, i.e. flagging will not affect gain solutions
+        self.args.flag_first = "False"
         gtfile = rcal_simulator(self.args)
 
         # Check that the gaintable exists and is correct by applying it to
         # the corrupted visibility
         assert os.path.exists(gtfile)
-        newgt = import_gaintable_from_hdf5(gtfile)
+        gain_table = import_gaintable_from_hdf5(gtfile)
         assert (
-            newgt["weight"].data != 0
+            gain_table["weight"].data != 0
         ).all()  # un-flagged data, all weights are non-zero
-        log.info(f"\nFinal gaintable: {newgt}")
+        log.info(f"\nFinal gaintable: {gain_table}")
 
-        qa_gt = qa_gaintable(newgt)
+        qa_gt = qa_gaintable(gain_table)
         log.info(qa_gt)
         assert qa_gt.data["rms-phase"] > 0.0, str(qa_gt)
 
-        bvis_difference = apply_gaintable(self.bvis_error, newgt, inverse=True)
+        bvis_difference = apply_gaintable(self.bvis_error, gain_table, inverse=True)
         bvis_difference["vis"] -= self.bvis_original["vis"]
         qa = qa_visibility(bvis_difference)
         assert qa.data["maxabs"] < 1e-12, str(qa)
@@ -224,12 +221,21 @@ class TestRASCILRcal(unittest.TestCase):
         self.plotfile = self.tempdir + "/test_rascil_rcal_plot.png"
         assert os.path.exists(self.plotfile) is False
 
+        # Test that when we flag first, the results are different from
+        # when we flag after gains were calculated
+        os.remove(gtfile)
+        self.args.flag_first = "True"  # flag before gains are calculated
+        gtfile = rcal_simulator(self.args)
+        gain_table_w_flag = import_gaintable_from_hdf5(gtfile)
+
+        assert (gain_table_w_flag["weight"].data != gain_table["weight"].data).any()
+
         if self.persist is True:
             self.persist_data_files()
 
     def test_rcal_plot(self):
         self.pre_setup()
-        comp = self.create_dft_components(self.flux)
+        self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
 
         self.plotfile = self.tempdir + "/test_rascil_rcal_plot.png"
@@ -275,7 +281,7 @@ class TestRASCILRcal(unittest.TestCase):
 
     def test_get_gain_data(self):
         self.pre_setup()
-        comp = self.create_dft_components(self.flux)
+        self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
 
         gain_data = get_gain_data(self.gt)
@@ -283,33 +289,25 @@ class TestRASCILRcal(unittest.TestCase):
         assert len(gain_data[1]) == 6  # gain dimension (number of antennas)
         assert len(gain_data[2]) == 6  # phase dimension
         assert len(gain_data[3]) == 1  # residual dimension
+        assert len(gain_data[4]) == 6  # weight dimension
 
         if self.persist is True:
             self.persist_data_files()
 
-    def test_rfi_flagger_no_flag(self):
-        """Tests the placeholder function only. Option: Do not flag."""
+    def test_rfi_flagger(self):
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
+        # update new_bvis to have a value that will be flagged
+        new_bvis["vis"].data[0, 0, 0, 0] = 100
 
         _rfi_flagger(new_bvis)
-        assert new_bvis == self.bvis_original
-
-        if self.persist is True:
-            self.persist_data_files()
-
-    def test_rfi_flagger_flag(self):
-        """Tests the placeholder function only. Option: flag."""
-        self.pre_setup()
-        new_bvis = self.bvis_original.copy(deep=True)
-
-        _rfi_flagger(new_bvis, to_flag=True)
-        n_freqs = self.bvis_original.dims["frequency"]
 
         assert new_bvis != self.bvis_original
-        assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
-        assert (new_bvis["flags"][..., : n_freqs // 2, :] == 1).all()
-        assert (new_bvis["flags"][..., n_freqs // 2 :, :] == 0).all()
+        assert new_bvis["flags"].data[0, 0, 0, 0] == 1
+
+        # reset value, so we can check that now all are 0
+        new_bvis["vis"].data[0, 0, 0, 0] = 0
+        assert (new_bvis["vis"].data == 0).all()
 
         if self.persist is True:
             self.persist_data_files()

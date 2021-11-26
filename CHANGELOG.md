@@ -10,6 +10,8 @@ master
 * create_blockvisibility can accepts time in UTC as well as HA (both in radians) ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
 * Pipelines produce more log info on calibration progress, also writes gaintables ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
 * Prototype of an app to calculate sensitivity for weightings and tapers ([MR273](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/273))
+* Update the RCAL pipeline to use RFI flags ([MR288](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/288), [MR280](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/280))
+* Added option to use and generate initial SkyModel in ICAL ([MR274](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/274))
 * Added a CI job to build and test the docker images upon every merge to master ([MR270](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/270))
 * Fixed an issue in plot_skycomponent to deal with the angle wrap problem([MR269](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/269))
 * Large number of test fixes and improvements ([MR267](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/267))

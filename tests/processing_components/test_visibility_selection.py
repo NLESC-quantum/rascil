@@ -12,6 +12,10 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.visibility.visibility_selection import (
+    blockvisibility_select_r_range,
+    blockvisibility_flag_uvrange,
+)
 
 log = logging.getLogger("rascil-logger")
 
@@ -159,3 +163,37 @@ class TestVisibilitySelectors(unittest.TestCase):
         after = bvis["flags"].sum()
         assert after > before
         print(bvis)
+
+    def test_blockvisibility_flag_uvrange(self):
+        bvis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            polarisation_frame=self.polarisation_frame,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+        )
+        before = bvis["flags"].sum()
+        uvmin = 100.0
+        uvmax = 20000.0
+
+        bvis = blockvisibility_flag_uvrange(bvis, uvmin, uvmax)
+        after = bvis["flags"].sum()
+        assert after > before
+
+    def test_blockvisibility_select_r_range(self):
+        bvis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            polarisation_frame=self.polarisation_frame,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+        )
+        rmin = 100.0
+        rmax = 20000.0
+
+        sub_bvis = blockvisibility_select_r_range(bvis, rmin, rmax)
+        assert len(bvis.baselines) > len(sub_bvis.baselines)

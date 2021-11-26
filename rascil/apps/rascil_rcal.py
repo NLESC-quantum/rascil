@@ -536,13 +536,16 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     return comp
 
 
-def apply_beam_correction(bvis, components, beam_file, telescope_name=None):
+def apply_beam_correction(
+    bvis, components, beam_file, telescope_name=None, write_beam=False
+):
     """Apply primary beam to skycomponents for a better skymodel
 
     :param bvis: Blockvisibility for creating the test beam
     :param components: Input list of skycomponents
     :param beam_file: External FITS file of beam information (regardless of telescope)
     :param telescope_name: Which telescope (MID or LOW)
+    :param write_beam: Write the beam?
 
     :return comp_new: Corrected list of components
 
@@ -587,7 +590,8 @@ def apply_beam_correction(bvis, components, beam_file, telescope_name=None):
             beam["pixels"].data = beam_local["pixels"].data
 
             # Output beam image itself for checking purposes
-            export_image_to_fits(beam, "rascil_low_beam.fits")
+            if write_beam:
+                export_image_to_fits(beam, "rascil_low_beam.fits")
 
             # Check the polarisation match
             # TODO: If they don't, try to use a different approach

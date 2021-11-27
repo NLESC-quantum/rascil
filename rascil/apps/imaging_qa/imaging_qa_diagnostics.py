@@ -328,33 +328,35 @@ def source_region_mask(img, use_dask=False):
 
     if use_dask is True:
         num_worker = len(rsexecute.client.ncores())
-        assert num_worker > 0
-        num_task_per_worker = len(img.gaussians) // num_worker
-        if num_task_per_worker < 1:
-            num_task_per_worker = 1
-
-        source_regions_list = []
-        for i in range(0, len(img.gaussians), num_task_per_worker):
-            img_gaussians_list = img.gaussians[i : i + num_task_per_worker]
-            source_regions_list.append(
-                rsexecute.execute(scatter_mask_list)(
-                    img_gaussians_list, grid, beam_radius, image_shape
-                )
-            )
-
-        source_regions_sum = gather_image_list(source_regions_list)
-        source_regions = rsexecute.compute(source_regions_sum, sync=True)
-
     else:
-        source_regions = np.ones(shape=image_shape, dtype=int)
-        for gaussian in img.gaussians:
+        num_worker = 1
+    assert num_worker > 0
+    num_task_per_worker = len(img.gaussians) // num_worker
+    if num_task_per_worker < 1:
+        num_task_per_worker = 1
 
-            source_radius = np.sqrt(
-                (grid[0] - gaussian.centre_pix[0]) ** 2
-                + (grid[1] - gaussian.centre_pix[1]) ** 2
+    source_regions_list = []
+    for i in range(0, len(img.gaussians), num_task_per_worker):
+        img_gaussians_list = img.gaussians[i : i + num_task_per_worker]
+        source_regions_list.append(
+            rsexecute.execute(scatter_mask_list)(
+                img_gaussians_list, grid, beam_radius, image_shape
             )
+        )
 
-            source_regions[source_radius < beam_radius] = 0
+    source_regions_sum = gather_image_list(source_regions_list)
+    source_regions = rsexecute.compute(source_regions_sum, sync=True)
+
+    # else:
+    #     source_regions = np.ones(shape=image_shape, dtype=int)
+    #     for gaussian in img.gaussians:
+
+    #         source_radius = np.sqrt(
+    #             (grid[0] - gaussian.centre_pix[0]) ** 2
+    #             + (grid[1] - gaussian.centre_pix[1]) ** 2
+    #         )
+
+    #         source_regions[source_radius < beam_radius] = 0
 
     background_regions = np.zeros(shape=image_shape, dtype=int)
     background_regions[source_regions == 0] = 1

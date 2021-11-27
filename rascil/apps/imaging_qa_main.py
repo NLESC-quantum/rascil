@@ -316,6 +316,9 @@ def analyze_image(args):
             )
             rsexecute.set_client(use_dask=True, client=client)
         rsexecute.run(init_logging)
+    else:
+        rsexecute.set_client(use_dask=False)
+        rsexecute.run(init_logging)
 
     log.info("\nRASCIL Continuum Imaging Checker\n")
 

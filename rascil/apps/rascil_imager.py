@@ -11,6 +11,7 @@ import time
 
 import matplotlib
 import numpy
+import xarray
 
 from rascil.apps.imaging_qa_main import read_skycomponent_from_txt, FileFormatError
 
@@ -26,6 +27,7 @@ from rascil.data_models import (
     Skycomponent,
     SkyModel,
     import_skycomponent_from_hdf5,
+    export_gaintable_to_hdf5,
 )
 from rascil.processing_components.util.sizeof import get_size
 
@@ -37,6 +39,7 @@ from rascil.processing_components import (
     image_gather_channels,
     create_calibration_controls,
     advise_wide_field,
+    concatenate_gaintables,
 )
 
 from rascil.processing_components.util.performance import (
@@ -74,7 +77,6 @@ from rascil.apps.apps_parser import (
 
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.INFO)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def cli_parser():
@@ -448,13 +450,14 @@ def perf_graph(result, name, start, performance_file):
     performance_store_dict(performance_file, "graph", graph)
 
 
-def write_results(restored_output, imagename, result, performance_file):
+def write_results(restored_output, imagename, result, performance_file, gt_list=None):
     """Write the results out to files
 
     :param restored_output: Type of output: list or taylor
     :param imagename: Root of image names
     :param result: Set of results i.e. deconvolved, residual, restored, skymodel
     :param performance_file: Name of performance file
+    :param gt_list: list of dictionaries of GainTables to export to HDF5
     :return:
     """
     residual, restored, skymodel = result
@@ -467,6 +470,15 @@ def write_results(restored_output, imagename, result, performance_file):
     skymodelname = imagename + "_skymodel.hdf"
     export_skymodel_to_hdf5(skymodel, skymodelname)
     del skymodel
+
+    if gt_list:
+        for context in gt_list[0]:
+            full_gt = concatenate_gaintables(
+                [gt_dict[context] for i, gt_dict in enumerate(gt_list)],
+                "frequency",
+            )
+            gt_file = f"{imagename}_gaintable_{context}.hdf"
+            export_gaintable_to_hdf5(full_gt, gt_file)
 
     if restored_output == "list":
         deconvolved_image = image_gather_channels(deconvolved)
@@ -730,11 +742,12 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         restore_taper=args.clean_restore_taper,
         calibration_context=args.calibration_context,
         controls=controls,
-        global_solution=args.calibration_global_solution,
+        global_solution=args.calibration_global_solution == "True",
         component_threshold=args.clean_component_threshold,
         component_method=args.clean_component_method,
         dft_compute_kernel=args.imaging_dft_kernel,
         clean_beam=clean_beam,
+        reset_skymodel=args.calibration_reset_skymodel == "True",
     )
     perf_graph(result, "ical", start, args.performance_file)
 
@@ -749,6 +762,7 @@ def ical(args, bvis_list, model_list, msname, clean_beam=None):
         imagename,
         (residual, restored, skymodel),
         args.performance_file,
+        gt_list=gt_list,
     )
 
 
@@ -763,7 +777,7 @@ def invert(args, bvis_list, model_list, msname):
     """
     # Next we define a graph to run the continuum imaging pipeline
     start = time.time()
-    result = invert_list_rsexecute_workflow(
+    invert_result = invert_list_rsexecute_workflow(
         bvis_list,  # List of BlockVisibilitys
         model_list,  # List of model images
         context=args.imaging_context,
@@ -772,7 +786,7 @@ def invert(args, bvis_list, model_list, msname):
         wstacking=args.imaging_w_stacking == "True",
         dft_compute_kernel=args.imaging_dft_kernel,
     )
-    result = sum_invert_results_rsexecute(result)
+    result = sum_invert_results_rsexecute(invert_result)
     perf_graph(result, "invert", start, args.performance_file)
     # Execute the Dask graph
     log.info("rascil.imager.invert: Starting compute of invert graph ")

@@ -957,8 +957,27 @@ def simulate_gaintable(
 
 
 def ingest_unittest_visibility(
-    config, frequency, channel_bandwidth, times, vis_pol, phasecentre, zerow=False
+    config,
+    frequency,
+    channel_bandwidth,
+    times,
+    vis_pol,
+    phasecentre,
+    zerow=False,
+    times_are_ha=True,
 ):
+    """Make a standard visibility simulation
+
+    :param config: Configuration
+    :param frequency: Frequency (array in Hz)
+    :param channel_bandwidth: Channel bandwidth (array in Hz)
+    :param times: Times (radians, utc or hour angle depending on times_are_ha
+    :param vis_pol: Polarisation frame
+    :param phasecentre: Phase centre (SkyCoord)
+    :param zerow: Zero the w terms?
+    :param times_are_ha: Are the times hourangles or utc (in radians)
+    :return:
+    """
     vt = create_blockvisibility(
         config,
         times,
@@ -968,6 +987,7 @@ def ingest_unittest_visibility(
         weight=1.0,
         polarisation_frame=vis_pol,
         zerow=zerow,
+        times_are_ha=times_are_ha,
     )
     vt["vis"].data[...] = 0.0
     return vt

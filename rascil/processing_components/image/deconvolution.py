@@ -838,7 +838,20 @@ def restore_list(
         else:
             log.info(
                 "restore_list: Using clean beam  (deg, deg, deg) = {}".format(
-                    clean_beam
+                    (
+                        clean_beam["bmaj"],
+                        clean_beam["bmin"],
+                        clean_beam["bpa"],
+                    )
+                )
+            )
+            log.info(
+                "restore_list: Using clean beam  (arsec, arcsec, deg) = {}".format(
+                    (
+                        3600.0 * clean_beam["bmaj"],
+                        3600.0 * clean_beam["bmin"],
+                        clean_beam["bpa"],
+                    )
                 )
             )
 

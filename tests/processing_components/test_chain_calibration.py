@@ -101,7 +101,7 @@ class TestCalibrationChain(unittest.TestCase):
             self.vis, original, calibration_context="T", controls=controls
         )
         residual = numpy.max(gaintables["T"].residual)
-        assert residual < 1e-8, "Max T residual = %s" % (residual)
+        assert residual < 1.3e-6, "Max T residual = %s" % (residual)
 
     def test_calibrate_T_function_phase_only(self):
         self.actualSetup("stokesI", "stokesI", f=[100.0])
@@ -119,7 +119,7 @@ class TestCalibrationChain(unittest.TestCase):
             self.vis, original, calibration_context="T", controls=controls
         )
         residual = numpy.max(gaintables["T"].residual)
-        assert residual < 1e-8, "Max T residual = %s" % (residual)
+        assert residual < 1e-6, "Max T residual = %s" % (residual)
 
     def test_calibrate_G_function(self):
         self.actualSetup("stokesIQUV", "linear", f=[100.0, 50.0, 0.0, 0.0])
@@ -142,7 +142,7 @@ class TestCalibrationChain(unittest.TestCase):
             corrupted, self.vis, calibration_context="G", controls=controls
         )
         residual = numpy.max(gaintables["G"].residual)
-        assert residual < 1e-8, "Max T residual = %s" % (residual)
+        assert residual < 1e-6, "Max G residual = %s" % (residual)
 
     def test_calibrate_TG_function(self):
         self.actualSetup("stokesIQUV", "linear", f=[100.0, 50, 0.0, 0.0])
@@ -167,7 +167,36 @@ class TestCalibrationChain(unittest.TestCase):
         )
         # We test the G residual because it is calibrated last
         residual = numpy.max(gaintables["G"].residual)
-        assert residual < 1e-8, "Max T residual = %s" % residual
+        assert residual < 1e-6, "Max T residual = %s" % residual
+
+    def test_calibrate_B_function(self):
+        self.actualSetup("stokesIQUV", "linear", f=[100.0, 50, 0.0, 0.0], vnchan=32)
+        # Prepare the corrupted visibility data_models
+        gt = create_gaintable_from_blockvisibility(self.vis)
+        log.info("Created gain table: %s" % (gaintable_summary(gt)))
+        gt = simulate_gaintable(gt, phase_error=10.0, amplitude_error=0.1)
+        original = copy_visibility(self.vis)
+        self.vis = apply_gaintable(self.vis, gt)
+
+        # Now get the control dictionary and calibrate
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 10
+        controls["T"]["timeslice"] = 0.0
+        controls["T"]["phase_only"] = True
+
+        controls["G"]["first_selfcal"] = 10
+        controls["G"]["timeslice"] = 0.0
+        controls["G"]["phase_only"] = True
+
+        controls["B"]["first_selfcal"] = 0
+        controls["B"]["timeslice"] = 0.0
+        controls["B"]["phase_only"] = False
+
+        calibrated_vis, gaintables = calibrate_chain(
+            self.vis, original, calibration_context="B", controls=controls
+        )
+        residual = numpy.max(gaintables["B"].residual)
+        assert residual < 1e-6, "Max B residual = %s" % residual
 
 
 if __name__ == "__main__":

@@ -63,6 +63,19 @@ class TestVisibilityOperations(unittest.TestCase):
         )
         assert vis.vis.shape == (10, 13861, 3, 4), vis.vis.shape
 
+    def test_create_blockvisibility_not_ha(self):
+        vis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+            times_are_ha=False,
+        )
+        assert vis.vis.shape == (10, 13861, 3, 4), vis.vis.shape
+        assert vis.integration_time[0] == 30.0
+
     def test_create_blockvisibility_polarisation(self):
         self.vis = create_blockvisibility(
             self.lowcore,
@@ -249,6 +262,7 @@ class TestVisibilityOperations(unittest.TestCase):
             phasecentre=self.phasecentre,
             weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
+            times_are_ha=True,
         )
         self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
         # Predict visibilities with new phase centre independently
@@ -261,6 +275,7 @@ class TestVisibilityOperations(unittest.TestCase):
             phasecentre=self.compabsdirection,
             weight=1.0,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
+            times_are_ha=True,
         )
         vismodel2 = dft_skycomponent_visibility(vispred, self.comp)
 

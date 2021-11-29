@@ -21,6 +21,8 @@ from astropy.time import Time
 from astropy.visualization import time_support
 from astropy.coordinates import SkyCoord
 
+import ska_post_correlation_rfi_flagger
+
 from rascil.data_models import (
     BlockVisibility,
     GainTable,
@@ -37,6 +39,7 @@ from rascil.processing_components import (
     create_skycomponent,
     create_gaintable_from_blockvisibility,
     apply_gaintable,
+    concatenate_gaintables,
     create_low_test_beam,
     create_image_from_visibility,
     apply_beam_to_skycomponent,
@@ -151,25 +154,70 @@ def cli_parser():
     )
 
     parser.add_argument(
+        "--initial_threshold",
+        type=float,
+        default=8.0,
+        help="The initial threshold to be used by the flagger. "
+        "Used for calculating a list of thresholds."
+        "Note: use default value since flagger is still under development",
+    )
+
+    parser.add_argument(
+        "--rho",
+        type=float,
+        default=1.5,
+        help="The initial rho used by flagger. Used for calculating a list of thresholds. "
+        "Note: use default value since flagger is still under development",
+    )
+
+    parser.add_argument(
         "--calibrate_bvis",
         type=str,
         default="True",
-        help="Whether to apply calibration or not.",
+        help="Whether to apply calibration to bvis or not.",
     )
 
     return parser
 
 
-def _rfi_flagger(bvis, to_flag=False):
+def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     """
-    Place holder function. It will be replaced with RFI flagger
-    once python interface is implemented.
+    Wrapper function for the SKA flagger
+    (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger),
+    certain defaults are managed here.
 
-    Arbitrarily flags data (for testing purposes)
+    :param bvis: Block visibility
+    :param initial_threshold: The initial threshold to be used
+    :param rho: The roh to be used
+    :return: Block visibility with flags populated.
     """
-    if to_flag:
-        n_freqs = bvis.dims["frequency"]
-        bvis["flags"][..., : n_freqs // 2, :] = 1
+    # Sequence from https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger/-/blob/master/flagger_in_python.py#L25
+    sequence = [1, 2, 4, 8, 16, 32]
+    sequence_length = len(sequence)
+    sequence = numpy.array(sequence, dtype=numpy.int32)
+    thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
+
+    new_dims = (
+        bvis.dims["time"] * bvis.dims["baselines"],
+        bvis.dims["frequency"],
+        bvis.dims["polarisation"],
+    )
+    vis_data = abs(bvis["vis"].data).reshape(new_dims).astype("float32")
+    flag_data = bvis["flags"].data.reshape(new_dims).astype("int32")
+
+    ska_post_correlation_rfi_flagger.run_flagger_on_all_slices(
+        bvis.dims["time"],
+        bvis.dims["frequency"],
+        bvis.dims["baselines"],
+        bvis.dims["polarisation"],
+        vis_data,
+        flag_data,
+        thresholds.astype("float32"),
+        sequence_length,
+        sequence,
+    )
+
+    bvis["flags"].data = flag_data.reshape(bvis["vis"].data.shape)
 
 
 def rcal_simulator(args):
@@ -212,8 +260,10 @@ def rcal_simulator(args):
     log.info(f"The data is from {telescope_name}.")
 
     flagged = False
+    initial_threshold = args.initial_threshold
+    rho = args.rho
     if args.flag_first == "True":
-        _rfi_flagger(bvis)
+        _rfi_flagger(bvis, initial_threshold, rho)
         flagged = True
 
     if args.ingest_components_file is not None:
@@ -272,9 +322,6 @@ def rcal_simulator(args):
         tol=args.solution_tolerance,
     )
 
-    if not flagged:
-        _rfi_flagger(bvis)
-
     base = os.path.basename(args.ingest_msname)
     plotfile = plot_dir + "/" + base.replace(".ms", "_plot")
     log.info(f"Write plots into : \n{plotfile}\n")
@@ -282,6 +329,9 @@ def rcal_simulator(args):
     do_plotting = args.do_plotting == "True"
     plot_dynamic = args.plot_dynamic == "True"
     full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
+
+    if not flagged:
+        _rfi_flagger(bvis, initial_threshold, rho)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -339,7 +389,9 @@ def bvis_solver(
                 **kwargs,
             )
         else:
-            gt = solve_gaintable(bv, gt=previous, phase_only=phase_only, **kwargs)
+            gt = solve_gaintable(
+                bv, gt=previous, phase_only=phase_only, jones_type=jones_type, **kwargs
+            )
 
         if use_previous:
             newgt = create_gaintable_from_blockvisibility(bv, jones_type=jones_type)
@@ -366,7 +418,8 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
     for gt in gt_gen:
         datetime = gt["datetime"][0].data
         log.info(
-            f"rascil_rcal_gt_sink: Processing integration {datetime} residual: {numpy.max(gt.residual.data):.3g}"
+            f"rascil_rcal_gt_sink: Processing integration {datetime} "
+            f"residual: {numpy.max(gt.residual.data):.3g}"
         )
         gt_list.append(gt)
 
@@ -379,7 +432,7 @@ def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
         gt_single_plot(gt_list, plot_name)
         log.info("Save final plot.")
 
-    full_gt = xarray.concat(gt_list, "time")
+    full_gt = concatenate_gaintables(gt_list, "time")
     return full_gt
 
 
@@ -409,19 +462,65 @@ def get_gain_data(gt_list):
         gains = []
         residual = []
         time = []
+        weight = []
 
         # We only look at the central channel at the moment
+        half_of_chans_to_avg = 0
         for gt in gt_list:
             time.append(gt.time.data[0] / 86400.0)
             current_gain = gt.gain.data[0]
             nchan = current_gain.shape[1]
-            gains.append(current_gain[:, nchan // 2, 0, 0])
-            residual.append(gt.residual.data[0, nchan // 2, 0, 0])
+            central_chan = nchan // 2
+            gains.append(
+                numpy.average(
+                    current_gain[
+                        :,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
+                        0,
+                        0,
+                    ],
+                    axis=1,
+                )
+            )
+            residual.append(
+                numpy.average(
+                    gt.residual.data[
+                        0,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
+                        0,
+                        0,
+                    ],
+                    axis=0,
+                )
+            )
+            weight.append(
+                numpy.average(
+                    gt.weight.data[
+                        0,
+                        :,
+                        central_chan
+                        - half_of_chans_to_avg : central_chan
+                        + half_of_chans_to_avg
+                        + 1,
+                        0,
+                        0,
+                    ],
+                    axis=1,
+                )
+            )
 
         gains = numpy.array(gains)
-        amp = numpy.abs(gains) - 1.0
+        amp = numpy.abs(gains)
         amp = amp.reshape(amp.shape[1], amp.shape[0])
         phase = numpy.angle(gains, deg=True)
+        weight = numpy.array(weight)
+        weight = weight.reshape(weight.shape[1], weight.shape[0])
 
         phase_rel = []
         for i in range(len(phase[0])):
@@ -432,7 +531,7 @@ def get_gain_data(gt_list):
 
         timeseries = Time(time, format="mjd", out_subfmt="str")
 
-        return [timeseries, amp, phase_rel, residual]
+        return timeseries, amp, phase_rel, residual, weight
 
 
 def gt_single_plot(gt_list, plot_name=None):
@@ -449,27 +548,30 @@ def gt_single_plot(gt_list, plot_name=None):
         gt_list = [gt_list]
 
     with time_support(format="iso", scale="utc"):
+        timeseries, amp, phase_rel, residual, weight = get_gain_data(gt_list)
 
         plt.cla()
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 12), sharex=True)
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(8, 12), sharex=True)
         fig.subplots_adjust(hspace=0)
 
         datetime = gt_list[0]["datetime"][0].data
 
-        timeseries, amp, phase_rel, residual = get_gain_data(gt_list)
-
         for i in range(amp.shape[0]):
-            ax1.plot(timeseries, amp[i], "-", label=f"Antenna {i}")
+            ax1.plot(timeseries, amp[i] - 1, "-", label=f"Antenna {i}")
             ax2.plot(timeseries, phase_rel[i], "-", label=f"Antenna {i}")
+            ax3.plot(timeseries, weight[i], "-", label=f"Antenna {i}")
+
+        ax1.ticklabel_format(axis="y", style="scientific", useMathText=True)
 
         ax1.set_ylabel("Gain Amplitude - 1")
         ax2.set_ylabel("Gain Phase (Antenna - Antenna 0)")
-        ax2.legend(loc="best")
+        ax3.set_ylabel("Gain Weight")
+        ax3.legend(loc="best")
 
-        ax3.plot(timeseries, residual, "-")
-        ax3.set_ylabel("Residual")
-        ax3.set_xlabel("Time (UTC)")
-        ax3.set_yscale("log")
+        ax4.plot(timeseries, residual, "-")
+        ax4.set_ylabel("Residual")
+        ax4.set_xlabel("Time (UTC)")
+        ax4.set_yscale("log")
         plt.xticks(rotation=30)
 
         fig.suptitle(f"Updated GainTable at {datetime}")
@@ -535,13 +637,16 @@ def read_skycomponent_from_txt_with_external_frequency(filename, freq, pol):
     return comp
 
 
-def apply_beam_correction(bvis, components, beam_file, telescope_name=None):
+def apply_beam_correction(
+    bvis, components, beam_file, telescope_name=None, write_beam=False
+):
     """Apply primary beam to skycomponents for a better skymodel
 
     :param bvis: Blockvisibility for creating the test beam
     :param components: Input list of skycomponents
     :param beam_file: External FITS file of beam information (regardless of telescope)
     :param telescope_name: Which telescope (MID or LOW)
+    :param write_beam: Write the beam?
 
     :return comp_new: Corrected list of components
 
@@ -586,7 +691,8 @@ def apply_beam_correction(bvis, components, beam_file, telescope_name=None):
             beam["pixels"].data = beam_local["pixels"].data
 
             # Output beam image itself for checking purposes
-            export_image_to_fits(beam, "rascil_low_beam.fits")
+            if write_beam:
+                export_image_to_fits(beam, "rascil_low_beam.fits")
 
             # Check the polarisation match
             # TODO: If they don't, try to use a different approach

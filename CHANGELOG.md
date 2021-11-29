@@ -1,6 +1,7 @@
 master
 ------
 
+* Added blockvisibility selection documentation and functions ([MR292](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/292))
 * Developed the capability to apply realistic LOW beam for skymodel in the RCAL app and refined its application in imaging_qa ([MR284](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/284))
 * The rascil_imager option for global solution was being ignored ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))
 * The numba version of the DFT became unstable and is no longer part of the test suite ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))

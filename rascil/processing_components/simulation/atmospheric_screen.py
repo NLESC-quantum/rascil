@@ -71,7 +71,7 @@ def create_gaintable_from_screen(
     r0=5e3,
     type_atmosphere="ionosphere",
     reference_component=None,
-    jones_type="T",
+    jones_type="B",
     **kwargs
 ):
     """Create gaintables from a screen calculated using ARatmospy
@@ -164,11 +164,11 @@ def create_gaintable_from_screen(
         number_good > 0
     ), "create_gaintable_from_screen: There are no pierce points inside the atmospheric screen image"
     if number_bad > 0:
-        log.warning(
+        log.info(
             "create_gaintable_from_screen: %d pierce points are inside the atmospheric screen image"
             % (number_good)
         )
-        log.warning(
+        log.info(
             "create_gaintable_from_screen: %d pierce points are outside the atmospheric screen image"
             % (number_bad)
         )

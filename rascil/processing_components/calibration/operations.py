@@ -13,12 +13,14 @@ __all__ = [
     "copy_gaintable",
     "gaintable_plot",
     "multiply_gaintables",
+    "concatenate_gaintables",
 ]
 
 import copy
 import logging
 from typing import Union
 
+import xarray
 import matplotlib.pyplot as plt
 import numpy.linalg
 
@@ -305,11 +307,8 @@ def create_gaintable_from_blockvisibility(
     nants = vis.blockvisibility_acc.nants
 
     # Set up times
-    if timeslice == "auto" or timeslice is None or timeslice < 0.0:
-        timeslice = 0.0
-
-    if timeslice == 0.0:
-        nbins = len(vis.time)
+    if timeslice == "auto" or timeslice is None or timeslice <= 0.0:
+        utimes = vis.time
     else:
         nbins = max(
             1,
@@ -318,11 +317,12 @@ def create_gaintable_from_blockvisibility(
             ).astype("int"),
         )
 
-    utimes = [
-        numpy.average(times)
-        for time, times in vis.time.groupby_bins("time", nbins, squeeze=False)
-    ]
-    utimes = numpy.array(utimes)
+        utimes = [
+            numpy.average(times)
+            for time, times in vis.time.groupby_bins("time", nbins, squeeze=False)
+        ]
+        utimes = numpy.array(utimes)
+
     gain_interval = numpy.ones_like(utimes)
     if len(utimes) > 1:
         for time_index, _ in enumerate(utimes):
@@ -398,7 +398,7 @@ def copy_gaintable(gt: GainTable, zero=False):
 
     ##assert isinstance(gt, GainTable), gt
 
-    newgt = copy.copy(gt)
+    newgt = gt.copy(deep=True)
     if zero:
         newgt["gain"].data[...] = 0.0
     return newgt
@@ -565,7 +565,9 @@ def gaintable_plot(
                 ax[1][1].legend()
 
 
-def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
+def multiply_gaintables(
+    gt: GainTable, dgt: GainTable, time_tolerance=1e-3
+) -> GainTable:
     """Multiply two gaintables
 
     Returns gt * dgt
@@ -577,6 +579,12 @@ def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
     # assert isinstance(gt, GainTable), "gt is not a GainTable: %r" % gt
     # assert isinstance(dgt, GainTable), "gtdgt is not a GainTable: %r" % dgt
 
+    # Test if times align
+    mismatch = numpy.max(numpy.abs(gt["time"].data - dgt["time"].data))
+    if mismatch > time_tolerance:
+        raise ValueError(
+            f"Gaintables not aligned in time: max mismatch {mismatch} seconds"
+        )
     if dgt.gaintable_acc.nrec == gt.gaintable_acc.nrec:
         if dgt.gaintable_acc.nrec == 2:
             gt["gain"].data = numpy.einsum(
@@ -597,3 +605,18 @@ def multiply_gaintables(gt: GainTable, dgt: GainTable) -> GainTable:
         )
 
     return gt
+
+
+def concatenate_gaintables(gt_list, dim="time"):
+    """Concatenate a list of gaintables
+
+    :param gt_list: List of gaintables
+    :return: Concatendated gaintable
+    """
+
+    if len(gt_list) == 0:
+        raise ValueError("GainTable list is empty")
+
+    return xarray.concat(
+        gt_list, dim=dim, data_vars="minimal", coords="minimal", compat="override"
+    )

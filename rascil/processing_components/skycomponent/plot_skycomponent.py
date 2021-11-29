@@ -312,9 +312,14 @@ def plot_skycomponents_flux_ratio(
              The flux array for users to check
     """
 
+    angle_wrap = 180.0 * u.deg
+
     matches = find_skycomponent_matches(comps_test, comps_ref, tol)
     flux_ratio = []
     dist = []
+    ra = []
+    dec = []
+
     for i, match in enumerate(matches):
         m_comp = comps_test[match[0]]
         m_ref = comps_ref[match[1]]
@@ -331,6 +336,8 @@ def plot_skycomponents_flux_ratio(
         if fr > 0.0 and fr < max_ratio:
             flux_ratio.append(fr)
             dist.append(m_comp.direction.separation(phasecentre).degree)
+            ra.append(m_comp.direction.ra.wrap_at(angle_wrap).degree)
+            dec.append(m_comp.direction.dec.degree)
 
     if len(dist) == 0:
         raise ValueError("No valid points found for flux ratio plot")
@@ -342,6 +349,20 @@ def plot_skycomponents_flux_ratio(
     plt.ylabel("Flux Ratio (Out/In)")
     if plot_file is not None:
         plt.savefig(plot_file + "_flux_ratio.png")
+    plt.show(block=False)
+    plt.clf()
+
+    # Flux ratio vs. RA & Dec
+    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+    fig.suptitle("Flux ratio vs. Position")
+    ax1.plot(ra, flux_ratio, "o", color="b", markersize=5, alpha=0.5)
+    ax2.plot(dec, flux_ratio, "o", color="b", markersize=5, alpha=0.5)
+
+    ax1.set_xlabel("RA (deg)")
+    ax2.set_xlabel("Dec (deg)")
+    ax1.set_ylabel("Flux ratio (Out/In)")
+    if plot_file is not None:
+        plt.savefig(plot_file + "_flux_position.png")
     plt.show(block=False)
     plt.clf()
 

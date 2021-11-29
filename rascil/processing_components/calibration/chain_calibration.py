@@ -128,7 +128,7 @@ def apply_calibration_chain(
     controls=None,
     iteration=0,
     tol=1e-6,
-    **kwargs
+    **kwargs,
 ):
     """Calibrate using algorithm specified by calibration_context and the calibration controls
 
@@ -174,8 +174,8 @@ def calibrate_chain(
     calibration_context="T",
     controls=None,
     iteration=0,
-    tol=1e-8,
-    **kwargs
+    tol=1e-6,
+    **kwargs,
 ):
     """Calibrate using algorithm specified by calibration_context
 
@@ -258,7 +258,7 @@ def solve_calibrate_chain(
     controls=None,
     iteration=0,
     tol=1e-6,
-    **kwargs
+    **kwargs,
 ):
     """Calibrate using algorithm specified by calibration_context
 
@@ -293,6 +293,8 @@ def solve_calibrate_chain(
             gaintables[c] = create_gaintable_from_blockvisibility(
                 avis, timeslice=controls[c]["timeslice"], jones_type=c
             )
+        fmin = gaintables[c].frequency.data[0]
+        fmax = gaintables[c].frequency.data[-1]
         if iteration >= controls[c]["first_selfcal"]:
             if numpy.max(numpy.abs(vis.blockvisibility_acc.flagged_weight)) > 0.0 and (
                 amvis is None or numpy.max(numpy.abs(amvis.vis)) > 0.0
@@ -306,24 +308,18 @@ def solve_calibrate_chain(
                     crosspol=controls[c]["shape"] == "matrix",
                     tol=tol,
                 )
-                log.debug(
-                    "calibrate_chain: Jones matrix %s, iteration %d" % (c, iteration)
+                qa = qa_gaintable(
+                    gaintables[c],
+                    context=f"Model is non-zero: solving for Jones matrix {c}, iteration {iteration}, frequency {fmin:4g} - {fmax:4g} Hz",
                 )
-                log.debug(
-                    qa_gaintable(
-                        gaintables[c],
-                        context="Jones matrix %s, iteration %d" % (c, iteration),
-                    )
-                )
+                log.info(f"calibrate_chain: {qa}")
             else:
-                log.debug(
-                    "calibrate_chain: Jones matrix %s not solved, iteration %d"
-                    % (c, iteration)
+                log.info(
+                    f"No model data: cannot solve for Jones matrix {c}, iteration {iteration}, frequency {fmin:4g} - {fmax:4g} Hz"
                 )
         else:
-            log.debug(
-                "calibrate_chain: Jones matrix %s not solved, iteration %d"
-                % (c, iteration)
+            log.info(
+                f"Not solving for Jones matrix {c} this iteration: iteration {iteration}, frequency {fmin:4g} - {fmax:4g} Hz"
             )
 
     return gaintables

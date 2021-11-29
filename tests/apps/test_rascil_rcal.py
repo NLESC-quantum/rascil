@@ -1,13 +1,13 @@
 """ Unit test for rascil_rcal app.
 
 """
-import sys
 import os
 import logging
 import unittest
 import shutil
 import glob
-from unittest.mock import patch, Mock
+import tempfile
+import sys
 
 import numpy
 from astropy import units as u
@@ -20,12 +20,13 @@ from rascil.apps.rascil_rcal import (
     gt_single_plot,
     read_skycomponent_from_txt_with_external_frequency,
     _rfi_flagger,
+    apply_beam_correction,
 )
 from rascil.data_models import (
-    rascil_path,
     Skycomponent,
     import_gaintable_from_hdf5,
     export_skycomponent_to_hdf5,
+    rascil_path,
 )
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import (
@@ -41,13 +42,8 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.simulation import ingest_unittest_visibility
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
 log.addHandler(logging.StreamHandler(sys.stdout))
-
-
-def _to_flag_flagger(bvis, to_flag=True):
-    """Need to be able to run the place-holder flagger in flagging mode."""
-    return _rfi_flagger(bvis, to_flag=to_flag)
 
 
 class TestRASCILRcal(unittest.TestCase):
@@ -60,8 +56,8 @@ class TestRASCILRcal(unittest.TestCase):
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
         self.low = create_named_configuration("LOW-AA0.5")
-        self.freqwin = 200
-        self.ntimes = 240
+        self.freqwin = 20
+        self.ntimes = 24
         self.times = numpy.linspace(-2.0, +2.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
 
@@ -101,13 +97,13 @@ class TestRASCILRcal(unittest.TestCase):
 
         export_skycomponent_to_hdf5(
             [comp],
-            rascil_path("test_results/test_rascil_rcal_components.hdf"),
+            self.tempdir + "/test_rascil_rcal_components.hdf",
         )
 
         self.bvis_error = self.create_apply_gains()
 
         export_blockvisibility_to_ms(
-            rascil_path("test_results/test_rascil_rcal.ms"), [self.bvis_error]
+            self.tempdir + "/test_rascil_rcal.ms", [self.bvis_error]
         )
 
     def create_dft_components(self, flux):
@@ -131,7 +127,7 @@ class TestRASCILRcal(unittest.TestCase):
 
     def write_to_txt(self, comp):
 
-        self.txtfile = rascil_path("test_results/test_rascil_rcal_components.txt")
+        self.txtfile = self.tempdir + "/test_rascil_rcal_components.txt"
 
         coord_ra = comp.direction.ra.degree
         coord_dec = comp.direction.dec.degree
@@ -166,91 +162,90 @@ class TestRASCILRcal(unittest.TestCase):
 
         return bvis_error
 
-    def cleanup_data_files(self):
-        """Cleanup the temporary data files"""
+    def persist_data_files(self):
+        """Persist the temporary data files"""
+        try:
+            shutil.copyfile(
+                self.tempdir + "/test_rascil_rcal.ms", rascil_path("test_results")
+            )
+        except FileNotFoundError:
+            pass
 
-        # First remove the measurement set
-        shutil.rmtree(
-            rascil_path("test_results/test_rascil_rcal.ms"), ignore_errors=True
-        )
-
-        to_remove = rascil_path("test_results/test_rascil_rcal*")
-        for f in glob.glob(to_remove):
-            if os.path.exists(f):
-                os.remove(f)
+        to_copy = self.tempdir + "/test_rascil_rcal*"
+        for f in glob.glob(to_copy):
+            shutil.copy(f, rascil_path("test_results"))
 
     def setUp(self) -> None:
 
+        self.tempdir_root = tempfile.TemporaryDirectory(dir=rascil_path("test_results"))
+        self.tempdir = self.tempdir_root.name
+
         parser = cli_parser()
         self.args = parser.parse_args([])
-        self.args.ingest_msname = rascil_path("test_results/test_rascil_rcal.ms")
-        self.args.ingest_components_file = rascil_path(
-            "test_results/test_rascil_rcal_components.hdf"
+        self.args.ingest_msname = self.tempdir + "/test_rascil_rcal.ms"
+        self.args.ingest_components_file = (
+            self.tempdir + "/test_rascil_rcal_components.hdf"
         )
         self.args.do_plotting = "False"
-        self.args.plot_dir = rascil_path("test_results/")
+        self.args.plot_dir = self.tempdir + "/"
 
     # Regression test
     def test_rcal(self):
         self.pre_setup()
         self.makeMS(self.flux)
+
+        # flag only after gain tables are calculated, i.e. flagging will not affect gain solutions
+        self.args.flag_first = "False"
         gtfile = rcal_simulator(self.args)
 
         # Check that the gaintable exists and is correct by applying it to
         # the corrupted visibility
         assert os.path.exists(gtfile)
-        newgt = import_gaintable_from_hdf5(gtfile)
+        gain_table = import_gaintable_from_hdf5(gtfile)
         assert (
-            newgt["weight"].data != 0
+            gain_table["weight"].data != 0
         ).all()  # un-flagged data, all weights are non-zero
-        log.info(f"\nFinal gaintable: {newgt}")
+        log.info(f"\nFinal gaintable: {gain_table}")
 
-        qa_gt = qa_gaintable(newgt)
+        qa_gt = qa_gaintable(gain_table)
         log.info(qa_gt)
         assert qa_gt.data["rms-phase"] > 0.0, str(qa_gt)
 
-        bvis_difference = apply_gaintable(self.bvis_error, newgt, inverse=True)
+        bvis_difference = apply_gaintable(self.bvis_error, gain_table, inverse=True)
         bvis_difference["vis"] -= self.bvis_original["vis"]
         qa = qa_visibility(bvis_difference)
         assert qa.data["maxabs"] < 1e-12, str(qa)
         assert qa.data["minabs"] < 1e-12, str(qa)
 
         # Test the plot does not exist
-        self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        self.plotfile = self.tempdir + "/test_rascil_rcal_plot.png"
         assert os.path.exists(self.plotfile) is False
 
-    @patch("rascil.apps.rascil_rcal._rfi_flagger", Mock(side_effect=_to_flag_flagger))
-    def test_rcal_with_flagging(self):
-        """Test that rcal uses RFI flagging (the returned bvis has flags)."""
-        self.pre_setup()
-        self.makeMS(self.flux)
-
-        freq_border = self.bvis_original.dims["frequency"] // 2
+        # Test that when we flag first, the results are different from
+        # when we flag after gains were calculated
+        os.remove(gtfile)
         self.args.flag_first = "True"  # flag before gains are calculated
-
         gtfile = rcal_simulator(self.args)
-        gain_table = import_gaintable_from_hdf5(gtfile)
+        gain_table_w_flag = import_gaintable_from_hdf5(gtfile)
 
-        # the flagged elements will not contribute to the GT weight --> they're 0
-        assert (gain_table["weight"].data[..., :freq_border, :, :] == 0).all()
-        assert (gain_table["weight"].data[..., freq_border:, :, :] != 0).all()
+        assert (gain_table_w_flag["weight"].data != gain_table["weight"].data).any()
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist is True:
+            self.persist_data_files()
 
     def test_rcal_plot(self):
         self.pre_setup()
-        comp = self.create_dft_components(self.flux)
+        self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
 
-        self.plotfile = rascil_path("test_results/test_rascil_rcal_plot.png")
+        self.plotfile = self.tempdir + "/test_rascil_rcal_plot.png"
         plot_name = self.plotfile.replace(".png", "")
         gt_single_plot(self.gt, plot_name=plot_name)
 
         assert os.path.exists(self.plotfile)
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist is True:
+            self.persist_data_files()
 
     # Unit tests for additional functions
     def test_read_txtfile(self):
@@ -265,12 +260,28 @@ class TestRASCILRcal(unittest.TestCase):
         assert components_read.direction == self.phasecentre
         assert components_read.flux[:, 0].all() == self.flux.all()
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist is True:
+            self.persist_data_files()
+
+    def test_apply_beam_correction(self):
+        """Test for apply_beam_correction
+        Currently only test for LOW"""
+
+        self.pre_setup()
+        new_bvis = self.bvis_original.copy(deep=True)
+        comp = self.create_dft_components(self.flux)
+        new_comp = apply_beam_correction(new_bvis, [comp], None, telescope_name="LOW")
+
+        assert len(new_comp) == 1
+        assert new_comp[0].direction == self.phasecentre
+        assert numpy.any(numpy.not_equal(new_comp[0].flux, self.flux))
+
+        if self.persist is True:
+            self.persist_data_files()
 
     def test_get_gain_data(self):
         self.pre_setup()
-        comp = self.create_dft_components(self.flux)
+        self.create_dft_components(self.flux)
         self.bvis_error = self.create_apply_gains()
 
         gain_data = get_gain_data(self.gt)
@@ -278,30 +289,28 @@ class TestRASCILRcal(unittest.TestCase):
         assert len(gain_data[1]) == 6  # gain dimension (number of antennas)
         assert len(gain_data[2]) == 6  # phase dimension
         assert len(gain_data[3]) == 1  # residual dimension
+        assert len(gain_data[4]) == 6  # weight dimension
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist is True:
+            self.persist_data_files()
 
-    def test_rfi_flagger_no_flag(self):
-        """Tests the placeholder function only. Option: Do not flag."""
+    def test_rfi_flagger(self):
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
+        # update new_bvis to have a value that will be flagged
+        new_bvis["vis"].data[0, 0, 0, 0] = 100
 
         _rfi_flagger(new_bvis)
-        assert new_bvis == self.bvis_original
-
-    def test_rfi_flagger_flag(self):
-        """Tests the placeholder function only. Option: flag."""
-        self.pre_setup()
-        new_bvis = self.bvis_original.copy(deep=True)
-
-        _rfi_flagger(new_bvis, to_flag=True)
-        n_freqs = self.bvis_original.dims["frequency"]
 
         assert new_bvis != self.bvis_original
-        assert (new_bvis["flags"].data != self.bvis_original["flags"].data).any()
-        assert (new_bvis["flags"][..., : n_freqs // 2, :] == 1).all()
-        assert (new_bvis["flags"][..., n_freqs // 2 :, :] == 0).all()
+        assert new_bvis["flags"].data[0, 0, 0, 0] == 1
+
+        # reset value, so we can check that now all are 0
+        new_bvis["vis"].data[0, 0, 0, 0] = 0
+        assert (new_bvis["vis"].data == 0).all()
+
+        if self.persist is True:
+            self.persist_data_files()
 
 
 if __name__ == "__main__":

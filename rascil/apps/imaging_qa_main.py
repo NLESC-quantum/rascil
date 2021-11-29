@@ -36,7 +36,10 @@ from rascil.processing_components.image.operations import (
     create_image_from_array,
     add_image,
 )
-from rascil.processing_components.imaging.primary_beams import create_pb
+from rascil.processing_components.imaging.primary_beams import (
+    create_pb,
+    create_low_test_beam,
+)
 from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_skycomponents_positions,
     plot_skycomponents_position_distance,
@@ -47,7 +50,7 @@ from rascil.processing_components.skycomponent.plot_skycomponent import (
     plot_gaussian_beam_position,
     plot_multifreq_spectral_index,
 )
-
+from rascil.processing_components.util.coordinate_support import hadec_to_azel
 from rascil.apps.imaging_qa.generate_results_index import create_index
 from rascil.apps.imaging_qa.imaging_qa_diagnostics import (
     imaging_qa_diagnostics,
@@ -419,7 +422,9 @@ def analyze_image(args):
     log.info("Number of frequency moments image found: {}".format(len(moment_images)))
 
     log.info("Putting sources into skycomponents format.")
-    out = create_source_to_skycomponent(source_file, rascil_source_file, freq)
+    out = create_source_to_skycomponent(
+        source_file, rascil_source_file, freq, pol=PolarisationFrame(image_pol)
+    )
 
     # Correct and put into new csv file
     # Calculate spectral index from frequency moment images
@@ -455,7 +460,9 @@ def analyze_image(args):
             orig = import_skycomponent_from_hdf5(args.input_source_filename)
 
         elif ".txt" in args.input_source_filename:
-            orig = read_skycomponent_from_txt(args.input_source_filename, freq)
+            orig = read_skycomponent_from_txt(
+                args.input_source_filename, freq, pol=PolarisationFrame(image_pol)
+            )
         else:
             raise FileFormatError("Input file must be of format: hdf5 or txt.")
 
@@ -634,7 +641,9 @@ def imaging_qa_bdsf(
     return
 
 
-def create_source_to_skycomponent(source_file, rascil_source_file, freq):
+def create_source_to_skycomponent(
+    source_file, rascil_source_file, freq, pol=PolarisationFrame("stokesI")
+):
     """
     Put the sources into RASCIL-readable skycomponents
 
@@ -642,16 +651,17 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
     :param rascil_source_file: Output file name of the RASCIL skycomponents hdf file
     :param freq: List of frequencies in float
                  (if single frequency, pass it in a length one array)
+    :param pol: Polarisation frame
     :return comp: List of skycomponents
     """
 
     data = pd.read_csv(source_file, sep=r"\s*,\s*", skiprows=5, engine="python")
     comp = []
 
-    # TODO: Change this to multiple polarizaions
     nchan = len(freq)
-    npol = 1
+    npol = pol.npol
     centre = nchan // 2
+    log.info(f" nchan = {nchan}, npol = {npol}")
 
     for i, row in data.iterrows():
 
@@ -674,7 +684,7 @@ def create_source_to_skycomponent(source_file, rascil_source_file, freq):
                     direction=direc,
                     flux=flux_array,
                     frequency=freq,
-                    polarisation_frame=PolarisationFrame("stokesI"),
+                    polarisation_frame=pol,
                 )
             )
 
@@ -803,16 +813,38 @@ def correct_primary_beam(input_image, sensitivity_image, comp, telescope="MID"):
     """
 
     if sensitivity_image is not None:
+        log.info("Use beam from {}".format(sensitivity_image))
         beam = import_image_from_fits(sensitivity_image)
+
     elif input_image is not None:
         # Use internally provided telescope primary beam
-        image = import_image_from_fits(input_image)
-        beam = create_pb(
-            image,
-            telescope=telescope,
-            pointingcentre=image.image_acc.phasecentre,
-            use_local=False,
-        )
+
+        if "MID" in telescope:
+            image = import_image_from_fits(input_image)
+            beam = create_pb(
+                image,
+                telescope=telescope,
+                pointingcentre=image.image_acc.phasecentre,
+                use_local=False,
+            )
+
+        elif "LOW" in telescope:
+
+            # We want to make the beam for transit so we set the HA to 0.0
+            image = import_image_from_fits(input_image)
+            phasecentre = image.image_acc.phasecentre
+            az, el = hadec_to_azel(0.0 * u.deg, phasecentre.dec, -27.0 * u.deg)
+            log.info(f"The azimuth and elevation are: {az.to(u.deg), el.to(u.deg)}")
+
+            beam_local = create_low_test_beam(image, use_local=True, azel=(az, el))
+            beam = create_low_test_beam(image, use_local=False)
+            beam["pixels"].data = beam_local["pixels"].data
+
+        else:
+            raise ValueError(
+                "Telescope configuration is neither for SKA Mid nor for SKA Low."
+                "Please specify correct configuration."
+            )
     else:
         log.warning(
             "Please provide either the sensitivity image or the restored image."
@@ -861,12 +893,13 @@ def check_source(orig, comp, match_sep):
     return matches
 
 
-def read_skycomponent_from_txt(filename, freq):
+def read_skycomponent_from_txt(filename, freq, pol=PolarisationFrame("stokesI")):
     """
     Read source input from a txt file and make them into skycomponents
 
     :param filename: Name of input file
     :param freq: List of frequencies in float
+    :param pol: Polarisation frame
     :return comp: List of skycomponents
     """
 
@@ -880,7 +913,7 @@ def read_skycomponent_from_txt(filename, freq):
     spec_indx = data[7]
 
     nchan = len(freq)
-    npol = 1
+    npol = pol.npol
     for i, row in enumerate(ra):
 
         direc = SkyCoord(
@@ -899,7 +932,7 @@ def read_skycomponent_from_txt(filename, freq):
                 direction=direc,
                 flux=flux_array,
                 frequency=freq,
-                polarisation_frame=PolarisationFrame("stokesI"),
+                polarisation_frame=pol,
             )
         )
 

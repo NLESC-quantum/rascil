@@ -63,7 +63,7 @@ class TestVisibilitySelectors(unittest.TestCase):
             weight=1.0,
         )
         for result in bvis.groupby_bins("time", 3):
-            print(result[0])
+            log.info(result[0])
 
     def test_blockvisibility_iselect_time(self):
         bvis = create_blockvisibility(
@@ -76,7 +76,7 @@ class TestVisibilitySelectors(unittest.TestCase):
             weight=1.0,
         )
         selected_bvis = bvis.isel({"time": slice(5, 7)})
-        print(selected_bvis)
+        log.info(selected_bvis)
         assert len(selected_bvis.time) == 2
         assert len(selected_bvis.channel_bandwidth.shape) == 1
         assert len(selected_bvis.integration_time.shape) == 1
@@ -108,7 +108,7 @@ class TestVisibilitySelectors(unittest.TestCase):
             weight=1.0,
         )
         selected_bvis = bvis.sel({"frequency": slice(0.9e8, 1.2e8)})
-        print(selected_bvis)
+        log.info(selected_bvis)
         assert len(selected_bvis.frequency) == 4
         assert len(selected_bvis.channel_bandwidth.shape) == 1
         assert len(selected_bvis.integration_time.shape) == 1
@@ -126,7 +126,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         selected_bvis = bvis.sel(
             {"frequency": slice(0.9e8, 1.2e8), "polarisation": ["XX", "YY"]}
         ).dropna(dim="frequency", how="all")
-        print(selected_bvis)
+        log.info(selected_bvis)
         assert len(selected_bvis.frequency) == 4
         assert len(selected_bvis.polarisation) == 2
         assert len(selected_bvis.channel_bandwidth.shape) == 1
@@ -143,7 +143,7 @@ class TestVisibilitySelectors(unittest.TestCase):
             weight=1.0,
         )
         selected_bvis = bvis.isel({"frequency": slice(1, 3)})
-        print(selected_bvis)
+        log.info(selected_bvis)
         assert len(selected_bvis.frequency) == 2
 
     def test_blockvisibility_flag_auto(self):
@@ -162,7 +162,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         )
         after = bvis["flags"].sum()
         assert after > before
-        print(bvis)
+        log.info(bvis)
 
     def test_blockvisibility_flag_uvrange(self):
         bvis = create_blockvisibility(

@@ -1,4 +1,4 @@
-""" Unit tests for geometry
+""" Functions for calculating geometry of a BlockVisibility
 
 """
 

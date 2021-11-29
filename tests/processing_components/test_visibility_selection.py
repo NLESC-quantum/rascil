@@ -12,6 +12,10 @@ from astropy.coordinates import SkyCoord
 from rascil.data_models import PolarisationFrame
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
+from rascil.processing_components.visibility.visibility_selection import (
+    blockvisibility_select_r_range,
+    blockvisibility_flag_uvrange,
+)
 
 log = logging.getLogger("rascil-logger")
 
@@ -59,7 +63,7 @@ class TestVisibilitySelectors(unittest.TestCase):
             weight=1.0,
         )
         for result in bvis.groupby_bins("time", 3):
-            print(result[0])
+            log.info(result[0])
 
     def test_blockvisibility_iselect_time(self):
         bvis = create_blockvisibility(
@@ -72,7 +76,7 @@ class TestVisibilitySelectors(unittest.TestCase):
             weight=1.0,
         )
         selected_bvis = bvis.isel({"time": slice(5, 7)})
-        print(selected_bvis)
+        log.info(selected_bvis)
         assert len(selected_bvis.time) == 2
         assert len(selected_bvis.channel_bandwidth.shape) == 1
         assert len(selected_bvis.integration_time.shape) == 1
@@ -104,7 +108,7 @@ class TestVisibilitySelectors(unittest.TestCase):
             weight=1.0,
         )
         selected_bvis = bvis.sel({"frequency": slice(0.9e8, 1.2e8)})
-        print(selected_bvis)
+        log.info(selected_bvis)
         assert len(selected_bvis.frequency) == 4
         assert len(selected_bvis.channel_bandwidth.shape) == 1
         assert len(selected_bvis.integration_time.shape) == 1
@@ -122,7 +126,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         selected_bvis = bvis.sel(
             {"frequency": slice(0.9e8, 1.2e8), "polarisation": ["XX", "YY"]}
         ).dropna(dim="frequency", how="all")
-        print(selected_bvis)
+        log.info(selected_bvis)
         assert len(selected_bvis.frequency) == 4
         assert len(selected_bvis.polarisation) == 2
         assert len(selected_bvis.channel_bandwidth.shape) == 1
@@ -139,7 +143,7 @@ class TestVisibilitySelectors(unittest.TestCase):
             weight=1.0,
         )
         selected_bvis = bvis.isel({"frequency": slice(1, 3)})
-        print(selected_bvis)
+        log.info(selected_bvis)
         assert len(selected_bvis.frequency) == 2
 
     def test_blockvisibility_flag_auto(self):
@@ -158,4 +162,38 @@ class TestVisibilitySelectors(unittest.TestCase):
         )
         after = bvis["flags"].sum()
         assert after > before
-        print(bvis)
+        log.info(bvis)
+
+    def test_blockvisibility_flag_uvrange(self):
+        bvis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            polarisation_frame=self.polarisation_frame,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+        )
+        before = bvis["flags"].sum()
+        uvmin = 100.0
+        uvmax = 20000.0
+
+        bvis = blockvisibility_flag_uvrange(bvis, uvmin, uvmax)
+        after = bvis["flags"].sum()
+        assert after > before
+
+    def test_blockvisibility_select_r_range(self):
+        bvis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            polarisation_frame=self.polarisation_frame,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+        )
+        rmin = 100.0
+        rmax = 20000.0
+
+        sub_bvis = blockvisibility_select_r_range(bvis, rmin, rmax)
+        assert len(bvis.baselines) > len(sub_bvis.baselines)

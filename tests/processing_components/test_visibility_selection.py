@@ -180,7 +180,7 @@ class TestVisibilitySelectors(unittest.TestCase):
 
         assert bvis["flags"].sum() == 0
         bvis = blockvisibility_select_uv_range(bvis, uvmin, uvmax)
-        assert bvis["flags"].sum() == 2772200
+        assert bvis["flags"].sum() == 1185464
 
     def test_blockvisibility_select_r_range(self):
         bvis = create_blockvisibility(

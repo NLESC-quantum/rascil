@@ -52,7 +52,6 @@ from rascil.processing_components.imaging.imaging_helpers import sum_invert_resu
 log = logging.getLogger("rascil-logger")
 
 log.setLevel(logging.WARNING)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestImaging(unittest.TestCase):

@@ -39,7 +39,7 @@ centre in a range rmin, rmax (metres)::
 
 """
 
-__all__ = ["blockvisibility_flag_uvrange", "blockvisibility_select_r_range"]
+__all__ = ["blockvisibility_select_uv_range", "blockvisibility_select_r_range"]
 import logging
 import numpy
 import xarray
@@ -47,8 +47,10 @@ import xarray
 log = logging.getLogger("rascil-logger")
 
 
-def blockvisibility_flag_uvrange(bvis, uvmin=0.0, uvmax=numpy.inf):
+def blockvisibility_select_uv_range(bvis, uvmin=0.0, uvmax=numpy.inf):
     """Flag in-place all visibility data outside uvrange uvmin, uvmax (wavelengths)
+
+    The flags are set to 1 for all data outside the specified uvrange
 
     :param bvis: BlockVisibility
     :param uvmin: Minimum uv to flag

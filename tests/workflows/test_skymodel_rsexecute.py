@@ -36,7 +36,6 @@ from rascil.workflows.rsexecute.skymodel.skymodel_rsexecute import (
 log = logging.getLogger("rascil-logger")
 
 log.setLevel(logging.WARNING)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestSkyModel(unittest.TestCase):

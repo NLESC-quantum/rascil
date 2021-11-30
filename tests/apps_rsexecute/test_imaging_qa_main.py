@@ -51,14 +51,15 @@ from rascil.processing_components.skycomponent import (
 )
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.INFO)
-logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
+logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.WARNING)
 
 
 @pytest.mark.parametrize(
-    "cellsize, npixel, nchan, flux_limit, insert_method, noise, tag",
+    "use_dask, cellsize, npixel, nchan, flux_limit, insert_method, noise, tag",
     [
         (
+            "True",
             0.0001,
             512,
             1,
@@ -68,63 +69,79 @@ logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
             "nearest_npixel512_nchan1_noise0.00003_flux0.001",
         ),
         (
+            "False",
+            0.0001,
+            512,
+            1,
+            0.001,
+            "Nearest",
+            0.00003,
+            "without_dask_nearest_npixel512_nchan1_noise0.00003_flux0.001",
+        ),
+        (
+            "False",
             0.0001,
             1024,
             1,
             0.001,
             "Nearest",
             0.00003,
-            "nearest_npixel1024_nchan1_noise0.00003_flux0.001",
+            "without_dask_nearest_npixel1024_nchan1_noise0.00003_flux0.001",
         ),
         (
+            "False",
             0.0001,
             512,
             8,
             0.001,
             "Nearest",
             0.00003,
-            "nearest_npixel512_nchan8_noise0.00003_flux0.001",
+            "without_dask_nearest_npixel512_nchan8_noise0.00003_flux0.001",
         ),
         (
+            "False",
             0.0001,
             1024,
             8,
             0.001,
             "Nearest",
             0.000001,
-            "nearest_npixel1024_nchan8_noise0.000001_flux0.001",
+            "without_dask_nearest_npixel1024_nchan8_noise0.000001_flux0.001",
         ),
         (
+            "False",
             0.0001,
             512,
             1,
             0.0001,
             "Nearest",
             0.00003,
-            "nearest_npixel512_nchan1_noise0.00003_flux0.0001",
+            "without_dask_nearest_npixel512_nchan1_noise0.00003_flux0.0001",
         ),
         (
+            "False",
             0.0001,
             512,
             1,
             0.001,
             "Lanczos",
             0.00003,
-            "lanczos_npixel512_nchan1_noise0.00003_flux0.001",
+            "without_dask_lanczos_npixel512_nchan1_noise0.00003_flux0.001",
         ),
         (
+            "False",
             0.0001,
             512,
             1,
             0.001,
             "Nearest",
             0.0003,
-            "nearest_npixel512_nchan1_noise0.0003_flux0.001",
+            "without_dask_nearest_npixel512_nchan1_noise0.0003_flux0.001",
         ),
     ],
 )
 def test_continuum_imaging_checker(
-    cellsize, npixel, nchan, flux_limit, insert_method, noise, tag
+    use_dask, cellsize, npixel, nchan, flux_limit, insert_method, noise, tag
 ):
 
     # Set true if we want to save the outputs
@@ -287,6 +304,8 @@ def test_continuum_imaging_checker(
             "True",
             "--savefits_rmsim",
             "True",
+            "--use_dask",
+            use_dask,
         ]
     )
 

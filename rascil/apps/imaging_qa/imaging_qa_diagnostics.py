@@ -347,17 +347,6 @@ def source_region_mask(img, use_dask=False):
     source_regions_sum = gather_image_list(source_regions_list)
     source_regions = rsexecute.compute(source_regions_sum, sync=True)
 
-    # else:
-    #     source_regions = np.ones(shape=image_shape, dtype=int)
-    #     for gaussian in img.gaussians:
-
-    #         source_radius = np.sqrt(
-    #             (grid[0] - gaussian.centre_pix[0]) ** 2
-    #             + (grid[1] - gaussian.centre_pix[1]) ** 2
-    #         )
-
-    #         source_regions[source_radius < beam_radius] = 0
-
     background_regions = np.zeros(shape=image_shape, dtype=int)
     background_regions[source_regions == 0] = 1
 

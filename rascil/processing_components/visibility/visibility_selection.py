@@ -58,9 +58,9 @@ def blockvisibility_select_uv_range(bvis, uvmin=0.0, uvmax=numpy.inf):
     :return: bvis (with flags applied)
     """
     if uvmax is not None and uvmax < numpy.inf:
-        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > uvmax, bvis["flags"], 1.0)
+        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] < uvmax, bvis["flags"], 1)
     if uvmin is not None and uvmin > 0.0:
-        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] < uvmin, bvis["flags"], 1.0)
+        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > uvmin, bvis["flags"], 1)
     return bvis
 
 

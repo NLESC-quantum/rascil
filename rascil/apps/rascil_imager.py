@@ -40,6 +40,8 @@ from rascil.processing_components import (
     create_calibration_controls,
     advise_wide_field,
     concatenate_gaintables,
+    blockvisibility_select_uv_range,
+    blockvisibility_select_r_range,
 )
 
 from rascil.processing_components.util.performance import (
@@ -150,6 +152,9 @@ def imager(args):
     log.info("Current working directory is {}".format(cwd))
 
     bvis_list, msname = get_blockvis_list(args)
+
+    # Select the desired data
+    bvis_list = select_blockvis(args, bvis_list)
 
     # Now get the blockvisibility info. Do the query on the cluster to avoid
     # transferring the entire data.
@@ -322,6 +327,25 @@ def weight_blockvis(args, bvis_list, model_list):
             bvis_list, args.imaging_gaussian_taper
         )
     return bvis_list
+
+
+def select_blockvis(args, bvis_list):
+    # Create a graph to select the data
+    def select(bv):
+        # We need to make a copy so that this is a pure function
+        newbv = bv.copy(deep=True)
+        # Select by range in radius
+        newbv = blockvisibility_select_r_range(
+            newbv, args.imaging_rmin, args.imaging_rmax
+        )
+        # Flag data outside uvrange
+        newbv = blockvisibility_select_uv_range(
+            newbv, args.imaging_uvmin, args.imaging_uvmax
+        )
+        return newbv
+
+    new_bvis_list = [rsexecute.execute(select, nout=1)(bvis) for bvis in bvis_list]
+    return new_bvis_list
 
 
 def create_model_image_list(args, bvis_list, cellsize, npixel):

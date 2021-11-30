@@ -49,7 +49,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 
-DEFAULT_RUN = True
+DEFAULT_RUN = False
 
 
 def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
@@ -86,7 +86,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
 
 @pytest.mark.parametrize(
     "enabled, tag, use_dask, nmajor, mode, add_errors, flux_max, flux_min, "
-    "component_threshold, component_method, offset, flat_sky, restored_output",
+    "component_threshold, component_method, offset, flat_sky, restored_output, uvmax",
     [
         (
             DEFAULT_RUN,
@@ -102,6 +102,23 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.0,
             False,
             "list",
+            1e15,
+        ),
+        (
+            not DEFAULT_RUN,
+            "invert_uvmax",
+            True,
+            0,
+            "invert",
+            False,
+            106.85518750039576,
+            -18.244789328960383,
+            None,
+            None,
+            5.0,
+            False,
+            "list",
+            100.0,
         ),
         (
             DEFAULT_RUN,
@@ -117,6 +134,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.0,
             False,
             "list",
+            1e15,
         ),
         # Set a point source skymodel. We don't put in a shift for this case.
         (
@@ -133,6 +151,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             0.0,
             False,
             "list",
+            1e15,
         ),
         (
             DEFAULT_RUN,
@@ -148,6 +167,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.0,
             False,
             "list",
+            1e15,
         ),
         (
             DEFAULT_RUN,
@@ -163,6 +183,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.0,
             False,
             "list",
+            1e15,
         ),
         (
             DEFAULT_RUN,
@@ -178,6 +199,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.5,
             False,
             "list",
+            1e15,
         ),
         (
             DEFAULT_RUN,
@@ -193,6 +215,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.0,
             False,
             "taylor",
+            1e15,
         ),
         (
             DEFAULT_RUN,
@@ -208,6 +231,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.5,
             False,
             "taylor",
+            1e15,
         ),
         (
             DEFAULT_RUN,
@@ -223,6 +247,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.5,
             False,
             "taylor",
+            1e15,
         ),
         (
             DEFAULT_RUN,
@@ -238,6 +263,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             5.0,
             False,
             "taylor",
+            1e15,
         ),
     ],
 )
@@ -255,6 +281,7 @@ def test_rascil_imager(
     offset,
     flat_sky,
     restored_output,
+    uvmax,
 ):
     """
 
@@ -271,6 +298,7 @@ def test_rascil_imager(
     :param offset: Offset of test pattern in RA pizels
     :param flat_sky: Make the sky flat
     :param restored_output: Type of restored output
+    :param uvmax: Maximum uv to be imaged
     :return:
     """
 
@@ -426,6 +454,8 @@ def test_rascil_imager(
         "cpu_looped",
         "--imaging_flat_sky",
         "False",
+        "--imaging_uvmax",
+        f"{uvmax}",
         "--dask_scheduler",
         "existing",
     ]

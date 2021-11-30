@@ -17,6 +17,8 @@ The parser can then be called to extract the relevant command line argument::
 
 """
 
+import numpy
+
 
 def apps_parser_ingest(parser):
     """Add ingest-specific command line arguments to an existing CLI parser
@@ -143,6 +145,30 @@ def apps_parser_imaging(parser):
         type=str,
         default=None,
         help="DFT kernel: cpu_looped | cpu_numba | gpu_raw ",
+    )
+    parser.add_argument(
+        "--imaging_uvmax",
+        type=float,
+        default=numpy.inf,
+        help="Maximum uv (wavelengths)",
+    )
+    parser.add_argument(
+        "--imaging_uvmin",
+        type=float,
+        default=0.0,
+        help="Minimum uv (wavelengths)",
+    )
+    parser.add_argument(
+        "--imaging_rmax",
+        type=float,
+        default=numpy.inf,
+        help="Maximum distance of dish/station from array center (wavelengths)",
+    )
+    parser.add_argument(
+        "--imaging_rmin",
+        type=float,
+        default=0.0,
+        help="Minimum distance of dish/station from array center (wavelengths)",
     )
 
     return parser

@@ -49,7 +49,7 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import rsexecute
 log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 
-DEFAULT_RUN = False
+DEFAULT_RUN = True
 
 
 def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
@@ -105,7 +105,7 @@ def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
             1e15,
         ),
         (
-            not DEFAULT_RUN,
+            DEFAULT_RUN,
             "invert_uvmax",
             True,
             0,

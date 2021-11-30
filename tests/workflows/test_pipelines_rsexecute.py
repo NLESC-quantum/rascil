@@ -52,7 +52,6 @@ from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import (
 log = logging.getLogger("rascil-logger")
 
 log.setLevel(logging.WARNING)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestPipelineGraphs(unittest.TestCase):

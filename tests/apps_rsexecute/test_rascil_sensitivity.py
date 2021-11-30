@@ -11,6 +11,7 @@ from rascil.data_models import rascil_path
 from rascil.apps.rascil_sensitivity import cli_parser, calculate_sensitivity
 
 log = logging.getLogger("rascil-logger")
+log.setLevel(logging.WARNING)
 
 default_run = True
 

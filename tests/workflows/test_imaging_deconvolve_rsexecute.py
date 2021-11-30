@@ -41,7 +41,6 @@ from rascil.processing_components.skycomponent.operations import insert_skycompo
 log = logging.getLogger("rascil-logger")
 
 log.setLevel(logging.WARNING)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestImagingDeconvolveGraph(unittest.TestCase):

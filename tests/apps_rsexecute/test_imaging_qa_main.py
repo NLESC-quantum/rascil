@@ -51,8 +51,8 @@ from rascil.processing_components.skycomponent import (
 )
 
 log = logging.getLogger("rascil-logger")
-log.setLevel(logging.INFO)
-logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
+logging.getLogger("fit_skycomponent_spectral_index").setLevel(logging.WARNING)
 
 
 @pytest.mark.parametrize(

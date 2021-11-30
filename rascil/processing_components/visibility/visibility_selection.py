@@ -48,15 +48,17 @@ log = logging.getLogger("rascil-logger")
 
 
 def blockvisibility_flag_uvrange(bvis, uvmin=0.0, uvmax=numpy.inf):
-    """Flag in-place all visibility data in uvrange uvmin, uvmax (wavelengths)
+    """Flag in-place all visibility data outside uvrange uvmin, uvmax (wavelengths)
 
     :param bvis: BlockVisibility
     :param uvmin: Minimum uv to flag
     :param uvmax: Maximum uv to flag
     :return: bvis (with flags applied)
     """
-    bvis["flags"] = xarray.where(bvis["uvdist_lambda"] < uvmax, bvis["flags"], 1.0)
-    bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > uvmin, bvis["flags"], 1.0)
+    if uvmax is not None and uvmax < numpy.inf:
+        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > uvmax, bvis["flags"], 1.0)
+    if uvmin is not None and uvmin > 0.0:
+        bvis["flags"] = xarray.where(bvis["uvdist_lambda"] < uvmin, bvis["flags"], 1.0)
     return bvis
 
 

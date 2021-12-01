@@ -138,7 +138,7 @@ An example consider the arguments::
 
 These will perform a phase only solution of the T term after the second major cycle for every integration,
 solution of G after 5 major cycles with timescale of 1200s, and solution of B after 8 major cycles, integrating
-across all frequencies where appropriate.
+across all frequencies where appropriate. Note, that T and G terms are averages across frequency.
 
 SkyModel in ICAL
 ++++++++++++++++
@@ -161,6 +161,9 @@ This SkyModel is then overwritten during the remaining cycles of the run.
 
 By default, :code:`--use_initial_skymodel` is set to False, and hence no
 initial SkyModel is used.
+
+In addition, you can decide whether to reset the initial skymodel after first calibration,
+or not, by setting the :code:`--calibration_reset_skymodel` either to True or False.
 
 Dask
 ++++

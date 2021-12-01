@@ -107,19 +107,23 @@ def ical_skymodel_list_rsexecute_workflow(
             **kwargs,
         )
 
-        # Erase data in the input model_imagelist
-        def pipeline_zero_skymodel_image(sm):
-            log.info(
-                "ical_list_rsexecute_workflow: setting initial model to zero after initial selfcal"
-            )
-            if sm.image is not None:
-                sm.image["pixels"].data[...] = 0.0
-            return sm
+        # Erase data in the input skymodel_list?
+        reset_skymodel = get_parameter(kwargs, "reset_skymodel", True)
+        if reset_skymodel:
 
-        skymodel_list = [
-            rsexecute.execute(pipeline_zero_skymodel_image, nout=1)(sm)
-            for sm in skymodel_list
-        ]
+            def pipeline_zero_skymodel_image(sm):
+                new_sm = SkyModel(image=sm.image.copy(deep=True))
+                log.info(
+                    "ical_list_rsexecute_workflow: setting initial model to zero after initial selfcal"
+                )
+                if new_sm.image is not None:
+                    new_sm.image["pixels"].data[...] = 0.0
+                return new_sm
+
+            skymodel_list = [
+                rsexecute.execute(pipeline_zero_skymodel_image, nout=1)(s)
+                for s in skymodel_list
+            ]
 
         # Make the residual images for the skymodels
         residual_imagelist = residual_skymodel_list_rsexecute_workflow(

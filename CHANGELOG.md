@@ -1,5 +1,5 @@
-master
-------
+0.5.0
+-----
 
 * Add DASK support to Quality Assesment app ([MR 286](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/286))
 * Added blockvisibility selection documentation and functions ([MR292](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/292))

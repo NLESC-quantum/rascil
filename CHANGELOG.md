@@ -1,3 +1,6 @@
+
+* Add uv and r visibility selection in rascil_imager ([MR 294](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/294))
+
 0.5.0
 -----
 

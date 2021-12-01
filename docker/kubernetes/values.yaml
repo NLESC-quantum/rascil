@@ -9,7 +9,7 @@ nameOverride: rascil-dask
 fullnameOverride: rascil-dask
 
 # image used by the scheduler and workers
-image: "artefact.skao.int/rascil-full:0.4.0"
+image: "artefact.skao.int/rascil-full:0.5.0"
 imagePullPolicy: IfNotPresent
 
 worker:
@@ -19,5 +19,5 @@ jupyter:
   enabled: true  # Enable/disable the bundled Jupyter notebook.
   image:
     repository: "artefact.skao.int/rascil-notebook"
-    tag: 0.4.0
+    tag: 0.5.0
     pullPolicy: IfNotPresent

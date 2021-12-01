@@ -3,6 +3,8 @@
 """
 
 import logging
+import shutil
+import tempfile
 import unittest
 import os
 import glob
@@ -48,7 +50,8 @@ class TestCIChecker(unittest.TestCase):
 
         # Generate mock objects for functions in imaging_qa,
         # including skycomponents, primary beam image, restored image
-        self.results_dir = rascil_path("test_results")
+        self.tempdir_root = tempfile.TemporaryDirectory(dir=rascil_path("test_results"))
+        self.results_dir = self.tempdir_root.name
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -130,13 +133,11 @@ class TestCIChecker(unittest.TestCase):
         parser = cli_parser()
         self.args = parser.parse_args([])
 
-    def cleanup_data_files(self):
-        """Cleanup the temporary data files"""
-
-        to_remove = rascil_path("test_results/test_imaging_qa_functions*")
-        for f in glob.glob(to_remove):
-            if os.path.exists(f):
-                os.remove(f)
+    def persist_data_files(self):
+        """Persist the temporary data files"""
+        to_copy = self.results_dir + "/test_imaging_qa_functions*"
+        for f in glob.glob(to_copy):
+            shutil.copy(f, rascil_path("test_results"))
 
     def test_correct_primary_beam_sensitivity(self):
 
@@ -172,8 +173,8 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_flux, reversed_flux_rest, decimal=1)
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist:
+            self.persist_data_files()
 
     def test_correct_primary_beam_restored_low(self):
 
@@ -190,8 +191,8 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_flux, reversed_flux_rest, decimal=1)
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist:
+            self.persist_data_files()
 
     def test_correct_primary_beam_none(self):
 
@@ -201,8 +202,8 @@ class TestCIChecker(unittest.TestCase):
         )
         assert self.components_with_pb_mid == reversed_comp_none
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist:
+            self.persist_data_files()
 
     def write_txt_file(self):
 
@@ -241,8 +242,8 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_ra, read_ra)
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist:
+            self.persist_data_files()
 
     def test_read_skycomponent_from_txt_single(self):
 
@@ -261,8 +262,8 @@ class TestCIChecker(unittest.TestCase):
 
         assert_array_almost_equal(orig_flux, read_flux)
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist:
+            self.persist_data_files()
 
     def test_wrong_restored(self):
 
@@ -287,8 +288,8 @@ class TestCIChecker(unittest.TestCase):
         # Assert returning None values
         assert result == (None, None)
 
-        if self.persist is False:
-            self.cleanup_data_files()
+        if self.persist:
+            self.persist_data_files()
 
 
 if __name__ == "__main__":

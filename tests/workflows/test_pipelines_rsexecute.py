@@ -311,6 +311,12 @@ class TestPipelineGraphs(unittest.TestCase):
         )
         clean = [sm.image for sm in sky_model_list]
 
+        for freqwin in range(self.freqwin):
+            qa = qa_gaintable(
+                gt_list[freqwin]["T"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 2.1e-2, str(qa)
+
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
@@ -755,6 +761,7 @@ class TestPipelineGraphs(unittest.TestCase):
             controls=controls,
             do_selfcal=True,
             global_solution=False,
+            reset_skymodel=True,
         )
         residual, restored, sky_model_list, gt_list = rsexecute.compute(
             ical_list, sync=True
@@ -767,13 +774,16 @@ class TestPipelineGraphs(unittest.TestCase):
                 "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable_T.hdf5"
                 % self.results_dir,
             )
+        # Check that the residuals are small
+        assert numpy.max(gt_list[0]["T"]["residual"].data) < 9e-3
+
         self.save_and_check(
             "ical_skymodel_pipeline_exact",
             clean,
             residual,
             restored,
-            116.90605687884046,
-            -2.287644910440396e-06,
+            116.83666909212971,
+            -0.1272805973991534,
         )
 
     def test_ical_skymodel_pipeline_exact_dont_reset(self):

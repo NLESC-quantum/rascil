@@ -17,7 +17,6 @@ photutils
 python-casacore
 graphviz
 reproject
-scikit-image
 scipy
 seqfile
 ConfigParser

@@ -156,10 +156,12 @@ class TestVisibilitySelectors(unittest.TestCase):
             phasecentre=self.phasecentre,
             weight=1.0,
         )
+        flags_shape = bvis.flags.shape
         before = bvis["flags"].sum()
         bvis["flags"] = xarray.where(
             bvis["uvdist_lambda"] > 20000.0, bvis["flags"], 1.0
         )
+        assert bvis.flags.shape == flags_shape
         after = bvis["flags"].sum()
         assert after > before
         log.info(bvis)
@@ -181,6 +183,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         assert bvis["flags"].sum() == 0
         bvis = blockvisibility_select_uv_range(bvis, uvmin, uvmax)
         assert bvis["flags"].sum() == 1185464
+        assert bvis.frequency.shape == (5,)
 
     def test_blockvisibility_select_r_range(self):
         bvis = create_blockvisibility(
@@ -197,4 +200,6 @@ class TestVisibilitySelectors(unittest.TestCase):
 
         sub_bvis = blockvisibility_select_r_range(bvis, rmin, rmax)
         assert len(sub_bvis.baselines) == 3741
-        assert len(bvis.configuration.names) == 166
+        assert len(sub_bvis.configuration.names) == 166
+        assert sub_bvis.frequency.shape == (5,)
+        assert sub_bvis.integration_time.shape == bvis.integration_time.shape

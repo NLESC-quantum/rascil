@@ -43,11 +43,12 @@ __all__ = ["blockvisibility_select_uv_range", "blockvisibility_select_r_range"]
 import logging
 import numpy
 import xarray
+import pandas
 
 log = logging.getLogger("rascil-logger")
 
 
-def blockvisibility_select_uv_range(bvis, uvmin=0.0, uvmax=numpy.inf):
+def blockvisibility_select_uv_range(bvis, uvmin=0.0, uvmax=1.0e15):
     """Flag in-place all visibility data outside uvrange uvmin, uvmax (wavelengths)
 
     The flags are set to 1 for all data outside the specified uvrange
@@ -57,14 +58,14 @@ def blockvisibility_select_uv_range(bvis, uvmin=0.0, uvmax=numpy.inf):
     :param uvmax: Maximum uv to flag
     :return: bvis (with flags applied)
     """
-    if uvmax is not None and uvmax < numpy.inf:
+    if uvmax is not None and uvmax < 1e15:
         bvis["flags"] = xarray.where(bvis["uvdist_lambda"] < uvmax, bvis["flags"], 1)
     if uvmin is not None and uvmin > 0.0:
         bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > uvmin, bvis["flags"], 1)
     return bvis
 
 
-def blockvisibility_select_r_range(bvis, rmin=0.0, rmax=numpy.inf):
+def blockvisibility_select_r_range(bvis, rmin=0.0, rmax=1e15):
     """Select a block visibility with stations in a range of distance from the array centre
 
     r is the distance from the array centre in metres
@@ -83,8 +84,22 @@ def blockvisibility_select_r_range(bvis, rmin=0.0, rmax=numpy.inf):
     sub_config = config.where(config["radius"] > rmin, drop=True).where(
         config["radius"] < rmax, drop=True
     )
-    ids = sub_config.id.data
+    ids = list(sub_config.id.data)
     baselines = bvis.baselines.where(
         bvis.baselines.antenna1.isin(ids), drop=True
     ).where(bvis.baselines.antenna2.isin(ids), drop=True)
-    return bvis.sel({"baselines": baselines}, drop=True)
+    sub_bvis = bvis.sel({"baselines": baselines}, drop=True)
+
+    # The baselines coord now is missing the antenna1, antenna2 keys
+    # so we add those back
+    def generate_baselines(id):
+        for a1 in id:
+            for a2 in id:
+                if a2 >= a1:
+                    yield a1, a2
+
+    sub_bvis["baselines"] = pandas.MultiIndex.from_tuples(
+        generate_baselines(ids),
+        names=("antenna1", "antenna2"),
+    )
+    return sub_bvis

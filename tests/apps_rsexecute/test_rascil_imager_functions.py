@@ -123,6 +123,22 @@ def mock_image():
     return image, phase_centre
 
 
+@pytest.fixture(scope="module")
+def mock_iquv_image():
+    phase_centre = SkyCoord(
+        ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
+    )
+    frequency = numpy.array([1.0e8, 1.5e8, 2.0e8])
+    image = create_image(
+        phasecentre=phase_centre,
+        frequency=frequency,
+        channel_bandwidth=numpy.array([1e6, 1e6, 1e6]),
+        polarisation_frame=PolarisationFrame("stokesIQUV"),
+    )
+
+    return image
+
+
 def test_generate_skymodel_list(mock_image, set_up_dask):
     """
     Function correctly generates a list of SkyModels when there isn't
@@ -146,6 +162,32 @@ def test_generate_skymodel_list(mock_image, set_up_dask):
     assert result[0].components[0].direction.ra.info.unit == phase_centre.ra.info.unit
     assert result[0].components[0].direction.dec.info.unit == phase_centre.dec.info.unit
     assert result[0].components[0].polarisation_frame.names == ["I"]
+
+
+def test_generate_skymodel_list_from_hdf_mismatch_pol(
+    mock_iquv_image, sky_comp_file, set_up_dask
+):
+    """
+    Thest that the polarisation of components is correctly converted to the
+    polarisation of the model image.
+
+    comp pol: stokesI
+    image pol: stokesIQUV
+    """
+    result = generate_skymodel_list(
+        [mock_iquv_image], input_file=sky_comp_file[0], n_bright_sources=1
+    )
+    result = rsexecute.compute(result, sync=True)
+
+    assert len(result) == 1
+    assert len(result[0].components) == 1
+    assert (
+        result[0].components[0].flux
+        == numpy.array(
+            [[1.1, 0.0, 0.0, 0.0], [2.2, 0.0, 0.0, 0.0], [2.5, 0.0, 0.0, 0.0]]
+        )
+    ).all()
+    assert result[0].components[0].polarisation_frame == PolarisationFrame("stokesIQUV")
 
 
 def test_generate_skymodel_list_from_hdf_one_comp(

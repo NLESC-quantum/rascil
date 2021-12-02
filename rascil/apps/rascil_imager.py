@@ -14,12 +14,12 @@ import numpy
 import xarray
 
 from rascil.apps.imaging_qa_main import read_skycomponent_from_txt, FileFormatError
+from rascil.data_models.polarisation import convert_pol_frame
 
 matplotlib.use("Agg")
 
 from distributed import Client, SSHCluster
 import dask
-import sys
 
 from rascil.data_models import (
     PolarisationFrame,
@@ -634,6 +634,15 @@ def _sky_components_from_file(input_file, n_bright_sources, frequency_data):
     return sky_comp_list
 
 
+def _convert_component_polarisation(comp, expected_pol):
+    if comp.polarisation_frame != expected_pol:
+        new_flux = convert_pol_frame(comp.flux, comp.polarisation_frame, expected_pol)
+        comp.flux = new_flux
+        comp.polarisation_frame = expected_pol
+
+    return comp
+
+
 def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
     """
     Generate an initial SkyModel (from model images and SkyComponents) to be supplied to ICAL.
@@ -666,12 +675,22 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
         # frequencies of components are scaled to image frequency.
 
         frequency_data = model_list[0].frequency.data
-        sky_comp_list = rsexecute.execute(_sky_components_from_file, nout=1)(
+        sky_comp_list = _sky_components_from_file(
             input_file, n_bright_sources, frequency_data
         )
 
+        img_polarisation = PolarisationFrame(model_list[0]._polarisation_frame)
+        sky_comp_fixed_pol_list = [
+            rsexecute.execute(_convert_component_polarisation, nout=1)(
+                comp, img_polarisation
+            )
+            for comp in sky_comp_list
+        ]
+
         sky_model_list = [
-            rsexecute.execute(SkyModel, nout=1)(image=model, components=sky_comp_list)
+            rsexecute.execute(SkyModel, nout=1)(
+                image=model, components=sky_comp_fixed_pol_list
+            )
             for model in model_list
         ]
         return sky_model_list

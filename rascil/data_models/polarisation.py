@@ -339,6 +339,31 @@ def convert_circular_to_stokesI(circular):
         return 0.5 * (circular[..., 0] + circular[..., 3])[..., numpy.newaxis]
 
 
+def convert_stokesIQUV_to_stokesI(flux_iquv):
+    """
+    Convert fluxes of Stokes IQUV polarisation to Stokes I
+
+    :param flux_iquv: numpy array of shape [nfreq, npol], where npol = 4
+    :return flux_i: numpy array of shape [nfreq, 1]
+    """
+    flux_i = flux_iquv[:, 0].reshape((flux_iquv.shape[0], 1))
+    return flux_i
+
+
+def convert_stokesI_to_stokesIQUV(flux_i):
+    """
+    Convert fluxes of Stokes I polarisation to Stokes IQUV.
+    It fills in the QUV polarisations with 0.
+
+    :param flux_i: numpy array of shape [nfreq, 1]
+    :return flux_iquv: numpy array of shape [nfreq, npol], where npol = 4
+    """
+
+    flux_iquv = numpy.zeros((len(flux_i), 4))
+    flux_iquv[:, 0] = flux_i[:, 0]
+    return flux_iquv
+
+
 def convert_pol_frame(
     polvec, ipf: PolarisationFrame, opf: PolarisationFrame, polaxis=1
 ):
@@ -374,6 +399,8 @@ def convert_pol_frame(
             return convert_stokes_to_linear(polvec, polaxis)
         elif opf == PolarisationFrame("circular"):
             return convert_stokes_to_circular(polvec, polaxis)
+        elif opf == PolarisationFrame("stokesI"):
+            return convert_stokesIQUV_to_stokesI(polvec)
 
     if ipf == PolarisationFrame("stokesIQ"):
         if opf == PolarisationFrame("linearnp"):
@@ -386,6 +413,8 @@ def convert_pol_frame(
     if ipf == PolarisationFrame("stokesI"):
         if opf == PolarisationFrame("stokesI"):
             return polvec
+        elif opf == PolarisationFrame("stokesIQUV"):
+            return convert_stokesI_to_stokesIQUV(polvec)
 
     raise ValueError("Unknown polarisation conversion: {} to {}".format(ipf, opf))
 

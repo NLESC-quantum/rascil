@@ -238,6 +238,44 @@ class TestPolarisation(unittest.TestCase):
         st = convert_pol_frame(cir, opf, ipf, polaxis=1)
         assert_array_almost_equal(st.real, stokes, 15)
 
+    def test_image_conversion_stokesIQUV_to_I(self):
+        flux = numpy.array(
+            [
+                [1.0, 0.0, 1.13, 0.4],
+                [2.0, 0.0, 11.13, 2.4],
+                [-1.0, 0.0, -1.3, -0.72],
+                [10.0, 0.0, 2.4, 1.1],
+            ]
+        )
+        expected_flux = flux[:, 0]
+        expected_flux = expected_flux.reshape((len(expected_flux), 1))
+        ipf = PolarisationFrame("stokesIQUV")
+        opf = PolarisationFrame("stokesI")
+
+        result = convert_pol_frame(flux, ipf, opf)
+
+        assert result.shape == expected_flux.shape
+        assert (result == expected_flux).all()
+
+    def test_image_auto_conversion_stokesI_to_IQUV(self):
+        expected_flux = numpy.array(
+            [
+                [1.0, 0.0, 0.0, 0.0],
+                [2.0, 0.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0, 0.0],
+                [10.0, 0.0, 0.0, 0.0],
+            ]
+        )
+        input_flux = expected_flux[:, 0]
+        input_flux = input_flux.reshape((len(input_flux), 1))
+        ipf = PolarisationFrame("stokesI")
+        opf = PolarisationFrame("stokesIQUV")
+
+        result = convert_pol_frame(input_flux, ipf, opf)
+
+        assert result.shape == expected_flux.shape
+        assert (result == expected_flux).all()
+
     def test_vis_conversion(self):
         stokes = numpy.array(random.uniform(-1.0, 1.0, [1000, 3, 4]))
         cir = convert_stokes_to_circular(stokes, polaxis=2)

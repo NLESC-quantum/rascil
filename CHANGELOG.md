@@ -1,10 +1,15 @@
 
+=======
+master
+------
+
+* Bug fix in initial SkyModel for ICAL: convert polarisation of SkyComponents read from file to image polarisation ([MR296](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/296))
 * Add uv and r visibility selection in rascil_imager ([MR 294](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/294))
 
 0.5.0
 -----
 
-* Add DASK support to Quality Assesment app ([MR 286](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/286))
+* Add DASK support to Quality Assesment app ([MR286](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/286))
 * Added blockvisibility selection documentation and functions ([MR292](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/292))
 * Developed the capability to apply realistic LOW beam for skymodel in the RCAL app and refined its application in imaging_qa ([MR284](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/284))
 * The rascil_imager option for global solution was being ignored ([MR278](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/278))

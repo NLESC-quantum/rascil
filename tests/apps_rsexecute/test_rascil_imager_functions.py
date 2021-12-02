@@ -22,6 +22,9 @@ log = logging.getLogger("rascil-logger")
 log.setLevel(logging.WARNING)
 
 USE_DASK = True
+PHASE_CENTRE = SkyCoord(
+    ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
+)
 
 
 def write_to_txt(filename, components):
@@ -67,27 +70,24 @@ def sky_comp_file():
     """
     Create a temporary HDF file with three SkyComponents.
     """
-    phase_centre = SkyCoord(
-        ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
-    )
     pol_frame = PolarisationFrame("stokesI")
     frequency = numpy.array([1.0e8, 1.5e8, 2.0e8])
 
     sky_com_list = [
         Skycomponent(
-            direction=phase_centre,
+            direction=PHASE_CENTRE,
             flux=numpy.array([[1.0], [2.0], [2.5]]),
             polarisation_frame=pol_frame,
             frequency=frequency,
         ),
         Skycomponent(
-            direction=phase_centre,
+            direction=PHASE_CENTRE,
             flux=numpy.array([[1.1], [2.2], [2.5]]),
             polarisation_frame=pol_frame,
             frequency=frequency,
         ),
         Skycomponent(
-            direction=phase_centre,
+            direction=PHASE_CENTRE,
             flux=numpy.array([[0.4], [1.1], [1.6]]),
             polarisation_frame=pol_frame,
             frequency=frequency,
@@ -110,27 +110,21 @@ def mock_image():
     """
     Create a mock image for testing.
     """
-    phase_centre = SkyCoord(
-        ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
-    )
     frequency = numpy.array([1.0e8, 1.5e8, 2.0e8])
-    image = create_image(
-        phasecentre=phase_centre,
+    image = rsexecute.execute(create_image, nout=1)(
+        phasecentre=PHASE_CENTRE,
         frequency=frequency,
         channel_bandwidth=numpy.array([1e6, 1e6, 1e6]),
     )
 
-    return image, phase_centre
+    return image
 
 
 @pytest.fixture(scope="module")
 def mock_iquv_image():
-    phase_centre = SkyCoord(
-        ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
-    )
     frequency = numpy.array([1.0e8, 1.5e8, 2.0e8])
-    image = create_image(
-        phasecentre=phase_centre,
+    image = rsexecute.execute(create_image, nout=1)(
+        phasecentre=PHASE_CENTRE,
         frequency=frequency,
         channel_bandwidth=numpy.array([1e6, 1e6, 1e6]),
         polarisation_frame=PolarisationFrame("stokesIQUV"),
@@ -144,23 +138,20 @@ def test_generate_skymodel_list(mock_image, set_up_dask):
     Function correctly generates a list of SkyModels when there isn't
     an inout component file, using a source at the phase centre.
     """
-    image = mock_image[0]
-    phase_centre = mock_image[1]
-
-    result = generate_skymodel_list([image])
+    result = generate_skymodel_list([mock_image])
     result = rsexecute.compute(result, sync=True)
 
     assert len(result) == 1
     assert len(result[0].components) == 1
     assert_almost_equal(
-        result[0].components[0].direction.ra.value, phase_centre.ra.value
+        result[0].components[0].direction.ra.value, PHASE_CENTRE.ra.value
     )
     assert_almost_equal(
-        result[0].components[0].direction.dec.value, phase_centre.dec.value
+        result[0].components[0].direction.dec.value, PHASE_CENTRE.dec.value
     )
 
-    assert result[0].components[0].direction.ra.info.unit == phase_centre.ra.info.unit
-    assert result[0].components[0].direction.dec.info.unit == phase_centre.dec.info.unit
+    assert result[0].components[0].direction.ra.info.unit == PHASE_CENTRE.ra.info.unit
+    assert result[0].components[0].direction.dec.info.unit == PHASE_CENTRE.dec.info.unit
     assert result[0].components[0].polarisation_frame.names == ["I"]
 
 
@@ -198,7 +189,7 @@ def test_generate_skymodel_list_from_hdf_one_comp(
     from an HDF file, when n_bright_sources=1
     """
     result = generate_skymodel_list(
-        [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=1
+        [mock_image], input_file=sky_comp_file[0], n_bright_sources=1
     )
     result = rsexecute.compute(result, sync=True)
 
@@ -215,7 +206,7 @@ def test_generate_skymodel_list_from_hdf_two_comps(
     from an HDF file, when n_bright_sources=n (n>1)
     """
     result = generate_skymodel_list(
-        [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=2
+        [mock_image], input_file=sky_comp_file[0], n_bright_sources=2
     )
     result = rsexecute.compute(result, sync=True)
 
@@ -233,7 +224,7 @@ def test_generate_skymodel_list_from_hdf_all_comps(
     from an HDF file, when n_bright_sources=None and there is an input file.
     """
     result = generate_skymodel_list(
-        [mock_image[0]], input_file=sky_comp_file[0], n_bright_sources=None
+        [mock_image], input_file=sky_comp_file[0], n_bright_sources=None
     )
     result = rsexecute.compute(result, sync=True)
 
@@ -255,7 +246,7 @@ def test_generate_skymodel_list_from_txt_one_comp(
     Frequency of components are scaled to image frequency.
     """
     result = generate_skymodel_list(
-        [mock_image[0]], input_file=sky_comp_file[1], n_bright_sources=1
+        [mock_image], input_file=sky_comp_file[1], n_bright_sources=1
     )
     result = rsexecute.compute(result, sync=True)
 
@@ -275,7 +266,7 @@ def test_generate_skymodel_list_from_txt_two_comps(
     Frequency of components are scaled to image frequency.
     """
     result = generate_skymodel_list(
-        [mock_image[0]], input_file=sky_comp_file[1], n_bright_sources=2
+        [mock_image], input_file=sky_comp_file[1], n_bright_sources=2
     )
     result = rsexecute.compute(result, sync=True)
 
@@ -298,7 +289,7 @@ def test_generate_skymodel_list_from_txt_all_comps(
     Frequency of components are scaled to image frequency.
     """
     result = generate_skymodel_list(
-        [mock_image[0]],
+        [mock_image],
         input_file=sky_comp_file[1],
         n_bright_sources=None,
     )

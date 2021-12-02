@@ -674,8 +674,15 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
         # For the time being, we ignore this possibility.
         # When components are read from a TXT file (relevant for Low),
         # frequencies of components are scaled to image frequency.
-        frequency_data = model_list[0].frequency.data
-        img_polarisation = model_list[0]._polarisation_frame
+
+        # this needs to be computed, because the function using is not wrapped in dask directly
+        frequency_data = rsexecute.compute(model_list[0].frequency.data, sync=True)
+
+        # getattr explicitly needs to be wrapped in execute, because else dask complains
+        # about missing _polarisation_frame attribute (interestingly, it can deal with non-private attributes)
+        img_polarisation = rsexecute.execute(getattr, nout=1)(
+            model_list[0], "_polarisation_frame"
+        )
 
         sky_comp_list = _sky_components_from_file(
             input_file, n_bright_sources, frequency_data

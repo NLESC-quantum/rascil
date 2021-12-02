@@ -635,10 +635,11 @@ def _sky_components_from_file(input_file, n_bright_sources, frequency_data):
 
 
 def _convert_component_polarisation(comp, expected_pol):
-    if comp.polarisation_frame != expected_pol:
-        new_flux = convert_pol_frame(comp.flux, comp.polarisation_frame, expected_pol)
+    frame_convert = PolarisationFrame(expected_pol)
+    if comp.polarisation_frame != frame_convert:
+        new_flux = convert_pol_frame(comp.flux, comp.polarisation_frame, frame_convert)
         comp.flux = new_flux
-        comp.polarisation_frame = expected_pol
+        comp.polarisation_frame = frame_convert
 
     return comp
 
@@ -673,13 +674,12 @@ def generate_skymodel_list(model_list, input_file=None, n_bright_sources=None):
         # For the time being, we ignore this possibility.
         # When components are read from a TXT file (relevant for Low),
         # frequencies of components are scaled to image frequency.
-
         frequency_data = model_list[0].frequency.data
+        img_polarisation = model_list[0]._polarisation_frame
+
         sky_comp_list = _sky_components_from_file(
             input_file, n_bright_sources, frequency_data
         )
-
-        img_polarisation = PolarisationFrame(model_list[0]._polarisation_frame)
         sky_comp_fixed_pol_list = [
             rsexecute.execute(_convert_component_polarisation, nout=1)(
                 comp, img_polarisation

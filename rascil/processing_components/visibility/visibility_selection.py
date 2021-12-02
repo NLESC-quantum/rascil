@@ -84,6 +84,7 @@ def blockvisibility_select_r_range(bvis, rmin=0.0, rmax=numpy.inf):
         config["radius"] < rmax, drop=True
     )
     ids = sub_config.id.data
-    return bvis.where(bvis.baselines.antenna1.isin(ids), drop=True).where(
-        bvis.baselines.antenna2.isin(ids), drop=True
-    )
+    baselines = bvis.baselines.where(
+        bvis.baselines.antenna1.isin(ids), drop=True
+    ).where(bvis.baselines.antenna2.isin(ids), drop=True)
+    return bvis.sel({"baselines": baselines}, drop=True)

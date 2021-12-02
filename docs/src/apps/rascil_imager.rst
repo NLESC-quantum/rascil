@@ -25,7 +25,7 @@ Notable features:
   - Wide field imaging using the fast and accurate nifty gridder
   - Modelling of bright sources by fitting with sub-pixel locations
   - Selfcalibration available for atmosphere (T), complex gains (G), and bandpass (B)
-  - Selection of data by uv range and r range (where r is the distance of station/dih from array centre
+  - Selection of data by uv range and r range (where r is the distance of station/dish from array centre
 
 CLI arguments are grouped:
 
@@ -57,7 +57,7 @@ is set to False, each BlockVisibility has eight channels, for a total of 256 cha
 Selection
 +++++++++
 
-rscil_imager supports selection of data by uv range :code:`--imaging_uvmin` :code:`--imaging_uvmax`,
+rascil_imager supports selection of data by uv range :code:`--imaging_uvmin` :code:`--imaging_uvmax`,
 and by dish/station based on distance from the array centre :code:`--imaging_rmin` :code:`--imaging_rmax`
 
 Imaging

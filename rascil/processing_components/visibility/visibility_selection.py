@@ -58,14 +58,14 @@ def blockvisibility_select_uv_range(bvis, uvmin=0.0, uvmax=1.0e15):
     :param uvmax: Maximum uv to flag
     :return: bvis (with flags applied)
     """
-    if uvmax is not None and uvmax < 1e15:
+    if uvmax is not None:
         bvis["flags"] = xarray.where(bvis["uvdist_lambda"] < uvmax, bvis["flags"], 1)
-    if uvmin is not None and uvmin > 0.0:
+    if uvmin is not None:
         bvis["flags"] = xarray.where(bvis["uvdist_lambda"] > uvmin, bvis["flags"], 1)
     return bvis
 
 
-def blockvisibility_select_r_range(bvis, rmin=0.0, rmax=1e15):
+def blockvisibility_select_r_range(bvis, rmin=None, rmax=None):
     """Select a block visibility with stations in a range of distance from the array centre
 
     r is the distance from the array centre in metres
@@ -75,15 +75,24 @@ def blockvisibility_select_r_range(bvis, rmin=0.0, rmax=1e15):
     :param rmin: Minimum r
     :return: Selected BlockVisibility
     """
+    if rmin is None and rmax is None:
+        return bvis
+
     # Calculate radius from array centre (in 3D) and set it as a data variable
     r = numpy.abs(bvis.configuration.xyz - bvis.configuration.xyz.mean("id")).std(
         "spatial"
     )
     config = bvis.configuration.assign(radius=r)
     # Now use it for selection
-    sub_config = config.where(config["radius"] > rmin, drop=True).where(
-        config["radius"] < rmax, drop=True
-    )
+    if rmax is None:
+        sub_config = config.where(config["radius"] > rmin, drop=True)
+    elif rmin is None:
+        sub_config = config.where(config["radius"] < rmax, drop=True)
+    else:
+        sub_config = config.where(config["radius"] > rmin, drop=True).where(
+            config["radius"] < rmax, drop=True
+        )
+
     ids = list(sub_config.id.data)
     baselines = bvis.baselines.where(
         bvis.baselines.antenna1.isin(ids), drop=True

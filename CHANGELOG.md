@@ -1,7 +1,10 @@
+
+=======
 master
 ------
 
 * Bug fix in initial SkyModel for ICAL: convert polarisation of SkyComponents read from file to image polarisation ([MR296](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/296))
+* Add uv and r visibility selection in rascil_imager ([MR 294](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/294))
 
 0.5.0
 -----

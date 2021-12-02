@@ -25,6 +25,7 @@ Notable features:
   - Wide field imaging using the fast and accurate nifty gridder
   - Modelling of bright sources by fitting with sub-pixel locations
   - Selfcalibration available for atmosphere (T), complex gains (G), and bandpass (B)
+  - Selection of data by uv range and r range (where r is the distance of station/dish from array centre
 
 CLI arguments are grouped:
 
@@ -52,6 +53,12 @@ will read data descriptors 0, 1, 2, 3, each of which has 64 channels. Each set o
 into blocks of 8 and averaged. We thus end up with 32 separate datasets in RASCIL, each of which
 is a BlockVisibility and has 1 channel, for a total of 32 channels. If the argument :code:`--ingest_average_blockvis`
 is set to False, each BlockVisibility has eight channels, for a total of 256 channels.
+
+Selection
++++++++++
+
+rascil_imager supports selection of data by uv range :code:`--imaging_uvmin` :code:`--imaging_uvmax`,
+and by dish/station based on distance from the array centre :code:`--imaging_rmin` :code:`--imaging_rmax`
 
 Imaging
 +++++++

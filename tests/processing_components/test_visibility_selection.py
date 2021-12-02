@@ -14,7 +14,7 @@ from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import create_blockvisibility
 from rascil.processing_components.visibility.visibility_selection import (
     blockvisibility_select_r_range,
-    blockvisibility_flag_uvrange,
+    blockvisibility_select_uv_range,
 )
 
 log = logging.getLogger("rascil-logger")
@@ -156,15 +156,17 @@ class TestVisibilitySelectors(unittest.TestCase):
             phasecentre=self.phasecentre,
             weight=1.0,
         )
+        flags_shape = bvis.flags.shape
         before = bvis["flags"].sum()
         bvis["flags"] = xarray.where(
             bvis["uvdist_lambda"] > 20000.0, bvis["flags"], 1.0
         )
+        assert bvis.flags.shape == flags_shape
         after = bvis["flags"].sum()
         assert after > before
         log.info(bvis)
 
-    def test_blockvisibility_flag_uvrange(self):
+    def test_blockvisibility_select_uvrange(self):
         bvis = create_blockvisibility(
             self.lowcore,
             self.times,
@@ -178,9 +180,10 @@ class TestVisibilitySelectors(unittest.TestCase):
         uvmin = 100.0
         uvmax = 20000.0
 
-        bvis = blockvisibility_flag_uvrange(bvis, uvmin, uvmax)
-        after = bvis["flags"].sum()
-        assert after > before
+        assert bvis["flags"].sum() == 0
+        bvis = blockvisibility_select_uv_range(bvis, uvmin, uvmax)
+        assert bvis["flags"].sum() == 1185464
+        assert bvis.frequency.shape == (5,)
 
     def test_blockvisibility_select_r_range(self):
         bvis = create_blockvisibility(
@@ -196,4 +199,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         rmax = 20000.0
 
         sub_bvis = blockvisibility_select_r_range(bvis, rmin, rmax)
-        assert len(bvis.baselines) > len(sub_bvis.baselines)
+        assert len(sub_bvis.baselines) == 3741
+        assert len(sub_bvis.configuration.names) == 166
+        assert sub_bvis.frequency.shape == (5,)
+        assert sub_bvis.integration_time.shape == bvis.integration_time.shape

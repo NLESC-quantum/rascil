@@ -123,7 +123,7 @@ test_gpu:
     - git checkout --track origin/sim-874-python-wrapper
     - git checkout 5e6d40cf
     - cd python
-    - python3 setup.py install
+    - pip install .
     - cd ../..
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test-gpu

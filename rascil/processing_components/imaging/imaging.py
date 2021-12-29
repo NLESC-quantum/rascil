@@ -88,6 +88,6 @@ def invert_blockvisibility(
         return invert_ng(vis, im, dopsf=dopsf, normalise=normalise, **kwargs)
     elif context == "wg":
         return invert_wg(vis, im, dopsf=dopsf, normalise=normalise, **kwargs)
-     
+
     else:
         raise ValueError(f"Unknown imaging context {context}")

@@ -89,6 +89,54 @@ test-dask:
       - unit-tests-dask.xml
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+    
+# Always run the unittests
+test_gpu:
+  image: nvidia/cuda:11.3.0-devel-ubuntu20.04
+  stage: test
+  tags: [k8srunner-gpu]
+  before_script:
+    - nvidia-smi
+    - DEBIAN_FRONTEND=noninteractive apt-get -y update 
+    - DEBIAN_FRONTEND=noninteractive apt-get -y install rsync ca-certificates software-properties-common
+    - apt-get -y install python3 python3-pip
+    - apt-get -y install gfortran wget git pybind11-dev 
+    - apt-get -y install rsync ca-certificates libboost-dev libboost-python-dev libboost-numpy-dev
+    - wget https://repo.anaconda.com/miniconda/Miniconda3-py39_4.9.2-Linux-x86_64.sh
+    - mkdir /root/.conda
+    - export PATH=/root/miniconda3/bin:$PATH
+    - bash Miniconda3-py39_4.9.2-Linux-x86_64.sh -b
+    - rm -f Miniconda3-py39_4.9.2-Linux-x86_64.sh
+    - conda install -y boost 
+    - echo $LD_LIBRARY_PATH
+    - export LD_LIBRARY_PATH=/usr/local/cuda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    - ls /usr/local/cuda/lib64/*
+    - pip3 install --upgrade pip
+    - pip3 install importlib-metadata numpy wheel pytest setuptools astropy
+    - pip3 install -r requirements-test.txt
+    - pip3 install -r requirements.txt
+    - pip3 uninstall wagg
+    - mkdir -p test_results
+    - git clone http://gitlab.com/ska-telescope/sdp/ska-gridder-nifty-cuda.git
+    - cd ska-gridder-nifty-cuda
+    - git fetch
+    - git checkout --track origin/sim-874-python-wrapper
+    - git checkout 5e6d40cf
+    - cd python
+    - python3 setup.py install
+    - cd ../..
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make test-gpu
+  after_script:
+    - mv .coverage coverage_test_gpu
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+      - coverage_test_gpu
+      - coverage
+      - unit-tests-gpu.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Always try to build the docs since this catches errors via the notebook
 docs:

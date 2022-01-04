@@ -21,8 +21,6 @@ from astropy.time import Time
 from astropy.visualization import time_support
 from astropy.coordinates import SkyCoord
 
-import ska_post_correlation_rfi_flagger
-
 from rascil.data_models import (
     BlockVisibility,
     GainTable,
@@ -191,7 +189,21 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     :param rho: The roh to be used
     :return: Block visibility with flags populated.
     """
-    # Sequence from https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger/-/blob/master/flagger_in_python.py#L25
+    try:
+        import ska_post_correlation_rfi_flagger
+    except ImportError:
+        # ImportError:
+        #   - Either package is not imported,
+        #   - or an `ImportError: numpy.core.multiarray failed to import` error was thrown.
+        # If latter, upgrading numpy may solve it, but version still needs to be compatible with rest of RASCIL
+        log.error(
+            "ska_post_correlation_rfi_flagger ImportError. Flagger did not run. "
+            "(see comment where this message was produced)"
+        )
+        return
+
+    # Sequence from
+    # https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger/-/blob/master/flagger_in_python.py#L25
     sequence = [1, 2, 4, 8, 16, 32]
     sequence_length = len(sequence)
     sequence = numpy.array(sequence, dtype=numpy.int32)

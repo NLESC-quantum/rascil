@@ -303,8 +303,16 @@ class TestRASCILRcal(unittest.TestCase):
         if self.persist is True:
             self.persist_data_files()
 
-    @pytest.mark.xfail(raises=ImportError)
     def test_rfi_flagger(self):
+        try:
+            import ska_post_correlation_rfi_flagger
+        except ImportError:
+            log.error(
+                "_rfi_flagger test skipped: "
+                "see comments in rascil.apps.rascil_rcal._rfi_flagger"
+            )
+            return
+
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
         # update new_bvis to have a value that will be flagged

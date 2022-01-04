@@ -10,6 +10,7 @@ import tempfile
 import sys
 
 import numpy
+import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -223,12 +224,20 @@ class TestRASCILRcal(unittest.TestCase):
 
         # Test that when we flag first, the results are different from
         # when we flag after gains were calculated
-        os.remove(gtfile)
-        self.args.flag_first = "True"  # flag before gains are calculated
-        gtfile = rcal_simulator(self.args)
-        gain_table_w_flag = import_gaintable_from_hdf5(gtfile)
+        try:
+            import ska_post_correlation_rfi_flagger
+        except ImportError:
+            log.error(
+                "RCAL test with flagging skipped: "
+                "see comments in rascil.apps.rascil_rcal._rfi_flagger"
+            )
+        else:
+            os.remove(gtfile)
+            self.args.flag_first = "True"  # flag before gains are calculated
+            gtfile = rcal_simulator(self.args)
+            gain_table_w_flag = import_gaintable_from_hdf5(gtfile)
 
-        assert (gain_table_w_flag["weight"].data != gain_table["weight"].data).any()
+            assert (gain_table_w_flag["weight"].data != gain_table["weight"].data).any()
 
         if self.persist is True:
             self.persist_data_files()
@@ -295,6 +304,15 @@ class TestRASCILRcal(unittest.TestCase):
             self.persist_data_files()
 
     def test_rfi_flagger(self):
+        try:
+            import ska_post_correlation_rfi_flagger
+        except ImportError:
+            log.error(
+                "_rfi_flagger test skipped: "
+                "see comments in rascil.apps.rascil_rcal._rfi_flagger"
+            )
+            return
+
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
         # update new_bvis to have a value that will be flagged

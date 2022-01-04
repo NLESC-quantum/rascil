@@ -29,9 +29,6 @@ USER root
 # Install RASCIL from wheel built in the "build" stage of the CI pipeline
 COPY rascil-*whl .
 
-# these are needed for bdsf to install
-RUN apt-get update -y && apt-get install -y gfortran libboost-dev libboost-python-dev libboost-numpy-dev
-
 RUN pip install --upgrade pip && \
     DUCC0_OPTIMIZATION=portable-debug pip install rascil-*.whl && \
     rm -rf /root/.cache

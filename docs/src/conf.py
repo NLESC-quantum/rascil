@@ -29,6 +29,7 @@ import os
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+from unittest import mock
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -42,6 +43,9 @@ extensions = [
     "sphinxarg.ext",
     "m2r2",
 ]
+
+sys.modules["ska_post_correlation_rfi_flagger"] = mock.Mock()
+
 
 # The following seem to be buggy
 

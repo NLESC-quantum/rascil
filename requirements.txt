@@ -34,8 +34,6 @@ backports.shutil-get-terminal-size==1.0.0
 bcrypt==3.2.0
     # via paramiko
 bdsf==1.9.2
-#bdsf @ git+https://github.com/lofar-astron/PyBDSF.git@master
-#@731d198e0c8b8cbc50679476cf803bf339e676d2
     # via -r requirements.in
 bleach==4.1.0
     # via nbconvert
@@ -280,7 +278,7 @@ partd==1.2.0
     # via dask
 pexpect==4.8.0
     # via ipython
-photutils==1.3.0
+photutils==1.2.0
     # via -r requirements.in
 pickleshare==0.7.5
     # via ipython

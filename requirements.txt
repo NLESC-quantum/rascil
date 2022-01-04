@@ -25,7 +25,7 @@ astropy==5.0
     #   reproject
 astropy-healpix==0.6
     # via reproject
-attrs==21.2.0
+attrs==21.4.0
     # via jsonschema
 backcall==0.2.0
     # via ipython
@@ -59,7 +59,7 @@ cloudpickle==2.0.0
     #   distributed
 configparser==5.2.0
     # via -r requirements.in
-cryptography==36.0.0
+cryptography==36.0.1
     # via paramiko
 cycler==0.11.0
     # via matplotlib
@@ -87,7 +87,7 @@ entrypoints==0.3
     #   nbconvert
 fasteners==0.16.3
     # via zarr
-fonttools==4.28.3
+fonttools==4.28.5
     # via matplotlib
 fsspec==2021.11.1
     # via dask
@@ -105,7 +105,7 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-ipykernel==6.6.0
+ipykernel==6.6.1
     # via
     #   ipywidgets
     #   jupyter
@@ -135,7 +135,7 @@ jinja2==3.0.3
     #   distributed
     #   nbconvert
     #   notebook
-jsonschema==4.2.1
+jsonschema==4.3.3
     # via nbformat
 jupyter==1.0.0
     # via -r requirements.in
@@ -181,7 +181,7 @@ llvmlite==0.37.0
     # via numba
 locket==0.2.1
     # via partd
-lxml==4.6.5
+lxml==4.7.1
     # via jupyter-contrib-nbextensions
 markupsafe==2.0.1
     # via jinja2
@@ -197,11 +197,11 @@ mistune==0.8.4
     # via nbconvert
 msgpack==1.0.3
     # via distributed
-natsort==8.0.1
+natsort==8.0.2
     # via seqfile
 nbclient==0.5.9
     # via nbconvert
-nbconvert==6.3.0
+nbconvert==6.4.0
     # via
     #   jupyter
     #   jupyter-contrib-nbextensions
@@ -215,6 +215,7 @@ nbformat==5.1.3
     #   notebook
 nest-asyncio==1.5.4
     # via
+    #   ipykernel
     #   jupyter-client
     #   nbclient
     #   notebook
@@ -262,13 +263,14 @@ packaging==21.3
     #   bokeh
     #   dask
     #   matplotlib
+    #   qtpy
 pandas==1.3.5
     # via
     #   -r requirements.in
     #   xarray
 pandocfilters==1.5.0
     # via nbconvert
-paramiko==2.8.1
+paramiko==2.9.1
     # via -r requirements.in
 parso==0.8.3
     # via jedi
@@ -276,11 +278,11 @@ partd==1.2.0
     # via dask
 pexpect==4.8.0
     # via ipython
-photutils==1.2.0
+photutils==1.3.0
     # via -r requirements.in
 pickleshare==0.7.5
     # via ipython
-pillow==8.4.0
+pillow==9.0.0
     # via
     #   bokeh
     #   matplotlib
@@ -290,7 +292,7 @@ prompt-toolkit==3.0.24
     # via
     #   ipython
     #   jupyter-console
-psutil==5.8.0
+psutil==5.9.0
     # via distributed
 ptyprocess==0.7.0
     # via
@@ -300,7 +302,7 @@ pycparser==2.21
     # via cffi
 pyerfa==2.0.0.1
     # via astropy
-pygments==2.10.0
+pygments==2.11.1
     # via
     #   ipython
     #   jupyter-console
@@ -341,13 +343,13 @@ pyzmq==22.3.0
     #   jupyter-client
     #   notebook
     #   qtconsole
-qtconsole==5.2.1
+qtconsole==5.2.2
     # via jupyter
-qtpy==1.11.3
+qtpy==2.0.0
     # via qtconsole
 reproject==0.8
     # via -r requirements.in
-requests==2.26.0
+requests==2.27.0
     # via
     #   python-gitlab
     #   requests-toolbelt

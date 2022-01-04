@@ -33,7 +33,9 @@ backports.shutil-get-terminal-size==1.0.0
     # via bdsf
 bcrypt==3.2.0
     # via paramiko
-bdsf @ git+https://github.com/lofar-astron/PyBDSF.git@master
+bdsf==1.9.2
+#bdsf @ git+https://github.com/lofar-astron/PyBDSF.git@master
+#@731d198e0c8b8cbc50679476cf803bf339e676d2
     # via -r requirements.in
 bleach==4.1.0
     # via nbconvert

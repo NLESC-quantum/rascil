@@ -303,7 +303,6 @@ class TestRASCILRcal(unittest.TestCase):
         if self.persist is True:
             self.persist_data_files()
 
-    @pytest.mark.xfail(raises=ImportError)
     def test_rfi_flagger(self):
         try:
             import ska_post_correlation_rfi_flagger

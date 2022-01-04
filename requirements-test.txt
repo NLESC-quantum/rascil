@@ -6,9 +6,9 @@
 #
 alabaster==0.7.12
     # via sphinx
-astroid==2.9.0
+astroid==2.9.2
     # via pylint
-attrs==21.2.0
+attrs==21.4.0
     # via pytest
 babel==2.9.1
     # via sphinx
@@ -42,7 +42,7 @@ jinja2==3.0.3
     # via sphinx
 junit-xml-2==1.9
     # via pylint-junit
-lazy-object-proxy==1.6.0
+lazy-object-proxy==1.7.1
     # via astroid
 livereload==2.6.3
     # via sphinx-autobuild
@@ -56,7 +56,7 @@ packaging==21.3
     # via
     #   pytest
     #   sphinx
-platformdirs==2.4.0
+platformdirs==2.4.1
     # via pylint
 pluggy==1.0.0
     # via pytest
@@ -64,7 +64,7 @@ py==1.11.0
     # via
     #   pytest
     #   pytest-forked
-pygments==2.10.0
+pygments==2.11.1
     # via
     #   -r requirements-test.in
     #   sphinx
@@ -106,7 +106,7 @@ pytz==2021.3
     # via babel
 recommonmark==0.7.1
     # via -r requirements-test.in
-requests==2.26.0
+requests==2.27.0
     # via sphinx
 six==1.16.0
     # via
@@ -114,7 +114,7 @@ six==1.16.0
     #   livereload
 snowballstemmer==2.2.0
     # via sphinx
-sphinx==4.3.1
+sphinx==4.3.2
     # via
     #   -r requirements-test.in
     #   recommonmark
@@ -145,7 +145,7 @@ toml==0.10.2
     #   pylint
     #   pytest
     #   pytest-pylint
-tomli==1.2.2
+tomli==2.0.0
     # via coverage
 tornado==6.1
     # via livereload

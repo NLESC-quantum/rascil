@@ -34,7 +34,7 @@ def predict_blockvisibility(
 
     :param vis: blockvisibility to be predicted
     :param model: model image
-    :param context: Type: 2d or awprojection, ng or wg (default: ng)
+    :param context: Type: 2d or awprojection, ng or wg (nifty-gridder or WAGG GPU-based gridder/degridder), default: ng
     :param gcfcf: Tuple of (grid correction function, convolution function) or partial function
     :return: resulting visibility (in place works)
     """
@@ -71,7 +71,7 @@ def invert_blockvisibility(
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image (default: False)
     :param normalise: normalise by the sum of weights (default: True)
-    :param context: Type: 2d or awprojection, ng or wg (default: ng)
+    :param context: Type: 2d or awprojection, ng or wg (nifty-gridder or WAGG GPU-based gridder/degridder), default: ng
     :param gcfcf: Tuple of (grid correction function, convolution function) or partial function
     :return: (resulting image, sum of weights)
     """

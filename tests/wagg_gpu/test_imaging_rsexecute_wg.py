@@ -15,7 +15,6 @@ from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components import (
     export_image_to_fits,
     smooth_image,
-    qa_image,
 )
 from rascil.processing_components.griddata.kernels import (
     create_awterm_convolutionfunction,
@@ -42,13 +41,9 @@ from rascil.workflows.rsexecute.execution_support.rsexecute import (
 )
 from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     zero_list_rsexecute_workflow,
-    predict_list_rsexecute_workflow,
     invert_list_rsexecute_workflow,
     subtract_list_rsexecute_workflow,
-    weight_list_rsexecute_workflow,
-    residual_list_rsexecute_workflow,
-    sum_invert_results_rsexecute,
-    restore_list_rsexecute_workflow,
+    predict_list_rsexecute_workflow
 )
 from rascil.processing_components.imaging.imaging_helpers import sum_invert_results
 
@@ -61,7 +56,6 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 class TestImaging(unittest.TestCase):
     def setUp(self):
 
-        # rsexecute.set_client(use_dask=True)
         rsexecute.set_client(
             client=get_dask_client(n_workers=4, threads_per_worker=1),
             use_dask=True,
@@ -70,7 +64,7 @@ class TestImaging(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.test_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -184,9 +178,12 @@ class TestImaging(unittest.TestCase):
 
         self.cmodel = smooth_image(self.model)
         if self.persist:
-            export_image_to_fits(self.model, "%s/test_imaging_model.fits" % self.dir)
-        if self.persist:
-            export_image_to_fits(self.cmodel, "%s/test_imaging_cmodel.fits" % self.dir)
+            export_image_to_fits(
+                self.model, "%s/test_imaging_model.fits" % self.test_dir
+            )
+            export_image_to_fits(
+                self.cmodel, "%s/test_imaging_cmodel.fits" % self.test_dir
+            )
 
         if add_errors:
             self.bvis_list = [
@@ -206,7 +203,7 @@ class TestImaging(unittest.TestCase):
             polarisation_frame=self.vis_pol,
         )
 
-    def _checkcomponents(self, dirty, fluxthreshold=0.6, positionthreshold=1.0):
+    def _check_components(self, dirty, fluxthreshold=0.6, positionthreshold=1.0):
         comps = find_skycomponents(
             dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5
         )
@@ -229,7 +226,7 @@ class TestImaging(unittest.TestCase):
 
     def _predict_base(
         self,
-        context="ng",
+        context="wg",
         do_wstacking=True,
         extra="",
         fluxthreshold=1.0,
@@ -260,7 +257,7 @@ class TestImaging(unittest.TestCase):
             export_image_to_fits(
                 dirty[0],
                 "%s/test_imaging_predict_%s%s_%s_dirty.fits"
-                % (self.dir, context, extra, rsexecute.type()),
+                % (self.test_dir, context, extra, rsexecute.type()),
             )
 
         maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
@@ -299,29 +296,27 @@ class TestImaging(unittest.TestCase):
                 export_image_to_fits(
                     dirty[0],
                     "%s/test_imaging_invert_%s%s_%s_psf.fits"
-                    % (self.dir, context, extra, rsexecute.type()),
+                    % (self.test_dir, context, extra, rsexecute.type()),
                 )
             else:
                 export_image_to_fits(
                     dirty[0],
                     "%s/test_imaging_invert_%s%s_%s_dirty.fits"
-                    % (self.dir, context, extra, rsexecute.type()),
+                    % (self.test_dir, context, extra, rsexecute.type()),
                 )
 
         assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Image is empty"
 
         if check_components:
-            self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)
+            self._check_components(dirty[0], fluxthreshold, positionthreshold)
 
     def test_predict_wg(self):
         self.actualSetUp()
-        self._predict_base(context="wg", fluxthreshold=0.62)  # , normalise=False)
+        self._predict_base(context="wg", fluxthreshold=0.62)
 
     def test_invert_wg(self):
         self.actualSetUp(add_errors=False)
-        self._invert_base(
-            context="wg", positionthreshold=2.0, check_components=True
-        )  # , normalise=False
+        self._invert_base(context="wg", positionthreshold=2.0, check_components=True)
 
 
 if __name__ == "__main__":

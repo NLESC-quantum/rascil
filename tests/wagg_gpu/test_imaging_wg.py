@@ -1,4 +1,4 @@
-""" Unit tests for imaging using nifty gridder
+""" Unit tests for imaging using the WAGG GPU implementation of the nifty gridder
 
 """
 import logging
@@ -41,7 +41,7 @@ class TestImagingWG(unittest.TestCase):
 
         from rascil.data_models.parameters import rascil_path
 
-        self.dir = rascil_path("test_results")
+        self.test_dir = rascil_path("test_results")
 
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
@@ -52,7 +52,9 @@ class TestImagingWG(unittest.TestCase):
         freqwin=1,
         dospectral=True,
         image_pol=PolarisationFrame("stokesI"),
+        # zerow=True means zeroing w-terms when ingesting visibilities for unittests
         zerow=False,
+        # mfs=True means multi-frequency synthesis
         mfs=False,
     ):
 
@@ -123,10 +125,12 @@ class TestImagingWG(unittest.TestCase):
 
         self.cmodel = smooth_image(self.model)
         if self.persist:
-            export_image_to_fits(self.model, "%s/test_imaging_wg_model.fits" % self.dir)
+            export_image_to_fits(
+                self.model, "%s/test_imaging_wg_model.fits" % self.test_dir
+            )
         if self.persist:
             export_image_to_fits(
-                self.cmodel, "%s/test_imaging_wg_cmodel.fits" % self.dir
+                self.cmodel, "%s/test_imaging_wg_cmodel.fits" % self.test_dir
             )
 
         if mfs:
@@ -134,7 +138,7 @@ class TestImagingWG(unittest.TestCase):
                 self.blockvis, self.image_pol, npixel=self.npixel, nchan=1
             )
 
-    def _checkcomponents(self, dirty, fluxthreshold=0.6, positionthreshold=0.1):
+    def _check_components(self, dirty, fluxthreshold=0.6, positionthreshold=0.1):
         comps = find_skycomponents(
             dirty, fwhm=1.0, threshold=10 * fluxthreshold, npixels=5
         )
@@ -151,7 +155,6 @@ class TestImagingWG(unittest.TestCase):
             ocomp, separation = find_nearest_skycomponent(
                 comp.direction, self.components
             )
-            # print(separation, cellsize, positionthreshold)
             assert separation / cellsize < positionthreshold, (
                 "Component differs in position %.3f pixels" % separation / cellsize
             )
@@ -172,20 +175,10 @@ class TestImagingWG(unittest.TestCase):
             **kwargs
         )
 
-        # import matplotlib.pyplot as plt
-        # from rascil.processing_components.image.operations import show_image
-        # npol = dirty[0].shape[1]
-        # for pol in range(npol):
-        #     plt.clf()
-        #     show_image(dirty[0], pol=pol)
-        #     plt.show(block=False)
-
         if self.persist:
             export_image_to_fits(
-                dirty[0], "%s/test_imaging_wg_%s_residual.fits" % (self.dir, name)
+                dirty[0], "%s/test_imaging_wg_%s_residual.fits" % (self.test_dir, name)
             )
-
-        # assert numpy.max(numpy.abs(dirty[0].data)), "Residual image is empty"
 
         maxabs = numpy.max(numpy.abs(dirty[0]["pixels"].data))
         assert maxabs < fluxthreshold, "Error %.3f greater than fluxthreshold %.3f " % (
@@ -202,7 +195,6 @@ class TestImagingWG(unittest.TestCase):
         **kwargs
     ):
 
-        # dirty = invert_ng(self.blockvis, self.model, dopsf=False, normalise=True, **kwargs)
         from rascil.processing_components.imaging.wg import invert_wg
 
         dirty = invert_wg(
@@ -216,22 +208,14 @@ class TestImagingWG(unittest.TestCase):
 
         if self.persist:
             export_image_to_fits(
-                dirty[0], "%s/test_imaging_wg_%s_dirty.fits" % (self.dir, name)
+                dirty[0], "%s/test_imaging_wg_%s_dirty.fits" % (self.test_dir, name)
             )
 
-        # import matplotlib.pyplot as plt
-        # from rascil.processing_components.image.operations import show_image
-        # npol = dirty[0].shape[1]
-        # for pol in range(npol):
-        #     plt.clf()
-        #     show_image(dirty[0], pol=pol)
-        #     plt.show(block=False)
         assert numpy.max(numpy.abs(dirty[0]["pixels"].data)), "Image is empty"
 
         if check_components:
-            self._checkcomponents(dirty[0], fluxthreshold, positionthreshold)
+            self._check_components(dirty[0], fluxthreshold, positionthreshold)
 
-    # @unittest.skip("3D degridder not yet implemented")
     def test_predict_wg(self):
         self.actualSetUp()
         self._predict_base(name="predict_wg")

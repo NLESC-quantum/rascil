@@ -17,4 +17,3 @@ examples, API, and installation directions.
 
 RASCIL CI/CD occurs on  [Gitlab](https://gitlab.com/ska-telescope/external/rascil)
 
-This branch is for WG context integration into the recent RASCIL version

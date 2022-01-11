@@ -43,7 +43,7 @@ from rascil.workflows.rsexecute.imaging.imaging_rsexecute import (
     zero_list_rsexecute_workflow,
     invert_list_rsexecute_workflow,
     subtract_list_rsexecute_workflow,
-    predict_list_rsexecute_workflow
+    predict_list_rsexecute_workflow,
 )
 from rascil.processing_components.imaging.imaging_helpers import sum_invert_results
 

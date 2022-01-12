@@ -96,35 +96,23 @@ test_gpu:
   stage: test
   tags: [k8srunner-gpu]
   before_script:
-    - nvidia-smi
-    - DEBIAN_FRONTEND=noninteractive apt-get -y update 
-    - DEBIAN_FRONTEND=noninteractive apt-get -y install rsync ca-certificates software-properties-common
-    - apt-get -y install python3 python3-pip
-    - apt-get -y install gfortran wget git pybind11-dev 
-    - apt-get -y install rsync ca-certificates libboost-dev libboost-python-dev libboost-numpy-dev
-    - wget https://repo.anaconda.com/miniconda/Miniconda3-py39_4.9.2-Linux-x86_64.sh
-    - mkdir /root/.conda
-    - export PATH=/root/miniconda3/bin:$PATH
-    - bash Miniconda3-py39_4.9.2-Linux-x86_64.sh -b
-    - rm -f Miniconda3-py39_4.9.2-Linux-x86_64.sh
-    - conda install -y boost 
-    - echo $LD_LIBRARY_PATH
+    - nvidia-smi  # shows the status of nvidia GPUs
+    - DEBIAN_FRONTEND=noninteractive apt-get -y update
+    - DEBIAN_FRONTEND=noninteractive apt-get -y install git ca-certificates software-properties-common
     - export LD_LIBRARY_PATH=/usr/local/cuda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-    - ls /usr/local/cuda/lib64/*
+    - apt-get -y install python3 python3-pip  # python3.8 is installed natively
     - pip3 install --upgrade pip
-    - pip3 install importlib-metadata numpy wheel pytest setuptools astropy
-    - pip3 install -r requirements-test.txt
-    - pip3 install -r requirements.txt
-    - pip3 uninstall wagg
-    - mkdir -p test_results
-    - git clone http://gitlab.com/ska-telescope/sdp/ska-gridder-nifty-cuda.git
+    - pip install -r requirements-test.txt
+    - pip install -r requirements.txt
+    - git clone http://gitlab.com/ska-telescope/sdp/ska-gridder-nifty-cuda.git  # => wagg
     - cd ska-gridder-nifty-cuda
-    - git fetch
+    # due to a bug in wagg, we need to use the following branch for now
     - git checkout --track origin/sim-874-python-wrapper
     - git checkout 5e6d40cf
     - cd python
     - pip install .
     - cd ../..
+    - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test-gpu
   after_script:

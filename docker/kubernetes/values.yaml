@@ -12,11 +12,22 @@ fullnameOverride: rascil-dask
 image: "artefact.skao.int/rascil-full:0.5.0"
 imagePullPolicy: IfNotPresent
 
+buffers: []
+secrets: []
+
+scheduler:
+  env:
+    - name: "DASK_DISTRIBUTED__DASHBOARD__GRAPH_MAX_ITEMS"
+      value: "1000000"
+
 worker:
   replicas: 2
+  volume:
+    path: "/mnt/data"
+    name: "local-pvc"
 
 jupyter:
-  enabled: true  # Enable/disable the bundled Jupyter notebook.
+  enabled: false  # Enable/disable the bundled Jupyter notebook.
   image:
     repository: "artefact.skao.int/rascil-notebook"
     tag: 0.5.0

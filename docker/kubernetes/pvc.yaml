@@ -1,0 +1,31 @@
+# PersistentVolume and Claim to mount data which can be used by Dask workers
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-local
+  labels:
+    type: manual
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: local-pvc
+spec:
+  storageClassName: manual
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+  selector:
+    matchLabels:
+      type: manual

@@ -1,5 +1,11 @@
 """Unit tests for pipelines expressed via dask.delayed
 
+The variety of Dask-based pipelines are tested here including
+continuum imaging pipelines and ICAL pipelines.
+
+Each dask worker can use only one GPU. To prevent hardware race it is required to
+use only one thread per worker. It is allowed to use the same GPU by several workers
+but in this case one has to care about GPU memory usage.
 
 """
 import logging

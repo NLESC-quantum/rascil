@@ -56,6 +56,8 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 class TestImaging(unittest.TestCase):
     def setUp(self):
 
+        # To make WAGG GPU-based module working in Dask it is required to use only one thread per worker,
+        # to avoid the hardware resource race by the different threads which causes cudaError (invalid CUDA context).
         rsexecute.set_client(
             client=get_dask_client(n_workers=4, threads_per_worker=1),
             use_dask=True,

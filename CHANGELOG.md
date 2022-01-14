@@ -1,6 +1,6 @@
 master
 ------
-
+* Remove Numba related codes ([MR303](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/303))
 * Install PyBDSF from PyPi test_skymodel_extract_skycomponentsusing latest python3.9 wheel ([MR300](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/300))
 * Bug fix in initial SkyModel for ICAL: convert polarisation of SkyComponents read from file to image polarisation ([MR296](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/296))
 * Add uv and r visibility selection in rascil_imager ([MR294](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/294))

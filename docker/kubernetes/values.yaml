@@ -27,8 +27,16 @@ worker:
     name: "local-pvc"
 
 jupyter:
-  enabled: false  # Enable/disable the bundled Jupyter notebook.
+  enabled: true  # Enable/disable the bundled Jupyter notebook.
   image:
     repository: "artefact.skao.int/rascil-notebook"
     tag: 0.5.0
     pullPolicy: IfNotPresent
+  mounts:
+    volumes:
+      - name: "local-pvc"
+        persistentVolumeClaim:
+         claimName: "local-pvc"
+    volumeMounts:
+      - name: "local-pvc"
+        mountPath: "/mnt/data"

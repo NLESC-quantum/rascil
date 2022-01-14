@@ -6,13 +6,9 @@ import unittest
 import numpy
 import logging
 
-from rascil.processing_components.util.array_functions import (
-    average_chunks_jit as average_chunks,
-)
-from rascil.processing_components.util.array_functions import (
-    average_chunks2,
-    average_chunks_jit,
-)
+from rascil.processing_components.util.array_functions import average_chunks
+
+from rascil.processing_components.util.array_functions import average_chunks2
 
 log = logging.getLogger("rascil-logger")
 
@@ -93,14 +89,6 @@ class TestArray_functions(unittest.TestCase):
         answerwts = numpy.array([5.0, 5.0, 1.0])
         numpy.testing.assert_array_equal(carr[:, 5], answerarr)
         numpy.testing.assert_array_equal(cwts[:, 5], answerwts)
-
-    def test_average_chunks_jit(self):
-        arr = numpy.linspace(0.0, 100.0, 11)
-        wts = numpy.ones_like(arr)
-        carr, cwts = average_chunks(arr, wts, 2)
-        carr_jit, cwts_jit = average_chunks_jit(arr, wts, 2)
-        numpy.testing.assert_array_equal(carr, carr_jit)
-        numpy.testing.assert_array_equal(cwts, cwts_jit)
 
 
 if __name__ == "__main__":

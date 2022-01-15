@@ -7,4 +7,3 @@ These are tests of the ability to run dask in various contexts. These are intend
  - cluster_image_test is python + Dask + RASCIL
  - ritoy is python + Dask
  
- - Numba caused a conflict in the requirements.txt. After the discussion, we removed all numba related scripts in ORC-1146. 

@@ -20,10 +20,6 @@ def average_chunks(arr, wts, chunksize):
 
     Array len does not have to be multiple of chunksize
 
-    This version is optimised for plain numpy. It is roughly ten times faster that average_chunks_jit when used
-    without numba jit. It cannot (yet) be used with numba because the add.reduceat is not support in numba
-    0.31
-
     :param arr: 1D array of values
     :param wts: 1D array of weights
     :param chunksize: averaging size

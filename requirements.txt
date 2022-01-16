@@ -25,6 +25,8 @@ astropy==5.0
     #   reproject
 astropy-healpix==0.6
     # via reproject
+asttokens==2.0.5
+    # via stack-data
 attrs==21.4.0
     # via jsonschema
 backcall==0.2.0
@@ -35,6 +37,8 @@ bcrypt==3.2.0
     # via paramiko
 bdsf==1.9.2
     # via -r requirements.in
+black==21.12b0
+    # via ipython
 bleach==4.1.0
     # via nbconvert
 bokeh==2.4.2
@@ -51,6 +55,7 @@ charset-normalizer==2.0.10
     # via requests
 click==8.0.3
     # via
+    #   black
     #   dask-memusage
     #   distributed
 cloudpickle==2.0.0
@@ -63,7 +68,7 @@ cryptography==36.0.1
     # via paramiko
 cycler==0.11.0
     # via matplotlib
-dask==2021.12.0
+dask==2022.01.0
     # via
     #   -r requirements.in
     #   distributed
@@ -75,7 +80,7 @@ decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2021.12.0
+distributed==2022.1.0
     # via
     #   -r requirements.in
     #   dask-memusage
@@ -85,17 +90,19 @@ entrypoints==0.3
     # via
     #   jupyter-client
     #   nbconvert
+executing==0.8.2
+    # via stack-data
 fasteners==0.16.3
     # via zarr
 fonttools==4.28.5
     # via matplotlib
-fsspec==2021.11.1
+fsspec==2022.1.0
     # via dask
 future==0.18.2
     # via python-casacore
 gitdb==4.0.9
     # via gitpython
-gitpython==3.1.25
+gitpython==3.1.26
     # via -r requirements.in
 graphviz==0.19.1
     # via -r requirements.in
@@ -105,14 +112,14 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-ipykernel==6.6.1
+ipykernel==6.7.0
     # via
     #   ipywidgets
     #   jupyter
     #   jupyter-console
     #   notebook
     #   qtconsole
-ipython==7.31.0
+ipython==8.0.0
     # via
     #   ipykernel
     #   ipywidgets
@@ -135,11 +142,11 @@ jinja2==3.0.3
     #   distributed
     #   nbconvert
     #   notebook
-jsonschema==4.3.3
+jsonschema==4.4.0
     # via nbformat
 jupyter==1.0.0
     # via -r requirements.in
-jupyter-client==7.1.0
+jupyter-client==7.1.1
     # via
     #   ipykernel
     #   jupyter-console
@@ -177,7 +184,7 @@ jupyterlab-widgets==1.0.2
     # via ipywidgets
 kiwisolver==1.3.2
     # via matplotlib
-llvmlite==0.37.0
+llvmlite==0.38.0
     # via numba
 locket==0.2.1
     # via partd
@@ -197,9 +204,11 @@ mistune==0.8.4
     # via nbconvert
 msgpack==1.0.3
     # via distributed
+mypy-extensions==0.4.3
+    # via black
 natsort==8.0.2
     # via seqfile
-nbclient==0.5.9
+nbclient==0.5.10
     # via nbconvert
 nbconvert==6.4.0
     # via
@@ -219,7 +228,7 @@ nest-asyncio==1.5.4
     #   jupyter-client
     #   nbclient
     #   notebook
-notebook==6.4.6
+notebook==6.4.7
     # via
     #   jupyter
     #   jupyter-contrib-core
@@ -227,13 +236,13 @@ notebook==6.4.6
     #   jupyter-latex-envs
     #   jupyter-nbextensions-configurator
     #   widgetsnbextension
-numba==0.54.1
+numba==0.55.0
     # via
     #   -r requirements.in
     #   aotools
 numcodecs==0.9.1
     # via zarr
-numpy==1.20.3
+numpy==1.21.5
     # via
     #   -r requirements.in
     #   aotools
@@ -262,6 +271,7 @@ packaging==21.3
     #   bleach
     #   bokeh
     #   dask
+    #   distributed
     #   matplotlib
     #   qtpy
 pandas==1.3.5
@@ -276,6 +286,8 @@ parso==0.8.3
     # via jedi
 partd==1.2.0
     # via dask
+pathspec==0.9.0
+    # via black
 pexpect==4.8.0
     # via ipython
 photutils==1.3.0
@@ -286,6 +298,8 @@ pillow==9.0.0
     # via
     #   bokeh
     #   matplotlib
+platformdirs==2.4.1
+    # via black
 prometheus-client==0.12.0
     # via notebook
 prompt-toolkit==3.0.24
@@ -298,6 +312,8 @@ ptyprocess==0.7.0
     # via
     #   pexpect
     #   terminado
+pure-eval==0.2.1
+    # via stack-data
 pycparser==2.21
     # via cffi
 pyerfa==2.0.0.1
@@ -315,7 +331,7 @@ pyparsing==3.0.6
     # via
     #   matplotlib
     #   packaging
-pyrsistent==0.18.0
+pyrsistent==0.18.1
     # via jsonschema
 python-casacore==3.4.0
     # via -r requirements.in
@@ -324,7 +340,7 @@ python-dateutil==2.8.2
     #   jupyter-client
     #   matplotlib
     #   pandas
-python-gitlab==3.0.0
+python-gitlab==3.1.0
     # via -r requirements.in
 pytz==2021.3
     # via
@@ -379,6 +395,8 @@ smmap==5.0.0
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
+stack-data==0.1.4
+    # via ipython
 tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
@@ -387,6 +405,8 @@ terminado==0.12.1
     # via notebook
 testpath==0.5.0
     # via nbconvert
+tomli==1.2.3
+    # via black
 toolz==0.11.2
     # via
     #   dask
@@ -421,7 +441,9 @@ traitlets==5.1.1
     #   notebook
     #   qtconsole
 typing-extensions==4.0.1
-    # via bokeh
+    # via
+    #   black
+    #   bokeh
 urllib3==1.26.8
     # via requests
 wcwidth==0.2.5

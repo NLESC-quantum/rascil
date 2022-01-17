@@ -14,7 +14,6 @@ h5py
 jupyter
 jupyter_contrib_nbextensions
 matplotlib
-numba
 numpy
 pandas
 paramiko

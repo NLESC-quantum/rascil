@@ -12,63 +12,13 @@ __all__ = [
     "insert_function_sinc",
 ]
 
-# import numba
 import numpy
-
-
-# @numba.jit([numba.types.Tuple((numba.float64[:], numba.float64[:]))
-#                 (numba.float64[:], numba.float64[:], numba.int64)], nopython=True)
-def average_chunks_jit(arr, wts, chunksize):
-    """Average the array arr with weights by chunks
-
-    Array len does not have to be multiple of chunksize
-
-    This is a version written for numba. When used with numba.jit, it's about 25 - 30% faster than the
-    numpy version without jit.
-
-    :param arr: 1D array of values
-    :param wts: 1D array of weights
-    :param chunksize: averaging size
-    :return: 1D array of averaged data_models, 1d array of weights
-    """
-    if chunksize <= 1:
-        return arr, wts
-    nchunks = len(arr) // chunksize
-    extra = len(arr) % chunksize
-    if extra > 0:
-        fullsize = nchunks + 1
-    else:
-        fullsize = nchunks
-
-    chunks = numpy.empty(fullsize, dtype=arr.dtype)
-    weights = numpy.empty(fullsize, dtype=wts.dtype)
-
-    for place in range(nchunks):
-        chunks[place] = numpy.sum(
-            wts[place * chunksize : (place + 1) * chunksize]
-            * arr[place * chunksize : (place + 1) * chunksize]
-        )
-        weights[place] = numpy.sum(wts[place * chunksize : (place + 1) * chunksize])
-
-    if extra > 0:
-        chunks[-1] = numpy.sum(
-            wts[(len(arr) - extra) : len(arr)] * arr[(len(arr) - extra) : len(arr)]
-        )
-        weights[-1] = numpy.sum(wts[(len(arr) - extra) : len(arr)])
-
-    chunks[weights > 0.0] = chunks[weights > 0.0] / weights[weights > 0.0]
-
-    return chunks, weights
 
 
 def average_chunks(arr, wts, chunksize):
     """Average the array arr with weights by chunks
 
     Array len does not have to be multiple of chunksize
-
-    This version is optimised for plain numpy. It is roughly ten times faster that average_chunks_jit when used
-    without numba jit. It cannot (yet) be used with numba because the add.reduceat is not support in numba
-    0.31
 
     :param arr: 1D array of values
     :param wts: 1D array of weights

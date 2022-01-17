@@ -144,7 +144,7 @@ def apps_parser_imaging(parser):
         "--imaging_dft_kernel",
         type=str,
         default=None,
-        help="DFT kernel: cpu_looped | cpu_numba | gpu_raw ",
+        help="DFT kernel: cpu_looped | gpu_raw ",
     )
     parser.add_argument(
         "--imaging_uvmax",

@@ -6,10 +6,11 @@ import unittest
 import numpy
 import logging
 
-from rascil.processing_components.util.array_functions import average_chunks
+from rascil.processing_components.util.array_functions import (
+    average_chunks,
+    average_chunks2,
+)
 
-from rascil.processing_components.util.array_functions import average_chunks2
-from rascil.processing_components.util.array_functions import average_chunks, average_chunks2
 log = logging.getLogger("rascil-logger")
 
 log.setLevel(logging.WARNING)

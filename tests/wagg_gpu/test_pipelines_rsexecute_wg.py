@@ -48,6 +48,7 @@ from rascil.processing_components.skycomponent import (
     insert_skycomponent,
     copy_skycomponent,
 )
+from rascil.processing_components import qa_gaintable
 from rascil.workflows.rsexecute.execution_support.rsexecute import (
     rsexecute,
     get_dask_client,
@@ -60,7 +61,6 @@ from rascil.workflows.rsexecute.pipelines.pipeline_skymodel_rsexecute import (
 log = logging.getLogger("rascil-logger")
 
 log.setLevel(logging.WARNING)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 class TestPipelineGraphs(unittest.TestCase):
@@ -71,6 +71,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.rng = default_rng(1805550721)
 
+        #        rsexecute.set_client(use_dask=True)
         rsexecute.set_client(
             client=get_dask_client(n_workers=4, threads_per_worker=1),
             use_dask=True,
@@ -85,23 +86,39 @@ class TestPipelineGraphs(unittest.TestCase):
         rsexecute.close()
 
     def actualSetUp(
-        self, add_errors=False, nfreqwin=5, dospectral=True, dopol=False, zerow=False
+        self, add_errors=False, nfreqwin=5, dopol=False, zerow=False, vnchan=1
     ):
+        """Setup the blockvis, model images, and components for use in the tests
 
+        :param add_errors: Do we want to add errors?
+        :param nfreqwin: Number of frequency windows
+        :param vnchan: Number of frequencies in each window
+        :param dopol: Do polarisation?
+        :param zerow: Zero the w coordinates?
+        :return:
+        """
         self.npixel = 512
         self.low = create_named_configuration("LOW", rmax=750.0)
         self.low = decimate_configuration(self.low, skip=3)
-        self.freqwin = nfreqwin
         self.ntimes = 3
         self.times = numpy.linspace(-3.0, +3.0, self.ntimes) * numpy.pi / 12.0
-        self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)
 
-        if self.freqwin > 1:
-            self.channelwidth = numpy.array(
-                self.freqwin * [self.frequency[1] - self.frequency[0]]
-            )
-        else:
-            self.channelwidth = numpy.array([1e6])
+        self.freqwin = nfreqwin
+        block_channel_width = (1.2e8 - 0.8e8) / self.freqwin
+        channel_width = (1.2e8 - 0.8e8) / (self.freqwin * vnchan)
+        self.frequency = numpy.array(
+            [
+                [
+                    0.8e8 + channel_width * vchan + freqwin * block_channel_width
+                    for vchan in range(vnchan)
+                ]
+                for freqwin in range(nfreqwin)
+            ]
+        )
+
+        self.channelwidth = numpy.array(
+            [[channel_width for vchan in range(vnchan)] for freqwin in range(nfreqwin)]
+        )
 
         if dopol:
             self.vis_pol = PolarisationFrame("linear")
@@ -112,12 +129,9 @@ class TestPipelineGraphs(unittest.TestCase):
             self.image_pol = PolarisationFrame("stokesI")
             f = numpy.array([100.0])
 
-        if dospectral:
-            flux = numpy.array(
-                [f * numpy.power(freq / 1e8, -0.7) for freq in self.frequency]
-            )
-        else:
-            flux = numpy.array([f])
+        flux = numpy.array(
+            [f * numpy.power(freq / 1e8, -0.7) for freq in self.frequency]
+        )
 
         self.phasecentre = SkyCoord(
             ra=+180.0 * u.deg, dec=-60.0 * u.deg, frame="icrs", equinox="J2000"
@@ -125,8 +139,8 @@ class TestPipelineGraphs(unittest.TestCase):
         self.bvis_list = [
             rsexecute.execute(ingest_unittest_visibility, nout=1)(
                 self.low,
-                [self.frequency[i]],
-                [self.channelwidth[i]],
+                self.frequency[i],
+                self.channelwidth[i],
                 self.times,
                 self.vis_pol,
                 self.phasecentre,
@@ -138,7 +152,11 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.model_imagelist = [
             rsexecute.execute(create_unittest_model, nout=1)(
-                self.bvis_list[i], self.image_pol, npixel=self.npixel, cellsize=0.001
+                self.bvis_list[i],
+                self.image_pol,
+                npixel=self.npixel,
+                cellsize=0.001,
+                nchan=vnchan,
             )
             for i in range(nfreqwin)
         ]
@@ -146,7 +164,7 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.components_list = [
             rsexecute.execute(create_unittest_components)(
-                self.model_imagelist[freqwin], flux[freqwin, :][numpy.newaxis, :]
+                self.model_imagelist[freqwin], flux[freqwin][:, numpy.newaxis]
             )
             for freqwin, m in enumerate(self.model_imagelist)
         ]
@@ -194,7 +212,7 @@ class TestPipelineGraphs(unittest.TestCase):
                 ], seeds
 
             def sim_and_apply(vis, seed):
-                gt = create_gaintable_from_blockvisibility(vis)
+                gt = create_gaintable_from_blockvisibility(vis, jones_type="G")
                 gt = simulate_gaintable(
                     gt,
                     phase_error=0.1,
@@ -267,6 +285,7 @@ class TestPipelineGraphs(unittest.TestCase):
             assert numpy.abs(qa.data["min"] - flux_min) < 1.0e-5, str(qa)
 
     def test_ical_skymodel_pipeline_empty(self):
+        # Run the ICAL pipeline starting with an empty model
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
         controls["T"]["first_selfcal"] = 1
@@ -306,6 +325,12 @@ class TestPipelineGraphs(unittest.TestCase):
         )
         clean = [sm.image for sm in sky_model_list]
 
+        for freqwin in range(self.freqwin):
+            qa = qa_gaintable(
+                gt_list[freqwin]["T"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 2.1e-2, str(qa)
+
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
@@ -317,11 +342,345 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.76942026395899,
-            -0.1883149303697396,
+            116.80924213494968,
+            -0.12700338113215193,
+        )
+
+    def test_ical_skymodel_pipeline_empty_4chan_T(self):
+        # Run the ICAL pipeline starting with an empty model
+        self.actualSetUp(add_errors=True, vnchan=4)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 1
+        controls["T"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="wg",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=3,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="T",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=False,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        for freqwin in range(self.freqwin):
+            qa = qa_gaintable(
+                gt_list[freqwin]["T"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 4e-2, str(qa)
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_4chan_T_gaintable.hdf5"
+                % self.results_dir,
+            )
+        self.save_and_check(
+            "ical_skymodel_pipeline_empty_4chan_T",
+            clean,
+            residual,
+            restored,
+            113.81012471759779,
+            -0.3991829011868599,
+        )
+
+    def test_ical_skymodel_pipeline_empty_4chan_B(self):
+        # Run the ICAL pipeline starting with an empty model
+        self.actualSetUp(add_errors=True, vnchan=4)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 10
+        controls["T"]["timeslice"] = "auto"
+        controls["B"]["first_selfcal"] = 1
+        controls["B"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="wg",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=3,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="T",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=False,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        for freqwin in range(self.freqwin):
+            qa = qa_gaintable(
+                gt_list[freqwin]["T"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 2.1e-2, str(qa)
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_4chan_B_gaintable.hdf5"
+                % self.results_dir,
+            )
+        self.save_and_check(
+            "ical_skymodel_pipeline_empty_4chan_B",
+            clean,
+            residual,
+            restored,
+            113.69590541101483,
+            -0.5268029813213463,
+        )
+
+    def test_ical_skymodel_pipeline_empty_4chan_TB(self):
+        # Run the ICAL pipeline starting with an empty model
+        self.actualSetUp(add_errors=True, vnchan=4)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 1
+        controls["T"]["phase_only"] = True
+        controls["T"]["timeslice"] = "auto"
+        controls["B"]["first_selfcal"] = 2
+        controls["B"]["phase_only"] = False
+        controls["B"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="wg",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=5,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="TB",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=False,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        for freqwin in range(self.freqwin):
+            qa = qa_gaintable(
+                gt_list[freqwin]["T"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 3.3e-2, str(qa)
+            qa = qa_gaintable(
+                gt_list[freqwin]["B"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 5e-3, str(qa)
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_4chan_TB_gaintable.hdf5"
+                % self.results_dir,
+            )
+        self.save_and_check(
+            "ical_skymodel_pipeline_empty_4chan_TB",
+            clean,
+            residual,
+            restored,
+            113.91148746256246,
+            -0.26329612618417786,
+        )
+
+    def test_ical_skymodel_pipeline_empty_4chan_TGB(self):
+        # Run the ICAL pipeline starting with an empty model
+        self.actualSetUp(add_errors=True, vnchan=4)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 1
+        controls["T"]["phase_only"] = True
+        controls["T"]["timeslice"] = "auto"
+        controls["G"]["first_selfcal"] = 2
+        controls["G"]["phase_only"] = False
+        controls["G"]["timeslice"] = "auto"
+        controls["B"]["first_selfcal"] = 3
+        controls["B"]["phase_only"] = False
+        controls["B"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="wg",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=5,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="TGB",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=False,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        for freqwin in range(self.freqwin):
+            qa = qa_gaintable(
+                gt_list[freqwin]["T"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 3.3e-2, str(qa)
+            qa = qa_gaintable(
+                gt_list[freqwin]["G"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 3.3e-2, str(qa)
+            qa = qa_gaintable(
+                gt_list[freqwin]["B"], context=f"Frequency window {freqwin}"
+            )
+            assert qa.data["residual"] < 5e-3, str(qa)
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_4chan_TGB_gaintable.hdf5"
+                % self.results_dir,
+            )
+        self.save_and_check(
+            "ical_skymodel_pipeline_empty_4chan_TGB",
+            clean,
+            residual,
+            restored,
+            113.8947579307751,
+            -0.3540250885871582,
+        )
+
+    def test_ical_skymodel_pipeline_empty_4chan_global(self):
+        # Run the ICAL pipeline starting with an empty model
+        self.actualSetUp(add_errors=True, vnchan=4)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 1
+        controls["T"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(image=im) for im in self.model_imagelist
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="wg",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=3,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="T",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=True,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        qa = qa_gaintable(gt_list[0]["T"], context=f"Entire frequency window")
+        assert qa.data["residual"] < 3.2e-2, str(qa)
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_4chan_global_gaintable.hdf5"
+                % self.results_dir,
+            )
+        self.save_and_check(
+            "ical_skymodel_pipeline_empty_4chan_global",
+            clean,
+            residual,
+            restored,
+            113.71719855672642,
+            -0.4912817839706385,
         )
 
     def test_ical_skymodel_pipeline_empty_threshold(self):
+        # Run the ICAL pipeline starting with an empty model and a component_threshold to
+        # find the brightest sources
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
         controls["T"]["first_selfcal"] = 1
@@ -365,7 +724,7 @@ class TestPipelineGraphs(unittest.TestCase):
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
-                "%s/test_pipelines_ical_skymodel_pipeline_empty_threshold_rsexecute_gaintable.hdf5"
+                "%s/test_pipelines_ical_skymodel_pipeline_empty_threshold_rsexecute_gaintable_T.hdf5"
                 % self.results_dir,
             )
         self.save_and_check(
@@ -373,16 +732,16 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.76942026395895,
-            -0.18831493036973768,
+            116.8092421349497,
+            -0.12700338113215057,
         )
 
-    @unittest.skip("Assert error - TBD later")
     def test_ical_skymodel_pipeline_exact(self):
+        # Run the ICAL pipeline starting with an exactly correct model
 
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
-        controls["T"]["first_selfcal"] = 1
+        controls["T"]["first_selfcal"] = 0
         controls["T"]["timeslice"] = "auto"
 
         skymodel_list = [
@@ -416,6 +775,7 @@ class TestPipelineGraphs(unittest.TestCase):
             controls=controls,
             do_selfcal=True,
             global_solution=False,
+            reset_skymodel=True,
         )
         residual, restored, sky_model_list, gt_list = rsexecute.compute(
             ical_list, sync=True
@@ -425,23 +785,90 @@ class TestPipelineGraphs(unittest.TestCase):
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
-                "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable.hdf5"
+                "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable_T.hdf5"
                 % self.results_dir,
             )
+        # Check that the residuals are small
+        assert numpy.max(gt_list[0]["T"]["residual"].data) < 9e-3
+
         self.save_and_check(
             "ical_skymodel_pipeline_exact",
             clean,
             residual,
             restored,
-            116.9220347300889,
-            -0.03710122171894675,
+            116.83666909212971,
+            -0.1272805973991534,
         )
 
-    @unittest.skip("Assert error - TBD later")
-    def test_ical_skymodel_pipeline_partial(self):
+    def test_ical_skymodel_pipeline_exact_dont_reset(self):
+        # Run the ICAL pipeline starting with an exactly correct model, keep skymodel after initial calibration
+
         self.actualSetUp(add_errors=True)
         controls = create_calibration_controls()
-        controls["T"]["first_selfcal"] = 1
+        controls["T"]["first_selfcal"] = 0
+        controls["T"]["timeslice"] = "auto"
+
+        skymodel_list = [
+            rsexecute.execute(SkyModel)(
+                components=comp_list, image=self.model_imagelist[icomp]
+            )
+            for icomp, comp_list in enumerate(self.components_list)
+        ]
+        skymodel_list = rsexecute.persist(skymodel_list)
+
+        ical_list = ical_skymodel_list_rsexecute_workflow(
+            self.bvis_list,
+            model_imagelist=self.model_imagelist,
+            skymodel_list=skymodel_list,
+            context="wg",
+            algorithm="mmclean",
+            facets=1,
+            scales=[0],
+            niter=100,
+            fractional_threshold=0.1,
+            threshold=0.01,
+            nmoment=2,
+            nmajor=3,
+            gain=0.7,
+            deconvolve_facets=2,
+            deconvolve_overlap=32,
+            deconvolve_taper="tukey",
+            psf_support=64,
+            restore_facets=1,
+            calibration_context="T",
+            controls=controls,
+            do_selfcal=True,
+            global_solution=False,
+            reset_skymodel=False,
+        )
+        residual, restored, sky_model_list, gt_list = rsexecute.compute(
+            ical_list, sync=True
+        )
+        clean = [sm.image for sm in sky_model_list]
+
+        if self.persist:
+            export_gaintable_to_hdf5(
+                gt_list[0]["T"],
+                "%s/test_pipelines_ical_skymodel_pipeline_exact_rsexecute_gaintable_T.hdf5"
+                % self.results_dir,
+            )
+        # Check that the residuals are very small
+        assert numpy.max(gt_list[0]["T"]["residual"].data) < 1.4e-7
+
+        self.save_and_check(
+            "ical_skymodel_pipeline_exact",
+            clean,
+            residual,
+            restored,
+            116.90605687884043,
+            -2.287644886998181e-06,
+        )
+
+    def test_ical_skymodel_pipeline_partial(self):
+        # Run the ICAL pipeline starting with a model which is half the true model
+        self.actualSetUp(add_errors=True)
+        controls = create_calibration_controls()
+        controls["T"]["first_selfcal"] = 0
         controls["T"]["timeslice"] = "auto"
 
         def downscale(comp):
@@ -486,6 +913,7 @@ class TestPipelineGraphs(unittest.TestCase):
             controls=controls,
             do_selfcal=True,
             global_solution=False,
+            reset_skymodel=False,
         )
         residual, restored, sky_model_list, gt_list = rsexecute.compute(
             ical_list, sync=True
@@ -495,7 +923,7 @@ class TestPipelineGraphs(unittest.TestCase):
         if self.persist:
             export_gaintable_to_hdf5(
                 gt_list[0]["T"],
-                "%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_gaintable.hdf5"
+                "%s/test_pipelines_ical_skymodel_pipeline_partial_rsexecute_gaintable_T.hdf5"
                 % self.results_dir,
             )
         self.save_and_check(
@@ -503,8 +931,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.8877123742255,
-            -0.10058889464014169,
+            116.87136533279478,
+            -0.06364171175002449,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty(self):
@@ -540,8 +968,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.80897017399957,
-            -0.18430286786954833,
+            116.83913792559628,
+            -0.12738898297535658,
         )
 
     def test_continuum_imaging_skymodel_pipeline_empty_taylor_terms(self):
@@ -578,8 +1006,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            101.20612449807776,
-            -0.05374166540972006,
+            103.75563532871399,
+            -0.040258320105007656,
             taylor=True,
         )
 
@@ -617,8 +1045,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.84424764687517,
-            -0.18926129194462596,
+            116.8621697606808,
+            -0.12560801720818232,
         )
 
     def test_continuum_imaging_skymodel_pipeline_partial(self):
@@ -674,8 +1102,8 @@ class TestPipelineGraphs(unittest.TestCase):
             clean,
             residual,
             restored,
-            116.87515181235142,
-            -0.09463064597231315,
+            116.88411286925424,
+            -0.06280400860409169,
         )
 
     def test_continuum_imaging_skymodel_pipeline_exact(self):

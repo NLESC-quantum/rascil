@@ -104,14 +104,14 @@ test_gpu:
     - pip3 install --upgrade pip
     - pip install -r requirements-test.txt
     - pip install -r requirements.txt
-    #- git clone http://gitlab.com/ska-telescope/sdp/ska-gridder-nifty-cuda.git  # => wagg
-    #- cd ska-gridder-nifty-cuda
+    - git clone http://gitlab.com/ska-telescope/sdp/ska-gridder-nifty-cuda.git  # => wagg
+    - cd ska-gridder-nifty-cuda
     # due to a bug in wagg, we need to use the following branch for now
-    #- git checkout --track origin/sim-874-python-wrapper
+    - git checkout --track origin/sim-874-python-wrapper
     #- git checkout 5e6d40cf
-    #- cd python
-    #- pip install .
-    #- cd ../..
+    - cd python
+    - pip install .
+    - cd ../..
     - mkdir -p test_results
   script:
     - PYTHONPATH=`pwd` HOME=`pwd` make test-gpu

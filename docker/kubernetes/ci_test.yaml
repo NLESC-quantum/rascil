@@ -29,8 +29,8 @@ cluster-test:
     - cd ska-sdp-helmdeploy-charts
     - git checkout orc-1156-update-dask-worker-with-volume-mount
     - cd ..
-    - kubectl -n $(NAMESPACE) create -f docker/kubernetes/pvc.yaml
-    - helm install test ska-sdp-helmdeploy-charts/charts/dask -n $(NAMESPACE) -f docker/kubernetes/values.yaml --wait
+    - kubectl -n ${NAMESPACE} create -f docker/kubernetes/pvc.yaml
+    - helm install test ska-sdp-helmdeploy-charts/charts/dask -n ${NAMESPACE} -f docker/kubernetes/values.yaml --wait
     - kubectl get pods -n ${NAMESPACE}
     # TODO: what would be the test?
   environment:

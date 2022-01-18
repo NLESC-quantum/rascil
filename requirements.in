@@ -26,4 +26,4 @@ tabulate
 xarray
 zarr
 git+https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger.git@master
-#git+http://gitlab.com/ska-telescope/sdp/ska-gridder-nifty-cuda.git@sim-874-python-wrapper#subdirectory=python
+

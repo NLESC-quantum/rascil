@@ -108,7 +108,6 @@ test_gpu:
     - cd ska-gridder-nifty-cuda
     # due to a bug in wagg, we need to use the following branch for now
     - git checkout --track origin/sim-874-python-wrapper
-    #- git checkout 5e6d40cf
     - cd python
     - pip install .
     - cd ../..

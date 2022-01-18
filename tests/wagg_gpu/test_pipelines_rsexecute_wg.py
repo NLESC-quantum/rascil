@@ -71,7 +71,6 @@ class TestPipelineGraphs(unittest.TestCase):
 
         self.rng = default_rng(1805550721)
 
-        #        rsexecute.set_client(use_dask=True)
         rsexecute.set_client(
             client=get_dask_client(n_workers=4, threads_per_worker=1),
             use_dask=True,

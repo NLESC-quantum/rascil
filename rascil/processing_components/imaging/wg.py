@@ -46,7 +46,6 @@ def predict_wg(bvis: BlockVisibility, model: Image, **kwargs) -> BlockVisibility
     try:
         import wagg as wg
     except ImportError:
-        wagg = None
         log.warning("WAGG is not installed. Cannot run predict_wg")
         return None
 
@@ -164,7 +163,6 @@ def invert_wg(
     try:
         import wagg as wg
     except ImportError:
-        wagg = None
         log.warning("WAGG is not installed. Cannot run invert_wg")
         return None
 

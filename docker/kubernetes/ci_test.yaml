@@ -18,34 +18,36 @@ cluster-test:
   before_script:
     - apt-get -y update
     - apt-get install -y curl ca-certificates jq --no-install-recommends git
-  script:
-    - kubectl delete namespace ${NAMESPACE} --ignore-not-found
-    - kubectl create namespace ${NAMESPACE}
-    - curl -s https://gitlab.com/ska-telescope/templates-repository/-/raw/master/scripts/namespace_auth.sh | bash -s $SERVICE_ACCOUNT $NAMESPACE || true
+#    - kubectl -n ${NAMESPACE} delete -f docker/kubernetes/pvc.yaml --ignore-not-found
+#    - kubectl delete namespace ${NAMESPACE} --ignore-not-found
+#    - kubectl create namespace ${NAMESPACE}
+#    - curl -s https://gitlab.com/ska-telescope/templates-repository/-/raw/master/scripts/namespace_auth.sh | bash -s $SERVICE_ACCOUNT $NAMESPACE || true
 #    - helm repo add tmp-ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
 #    - helm repo update
 #    - helm install ${RELEASE} tmp-ska-helm/dask -n ${NAMESPACE} -f docker/kubernetes/values.yaml --wait
-    - git clone https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts.git
-    - cd ska-sdp-helmdeploy-charts
-    - git checkout orc-1156-update-dask-worker-with-volume-mount
-    - cd ..
-    - kubectl -n ${NAMESPACE} create -f docker/kubernetes/pvc.yaml
-    - helm install test ska-sdp-helmdeploy-charts/charts/dask -n ${NAMESPACE} -f docker/kubernetes/values.yaml --wait
-    - kubectl get pods -n ${NAMESPACE}
+#    - git clone https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts.git
+#    - cd ska-sdp-helmdeploy-charts
+#    - git checkout orc-1156-update-dask-worker-with-volume-mount
+#    - cd ..
+  script:
+    - kubectl -n ${NAMESPACE} delete -f docker/kubernetes/pvc.yaml --ignore-not-found
+#    - kubectl -n ${NAMESPACE} create -f docker/kubernetes/pvc.yaml
+#    - helm install test ska-sdp-helmdeploy-charts/charts/dask -n ${NAMESPACE} -f docker/kubernetes/values.yaml --wait
+#    - kubectl get pods -n ${NAMESPACE}
     # TODO: what would be the test?
   environment:
     name: test/$CI_COMMIT_REF_NAME
     kubernetes:
       namespace: $NAMESPACE
     on_stop: test-cleanup
-    auto_stop_in: 1 hours
+    auto_stop_in: 30 minutes
 
 test-cleanup:
   extends: .k8s-test
   stage: .post
-  when: manual
   script:
     - helm uninstall ${RELEASE} --wait
+    - kubectl delete pv pv-rascil-cip --ignore-not-found
     - kubectl delete namespace ${NAMESPACE} --ignore-not-found
     - helm repo remove tmp-ska-helm
   environment:

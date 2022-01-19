@@ -24,7 +24,7 @@ worker:
   replicas: 2
   volume:
     path: "/mnt/data"
-    name: "local-pvc"
+    name: "pvc-rascil-cip"
 
 jupyter:
   enabled: true  # Enable/disable the bundled Jupyter notebook.
@@ -34,9 +34,9 @@ jupyter:
     pullPolicy: IfNotPresent
   mounts:
     volumes:
-      - name: "local-pvc"
+      - name: "pvc-rascil-cip"
         persistentVolumeClaim:
-         claimName: "local-pvc"
+         claimName: "pvc-rascil-cip"
     volumeMounts:
-      - name: "local-pvc"
+      - name: "pvc-rascil-cip"
         mountPath: "/mnt/data"

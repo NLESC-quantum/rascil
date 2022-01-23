@@ -34,7 +34,7 @@ idna==3.3
     # via requests
 imagesize==1.3.0
     # via sphinx
-importlib-metadata==4.10.0
+importlib-metadata==4.10.1
     # via sphinx
 iniconfig==1.1.1
     # via pytest
@@ -79,7 +79,7 @@ pylint-junit==0.3.2
     # via -r requirements-test.in
 pylint2junit==1.0.1
     # via -r requirements-test.in
-pyparsing==3.0.6
+pyparsing==3.0.7
     # via packaging
 pytest==6.2.5
     # via

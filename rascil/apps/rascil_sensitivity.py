@@ -11,6 +11,7 @@ import sys
 import argparse
 import datetime
 import pandas as pd
+import json
 
 import matplotlib.pyplot as plt
 import numpy
@@ -125,19 +126,30 @@ def cli_parser():
         "--declination", type=float, default=-45.0, help="Declination (degrees)"
     )
     parser.add_argument(
+        "--configuration",
+        type=str,
+        default="MIDR5",
+        help="Name of configuration or path: MID(=MIDR5), MIDR5, MEERKAT+",
+    )
+    parser.add_argument(
+        "--subarray",
+        type=str,
+        default="",
+        help="Name of file containing json description of subarray to be used",
+    )
+    parser.add_argument(
         "--rmax",
         type=float,
         default=2e5,
         help="Maximum distance of station from centre (m)",
     )
     parser.add_argument(
-        "--band", type=str, default="B2", help="Band name one of B1LOW B1 B2 Ku"
+        "--frequency", type=float, default=1.36e9, help="Centre frequency (Hz)"
     )
 
     parser.add_argument(
         "--integration_time", type=float, default=600, help="Integration time (s)"
     )
-
     parser.add_argument(
         "--time_range",
         type=float,
@@ -169,7 +181,6 @@ def calculate_sensitivity(args):
     :param args:
     :return:
     """
-    band = args.band
 
     vis_polarisation_frame = PolarisationFrame("stokesI")
 
@@ -186,17 +197,7 @@ def calculate_sensitivity(args):
 
     rsexecute.run(init_logging)
 
-    # Set up details of simulated observation
-    if band == "B1LOW":
-        start_frequency = 0.350e9
-    elif band == "B1":
-        start_frequency = 0.765e9
-    elif band == "B2":
-        start_frequency = 1.36e9
-    elif band == "Ku":
-        start_frequency = 12.179e9
-    else:
-        raise ValueError("Unknown band %s" % band)
+    start_frequency = args.frequency
 
     frequency = numpy.linspace(
         start_frequency, start_frequency + args.nchan * args.channel_width, args.nchan
@@ -208,7 +209,15 @@ def calculate_sensitivity(args):
     )
 
     # Set up configuration and observing times
-    config = create_named_configuration("MIDR5", rmax=args.rmax)
+    config = create_named_configuration(args.configuration)
+    print("subarray in", args.subarray)
+    if args.subarray != "":
+        f = open(args.subarray)
+        subarray_dict = json.load(f)
+        f.close()
+        subarray_ids = subarray_dict["ids"]
+        print(subarray_ids)
+        config = config.sel({"id": subarray_ids})
     time_rad = numpy.array(args.time_range) * numpy.pi / 12.0
     times = numpy.arange(
         time_rad[0], time_rad[1], args.integration_time * numpy.pi / 43200.0
@@ -431,7 +440,7 @@ def save_results(args, results):
     df = pd.DataFrame(results)
     log.info(df)
     results_file = f"{args.results}_sensitivity.csv"
-    df.to_csv(results_file)
+    df.to_csv(results_file, index=False)
     return results_file
 
 

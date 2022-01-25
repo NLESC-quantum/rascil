@@ -4,31 +4,24 @@ kind: PersistentVolume
 apiVersion: v1
 metadata:
   name: pv-rascil-cip
-#  labels:
-#    type: manual
 spec:
-  storageClassName: nfss1 #manual
-#  claimRef:
-#    name: pvc-rascil-cip
+  storageClassName: manual
   capacity:
     storage: 5Gi
   accessModes:
     - ReadWriteMany
   hostPath:
-    path: "/builds/ska-telescope/external/rascil/docker/kubernetes/"
+    path: "/mnt/data"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: pvc-rascil-cip
 spec:
-  storageClassName: nfss1 #manual
+  storageClassName: manual
   volumeName: pv-rascil-cip
   accessModes:
   - ReadWriteMany
   resources:
     requests:
       storage: 5Gi
-#  selector:
-#    matchLabels:
-#      type: manual

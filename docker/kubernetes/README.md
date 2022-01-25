@@ -107,7 +107,7 @@ you need to use the IP and port given after `Scheduler at: `, so in this example
 So the command you will need to run is:
 
 ``` bash
-MALLOC_TRIM_THRESHOLD_=0 RASCIL_DASK_SCHEDULER=172.17.0.4:8786 sh /mnt/data/example_cip.sh | tee -a /mnt/data/example_cip.log
+MALLOC_TRIM_THRESHOLD_=0 RASCIL_DASK_SCHEDULER=172.17.0.3:8786 sh /mnt/data/example_cip.sh | tee -a /mnt/data/example_cip.log
 ```
 make sure you update the scheduler address, the path to the example_cip.sh file,
 and the path where you want to print the logs, accordingly.
@@ -127,25 +127,3 @@ ctrl+c
 - remove the persistent volume and claim: `kubectl delete -f pvc.yaml`
 
 - stop minikube
-
-
-### On P3 - in Kubernets cluster -- TODO!!
-
-1. Create namespace
-
-2. Update the `pvc.yaml` file:
-- update the `spec.hostPath.path` of the PersistentVolume to reflect the local
-path to your data directory !! MOUNT DOESN'T WORK
-  
-- for both ojects under `metadata` add: `namespace: <my-namespace>`;
-`<my-namespace>` is the same name that you created in #1
-
-3. Run #2 from Minikube section
-
-4. Follow steps in #3 from Minikube section. Modify the `helm install test` command
-to include `--namespace <my-namespace` at the end. This will deploy the pods in that namespace
-   
-5-6. Follow steps #4 and #5 from Minikube section; 
-Make sure you have a test.ms present in the mounted directory.
-Specify the namespace when using helm!
-And delete the namespace: `kubectl delete ns <my-namespace>`

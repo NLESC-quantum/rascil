@@ -45,6 +45,53 @@ from rascil import phyconst
 
 log = logging.getLogger("rascil-logger")
 
+# Copyright of function zernIndex and zernike_noll belongs to its respectful owner
+# zernIndex and zernike_noll are the functions of AOTools.zernike
+# AOTools: https://github.com/AOtools/aotools
+# L-GPL 3.0
+
+
+def zernIndex(j):
+    """
+    Find the [n,m] list giving the radial order n and azimuthal order
+    of the Zernike polynomial of Noll index j.
+
+    Parameters:
+        j (int): The Noll index for Zernike polynomials
+
+    Returns:
+        list: n, m values
+    """
+    n = int((-1.0 + numpy.sqrt(8 * (j - 1) + 1)) / 2.0)
+    p = j - (n * (n + 1)) / 2.0
+    k = n % 2
+    m = int((p + k) / 2.0) * 2 - k
+
+    if m != 0:
+        if j % 2 == 0:
+            s = 1
+        else:
+            s = -1
+        m *= s
+
+    return [n, m]
+
+
+def zernike_noll(j, N):
+    """
+    Creates the Zernike polynomial with mode index j,
+    where j = 1 corresponds to piston.
+
+    Args:
+       j (int): The noll j number of the zernike mode
+       N (int): The diameter of the zernike more in pixels
+    Returns:
+       ndarray: The Zernike mode
+    """
+
+    n, m = zernIndex(j)
+    return zernike_nm(n, m, N)
+
 
 def set_pb_header(pb, use_local=True):
     """Fill in PB header correctly for local coordinates.
@@ -483,18 +530,11 @@ def create_vp_generic_numeric(
                 xfr["pixels"].data[chan, pol, ...] *= numpy.exp(1j * phase)
 
         if isinstance(zernikes, collections.abc.Iterable):
-            try:
-                import aotools
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError("aotools is not installed")
-
             ndisk = numpy.ceil(numpy.abs(diameter / scalex)).astype("int")[0]
             ndisk = 2 * ((ndisk + 1) // 2)
             phase = numpy.zeros([ndisk, ndisk])
             for zernike in zernikes:
-                phase = zernike["coeff"] * aotools.functions.zernike.zernike_noll(
-                    zernike["noll"], ndisk
-                )
+                phase = zernike["coeff"] * zernike_noll(zernike["noll"], ndisk)
 
             # import matplotlib.pyplot as plt
             # plt.clf()

@@ -42,6 +42,7 @@ from rascil.processing_components.image.operations import (
     pad_image,
 )
 from rascil import phyconst
+from .ao import *
 
 log = logging.getLogger("rascil-logger")
 

@@ -1,11 +1,11 @@
 """
 Functions that implement creating Zernike polynomials to be applied as phase across the dish.
 
-Note that we copied the implementation of zernike_noll and its related functions from package aotools 
+Note that we copied the implementation of zernike_noll and its related functions from package aotools (Ver 1.0.5)
 to simplify the RASCIL installation. Copyright of function zernIndex and zernike_noll belongs to its 
 respectful owner
 
-AOTools: https://github.com/AOtools/aotools (L-GPL 3.0)
+AOTools: https://github.com/AOtools/aotools version 1.0.5 Releases 22 
 
 """
 

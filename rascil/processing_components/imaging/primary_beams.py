@@ -42,7 +42,7 @@ from rascil.processing_components.image.operations import (
     pad_image,
 )
 from rascil import phyconst
-from .ao import *
+from rascil.processing_components.imaging.ao import zernike_noll
 
 log = logging.getLogger("rascil-logger")
 

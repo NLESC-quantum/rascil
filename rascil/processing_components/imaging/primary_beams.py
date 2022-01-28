@@ -42,6 +42,7 @@ from rascil.processing_components.image.operations import (
     pad_image,
 )
 from rascil import phyconst
+from rascil.processing_components.imaging.ao import zernike_noll
 
 log = logging.getLogger("rascil-logger")
 
@@ -483,18 +484,11 @@ def create_vp_generic_numeric(
                 xfr["pixels"].data[chan, pol, ...] *= numpy.exp(1j * phase)
 
         if isinstance(zernikes, collections.abc.Iterable):
-            try:
-                import aotools
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError("aotools is not installed")
-
             ndisk = numpy.ceil(numpy.abs(diameter / scalex)).astype("int")[0]
             ndisk = 2 * ((ndisk + 1) // 2)
             phase = numpy.zeros([ndisk, ndisk])
             for zernike in zernikes:
-                phase = zernike["coeff"] * aotools.functions.zernike.zernike_noll(
-                    zernike["noll"], ndisk
-                )
+                phase = zernike["coeff"] * zernike_noll(zernike["noll"], ndisk)
 
             # import matplotlib.pyplot as plt
             # plt.clf()

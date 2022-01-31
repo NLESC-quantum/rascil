@@ -53,7 +53,7 @@ DEFAULT_RUN = True
 
 
 def _add_errors_to_bvis(bvis_list, freqwin, nfreqwin, rng):
-    seeds = [rng.integers(low=1, high=2 ** 32 - 1) for i in range(nfreqwin)]
+    seeds = [rng.integers(low=1, high=2**32 - 1) for i in range(nfreqwin)]
     if nfreqwin == 5:
         assert seeds == [
             3822708302,

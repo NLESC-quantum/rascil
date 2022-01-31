@@ -476,7 +476,7 @@ def smooth_image(model: Image, width=1.0, normalise=True):
     # The convolve_fft step seems to return an object dtype
     cmodel["pixels"].data = cmodel["pixels"].data.astype(model_type)
     if normalise and isinstance(kernel, Gaussian2DKernel):
-        cmodel["pixels"].data *= 2 * numpy.pi * width ** 2
+        cmodel["pixels"].data *= 2 * numpy.pi * width**2
 
     return cmodel
 
@@ -1188,22 +1188,20 @@ def scale_and_rotate_image(im, angle=0.0, scale=None, order=5):
     for chan in range(nchan):
         for pol in range(npol):
             if im["pixels"].data.dtype == "complex":
-                newim["pixels"].data[chan, pol] = (
-                    affine_transform(
-                        im["pixels"].data[chan, pol].real,
-                        inv_transform,
-                        offset=offset,
-                        order=order,
-                        output_shape=(ny, nx),
-                    ).astype("float")
-                    + 1.0j
-                    * affine_transform(
-                        im["pixels"].data[chan, pol].imag,
-                        inv_transform,
-                        offset=offset,
-                        order=order,
-                        output_shape=(ny, nx),
-                    ).astype("float")
+                newim["pixels"].data[chan, pol] = affine_transform(
+                    im["pixels"].data[chan, pol].real,
+                    inv_transform,
+                    offset=offset,
+                    order=order,
+                    output_shape=(ny, nx),
+                ).astype("float") + 1.0j * affine_transform(
+                    im["pixels"].data[chan, pol].imag,
+                    inv_transform,
+                    offset=offset,
+                    order=order,
+                    output_shape=(ny, nx),
+                ).astype(
+                    "float"
                 )
             elif im["pixels"].data.dtype == "float":
                 newim["pixels"].data[chan, pol] = affine_transform(

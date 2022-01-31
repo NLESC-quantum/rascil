@@ -462,9 +462,9 @@ def power_spectrum(input_image, resolution, signal_channel=None):
     img_fft = fft_image_to_griddata(im)
 
     # conversion factor between Jy (units of image data) and K (brightness temperature)
-    omega = numpy.pi * resolution ** 2 / (4 * numpy.log(2.0))
+    omega = numpy.pi * resolution**2 / (4 * numpy.log(2.0))
     wavelength = consts.c / numpy.average(im.frequency)
-    k_per_jy = 1e-26 * wavelength ** 2 / (2 * consts.k_B * omega)
+    k_per_jy = 1e-26 * wavelength**2 / (2 * consts.k_B * omega)
 
     im_spectrum = img_fft.copy()
     # convert image data from Jy to K

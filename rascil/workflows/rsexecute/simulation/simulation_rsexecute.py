@@ -340,7 +340,7 @@ def create_pointing_errors_gaintable_rsexecute_workflow(
         rng = default_rng(seed)
 
     # Need one seed per bvis
-    seeds = [rng.integers(low=1, high=2 ** 32 - 1) for bvis in sub_bvis_list]
+    seeds = [rng.integers(low=1, high=2**32 - 1) for bvis in sub_bvis_list]
 
     if global_pointing_error is None:
         global_pointing_error = [0.0, 0.0]

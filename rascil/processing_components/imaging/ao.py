@@ -173,7 +173,7 @@ def zernike_nm(n, m, N):
     """
     coords = (numpy.arange(N) - N / 2.0 + 0.5) / (N / 2.0)
     X, Y = numpy.meshgrid(coords, coords)
-    R = numpy.sqrt(X ** 2 + Y ** 2)
+    R = numpy.sqrt(X**2 + Y**2)
     theta = numpy.arctan2(Y, X)
 
     if m == 0:

@@ -25,24 +25,18 @@ then the persistent volume claim, respectively: `:pv`; `:pvc`
 
 #### 3. Install the helm chart
 
+Add the helm chart (if haven't already) and update it:
+``` bash 
+helm repo add ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
+helm repo update
+```
+
+Install the chart:
 ``` bash 
 helm install test ska-helm/dask -f values.yaml
 ```
-Important: at the moment the `ska-helm/dask` chart does not contain the necessary
-updates, which allow for the proper volume claims for workers. To use the updated code,
-follow these steps:
 
-- clone the SDP Helm Deployer Charts repository: 
-`https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts.git`
-  
-- check out the branch `orc-1156-update-dask-worker-with-volume-mount`:
-`git checkout orc-1156-update-dask-worker-with-volume-mount`
-  
-- run the above helm command as follows:
-`helm install test <path-to-ska-sdp-helmdeploy-charts>/charts/dask -f values.yaml`
-  Do not forget to update the path!
-
-Now you should have the Daks cluster running with one scheduler and two workers.
+Now you should have the Dask cluster running with one scheduler and two workers.
 Update the values.yaml file if you require more or fewer workers. To see the pods
 in k9s (if you changed to pv or pvc previously), type `:pod`.
 

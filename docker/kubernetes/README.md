@@ -2,13 +2,20 @@
 
 ### Run in Minikube
 
+Relevant kubernetes files and example bash script are found in
+`docker/kubernetes` (same directory where this README is located).
+The following guide assumes that you are executing the commands from
+that directory.
+
 #### 1. Start minikube by mounting the directory that contains the MS. 
    The following command will mount it to `/mnt/data`
 
 ``` bash
 minikube start --mount=true --mount-string="<local-data-dir>:/mnt/data"
 ```
-where `local-data-dir` is the full path to the directory containing your data, which you want to mount.
+where `local-data-dir` is the full path to the directory, which you want to mount. 
+Normally, this directory contains the data (e.g. MeasurementSet) that you want to 
+feed to the RASCIL pipeline (e.g. continuum imaging pipeline), which you want to run.
 You can add additional arguments to the command, e.g. `--driver=docker`, if needed.
 
 #### 2. Create the persistent volume and claim
@@ -62,7 +69,14 @@ update the `--ingest_msname` path.
 Note: `--logfile` cannot point to a specific directory. Because of the mounting, 
 it only works if just the filename is given.
 
-a. Run from your commandline:
+Example MeasurementSets can be found on GCP, e.g:
+[SP-1901 Mid simulation](https://console.cloud.google.com/storage/browser/ska1-simulation-data/simulations/continuum_simulations_SP-1901/mid/v12p2/SKA_MID_SIM_custom_B2_dec_-45.0_polarisation_nchan100_actual.ms)
+
+Below, section 5/a gives instructions on how to run the script from your commandline,
+while section 5/b shows how to do it in Jupyter Lab (deployed as part of the cluster).
+Latter is useful if you do not have RASCIL installed and set up locally.
+
+#####a. Run from your commandline:
 
 For the pipeline to work, you need to have a working RASCIL python environment,
 and the RASCIL code present on your machine. Activate the environment, 
@@ -80,7 +94,7 @@ also be able to see how the pipeline is running in the Dask Dashboard.
 Note: if you run CIP this way, you will not need the jupyter-pod, and
 hence can disable it in `values.yaml`.
 
-b. Run from Jupyter Lab (need to do #4 first):
+#####b. Run from Jupyter Lab (need to do #4 first):
 
 In Jupyter Lab, you will be able to start a terminal interface within the docker container.
 The advantage of this is that it already has all the necessary packages installed.

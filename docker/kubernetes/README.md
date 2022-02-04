@@ -18,6 +18,17 @@ Normally, this directory contains the data (e.g. MeasurementSet) that you want t
 feed to the RASCIL pipeline (e.g. continuum imaging pipeline), which you want to run.
 You can add additional arguments to the command, e.g. `--driver=docker`, if needed.
 
+After the start of minikube, it is better to check the mount status using the following command to login into minikube. 
+``` bash
+minikube ssh
+```
+
+If you find the directory of "/mnt/data" is empty, you could try the following solution mentioned in https://github.com/kubernetes/minikube/issues/12729.
+``` bash
+minikube start
+minikube mount "<local-data-dir>:/mnt/data" --ip $(minikube ip)
+```
+
 #### 2. Create the persistent volume and claim
 
 ``` bash

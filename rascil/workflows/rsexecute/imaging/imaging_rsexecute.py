@@ -532,7 +532,7 @@ def deconvolve_list_rsexecute_workflow(
     # Single facet case
     deconvolve_overlap = get_parameter(kwargs, "deconvolve_overlap", 0)
     deconvolve_taper = get_parameter(kwargs, "deconvolve_taper", None)
-    deconvolve_number_facets = deconvolve_facets ** 2
+    deconvolve_number_facets = deconvolve_facets**2
 
     # Each list is a sequence in frequency. We want to scatter each channel
     # image into facet-space and then transpose from [channel][facet] to

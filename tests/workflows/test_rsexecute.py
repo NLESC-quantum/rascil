@@ -24,7 +24,7 @@ class Testrsexecute(unittest.TestCase):
 
     def test_useFunction(self):
         def square(x):
-            return x ** 2
+            return x**2
 
         graph = rsexecute.execute(square)(numpy.arange(10))
         result = rsexecute.compute(graph, sync=True)
@@ -34,7 +34,7 @@ class Testrsexecute(unittest.TestCase):
 
     def test_restart(self):
         def square(x):
-            return x ** 2
+            return x**2
 
         for trial in range(10):
             rsexecute.close()
@@ -49,7 +49,7 @@ class Testrsexecute(unittest.TestCase):
 
     def test_useDaskAsync(self):
         def square(x):
-            return x ** 2
+            return x**2
 
         graph = rsexecute.execute(square)(numpy.arange(10))
         result = rsexecute.compute(graph).result()
@@ -57,7 +57,7 @@ class Testrsexecute(unittest.TestCase):
 
     def test_useDaskSync(self):
         def square(x):
-            return x ** 2
+            return x**2
 
         graph = rsexecute.execute(square)(numpy.arange(10))
         result = rsexecute.compute(graph, sync=True)

@@ -1,0 +1,27 @@
+# PersistentVolume and Claim to mount data which can be used by Dask workers
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-rascil-cip
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-rascil-cip
+spec:
+  storageClassName: manual
+  volumeName: pv-rascil-cip
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

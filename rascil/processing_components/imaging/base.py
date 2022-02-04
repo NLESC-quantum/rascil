@@ -588,7 +588,7 @@ def advise_wide_field(
     # We will assume that the constraint holds at one quarter the entire FOV i.e. that
     # the full field of view includes the entire primary beam
 
-    w_sampling_image = numpy.sqrt(2.0 * delA) / (numpy.pi * image_fov ** 2)
+    w_sampling_image = numpy.sqrt(2.0 * delA) / (numpy.pi * image_fov**2)
     if verbose:
         log.info(
             "\nadvice_wide_field: (w_sampling_image) W sampling for full image = %.1f (wavelengths)"
@@ -596,7 +596,7 @@ def advise_wide_field(
         )
 
     if facets > 1:
-        w_sampling_facet = numpy.sqrt(2.0 * delA) / (numpy.pi * facet_fov ** 2)
+        w_sampling_facet = numpy.sqrt(2.0 * delA) / (numpy.pi * facet_fov**2)
         if verbose:
             log.info(
                 "advice_wide_field: (w_sampling_facet) W sampling for facet = %.1f (wavelengths)"
@@ -606,7 +606,7 @@ def advise_wide_field(
         w_sampling_facet = w_sampling_image
 
     w_sampling_primary_beam = numpy.sqrt(2.0 * delA) / (
-        numpy.pi * primary_beam_fov ** 2
+        numpy.pi * primary_beam_fov**2
     )
     if verbose:
         log.info(

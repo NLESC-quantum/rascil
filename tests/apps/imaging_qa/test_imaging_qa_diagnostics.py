@@ -51,7 +51,7 @@ class MockBDSFImage:
         # 4D array: (nstokes, nchannels, imag_size_x, image_size_y)
         self.image_arr = np.ones(self.shape)
 
-        self.raw_rms = np.sqrt(np.mean(self.image_arr ** 2))
+        self.raw_rms = np.sqrt(np.mean(self.image_arr**2))
         self.raw_mean = np.mean(self.image_arr)
 
         # see bdsf.make_residimage.Op_make_residimage

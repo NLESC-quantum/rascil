@@ -91,7 +91,7 @@ def dft_skycomponent_visibility(
         vfluxes.append(vflux)
 
         l, m, n = skycoord_to_lmn(comp.direction, vis.phasecentre)
-        direction_cosine = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+        direction_cosine = numpy.array([l, m, numpy.sqrt(1 - l**2 - m**2) - 1.0])
 
         direction_cosines.append(direction_cosine)
 

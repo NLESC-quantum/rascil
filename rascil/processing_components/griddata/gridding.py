@@ -375,7 +375,7 @@ def griddata_blockvisibility_reweight(
     # is unaffected. This means that the sensitivity may be calculated from
     # the sum of gridded weights
     if weighting == "uniform":
-        sumlocwt = numpy.sum(real_gd ** 2)
+        sumlocwt = numpy.sum(real_gd**2)
         sumwt = numpy.sum(vis.blockvisibility_acc.flagged_weight)
         for pol in range(nvpol):
             for vchan in range(nvchan):
@@ -397,7 +397,7 @@ def griddata_blockvisibility_reweight(
 
     elif weighting == "robust":
         # Equation 3.15, 3.16 in Briggs thesis
-        sumlocwt = numpy.sum(real_gd ** 2)
+        sumlocwt = numpy.sum(real_gd**2)
         sumwt = numpy.sum(vis.blockvisibility_acc.flagged_imaging_weight)
         # Larger +ve robustness tends to natural weighting
         # Larger -ve robustness tends to uniform weighting

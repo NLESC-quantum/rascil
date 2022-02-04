@@ -12,8 +12,19 @@ fullnameOverride: rascil-dask
 image: "artefact.skao.int/rascil-full:0.5.0"
 imagePullPolicy: IfNotPresent
 
+buffers: []
+secrets: []
+
+scheduler:
+  env:
+    - name: "DASK_DISTRIBUTED__DASHBOARD__GRAPH_MAX_ITEMS"
+      value: "1000000"
+
 worker:
   replicas: 2
+  volume:
+    path: "/mnt/data"
+    name: "pvc-rascil-cip"
 
 jupyter:
   enabled: true  # Enable/disable the bundled Jupyter notebook.
@@ -21,3 +32,11 @@ jupyter:
     repository: "artefact.skao.int/rascil-notebook"
     tag: 0.5.0
     pullPolicy: IfNotPresent
+  mounts:
+    volumes:
+      - name: "pvc-rascil-cip"
+        persistentVolumeClaim:
+         claimName: "pvc-rascil-cip"
+    volumeMounts:
+      - name: "pvc-rascil-cip"
+        mountPath: "/mnt/data"

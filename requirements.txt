@@ -360,7 +360,7 @@ requests==2.27.1
     #   requests-toolbelt
 requests-toolbelt==0.9.1
     # via python-gitlab
-scipy==1.8.0
+scipy==1.7.3
     # via
     #   -r requirements.in
     #   bdsf

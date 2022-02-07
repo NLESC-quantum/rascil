@@ -21,9 +21,10 @@ You can add additional arguments to the command, e.g. `--driver=docker`, if need
 After minikube started, you can check the mount status after ssh-ing into minikube. 
 ``` bash
 minikube ssh
+ls /mnt/data
 ```
 
-If you find the directory of "/mnt/data" is empty, you could try the following solution mentioned in https://github.com/kubernetes/minikube/issues/12729.
+If you find the directory of "/mnt/data" is empty, try the following solution mentioned in https://github.com/kubernetes/minikube/issues/12729#issuecomment-949824254.
 ``` bash
 minikube start
 minikube mount "<local-data-dir>:/mnt/data" --ip $(minikube ip)

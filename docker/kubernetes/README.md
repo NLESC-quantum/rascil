@@ -18,7 +18,7 @@ Normally, this directory contains the data (e.g. MeasurementSet) that you want t
 feed to the RASCIL pipeline (e.g. continuum imaging pipeline), which you want to run.
 You can add additional arguments to the command, e.g. `--driver=docker`, if needed.
 
-After the start of minikube, it is better to check the mount status using the following command to login into minikube. 
+After minikube started, you can check the mount status after ssh-ing into minikube. 
 ``` bash
 minikube ssh
 ```

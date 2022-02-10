@@ -405,7 +405,7 @@ class TestImageDeconvolution(unittest.TestCase):
         assert len(residual_list) == 1
         self._check_hogbom_kernel_list_test_results(comp_list[0], residual_list[0])
 
-    def test_hogbom_kernel_list_multiple_dirty(self):
+    def test_hogbom_kernel_list_multiple_dirty(self, window_shape=None):
         """
         Bugfix: hogbom_kernel_list produced an IndexError, when dirty_list has more than
         one elements, and those elements are for a single frequency each.
@@ -414,7 +414,7 @@ class TestImageDeconvolution(unittest.TestCase):
         prefix = "test_hogbom_list"
         dirty_list = [self.dirty, self.dirty]
         psf_list = [self.psf, self.psf]
-        window_list = find_window_list(dirty_list, prefix)
+        window_list = find_window_list(dirty_list, prefix, window_shape)
 
         comp_list, residual_list = hogbom_kernel_list(
             dirty_list, prefix, psf_list, window_list
@@ -425,6 +425,9 @@ class TestImageDeconvolution(unittest.TestCase):
         # because the two dirty images and psfs are the same, the expected results are also the same
         self._check_hogbom_kernel_list_test_results(comp_list[0], residual_list[0])
         self._check_hogbom_kernel_list_test_results(comp_list[1], residual_list[1])
+
+    def test_hogbom_kernel_list_multiple_dirty_window_shape(self):
+        self.test_hogbom_kernel_list_multiple_dirty(window_shape="quarter")
 
 
 if __name__ == "__main__":

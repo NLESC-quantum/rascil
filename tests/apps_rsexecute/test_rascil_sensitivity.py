@@ -115,10 +115,9 @@ def test_rascil_sensitivity(
     # Check the shape of the DataFrame and the column names
     nrows = len(tapers * (len(robustnesses) + 2))
     assert len(df) == nrows
-    assert len(df.columns) == 22
+    assert len(df.columns) == 21
 
     columns = [
-        "Unnamed: 0",
         "weighting",
         "robustness",
         "taper",

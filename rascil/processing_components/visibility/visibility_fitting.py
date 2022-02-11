@@ -93,9 +93,9 @@ def fit_visibility(
         hess[0, 1] = 4.0 * numpy.pi * numpy.sum(wt * u * Vrp.imag)
         hess[0, 2] = 4.0 * numpy.pi * numpy.sum(wt * v * Vrp.imag)
 
-        hess[1, 1] = 8.0 * numpy.pi ** 2 * S * numpy.sum(wt * u ** 2 * (S + Vrp.real))
-        hess[1, 2] = 8.0 * numpy.pi ** 2 * S * numpy.sum(wt * u * v * (S + Vrp.real))
-        hess[2, 2] = 8.0 * numpy.pi ** 2 * S * numpy.sum(wt * v ** 2 * (S + Vrp.real))
+        hess[1, 1] = 8.0 * numpy.pi**2 * S * numpy.sum(wt * u**2 * (S + Vrp.real))
+        hess[1, 2] = 8.0 * numpy.pi**2 * S * numpy.sum(wt * u * v * (S + Vrp.real))
+        hess[2, 2] = 8.0 * numpy.pi**2 * S * numpy.sum(wt * v**2 * (S + Vrp.real))
 
         hess[1, 0] = hess[0, 1]
         hess[2, 0] = hess[0, 2]

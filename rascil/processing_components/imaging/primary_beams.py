@@ -42,6 +42,7 @@ from rascil.processing_components.image.operations import (
     pad_image,
 )
 from rascil import phyconst
+from rascil.processing_components.imaging.ao import zernike_noll
 
 log = logging.getLogger("rascil-logger")
 
@@ -84,8 +85,8 @@ def gauss(x0, y0, amp, sigma, rho, diff, a):
     r = numpy.hypot(dx, dy)
     return amp * numpy.exp(
         -1.0
-        / (2 * sigma ** 2)
-        * (r ** 2 + rho * (dx * dy) + diff * (dx ** 2 - dy ** 2))
+        / (2 * sigma**2)
+        * (r**2 + rho * (dx * dy) + diff * (dx**2 - dy**2))
     )
 
 
@@ -103,7 +104,7 @@ def tapered_disk(r, radius, blockage=0.0, taper="gaussian", edge=1.0):
     result = numpy.zeros_like(r, dtype="complex")
     if taper == "gaussian":
         # exp(-gscale*radius**2) = taper
-        gscale = -numpy.log(edge) / radius ** 2
+        gscale = -numpy.log(edge) / radius**2
         result[r < radius] = numpy.exp(-gscale * r[r < radius] ** 2)
     result[r < blockage] = 0.0
     return result
@@ -339,7 +340,7 @@ def create_vp_generic(
             scale * (numpy.arange(nx) - cx), scale * (numpy.arange(ny) - cy)
         )
         # Radius of each cell in radians
-        rr = numpy.sqrt(xx ** 2 + yy ** 2)
+        rr = numpy.sqrt(xx**2 + yy**2)
 
         blockage_factor = (blockage / diameter) ** 2
 
@@ -453,7 +454,7 @@ def create_vp_generic_numeric(
         )
 
         # rr in metres
-        rr = numpy.sqrt(xx ** 2 + yy ** 2)
+        rr = numpy.sqrt(xx**2 + yy**2)
         if beam.image_acc.polarisation_frame == PolarisationFrame("linear"):
             pols = [0, 3]
         elif beam.image_acc.polarisation_frame == PolarisationFrame("circular"):
@@ -483,18 +484,11 @@ def create_vp_generic_numeric(
                 xfr["pixels"].data[chan, pol, ...] *= numpy.exp(1j * phase)
 
         if isinstance(zernikes, collections.abc.Iterable):
-            try:
-                import aotools
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError("aotools is not installed")
-
             ndisk = numpy.ceil(numpy.abs(diameter / scalex)).astype("int")[0]
             ndisk = 2 * ((ndisk + 1) // 2)
             phase = numpy.zeros([ndisk, ndisk])
             for zernike in zernikes:
-                phase = zernike["coeff"] * aotools.functions.zernike.zernike_noll(
-                    zernike["noll"], ndisk
-                )
+                phase = zernike["coeff"] * zernike_noll(zernike["noll"], ndisk)
 
             # import matplotlib.pyplot as plt
             # plt.clf()

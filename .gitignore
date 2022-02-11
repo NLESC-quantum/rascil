@@ -1,7 +1,6 @@
 .*
 /.idea
 /docker/.idea
-/examples/numba experiments
 
 /docs/build
 .ipynb_checkpoints

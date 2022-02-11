@@ -540,7 +540,7 @@ class TestGridDataGridding(unittest.TestCase):
         if self.doplot:
             import matplotlib.pyplot as plt
 
-            r = numpy.sqrt(newvis.u ** 2 + newvis.v ** 2)
+            r = numpy.sqrt(newvis.u**2 + newvis.v**2)
             for pol in range(4):
                 plt.plot(newvis.w, numpy.real(newvis.vis[:, pol]), ".")
             plt.xlim(150, 300)

@@ -723,12 +723,12 @@ def get_data_sizes(performance):
     :param performance: Dictionary containing performance information for one run
     :return:
     """
-    imagesize = performance["restored"]["size"] * 2 ** -30
+    imagesize = performance["restored"]["size"] * 2**-30
     nblockvis = (
         performance["inputs"]["ingest_vis_nchan"]
         // performance["inputs"]["ingest_chan_per_blockvis"]
     )
-    vissize = nblockvis * performance["blockvis0"]["size"] * 2 ** -30
+    vissize = nblockvis * performance["blockvis0"]["size"] * 2**-30
     return imagesize, vissize
 
 

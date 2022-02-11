@@ -47,12 +47,12 @@ def geo_to_ecef(lat, lon, elev):
 
     WGS84_a = 6378137.00000000
     WGS84_b = 6356752.31424518
-    N = WGS84_a ** 2 / numpy.sqrt(
-        WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2
+    N = WGS84_a**2 / numpy.sqrt(
+        WGS84_a**2 * numpy.cos(lat) ** 2 + WGS84_b**2 * numpy.sin(lat) ** 2
     )
     x = (N + elev) * numpy.cos(lat) * numpy.cos(lon)
     y = (N + elev) * numpy.cos(lat) * numpy.sin(lon)
-    z = ((WGS84_b ** 2 / WGS84_a ** 2) * N + elev) * numpy.sin(lat)
+    z = ((WGS84_b**2 / WGS84_a**2) * N + elev) * numpy.sin(lat)
 
     return (x, y, z)
 
@@ -152,5 +152,5 @@ def split_baseline(baseline, shift=16):
     Given a baseline, split it into it consistent stand ID numbers.
     """
 
-    part = 2 ** shift - 1
+    part = 2**shift - 1
     return (baseline >> shift) & part, baseline & part

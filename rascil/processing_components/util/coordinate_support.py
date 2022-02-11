@@ -70,13 +70,13 @@ def lla_to_ecef(lat, lon, alt):
     """
     WGS84_a = 6378137.00000000
     WGS84_b = 6356752.31424518
-    N = WGS84_a ** 2 / numpy.sqrt(
-        WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2
+    N = WGS84_a**2 / numpy.sqrt(
+        WGS84_a**2 * numpy.cos(lat) ** 2 + WGS84_b**2 * numpy.sin(lat) ** 2
     )
 
     x = (N + alt) * numpy.cos(lat) * numpy.cos(lon)
     y = (N + alt) * numpy.cos(lat) * numpy.sin(lon)
-    z = ((WGS84_b ** 2 / WGS84_a ** 2) * N + alt) * numpy.sin(lat)
+    z = ((WGS84_b**2 / WGS84_a**2) * N + alt) * numpy.sin(lat)
 
     return x, y, z
 
@@ -89,15 +89,15 @@ def ecef_to_lla(x, y, z):
 
     WGS84_a = 6378137.00000000
     WGS84_b = 6356752.31424518
-    e2 = (WGS84_a ** 2 - WGS84_b ** 2) / WGS84_a ** 2
-    ep2 = (WGS84_a ** 2 - WGS84_b ** 2) / WGS84_b ** 2
+    e2 = (WGS84_a**2 - WGS84_b**2) / WGS84_a**2
+    ep2 = (WGS84_a**2 - WGS84_b**2) / WGS84_b**2
 
     # Distance from rotation axis
-    p = numpy.sqrt(x ** 2 + y ** 2)
+    p = numpy.sqrt(x**2 + y**2)
 
     # Longitude
     lon = numpy.arctan2(y, x)
-    p = numpy.sqrt(x ** 2 + y ** 2)
+    p = numpy.sqrt(x**2 + y**2)
 
     # Latitude (first approximation)
     lat = numpy.arctan2(z, p)
@@ -109,8 +109,8 @@ def ecef_to_lla(x, y, z):
     lat = numpy.arctan2(num, den)
 
     # Elevation
-    N = WGS84_a ** 2 / numpy.sqrt(
-        WGS84_a ** 2 * numpy.cos(lat) ** 2 + WGS84_b ** 2 * numpy.sin(lat) ** 2
+    N = WGS84_a**2 / numpy.sqrt(
+        WGS84_a**2 * numpy.cos(lat) ** 2 + WGS84_b**2 * numpy.sin(lat) ** 2
     )
     alt = p / numpy.cos(lat) - N
 
@@ -509,7 +509,7 @@ def simulate_point(dist_uvw, l, m):
     """
 
     # vector direction to source
-    s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+    s = numpy.array([l, m, numpy.sqrt(1 - l**2 - m**2) - 1.0])
     # complex valued Visibility data_models
     return numpy.exp(-2j * numpy.pi * numpy.einsum("...fs,s->...f", dist_uvw, s))
 
@@ -533,7 +533,7 @@ def simulate_point_antenna(dist_uvw, l, m):
     """
 
     # vector direction to source
-    s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+    s = numpy.array([l, m, numpy.sqrt(1 - l**2 - m**2) - 1.0])
     # complex valued Visibility data_models
     return numpy.exp(-2j * numpy.pi * numpy.dot(dist_uvw, s))
 

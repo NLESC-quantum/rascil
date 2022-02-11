@@ -54,7 +54,7 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
 
             compute_kernels = ["cpu_looped", "gpu_cupy_raw"]
         except ModuleNotFoundError:
-            compute_kernels = ["cpu_numba"]
+            compute_kernels = ["cpu_looped"]
 
         vis = dict()
 

@@ -402,7 +402,7 @@ def create_scalestack(scaleshape, scales, norm=True):
                     fy = float(y - ycen)
                     r2 = rscale2 * (fx * fx + fy * fy)
                     r = numpy.sqrt(r2)
-                    basis[iscale, x, y] = spheroidal_function(r) * (1.0 - r ** 2)
+                    basis[iscale, x, y] = spheroidal_function(r) * (1.0 - r**2)
             basis[basis < 0.0] = 0.0
             if norm:
                 basis[iscale, :, :] /= numpy.sum(basis[iscale, :, :])
@@ -560,14 +560,14 @@ def spheroidal_function(vnu):
 
     top = p[part, 0]
     bot = q[part, 0]
-    delnusq = vnu ** 2 - nuend ** 2
+    delnusq = vnu**2 - nuend**2
 
     for k in range(1, n_p + 1):
-        factor = delnusq ** k
+        factor = delnusq**k
         top += p[part, k] * factor
 
     for k in range(1, n_q + 1):
-        factor = delnusq ** k
+        factor = delnusq**k
         bot += q[part, k] * factor
 
     if bot != 0.0:

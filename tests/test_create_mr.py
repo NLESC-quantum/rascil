@@ -126,18 +126,18 @@ class TestCommitAndPushToBranch:
             - the commit message is the default message
             - git.push is called
         """
-        new_branch = "sim-805-my-new-branch"
+        new_branch = "orc-805-my-new-branch"
 
         manager_fixture.commit_and_push_to_branch(new_branch)
 
         mock_delete_head.assert_not_called()
         mock_git.return_value.checkout.assert_called_with("-b", new_branch)
         mock_git.return_value.commit.assert_called_with(
-            m="SIM-805: Updated requirements"
+            m="ORC-805: Updated requirements"
         )
         mock_git.return_value.push.assert_called()
 
-    @patch.object(Repo, "heads", ["sim-805-my-new-branch"])
+    @patch.object(Repo, "heads", ["orc-805-my-new-branch"])
     def test_branch_in_heads(self, mock_git, mock_delete_head, manager_fixture):
         """
         Given
@@ -151,14 +151,14 @@ class TestCommitAndPushToBranch:
             - the commit message is the default message
             - git.push is called
         """
-        new_branch = "sim-805-my-new-branch"
+        new_branch = "orc-805-my-new-branch"
 
         manager_fixture.commit_and_push_to_branch(new_branch)
 
         mock_delete_head.assert_called_once()
         mock_git.return_value.checkout.assert_called_with("-b", new_branch)
         mock_git.return_value.commit.assert_called_with(
-            m="SIM-805: Updated requirements"
+            m="ORC-805: Updated requirements"
         )
         mock_git.return_value.push.assert_called()
 

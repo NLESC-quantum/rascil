@@ -106,7 +106,7 @@ def grdsf(nu):
     nuend[(nu >= 0.0) & (nu < 0.75)] = 0.75
     nuend[(nu >= 0.75) & (nu <= 1.0)] = 1.0
 
-    delnusq = nu ** 2 - nuend ** 2
+    delnusq = nu**2 - nuend**2
 
     top = p[part, 0]
     for k in range(1, np):
@@ -123,7 +123,7 @@ def grdsf(nu):
     grdsf[ok] = 0.0
 
     # Return the griddata function and the grid correction function
-    return grdsf, (1 - nu ** 2) * grdsf
+    return grdsf, (1 - nu**2) * grdsf
 
 
 def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
@@ -179,7 +179,7 @@ def w_beam(npixel, field_of_view, w, cx=None, cy=None, remove_shift=False):
 
     # SubArray Copy Symmetrically
     ly, mx = coordinates2Offset(npixel, cx, cy, quadrant=True)
-    r2 = field_of_view ** 2 * (ly ** 2 + mx ** 2)
+    r2 = field_of_view**2 * (ly**2 + mx**2)
     ph = -2 * numpy.pi * w * (1 - numpy.sqrt(1.0 - r2))
     numpy.putmask(ph, r2 >= 1.0, 0)
     cp = numpy.zeros_like(r2, dtype="complex")

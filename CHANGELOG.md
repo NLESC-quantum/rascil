@@ -1,6 +1,8 @@
 master
 ------
-
+* Updated the RASCIL kubernetes cluster with the option of using a persistent volume and claim ([MR302](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/302))
+* Add ao.py which directly copied a few AOTools functions ([MR306](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/306))
+* Remove Numba related code ([MR303](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/303))
 * Install PyBDSF from PyPi test_skymodel_extract_skycomponentsusing latest python3.9 wheel ([MR300](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/300))
 * Bug fix in initial SkyModel for ICAL: convert polarisation of SkyComponents read from file to image polarisation ([MR296](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/296))
 * Add uv and r visibility selection in rascil_imager ([MR294](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/294))

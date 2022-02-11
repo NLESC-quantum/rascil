@@ -41,7 +41,7 @@ class TestFFTSupport(unittest.TestCase):
             a = 1 + self._pattern(npixel * kernel_oversampling)
             ex = (
                 extract_oversampled(a, 0, 0, kernel_oversampling, npixel)
-                / kernel_oversampling ** 2
+                / kernel_oversampling**2
             )
             assert_allclose(ex, 1 + self._pattern(npixel))
 

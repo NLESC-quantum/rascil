@@ -298,7 +298,10 @@ def find_skycomponents(
 
     # Make filter kernel
     sigma = fwhm * gaussian_fwhm_to_sigma
-    kernel = Gaussian2DKernel(sigma, x_size=int(1.5 * fwhm), y_size=int(1.5 * fwhm))
+    kernel_size = int(1.5 * fwhm)
+    if kernel_size % 2 == 0:
+        kernel_size += 1
+    kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
     kernel.normalize()
 
     # Segment the average over all channels of Stokes I

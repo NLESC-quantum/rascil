@@ -408,7 +408,7 @@ class TestImageDeconvolution(unittest.TestCase):
     def test_hogbom_kernel_list_multiple_dirty(self, window_shape=None):
         """
         Bugfix: hogbom_kernel_list produced an IndexError, when dirty_list has more than
-        one elements, and those elements are for a single frequency each.
+        one elements, and those elements are for a single frequency each, and window_shape is None.
         """
 
         prefix = "test_hogbom_list"
@@ -427,6 +427,10 @@ class TestImageDeconvolution(unittest.TestCase):
         self._check_hogbom_kernel_list_test_results(comp_list[1], residual_list[1])
 
     def test_hogbom_kernel_list_multiple_dirty_window_shape(self):
+        """
+        Buffix: hogbom_kernel_list produced an IndexError.  Test the second branch of the if statement
+        when dirty_list has more than one elements.
+        """
         self.test_hogbom_kernel_list_multiple_dirty(window_shape="quarter")
 
 

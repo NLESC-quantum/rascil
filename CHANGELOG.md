@@ -1,5 +1,6 @@
 master
 ------
+* Bug fix in Hogbom deconvolution ([MR310](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/310))
 * Updated the RASCIL kubernetes cluster with the option of using a persistent volume and claim ([MR302](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/302))
 * Add ao.py which directly copied a few AOTools functions ([MR306](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/306))
 * Remove Numba related code ([MR303](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/303))

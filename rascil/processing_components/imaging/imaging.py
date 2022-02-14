@@ -18,6 +18,7 @@ from rascil.processing_components.imaging.base import (
     invert_awprojection,
 )
 from rascil.processing_components.imaging.ng import predict_ng, invert_ng
+from rascil.processing_components.imaging.wg import predict_wg, invert_wg
 
 log = logging.getLogger("rascil-logger")
 
@@ -33,7 +34,7 @@ def predict_blockvisibility(
 
     :param vis: blockvisibility to be predicted
     :param model: model image
-    :param context: Type: 2d or awprojection or ng (default: ng)
+    :param context: Type: 2d or awprojection, ng or wg (nifty-gridder or WAGG GPU-based gridder/degridder), default: ng
     :param gcfcf: Tuple of (grid correction function, convolution function) or partial function
     :return: resulting visibility (in place works)
     """
@@ -43,6 +44,8 @@ def predict_blockvisibility(
         return predict_ng(vis, model, do_wstacking=False, **kwargs)
     elif context == "ng":
         return predict_ng(vis, model, **kwargs)
+    elif context == "wg":
+        return predict_wg(vis, model, **kwargs)
     else:
         raise ValueError(f"Unknown imaging context {context}")
 
@@ -68,7 +71,7 @@ def invert_blockvisibility(
     :param im: image template (not changed)
     :param dopsf: Make the psf instead of the dirty image (default: False)
     :param normalise: normalise by the sum of weights (default: True)
-    :param context: Type: 2d or awprojection or ng (default: ng)
+    :param context: Type: 2d or awprojection, ng or wg (nifty-gridder or WAGG GPU-based gridder/degridder), default: ng
     :param gcfcf: Tuple of (grid correction function, convolution function) or partial function
     :return: (resulting image, sum of weights)
     """
@@ -83,5 +86,8 @@ def invert_blockvisibility(
         )
     elif context == "ng":
         return invert_ng(vis, im, dopsf=dopsf, normalise=normalise, **kwargs)
+    elif context == "wg":
+        return invert_wg(vis, im, dopsf=dopsf, normalise=normalise, **kwargs)
+
     else:
         raise ValueError(f"Unknown imaging context {context}")

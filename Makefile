@@ -84,6 +84,13 @@ test-dask:
 	--pylint --pylint-error-types=EF --durations=30
 	coverage html -d coverage
 
+test-gpu:
+	HOME=`pwd` py.test tests/wagg_gpu --verbose \
+	--cov=rascil \
+	--junitxml unit-tests-gpu.xml \
+	--pylint --pylint-error-types=EF --durations=30
+	coverage html -d coverage
+
 upgrade_pip:  ## make sure pip is up to date.
 	pip install --upgrade pip
 

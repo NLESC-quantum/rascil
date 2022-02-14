@@ -26,4 +26,7 @@ Imaging
 .. automodapi::    rascil.processing_components.imaging.weighting
    :no-inheritance-diagram:
 
+.. automodapi::    rascil.processing_components.imaging.wg
+   :no-inheritance-diagram:
+
 

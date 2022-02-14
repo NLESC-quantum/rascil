@@ -26,3 +26,4 @@ tabulate
 xarray
 zarr
 git+https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger.git@master
+

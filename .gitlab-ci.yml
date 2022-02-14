@@ -89,6 +89,41 @@ test-dask:
       - unit-tests-dask.xml
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+    
+# Always run the unittests
+test_gpu:
+  image: nvidia/cuda:11.3.0-devel-ubuntu20.04
+  stage: test
+  tags: [k8srunner-gpu]
+  before_script:
+    - nvidia-smi  # shows the status of nvidia GPUs
+    - DEBIAN_FRONTEND=noninteractive apt-get -y update
+    - DEBIAN_FRONTEND=noninteractive apt-get -y install git ca-certificates software-properties-common
+    - export LD_LIBRARY_PATH=/usr/local/cuda/lib:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    - apt-get -y install python3 python3-pip  # python3.8 is installed natively
+    - pip3 install --upgrade pip
+    - pip install -r requirements-test.txt
+    - pip install -r requirements.txt
+    - git clone http://gitlab.com/ska-telescope/sdp/ska-gridder-nifty-cuda.git  # => wagg
+    - cd ska-gridder-nifty-cuda
+    # due to a bug in wagg, we need to use the following branch for now
+    - git checkout --track origin/sim-874-python-wrapper
+    - cd python
+    - pip install .
+    - cd ../..
+    - mkdir -p test_results
+  script:
+    - PYTHONPATH=`pwd` HOME=`pwd` make test-gpu
+  after_script:
+    - mv .coverage coverage_test_gpu
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+      - coverage_test_gpu
+      - coverage
+      - unit-tests-gpu.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Always try to build the docs since this catches errors via the notebook
 docs:
@@ -215,7 +250,7 @@ prepare ci metrics:
     - coverage combine coverage_* && coverage xml && coverage html -d coverage && coverage report
     - test -a coverage.xml && mv coverage.xml ./build/reports/code-coverage.xml
     - test -a linting.xml && mv linting.xml ./build/reports/linting.xml
-    - python3 util/xmlcombine.py unit-tests-dask.xml unit-tests-other.xml > unit-tests.xml
+    - python3 util/xmlcombine.py unit-tests-dask.xml unit-tests-other.xml unit-tests-gpu.xml > unit-tests.xml
     - test -a unit-tests.xml && mv unit-tests.xml ./build/reports/unit-tests.xml
   artifacts:
     paths:

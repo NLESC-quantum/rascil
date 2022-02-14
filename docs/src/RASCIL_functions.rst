@@ -31,6 +31,8 @@ Visibility predict and invert
 
 * Predict by de-gridding visibilities with Nifty Gridder :py:func:`rascil.processing_components.imaging.ng.predict_ng`
 * Invert by gridding visibilities with Nifty Gridder :py:func:`rascil.processing_components.imaging.ng.invert_ng`
+* Predict by de-gridding visibilities with GPU-based WAGG :py:func:`rascil.processing_components.imaging.wg.predict_wg`
+* Invert by gridding visibilities with GPU-based WAGG :py:func:`rascil.processing_components.imaging.wg.invert_wg`
 * Predict BlockVisibility for Skycomponent :py:func:`rascil.processing_components.imaging.dft.dft_skycomponent_visibility`
 * Predict Skycomponent from BlockVisibility :py:func:`rascil.processing_components.imaging.dft.idft_visibility_skycomponent`
 

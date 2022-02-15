@@ -171,6 +171,7 @@ def check_psf_peak(psf_list):
             pmax,
             1.0,
             err_msg=f"check_psf_peak: PSF {ipsf} does not have unit peak {pmax}",
+            significant=6,
         )
 
 

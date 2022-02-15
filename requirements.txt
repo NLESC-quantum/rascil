@@ -19,6 +19,7 @@ astropy==5.0.1
     #   -r requirements.in
     #   astroplan
     #   astropy-healpix
+    #   bdsf
     #   photutils
     #   reproject
 astropy-healpix==0.6
@@ -33,7 +34,7 @@ backports-shutil-get-terminal-size==1.0.0
     # via bdsf
 bcrypt==3.2.0
     # via paramiko
-bdsf==1.9.2
+bdsf==1.10.0
     # via -r requirements.in
 black==22.1.0
     # via ipython
@@ -49,7 +50,7 @@ cffi==1.15.0
     #   bcrypt
     #   cryptography
     #   pynacl
-charset-normalizer==2.0.11
+charset-normalizer==2.0.12
     # via requests
 click==8.0.3
     # via
@@ -66,7 +67,7 @@ cryptography==36.0.1
     # via paramiko
 cycler==0.11.0
     # via matplotlib
-dask==2022.01.1
+dask==2022.02.0
     # via
     #   -r requirements.in
     #   distributed
@@ -78,7 +79,7 @@ decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2022.1.1
+distributed==2022.2.0
     # via
     #   -r requirements.in
     #   dask-memusage
@@ -110,7 +111,7 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-ipykernel==6.8.0
+ipykernel==6.9.0
     # via
     #   ipywidgets
     #   jupyter
@@ -204,7 +205,7 @@ natsort==8.1.0
     # via seqfile
 nbclient==0.5.10
     # via nbconvert
-nbconvert==6.4.1
+nbconvert==6.4.2
     # via
     #   jupyter
     #   jupyter-contrib-nbextensions
@@ -263,7 +264,7 @@ packaging==21.3
     #   matplotlib
     #   qtpy
     #   xarray
-pandas==1.4.0
+pandas==1.4.1
     # via
     #   -r requirements.in
     #   xarray
@@ -287,11 +288,11 @@ pillow==9.0.1
     # via
     #   bokeh
     #   matplotlib
-platformdirs==2.4.1
+platformdirs==2.5.0
     # via black
 prometheus-client==0.13.1
     # via notebook
-prompt-toolkit==3.0.26
+prompt-toolkit==3.0.28
     # via
     #   ipython
     #   jupyter-console
@@ -360,7 +361,7 @@ requests==2.27.1
     #   requests-toolbelt
 requests-toolbelt==0.9.1
     # via python-gitlab
-scipy==1.7.3
+scipy==1.8.0
     # via
     #   -r requirements.in
     #   bdsf
@@ -392,7 +393,7 @@ terminado==0.13.1
     # via notebook
 testpath==0.5.0
     # via nbconvert
-tomli==2.0.0
+tomli==2.0.1
     # via black
 toolz==0.11.2
     # via
@@ -427,7 +428,7 @@ traitlets==5.1.1
     #   nbformat
     #   notebook
     #   qtconsole
-typing-extensions==4.0.1
+typing-extensions==4.1.0
     # via
     #   black
     #   bokeh
@@ -441,7 +442,7 @@ widgetsnbextension==3.5.2
     # via ipywidgets
 xarray==0.21.1
     # via -r requirements.in
-zarr==2.10.3
+zarr==2.11.0
     # via -r requirements.in
 zict==2.0.0
     # via distributed

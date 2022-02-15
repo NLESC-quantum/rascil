@@ -428,7 +428,7 @@ class TestImageDeconvolution(unittest.TestCase):
 
     def test_hogbom_kernel_list_multiple_dirty_window_shape(self):
         """
-        Buffix: hogbom_kernel_list produced an IndexError. Test the second branch of the if statement
+        Bugfix: hogbom_kernel_list produced an IndexError. Test the second branch of the if statement
         when dirty_list has more than one elements.
         """
         self.test_hogbom_kernel_list_multiple_dirty(window_shape="quarter")

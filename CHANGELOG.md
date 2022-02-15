@@ -1,5 +1,6 @@
 master
 ------
+* Bug fix in Hogbom deconvolution ([MR310](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/310))
 * Add GPU-based gridder/degridder functionality using WAGG module which should be installed separately ([MR299](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/299))
 * Updated the RASCIL kubernetes cluster with the option of using a persistent volume and claim ([MR302](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/302))
 * Add ao.py which directly copied a few AOTools functions ([MR306](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/306))

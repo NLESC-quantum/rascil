@@ -210,14 +210,13 @@ def calculate_sensitivity(args):
 
     # Set up configuration and observing times
     config = create_named_configuration(args.configuration)
-    print("subarray in", args.subarray)
     if args.subarray != "":
         f = open(args.subarray)
         subarray_dict = json.load(f)
         f.close()
         subarray_ids = subarray_dict["ids"]
-        print(subarray_ids)
         config = config.sel({"id": subarray_ids})
+
     time_rad = numpy.array(args.time_range) * numpy.pi / 12.0
     times = numpy.arange(
         time_rad[0], time_rad[1], args.integration_time * numpy.pi / 43200.0

@@ -27,8 +27,8 @@ sensitivity always worsens compared to natural weighting but the surface brightn
 The robustness parameter and the visibility taper can be specified as single values or as a list of values
 to test.
 
-The array configuration is specified by parameters configuration and subarray.
-`configuration` identifies a table with details of the available dishes. `subarray`
+The array configuration is specified by 2 parameters:
+`configuration` identifies a table with details of the available dishes, `subarray`
 names a json file listing the ids (i.e. row numbers in the configuration table) 
 of the dishes to be used. If no subarray is specified then all dishes will be selected. The
 json format is:: 

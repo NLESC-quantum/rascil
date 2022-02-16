@@ -28,7 +28,7 @@ The robustness parameter and the visibility taper can be specified as single val
 to test.
 
 The array configuration is specified by parameters configuration and subarray.
-`configuration' identifies a table with details of the available dishes. `subarray'
+`configuration` identifies a table with details of the available dishes. `subarray`
 names a json file listing the ids (i.e. row numbers in the configuration table) 
 of the dishes to be used. If no subarray is specified then all dishes will be selected. The
 json format is:: 

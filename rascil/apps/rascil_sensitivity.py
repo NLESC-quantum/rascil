@@ -135,7 +135,7 @@ def cli_parser():
         "--subarray",
         type=str,
         default="",
-        help="Name of file containing json description of subarray to be used",
+        help="Name of json file describing subarray to be used, default is all antennas",
     )
     parser.add_argument(
         "--rmax",
@@ -208,7 +208,7 @@ def calculate_sensitivity(args):
         ra=args.ra * u.deg, dec=args.declination * u.deg, frame="icrs", equinox="J2000"
     )
 
-    # Set up configuration and observing times
+    # Set up configuration and observing times. Default subarray is all antennas.
     config = create_named_configuration(args.configuration)
     if args.subarray != "":
         f = open(args.subarray)

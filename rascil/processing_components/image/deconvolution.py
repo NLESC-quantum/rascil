@@ -496,13 +496,10 @@ def hogbom_kernel_list(
                         prefix,
                     )
                 else:
-                    (
-                        comp_array[channel, pol, :, :],
-                        residual_array[channel, pol, :, :],
-                    ) = hogbom(
+                    (comp_array[0, pol, :, :], residual_array[0, pol, :, :],) = hogbom(
                         dirty["pixels"].data[0, pol, :, :],
                         psf["pixels"].data[0, pol, :, :],
-                        window_list[channel]["pixels"].data[channel, pol, :, :],
+                        window_list[channel]["pixels"].data[0, pol, :, :],
                         gain,
                         thresh,
                         niter,

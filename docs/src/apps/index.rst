@@ -12,6 +12,7 @@ The following command line apps are available.
    :maxdepth: 1
 
    rascil_imager.rst
+   rascil_sensitivity.rst
    rascil_rcal.rst
    rascil_advise.rst
    rascil_vis_ms.rst

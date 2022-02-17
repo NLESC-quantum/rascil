@@ -27,6 +27,15 @@ sensitivity always worsens compared to natural weighting but the surface brightn
 The robustness parameter and the visibility taper can be specified as single values or as a list of values
 to test.
 
+The array configuration is specified by 2 parameters:
+`configuration` identifies a table with details of the available dishes, `subarray`
+names a json file listing the ids (i.e. row numbers in the configuration table) 
+of the dishes to be used. If no subarray is specified then all dishes will be selected. The
+json format is:: 
+
+    {"ids": [64, 65, 66, 67, 68, 69, 70, ....etc.]}
+
+
 The principal output is a CSV file, written by pandas in which all values of robustness and taper are
 tested, along with natural weighting.
 

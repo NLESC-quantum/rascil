@@ -17,13 +17,13 @@ default_run = True
 
 
 @pytest.mark.parametrize(
-    "enabled, tag, use_dask, band, npixel, cellsize, weighting, rmax, robustnesses, tapers",
+    "enabled, tag, use_dask, frequency, npixel, cellsize, weighting, rmax, robustnesses, tapers",
     [
         (
             default_run,
             "B1LOW",
             True,
-            "B1LOW",
+            0.350e9,
             512,
             6e-7,
             "robust",
@@ -35,7 +35,7 @@ default_run = True
             default_run,
             "B2",
             True,
-            "B2",
+            1.36e9,
             1024,
             2e-7,
             "robust",
@@ -49,7 +49,7 @@ def test_rascil_sensitivity(
     enabled,
     tag,
     use_dask,
-    band,
+    frequency,
     npixel,
     cellsize,
     weighting,
@@ -62,7 +62,7 @@ def test_rascil_sensitivity(
     :param enabled: Turn this test on?
     :param tag: Tag for files generated
     :param use_dask: Use dask for processing. Set to False for debugging
-    :param band: Name of band to test
+    :param frequency: Frequency of test images (Hz)
     :param npixel: Number of pixels in test images
     :param cellsize: Cellsize of test images (rad)
     :param weighting: type of weighting
@@ -80,8 +80,8 @@ def test_rascil_sensitivity(
 
     results = rascil_path(f"test_results/{tag}")
     sensitivity_args = [
-        "--band",
-        f"{band}",
+        "--frequency",
+        f"{frequency}",
         "--imaging_cellsize",
         f"{cellsize}",
         "--imaging_npixel",
@@ -115,10 +115,9 @@ def test_rascil_sensitivity(
     # Check the shape of the DataFrame and the column names
     nrows = len(tapers * (len(robustnesses) + 2))
     assert len(df) == nrows
-    assert len(df.columns) == 22
+    assert len(df.columns) == 21
 
     columns = [
-        "Unnamed: 0",
         "weighting",
         "robustness",
         "taper",

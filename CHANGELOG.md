@@ -1,5 +1,5 @@
-master
-------
+0.6.0
+-----
 * Modify parameters of rescil_sensitivity app to enable subarrays and allow a greater choice of frequency ([MR311](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/311))
 * Bug fix in Hogbom deconvolution ([MR310](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/310))
 * Add GPU-based gridder/degridder functionality using WAGG module which should be installed separately ([MR299](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/299))
@@ -13,6 +13,7 @@ master
 0.5.0
 -----
 
+* Fix bug in how the skymodel is reset in ICAL ([MR293](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/293))
 * Add DASK support to Quality Assesment app ([MR286](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/286))
 * Added blockvisibility selection documentation and functions ([MR292](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/292))
 * Developed the capability to apply realistic LOW beam for skymodel in the RCAL app and refined its application in imaging_qa ([MR284](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/284))

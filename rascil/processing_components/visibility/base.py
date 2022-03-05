@@ -541,7 +541,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         elif vis.blockvisibility_acc.polarisation_frame.type == "linearnp":
             polarization = ["XX", "YY"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "stokesI":
-            polarization = ["I"]
+            polarization = ["XX"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "circular":
             polarization = ["RR", "RL", "LR", "LL"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "circularnp":
@@ -854,7 +854,7 @@ def create_blockvisibility_from_ms(
             elif numpy.array_equal(corr_type, [9, 12]):
                 polarisation_frame = PolarisationFrame("linearnp")
                 npol = 2
-            elif numpy.array_equal(corr_type, [1]):
+            elif numpy.array_equal(corr_type, [9]):
                 npol = 1
                 polarisation_frame = PolarisationFrame("stokesI")
             else:

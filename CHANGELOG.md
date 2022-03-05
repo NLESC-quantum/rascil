@@ -1,5 +1,6 @@
 0.6.0
 -----
+* Bug fix for export measurement set file with multi-block visibility ([MR315](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/315)
 * Modify parameters of rescil_sensitivity app to enable subarrays and allow a greater choice of frequency ([MR311](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/311))
 * Bug fix in Hogbom deconvolution ([MR310](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/310))
 * Add GPU-based gridder/degridder functionality using WAGG module which should be installed separately ([MR299](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/299))

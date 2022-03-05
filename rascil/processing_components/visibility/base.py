@@ -1253,7 +1253,7 @@ def calculate_blockvisibility_phasor(direction, vis):
     # assert isinstance(vis, BlockVisibility)
     ntimes, nbaseline, nchan, npol = vis["vis"].data.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
-    s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+    s = numpy.array([l, m, numpy.sqrt(1 - l**2 - m**2) - 1.0])
 
     phasor = numpy.ones([ntimes, nbaseline, nchan, npol], dtype="complex")
     phasor[...] = numpy.exp(

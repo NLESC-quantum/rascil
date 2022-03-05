@@ -1459,24 +1459,24 @@ try:
                     # Add in the new new source ID and name
                     sourceList = [sourceID for bl in dataSet.baselines]
 
-                    # Zero out the visibility data
-                    try:
-                        matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
-                        flag_matrix.shape = (
-                            len(order),
-                            self.nStokes,
-                            nBand * self.nchan,
-                        )
-                        matrix *= 0.0
-                        flag_matrix *= False
-                    except (NameError, RuntimeError):
-                        matrix = numpy.zeros(
-                            (len(order), self.nStokes, self.nchan * nBand),
-                            dtype=complex,
-                        )
-                        flag_matrix = numpy.zeros(
-                            (len(order), self.nStokes, self.nchan * nBand), dtype=bool
-                        )
+                # Zero out the visibility data
+                try:
+                    matrix.shape = (len(order), self.nStokes, nBand * self.nchan)
+                    flag_matrix.shape = (
+                        len(order),
+                        self.nStokes,
+                        nBand * self.nchan,
+                    )
+                    matrix *= 0.0
+                    flag_matrix *= False
+                except (NameError, RuntimeError):
+                    matrix = numpy.zeros(
+                        (len(order), self.nStokes, self.nchan * nBand),
+                        dtype=complex,
+                    )
+                    flag_matrix = numpy.zeros(
+                        (len(order), self.nStokes, self.nchan * nBand), dtype=bool
+                    )
 
                 # Save the visibility data in the right order
                 matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.visibilities[

@@ -541,7 +541,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         elif vis.blockvisibility_acc.polarisation_frame.type == "linearnp":
             polarization = ["XX", "YY"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "stokesI":
-            polarization = ["XX"]
+            polarization = ["I"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "circular":
             polarization = ["RR", "RL", "LR", "LL"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "circularnp":

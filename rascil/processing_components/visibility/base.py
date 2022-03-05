@@ -541,7 +541,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         elif vis.blockvisibility_acc.polarisation_frame.type == "linearnp":
             polarization = ["XX", "YY"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "stokesI":
-            polarization = ["XX"]
+            polarization = ["I"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "circular":
             polarization = ["RR", "RL", "LR", "LL"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "circularnp":
@@ -854,7 +854,7 @@ def create_blockvisibility_from_ms(
             elif numpy.array_equal(corr_type, [9, 12]):
                 polarisation_frame = PolarisationFrame("linearnp")
                 npol = 2
-            elif numpy.array_equal(corr_type, [9]):
+            elif numpy.array_equal(corr_type, [1]):
                 npol = 1
                 polarisation_frame = PolarisationFrame("stokesI")
             else:
@@ -1253,7 +1253,7 @@ def calculate_blockvisibility_phasor(direction, vis):
     # assert isinstance(vis, BlockVisibility)
     ntimes, nbaseline, nchan, npol = vis["vis"].data.shape
     l, m, n = skycoord_to_lmn(direction, vis.phasecentre)
-    s = numpy.array([l, m, numpy.sqrt(1 - l ** 2 - m ** 2) - 1.0])
+    s = numpy.array([l, m, numpy.sqrt(1 - l**2 - m**2) - 1.0])
 
     phasor = numpy.ones([ntimes, nbaseline, nchan, npol], dtype="complex")
     phasor[...] = numpy.exp(

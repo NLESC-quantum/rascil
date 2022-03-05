@@ -587,9 +587,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
 
         int_time = vis["integration_time"].data
         assert vis["integration_time"].data.shape == vis["time"].data.shape
-        # bv_vis = vis['vis']
-        # bv_uvw = vis['uvw']
-        #
+
         # Now easier since the BlockVisibility is baseline oriented
 
         for ntime, time in enumerate(vis["time"]):

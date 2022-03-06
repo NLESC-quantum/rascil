@@ -854,7 +854,7 @@ def create_blockvisibility_from_ms(
             elif numpy.array_equal(corr_type, [9, 12]):
                 polarisation_frame = PolarisationFrame("linearnp")
                 npol = 2
-            elif numpy.array_equal(corr_type, [9]) or  numpy.array_equal(corr_type, [1]:
+            elif numpy.array_equal(corr_type, [9]) or numpy.array_equal(corr_type, [1]):
                 npol = 1
                 polarisation_frame = PolarisationFrame("stokesI")
             else:

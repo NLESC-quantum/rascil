@@ -86,7 +86,7 @@ entrypoints==0.4
     # via
     #   jupyter-client
     #   nbconvert
-executing==0.8.2
+executing==0.8.3
     # via stack-data
 fasteners==0.17.3
     # via zarr
@@ -115,7 +115,7 @@ ipykernel==6.9.1
     #   jupyter-console
     #   notebook
     #   qtconsole
-ipython==8.1.0
+ipython==8.1.1
     # via
     #   ipykernel
     #   ipywidgets
@@ -149,7 +149,7 @@ jupyter-client==7.1.2
     #   nbclient
     #   notebook
     #   qtconsole
-jupyter-console==6.4.0
+jupyter-console==6.4.2
     # via jupyter
 jupyter-contrib-core==0.3.3
     # via
@@ -198,7 +198,7 @@ msgpack==1.0.3
     # via distributed
 natsort==8.1.0
     # via seqfile
-nbclient==0.5.11
+nbclient==0.5.12
     # via nbconvert
 nbconvert==6.4.2
     # via
@@ -321,7 +321,7 @@ python-dateutil==2.8.2
     #   jupyter-client
     #   matplotlib
     #   pandas
-python-gitlab==3.1.1
+python-gitlab==3.2.0
     # via -r requirements.in
 pytz==2021.3
     # via
@@ -380,7 +380,7 @@ tabulate==0.8.9
     # via -r requirements.in
 tblib==1.7.0
     # via distributed
-terminado==0.13.1
+terminado==0.13.2
     # via notebook
 testpath==0.6.0
     # via nbconvert
@@ -427,7 +427,7 @@ webencodings==0.5.1
     # via bleach
 widgetsnbextension==3.5.2
     # via ipywidgets
-xarray==0.21.1
+xarray==2022.3.0
     # via -r requirements.in
 zarr==2.11.0
     # via -r requirements.in

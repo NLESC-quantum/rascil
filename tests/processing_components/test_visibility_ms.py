@@ -5,6 +5,7 @@
 import sys
 import unittest
 import logging
+import shutil
 
 import numpy
 
@@ -205,8 +206,6 @@ class TestCreateMS(unittest.TestCase):
 
         # export the list without any changes
         export_blockvisibility_to_ms("out.ms", bvis_list)
-        import shutil
-
         # verify data
         bvis_list_2 = create_blockvisibility_from_ms("out.ms")
         for i in range(0, len(bvis_list), 3):

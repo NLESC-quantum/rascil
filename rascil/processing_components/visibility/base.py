@@ -541,7 +541,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
         elif vis.blockvisibility_acc.polarisation_frame.type == "linearnp":
             polarization = ["XX", "YY"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "stokesI":
-            polarization = ["XX"]
+            polarization = ["I"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "circular":
             polarization = ["RR", "RL", "LR", "LL"]
         elif vis.blockvisibility_acc.polarisation_frame.type == "circularnp":
@@ -587,9 +587,7 @@ def export_blockvisibility_to_ms(msname, vis_list, source_name=None):
 
         int_time = vis["integration_time"].data
         assert vis["integration_time"].data.shape == vis["time"].data.shape
-        # bv_vis = vis['vis']
-        # bv_uvw = vis['uvw']
-        #
+
         # Now easier since the BlockVisibility is baseline oriented
 
         for ntime, time in enumerate(vis["time"]):
@@ -856,7 +854,7 @@ def create_blockvisibility_from_ms(
             elif numpy.array_equal(corr_type, [9, 12]):
                 polarisation_frame = PolarisationFrame("linearnp")
                 npol = 2
-            elif numpy.array_equal(corr_type, [9]):
+            elif numpy.array_equal(corr_type, [9]) or numpy.array_equal(corr_type, [1]):
                 npol = 1
                 polarisation_frame = PolarisationFrame("stokesI")
             else:

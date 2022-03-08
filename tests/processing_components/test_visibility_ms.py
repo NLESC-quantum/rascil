@@ -5,6 +5,7 @@
 import sys
 import unittest
 import logging
+import shutil
 
 import numpy
 
@@ -12,6 +13,7 @@ from rascil.data_models import rascil_path, rascil_data_path, BlockVisibility
 from rascil.processing_components.visibility.base import (
     create_blockvisibility_from_ms,
     create_blockvisibility_from_ms,
+    export_blockvisibility_to_ms,
 )
 from rascil.processing_components.visibility.operations import (
     integrate_visibility_by_channel,
@@ -197,6 +199,19 @@ class TestCreateMS(unittest.TestCase):
             ms = "vis/ASKAP_example.fits"
             vis_list = create_blockvisibility_from_ms(rascil_data_path(ms))
             # assert isinstance(vis_list[0], BlockVisibility)
+
+    def test_write_multi_bvis_ms(self):
+        # read in an MS which produces multiple bvis
+        bvis_list = create_blockvisibility_from_ms(rascil_path("data/vis/xcasa.ms"))
+
+        # export the list without any changes
+        export_blockvisibility_to_ms("out.ms", bvis_list)
+        # verify data
+        bvis_list_2 = create_blockvisibility_from_ms("out.ms")
+        # there are 14 elements in the list and we test half to decrease the time it takes for the test to run
+        for i in range(0, len(bvis_list), 2):
+            assert bvis_list[i] == bvis_list_2[i]
+        shutil.rmtree("./out.ms", ignore_errors=True)
 
 
 if __name__ == "__main__":

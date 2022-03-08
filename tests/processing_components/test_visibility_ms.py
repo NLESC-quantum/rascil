@@ -208,7 +208,8 @@ class TestCreateMS(unittest.TestCase):
         export_blockvisibility_to_ms("out.ms", bvis_list)
         # verify data
         bvis_list_2 = create_blockvisibility_from_ms("out.ms")
-        for i in range(0, len(bvis_list), 3):
+        # there are 14 elements in the list and we test half to decrease the time it takes for the test to run
+        for i in range(0, len(bvis_list), 2):
             assert bvis_list[i] == bvis_list_2[i]
         shutil.rmtree("./out.ms", ignore_errors=True)
 

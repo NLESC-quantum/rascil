@@ -52,7 +52,7 @@ lazy-object-proxy==1.7.1
     # via astroid
 livereload==2.6.3
     # via sphinx-autobuild
-markupsafe==2.1.0
+markupsafe==2.1.1
     # via
     #   -r requirements-test.in
     #   jinja2
@@ -91,7 +91,7 @@ pylint2junit==1.0.1
     # via -r requirements-test.in
 pyparsing==3.0.7
     # via packaging
-pytest==7.1.0
+pytest==7.1.1
     # via
     #   -r requirements-test.in
     #   pytest-cov
@@ -104,7 +104,7 @@ pytest-cov==3.0.0
     # via -r requirements-test.in
 pytest-forked==1.4.0
     # via pytest-xdist
-pytest-json-report==1.4.1
+pytest-json-report==1.5.0
     # via -r requirements-test.in
 pytest-metadata==1.11.0
     # via pytest-json-report
@@ -114,7 +114,7 @@ pytest-xdist==2.5.0
     # via -r requirements-test.in
 python-dotenv==0.19.2
     # via -r requirements-test.in
-pytz==2021.3
+pytz==2022.1
     # via babel
 recommonmark==0.7.1
     # via -r requirements-test.in
@@ -168,7 +168,7 @@ typing-extensions==4.1.1
     #   astroid
     #   black
     #   pylint
-urllib3==1.26.8
+urllib3==1.26.9
     # via requests
 wrapt==1.13.3
     # via astroid

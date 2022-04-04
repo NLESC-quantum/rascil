@@ -33,11 +33,9 @@ compile_requirements:
     - git remote rm new_origin
 
 linting:
-  image: artefact.skao.int/ska-tango-images-pytango-builder:9.3.11
   stage: linting
   before_script:
     - pip3 install -r requirements-test.txt
-    - pip3 install black
   script:
     - make lint
   artifacts:

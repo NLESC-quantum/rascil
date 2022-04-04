@@ -211,7 +211,7 @@ def main():
 
     if new_branch:
         original_branch = os.environ["CI_COMMIT_BRANCH"]
-        mr_title = "WIP: ORC-805: Update requirements - to be actioned before next scheduled run"
+        mr_title = "Draft: ORC-805: Update requirements - to be actioned before next scheduled run"
         mr_object = MergeRequest(private_token)
         mr = mr_object.create_merge_request(new_branch, original_branch, mr_title)
         mr_object.udpate_mr_settings(

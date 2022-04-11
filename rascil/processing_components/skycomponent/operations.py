@@ -316,18 +316,6 @@ def find_skycomponents(
 
     log.info("find_skycomponents: Identified %d segments" % segments.nlabels)
 
-    # Now compute source properties for all polarisations and frequencies
-    # comp_tbl = [
-    #     [
-    #         segmentation.SourceCatalog(
-    #             im["pixels"].data[chan, pol],
-    #             segments,
-    #             kernel=kernel,
-    #         ).to_table()
-    #         for pol in [0]
-    #     ]
-    #     for chan in range(im.image_acc.nchan)
-    # ]
     comp_catalog = [
         [
             segmentation.SourceCatalog(
@@ -352,9 +340,6 @@ def find_skycomponents(
         # Get flux and position. Astropy's quantities make this
         # unnecessarily complicated.
         flux = numpy.array(comp_prop(segment, "max_value"))
-        # TODO: maxval_xpos/ypos no longer exist; I think it should be maxval_xindex and maxval_yindex,
-        #  but those aren't part of the table! Ask rascil people what they think
-        #  maybe I can rewrite this a bit without converting to table, instead just using the SourceCatalog class
         xs = u.Quantity(list(map(u.Quantity, comp_prop(segment, "maxval_xindex"))))
         ys = u.Quantity(list(map(u.Quantity, comp_prop(segment, "maxval_yindex"))))
 

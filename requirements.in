@@ -16,7 +16,7 @@ matplotlib
 numpy
 pandas
 paramiko
-photutils
+photutils >= 1.4.0
 python-casacore
 python-gitlab
 reproject

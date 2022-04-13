@@ -25,5 +25,5 @@ seqfile
 tabulate
 xarray
 zarr
-git+https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger.git@master
+git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@rfi_flagger
 

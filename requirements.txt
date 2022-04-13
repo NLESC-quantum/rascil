@@ -82,7 +82,7 @@ distributed==2022.4.0
     # via
     #   -r requirements.in
     #   dask-memusage
-ducc0==0.22.1
+ducc0==0.23.0
     # via -r requirements.in
 entrypoints==0.4
     # via
@@ -112,7 +112,7 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-ipykernel==6.12.1
+ipykernel==6.13.0
     # via
     #   ipywidgets
     #   jupyter
@@ -177,7 +177,7 @@ jupyter-latex-envs==1.4.6
     # via jupyter-contrib-nbextensions
 jupyter-nbextensions-configurator==0.4.1
     # via jupyter-contrib-nbextensions
-jupyterlab-pygments==0.2.0
+jupyterlab-pygments==0.2.1
     # via nbconvert
 jupyterlab-widgets==1.1.0
     # via ipywidgets
@@ -203,9 +203,9 @@ msgpack==1.0.3
     # via distributed
 natsort==8.1.0
     # via seqfile
-nbclient==0.5.13
+nbclient==0.6.0
     # via nbconvert
-nbconvert==6.4.5
+nbconvert==6.5.0
     # via
     #   jupyter
     #   jupyter-contrib-nbextensions
@@ -251,7 +251,6 @@ numpy==1.22.3
     #   python-casacore
     #   reproject
     #   scipy
-    #   ska-post-correlation-rfi-flagger
     #   xarray
     #   zarr
 packaging==21.3
@@ -262,6 +261,7 @@ packaging==21.3
     #   distributed
     #   ipykernel
     #   matplotlib
+    #   nbconvert
     #   qtpy
     #   xarray
 pandas==1.4.2
@@ -375,7 +375,7 @@ six==1.16.0
     #   paramiko
     #   python-casacore
     #   python-dateutil
-ska-post-correlation-rfi-flagger @ git+https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger.git@master
+ska-sdp-func @ git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@rfi_flagger
     # via -r requirements.in
 smmap==5.0.0
     # via gitdb
@@ -391,7 +391,7 @@ tblib==1.7.0
     # via distributed
 terminado==0.13.3
     # via notebook
-testpath==0.6.0
+tinycss2==1.1.1
     # via nbconvert
 toolz==0.11.2
     # via
@@ -435,7 +435,9 @@ urllib3==1.26.9
 wcwidth==0.2.5
     # via prompt-toolkit
 webencodings==0.5.1
-    # via bleach
+    # via
+    #   bleach
+    #   tinycss2
 widgetsnbextension==3.6.0
     # via ipywidgets
 xarray==2022.3.0

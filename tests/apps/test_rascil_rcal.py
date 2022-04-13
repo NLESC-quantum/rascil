@@ -304,8 +304,10 @@ class TestRASCILRcal(unittest.TestCase):
             self.persist_data_files()
 
     def test_rfi_flagger(self):
+
+        # Import flagger
         try:
-            import ska_post_correlation_rfi_flagger
+            from ska.sdp.func import rfi_flagger
         except ImportError:
             log.error(
                 "_rfi_flagger test skipped: "

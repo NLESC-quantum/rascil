@@ -177,18 +177,17 @@ def cli_parser():
     return parser
 
 
-def _rfi_flagger(bvis, initial_threshold=8, rho=1.5, option="post-correlation"):
+def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     """
     Wrapper function for the SKA flagger, certain defaults are managed here.
-    Version of flaggers:
-    1. (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger)
+    Version of flagger:
+    1. (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger) (deprecated)
     2. (https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/tree/rfi_flagger/)
     TODO: Update this link when the flagger is merged into the main branch
 
     :param bvis: Block visibility
     :param initial_threshold: The initial threshold to be used
     :param rho: The roh to be used
-    :param option: Which flagger to use (currently supported: post-correlation or sdp-func (processing functions)
     :return: Block visibility with flags populated.
     """
 
@@ -198,60 +197,22 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5, option="post-correlation"):
     sequence = numpy.array(sequence, dtype=numpy.int32)
     thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
 
-    new_dims = (
-        bvis.dims["time"] * bvis.dims["baselines"],
-        bvis.dims["frequency"],
-        bvis.dims["polarisation"],
-    )
-    vis_data = abs(bvis["vis"].data).reshape(new_dims).astype("float32")
-    flag_data = bvis["flags"].data.reshape(new_dims).astype("int32")
+    vis_data = abs(bvis["vis"].data).astype("float32")
+    flag_data = bvis["flags"].data.astype("int32")
 
-    if option == "post-correlation":
-        try:
-            import ska_post_correlation_rfi_flagger
-        except ImportError:
-            # ImportError:
-            #   - Either package is not imported,
-            #   - or an `ImportError: numpy.core.multiarray failed to import` error was thrown.
-            # If latter, upgrading numpy may solve it, but version still needs to be compatible with rest of RASCIL
-            log.error(
-                "ska_post_correlation_rfi_flagger ImportError. Flagger did not run. "
-                "(see comment where this message was produced)"
-            )
-            return
+    try:
+        from ska.sdp.func import rfi_flagger
+    except ImportError:
 
-        ska_post_correlation_rfi_flagger.run_flagger_on_all_slices(
-            bvis.dims["time"],
-            bvis.dims["frequency"],
-            bvis.dims["baselines"],
-            bvis.dims["polarisation"],
-            vis_data,
-            flag_data,
-            thresholds.astype("float32"),
-            sequence_length,
-            sequence,
+        log.error(
+            "ska_sdp_func rfi_flagger ImportError. Flagger did not run. "
+            "(see comment where this message was produced)"
         )
+        return
 
-        bvis["flags"].data = flag_data.reshape(bvis["vis"].data.shape)
+    rfi_flagger(vis_data, sequence_length, thresholds.astype("float32"), flag_data)
 
-    elif option == "sdp-func":
-
-        try:
-            from ska.sdp.func import rfi_flagger
-        except ImportError:
-
-            log.error(
-                "ska_sdp_func rfi_flagger ImportError. Flagger did not run. "
-                "(see comment where this message was produced)"
-            )
-            return
-        rfi_flagger(vis_data, sequence_length, thresholds.astype("float32"), flag_data)
-
-        bvis["flags"].data = flag_data.reshape(bvis["vis"].data.shape)
-
-    else:
-
-        log.error("RFI Flagger option not supported. Flagger did not run.")
+    bvis["flags"].data = flag_data.reshape(bvis["vis"].data.shape)
 
 
 def rcal_simulator(args):

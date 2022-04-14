@@ -194,10 +194,10 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     # Set up the sequence.
     sequence = [1, 2, 4, 8, 16, 32]
     sequence_length = len(sequence)
-    sequence = numpy.array(sequence, dtype=numpy.int32)
+    sequence = numpy.array(sequence, dtype=numpy.float32)
     thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
 
-    vis_data = abs(bvis["vis"].data).astype("float32")
+    vis_data = bvis["vis"].data
     flag_data = bvis["flags"].data.astype("int32")
 
     try:
@@ -210,9 +210,10 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
         )
         return
 
-    rfi_flagger(vis_data, sequence_length, thresholds.astype("float32"), flag_data)
+    rfi_flagger(vis_data, sequence, thresholds.astype("float32"), flag_data)
 
-    bvis["flags"].data = flag_data.reshape(bvis["vis"].data.shape)
+    log.info("Number of zero flags (CPU): {numpy.count_nonzero(flags == 0)} ")
+    log.info("Number of nonzero flags (CPU): {numpy.count_nonzero(flags != 0)} ")
 
 
 def rcal_simulator(args):

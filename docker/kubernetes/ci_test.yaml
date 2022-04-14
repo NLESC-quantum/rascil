@@ -7,10 +7,10 @@
     NAMESPACE: ci-$CI_PROJECT_NAME-$CI_COMMIT_BRANCH
     RELEASE: test
 # TODO: when should this run once rascil-notebook is up-to-date? need to see how long it takes
-#  rules:
-#    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 # It shouldn't run for now because rascil-notebook:0.3.0 fails the deployment (need to release a new one)
-  when: manual
+#  when: manual
 
 cluster-test:
   extends: .k8s-test
@@ -20,30 +20,39 @@ cluster-test:
     - apt-get install -y curl ca-certificates jq --no-install-recommends
     - kubectl delete namespace ${NAMESPACE} --ignore-not-found
     - kubectl create namespace ${NAMESPACE}
-    - curl -s https://gitlab.com/ska-telescope/templates-repository/-/raw/master/scripts/namespace_auth.sh | bash -s $SERVICE_ACCOUNT $NAMESPACE || true
+#    - curl -s https://gitlab.com/ska-telescope/templates-repository/-/raw/master/scripts/namespace_auth.sh | bash -s $SERVICE_ACCOUNT $NAMESPACE || true
+    - |
+      cat <<EOF | kubectl -n ${NAMESPACE} create -f -
+      {
+        "apiVersion": "v1",
+        "kind": "PersistentVolumeClaim",
+        "metadata": {
+          "name": "pvc-rascil-cip"
+        },
+        "spec": {
+          "storageClassName": "nfss1",
+          "volumeName": "pv-rascil-cip",
+          "accessModes": [
+              "ReadWriteMany"
+          ],
+          "resources": {
+            "requests": {
+              "storage": "5Gi"
+            }
+          }
+        }
+      }
+      EOF
     - helm repo add tmp-ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
     - helm repo update
     - helm install ${RELEASE} tmp-ska-helm/dask -n ${NAMESPACE} -f docker/kubernetes/values.yaml --wait
   script:
-    - kubectl get pods -n ${NAMESPACE}
-    # TODO: what would be the test?
-  environment:
-    name: test/$CI_COMMIT_REF_NAME
-    kubernetes:
-      namespace: $NAMESPACE
-    on_stop: test-cleanup
-    auto_stop_in: 30 minutes
-
-test-cleanup:
-  extends: .k8s-test
-  stage: .post
-  script:
+    - kubectl get pods,pvc -n ${NAMESPACE}
+  after_script:
     - helm uninstall ${RELEASE} --wait
-    - kubectl delete pv pv-rascil-cip --ignore-not-found
     - kubectl delete namespace ${NAMESPACE} --ignore-not-found
     - helm repo remove tmp-ska-helm
   environment:
     name: test/$CI_COMMIT_REF_NAME
     kubernetes:
       namespace: $NAMESPACE
-    action: stop

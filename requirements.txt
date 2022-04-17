@@ -66,7 +66,7 @@ cryptography==36.0.2
     # via paramiko
 cycler==0.11.0
     # via matplotlib
-dask==2022.04.0
+dask==2022.04.1
     # via
     #   -r requirements.in
     #   distributed
@@ -78,7 +78,7 @@ decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2022.4.0
+distributed==2022.4.1
     # via
     #   -r requirements.in
     #   dask-memusage
@@ -104,7 +104,7 @@ gitdb==4.0.9
     # via gitpython
 gitpython==3.1.27
     # via -r requirements.in
-graphviz==0.19.2
+graphviz==0.20
     # via -r requirements.in
 h5py==3.6.0
     # via -r requirements.in
@@ -177,7 +177,7 @@ jupyter-latex-envs==1.4.6
     # via jupyter-contrib-nbextensions
 jupyter-nbextensions-configurator==0.4.1
     # via jupyter-contrib-nbextensions
-jupyterlab-pygments==0.2.1
+jupyterlab-pygments==0.2.2
     # via nbconvert
 jupyterlab-widgets==1.1.0
     # via ipywidgets
@@ -381,7 +381,7 @@ smmap==5.0.0
     # via gitdb
 sortedcontainers==2.4.0
     # via distributed
-soupsieve==2.3.2
+soupsieve==2.3.2.post1
     # via beautifulsoup4
 stack-data==0.2.0
     # via ipython
@@ -426,7 +426,7 @@ traitlets==5.1.1
     #   nbformat
     #   notebook
     #   qtconsole
-typing-extensions==4.1.1
+typing-extensions==4.2.0
     # via bokeh
 urllib3==1.26.9
     # via

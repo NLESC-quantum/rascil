@@ -254,13 +254,17 @@ def create_test_image_from_s3(
         else:
             fovstr = "10"
             csvfilename = rascil_data_path("models/S3_1400MHz_10uJy_%sdeg.csv" % fovstr)
-        log.info("create_test_image_from_s3: Reading S3 sources from %s " % csvfilename)
+        log.info(
+            "create_test_image_from_s3: Reading S3-SEX sources from %s " % csvfilename
+        )
     else:
         assert fov in [10, 20, 40], "Field of view invalid: use one of %s" % (
             [10, 20, 40]
         )
         csvfilename = rascil_data_path("models/S3_151MHz_%ddeg.csv" % (fov))
-        log.info("create_test_image_from_s3: Reading S3 sources from %s " % csvfilename)
+        log.info(
+            "create_test_image_from_s3: Reading S3-SEX sources from %s " % csvfilename
+        )
 
     with open(csvfilename) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=",")
@@ -268,14 +272,28 @@ def create_test_image_from_s3(
         for row in readCSV:
             # Skip first row
             if r > 0:
-                ra = float(row[4]) + phasecentre.ra.deg
+                ra = float(row[4]) / numpy.cos(phasecentre.dec.rad) + phasecentre.ra.deg
                 dec = float(row[5]) + phasecentre.dec.deg
-                if numpy.max(frequency) > 6.1e8:
+                if numpy.max(frequency) > 4.68e9:
+                    alpha = (float(row[13]) - float(row[12])) / numpy.log10(
+                        18000.0 / 4680.0
+                    )
+                    flux = numpy.power(10, float(row[12])) * numpy.power(
+                        frequency / 4.68e9, alpha
+                    )
+                elif numpy.max(frequency) > 1.4e9:
+                    alpha = (float(row[12]) - float(row[11])) / numpy.log10(
+                        4860.0 / 1400.0
+                    )
+                    flux = numpy.power(10, float(row[11])) * numpy.power(
+                        frequency / 1.4e9, alpha
+                    )
+                elif numpy.max(frequency) > 6.1e8:
                     alpha = (float(row[11]) - float(row[10])) / numpy.log10(
                         1400.0 / 610.0
                     )
                     flux = numpy.power(10, float(row[10])) * numpy.power(
-                        frequency / 1.4e9, alpha
+                        frequency / 6.1e8, alpha
                     )
                 else:
                     alpha = (float(row[10]) - float(row[9])) / numpy.log10(
@@ -287,7 +305,11 @@ def create_test_image_from_s3(
                 if numpy.max(flux) > flux_limit:
                     ras.append(ra)
                     decs.append(dec)
-                    fluxes.append(flux)
+                    if polarisation_frame == PolarisationFrame("stokesIQUV"):
+                        polscale = numpy.array([1.0, 0.0, 0.0, 0.0])
+                        fluxes.append(numpy.outer(flux, polscale))
+                    else:
+                        fluxes.append([[f] for f in flux])
             r += 1
 
     csvfile.close()
@@ -310,7 +332,7 @@ def create_test_image_from_s3(
     log.info("create_test_image_from_s3: %d sources inside the image" % (ps.shape[1]))
 
     log.info(
-        "create_test_image_from_s3: average channel flux in S3 model = %.3f, actual average channel flux in "
+        "create_test_image_from_s3: average channel flux in S3-SEX model = %.3f, actual average channel flux in "
         "image = %.3f" % (total_flux / float(nchan), actual_flux / float(nchan))
     )
     for chan in range(nchan):

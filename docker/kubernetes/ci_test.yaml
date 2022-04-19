@@ -17,39 +17,36 @@ cluster-test:
   stage: test
   before_script:
     - apt-get -y update
-    - apt-get install -y curl ca-certificates jq --no-install-recommends
-    - kubectl delete namespace ${NAMESPACE} --ignore-not-found
-    - kubectl create namespace ${NAMESPACE}
-    - | # create a temporary persistent volume claim
-      cat <<EOF | kubectl -n ${NAMESPACE} create -f -
-      {
-        "apiVersion": "v1",
-        "kind": "PersistentVolumeClaim",
-        "metadata": {
-          "name": "pvc-rascil-cip"
-        },
-        "spec": {
-          "storageClassName": "nfss1",
-          "accessModes": [
-              "ReadWriteMany"
-          ],
-          "resources": {
-            "requests": {
-              "storage": "5Gi"
-            }
-          }
-        }
-      }
-      EOF
-    - helm repo add tmp-ska-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo
-    - helm repo update
-    - helm install ${RELEASE} tmp-ska-helm/dask -n ${NAMESPACE} -f docker/kubernetes/values.yaml --wait --timeout 600s
+    - apt-get install -y envsubst #curl ca-certificates --no-install-recommends
+    - cd docker
+    - make namespace
+#    - | # create a temporary persistent volume claim
+#      cat <<EOF | kubectl -n ${NAMESPACE} create -f -
+#      {
+#        "apiVersion": "v1",
+#        "kind": "PersistentVolumeClaim",
+#        "metadata": {
+#          "name": "pvc-rascil-cip"
+#        },
+#        "spec": {
+#          "storageClassName": "nfss1",
+#          "accessModes": [
+#              "ReadWriteMany"
+#          ],
+#          "resources": {
+#            "requests": {
+#              "storage": "5Gi"
+#            }
+#          }
+#        }
+#      }
+#      EOF
+    - make pvc
+    - make install_chart
   script:
     - kubectl get pods,pvc -n ${NAMESPACE}
   after_script:
-    - helm uninstall ${RELEASE} --wait
-    - kubectl delete namespace ${NAMESPACE} --ignore-not-found
-    - helm repo remove tmp-ska-helm
+    - make clean_up_k8s
   environment:
     name: test/$CI_COMMIT_REF_NAME
     kubernetes:

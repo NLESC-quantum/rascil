@@ -1,3 +1,5 @@
+include kubernetes/Makefile
+
 pull_all:
 	cd rascil-base; make pull
 	cd rascil-full; make pull

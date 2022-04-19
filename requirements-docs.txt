@@ -17,7 +17,7 @@ docutils==0.17.1
     #   m2r2
     #   sphinx
     #   sphinx-rtd-theme
-graphviz==0.19.2
+graphviz==0.20
     # via -r requirements-docs.in
 idna==3.3
     # via requests

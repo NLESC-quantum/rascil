@@ -31,6 +31,10 @@ install_chart:
 	helm repo update
 	helm install $(RELEASE) tmp-rascil-helm/dask -n $(NAMESPACE) -f $(GIT_ROOT)/docker/kubernetes/values.yaml --wait --timeout 600s
 
+clean_up_k8s:
+	kubectl delete namespace $(NAMESPACE) --ignore-not-found
+	helm repo remove tmp-rascil-helm
+
 test_k8s_jupyter:  # TODO: doesn't work - nothing in env vars :(
 	export JUP_POD=`kubectl get pods -o name | grep jupyter`
 	@echo $(JUP_POD)
@@ -38,7 +42,3 @@ test_k8s_jupyter:  # TODO: doesn't work - nothing in env vars :(
 	export SCHEDULER_IP=`kubectl get $(SCHEDULER_POD) --template={{.status.podIP}}`
 	kubectl exec $(JUP_POD) -- bash -c \
 	'python -m rascil.apps.rascil_imager --dask_scheduler $(SCHEDULER_IP):8786 --use_dask True --ingest_msname  ./data/vis/ASKAP_example.ms'
-
-clean_up_k8s:
-	kubectl delete namespace $(NAMESPACE) --ignore-not-found
-	helm repo remove tmp-rascil-helm

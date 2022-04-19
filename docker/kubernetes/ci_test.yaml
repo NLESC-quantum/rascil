@@ -17,30 +17,9 @@ cluster-test:
   stage: test
   before_script:
     - apt-get -y update
-    - apt-get install -y gettext-base #curl ca-certificates --no-install-recommends
+    - apt-get install -y gettext-base --no-install-recommends
     - cd docker
     - make namespace
-#    - | # create a temporary persistent volume claim
-#      cat <<EOF | kubectl -n ${NAMESPACE} create -f -
-#      {
-#        "apiVersion": "v1",
-#        "kind": "PersistentVolumeClaim",
-#        "metadata": {
-#          "name": "pvc-rascil-cip"
-#        },
-#        "spec": {
-#          "storageClassName": "nfss1",
-#          "accessModes": [
-#              "ReadWriteMany"
-#          ],
-#          "resources": {
-#            "requests": {
-#              "storage": "5Gi"
-#            }
-#          }
-#        }
-#      }
-#      EOF
     - make pvc
     - make install_chart
   script:

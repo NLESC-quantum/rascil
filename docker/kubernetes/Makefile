@@ -8,14 +8,16 @@ kind: PersistentVolumeClaim
 metadata:
   name: pvc-rascil-cip
 spec:
-  storageClassName: manual
-  volumeName: pv-rascil-cip
+  storageClassName: nfss1
   accessModes:
   - ReadWriteMany
   resources:
     requests:
       storage: 5Gi
+
 endef
+
+export PVC_YAML
 
 namespace:
 	kubectl delete namespace $(NAMESPACE) --ignore-not-found

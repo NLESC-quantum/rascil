@@ -57,14 +57,14 @@ clean_up_k8s:
 	helm repo remove tmp-rascil-helm
 
 test_k8s:
-	pytest -m outside $(GIT_ROOT)/docker/kubernetes/test_k8s.py
+	pytest $(GIT_ROOT)/docker/kubernetes/test_k8s.py
 
 test_k8s_jupyter:
 	export JUPYTER_POD
 	export SCHEDULER_IP
 	export WORKER_IPS
 	# we copy the test file into /mnt/data, which is a mounted volume in the pod
-	kubectl cp $(GIT_ROOT)/docker/kubernetes/test_k8s.py $(NAMESPACE)/$(JUPYTER_POD):/mnt/data
-	# pytest and kubernetes are not installed inside the container by default
+	kubectl cp $(GIT_ROOT)/docker/kubernetes/test_k8s_dask.py $(NAMESPACE)/$(JUPYTER_POD):/mnt/data
+	# pytest is not installed inside the container by default
 	kubectl -n $(NAMESPACE) exec $(JUPYTER_POD) -- bash -c \
-	'pip install pytest kubernetes; WORKER_IPS="${WORKER_IPS}" pytest -m inside /mnt/data/'
+	'pip install pytest; WORKER_IPS="${WORKER_IPS}" pytest /mnt/data/'

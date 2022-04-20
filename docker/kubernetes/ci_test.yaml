@@ -18,7 +18,7 @@ cluster-test:
   before_script:
     - apt-get -y update
     - apt-get install -y gettext-base --no-install-recommends
-    - pip install pytest kubernetes distributed
+    - pip install pytest kubernetes  # needed for make test_k8s
     - make namespace
     - make pvc
     - make helm_repo

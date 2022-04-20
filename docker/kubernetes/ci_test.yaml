@@ -18,12 +18,15 @@ cluster-test:
   before_script:
     - apt-get -y update
     - apt-get install -y gettext-base --no-install-recommends
-    - cd docker
+    - pip install kubernetes
     - make namespace
     - make pvc
+    - make helm_repo
     - make install_chart
   script:
     - kubectl get pods,pvc -n ${NAMESPACE}
+    - make test_k8s
+    - make test_k8s_jupyter
   after_script:
     - make clean_up_k8s
   environment:

@@ -216,6 +216,9 @@ https://developer.skao.int/projects/ska-sdp-helmdeploy-charts/en/latest/charts/d
 
 You can modify the `values.yaml` file, if needed, e.g. you can change the number of 
 worker replicas, or the docker image used (e.g. the version that should be run).
+If you don't use a PersistentVolumeClaim, remove `mounts` and `volume` sections from the
+jupyter and worker entries. 
+(See also [/rascil/docker/kubernetes/README.md](https://gitlab.com/ska-telescope/external/rascil/-/tree/master/docker/kubernetes/README.md))
 
 Start Minikube and add the helm repository::
 

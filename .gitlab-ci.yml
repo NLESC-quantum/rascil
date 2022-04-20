@@ -13,6 +13,7 @@ stages:
   - build
   - test
   - publish
+  - test_k8s
   - prepost
 
 compile_requirements:
@@ -263,4 +264,5 @@ include:
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/post_step.yml'
 
+  # this only runs on commit tag and in the k8s_test stage
   - local: 'docker/kubernetes/ci_test.yaml'

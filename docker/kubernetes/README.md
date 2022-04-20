@@ -1,5 +1,3 @@
-# RASCIL in Kubernetes
-
 ## Run the Continuum Imaging Pipeline in a Kubernetes cluster
 
 ### Run in Minikube

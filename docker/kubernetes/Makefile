@@ -36,12 +36,13 @@ spec:
       storage: 5Gi
 endef
 
+export PVC_YAML
+
 namespace:
 	kubectl delete namespace $(NAMESPACE) --ignore-not-found
 	kubectl create namespace $(NAMESPACE)
 
 pvc:
-	export PVC_YAML
 	@echo "$${PVC_YAML}" | envsubst | kubectl apply -f -
 
 helm_repo:

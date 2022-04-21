@@ -6,10 +6,9 @@
     SERVICE_ACCOUNT: ci-svc-$CI_PROJECT_NAME-$CI_COMMIT_BRANCH
     NAMESPACE: ci-$CI_PROJECT_NAME-$CI_COMMIT_BRANCH
     RELEASE: test
-  rules:
-    - if: '$CI_COMMIT_TAG'
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
-# Only run it on commit tag and after the newest docker images have been released
 cluster-test:
   extends: .k8s-test
   stage: test_k8s

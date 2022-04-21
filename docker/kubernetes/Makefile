@@ -38,11 +38,11 @@ endef
 
 export PVC_YAML
 
-namespace:
+create_namespace:
 	kubectl delete namespace $(NAMESPACE) --ignore-not-found
 	kubectl create namespace $(NAMESPACE)
 
-pvc:
+create_volume_claim:
 	@echo "$${PVC_YAML}" | envsubst | kubectl apply -f -
 
 helm_repo:
@@ -50,7 +50,13 @@ helm_repo:
 	helm repo update
 
 install_chart:
-	helm install $(RELEASE) tmp-rascil-helm/dask -n $(NAMESPACE) -f $(GIT_ROOT)/docker/kubernetes/values.yaml --wait --timeout 600s
+	# test the latest version of the images, published in GitLab registry
+	helm install $(RELEASE) tmp-rascil-helm/dask -n $(NAMESPACE) \
+	-f $(GIT_ROOT)/docker/kubernetes/values.yaml \
+	--set image=registry.gitlab.com/ska-telescope/external/rascil/rascil-full:latest \
+	--set imagePullPolicy=Always --set jupyter.image.tag=latest --set jupyter.image.pullPolicy=Always \
+	--set jupyter.image.repository=registry.gitlab.com/ska-telescope/external/rascil/rascil-notebook
+	--wait --timeout 600s
 
 clean_up_k8s:
 	kubectl delete namespace $(NAMESPACE) --ignore-not-found

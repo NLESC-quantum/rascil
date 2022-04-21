@@ -6,18 +6,20 @@
     SERVICE_ACCOUNT: ci-svc-$CI_PROJECT_NAME-$CI_COMMIT_BRANCH
     NAMESPACE: ci-$CI_PROJECT_NAME-$CI_COMMIT_BRANCH
     RELEASE: test
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
+# uses the publish stage because that happens after docker_test runs,
+# which pushes the images necessary for cluster-test to the GitLab registry
 cluster-test:
   extends: .k8s-test
-  stage: test_k8s
+  stage: publish
   before_script:
     - apt-get -y update
     - apt-get install -y gettext-base --no-install-recommends
     - pip install pytest kubernetes  # needed for make test_k8s
-    - make namespace
-    - make pvc
+    - make create_namespace
+    - make create_volume_claim
     - make helm_repo
     - make install_chart
   script:

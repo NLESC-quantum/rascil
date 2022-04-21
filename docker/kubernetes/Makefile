@@ -55,7 +55,7 @@ install_chart:
 	-f $(GIT_ROOT)/docker/kubernetes/values.yaml \
 	--set image=registry.gitlab.com/ska-telescope/external/rascil/rascil-full:latest \
 	--set imagePullPolicy=Always --set jupyter.image.tag=latest --set jupyter.image.pullPolicy=Always \
-	--set jupyter.image.repository=registry.gitlab.com/ska-telescope/external/rascil/rascil-notebook
+	--set jupyter.image.repository=registry.gitlab.com/ska-telescope/external/rascil/rascil-notebook \
 	--wait --timeout 600s
 
 clean_up_k8s:

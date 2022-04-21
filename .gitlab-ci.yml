@@ -12,7 +12,6 @@ stages:
   - linting
   - build
   - test
-  - test_k8s  # separate stage because needs the docker images published in the test stage
   - publish
   - prepost
 
@@ -88,8 +87,7 @@ test-dask:
       - unit-tests-dask.xml
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
-    
-# Always run the unittests
+
 test_gpu:
   image: nvidia/cuda:11.3.0-devel-ubuntu20.04
   stage: test
@@ -162,8 +160,8 @@ docker_test:
     - make build_all_latest
     - make test_all
     - make push_all_latest
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Build the data file only if on the master
 data:
@@ -185,9 +183,9 @@ build_package:
   artifacts:
     paths:
       - dist
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
-#    - if: '$CI_COMMIT_TAG'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+    - if: '$CI_COMMIT_TAG'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master
 publish_to_car:
@@ -268,5 +266,4 @@ include:
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/post_step.yml'
 
-  # this only runs on commit tag and in the k8s_test stage
   - local: 'docker/kubernetes/ci_test.yaml'

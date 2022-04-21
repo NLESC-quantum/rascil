@@ -200,6 +200,8 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     vis_data = bvis["vis"].data
     flag_data = bvis["flags"].data.astype("int32")
 
+    log.info("The dimensions of the visibility data:{}".format(vis_data.shape))
+
     try:
         from ska.sdp.func import rfi_flagger
     except ImportError:
@@ -211,9 +213,6 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
         return
 
     rfi_flagger(vis_data, sequence, thresholds.astype("float32"), flag_data)
-
-    log.info("Number of zero flags (CPU): {numpy.count_nonzero(flags == 0)} ")
-    log.info("Number of nonzero flags (CPU): {numpy.count_nonzero(flags != 0)} ")
 
 
 def rcal_simulator(args):

@@ -178,7 +178,7 @@ def cli_parser():
     return parser
 
 
-def _rfi_flagger(bvis, initial_threshold=20, rho=1.5):
+def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     """
     Wrapper function for the SKA flagger, certain defaults are managed here.
     Versions of flagger:
@@ -194,14 +194,10 @@ def _rfi_flagger(bvis, initial_threshold=20, rho=1.5):
 
     # Set up the sequence.
     sequence = numpy.array([1, 2, 4, 8, 16, 32], dtype=numpy.int32)
-    thresholds = numpy.zeros(len(sequence), dtype=numpy.float32)
-    for i in range(len(sequence)):
-        m = pow(rho, numpy.log2(sequence[i]))
-        thresholds[i] = initial_threshold / m
-    # thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
+    thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
 
     vis_data = bvis["vis"].data
-    flag_data = bvis["flags"].data.astype("int32")
+    flag_data = bvis["flags"].data.astype(numpy.int32)
 
     log.info("The dimensions of the visibility data:{}".format(vis_data.shape))
 
@@ -216,6 +212,9 @@ def _rfi_flagger(bvis, initial_threshold=20, rho=1.5):
         return
 
     rfi_flagger(vis_data, sequence, thresholds, flag_data)
+
+    # update flag data in place
+    bvis["flags"].data = flag_data
 
 
 def rcal_simulator(args):

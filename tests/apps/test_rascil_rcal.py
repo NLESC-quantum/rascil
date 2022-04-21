@@ -192,7 +192,6 @@ class TestRASCILRcal(unittest.TestCase):
         self.args.plot_dir = self.tempdir + "/"
 
     # Regression test
-    @pytest.mark.skip()
     def test_rcal(self):
         self.pre_setup()
         self.makeMS(self.flux)
@@ -320,7 +319,7 @@ class TestRASCILRcal(unittest.TestCase):
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
         # update new_bvis to have a value that will be flagged
-        new_bvis["vis"].data[0, 0, 0, 0] = complex(100, 100)
+        new_bvis["vis"].data[0, 0, 0, 0] = complex(100, 0)
 
         _rfi_flagger(new_bvis)
 
@@ -328,7 +327,7 @@ class TestRASCILRcal(unittest.TestCase):
         assert new_bvis["flags"].data[0, 0, 0, 0] == 1
 
         # reset value, so we can check that now all are 0
-        new_bvis["vis"].data[0, 0, 0, 0] = complex(0, 0)
+        new_bvis["vis"].data[0, 0, 0, 0] = 0
         assert (new_bvis["vis"].data == 0).all()
 
         if self.persist is True:

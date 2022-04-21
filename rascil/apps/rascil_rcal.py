@@ -8,6 +8,7 @@ import os
 import pprint
 import sys
 from typing import Iterable
+import xarray
 
 import matplotlib
 import numpy
@@ -177,25 +178,27 @@ def cli_parser():
     return parser
 
 
-def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
+def _rfi_flagger(bvis, initial_threshold=20, rho=1.5):
     """
     Wrapper function for the SKA flagger, certain defaults are managed here.
-    Version of flagger:
+    Versions of flagger:
     1. (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger) (deprecated)
     2. (https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/tree/rfi_flagger/)
     TODO: Update this link when the flagger is merged into the main branch
 
     :param bvis: Block visibility
     :param initial_threshold: The initial threshold to be used
-    :param rho: The roh to be used
+    :param rho: The rho to be used
     :return: Block visibility with flags populated.
     """
 
     # Set up the sequence.
-    sequence = [1, 2, 4, 8, 16, 32]
-    sequence_length = len(sequence)
-    sequence = numpy.array(sequence, dtype=numpy.float32)
-    thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
+    sequence = numpy.array([1, 2, 4, 8, 16, 32], dtype=numpy.int32)
+    thresholds = numpy.zeros(len(sequence), dtype=numpy.float32)
+    for i in range(len(sequence)):
+        m = pow(rho, numpy.log2(sequence[i]))
+        thresholds[i] = initial_threshold / m
+    # thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
 
     vis_data = bvis["vis"].data
     flag_data = bvis["flags"].data.astype("int32")
@@ -212,7 +215,7 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
         )
         return
 
-    rfi_flagger(vis_data, sequence, thresholds.astype("float32"), flag_data)
+    rfi_flagger(vis_data, sequence, thresholds, flag_data)
 
 
 def rcal_simulator(args):

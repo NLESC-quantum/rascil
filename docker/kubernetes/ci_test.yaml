@@ -22,7 +22,6 @@ cluster-test:
     - make helm_repo
     - make install_chart
   script:
-    - kubectl get pods,pvc -n ${NAMESPACE}
     - make test_k8s
     - make test_k8s_jupyter
   after_script:

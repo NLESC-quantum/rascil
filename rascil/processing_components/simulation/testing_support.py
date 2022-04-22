@@ -166,7 +166,7 @@ def create_test_image_from_s3(
 ) -> Image:
     """Create MID test image from S3
 
-    The input catalog was generated at http://s-cubed.physics.ox.ac.uk/s3_sex using the following query::
+    The input catalog was generated using the following query::
         Database: s3_sex
         SQL: select * from Galaxies where (pow(10,itot_151)*1000 > 1.0) and (right_ascension between -5 and 5) and (declination between -5 and 5);;
 
@@ -349,7 +349,7 @@ def create_test_skycomponents_from_s3(
 ):
     """Create test image from S3
 
-    The input catalog was generated at http://s-cubed.physics.ox.ac.uk/s3_sex using the following query::
+    The input catalog was generated using the following query::
         Database: s3_sex
         SQL: select * from Galaxies where (pow(10,itot_151)*1000 > 1.0) and (right_ascension between -5 and 5) and (declination between -5 and 5);;
 

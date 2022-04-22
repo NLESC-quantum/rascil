@@ -305,11 +305,7 @@ def create_test_image_from_s3(
                 if numpy.max(flux) > flux_limit:
                     ras.append(ra)
                     decs.append(dec)
-                    if polarisation_frame == PolarisationFrame("stokesIQUV"):
-                        polscale = numpy.array([1.0, 0.0, 0.0, 0.0])
-                        fluxes.append(numpy.outer(flux, polscale))
-                    else:
-                        fluxes.append([[f] for f in flux])
+                    fluxes.append(flux)
             r += 1
 
     csvfile.close()

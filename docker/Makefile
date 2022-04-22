@@ -1,3 +1,5 @@
+include kubernetes/Makefile
+
 pull_all:
 	cd rascil-base; make pull
 	cd rascil-full; make pull
@@ -10,7 +12,7 @@ build_all_latest:
 	cd rascil-notebook; make build; make tag_latest
 	cd rascil-imaging-qa; make build; make tag_latest
 
-push_all:
+push_all_latest:
 	cd rascil-base; make tag_latest; make push_latest
 	cd rascil-full; make tag_latest; make push_latest
 	cd rascil-notebook; make tag_latest; make push_latest
@@ -36,7 +38,7 @@ ls_all:
 
 WORKDIR=./test_results
 
-IMAGES=artefact.skao.int
+IMAGE_PREFIX ?= artefact.skao.int
 
 # Docker tests
 test_base:
@@ -45,7 +47,7 @@ test_base:
 	@echo "------------------------------"
 	- echo "Running Dask-enabled test cluster_test_ritoy - takes about 20 -- 30 seconds"
 	echo "cd ${WORKDIR};python3 /rascil/examples/cluster_tests/ritoy/cluster_test_ritoy.py" | docker run -i  \
-	${IMAGES}/rascil-base /bin/bash -e
+	${IMAGE_PREFIX}/rascil-base /bin/bash -e
 
 test_full:
 	@echo "------------------------------"
@@ -53,7 +55,7 @@ test_full:
 	@echo "------------------------------"
 	- echo "Running imaging.py - takes about 20 -- 30 seconds, writes three fits files in ${WORKDIR}"
 	echo "cd ${WORKDIR};python3 /rascil/examples/scripts/imaging.py" | docker run -i \
-	${IMAGES}/rascil-full /bin/bash -e
+	${IMAGE_PREFIX}/rascil-full /bin/bash -e
 
 test_notebook:
 	@echo "----------------------------------"
@@ -61,14 +63,14 @@ test_notebook:
 	@echo "----------------------------------"
 	- echo "Running imaging notebook - takes about 20 -- 30 seconds, writes html file ${WORKDIR}/imaging.html"
 	echo "cd ${WORKDIR};cp /rascil/examples/notebooks/imaging.ipynb .;jupyter nbconvert --execute --to html \
-	--ExecutePreprocessor.timeout=1200 imaging.ipynb" | docker run -i ${IMAGES}/rascil-notebook /bin/bash -e
+	--ExecutePreprocessor.timeout=1200 imaging.ipynb" | docker run -i ${IMAGE_PREFIX}/rascil-notebook /bin/bash -e
 
 test_imaging_qa:
 	@echo "------------------------------------"
 	@echo "| TESTING RASCIL-IMAGING-QA DOCKER |"
 	@echo "------------------------------------"
 	- echo "Running imaging QA code - takes about 3-5 seconds, outputs the help of the QA tool"
-	docker run -i ${IMAGES}/rascil-imaging-qa /bin/bash -e
+	docker run -i ${IMAGE_PREFIX}/rascil-imaging-qa /bin/bash -e
 
 # Singularity tests
 test_base_singularity:
@@ -76,7 +78,7 @@ test_base_singularity:
 	@echo "| TESTING RASCIL-BASE SINGULARITY |"
 	@echo "-----------------------------------"
 	- echo "Running Dask-enabled test cluster_test_ritoy - takes about 20 -- 30 seconds"
-	- singularity pull RASCIL-base.img docker://${IMAGES}/rascil-base
+	- singularity pull RASCIL-base.img docker://${IMAGE_PREFIX}/rascil-base
 	singularity exec RASCIL-base.img "cd ${WORKDIR};python3 /rascil/examples/cluster_tests/ritoy/cluster_test_ritoy.py"
 
 test_full_singularity:
@@ -84,7 +86,7 @@ test_full_singularity:
 	@echo "| TESTING RASCIL-FULL SINGULARITY |"
 	@echo "-----------------------------------"
 	- echo "Running imaging.py - takes about 20 -- 30 seconds, writes three fits files in ${WORKDIR}"
-	- singularity pull RASCIL-full.img docker://${IMAGES}/rascil-full
+	- singularity pull RASCIL-full.img docker://${IMAGE_PREFIX}/rascil-full
 	singularity exec RASCIL-full.img "cd ${WORKDIR};python3 /rascil/examples/scripts/imaging.py"
 
 test_notebook_singularity:
@@ -92,7 +94,7 @@ test_notebook_singularity:
 	@echo "| TESTING RASCIL-NOTEBOOK SINGULARITY |"
 	@echo "---------------------------------------"
 	- echo "Running imaging notebook - takes about 20 -- 30 seconds, writes html file ${WORKDIR}/imaging.html"
-	- singularity pull RASCIL-notebook.img docker://${IMAGES}/rascil-notebook
+	- singularity pull RASCIL-notebook.img docker://${IMAGE_PREFIX}/rascil-notebook
 	singularity exec RASCIL-notebook.img "cd ${WORKDIR};jupyter nbconvert --execute \
 	--ExecutePreprocessor.timeout=1200 --to html /rascil/examples/notebooks/imaging.ipynb"
 
@@ -101,7 +103,7 @@ test_imaging_qa_singularity:
 	@echo "| TESTING RASCIL-IMAGING-QA SINGULARITY |"
 	@echo "-----------------------------------------"
 	- echo "Running imaging QA code - takes about 3-5 seconds, outputs the help of the QA tool"
-	- singularity pull rascil-imaging-qa.img docker://${IMAGES}/rascil-imaging-qa
+	- singularity pull rascil-imaging-qa.img docker://${IMAGE_PREFIX}/rascil-imaging-qa
 	singularity run rascil-imaging-qa.img
 
 lint:

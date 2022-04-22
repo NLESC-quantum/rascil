@@ -1,4 +1,6 @@
 # simple makefile to simplify repetitive build env management tasks under posix
+include docker/kubernetes/Makefile
+
 PYTHON ?= python3
 PYLINT ?= pylint
 MAKE_DBG ?= ""

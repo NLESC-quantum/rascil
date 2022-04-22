@@ -87,8 +87,7 @@ test-dask:
       - unit-tests-dask.xml
   rules:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
-    
-# Always run the unittests
+
 test_gpu:
   image: nvidia/cuda:11.3.0-devel-ubuntu20.04
   stage: test
@@ -143,6 +142,7 @@ docs:
     - if: '$CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Test docker images upon each merge to master
+# Publish tested image in the GitLab registry, with latest tag
 docker_test:
   stage: test
   image: docker:20.10.7
@@ -150,13 +150,16 @@ docker_test:
     - docker:20.10.7-dind
   variables:
     GIT_VERSION: $CI_COMMIT_SHORT_SHA
+    IMAGE_PREFIX: $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
   before_script:
     - apk add make git
     - cp dist/*whl docker/rascil-base
     - cd docker
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - make build_all_latest
     - make test_all
+    - make push_all_latest
   rules:
     - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 

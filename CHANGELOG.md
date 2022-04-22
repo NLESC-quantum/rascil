@@ -1,7 +1,7 @@
 master
 ------
-
 * Bug fix in flux computation in create_test_image_from_s3 (rascil.processing_components.simulation.testing_support) ([MR325](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/325))
+* Add Kubernetes cluster tests and start publishing docker images with latest tag in GitLab registry ([MR324](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/324))
 * Update rascil.processing_components.skycomponent.operations.find_skycomponents to use photutils==1.4.0 ([MR322](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/322))
 * Bug fix for exporting measurement set file with multi-block visibility ([MR315](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/315)
 

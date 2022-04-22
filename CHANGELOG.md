@@ -1,12 +1,13 @@
 master
 ------
 
+* Update the RCAL app to use the most up-to-date RFI flagger ([MR326](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/326))
 * Update rascil.processing_components.skycomponent.operations.find_skycomponents to use photutils==1.4.0 ([MR322](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/322))
 * Bug fix for exporting measurement set file with multi-block visibility ([MR315](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/315)
 
 0.6.0
 -----
-* Modify parameters of rescil_sensitivity app to enable subarrays and allow a greater choice of frequency ([MR311](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/311))
+* Modify parameters of rascil_sensitivity app to enable subarrays and allow a greater choice of frequency ([MR311](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/311))
 * Bug fix in Hogbom deconvolution ([MR310](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/310))
 * Add GPU-based gridder/degridder functionality using WAGG module which should be installed separately ([MR299](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/299))
 * Updated the RASCIL kubernetes cluster with the option of using a persistent volume and claim ([MR302](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/302))

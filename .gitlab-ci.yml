@@ -50,7 +50,7 @@ test:
   stage: test
   before_script:
     - apt-get update
-    - apt-get -y install rsync ca-certificates
+    - apt-get -y install rsync ca-certificates cmake
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
     - mkdir -p test_results

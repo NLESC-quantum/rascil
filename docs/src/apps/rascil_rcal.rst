@@ -32,7 +32,7 @@ other operations are performed, or after first calibration and gain solution cal
 
 RASCIL's BlockVisibility object contains a "flags" data array with the same
 dimensions as the visibilities. This array is updated with the results of
-the SKA `Post-Correlation RFI Flagger <https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger/-/tree/master>`.
+the SKA Processing Function Library `RFI Flagger <https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/tree/rfi_flagger>`.
 The RFI flagger requires `initial threshold` and `rho` values (both needed
 to provide a list of thresholds used for finding RFI signal in the data), which can
 be set via CLI arguments, though we recommend using the defaults at this stage.

@@ -8,10 +8,10 @@ import os
 import pprint
 import sys
 from typing import Iterable
+import xarray
 
 import matplotlib
 import numpy
-import xarray
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -180,56 +180,46 @@ def cli_parser():
 
 def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     """
-    Wrapper function for the SKA flagger
-    (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger),
-    certain defaults are managed here.
+    Wrapper function for the SKA flagger, certain defaults are managed here.
+    Versions of flagger:
+    1. (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger) (deprecated)
+    2. (https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/tree/rfi_flagger/)
+    TODO: Update this link when the flagger is merged into the main branch
+
+    The code provides a sequence and derives the best experimented thresholds for flagging.
+    For a longer sequence, the flagging threshold should be lower.
+    Details see line 158, Offringa et al. 2010MNRAS.405..155O
+    The parameters have been fixed for SKA purposes.
 
     :param bvis: Block visibility
     :param initial_threshold: The initial threshold to be used
-    :param rho: The roh to be used
+    :param rho: Empirical parameter to derive the thresholds to be used
     :return: Block visibility with flags populated.
     """
+
+    # Set up the sequence.
+    sequence = numpy.array([1, 2, 4, 8, 16, 32], dtype=numpy.int32)
+    thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
+
+    vis_data = bvis["vis"].data
+    flag_data = bvis["flags"].data.astype(numpy.int32)
+
+    log.info("The dimensions of the visibility data:{}".format(vis_data.shape))
+
     try:
-        import ska_post_correlation_rfi_flagger
+        from ska.sdp.func import rfi_flagger
     except ImportError:
-        # ImportError:
-        #   - Either package is not imported,
-        #   - or an `ImportError: numpy.core.multiarray failed to import` error was thrown.
-        # If latter, upgrading numpy may solve it, but version still needs to be compatible with rest of RASCIL
+
         log.error(
-            "ska_post_correlation_rfi_flagger ImportError. Flagger did not run. "
+            "ska_sdp_func rfi_flagger ImportError. Flagger did not run. "
             "(see comment where this message was produced)"
         )
         return
 
-    # Sequence from
-    # https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger/-/blob/master/flagger_in_python.py#L25
-    sequence = [1, 2, 4, 8, 16, 32]
-    sequence_length = len(sequence)
-    sequence = numpy.array(sequence, dtype=numpy.int32)
-    thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
+    rfi_flagger(vis_data, sequence, thresholds, flag_data)
 
-    new_dims = (
-        bvis.dims["time"] * bvis.dims["baselines"],
-        bvis.dims["frequency"],
-        bvis.dims["polarisation"],
-    )
-    vis_data = abs(bvis["vis"].data).reshape(new_dims).astype("float32")
-    flag_data = bvis["flags"].data.reshape(new_dims).astype("int32")
-
-    ska_post_correlation_rfi_flagger.run_flagger_on_all_slices(
-        bvis.dims["time"],
-        bvis.dims["frequency"],
-        bvis.dims["baselines"],
-        bvis.dims["polarisation"],
-        vis_data,
-        flag_data,
-        thresholds.astype("float32"),
-        sequence_length,
-        sequence,
-    )
-
-    bvis["flags"].data = flag_data.reshape(bvis["vis"].data.shape)
+    # update flag data in place
+    bvis["flags"].data = flag_data
 
 
 def rcal_simulator(args):

@@ -251,7 +251,6 @@ numpy==1.22.3
     #   python-casacore
     #   reproject
     #   scipy
-    #   ska-post-correlation-rfi-flagger
     #   xarray
     #   zarr
 packaging==21.3
@@ -376,7 +375,7 @@ six==1.16.0
     #   paramiko
     #   python-casacore
     #   python-dateutil
-ska-post-correlation-rfi-flagger @ git+https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger.git@master
+ska-sdp-func @ git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@rfi_flagger
     # via -r requirements.in
 smmap==5.0.0
     # via gitdb

@@ -94,7 +94,7 @@ fasteners==0.17.3
     # via zarr
 fastjsonschema==2.15.3
     # via nbformat
-fonttools==4.32.0
+fonttools==4.33.2
     # via matplotlib
 fsspec==2022.3.0
     # via dask
@@ -160,7 +160,7 @@ jupyter-contrib-core==0.3.3
     #   jupyter-nbextensions-configurator
 jupyter-contrib-nbextensions==0.5.1
     # via -r requirements.in
-jupyter-core==4.9.2
+jupyter-core==4.10.0
     # via
     #   jupyter-client
     #   jupyter-contrib-core
@@ -183,7 +183,7 @@ jupyterlab-widgets==1.1.0
     # via ipywidgets
 kiwisolver==1.4.2
     # via matplotlib
-locket==0.2.1
+locket==1.0.0
     # via partd
 lxml==4.8.0
     # via jupyter-contrib-nbextensions
@@ -223,7 +223,7 @@ nest-asyncio==1.5.5
     #   jupyter-client
     #   nbclient
     #   notebook
-notebook==6.4.10
+notebook==6.4.11
     # via
     #   jupyter
     #   jupyter-contrib-core
@@ -306,7 +306,7 @@ pycparser==2.21
     # via cffi
 pyerfa==2.0.0.1
     # via astropy
-pygments==2.11.2
+pygments==2.12.0
     # via
     #   ipython
     #   jupyter-console

@@ -58,7 +58,9 @@ class TestRASCILRcal(unittest.TestCase):
         self.persist = os.getenv("RASCIL_PERSIST", False)
 
         self.low = create_named_configuration("LOW-AA0.5")
-        self.freqwin = 40  # This needs to be larger than 32
+        # For the flagger to work, the number of channels and times should be larger than 32
+        # Because the largest sequence number is 32
+        self.freqwin = 40
         self.ntimes = 48
         self.times = numpy.linspace(-2.0, +2.0, self.ntimes) * numpy.pi / 12.0
         self.frequency = numpy.linspace(0.8e8, 1.2e8, self.freqwin)

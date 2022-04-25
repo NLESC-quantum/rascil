@@ -186,9 +186,14 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     2. (https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/tree/rfi_flagger/)
     TODO: Update this link when the flagger is merged into the main branch
 
+    The code provides a sequence and derives the best experimented thresholds for flagging.
+    For a longer sequence, the flagging threshold should be lower.
+    Details see line 158, Offringa et al. 2010MNRAS.405..155O
+    The parameters have been fixed for SKA purposes.
+
     :param bvis: Block visibility
     :param initial_threshold: The initial threshold to be used
-    :param rho: The rho to be used
+    :param rho: Empirical parameter to derive the thresholds to be used
     :return: Block visibility with flags populated.
     """
 

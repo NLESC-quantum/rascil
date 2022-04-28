@@ -91,7 +91,7 @@ def cli_parser():
     parser.add_argument(
         "--imaging_weighting",
         type=str,
-        default="robust",
+        default=None,
         help="Type of weighting: uniform or robust or natural",
     )
     parser.add_argument(
@@ -99,7 +99,7 @@ def cli_parser():
         type=float,
         nargs="*",
         default=[-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0],
-        help="Robustness for robust weighting",
+        help="Robustness for robust weighting, ",
     )
     parser.add_argument(
         "--imaging_taper",
@@ -293,19 +293,33 @@ def image_bvis(args, bvis_list):
         tapers = [0.0]
 
     for taper in tapers:
-        result = robustness_taper_scenario(
-            args, "uniform", 0.0, taper, bvis_list, model_list
-        )
-        results.append(result)
-        for robustness in robustnesses:
+        if args.imaging_weighting is None:
             result = robustness_taper_scenario(
-                args, "robust", robustness, taper, bvis_list, model_list
+                args, "uniform", 0.0, taper, bvis_list, model_list
             )
             results.append(result)
-        result = robustness_taper_scenario(
-            args, "natural", 0.0, taper, bvis_list, model_list
-        )
-        results.append(result)
+            for robustness in robustnesses:
+                result = robustness_taper_scenario(
+                    args, "robust", robustness, taper, bvis_list, model_list
+                )
+                results.append(result)
+            result = robustness_taper_scenario(
+                args, "natural", 0.0, taper, bvis_list, model_list
+            )
+            results.append(result)
+        else:
+            if args.imaging_weighting in ["uniform", "natural"]:
+                robustnesses = [0.0]
+            for robustness in robustnesses:
+                result = robustness_taper_scenario(
+                    args,
+                    args.imaging_weighting,
+                    robustness,
+                    taper,
+                    bvis_list,
+                    model_list,
+                )
+                results.append(result)
 
     log.info("Final results:")
     results_file = save_results(args, results)

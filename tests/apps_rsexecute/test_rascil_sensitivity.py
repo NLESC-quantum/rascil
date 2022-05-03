@@ -32,28 +32,28 @@ default_run = True
             "0.0 5e-6 1e-5",
         ),
         (
-                default_run,
-                "B1LOW_NATURAL",
-                True,
-                0.350e9,
-                512,
-                6e-7,
-                "natural",
-                1e4,
-                "0",
-                "0.0 5e-6 1e-5",
+            default_run,
+            "B1LOW_NATURAL",
+            True,
+            0.350e9,
+            512,
+            6e-7,
+            "natural",
+            1e4,
+            "0",
+            "0.0 5e-6 1e-5",
         ),
         (
-                default_run,
-                "B1LOW_UNIFORM",
-                True,
-                0.350e9,
-                512,
-                6e-7,
-                "uniform",
-                1e4,
-                "0",
-                "0.0 5e-6 1e-5",
+            default_run,
+            "B1LOW_UNIFORM",
+            True,
+            0.350e9,
+            512,
+            6e-7,
+            "uniform",
+            1e4,
+            "0",
+            "0.0 5e-6 1e-5",
         ),
         (
             default_run,
@@ -68,16 +68,16 @@ default_run = True
             "0.0 1.2e-6",
         ),
         (
-                default_run,
-                "B2_NATURAL",
-                True,
-                1.36e9,
-                1024,
-                2e-7,
-                "natural",
-                1e4,
-                "0",
-                "0.0 1.2e-6",
+            default_run,
+            "B2_NATURAL",
+            True,
+            1.36e9,
+            1024,
+            2e-7,
+            "natural",
+            1e4,
+            "0",
+            "0.0 1.2e-6",
         ),
         (
             default_run,
@@ -147,7 +147,7 @@ def test_rascil_sensitivity(
     for taper in tapers:
         sensitivity_args.append(taper)
 
-    if weighting not in ['uniform','natural']:
+    if weighting not in ["uniform", "natural"]:
         sensitivity_args.append("--imaging_robustness")
         for robust in robustnesses:
             sensitivity_args.append(robust)
@@ -163,7 +163,7 @@ def test_rascil_sensitivity(
     df = pd.read_csv(results_file)
 
     # Check the shape of the DataFrame and the column names
-    if weighting in ['uniform','natural']:
+    if weighting in ["uniform", "natural"]:
         nrows = len(tapers)
     else:
         nrows = len(tapers * (len(robustnesses)))

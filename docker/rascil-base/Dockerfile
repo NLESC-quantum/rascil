@@ -19,7 +19,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 # Install packages needed to build rascil
-RUN apt-get update -y && apt-get install -y gosu && \
+RUN apt-get update -y && apt-get install -y gosu cmake && \
     apt-get clean -y && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 

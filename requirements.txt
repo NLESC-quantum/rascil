@@ -376,7 +376,7 @@ six==1.16.0
     #   paramiko
     #   python-casacore
     #   python-dateutil
-ska-sdp-func @ git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@rfi_flagger
+ska-sdp-func @ git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@main
     # via -r requirements.in
 smmap==5.0.0
     # via gitdb

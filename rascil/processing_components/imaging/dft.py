@@ -58,15 +58,14 @@ def dft_skycomponent_visibility(
     return vis
 
 
-def extract_direction_and_flux(
-    sc: Union[Skycomponent, List[Skycomponent]], vis: BlockVisibility
-) -> BlockVisibility:
+def extract_direction_and_flux(sc, vis):
     """
     Extract SkyComponent direction and flux to be consumed by DFT.
     Flux polarisation and frequency are scaled to that of input BlockVisibility data.
 
     :param sc: SkyComponent or list of SkyComponents
     :param vis: BlockVisibility
+    :returns: tuple of two numpy arrays: component direction cosines and component fluxes
     """
     if not isinstance(sc, collections.abc.Iterable):
         sc = [sc]
@@ -93,6 +92,7 @@ def extract_direction_and_flux(
             nvchan = len(vis.frequency)
             vflux = numpy.zeros([nvchan, npol])
             if nchan > 1:
+                # TODO: this path needs testing to verify that it works
                 for pol in range(flux.shape[1]):
                     fint = interpolate.interp1d(
                         comp.frequency, comp.flux[:, pol], kind="cubic"

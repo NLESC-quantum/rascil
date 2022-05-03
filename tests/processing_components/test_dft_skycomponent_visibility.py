@@ -14,7 +14,8 @@ from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.imaging.dft import (
     dft_skycomponent_visibility,
-    idft_visibility_skycomponent, extract_direction_and_flux,
+    idft_visibility_skycomponent,
+    extract_direction_and_flux,
 )
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import (
@@ -160,7 +161,9 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
 
-        expected_direction = numpy.array([[1.42961744e-02, -7.15598688e-05, -1.02198084e-04]])
+        expected_direction = numpy.array(
+            [[1.42961744e-02, -7.15598688e-05, -1.02198084e-04]]
+        )
         result_direction, result_flux = extract_direction_and_flux(self.comp, vis)
 
         assert_array_almost_equal(result_direction, expected_direction)
@@ -182,7 +185,9 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesI"),
         )
 
-        expected_direction = numpy.array([[1.42961744e-02, -7.15598688e-05, -1.02198084e-04]])
+        expected_direction = numpy.array(
+            [[1.42961744e-02, -7.15598688e-05, -1.02198084e-04]]
+        )
         expected_flux = self.flux[:, 0].astype(complex).reshape((self.flux.shape[0], 1))
         result_direction, result_flux = extract_direction_and_flux(self.comp, vis)
 

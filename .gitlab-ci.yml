@@ -91,7 +91,7 @@ test-dask:
 test_gpu:
   image: nvidia/cuda:11.3.0-devel-ubuntu20.04
   stage: test
-  tags: [k8srunner-gpu-v100]
+  tags: [k8srunner-gpu]
   before_script:
     - nvidia-smi  # shows the status of nvidia GPUs
     - rm /etc/apt/sources.list.d/cuda.list

@@ -8,17 +8,16 @@ import unittest
 import astropy.units as u
 import numpy
 from astropy.coordinates import SkyCoord
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_array_almost_equal
 
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 from rascil.processing_components.imaging.dft import (
     dft_skycomponent_visibility,
-    idft_visibility_skycomponent,
+    idft_visibility_skycomponent, extract_direction_and_flux,
 )
 from rascil.processing_components.simulation import create_named_configuration
 from rascil.processing_components.visibility.base import (
-    create_blockvisibility,
     create_blockvisibility,
     phaserotate_visibility,
 )
@@ -145,6 +144,50 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             self.vismodel = dft_skycomponent_visibility(self.vis, self.comp)
             rcomp, weights = idft_visibility_skycomponent(self.vismodel, self.comp)
             assert_allclose(self.comp.flux, numpy.real(rcomp[0].flux), rtol=1e-10)
+
+    def test_extract_direction_and_flux(self):
+        """
+        vis and comp frequency and polarisation are the same
+        --> expected flux is same as comp flux (except complex)
+        """
+        vis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+            polarisation_frame=PolarisationFrame("stokesIQUV"),
+        )
+
+        expected_direction = numpy.array([[1.42961744e-02, -7.15598688e-05, -1.02198084e-04]])
+        result_direction, result_flux = extract_direction_and_flux(self.comp, vis)
+
+        assert_array_almost_equal(result_direction, expected_direction)
+        assert (result_flux == self.comp.flux.astype(complex)).all()
+
+    def test_extract_direction_and_flux_diff_pol(self):
+        """
+        vis and comp frequency match, but polarisation frame is
+        different (vis = stokesI, comp = stokesIQUV).
+        Expected flux contains the data for the polarisation of visibility.
+        """
+        vis = create_blockvisibility(
+            self.lowcore,
+            self.times,
+            self.frequency,
+            channel_bandwidth=self.channel_bandwidth,
+            phasecentre=self.phasecentre,
+            weight=1.0,
+            polarisation_frame=PolarisationFrame("stokesI"),
+        )
+
+        expected_direction = numpy.array([[1.42961744e-02, -7.15598688e-05, -1.02198084e-04]])
+        expected_flux = self.flux[:, 0].astype(complex).reshape((self.flux.shape[0], 1))
+        result_direction, result_flux = extract_direction_and_flux(self.comp, vis)
+
+        assert_array_almost_equal(result_direction, expected_direction)
+        assert (result_flux == expected_flux).all()
 
 
 if __name__ == "__main__":

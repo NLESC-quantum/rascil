@@ -46,12 +46,27 @@ def dft_skycomponent_visibility(
     """DFT to get the visibility from a Skycomponent, for BlockVisibility
 
     :param vis: BlockVisibility
-    :param sc: Skycomponent or list of SkyComponents
-    :return: BlockVisibility or BlockVisibility
+    :param sc: SkyComponent or list of SkyComponents
+    :return: BlockVisibility
     """
     if sc is None or (isinstance(sc, list) and len(sc) == 0):
         return vis
 
+    direction_cosines, vfluxes = extract_direction_and_flux(sc, vis)
+    vis["vis"].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
+
+    return vis
+
+
+def extract_direction_and_flux(sc, vis):
+    """
+    Extract SkyComponent direction and flux to be consumed by DFT.
+    Flux polarisation and frequency are scaled to that of input BlockVisibility data.
+
+    :param sc: SkyComponent or list of SkyComponents
+    :param vis: BlockVisibility
+    :returns: tuple of two numpy arrays: component direction cosines and component fluxes
+    """
     if not isinstance(sc, collections.abc.Iterable):
         sc = [sc]
 
@@ -59,7 +74,6 @@ def dft_skycomponent_visibility(
     direction_cosines = list()  # lmn vector for each component
 
     for comp in sc:
-        # assert isinstance(comp, Skycomponent), comp
         flux = comp.flux
         if comp.polarisation_frame != vis.blockvisibility_acc.polarisation_frame:
             flux = convert_pol_frame(
@@ -78,6 +92,7 @@ def dft_skycomponent_visibility(
             nvchan = len(vis.frequency)
             vflux = numpy.zeros([nvchan, npol])
             if nchan > 1:
+                # TODO: this path needs testing to verify that it works
                 for pol in range(flux.shape[1]):
                     fint = interpolate.interp1d(
                         comp.frequency, comp.flux[:, pol], kind="cubic"
@@ -97,9 +112,8 @@ def dft_skycomponent_visibility(
 
     direction_cosines = numpy.array(direction_cosines)
     vfluxes = numpy.array(vfluxes).astype("complex")
-    vis["vis"].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
 
-    return vis
+    return direction_cosines, vfluxes
 
 
 def dft_kernel(

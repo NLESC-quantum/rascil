@@ -16,8 +16,7 @@ If you just wish to run the package and do not intend to run simulations or test
 
 This will download the latest stable version.
 
-This will download and install the python files in the rascil, and dependencies. For simulations, you must add the data
-in a separate step::
+For simulations, you must add the data in a separate step::
 
     mkdir rascil_data
     cd rascil_data
@@ -42,9 +41,10 @@ If you are familiar with docker, an easy approach is to use docker:
 Installation via git clone
 ++++++++++++++++++++++++++
 
-Use of git clone is necessary if you wish to develop and possibly contribute RASCIL code. Installation should be straightforward. We strongly recommend the use of a python virtual environment.
+Use of git clone is necessary if you wish to develop and possibly contribute RASCIL code.
+Installation should be straightforward. We strongly recommend the use of a python virtual environment.
 
-RASCIL requires python 3.7 or 3.8.
+RASCIL requires python 3.8+.
 
 The installation steps are:
 
@@ -56,14 +56,10 @@ The installation steps are:
 
    cd rascil
 
-- Use pip to install required python packages::
+- Install the required python packages and RASCIL package (in an activated virtual environment).
+  The following command uses pip to install all of the requirements, including test and docs::
 
-   pip3 install pip --upgrade
-   pip3 install -r requirements.txt
-
-- Setup RASCIL::
-
-   python3 setup.py install
+   make install_requirements
 
 - RASCIL makes use of a number of data files. These can be downloaded using Git LFS::
 
@@ -72,7 +68,8 @@ The installation steps are:
     git-lfs pull
 
 If git-lfs is not already available, then lfs will not be recognised as a valid option for git in the second step.
-In this case, git-lfs can be installed via :code:`sudo apt install git-lfs` or from a `tar file <https://docs.github.com/en/github/managing-large-files/installing-git-large-file-storage>`_
+In this case, git-lfs can be installed via :code:`sudo apt install git-lfs` or
+from a `tar file <https://docs.github.com/en/github/managing-large-files/installing-git-large-file-storage>`_
 
 - Put the following definitions in your .bashrc::
 
@@ -110,10 +107,13 @@ Or the full set::
    py.test -n 4 tests
 
 - Ensure that pip is up-to-date. If not, some strange install errors may occur.
-- Check that the contents of the data directories have plausible contents. If gif-lfs has not been run successfully then the data files will just contain meta data, leading to strange run-time errors.
+- Check that the contents of the data directories have plausible contents.
+  If gif-lfs has not been run successfully then the data files will just contain meta data,
+  leading to strange run-time errors.
 - There may be some dependencies that require either conda (or brew install on a mac).
 - Ensure that you have made the directory test_results to store the test results. Or add the below in the test script::
-  if not os.path.isdir(test_results):os.makedirs(test_results)
+
+    if not os.path.isdir(test_results):os.makedirs(test_results)
 
 Casacore installation
 ^^^^^^^^^^^^^^^^^^^^^

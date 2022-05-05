@@ -19,10 +19,12 @@ try:
     from realtime.receive.modules.consumers.iconsumer import IConsumer
     from realtime.receive.modules.utils.command_executor import CommandExecutor
 except ImportError:
-    raise ImportError("SKA SDP Realtime Receive Modules is not installed; cannot"
-                      "operate visibility receive consumer. To install, run:\n"
-                      "pip install --extra-index-url=https://artefact.skao.int/repository/pypi-all/simple "
-                      "ska-sdp-realtime-receive-modules")
+    raise ImportError(
+        "SKA SDP Realtime Receive Modules is not installed; cannot"
+        "operate visibility receive consumer. To install, run:\n"
+        "pip install --extra-index-url=https://artefact.skao.int/repository/pypi-all/simple "
+        "ska-sdp-realtime-receive-modules"
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +46,9 @@ class consumer(IConsumer):
         self.max_payloads: Optional[int] = config["reception"].getoptint(
             "max_payloads", None
         )
-        self._command_template: Optional[List[str]] = config[
-            "reception"
-        ].getoptlist("command_template", None)
+        self._command_template: Optional[List[str]] = config["reception"].getoptlist(
+            "command_template", None
+        )
         self._timestamp_output: bool = config["reception"].getboolean(
             "timestamp_output", False
         )
@@ -74,9 +76,7 @@ class consumer(IConsumer):
             output_path = self._generate_output_path()
             logger.info(f"Writing to {output_path}")
             self.mswriter = msutils.MSWriter(output_path, self.tm)
-        await self.mswriter.write_payload(
-            payload, self.tm, executor=self.executor
-        )
+        await self.mswriter.write_payload(payload, self.tm, executor=self.executor)
         self.received_payloads += 1
 
         # Write output ms if max payloads reached

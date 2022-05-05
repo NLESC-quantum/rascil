@@ -13,7 +13,7 @@
 # which pushes the images necessary for cluster-test to the GitLab registry
 cluster-test:
   extends: .k8s-test
-  stage: publish
+  stage: test
   before_script:
     - apt-get -y update
     - apt-get install -y gettext-base --no-install-recommends

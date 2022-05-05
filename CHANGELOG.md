@@ -2,7 +2,7 @@ master
 ------
 
 * Add a temporary consumer (mswriter), which is used for testing the connection to visibility receive ([MR332](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/332))
-* If RASCIL data directory doe not exist, only fail if check_data_directory(fatal=True), if fatal=False, just log a warning ([MR331](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/331), [MR332](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/332))
+* If RASCIL data directory does not exist, only fail if check_data_directory(fatal=True), if fatal=False, just log a warning ([MR331](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/331), [MR332](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/332))
 * Update the RCAL app to use the most up-to-date RFI flagger ([MR326](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/326))
 * Bug fix in flux computation in create_test_image_from_s3 (rascil.processing_components.simulation.testing_support) ([MR325](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/325))
 * Add Kubernetes cluster tests and start publishing docker images with latest tag in GitLab registry ([MR324](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/324))

@@ -13,7 +13,7 @@ from rascil.processing_components.util.installation_checks import check_data_dir
 
 def test_rascil_data_path():
     result = rascil_data_path("configurations")
-    assert "rascil/data/configurations" in result
+    assert "data/configurations" in result
 
 
 @patch("rascil.data_models.parameters.rascil_path")
@@ -32,18 +32,6 @@ def test_rascil_data_path_not_exist(mock_path):
     with patch.dict(os.environ, modified_environ, clear=True):
         with pytest.raises(FileNotFoundError):
             rascil_data_path("configurations")
-
-
-def test_rascil_path():
-    path = "data_models/buffer_data_models.py"
-    result = rascil_path(path)
-    assert "rascil/data_models/buffer_data_models.py" in result
-
-    # only the repository root is added! if file is in a sub directory, but
-    # the request doesn't contain that dir, it won't be returning the correct path.
-    path = "buffer_data_models.py"
-    result = rascil_path(path)
-    assert "rascil/buffer_data_models.py" in result
 
 
 @patch("rascil.data_models.parameters.rascil_path")

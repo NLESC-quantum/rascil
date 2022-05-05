@@ -1,3 +1,5 @@
+--extra-index-url=https://artefact.skao.int/repository/pypi-all/simple
+
 astropy
 astroplan
 bdsf
@@ -22,8 +24,8 @@ python-gitlab
 reproject
 scipy
 seqfile
+ska-sdp-realtime-receive-modules
 tabulate
 xarray
 zarr
 git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@main
-

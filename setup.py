@@ -27,6 +27,7 @@ reqs = [
     line.strip()
     for line in open("requirements.txt").readlines()
     if not line.strip().startswith("#") and line.strip() != ""
+    and not line.strip().startswith("--extra-index-url")
 ]
 
 # MF. This is a workaround to be able to build the library with MacOS

@@ -30,7 +30,8 @@ USER root
 COPY rascil-*whl .
 
 RUN pip install --upgrade pip && \
-    DUCC0_OPTIMIZATION=portable-debug pip install rascil-*.whl && \
+    DUCC0_OPTIMIZATION=portable-debug pip install rascil-*.whl \
+    --extra-index-url https://artefact.skao.int/repository/pypi-all/simple && \
     rm -rf /root/.cache
 
 # Set runtime environment variables.

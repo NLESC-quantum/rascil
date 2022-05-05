@@ -43,7 +43,7 @@ create_namespace:
 	kubectl create namespace $(NAMESPACE)
 
 create_volume_claim:
-	@echo "$${PVC_YAML}" | envsubst | kubectl apply -f -
+	@echo "$${PVC_YAML}" | envsubst | kubectl -n $(NAMESPACE) apply -f -
 
 helm_repo:
 	helm repo add tmp-rascil-helm https://gitlab.com/ska-telescope/sdp/ska-sdp-helmdeploy-charts/-/raw/master/chart-repo

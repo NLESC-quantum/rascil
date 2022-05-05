@@ -27,8 +27,12 @@ def check_data_directory(verbose=False, fatal=True):
                         "The RASCIL data directory appears to have been installed correctly"
                     )
     except FileNotFoundError:
+        # FileNotFoundError raised when trying to open 'canary'
+        # and also if rascil_data_path doesn't find the data directory
         if fatal:
-            log.error("The RASCIL data directory is not available - stopping")
+            raise FileNotFoundError(
+                "The RASCIL data directory is not available - stopping"
+            )
         else:
             log.warning(
                 "The RASCIL data directory is not available - continuing but any simulations will fail"

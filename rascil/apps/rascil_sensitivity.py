@@ -221,6 +221,9 @@ def calculate_sensitivity(args):
     times = numpy.arange(
         time_rad[0], time_rad[1], args.integration_time * numpy.pi / 43200.0
     )
+    ntimes = len(times)
+    log.info(f"The number of times: {ntimes}\n")
+
     # Make a list of BlockVisibility's, one for each frequency.
     # This is actually a graph that we will compute later
     # Note that the weight of one sample is set to the time-bandwidth product
@@ -250,12 +253,12 @@ def calculate_sensitivity(args):
             f"Size of BlockVisibility for first channel: {local_bvis_list[0].nbytes * 2**-30:.6f}GB "
         )
 
-    results = image_bvis(args, bvis_list)
+    results = image_bvis(args, bvis_list, ntimes)
 
     return results
 
 
-def image_bvis(args, bvis_list):
+def image_bvis(args, bvis_list, ntimes=1):
     """Construct the PSF and calculate statistics
 
     :param args: CLI arguments
@@ -295,16 +298,16 @@ def image_bvis(args, bvis_list):
     for taper in tapers:
         if args.imaging_weighting is None:
             result = robustness_taper_scenario(
-                args, "uniform", 0.0, taper, bvis_list, model_list
+                args, "uniform", 0.0, taper, bvis_list, model_list, ntimes
             )
             results.append(result)
             for robustness in robustnesses:
                 result = robustness_taper_scenario(
-                    args, "robust", robustness, taper, bvis_list, model_list
+                    args, "robust", robustness, taper, bvis_list, model_list, ntimes
                 )
                 results.append(result)
             result = robustness_taper_scenario(
-                args, "natural", 0.0, taper, bvis_list, model_list
+                args, "natural", 0.0, taper, bvis_list, model_list, ntimes
             )
             results.append(result)
         else:
@@ -318,6 +321,7 @@ def image_bvis(args, bvis_list):
                     taper,
                     bvis_list,
                     model_list,
+                    ntimes,
                 )
                 results.append(result)
 
@@ -337,6 +341,7 @@ def robustness_taper_scenario(
     taper,
     bvis_list,
     model_list,
+    ntimes=1,
 ):
     """Grid the data, form the PSF, and calculate the noise characteristics
 
@@ -410,8 +415,8 @@ def robustness_taper_scenario(
         results[f"psf_{key}"] = qa_psf.data[key]
 
     # The effective time-bandwidth product (i.. accounting for weighting and taper)
-    tb = sumwt[0][0] + sumwt[-1][0]
-    log.info(f"\tTime-Bandwidth product (tb) = {tb:.4g} (Hz.s)")
+    tb = (sumwt[0][0] + sumwt[-1][0])/ntimes
+    log.info(f"\tTime-Bandwidth product (tb) = {tb:.4g} (Hz.s)， ntimes={ntimes}")
 
     # Point source sensitivity
     # Equation 6.50 of Thompson, Moran, and Swenson

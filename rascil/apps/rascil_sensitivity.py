@@ -415,7 +415,7 @@ def robustness_taper_scenario(
         results[f"psf_{key}"] = qa_psf.data[key]
 
     # The effective time-bandwidth product (i.. accounting for weighting and taper)
-    tb = (sumwt[0][0] + sumwt[-1][0])/ntimes
+    tb = (sumwt[0][0] + sumwt[-1][0]) / ntimes
     log.info(f"\tTime-Bandwidth product (tb) = {tb:.4g} (Hz.s)， ntimes={ntimes}")
 
     # Point source sensitivity

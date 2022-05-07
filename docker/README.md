@@ -1,9 +1,11 @@
 # Dockerfiles for RASCIL
 
-These Dockerfiles construct RASCIL docker images working from the RASCIL master. 
-They can be found in the `docker` directory and its subdirectories.
-These currently support building, pushing, and tagging images. The images are named
-as specified in the `release` file of the docker image directory,
+RASCIL supports the publishing of various docker images. The related Dockerfiles
+can be found in the `docker` directory and its subdirectories. The images are
+based on a python wheel created from RASCIL.
+
+Makefiles are also included, which support building, pushing, and tagging images. 
+The images are named as specified in the `release` file of the docker image directory,
 and tagged by the RASCIL version stored in `rascil/version.py`. 
 
 There are various directories for docker files:
@@ -16,14 +18,21 @@ There are various directories for docker files:
 ## Automatic publishing
 
 The docker images are automatically built by the CI pipeline.
-The `latest` versions are pushed to the [Central Artifact Repository](https://artefact.skao.int/#browse/browse:docker-all)
-(CAR) upon merge to the master branch, while the release version 
-(tagged with the RASCIL version number) are pushed when a commit tag
-is pushed to the repository
 
-Note: at the moment, `latest` versions are NOT accessible from the CAR.
-To find out what versions you can download, look for the relevant 
-RASCIL docker image in the [Central Artifact Repository](https://artefact.skao.int/#browse/browse:docker-all)
+When the repository is tagged, and a new version of it is released,
+a versioned docker images of each type is published to 
+the [Central Artifact Repository](https://artefact.skao.int/#browse/browse:docker-all)
+(CAR). To find out what versions you can download, look for the relevant 
+RASCIL docker image in the CAR. Example::
+
+    artefact.skao.int/rascil-base:0.6.0
+
+Upon every merge to the master branch, docker images with the `latest` tagged
+are published to the GitLab Registry. Note that this tage is always updated
+with the latest code on master, hence it changes very often::
+
+    registry.gitlab.com/ska-telescope/external/rascil/rascil-imaging-qa:latest
+
 
 ## Build, push, and tag a set of Dockerfiles
 
@@ -75,7 +84,7 @@ However, for many of the tests and demonstrations the test data is needed, which
 
 To run RASCIL with your home directory available inside the image::
 
-    docker run -it --volume $HOME:$HOME artefact.skao.int/rascil-full
+    docker run -it --volume $HOME:$HOME artefact.skao.int/rascil-full:<version>
 
 Now let's run an example. First it simplifies using the container if we do not
 try to write inside the container, and that's why we mapped in our $HOME directory.
@@ -84,7 +93,7 @@ to the name of the HOME directory, which is the same inside and outside the
 container, and then give the full address of the script inside the container. This time
 we will show the prompts from inside the container::
 
-     % docker run -p 8888:8888 -v $HOME:$HOME -it artefact.skao.int/rascil-full
+     % docker run -p 8888:8888 -v $HOME:$HOME -it artefact.skao.int/rascil-full:0.6.0
      rascil@d0c5fc9fc19d:/rascil$ cd /<your home directory>
      rascil@d0c5fc9fc19d:/<your home directory>$ python3 /rascil/examples/scripts/imaging.py
      ...
@@ -104,7 +113,7 @@ The docker image to use with RASCIL Jupyter Notebooks is::
 
 Run Jupyter Notebooks inside the container::
 
-    docker run -it -p 8888:8888 --volume $HOME:$HOME artefact.skao.int/rascil-full
+    docker run -it -p 8888:8888 --volume $HOME:$HOME artefact.skao.int/rascil-notebook:0.6.0
     cd /<your home directory>
     jupyter notebook --no-browser --ip 0.0.0.0  /rascil/examples/notebooks/
 
@@ -124,14 +133,15 @@ the standard Jupyter directory page.
 
 ### Continuum imaging QA tool (a.k.a imaging_qa)
 
-[imaging_qa](Documentation: https://ska-telescope.gitlab.io/external/rascil/apps/imaging_qa.html) finds compact sources in a continuum image and compares them 
+[imaging_qa](Documentation: https://ska-telescope.gitlab.io/external/rascil/apps/imaging_qa.html) 
+finds compact sources in a continuum image and compares them 
 to the sources used in the simulation, thus revealing the quality of the imaging.
 
 ####DOCKER
 
 Pull the image:
 
-`docker pull artefact.skao.int/rascil-imaging-qa:latest`
+`docker pull artefact.skao.int/rascil-imaging-qa:<version>`
 
 Run the image:
 
@@ -139,7 +149,7 @@ Run the image:
 docker run -v ${PWD}:/myData -e DOCKER_PATH=${PWD} \
     -e CLI_ARGS='--ingest_fitsname_restored /myData/my_restored.fits \
     --ingest_fitsname_residual /myData/my_residual.fits' \
-    --rm artefact.skao.int/rascil-imaging-qa:latest
+    --rm artefact.skao.int/rascil-imaging-qa:0.6.0
 ```
 Run it from the directory where your images you want to check are. The output files will
 appear in the same directory. Update the `CLI_ARGS` string with the command line arguments
@@ -151,7 +161,7 @@ is used for generating the output file index files.
 
 Pull the image:
 
-`singularity pull rascil-imaging-qa.img docker://artefact.skao.int/rascil-imaging-qa:latest`
+`singularity pull rascil-imaging-qa.img docker://artefact.skao.int/rascil-imaging-qa:0.6.0`
 
 Run the image:
 
@@ -184,7 +194,7 @@ Here, we use the `DOCKER` example of mounting our data into the `/myData` direct
 Then, calling `docker run` simplifies as::
 
     docker run -v ${PWD}:/myData  -e DOCKER_PATH=${PWD} -e CLI_ARGS='@/myData/args.txt' \
-    --rm artefact.skao.int/rascil-imaging-qa:latest
+    --rm artefact.skao.int/rascil-imaging-qa:0.6.0
 
 Here, we assume that your custom args.txt file is also mounted together with the data into ``/myData``. 
 Provide the absolute path to that file when your run the above command.
@@ -239,21 +249,11 @@ To uninstall the chart and clean out all pods, run::
 
 Note: this will remove changes you might have made in the Jupyter notebooks.
 
-
-## CASA Measures Tables
-
-We use the CASA measures system for TAI/UTC corrections. These rely upon tables downloaded from NRAO.
-It may happen that the tables become out of date. If so do the following at the command prompt inside a
-docker image::
-
-    rsync -avz rsync://casa-rsync.nrao.edu/casa-data/geodetic /var/lib/casacore/data
-
-
 ##Singularity
 
 `Singularity <https://sylabs.io/docs/>`_ can be used to load and run the docker images::
 
-    singularity pull RASCIL-full.img docker://artefact.skao.int/rascil-full
+    singularity pull RASCIL-full.img docker://artefact.skao.int/rascil-full:0.6.0
     singularity exec RASCIL-full.img python3 /rascil/examples/scripts/imaging.py
 
 As in docker, don't run from the /rascil/ directory.

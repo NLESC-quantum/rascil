@@ -98,7 +98,9 @@ def rascil_data_path(path, check=True):
         dp = rascil_data_home
     if check:
         if not os.path.exists(dp):
-            raise EnvironmentError("RASCIL data directory {} does not exist".format(dp))
+            raise FileNotFoundError(
+                "RASCIL data directory {} does not exist".format(dp)
+            )
     dp = os.path.join(dp, path)
     return dp
 

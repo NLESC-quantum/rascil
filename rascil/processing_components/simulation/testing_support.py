@@ -90,7 +90,6 @@ from rascil.processing_components.skycomponent.operations import (
 from rascil.processing_components.util.installation_checks import check_data_directory
 from rascil.processing_components.visibility.base import create_blockvisibility
 
-check_data_directory()
 log = logging.getLogger("rascil-logger")
 
 

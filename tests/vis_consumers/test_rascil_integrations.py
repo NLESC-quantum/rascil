@@ -1,7 +1,7 @@
 import asyncio
 import os
-import time
 import tempfile
+import time
 import unittest
 
 import pytest
@@ -10,14 +10,12 @@ from pytest_bdd.scenario import scenarios
 from pytest_bdd.steps import given, then, when
 from realtime.receive.core import ms_asserter, sched_tm, utils
 from realtime.receive.core.config import create_config_parser
-
 from realtime.receive.modules import receivers
+
 try:
     from rascil.vis_consumer import msconsumer
 except ImportError:
-    raise ImportError(
-        "RASCIL consumer not found"
-        )
+    raise ImportError("RASCIL consumer not found")
 
 
 scenarios("./YAN-982.feature")
@@ -50,6 +48,33 @@ def test_file():
     else:
         raise FileExistsError
 
+
+@given(
+    "A receiver can be configured with a RCAL consumer",
+    target_fixture="rcalconsumer",
+)
+def get_receiver(loop):
+    tm = sched_tm.SchedTM(SCHED_FILE)
+    config = create_config_parser()
+    config["reception"] = {
+        "method": "spead2_receivers",
+        "receiver_port_start": 42001,
+        "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
+        "schedblock": SCHED_FILE,
+        "outputfilename": OUTPUT_FILE,
+        "ring_heaps": 128,
+    }
+    config["transmission"] = {
+        "method": "spead2_transmitters",
+        "target_host": "127.0.0.1",
+        "target_port_start": str(42001),
+        "channels_per_stream": str(CHAN_PER_STREAM),
+    }
+    config["reader"] = {"num_repeats": str(10), "num_timestamps": str(2)}
+
+    return receivers.create(config, tm, loop)
+
+
 @given(
     "A receiver can be configured with a RASCIL consumer",
     target_fixture="mswriter",
@@ -74,6 +99,35 @@ def get_receiver(loop):
     config["reader"] = {"num_repeats": str(10), "num_timestamps": str(2)}
 
     return receivers.create(config, tm, loop)
+
+
+@when("the data is sent to the RCAL consumer")
+def send_data(rcalconsumer, loop):
+
+    rate = 1e9 / NUM_STREAMS
+
+    config = create_config_parser()
+    config["transmission"] = {
+        "method": "spead2_transmitters",
+        "target_host": "127.0.0.1",
+        "target_port_start": str(42001),
+        "channels_per_stream": str(CHAN_PER_STREAM),
+        "rate": str(rate),
+        "time_interval": str(0),
+    }
+
+    sending = packetiser.packetise(config, INPUT_FILE)
+
+    time.sleep(5)
+
+    # Go, go, go!
+    async def run():
+        coros = [sending, mswriter.run()]
+        done, waiting = await asyncio.wait(coros, timeout=30)
+        assert len(done) == len(coros)
+        assert not waiting
+
+    loop.run_until_complete(run())
 
 
 @when("the data is sent at a rate commensurate with AA0.5")

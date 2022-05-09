@@ -6,7 +6,7 @@
 #
 alabaster==0.7.12
     # via sphinx
-astroid==2.11.3
+astroid==2.11.4
     # via pylint
 attrs==21.4.0
     # via pytest
@@ -82,7 +82,7 @@ pygments==2.12.0
     # via
     #   -r requirements-test.in
     #   sphinx
-pylint==2.13.7
+pylint==2.13.8
     # via
     #   -r requirements-test.in
     #   pylint-junit
@@ -171,7 +171,7 @@ typing-extensions==4.2.0
     #   pylint
 urllib3==1.26.9
     # via requests
-wrapt==1.14.0
+wrapt==1.14.1
     # via astroid
 zipp==3.8.0
     # via importlib-metadata

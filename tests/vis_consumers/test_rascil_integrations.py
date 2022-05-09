@@ -161,9 +161,7 @@ def send_data(mswriter, loop):
 
 @then("The same data is received and written")
 def compare_measurement_sets():
-    asserter = type(
-        "asserter", (ms_asserter.MSAsserter, unittest.TestCase), {}
-    )()
+    asserter = type("asserter", (ms_asserter.MSAsserter, unittest.TestCase), {})()
     asserter.assert_ms_data_equal(INPUT_FILE, OUTPUT_FILE)
 
 

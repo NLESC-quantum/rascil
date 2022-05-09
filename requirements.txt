@@ -6,10 +6,6 @@
 #
 --extra-index-url https://artefact.skao.int/repository/pypi-all/simple
 
-appnope==0.1.3
-    # via
-    #   ipykernel
-    #   ipython
 argon2-cffi==21.3.0
     # via notebook
 argon2-cffi-bindings==21.2.0
@@ -149,11 +145,11 @@ jinja2==3.1.2
     #   distributed
     #   nbconvert
     #   notebook
-jsonschema==4.4.0
+jsonschema==4.5.1
     # via nbformat
 jupyter==1.0.0
     # via -r requirements.in
-jupyter-client==7.3.0
+jupyter-client==7.3.1
     # via
     #   ipykernel
     #   jupyter-console

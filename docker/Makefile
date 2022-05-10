@@ -8,15 +8,17 @@ pull_all:
 
 build_all_latest:
 	cd rascil-base; make build; make tag_latest
-	cd rascil-full; make build; make tag_latest
-	cd rascil-notebook; make build; make tag_latest
-	cd rascil-imaging-qa; make build; make tag_latest
+	#cd rascil-full; make build; make tag_latest
+	#cd rascil-notebook; make build; make tag_latest
+	#cd rascil-imaging-qa; make build; make tag_latest
+	cd rascil-rcal; make build; make tag_latest
 
 push_all_latest:
 	cd rascil-base; make tag_latest; make push_latest
-	cd rascil-full; make tag_latest; make push_latest
-	cd rascil-notebook; make tag_latest; make push_latest
-	cd rascil-imaging-qa; make tag_latest; make push_latest
+	#cd rascil-full; make tag_latest; make push_latest
+	#cd rascil-notebook; make tag_latest; make push_latest
+	#cd rascil-imaging-qa; make tag_latest; make push_latest
+	cd rascil-rcal; make tag_latest; make push_latest
 
 push_all_release:
 	cd rascil-base; make push_version

@@ -158,10 +158,10 @@ docker_test:
     - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
     - make build_all_latest
-    - make test_all
+#    - make test_all
     - make push_all_latest
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # Build the data file only if on the master
 data:
@@ -183,9 +183,9 @@ build_package:
   artifacts:
     paths:
       - dist
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
-    - if: '$CI_COMMIT_TAG'
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule"'
+#    - if: '$CI_COMMIT_TAG'
 
 # Publish package to Central Artefact Repository only if this is a tagged build of the master
 publish_to_car:

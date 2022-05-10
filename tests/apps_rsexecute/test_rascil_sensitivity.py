@@ -33,6 +33,30 @@ default_run = True
         ),
         (
             default_run,
+            "B1LOW_NATURAL",
+            True,
+            0.350e9,
+            512,
+            6e-7,
+            "natural",
+            1e4,
+            "0",
+            "0.0 5e-6 1e-5",
+        ),
+        (
+            default_run,
+            "B1LOW_UNIFORM",
+            True,
+            0.350e9,
+            512,
+            6e-7,
+            "uniform",
+            1e4,
+            "0",
+            "0.0 5e-6 1e-5",
+        ),
+        (
+            default_run,
             "B2",
             True,
             1.36e9,
@@ -41,6 +65,30 @@ default_run = True
             "robust",
             1e4,
             "-2 -1 0 1 2",
+            "0.0 1.2e-6",
+        ),
+        (
+            default_run,
+            "B2_NATURAL",
+            True,
+            1.36e9,
+            1024,
+            2e-7,
+            "natural",
+            1e4,
+            "0",
+            "0.0 1.2e-6",
+        ),
+        (
+            default_run,
+            "B2_UNIFORM",
+            True,
+            1.36e9,
+            1024,
+            2e-7,
+            "uniform",
+            1e4,
+            "0",
             "0.0 1.2e-6",
         ),
     ],
@@ -98,9 +146,11 @@ def test_rascil_sensitivity(
     sensitivity_args.append("--imaging_taper")
     for taper in tapers:
         sensitivity_args.append(taper)
-    sensitivity_args.append("--imaging_robustness")
-    for robust in robustnesses:
-        sensitivity_args.append(robust)
+
+    if weighting not in ["uniform", "natural"]:
+        sensitivity_args.append("--imaging_robustness")
+        for robust in robustnesses:
+            sensitivity_args.append(robust)
 
     parser = cli_parser()
     args = parser.parse_args(sensitivity_args)
@@ -113,7 +163,11 @@ def test_rascil_sensitivity(
     df = pd.read_csv(results_file)
 
     # Check the shape of the DataFrame and the column names
-    nrows = len(tapers * (len(robustnesses) + 2))
+    if weighting in ["uniform", "natural"]:
+        nrows = len(tapers)
+    else:
+        nrows = len(tapers * (len(robustnesses)))
+
     assert len(df) == nrows
     assert len(df.columns) == 21
 

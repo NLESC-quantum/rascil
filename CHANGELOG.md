@@ -1,6 +1,7 @@
 master
 ------
 
+* Bug fix in RASCIL sensitivity app integration time ([MR328](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/328))
 * Add a temporary consumer (mswriter), which is used for testing the connection to visibility receive ([MR332](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/332))
 * If RASCIL data directory does not exist, only fail if check_data_directory(fatal=True), if fatal=False, just log a warning ([MR331](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/331), [MR332](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/332))
 * Update the RCAL app to use the most up-to-date RFI flagger ([MR326](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/326))

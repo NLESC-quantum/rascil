@@ -416,9 +416,9 @@ def robustness_taper_scenario(
     for key in qa_psf.data:
         results[f"psf_{key}"] = qa_psf.data[key]
 
-    # The effective time-bandwidth product (i.. accounting for weighting and taper)
+    # The effective time-bandwidth product (i.e. accounting for weighting and taper)
     # Tim's original code: tb = sumwt[0][0] + sumwt[-1][0]
-    # This sum step has been added in sum_invert_results_rsexecute
+    # This summation step is already implemented in sum_invert_results_rsexecute.
     tb = sumwt[0][0]
     log.info(f"\tTime-Bandwidth product (tb) = {tb:.4g} (Hz.s)")
 

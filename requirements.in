@@ -24,7 +24,7 @@ python-gitlab
 reproject
 scipy
 seqfile
-ska-sdp-realtime-receive-modules
+ska-sdp-realtime-receive-modules >= 2.0.3
 tabulate
 xarray
 zarr

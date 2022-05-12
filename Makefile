@@ -93,6 +93,14 @@ test-gpu:
 	--pylint --pylint-error-types=EF --durations=30
 	coverage html -d coverage
 
+test-consumer:
+	HOME=`pwd` py.test tests/vis_consumers --verbose \
+	--cov=rascil \
+	--junitxml unit-tests-gpu.xml \
+	--pylint --pylint-error-types=EF --durations=30
+	coverage html -d coverage
+
+
 upgrade_pip:  ## make sure pip is up to date.
 	pip install --upgrade pip
 

@@ -8,7 +8,7 @@ import pytest
 from cbf_sdp import packetiser
 from pytest_bdd.scenario import scenarios
 from pytest_bdd.steps import given, then, when
-from realtime.receive.core import ms_asserter, sched_tm, utils
+from realtime.receive.core import ms_asserter, sched_tm
 from realtime.receive.core.config import create_config_parser
 from realtime.receive.modules import receivers
 
@@ -20,8 +20,10 @@ except ImportError:
 
 scenarios("./YAN-982.feature")
 
-INPUT_FILE = "tests/vis_consumer/data/AA05LOW.ms"
-SCHED_FILE = "tests/vis_consumer/data/sb-test.json"
+INPUT_FILE = "tests/vis_consumers/data/AA05LOW.ms"
+SCHED_FILE = "tests/vis_consumers/data/sb-test.json"
+LAYOUT_FILE = "tests/vis_consumers/data/TSI-AP.json"
+
 OUTPUT_FILE = tempfile.mktemp(suffix=".ms", prefix="output_")
 
 NUM_STREAMS = 96
@@ -54,13 +56,14 @@ def test_file():
     target_fixture="rcalconsumer",
 )
 def get_receiver(loop):
-    tm = sched_tm.SchedTM(SCHED_FILE)
+    tm = sched_tm.SchedTM(SCHED_FILE, LAYOUT_FILE)
     config = create_config_parser()
     config["reception"] = {
         "method": "spead2_receivers",
         "receiver_port_start": 42001,
         "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
         "schedblock": SCHED_FILE,
+        "layout": LAYOUT_FILE,
         "outputfilename": OUTPUT_FILE,
         "ring_heaps": 128,
     }
@@ -80,13 +83,14 @@ def get_receiver(loop):
     target_fixture="mswriter",
 )
 def get_receiver(loop):
-    tm = sched_tm.SchedTM(SCHED_FILE)
+    tm = sched_tm.SchedTM(SCHED_FILE,LAYOUT_FILE)
     config = create_config_parser()
     config["reception"] = {
         "method": "spead2_receivers",
         "receiver_port_start": 42001,
-        "consumer": "rascil.vis_consumer.msconsumer.consumer",
+        "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
         "schedblock": SCHED_FILE,
+        "layout": LAYOUT_FILE,
         "outputfilename": OUTPUT_FILE,
         "ring_heaps": 128,
     }
@@ -122,7 +126,7 @@ def send_data(rcalconsumer, loop):
 
     # Go, go, go!
     async def run():
-        coros = [sending, mswriter.run()]
+        coros = [sending, rcalconsumer.run()]
         done, waiting = await asyncio.wait(coros, timeout=30)
         assert len(done) == len(coros)
         assert not waiting

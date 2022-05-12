@@ -6,13 +6,14 @@
         https://github.com/OxfordSKA/OSKAR/blob/master/python/examples/spead/receiver/spead_recv.py
 """
 import numpy
-import numpy as np
+import asyncio
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units
 import concurrent.futures
 import logging
 from configparser import ConfigParser
 from datetime import datetime
+from multiprocessing import Process, Pool
 from pathlib import Path
 from rascil.data_models.memory_data_models import BlockVisibility, Configuration
 from rascil.data_models.polarisation import PolarisationFrame
@@ -55,14 +56,14 @@ class VisibilityBucket(object):
         The full block of visibilities
         """
         self._model = model
-        shape = (model.num_baselines,model.num_channels,model.num_pols)
         self._nant = len(self._model.get_antennas())
         uvw_matrix_shape = (self._nant,self._nant, 3)
-        self._full_count = model.num_baselines * model.num_channels * model.num_pols
-        self._visibilities = numpy.zeros(shape=shape, dtype=complex)
+        vis_matrix_shape = (self._nant,self._nant,int(self._model.num_channels), int(self._model.num_pols))
+        self._full_count = self._nant * self._nant * int(self._model.num_channels) * int(self._model.num_pols)
+        self._visibilities = numpy.zeros(shape=vis_matrix_shape, dtype=complex)
         self._uvw = numpy.zeros(shape=uvw_matrix_shape, dtype=float)
-        self._flag = numpy.zeros(shape=shape, dtype=int)
-        self._weight = numpy.ones(shape=shape,dtype=float)
+        self._flag = numpy.zeros(shape=vis_matrix_shape, dtype=int)
+        self._weight = numpy.ones(shape=vis_matrix_shape,dtype=float)
         self._gauge = numpy.zeros_like(self._flag)
         self._is_full = False
 
@@ -85,7 +86,7 @@ class VisibilityBucket(object):
         for ant1 in range(0,self._nant):
             for ant2 in range(ant1,self._nant):
                 self._uvw[ant1,ant2] = uvw[uvw_index]
-                self._uvw[ant2,ant1] = uvw[uvw_index]
+                self._uvw[ant2,ant1] = [-1*uvw[uvw_index][0],-1*uvw[uvw_index][1],uvw[uvw_index]]
                 uvw_index = uvw_index + 1
 
 
@@ -97,24 +98,35 @@ class VisibilityBucket(object):
         THe ICD stacks then channels in freq x baseline x pol order - but the measurement
         sets want baseline x freq x pol - so we need to moveaxis
 
+        Also we need to repack into an nant,nant array
         """
+        gauge_shape = (self._nant, self._nant, num_chan, self._model.num_pols)
+        vis_to_add = numpy.zeros(shape=gauge_shape,dtype=complex)
 
-        vis_to_add = icd_to_ms(vis_slice)
+        for chan in num_chan:
+            for ant1 in range(0,self._nant):
+                for ant2 in range(ant1,self._nant):
+                    vis_to_add[ant1,ant2,chan] = vis_slice[chan,uvw_index]
+                    vis_to_add[ant2, ant1, chan] = numpy.ndarray.conjugate(vis_slice[chan, uvw_index])
+                    uvw_index = uvw_index + 1
+
         stop_chan = start_chan+num_chan
-        gauge_shape = (self._model.num_baselines, num_chan, self._model.num_pols)
-        if numpy.shape(self._visibilities[:,start_chan:stop_chan]) != numpy.shape(vis_to_add):
+        if numpy.shape(self._visibilities[:,:,start_chan:stop_chan]) != numpy.shape(vis_to_add):
             raise RuntimeError(
                 f"Shape missmatch between slices input:{numpy.shape(vis_to_add)} "
                 f"output:{numpy.shape(self._visibilities[:,start_chan:stop_chan])}"
             )
 
-        if self._gauge[:,start_chan:stop_chan].sum() != 0:
+        if self._gauge[:,:,start_chan:stop_chan].sum() != 0:
             raise RuntimeError(
-                "Trying to add a slice that is already present"
+                f"Trying to add a slice that is already present: "
+                f"current gauge is reading {self._gauge[:,start_chan:stop_chan].sum()}"
+                f"startchannel {start_chan} stopchannel {stop_chan}"
             )
 
-        self._visibilities[:, start_chan:stop_chan] = vis_to_add
-        self._gauge[:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
+        self._visibilities[:,:, start_chan:stop_chan] = vis_to_add
+        self._gauge[:,:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
+        self._weight[:,:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
         self._check()
 
     def empty(self):
@@ -219,8 +231,10 @@ class consumer(IConsumer):
             output_path = self._generate_output_path()
             logger.info(f"Writing to {output_path}")
             self.mswriter = msutils.MSWriter(output_path, self.tm)
-        await self.mswriter.write_payload(payload, self.tm, executor=self.executor)
-        await self._buffer_payload(payload)
+
+        asyncio.gather (self.mswriter.write_payload(payload, self.tm, executor=self.executor),
+                      self._buffer_payload(payload))
+
         self.received_payloads += 1
 
         # Write output ms if max payloads reached

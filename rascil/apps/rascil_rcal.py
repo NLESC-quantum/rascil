@@ -191,7 +191,7 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     # Set up the sequence.
     sequence = numpy.array([1, 2, 4, 8, 16, 32], dtype=numpy.int32)
     thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
-    max_sequence_length = 2**(len(thresholds)-1)
+    max_sequence_length = 2 ** (len(thresholds) - 1)
 
     vis_data = bvis["vis"].data
     flag_data = bvis["flags"].data.astype(numpy.int32)
@@ -334,7 +334,7 @@ def bvis_solver(
     phase_only=False,
     use_previous=True,
     jones_type="B",
-    **kwargs,
+    tol=1e-6,
 ) -> Iterable[GainTable]:
     """Iterate through the block vis, solving for the gain, returning gaintable generator
 
@@ -346,33 +346,76 @@ def bvis_solver(
     :param phase_only: Solve for phase only? Otherwise, also solve for amplitude
     :param use_previous: if True, use previous GainTable as starting point for solution
     :param jones_type: Type of calibration matrix T or G or B
-    :param kwargs: Optional keywords
+    :param tol: solution tolerance
     :return: generator of GainTables
     """
     previous = None
     for bv in bvis_gen:
-        if model_components is not None:
-            modelvis = copy_visibility(bv, zero=True)
-            modelvis = dft_skycomponent_visibility(modelvis, model_components)
-            gt = solve_gaintable(
-                bv,
-                modelvis=modelvis,
-                gt=previous,
-                phase_only=phase_only,
-                jones_type=jones_type,
-                **kwargs,
-            )
-        else:
-            gt = solve_gaintable(
-                bv, gt=previous, phase_only=phase_only, jones_type=jones_type, **kwargs
-            )
-
-        if use_previous:
-            newgt = create_gaintable_from_blockvisibility(bv, jones_type=jones_type)
-            previous = copy_gaintable(gt)
-            previous["time"].data = newgt["time"].data
-
+        gt, previous = realtime_single_bvis_solver(
+            bv,
+            model_components,
+            previous,
+            phase_only=phase_only,
+            jones_type=jones_type,
+            tol=tol,
+            use_previous=use_previous,
+        )
         yield gt
+
+
+def realtime_single_bvis_solver(
+    bvis: BlockVisibility,
+    model_components,
+    previous_solution,
+    phase_only=False,
+    jones_type="B",
+    tol=1e-6,
+    use_previous=True,
+):
+    """
+    The bulk of running RCAL.
+    This solves a single BlockVisibility and returns its GainTable.
+
+    :param bvis: a BlockVisibility object
+    :param model_components: Model components
+    :param previous_solution: previous GainTable used as starting point;
+                              if use_previous is True, update this object in place
+                              and make it the "previous" to be used next time
+    :param phase_only: Solve for phase only? Otherwise, also solve for amplitude
+    :param jones_type: Type of calibration matrix T or G or B
+    :param tol: solution tolerance
+    :param use_previous: if True, use previous GainTable as starting point for solution
+
+    :return: GainTable for the input BlockVisibility
+    """
+    if model_components is not None:
+        modelvis = copy_visibility(bvis, zero=True)
+        modelvis = dft_skycomponent_visibility(modelvis, model_components)
+        gt = solve_gaintable(
+            bvis,
+            modelvis=modelvis,
+            gt=previous_solution,
+            phase_only=phase_only,
+            jones_type=jones_type,
+            tol=tol,
+        )
+    else:
+        gt = solve_gaintable(
+            bvis,
+            gt=previous_solution,
+            phase_only=phase_only,
+            jones_type=jones_type,
+            tol=tol,
+        )
+
+    if use_previous:
+        newgt = create_gaintable_from_blockvisibility(bvis, jones_type=jones_type)
+        previous_solution = copy_gaintable(gt)
+        previous_solution = previous_solution.assign_coords(
+            {"time": newgt["time"].data}
+        )
+
+    return gt, previous_solution
 
 
 def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):

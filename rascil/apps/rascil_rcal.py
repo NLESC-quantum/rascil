@@ -8,10 +8,10 @@ import os
 import pprint
 import sys
 from typing import Iterable
-import xarray
 
 import matplotlib
 import numpy
+from ska_sdp_func import sum_threshold_rfi_flagger
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -36,7 +36,6 @@ from rascil.processing_components import (
     copy_gaintable,
     create_skycomponent,
     create_gaintable_from_blockvisibility,
-    apply_gaintable,
     concatenate_gaintables,
     create_low_test_beam,
     create_image_from_visibility,
@@ -145,10 +144,10 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--flag_first",
+        "--flag_rfi",
         type=str,
         default="False",
-        help="Whether to do the RFI flagging before first calibration (True), or after (False).",
+        help="Whether to run the RFI flagger (before obtaining calibration solutions), or not.",
     )
 
     parser.add_argument(
@@ -168,13 +167,6 @@ def cli_parser():
         "Note: use default value since flagger is still under development",
     )
 
-    parser.add_argument(
-        "--calibrate_bvis",
-        type=str,
-        default="True",
-        help="Whether to apply calibration to bvis or not.",
-    )
-
     return parser
 
 
@@ -183,8 +175,7 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     Wrapper function for the SKA flagger, certain defaults are managed here.
     Versions of flagger:
     1. (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger) (deprecated)
-    2. (https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/tree/rfi_flagger/)
-    TODO: Update this link when the flagger is merged into the main branch
+    2. (https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/blob/main/src/ska_sdp_func/rfi_flagger.py) (current)
 
     The code provides a sequence and derives the best experimented thresholds for flagging.
     For a longer sequence, the flagging threshold should be lower.
@@ -200,23 +191,14 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     # Set up the sequence.
     sequence = numpy.array([1, 2, 4, 8, 16, 32], dtype=numpy.int32)
     thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
+    max_sequence_length = 2**(len(thresholds)-1)
 
     vis_data = bvis["vis"].data
     flag_data = bvis["flags"].data.astype(numpy.int32)
 
     log.info("The dimensions of the visibility data:{}".format(vis_data.shape))
 
-    try:
-        from ska.sdp.func import rfi_flagger
-    except ImportError:
-
-        log.error(
-            "ska_sdp_func rfi_flagger ImportError. Flagger did not run. "
-            "(see comment where this message was produced)"
-        )
-        return
-
-    rfi_flagger(vis_data, sequence, thresholds, flag_data)
+    sum_threshold_rfi_flagger(vis_data, thresholds, flag_data, max_sequence_length)
 
     # update flag data in place
     bvis["flags"].data = flag_data
@@ -261,12 +243,8 @@ def rcal_simulator(args):
     telescope_name = bvis.configuration.name
     log.info(f"The data is from {telescope_name}.")
 
-    flagged = False
-    initial_threshold = args.initial_threshold
-    rho = args.rho
-    if args.flag_first == "True":
-        _rfi_flagger(bvis, initial_threshold, rho)
-        flagged = True
+    if args.flag_rfi == "True":
+        _rfi_flagger(bvis, args.initial_threshold, args.rho)
 
     if args.ingest_components_file is not None:
         log.info("Using components model for calibration")
@@ -320,7 +298,6 @@ def rcal_simulator(args):
         model_components,
         phase_only=args.phase_only_solution == "True",
         use_previous=args.use_previous_gaintable == "True",
-        calibrate=args.calibrate_bvis == "True",
         tol=args.solution_tolerance,
     )
 
@@ -331,9 +308,6 @@ def rcal_simulator(args):
     do_plotting = args.do_plotting == "True"
     plot_dynamic = args.plot_dynamic == "True"
     full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
-
-    if not flagged:
-        _rfi_flagger(bvis, initial_threshold, rho)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -359,7 +333,6 @@ def bvis_solver(
     model_components,
     phase_only=False,
     use_previous=True,
-    calibrate=True,
     jones_type="B",
     **kwargs,
 ) -> Iterable[GainTable]:
@@ -372,7 +345,6 @@ def bvis_solver(
     :param model_components: Model components
     :param phase_only: Solve for phase only? Otherwise, also solve for amplitude
     :param use_previous: if True, use previous GainTable as starting point for solution
-    :param calibrate: if True, apply gain table to bvis; this is done in place with the input bvis
     :param jones_type: Type of calibration matrix T or G or B
     :param kwargs: Optional keywords
     :return: generator of GainTables
@@ -399,9 +371,6 @@ def bvis_solver(
             newgt = create_gaintable_from_blockvisibility(bv, jones_type=jones_type)
             previous = copy_gaintable(gt)
             previous["time"].data = newgt["time"].data
-
-        if calibrate:
-            apply_gaintable(bv, gt, inverse=True)
 
         yield gt
 

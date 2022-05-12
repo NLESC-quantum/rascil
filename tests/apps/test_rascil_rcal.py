@@ -8,10 +8,8 @@ import shutil
 import glob
 import tempfile
 import sys
-import cmath
 
 import numpy
-import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -307,17 +305,6 @@ class TestRASCILRcal(unittest.TestCase):
             self.persist_data_files()
 
     def test_rfi_flagger(self):
-
-        # Import flagger
-        try:
-            from ska.sdp.func import rfi_flagger
-        except ImportError:
-            log.error(
-                "_rfi_flagger test skipped: "
-                "see comments in rascil.apps.rascil_rcal._rfi_flagger"
-            )
-            return
-
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
         # update new_bvis to have a value that will be flagged
@@ -326,11 +313,10 @@ class TestRASCILRcal(unittest.TestCase):
         _rfi_flagger(new_bvis)
 
         assert new_bvis != self.bvis_original
+        # the flagger flagged that single data point
         assert new_bvis["flags"].data[0, 0, 0, 0] == 1
-
-        # reset value, so we can check that now all are 0
-        new_bvis["vis"].data[0, 0, 0, 0] = 0
-        assert (new_bvis["vis"].data == 0).all()
+        # the flags array is all 0s in the original bvis
+        assert (self.bvis_original["flags"] == 0).all()
 
         if self.persist is True:
             self.persist_data_files()

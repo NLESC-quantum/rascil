@@ -15,6 +15,7 @@ from configparser import ConfigParser
 from datetime import datetime
 from pathlib import Path
 from rascil.data_models.memory_data_models import BlockVisibility, Configuration
+from rascil.data_models.polarisation import PolarisationFrame
 from typing import List, Optional
 
 try:
@@ -55,15 +56,14 @@ class VisibilityBucket(object):
         """
         self._model = model
         shape = (model.num_baselines,model.num_channels,model.num_pols)
-        uvw_shape = (model.num_baselines, 3)
+        self._nant = len(self._model.get_antennas())
+        uvw_matrix_shape = (self._nant,self._nant, 3)
         self._full_count = model.num_baselines * model.num_channels * model.num_pols
         self._visibilities = numpy.zeros(shape=shape, dtype=complex)
-        self._uvw = numpy.zeros(shape=uvw_shape, dtype=float)
+        self._uvw = numpy.zeros(shape=uvw_matrix_shape, dtype=float)
         self._flag = numpy.zeros(shape=shape, dtype=int)
         self._weight = numpy.ones(shape=shape,dtype=float)
         self._gauge = numpy.zeros_like(self._flag)
-
-
         self._is_full = False
 
     def set_time(self,time):
@@ -77,12 +77,17 @@ class VisibilityBucket(object):
         Add the uvw for this buffer - needs to only be done once as all the frequency
         channels have the same UVW
         """
-        if numpy.shape(self._uvw) == numpy.shape(uvw):
-            self._uvw = uvw
-        else:
-            raise RuntimeError(
-                "uvw array does not match shape"
-            )
+        """
+        need to reshape as the uvw supplied have no redundancies and this seems to need a square
+        """
+        uvw_index = 0
+
+        for ant1 in range(0,self._nant):
+            for ant2 in range(ant1,self._nant):
+                self._uvw[ant1,ant2] = uvw[uvw_index]
+                self._uvw[ant2,ant1] = uvw[uvw_index]
+                uvw_index = uvw_index + 1
+
 
 
     def add_visibilities(self, vis_slice, start_chan, num_chan):
@@ -232,9 +237,11 @@ class consumer(IConsumer):
             full_block_vis = self._fill_Block_Visibility(self.tm, self._input_buffer[self._current_buffer] )
             self._current_buffer = self._current_buffer+1
             self._current_buffer = self._current_buffer%2
+            self._input_buffer[self._current_buffer].empty()
 
             """
-            And go!!!
+            And go!!!- there is another buffer to fill - if this could be done asynchronously then
+            you would get that extra time ....
             """
             rcal_pipeline_start(full_block_vis)
 
@@ -377,7 +384,7 @@ class consumer(IConsumer):
         """
         TODO: Frame information not held
         """
-        polarisation_frame="stokesI"
+        polarisation_frame=PolarisationFrame("linear")
         imaging_weight=None
         source="anonymous"
         meta=None

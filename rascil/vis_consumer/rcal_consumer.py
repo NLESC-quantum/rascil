@@ -6,6 +6,7 @@
         https://github.com/OxfordSKA/OSKAR/blob/master/python/examples/spead/receiver/spead_recv.py
 """
 import numpy
+import numpy as np
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units
 import concurrent.futures
@@ -342,17 +343,14 @@ class consumer(IConsumer):
         """
         Simple method to initialise contents of the BlockVisibility Object
         """
-        """
-        Assuming this is the start frequency we can get it from the model
-        """
-        frequency=model.freq_start_hz
-        """
-        Assuming this is the same as the increment between channels. But there
-        is some TD here. The cbf is probably blanking some fine chanels so the 
-        actual bandwidth of each channnel may be different
-        TODO: Check channel spearation is ok.
-        """
-        channel_bandwidth=model.freq_inc_hz
+
+        frequency = []
+        channel_bandwidth = []
+        for chan in range(0, model.num_channels):
+            frequency.append(model.freq_start_hz + chan*model.freq_inc_hz)
+            channel_bandwidth.append(model.freq_inc_hz)
+
+
         """ 
         In the model we are holding the phase centre as ra-dec in rad.
         TODO: Make sure there is some security around the frame:

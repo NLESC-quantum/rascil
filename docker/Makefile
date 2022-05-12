@@ -5,19 +5,20 @@ pull_all:
 	cd rascil-full; make pull
 	cd rascil-notebook; make pull
 	cd rascil-imaging-qa; make pull
+	cd rascil-rcal; make pull
 
 build_all_latest:
 	cd rascil-base; make build; make tag_latest
-	#cd rascil-full; make build; make tag_latest
-	#cd rascil-notebook; make build; make tag_latest
-	#cd rascil-imaging-qa; make build; make tag_latest
+	cd rascil-full; make build; make tag_latest
+	cd rascil-notebook; make build; make tag_latest
+	cd rascil-imaging-qa; make build; make tag_latest
 	cd rascil-rcal; make build; make tag_latest
 
 push_all_latest:
 	cd rascil-base; make tag_latest; make push_latest
-	#cd rascil-full; make tag_latest; make push_latest
-	#cd rascil-notebook; make tag_latest; make push_latest
-	#cd rascil-imaging-qa; make tag_latest; make push_latest
+	cd rascil-full; make tag_latest; make push_latest
+	cd rascil-notebook; make tag_latest; make push_latest
+	cd rascil-imaging-qa; make tag_latest; make push_latest
 	cd rascil-rcal; make tag_latest; make push_latest
 
 push_all_release:
@@ -25,18 +26,21 @@ push_all_release:
 	cd rascil-full; make push_version
 	cd rascil-notebook; make push_version
 	cd rascil-imaging-qa; make push_version
+	cd rascil-rcal; make push_version
 
 rm_all:
 	cd rascil-base; make rm
 	cd rascil-full; make rm
 	cd rascil-notebook; make rm
 	cd rascil-imaging-qa; make rm
+	cd rascil-rcal; make rm
 
 ls_all:
 	cd rascil-base; make ls
 	cd rascil-full; make ls
 	cd rascil-notebook; make ls
 	cd rascil-imaging-qa; make ls
+	cd rascil-rcal; make ls
 
 WORKDIR=./test_results
 
@@ -74,6 +78,9 @@ test_imaging_qa:
 	- echo "Running imaging QA code - takes about 3-5 seconds, outputs the help of the QA tool"
 	docker run -i ${IMAGE_PREFIX}/rascil-imaging-qa /bin/bash -e
 
+test_rcal:
+	@echo "NOT IMPLEMENTED"
+
 # Singularity tests
 test_base_singularity:
 	@echo "-----------------------------------"
@@ -108,17 +115,20 @@ test_imaging_qa_singularity:
 	- singularity pull rascil-imaging-qa.img docker://${IMAGE_PREFIX}/rascil-imaging-qa
 	singularity run rascil-imaging-qa.img
 
+test_rcal_singularity:
+	@echo "NOT IMPLEMENTED"
+
 lint:
 # outputs linting.xml
 	pylint --exit-zero --output-format=pylint2junit.JunitReporter rascil-base > linting.xml
 	pylint --exit-zero --output-format=parseable rascil-base
 	black --check .
 
-test_all: test_base test_full test_notebook test_imaging_qa
+test_all: test_base test_full test_notebook test_imaging_qa test_rcal
 
-test_all_singularity: test_base_singularity test_full_singularity test_notebook_singularity test_imaging_qa_singularity
+test_all_singularity: test_base_singularity test_full_singularity test_notebook_singularity test_imaging_qa_singularity test_rcal_singularity
 
 everything: rm_all build_all test_all
 
-.phony: build_all_latest rm_all test_all test_base test_full test_notebook test_imaging_qa \
-    test_all_singularity test_base_singularity test_full_singularity test_notebook_singularity \
+.phony: build_all_latest rm_all test_all test_base test_full test_notebook test_imaging_qa test_rcal \
+    test_all_singularity test_base_singularity test_full_singularity test_notebook_singularity test_all_singularity \

@@ -57,6 +57,7 @@ import pandas
 from astropy import units
 from astropy.coordinates import Angle, SkyCoord
 
+from rascil.apps.rascil_rcal import cli_parser, rcal_simulator
 from rascil.data_models.memory_data_models import BlockVisibility, Configuration
 from rascil.data_models.polarisation import PolarisationFrame
 
@@ -83,8 +84,22 @@ def rcal_pipeline_start(block: BlockVisibility, queue=None):
     """
     THis is the rcal method that is called with a full BlockVisibility
     """
+    # set up arguments for running RCAL, usually supplied via CLI
+    rcal_parser = cli_parser()
+    rcal_args = rcal_parser.parse_args(
+        [
+            "--do_plotting",
+            "False",
+            # needed because the output files' root dir is determined based on this
+            "--ingest_msname",
+            "./tmp.ms",
+            "--flag_rfi",
+            "False",
+        ]
+    )
     if queue:
         queue.put("working")
+        rcal_simulator(block, rcal_args)
 
 
 class VisibilityBucket(object):

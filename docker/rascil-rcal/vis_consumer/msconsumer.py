@@ -19,7 +19,7 @@ try:
     from realtime.receive.modules.utils.command_executor import CommandExecutor
 except ImportError:
     raise ImportError(
-        "SKA SDP Realtime Receive Modules is not installed; cannot"
+        "SKA SDP Realtime Receive Modules is not installed; cannot "
         "operate visibility receive consumer. To install, run:\n"
         "pip install --extra-index-url=https://artefact.skao.int/repository/pypi-all/simple "
         "ska-sdp-realtime-receive-modules"

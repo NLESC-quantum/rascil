@@ -26,20 +26,16 @@ RFI Flagger
 +++++++++++
 
 rascil_rcal also implements reading RFI (Radio Frequency Interference) flags
-and using them as part of the pipeline. Flagging either occurs before any
-other operations are performed, or after first calibration and gain solution calculation
-(set by the `--flag_first` argument).
+and using them as part of the pipeline. Flagging is optional and can be
+controlled with the `flag_rfi` argument.
 
 RASCIL's BlockVisibility object contains a "flags" data array with the same
 dimensions as the visibilities. This array is updated with the results of
-the SKA Processing Function Library `RFI Flagger <https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/tree/rfi_flagger>`.
+the SKA Processing Function Library
+`RFI Flagger <https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/blob/main/src/ska_sdp_func/rfi_flagger.py>`_.
 The RFI flagger requires `initial threshold` and `rho` values (both needed
 to provide a list of thresholds used for finding RFI signal in the data), which can
 be set via CLI arguments, though we recommend using the defaults at this stage.
-
-Calibration (i.e. applying the gains to the input visibilities) is optional
-in rascil_rcal and can be turned on via the `--calibrate_bvis` CLI argument.
-Calibrated BlockVisibilities are not used further at the moment.
 
 Example script
 ++++++++++++++
@@ -52,7 +48,9 @@ MID continuum imaging simulations (with an optional input components file)::
     --ingest_msname SKA_MID_SIM_custom_B2_dec_-45.0_nominal_nchan100_actual.ms \
     --ingest_components_file SKA_MID_SIM_custom_B2_dec_-45.0_nominal_nchan100_components.hdf
 
-There are also additional options if you want the sky model to have primary beams applied. Currently we support internal beam from MID and LOW, or additional beam file (in FITS format). An example::
+There are also additional options if you want the sky model to have primary beams applied.
+Currently we support internal beam from MID and LOW, or additional beam file (in FITS format).
+An example::
 
     #!/bin/bash
     python3 $RASCIL/rascil/apps/rascil_rcal.py \

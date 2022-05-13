@@ -53,9 +53,17 @@ test:
     - apt-get -y install rsync ca-certificates cmake
     - pip3 install -r requirements-test.txt
     - pip3 install -r requirements.txt
+    - pip3 install -r docker/rascil-rcal/consumer_test_requirements.txt
+    # casacore Measures is only needed for the consumer test
+    - mkdir -p /usr/share/casacore/data/
+    - cd /usr/share/casacore/data
+    - wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar
+    - tar xfz WSRT_Measures.ztar
+    - cd -
     - mkdir -p test_results
   script:
-    - PYTHONPATH=`pwd` HOME=`pwd` make test
+#    - PYTHONPATH=`pwd` HOME=`pwd` make test
+    - PYTHONPATH=`pwd` HOME=`pwd` make test-consumer
   after_script:
     - mv .coverage coverage_test
   coverage: '/^TOTAL.+?(\d+\%)$/'

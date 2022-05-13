@@ -94,11 +94,8 @@ test-gpu:
 	coverage html -d coverage
 
 test-consumer:
-	HOME=`pwd` py.test docker/rascil-rcal/vis_consumers_tests --verbose \
-	--cov=docker/rascil-rcal/vis_consumers \
-	--junitxml unit-tests-consumers.xml \
+	HOME=`pwd` py.test docker/rascil-rcal/vis_consumer_tests --verbose \
 	--pylint --pylint-error-types=EF --durations=30
-	coverage html -d coverage
 
 
 upgrade_pip:  ## make sure pip is up to date.

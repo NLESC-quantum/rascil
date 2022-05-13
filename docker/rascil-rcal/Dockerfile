@@ -7,11 +7,9 @@ LABEL author="SKA RASCIL Developers" \
       license="Apache2.0"
 
 COPY vis_consumer /usr/local/lib/python3.9/site-packages/rascil/vis_consumer
-COPY vis_consumer_tests /rascil/tests
 COPY consumer_requirements.txt .
-COPY consumer_test_requirements.txt .
 
-RUN pip install -r consumer_requirements.txt -r consumer_test_requirements.txt
+RUN pip install -r consumer_requirements.txt
 
 WORKDIR /rascil
 

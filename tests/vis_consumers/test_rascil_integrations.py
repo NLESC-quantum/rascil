@@ -32,8 +32,9 @@ OUTPUT_FILE = tempfile.mktemp(suffix=".ms", prefix="output_")
 NUM_STREAMS = 96
 CHAN_PER_STREAM = 144
 
+
 def rcal_test(block: BlockVisibility):
-   
+    exit(0)
 
 
 @pytest.fixture(name="loop")
@@ -90,7 +91,7 @@ def get_receiver(loop):
     target_fixture="mswriter",
 )
 def get_receiver(loop):
-    tm = sched_tm.SchedTM(SCHED_FILE,LAYOUT_FILE)
+    tm = sched_tm.SchedTM(SCHED_FILE, LAYOUT_FILE)
     config = create_config_parser()
     config["reception"] = {
         "method": "spead2_receivers",
@@ -129,9 +130,7 @@ def send_data(rcalconsumer, loop):
     try:
         sending = packetiser.packetise(config, INPUT_FILE)
     except:
-        raise RuntimeError(
-            "Exception in packetiser"
-        )
+        raise RuntimeError("Exception in packetiser")
     time.sleep(5)
 
     # Go, go, go!
@@ -162,9 +161,7 @@ def send_data(mswriter, loop):
     try:
         sending = packetiser.packetise(config, INPUT_FILE)
     except:
-        raise RuntimeError(
-            "Exception in packetise"
-        )
+        raise RuntimeError("Exception in packetise")
     time.sleep(5)
 
     # Go, go, go!

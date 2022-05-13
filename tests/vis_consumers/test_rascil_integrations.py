@@ -86,33 +86,6 @@ def get_receiver(loop):
     return receivers.create(config, tm, loop)
 
 
-@given(
-    "A receiver can be configured with a RASCIL consumer",
-    target_fixture="mswriter",
-)
-def get_receiver(loop):
-    tm = sched_tm.SchedTM(SCHED_FILE, LAYOUT_FILE)
-    config = create_config_parser()
-    config["reception"] = {
-        "method": "spead2_receivers",
-        "receiver_port_start": 42001,
-        "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
-        "schedblock": SCHED_FILE,
-        "layout": LAYOUT_FILE,
-        "outputfilename": OUTPUT_FILE,
-        "ring_heaps": 128,
-    }
-    config["transmission"] = {
-        "method": "spead2_transmitters",
-        "target_host": "127.0.0.1",
-        "target_port_start": str(42001),
-        "channels_per_stream": str(CHAN_PER_STREAM),
-    }
-    config["reader"] = {"num_repeats": str(10), "num_timestamps": str(2)}
-
-    return receivers.create(config, tm, loop)
-
-
 @when("the data is sent to the RCAL consumer")
 def send_data(rcalconsumer, loop):
 
@@ -138,37 +111,6 @@ def send_data(rcalconsumer, loop):
 
         tasks = [asyncio.create_task(coro) for coro in (sending, rcalconsumer.run())]
         done, waiting = await asyncio.wait(tasks, timeout=60)
-        assert len(done) == len(tasks)
-        assert not waiting
-
-    loop.run_until_complete(run())
-
-
-@when("the data is sent at a rate commensurate with AA0.5")
-def send_data(mswriter, loop):
-
-    rate = 1e9 / NUM_STREAMS
-
-    config = create_config_parser()
-    config["transmission"] = {
-        "method": "spead2_transmitters",
-        "target_host": "127.0.0.1",
-        "target_port_start": str(42001),
-        "channels_per_stream": str(CHAN_PER_STREAM),
-        "rate": str(rate),
-        "time_interval": str(0),
-    }
-    try:
-        sending = packetiser.packetise(config, INPUT_FILE)
-    except:
-        raise RuntimeError("Exception in packetise")
-    time.sleep(5)
-
-    # Go, go, go!
-    async def run():
-
-        tasks = [asyncio.create_task(coro) for coro in (sending, mswriter.run())]
-        done, waiting = await asyncio.wait(tasks, timeout=30)
         assert len(done) == len(tasks)
         assert not waiting
 

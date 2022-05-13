@@ -1,9 +1,45 @@
 # -*- coding: utf-8 -*-
 
 
-""" Takes a SPEAD2 HEAP and writes it to a MEASUREMENT SET. This is pretty much the
-        same functionality as presented in the  OSKAR python binding example available at:
-        https://github.com/OxfordSKA/OSKAR/blob/master/python/examples/spead/receiver/spead_recv.py
+"""
+        Performs two tasks:
+            1) Generates a measurement set using the same functionality as the mswriter.
+            this should be indistinguishable and you should be able to use these consumers
+            interchangeably
+            2) Executes a processing pipeline in a subprocess.
+            The processing pipeline can be chosen by adding a parameter to the reception configuration.
+
+            config["reception"] = {
+                "method": "spead2_receivers",
+                "receiver_port_start": 42001,
+                "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
+                "rcal_testing_method": "tests.vis_consumers.test_rascil_integrations.rcal_test",
+                "schedblock": SCHED_FILE,
+                "layout": LAYOUT_FILE,
+                "outputfilename": OUTPUT_FILE,
+                "ring_heaps": 128,
+            }
+
+            In the above example the method has been redirected to a test method. So you can
+            put your pipeline anywhere.
+
+            There is a default method in this module called:
+
+            rcal_pipeline_start(block: BlockVisibilty, Q: multiprocess.Queue = None)
+
+            You can fill this up with whatever you want,
+
+        How does this work?
+
+        Each payload as received by the receiver is put into a VisibilityBucket
+        This class - which is defined in this module is just an intermediate class to combine
+        all the information that will ne needed to create a BlockVisibility
+
+        When the VisibilityBucket is full a subprocess is lauunched using multiprocess.Process with
+        the specified processing method as a target and the full BlockVisibiltiy as an argument.
+
+
+
 """
 import asyncio
 import concurrent.futures
@@ -52,7 +88,7 @@ def rcal_pipeline_start(block: BlockVisibility, queue=None):
 
 class VisibilityBucket(object):
     """
-    Class to hold the visibilities for a single timestep until the buffers are full. This is needed as in the general case
+    Class to hold the visibilities for a single (or more) timestep until the buffers are full. This is needed as in the general case
     there are multiple input streams - each containing frequency slices (and perhaps even baseline slices)
     So we need to buffer them up.
     TODO: WHat to do if the streams arrive aout of order .... say the next time stamp arrives before the next is full
@@ -63,10 +99,13 @@ class VisibilityBucket(object):
         """
         The full block of visibilities
         """
+        # the telescope model
         self._model = model
+        # how many timesteps are we going to hold
         self._time_steps = time_steps
         self._time = numpy.empty(time_steps, dtype=float)
         self._nant = len(self._model.get_antennas())
+        # shape of the arrays
         uvw_matrix_shape = (self._time_steps, self._model.num_baselines, 3)
         vis_matrix_shape = (
             self._time_steps,
@@ -74,9 +113,11 @@ class VisibilityBucket(object):
             self._model.num_channels,
             self._model.num_pols,
         )
+        # howmany visibilities are required to fill the bucket
         self._full_count = (
             self._model.num_baselines * self._model.num_channels * self._model.num_pols
         )
+        # some initialisations
         self._visibilities = numpy.zeros(shape=vis_matrix_shape, dtype=complex)
         self._uvw = numpy.zeros(shape=uvw_matrix_shape, dtype=float)
         self._flag = numpy.zeros(shape=vis_matrix_shape, dtype=int)
@@ -86,9 +127,7 @@ class VisibilityBucket(object):
         self._current_time_step = 0
 
         baselines = []
-        """
-        Going to create an array of tuples here ...
-        """
+
         for ant1 in range(0, self._nant):
             for ant2 in range(ant1, self._nant):
                 baselines.append((ant1, ant2))
@@ -99,6 +138,7 @@ class VisibilityBucket(object):
 
     def set_time(self, time):
         """
+        Sets the time for this time step
         :param time: MJD seconds for this block
         """
         self._time[self._current_time_step] = time
@@ -107,17 +147,10 @@ class VisibilityBucket(object):
         """
         Add the uvw for this buffer - needs to only be done once as all the frequency
         channels have the same UVW
-        """
-        """
-        need to reshape as the uvw supplied have no redundancies and this seems to need a square
-        """
-        # uvw_index = 0
 
-        # for ant1 in range(0,self._nant):
-        #    for ant2 in range(ant1,self._nant):
-        #      self._uvw[self._current_time_step, ant1,ant2] = uvw[uvw_index]
-        #        self._uvw[self._current_time_step, ant2,ant1] = [-1*uvw[uvw_index][0],-1*uvw[uvw_index][1],uvw[uvw_index][2]]
-        #        uvw_index = uvw_index + 1
+        :param uvw: numpy array [baselines,[u,v,w]]
+        """
+
         self._uvw[self._current_time_step] = uvw
 
     def add_visibilities(self, vis_slice, start_chan, num_chan):
@@ -127,7 +160,6 @@ class VisibilityBucket(object):
         THe ICD stacks then channels in freq x baseline x pol order - but the measurement
         sets want baseline x freq x pol - so we need to moveaxis
 
-        Also we need to repack into an nant,nant array
         """
         gauge_shape = (self._model.num_baselines, num_chan, self._model.num_pols)
 
@@ -161,7 +193,7 @@ class VisibilityBucket(object):
 
     def empty(self):
         """
-        Empty bucket
+        Empty bucket we do this after we have filled the BlockVisibiltiy
         """
         self._gauge.fill(0.0)
         self._visibilities.fill(complex(0.0))
@@ -177,11 +209,9 @@ class VisibilityBucket(object):
 
     def _check(self):
         """
-        Need to check whether all the vis have been written for this Block
-        TODO: How do we do this>>>
+        Need to check whether all the vis have been written for this Bl
         """
         """
-        if we have ascetained the bucket is full then
         FIXME:(steve-ord) there is no check for dropped packets here. If a heap is dropped this will never be completely 
         full. Maybe also mark full if the time step changes?
         """
@@ -232,6 +262,9 @@ class consumer(IConsumer):
     Because data consumption happens inside the event loop we need to defer the
     data writing to a different thread. We do this by creating a single-threaded
     executor that we then use to schedule the I/O-heavy MS writing tasks onto.
+
+    The RCAL pipeline is actually spawned as a subprocess and the filling of the
+    Bucket should be a lightweight process - so I await both of the tasks together
     """
 
     @overrides
@@ -447,15 +480,13 @@ class consumer(IConsumer):
         for chan in range(0, model.num_channels):
             frequency.append(model.freq_start_hz + chan * model.freq_inc_hz)
             channel_bandwidth.append(model.freq_inc_hz)
-        """
-        FIXME: THIS IS THE WRONG DIMENSION I THINK WE MAY NEED TIMESTEPS
-        """
 
-        """ 
-        In the model we are holding the phase centre as ra-dec in rad.
-        TODO: Make sure there is some security around the frame:
+
+
+        # In the model we are holding the phase centre as ra-dec in rad.
+        # TODO: Make sure there is some security around the frame:
         
-        """
+
         ra_rad, dec_rad = model.phase_centre_radec_rad
         target_ra = Angle(ra_rad * units.rad)
         target_dec = Angle(dec_rad * units.rad)
@@ -474,9 +505,9 @@ class consumer(IConsumer):
         flags = buffer.get_flags()
         baselines = buffer.get_baselines()
 
-        """
-        TODO: Frame information not held
-        """
+
+        #TODO: Frame information not held
+
         polarisation_frame = PolarisationFrame("linear")
         imaging_weight = None
         source = "anonymous"
@@ -504,14 +535,17 @@ class consumer(IConsumer):
 
     async def _buffer_payload(self, payload: Payload):
 
-        """Writes a payload into a memory using the TM as the source of metadata"""
-        # Find out the time index and TM data for this timestamp
+        """
+        Writes a payload into a memory using the TM as the source of metadata
+        THis is the workhorse that fills the VisibilityBucket.
 
-        payload_time = payload.mjd_time
+        FIXME: (steve-ord) the Visibility bucket can hold multiple timesteps implement here
 
         """
-               The UVW vectors for the vis are calculated based upon the time
-        """
+        # The UVW vectors for the vis are calculated based upon the time
+        # the model does the work in the get_nearest_data method - it has this
+        # name for historical purposes as it was originally made to seach a measurement set
+
 
         time = payload.mjd_time
         uvw = []
@@ -525,7 +559,7 @@ class consumer(IConsumer):
                 uvw.append(uvw_vec)
 
         except ValueError:
-            raise ValueError(f"No model time to match {payload_time}")
+            raise ValueError(f"No model time to match {time}")
 
         assert len(data.uu) == self.tm.num_baselines, (
             f"Miss-match between baselines in heap {self.tm.num_baselines} "

@@ -45,6 +45,7 @@ import asyncio
 import concurrent.futures
 import importlib
 import logging
+import multiprocessing
 from configparser import ConfigParser
 from datetime import datetime
 from multiprocessing import Process, Queue
@@ -296,6 +297,7 @@ class consumer(IConsumer):
         """
         RCAL subprocess for the actual work
         """
+
         self._rcal_process = None
         self._rcal_process_q = Queue()
 
@@ -481,11 +483,8 @@ class consumer(IConsumer):
             frequency.append(model.freq_start_hz + chan * model.freq_inc_hz)
             channel_bandwidth.append(model.freq_inc_hz)
 
-
-
         # In the model we are holding the phase centre as ra-dec in rad.
         # TODO: Make sure there is some security around the frame:
-        
 
         ra_rad, dec_rad = model.phase_centre_radec_rad
         target_ra = Angle(ra_rad * units.rad)
@@ -505,8 +504,7 @@ class consumer(IConsumer):
         flags = buffer.get_flags()
         baselines = buffer.get_baselines()
 
-
-        #TODO: Frame information not held
+        # TODO: Frame information not held
 
         polarisation_frame = PolarisationFrame("linear")
         imaging_weight = None
@@ -545,7 +543,6 @@ class consumer(IConsumer):
         # The UVW vectors for the vis are calculated based upon the time
         # the model does the work in the get_nearest_data method - it has this
         # name for historical purposes as it was originally made to seach a measurement set
-
 
         time = payload.mjd_time
         uvw = []

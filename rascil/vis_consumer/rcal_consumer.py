@@ -5,15 +5,18 @@
         same functionality as presented in the  OSKAR python binding example available at:
         https://github.com/OxfordSKA/OSKAR/blob/master/python/examples/spead/receiver/spead_recv.py
 """
+import importlib
+
 import numpy
 import asyncio
+import pandas
 from astropy.coordinates import SkyCoord, Angle
 from astropy import units
 import concurrent.futures
 import logging
 from configparser import ConfigParser
 from datetime import datetime
-from multiprocessing import Process, Pool
+from multiprocessing import Process, Queue
 from pathlib import Path
 from rascil.data_models.memory_data_models import BlockVisibility, Configuration
 from rascil.data_models.polarisation import PolarisationFrame
@@ -38,10 +41,14 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-def rcal_pipeline_start(Block: BlockVisibility):
+
+def rcal_pipeline_start(block: BlockVisibility, queue=None):
     """
     THis is the rcal method that is called with a full BlockVisibility
     """
+    if queue:
+        queue.put("working")
+
 
 class VisibilityBucket(object):
     """
@@ -51,27 +58,42 @@ class VisibilityBucket(object):
     TODO: WHat to do if the streams arrive aout of order .... say the next time stamp arrives before the next is full
 
     """
-    def __init__(self, model: SchedTM):
+    def __init__(self, model: SchedTM, time_steps=1):
         """
         The full block of visibilities
         """
         self._model = model
+        self._time_steps = time_steps
+        self._time = numpy.empty(time_steps, dtype=float)
         self._nant = len(self._model.get_antennas())
-        uvw_matrix_shape = (self._nant,self._nant, 3)
-        vis_matrix_shape = (self._nant,self._nant,int(self._model.num_channels), int(self._model.num_pols))
-        self._full_count = self._nant * self._nant * int(self._model.num_channels) * int(self._model.num_pols)
+        uvw_matrix_shape = (self._time_steps, self._model.num_baselines, 3)
+        vis_matrix_shape = (self._time_steps, self._model.num_baselines, self._model.num_channels, self._model.num_pols)
+        self._full_count = self._model.num_baselines * self._model.num_channels * self._model.num_pols
         self._visibilities = numpy.zeros(shape=vis_matrix_shape, dtype=complex)
         self._uvw = numpy.zeros(shape=uvw_matrix_shape, dtype=float)
         self._flag = numpy.zeros(shape=vis_matrix_shape, dtype=int)
         self._weight = numpy.ones(shape=vis_matrix_shape,dtype=float)
         self._gauge = numpy.zeros_like(self._flag)
         self._is_full = False
+        self._current_time_step = 0
+
+        baselines = []
+        """
+        Going to create an array of tuples here ...
+        """
+        for ant1 in range (0, self._nant):
+            for ant2 in range (ant1, self._nant):
+                baselines.append((ant1,ant2))
+
+        self._baselines = pandas.MultiIndex.from_tuples(
+            baselines, names=("antenna1", "antenna2")
+        )
 
     def set_time(self,time):
         """
         :param time: MJD seconds for this block
         """
-        self._time = time
+        self._time[self._current_time_step] = time
 
     def add_uvw(self, uvw):
         """
@@ -81,14 +103,14 @@ class VisibilityBucket(object):
         """
         need to reshape as the uvw supplied have no redundancies and this seems to need a square
         """
-        uvw_index = 0
+        #uvw_index = 0
 
-        for ant1 in range(0,self._nant):
-            for ant2 in range(ant1,self._nant):
-                self._uvw[ant1,ant2] = uvw[uvw_index]
-                self._uvw[ant2,ant1] = [-1*uvw[uvw_index][0],-1*uvw[uvw_index][1],uvw[uvw_index]]
-                uvw_index = uvw_index + 1
-
+        #for ant1 in range(0,self._nant):
+        #    for ant2 in range(ant1,self._nant):
+        #      self._uvw[self._current_time_step, ant1,ant2] = uvw[uvw_index]
+        #        self._uvw[self._current_time_step, ant2,ant1] = [-1*uvw[uvw_index][0],-1*uvw[uvw_index][1],uvw[uvw_index][2]]
+        #        uvw_index = uvw_index + 1
+        self._uvw[self._current_time_step] = uvw
 
 
     def add_visibilities(self, vis_slice, start_chan, num_chan):
@@ -100,33 +122,27 @@ class VisibilityBucket(object):
 
         Also we need to repack into an nant,nant array
         """
-        gauge_shape = (self._nant, self._nant, num_chan, self._model.num_pols)
-        vis_to_add = numpy.zeros(shape=gauge_shape,dtype=complex)
+        gauge_shape = (self._model.num_baselines, num_chan, self._model.num_pols)
 
-        for chan in num_chan:
-            for ant1 in range(0,self._nant):
-                for ant2 in range(ant1,self._nant):
-                    vis_to_add[ant1,ant2,chan] = vis_slice[chan,uvw_index]
-                    vis_to_add[ant2, ant1, chan] = numpy.ndarray.conjugate(vis_slice[chan, uvw_index])
-                    uvw_index = uvw_index + 1
 
+        vis_to_add = icd_to_ms(vis_slice)
         stop_chan = start_chan+num_chan
-        if numpy.shape(self._visibilities[:,:,start_chan:stop_chan]) != numpy.shape(vis_to_add):
+        if numpy.shape(self._visibilities[self._current_time_step,:,start_chan:stop_chan]) != numpy.shape(vis_to_add):
             raise RuntimeError(
                 f"Shape missmatch between slices input:{numpy.shape(vis_to_add)} "
-                f"output:{numpy.shape(self._visibilities[:,start_chan:stop_chan])}"
+                f"output:{numpy.shape(self._visibilities[self._current_time_step,:,:,start_chan:stop_chan])}"
             )
 
-        if self._gauge[:,:,start_chan:stop_chan].sum() != 0:
+        if self._gauge[self._current_time_step,:,start_chan:stop_chan].sum() != 0:
             raise RuntimeError(
                 f"Trying to add a slice that is already present: "
-                f"current gauge is reading {self._gauge[:,start_chan:stop_chan].sum()}"
+                f"current gauge is reading {self._gauge[self._current_time_step,:,:,start_chan:stop_chan].sum()}"
                 f"startchannel {start_chan} stopchannel {stop_chan}"
             )
 
-        self._visibilities[:,:, start_chan:stop_chan] = vis_to_add
-        self._gauge[:,:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
-        self._weight[:,:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
+        self._visibilities[self._current_time_step,:, start_chan:stop_chan] = vis_to_add
+        self._gauge[self._current_time_step,:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
+        self._weight[self._current_time_step,:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
         self._check()
 
     def empty(self):
@@ -153,6 +169,8 @@ class VisibilityBucket(object):
         """
         """
         if we have ascetained the bucket is full then
+        FIXME:(steve-ord) there is no check for dropped packets here. If a heap is dropped this will never be completely 
+        full. Maybe also mark full if the time step changes?
         """
         if self._gauge.sum() == self._full_count:
             self._is_full = True
@@ -180,6 +198,17 @@ class VisibilityBucket(object):
         Return weight - should probably be correlation fraction?
         """
         return self._weight
+    def get_flags(self):
+        """
+        Return flags (all zero)
+        """
+        return self._flag
+
+    def get_baselines(self):
+        """
+        Return array of tuples that are the baselines
+        """
+        return self._baselines
 
 class consumer(IConsumer):
     """
@@ -204,14 +233,34 @@ class consumer(IConsumer):
         self._timestamp_output: bool = config["reception"].getboolean(
             "timestamp_output", False
         )
-
+        self._rcal_testing_method: Optional[str] = config["reception"].get(
+            "rcal_testing_method", None
+        )
         self.tm = tm
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.received_payloads = 0
         self._command_executor = None
         self.mswriter = None
-        self._input_buffer = [VisibilityBucket(self.tm), VisibilityBucket(self.tm)]
-        self._current_buffer = 0
+        """
+        Intermediate storage bucket
+        """
+        self._input_buffer = VisibilityBucket(self.tm)
+        """
+        RCAL subprocess for the actual work
+        """
+        self._rcal_process = None
+        self._rcal_process_q = Queue()
+
+        """
+        Decided to give some flexibility about the actual pipeline so you can 
+        change it if you want
+        """
+        if self._rcal_testing_method is not None:
+            modname, method_name = self._rcal_testing_method.rsplit(".",1)
+            m = importlib.import_module(modname)
+            self._rcal_process_target = getattr(m, method_name)
+        else:
+            self._rcal_process_target = rcal_pipeline_start
 
         if self._command_template:
             self._command_executor = CommandExecutor(self._command_template)
@@ -232,7 +281,7 @@ class consumer(IConsumer):
             logger.info(f"Writing to {output_path}")
             self.mswriter = msutils.MSWriter(output_path, self.tm)
 
-        asyncio.gather (self.mswriter.write_payload(payload, self.tm, executor=self.executor),
+        await asyncio.gather(self.mswriter.write_payload(payload, self.tm, executor=self.executor),
                       self._buffer_payload(payload))
 
         self.received_payloads += 1
@@ -246,19 +295,29 @@ class consumer(IConsumer):
             self._finish_writing()
             self.received_payloads = 0
 
-        if self._input_buffer[self._current_buffer].is_full():
+        if self._input_buffer.is_full():
 
-            full_block_vis = self._fill_Block_Visibility(self.tm, self._input_buffer[self._current_buffer] )
-            self._current_buffer = self._current_buffer+1
-            self._current_buffer = self._current_buffer%2
-            self._input_buffer[self._current_buffer].empty()
-
+            full_block_vis = self._fill_Block_Visibility(self.tm, self._input_buffer)
+            """ 
+            start the sub-process for this buffer
             """
-            And go!!!- there is another buffer to fill - if this could be done asynchronously then
-            you would get that extra time ....
-            """
-            rcal_pipeline_start(full_block_vis)
+            if self._rcal_process is not None:
+                """
+                    And go!!!- there is another buffer to fill - using some process parallelism here
+                    gives you the time 
+               
+                    check the exit code
+                """
+                self._rcal_process.join()
+                if self._rcal_process.exitcode != 0:
+                    logger.warning(
+                        "RCAL processor exited with non-zero exit status"
+                    )
 
+            self._rcal_process = Process(target=self._rcal_process_target,
+                                                         args=(full_block_vis,))
+            self._rcal_process.start()
+            self._input_buffer.empty()
 
     def _finish_writing(self):
         if self.mswriter is None:
@@ -282,6 +341,9 @@ class consumer(IConsumer):
             self._finish_writing()
         if self._command_executor is not None:
             self._command_executor.stop()
+
+        self._rcal_process.join()
+
 
     def _init_Configuration(self, model: SchedTM) -> Configuration:
 
@@ -370,7 +432,9 @@ class consumer(IConsumer):
         for chan in range(0, model.num_channels):
             frequency.append(model.freq_start_hz + chan*model.freq_inc_hz)
             channel_bandwidth.append(model.freq_inc_hz)
-
+        """
+        FIXME: THIS IS THE WRONG DIMENSION I THINK WE MAY NEED TIMESTEPS
+        """
 
         """ 
         In the model we are holding the phase centre as ra-dec in rad.
@@ -392,8 +456,8 @@ class consumer(IConsumer):
         time=buffer.get_time()
         weight=buffer.get_weight()
         integration_time=None
-        flags=None
-        baselines=None
+        flags=buffer.get_flags()
+        baselines=buffer.get_baselines()
 
         """
         TODO: Frame information not held
@@ -458,7 +522,7 @@ class consumer(IConsumer):
         first_chan = payload.channel_id
         chan_count = payload.channel_count
 
-        buff = self._input_buffer[self._current_buffer]
+        buff = self._input_buffer
         buff.add_visibilities(vis_slice=vis, start_chan=first_chan, num_chan=chan_count)
         buff.add_uvw(uvw=uvw)
         buff.set_time(time)

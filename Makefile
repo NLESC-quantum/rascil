@@ -96,7 +96,7 @@ test-gpu:
 test-consumer:
 	HOME=`pwd` py.test tests/vis_consumers --verbose \
 	--cov=rascil \
-	--junitxml unit-tests-gpu.xml \
+	--junitxml unit-tests-consumers.xml \
 	--pylint --pylint-error-types=EF --durations=30
 	coverage html -d coverage
 

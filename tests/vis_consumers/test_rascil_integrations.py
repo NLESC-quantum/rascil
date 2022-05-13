@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 import tempfile
 import time
 import unittest
@@ -11,7 +12,7 @@ from pytest_bdd.steps import given, then, when
 from realtime.receive.core import ms_asserter, sched_tm
 from realtime.receive.core.config import create_config_parser
 from realtime.receive.modules import receivers
-
+from rascil.data_models.memory_data_models import BlockVisibility
 try:
     from rascil.vis_consumer import msconsumer
 except ImportError:
@@ -28,6 +29,9 @@ OUTPUT_FILE = tempfile.mktemp(suffix=".ms", prefix="output_")
 
 NUM_STREAMS = 96
 CHAN_PER_STREAM = 144
+
+def rcal_test(block: BlockVisibility):
+   
 
 
 @pytest.fixture(name="loop")
@@ -62,6 +66,7 @@ def get_receiver(loop):
         "method": "spead2_receivers",
         "receiver_port_start": 42001,
         "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
+        "rcal_testing_method": "tests.vis_consumers.test_rascil_integrations.rcal_test",
         "schedblock": SCHED_FILE,
         "layout": LAYOUT_FILE,
         "outputfilename": OUTPUT_FILE,
@@ -119,16 +124,20 @@ def send_data(rcalconsumer, loop):
         "rate": str(rate),
         "time_interval": str(0),
     }
-
-    sending = packetiser.packetise(config, INPUT_FILE)
-
+    try:
+        sending = packetiser.packetise(config, INPUT_FILE)
+    except:
+        raise RuntimeError(
+            "Exception in packetiser"
+        )
     time.sleep(5)
 
     # Go, go, go!
     async def run():
-        coros = [sending, rcalconsumer.run()]
-        done, waiting = await asyncio.wait(coros, timeout=30)
-        assert len(done) == len(coros)
+
+        tasks = [asyncio.create_task(coro) for coro in (sending, rcalconsumer.run())]
+        done, waiting = await asyncio.wait(tasks, timeout=60)
+        assert len(done) == len(tasks)
         assert not waiting
 
     loop.run_until_complete(run())
@@ -148,16 +157,20 @@ def send_data(mswriter, loop):
         "rate": str(rate),
         "time_interval": str(0),
     }
-
-    sending = packetiser.packetise(config, INPUT_FILE)
-
+    try:
+        sending = packetiser.packetise(config, INPUT_FILE)
+    except:
+        raise RuntimeError(
+            "Exception in packetise"
+        )
     time.sleep(5)
 
     # Go, go, go!
     async def run():
-        coros = [sending, mswriter.run()]
-        done, waiting = await asyncio.wait(coros, timeout=30)
-        assert len(done) == len(coros)
+
+        tasks = [asyncio.create_task(coro) for coro in (sending, mswriter.run())]
+        done, waiting = await asyncio.wait(tasks, timeout=30)
+        assert len(done) == len(tasks)
         assert not waiting
 
     loop.run_until_complete(run())

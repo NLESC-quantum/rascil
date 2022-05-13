@@ -204,45 +204,17 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     bvis["flags"].data = flag_data
 
 
-def rcal_simulator(args):
+def rcal_simulator(bvis, args):
     """RCAL simulator
 
     Generate real-time calibration tables and optionally apply gains to data.
     RFI flagging also takes place as part of the pipeline (currently only place-holder for real function).
 
+    :param bvis: a single BlockVisibility object with one or more time samples
     :param args: argparse with appropriate arguments
     :return:
         gtfile: file name containing all of the GainTables
     """
-
-    assert args.ingest_msname is not None, "Input msname must be specified"
-
-    if args.logfile is None:
-        logfile = args.ingest_msname.replace(".ms", "_rcal.log")
-    else:
-        logfile = args.logfile
-
-    def init_logging():
-        logging.basicConfig(
-            filename=logfile,
-            filemode="a",
-            format="%(asctime)s.%(msecs)d %(name)s %(levelname)s %(message)s",
-            datefmt="%d/%m/%Y %I:%M:%S %p",
-            level=logging.INFO,
-        )
-
-    init_logging()
-
-    log.info("\nRASCIL RCAL simulator\n")
-
-    log.info(pprint.pformat(vars(args)))
-
-    bvis = create_blockvisibility_from_ms(
-        args.ingest_msname, selected_dds=args.ingest_dd
-    )[0]
-    telescope_name = bvis.configuration.name
-    log.info(f"The data is from {telescope_name}.")
-
     if args.flag_rfi == "True":
         _rfi_flagger(bvis, args.initial_threshold, args.rho)
 
@@ -720,7 +692,39 @@ def apply_beam_correction(
     return comp_new
 
 
+def main(args):
+    assert args.ingest_msname is not None, "Input msname must be specified"
+
+    if args.logfile is None:
+        logfile = args.ingest_msname.replace(".ms", "_rcal.log")
+    else:
+        logfile = args.logfile
+
+    def init_logging():
+        logging.basicConfig(
+            filename=logfile,
+            filemode="a",
+            format="%(asctime)s.%(msecs)d %(name)s %(levelname)s %(message)s",
+            datefmt="%d/%m/%Y %I:%M:%S %p",
+            level=logging.INFO,
+        )
+
+    init_logging()
+
+    log.info("\nRASCIL RCAL simulator\n")
+
+    log.info(pprint.pformat(vars(args)))
+
+    bvis = create_blockvisibility_from_ms(
+        args.ingest_msname, selected_dds=args.ingest_dd
+    )[0]
+    telescope_name = bvis.configuration.name
+    log.info(f"The data is from {telescope_name}.")
+
+    rcal_simulator(bvis, args)
+
+
 if __name__ == "__main__":
     parser = cli_parser()
-    args = parser.parse_args()
-    rcal_simulator(args)
+    argv = parser.parse_args()
+    main(argv)

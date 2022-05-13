@@ -198,7 +198,7 @@ class TestRASCILRcal(unittest.TestCase):
         self.pre_setup()
         self.makeMS(self.flux)
 
-        gtfile = rcal_simulator(self.args)
+        gtfile = rcal_simulator(self.bvis_original, self.args)
 
         # Check that the gaintable exists and is correct by applying it to
         # the corrupted visibility
@@ -227,7 +227,7 @@ class TestRASCILRcal(unittest.TestCase):
         # when we flag after gains were calculated
         os.remove(gtfile)
         self.args.flag_rfi = "True"  # flag before gains are calculated
-        gtfile = rcal_simulator(self.args)
+        gtfile = rcal_simulator(self.bvis_original, self.args)
         gain_table_w_flag = import_gaintable_from_hdf5(gtfile)
 
         assert (gain_table_w_flag["weight"].data != gain_table["weight"].data).any()

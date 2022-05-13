@@ -14,9 +14,7 @@ from typing import List, Optional
 
 try:
     from overrides import overrides
-    from realtime.receive.core import msutils
-    from realtime.receive.core import BaseTM
-
+    from realtime.receive.core import BaseTM, msutils
     from realtime.receive.modules.consumers.iconsumer import IConsumer
     from realtime.receive.modules.utils.command_executor import CommandExecutor
 except ImportError:

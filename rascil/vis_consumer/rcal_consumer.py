@@ -5,30 +5,30 @@
         same functionality as presented in the  OSKAR python binding example available at:
         https://github.com/OxfordSKA/OSKAR/blob/master/python/examples/spead/receiver/spead_recv.py
 """
-import importlib
-
-import numpy
 import asyncio
-import pandas
-from astropy.coordinates import SkyCoord, Angle
-from astropy import units
 import concurrent.futures
+import importlib
 import logging
 from configparser import ConfigParser
 from datetime import datetime
 from multiprocessing import Process, Queue
 from pathlib import Path
+from typing import List, Optional
+
+import numpy
+import pandas
+from astropy import units
+from astropy.coordinates import Angle, SkyCoord
+
 from rascil.data_models.memory_data_models import BlockVisibility, Configuration
 from rascil.data_models.polarisation import PolarisationFrame
-from typing import List, Optional
 
 try:
     from overrides import overrides
     from realtime.receive.core import msutils
+    from realtime.receive.core.base_tm import BaseTM
     from realtime.receive.core.icd import Payload, icd_to_ms
     from realtime.receive.core.sched_tm import SchedTM
-    from realtime.receive.core.base_tm import BaseTM
-
     from realtime.receive.modules.consumers.iconsumer import IConsumer
     from realtime.receive.modules.utils.command_executor import CommandExecutor
 except ImportError:
@@ -58,6 +58,7 @@ class VisibilityBucket(object):
     TODO: WHat to do if the streams arrive aout of order .... say the next time stamp arrives before the next is full
 
     """
+
     def __init__(self, model: SchedTM, time_steps=1):
         """
         The full block of visibilities
@@ -67,12 +68,19 @@ class VisibilityBucket(object):
         self._time = numpy.empty(time_steps, dtype=float)
         self._nant = len(self._model.get_antennas())
         uvw_matrix_shape = (self._time_steps, self._model.num_baselines, 3)
-        vis_matrix_shape = (self._time_steps, self._model.num_baselines, self._model.num_channels, self._model.num_pols)
-        self._full_count = self._model.num_baselines * self._model.num_channels * self._model.num_pols
+        vis_matrix_shape = (
+            self._time_steps,
+            self._model.num_baselines,
+            self._model.num_channels,
+            self._model.num_pols,
+        )
+        self._full_count = (
+            self._model.num_baselines * self._model.num_channels * self._model.num_pols
+        )
         self._visibilities = numpy.zeros(shape=vis_matrix_shape, dtype=complex)
         self._uvw = numpy.zeros(shape=uvw_matrix_shape, dtype=float)
         self._flag = numpy.zeros(shape=vis_matrix_shape, dtype=int)
-        self._weight = numpy.ones(shape=vis_matrix_shape,dtype=float)
+        self._weight = numpy.ones(shape=vis_matrix_shape, dtype=float)
         self._gauge = numpy.zeros_like(self._flag)
         self._is_full = False
         self._current_time_step = 0
@@ -81,15 +89,15 @@ class VisibilityBucket(object):
         """
         Going to create an array of tuples here ...
         """
-        for ant1 in range (0, self._nant):
-            for ant2 in range (ant1, self._nant):
-                baselines.append((ant1,ant2))
+        for ant1 in range(0, self._nant):
+            for ant2 in range(ant1, self._nant):
+                baselines.append((ant1, ant2))
 
         self._baselines = pandas.MultiIndex.from_tuples(
             baselines, names=("antenna1", "antenna2")
         )
 
-    def set_time(self,time):
+    def set_time(self, time):
         """
         :param time: MJD seconds for this block
         """
@@ -103,15 +111,14 @@ class VisibilityBucket(object):
         """
         need to reshape as the uvw supplied have no redundancies and this seems to need a square
         """
-        #uvw_index = 0
+        # uvw_index = 0
 
-        #for ant1 in range(0,self._nant):
+        # for ant1 in range(0,self._nant):
         #    for ant2 in range(ant1,self._nant):
         #      self._uvw[self._current_time_step, ant1,ant2] = uvw[uvw_index]
         #        self._uvw[self._current_time_step, ant2,ant1] = [-1*uvw[uvw_index][0],-1*uvw[uvw_index][1],uvw[uvw_index][2]]
         #        uvw_index = uvw_index + 1
         self._uvw[self._current_time_step] = uvw
-
 
     def add_visibilities(self, vis_slice, start_chan, num_chan):
         """
@@ -124,25 +131,32 @@ class VisibilityBucket(object):
         """
         gauge_shape = (self._model.num_baselines, num_chan, self._model.num_pols)
 
-
         vis_to_add = icd_to_ms(vis_slice)
-        stop_chan = start_chan+num_chan
-        if numpy.shape(self._visibilities[self._current_time_step,:,start_chan:stop_chan]) != numpy.shape(vis_to_add):
+        stop_chan = start_chan + num_chan
+        if numpy.shape(
+            self._visibilities[self._current_time_step, :, start_chan:stop_chan]
+        ) != numpy.shape(vis_to_add):
             raise RuntimeError(
                 f"Shape missmatch between slices input:{numpy.shape(vis_to_add)} "
                 f"output:{numpy.shape(self._visibilities[self._current_time_step,:,:,start_chan:stop_chan])}"
             )
 
-        if self._gauge[self._current_time_step,:,start_chan:stop_chan].sum() != 0:
+        if self._gauge[self._current_time_step, :, start_chan:stop_chan].sum() != 0:
             raise RuntimeError(
                 f"Trying to add a slice that is already present: "
                 f"current gauge is reading {self._gauge[self._current_time_step,:,:,start_chan:stop_chan].sum()}"
                 f"startchannel {start_chan} stopchannel {stop_chan}"
             )
 
-        self._visibilities[self._current_time_step,:, start_chan:stop_chan] = vis_to_add
-        self._gauge[self._current_time_step,:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
-        self._weight[self._current_time_step,:, start_chan:stop_chan] = numpy.ones(gauge_shape, dtype=int)
+        self._visibilities[
+            self._current_time_step, :, start_chan:stop_chan
+        ] = vis_to_add
+        self._gauge[self._current_time_step, :, start_chan:stop_chan] = numpy.ones(
+            gauge_shape, dtype=int
+        )
+        self._weight[self._current_time_step, :, start_chan:stop_chan] = numpy.ones(
+            gauge_shape, dtype=int
+        )
         self._check()
 
     def empty(self):
@@ -153,7 +167,6 @@ class VisibilityBucket(object):
         self._visibilities.fill(complex(0.0))
         self._flag.fill(0)
         self._weight.fill(0.0)
-
 
     def is_full(self) -> bool:
         """
@@ -198,6 +211,7 @@ class VisibilityBucket(object):
         Return weight - should probably be correlation fraction?
         """
         return self._weight
+
     def get_flags(self):
         """
         Return flags (all zero)
@@ -209,6 +223,7 @@ class VisibilityBucket(object):
         Return array of tuples that are the baselines
         """
         return self._baselines
+
 
 class consumer(IConsumer):
     """
@@ -256,7 +271,7 @@ class consumer(IConsumer):
         change it if you want
         """
         if self._rcal_testing_method is not None:
-            modname, method_name = self._rcal_testing_method.rsplit(".",1)
+            modname, method_name = self._rcal_testing_method.rsplit(".", 1)
             m = importlib.import_module(modname)
             self._rcal_process_target = getattr(m, method_name)
         else:
@@ -281,8 +296,10 @@ class consumer(IConsumer):
             logger.info(f"Writing to {output_path}")
             self.mswriter = msutils.MSWriter(output_path, self.tm)
 
-        await asyncio.gather(self.mswriter.write_payload(payload, self.tm, executor=self.executor),
-                      self._buffer_payload(payload))
+        await asyncio.gather(
+            self.mswriter.write_payload(payload, self.tm, executor=self.executor),
+            self._buffer_payload(payload),
+        )
 
         self.received_payloads += 1
 
@@ -303,19 +320,18 @@ class consumer(IConsumer):
             """
             if self._rcal_process is not None:
                 """
-                    And go!!!- there is another buffer to fill - using some process parallelism here
-                    gives you the time 
-               
-                    check the exit code
+                And go!!!- there is another buffer to fill - using some process parallelism here
+                gives you the time
+
+                check the exit code
                 """
                 self._rcal_process.join()
                 if self._rcal_process.exitcode != 0:
-                    logger.warning(
-                        "RCAL processor exited with non-zero exit status"
-                    )
+                    logger.warning("RCAL processor exited with non-zero exit status")
 
-            self._rcal_process = Process(target=self._rcal_process_target,
-                                                         args=(full_block_vis,))
+            self._rcal_process = Process(
+                target=self._rcal_process_target, args=(full_block_vis,)
+            )
             self._rcal_process.start()
             self._input_buffer.empty()
 
@@ -344,22 +360,21 @@ class consumer(IConsumer):
 
         self._rcal_process.join()
 
-
     def _init_Configuration(self, model: SchedTM) -> Configuration:
 
-        """ Simple method to initialise the Configuration object describing data for processing
+        """Simple method to initialise the Configuration object describing data for processing
 
-                name: Name of configuration e.g. 'LOWR3'
-                location: Location of array as an astropy EarthLocation
-                names: Names of the dishes/stations
-                xyz: Geocentric coordinates of dishes/stations
-                mount: Mount types of dishes/stations 'altaz' | 'xy' | 'equatorial'
-                frame: Reference frame of locations
-                receptor_frame: Receptor frame
-                diameter: Diameters of dishes/stations (m)
-                offset: Axis offset (m)
-                stations: Identifiers of the dishes/stations
-                vp_type: Type of voltage pattern (string)
+        name: Name of configuration e.g. 'LOWR3'
+        location: Location of array as an astropy EarthLocation
+        names: Names of the dishes/stations
+        xyz: Geocentric coordinates of dishes/stations
+        mount: Mount types of dishes/stations 'altaz' | 'xy' | 'equatorial'
+        frame: Reference frame of locations
+        receptor_frame: Receptor frame
+        diameter: Diameters of dishes/stations (m)
+        offset: Axis offset (m)
+        stations: Identifiers of the dishes/stations
+        vp_type: Type of voltage pattern (string)
         """
         antennas = model.get_antennas()
         """
@@ -386,8 +401,8 @@ class consumer(IConsumer):
             diameter.append(antennas[antenna]["dish_diameter"])
             stations.append(antennas[antenna]["name"])
             names.append(antennas[antenna]["name"])
-            offset.append([0.0,0.0,0.0])
-            xyz.append([x_location,y_location,z_location])
+            offset.append([0.0, 0.0, 0.0])
+            xyz.append([x_location, y_location, z_location])
 
         """
         TODO: Mount not currently in the layout
@@ -406,7 +421,6 @@ class consumer(IConsumer):
         """
         vp_type = "unknown"
 
-
         return Configuration(
             name=name,
             location=location,
@@ -418,11 +432,12 @@ class consumer(IConsumer):
             diameter=diameter,
             offset=offset,
             stations=stations,
-            vp_type=vp_type
+            vp_type=vp_type,
         )
 
-    def _fill_Block_Visibility(self, model: SchedTM,
-                               buffer: VisibilityBucket) -> BlockVisibility:
+    def _fill_Block_Visibility(
+        self, model: SchedTM, buffer: VisibilityBucket
+    ) -> BlockVisibility:
         """
         Simple method to initialise contents of the BlockVisibility Object
         """
@@ -430,7 +445,7 @@ class consumer(IConsumer):
         frequency = []
         channel_bandwidth = []
         for chan in range(0, model.num_channels):
-            frequency.append(model.freq_start_hz + chan*model.freq_inc_hz)
+            frequency.append(model.freq_start_hz + chan * model.freq_inc_hz)
             channel_bandwidth.append(model.freq_inc_hz)
         """
         FIXME: THIS IS THE WRONG DIMENSION I THINK WE MAY NEED TIMESTEPS
@@ -442,31 +457,31 @@ class consumer(IConsumer):
         
         """
         ra_rad, dec_rad = model.phase_centre_radec_rad
-        target_ra = Angle(ra_rad*units.rad)
-        target_dec = Angle(dec_rad*units.rad)
-        phasecentre=SkyCoord(ra=target_ra, dec=target_dec)
-        configuration=self._init_Configuration(model)
+        target_ra = Angle(ra_rad * units.rad)
+        target_dec = Angle(dec_rad * units.rad)
+        phasecentre = SkyCoord(ra=target_ra, dec=target_dec)
+        configuration = self._init_Configuration(model)
 
         """
         
         """
 
-        vis=buffer.get_visibilities()
-        uvw=buffer.get_uvw()
-        time=buffer.get_time()
-        weight=buffer.get_weight()
-        integration_time=None
-        flags=buffer.get_flags()
-        baselines=buffer.get_baselines()
+        vis = buffer.get_visibilities()
+        uvw = buffer.get_uvw()
+        time = buffer.get_time()
+        weight = buffer.get_weight()
+        integration_time = None
+        flags = buffer.get_flags()
+        baselines = buffer.get_baselines()
 
         """
         TODO: Frame information not held
         """
-        polarisation_frame=PolarisationFrame("linear")
-        imaging_weight=None
-        source="anonymous"
-        meta=None
-        low_precision="float64"
+        polarisation_frame = PolarisationFrame("linear")
+        imaging_weight = None
+        source = "anonymous"
+        meta = None
+        low_precision = "float64"
 
         return BlockVisibility(
             frequency=frequency,
@@ -484,9 +499,8 @@ class consumer(IConsumer):
             imaging_weight=imaging_weight,
             source=source,
             meta=meta,
-            low_precision=low_precision
+            low_precision=low_precision,
         )
-
 
     async def _buffer_payload(self, payload: Payload):
 
@@ -526,7 +540,3 @@ class consumer(IConsumer):
         buff.add_visibilities(vis_slice=vis, start_chan=first_chan, num_chan=chan_count)
         buff.add_uvw(uvw=uvw)
         buff.set_time(time)
-
-
-
-

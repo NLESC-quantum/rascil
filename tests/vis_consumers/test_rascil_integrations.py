@@ -12,7 +12,9 @@ from pytest_bdd.steps import given, then, when
 from realtime.receive.core import ms_asserter, sched_tm
 from realtime.receive.core.config import create_config_parser
 from realtime.receive.modules import receivers
+
 from rascil.data_models.memory_data_models import BlockVisibility
+
 try:
     from rascil.vis_consumer import msconsumer
 except ImportError:

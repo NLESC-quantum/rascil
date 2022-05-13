@@ -94,8 +94,8 @@ test-gpu:
 	coverage html -d coverage
 
 test-consumer:
-	HOME=`pwd` py.test tests/vis_consumers --verbose \
-	--cov=rascil \
+	HOME=`pwd` py.test docker/rascil-rcal/vis_consumers_tests --verbose \
+	--cov=docker/rascil-rcal/vis_consumers \
 	--junitxml unit-tests-consumers.xml \
 	--pylint --pylint-error-types=EF --durations=30
 	coverage html -d coverage

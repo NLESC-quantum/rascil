@@ -16,16 +16,16 @@ from realtime.receive.modules import receivers
 from rascil.data_models.memory_data_models import BlockVisibility
 
 try:
-    from vis_consumer import msconsumer
+    from rascil.vis_consumer import msconsumer
 except ImportError:
     raise ImportError("RASCIL consumer not found")
 
 
 scenarios("./YAN-982.feature")
 
-INPUT_FILE = "tests/vis_consumers_tests/data/AA05LOW.ms"
-SCHED_FILE = "tests/vis_consumers_tests/data/sb-test.json"
-LAYOUT_FILE = "tests/vis_consumers_tests/data/TSI-AP.json"
+INPUT_FILE = "/rascil/tests/vis_consumers_tests/data/AA05LOW.ms"
+SCHED_FILE = "/rascil/tests/vis_consumers_tests/data/sb-test.json"
+LAYOUT_FILE = "/rascil/tests/vis_consumers_tests/data/TSI-AP.json"
 
 OUTPUT_FILE = tempfile.mktemp(suffix=".ms", prefix="output_")
 
@@ -69,7 +69,7 @@ def get_receiver(loop):
         "method": "spead2_receivers",
         "receiver_port_start": 42001,
         "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
-        "rcal_testing_method": "tests.vis_consumers_tests.test_rascil_integrations.rcal_test",
+        "rcal_testing_method": "tests.vis_consumer_tests.test_rascil_integrations.rcal_test",
         "schedblock": SCHED_FILE,
         "layout": LAYOUT_FILE,
         "outputfilename": OUTPUT_FILE,

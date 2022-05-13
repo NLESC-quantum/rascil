@@ -13,7 +13,7 @@
                 "method": "spead2_receivers",
                 "receiver_port_start": 42001,
                 "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
-                "rcal_testing_method": "tests.vis_consumers_tests.test_rascil_integrations.rcal_test",
+                "rcal_testing_method": "tests.vis_consumer_tests.test_rascil_integrations.rcal_test",
                 "schedblock": SCHED_FILE,
                 "layout": LAYOUT_FILE,
                 "outputfilename": OUTPUT_FILE,

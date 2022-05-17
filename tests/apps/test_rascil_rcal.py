@@ -8,10 +8,8 @@ import shutil
 import glob
 import tempfile
 import sys
-import cmath
 
 import numpy
-import pytest
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -23,6 +21,7 @@ from rascil.apps.rascil_rcal import (
     read_skycomponent_from_txt_with_external_frequency,
     _rfi_flagger,
     apply_beam_correction,
+    realtime_single_bvis_solver,
 )
 from rascil.data_models import (
     Skycomponent,
@@ -192,15 +191,14 @@ class TestRASCILRcal(unittest.TestCase):
         )
         self.args.do_plotting = "False"
         self.args.plot_dir = self.tempdir + "/"
+        self.args.use_previous_gaintable = "True"
 
     # Regression test
     def test_rcal(self):
         self.pre_setup()
         self.makeMS(self.flux)
 
-        # flag only after gain tables are calculated, i.e. flagging will not affect gain solutions
-        self.args.flag_first = "False"
-        gtfile = rcal_simulator(self.args)
+        gtfile = rcal_simulator(self.bvis_original, self.args)
 
         # Check that the gaintable exists and is correct by applying it to
         # the corrupted visibility
@@ -225,22 +223,14 @@ class TestRASCILRcal(unittest.TestCase):
         self.plotfile = self.tempdir + "/test_rascil_rcal_plot.png"
         assert os.path.exists(self.plotfile) is False
 
-        # Test that when we flag first, the results are different from
+        # Test that when we flag RFI, the results are different from
         # when we flag after gains were calculated
-        try:
-            from ska.sdp.func import rfi_flagger
-        except ImportError:
-            log.error(
-                "RCAL test with flagging skipped: "
-                "see comments in rascil.apps.rascil_rcal._rfi_flagger"
-            )
-        else:
-            os.remove(gtfile)
-            self.args.flag_first = "True"  # flag before gains are calculated
-            gtfile = rcal_simulator(self.args)
-            gain_table_w_flag = import_gaintable_from_hdf5(gtfile)
+        os.remove(gtfile)
+        self.args.flag_rfi = "True"  # flag before gains are calculated
+        gtfile = rcal_simulator(self.bvis_original, self.args)
+        gain_table_w_flag = import_gaintable_from_hdf5(gtfile)
 
-            assert (gain_table_w_flag["weight"].data != gain_table["weight"].data).any()
+        assert (gain_table_w_flag["weight"].data != gain_table["weight"].data).any()
 
         if self.persist is True:
             self.persist_data_files()
@@ -307,17 +297,6 @@ class TestRASCILRcal(unittest.TestCase):
             self.persist_data_files()
 
     def test_rfi_flagger(self):
-
-        # Import flagger
-        try:
-            from ska.sdp.func import rfi_flagger
-        except ImportError:
-            log.error(
-                "_rfi_flagger test skipped: "
-                "see comments in rascil.apps.rascil_rcal._rfi_flagger"
-            )
-            return
-
         self.pre_setup()
         new_bvis = self.bvis_original.copy(deep=True)
         # update new_bvis to have a value that will be flagged
@@ -326,11 +305,42 @@ class TestRASCILRcal(unittest.TestCase):
         _rfi_flagger(new_bvis)
 
         assert new_bvis != self.bvis_original
+        # the flagger flagged that single data point
         assert new_bvis["flags"].data[0, 0, 0, 0] == 1
+        # the flags array is all 0s in the original bvis
+        assert (self.bvis_original["flags"] == 0).all()
 
-        # reset value, so we can check that now all are 0
-        new_bvis["vis"].data[0, 0, 0, 0] = 0
-        assert (new_bvis["vis"].data == 0).all()
+        if self.persist is True:
+            self.persist_data_files()
+
+    def test_realtime_single_bvis_solver(self):
+        """
+        use_previous=True surfaced a bug in the code;
+        this test makes sure that at least the code doesn't
+        break when that argument is set.
+        """
+        self.pre_setup()
+        bvis = self.bvis_original.copy(deep=True)
+        model_components = None
+        previous_solution = None
+        use_previous = True
+
+        result_gain_table, previous_solution = realtime_single_bvis_solver(
+            bvis, model_components, previous_solution, use_previous=use_previous
+        )
+
+        assert previous_solution is not None
+
+        # shape: (time, antenna, frequency, receptor1, receptor2
+        # time and frequency are same as in bvis
+        assert result_gain_table["gain"].shape == (
+            len(bvis.time),
+            6,
+            len(bvis.frequency),
+            1,
+            1,
+        )
+        assert (result_gain_table["gain"].data == 1.0 + 0j).all()
 
         if self.persist is True:
             self.persist_data_files()

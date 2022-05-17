@@ -14,6 +14,7 @@ There are various directories for docker files:
 - rascil-full: Base with data
 - rascil-notebook: Supports running jupyter notebook
 - rascil-imaging-qa: Runs the Continuum Imaging QA tool
+- rascil-rcal: Supports running RCAL as consumer of SDP visibility receive data
 
 ## Automatic publishing
 
@@ -62,6 +63,7 @@ These write results into the host /tmp area. For docker:
 - make test_full
 - make test_notebook
 - make test_imaging_qa
+- make test_rcal
 
 And for singularity:
 
@@ -69,6 +71,7 @@ And for singularity:
 - make test_full_singularity
 - make test_notebook_singularity
 - make test_imaging_qa_singularity
+- make test_rcal_singularity
 
 ## Generic RASCIL images
 
@@ -137,7 +140,7 @@ the standard Jupyter directory page.
 finds compact sources in a continuum image and compares them 
 to the sources used in the simulation, thus revealing the quality of the imaging.
 
-####DOCKER
+#### DOCKER
 
 Pull the image:
 
@@ -157,7 +160,7 @@ of the imaging QA code as needed. `DOCKER_PATH` is used to extract the path
 of the output files the app produced in your local machine, not in the docker container. This
 is used for generating the output file index files.
 
-####SINGULARITY
+#### SINGULARITY
 
 Pull the image:
 
@@ -176,7 +179,7 @@ appear in the same directory. If the singularity image you downloaded is in a di
 point to that path in the above command. Update the `CLI_ARGS` string with the command line arguments
 of the imaging QA code as needed.
 
-####Providing input arguments from a file
+#### Providing input arguments from a file
 
 You may create a file that contains the input arguments for the app. Here is an example of it,
 called `args.txt`::
@@ -203,14 +206,45 @@ You can use an args file to run the singularity version with same principles, ba
 that singularity will automatically mount your filesystem into the container with paths
 matching those on your system.
 
-##Running RASCIL as a cluster
+## RCAL visibility receive consumer
+
+The [rascil_rcal directory](https://gitlab.com/ska-telescope/external/rascil/-/tree/master/docker/rascil-rcal) 
+contains the necessary extra code and Dockerfile
+to build a docker image that can be used as a consumer for the 
+[visibility receive workflow](https://developer.skao.int/projects/ska-sdp-science-pipelines/en/latest/workflows/vis_receive.html). 
+This workflow can be deployed in the
+[SDP](https://developer.skao.int/projects/ska-sdp-integration/en/latest/index.html) system. 
+It receives data packets from the Correlator and Beam Former (CBF) or its emulator. 
+
+A specific rcal-consumer is being developed at the moment, which will 
+format the received data packets into objects that can be passed into 
+a BlockVisibility. The BlockVisibility then will be consumed by RCAL 
+to produce gain solutions. This is work in progress.
+
+The current version of the docker image contains an example consumer, 
+which is the exact copy of the 
+[mswriter](https://gitlab.com/ska-telescope/sdp/ska-sdp-realtime-receive-modules/-/blob/2.0.3/realtime/receive/modules/consumers/mswriter.py), 
+which is used to write the data into a MeasurementSet. This will be 
+replaced with the rcal-consumer when ready.
+
+The docker image is available from the Central Artifact Repository 
+(tagged with the release version number)::
+
+    artefact.skao.int/rascil-rcal:<version>
+
+and from the GitLab container registry (tagged with latest
+and updated upon merge to master)::
+
+    registry.gitlab.com/ska-telescope/external/rascil/rascil-rcal:latest
+
+## Running RASCIL as a cluster
 
 The following methods of running RASCIL as a cluster, will provide a set of 
 docker-based environments, which host a Dask scheduler, various Dask workers 
 (numbers can be customized), and a Jupyter lab notebook, which directly
 connects to the scheduler.
 
-###Kubernetes
+### Kubernetes
 
 RASCIL can be run as a cluster in [Kubernetes](https://kubernetes.io/) using 
 [helm](https://helm.sh/) and [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) 
@@ -249,7 +283,7 @@ To uninstall the chart and clean out all pods, run::
 
 Note: this will remove changes you might have made in the Jupyter notebooks.
 
-##Singularity
+## Singularity
 
 `Singularity <https://sylabs.io/docs/>`_ can be used to load and run the docker images::
 
@@ -266,7 +300,7 @@ Inside a SLURM file singularity can be used by prefacing dask and python command
     CMD="singularity exec /home/<your-name>/workspace/RASCIL-full.img python3 ./cluster_test_ritoy.py ${scheduler}:8786 | tee ritoy.log"
     eval $CMD
 
-##Customisability
+## Customisability
 
 The docker images described here are ones we have found useful. However,
 if you have the RASCIL code tree installed then you can also make your own versions

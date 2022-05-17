@@ -8,10 +8,10 @@ import os
 import pprint
 import sys
 from typing import Iterable
-import xarray
 
 import matplotlib
 import numpy
+from ska_sdp_func import sum_threshold_rfi_flagger
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -36,7 +36,6 @@ from rascil.processing_components import (
     copy_gaintable,
     create_skycomponent,
     create_gaintable_from_blockvisibility,
-    apply_gaintable,
     concatenate_gaintables,
     create_low_test_beam,
     create_image_from_visibility,
@@ -145,10 +144,10 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--flag_first",
+        "--flag_rfi",
         type=str,
         default="False",
-        help="Whether to do the RFI flagging before first calibration (True), or after (False).",
+        help="Whether to run the RFI flagger (before obtaining calibration solutions), or not.",
     )
 
     parser.add_argument(
@@ -168,13 +167,6 @@ def cli_parser():
         "Note: use default value since flagger is still under development",
     )
 
-    parser.add_argument(
-        "--calibrate_bvis",
-        type=str,
-        default="True",
-        help="Whether to apply calibration to bvis or not.",
-    )
-
     return parser
 
 
@@ -183,8 +175,7 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     Wrapper function for the SKA flagger, certain defaults are managed here.
     Versions of flagger:
     1. (https://gitlab.com/ska-telescope/ska-post-correlation-rfi-flagger) (deprecated)
-    2. (https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/tree/rfi_flagger/)
-    TODO: Update this link when the flagger is merged into the main branch
+    2. (https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/blob/main/src/ska_sdp_func/rfi_flagger.py) (current)
 
     The code provides a sequence and derives the best experimented thresholds for flagging.
     For a longer sequence, the flagging threshold should be lower.
@@ -200,73 +191,32 @@ def _rfi_flagger(bvis, initial_threshold=8, rho=1.5):
     # Set up the sequence.
     sequence = numpy.array([1, 2, 4, 8, 16, 32], dtype=numpy.int32)
     thresholds = initial_threshold / numpy.power(rho, numpy.log2(sequence))
+    max_sequence_length = 2 ** (len(thresholds) - 1)
 
     vis_data = bvis["vis"].data
     flag_data = bvis["flags"].data.astype(numpy.int32)
 
     log.info("The dimensions of the visibility data:{}".format(vis_data.shape))
 
-    try:
-        from ska.sdp.func import rfi_flagger
-    except ImportError:
-
-        log.error(
-            "ska_sdp_func rfi_flagger ImportError. Flagger did not run. "
-            "(see comment where this message was produced)"
-        )
-        return
-
-    rfi_flagger(vis_data, sequence, thresholds, flag_data)
+    sum_threshold_rfi_flagger(vis_data, thresholds, flag_data, max_sequence_length)
 
     # update flag data in place
     bvis["flags"].data = flag_data
 
 
-def rcal_simulator(args):
+def rcal_simulator(bvis, args):
     """RCAL simulator
 
     Generate real-time calibration tables and optionally apply gains to data.
     RFI flagging also takes place as part of the pipeline (currently only place-holder for real function).
 
+    :param bvis: a single BlockVisibility object with one or more time samples
     :param args: argparse with appropriate arguments
     :return:
         gtfile: file name containing all of the GainTables
     """
-
-    assert args.ingest_msname is not None, "Input msname must be specified"
-
-    if args.logfile is None:
-        logfile = args.ingest_msname.replace(".ms", "_rcal.log")
-    else:
-        logfile = args.logfile
-
-    def init_logging():
-        logging.basicConfig(
-            filename=logfile,
-            filemode="a",
-            format="%(asctime)s.%(msecs)d %(name)s %(levelname)s %(message)s",
-            datefmt="%d/%m/%Y %I:%M:%S %p",
-            level=logging.INFO,
-        )
-
-    init_logging()
-
-    log.info("\nRASCIL RCAL simulator\n")
-
-    log.info(pprint.pformat(vars(args)))
-
-    bvis = create_blockvisibility_from_ms(
-        args.ingest_msname, selected_dds=args.ingest_dd
-    )[0]
-    telescope_name = bvis.configuration.name
-    log.info(f"The data is from {telescope_name}.")
-
-    flagged = False
-    initial_threshold = args.initial_threshold
-    rho = args.rho
-    if args.flag_first == "True":
-        _rfi_flagger(bvis, initial_threshold, rho)
-        flagged = True
+    if args.flag_rfi == "True":
+        _rfi_flagger(bvis, args.initial_threshold, args.rho)
 
     if args.ingest_components_file is not None:
         log.info("Using components model for calibration")
@@ -320,7 +270,6 @@ def rcal_simulator(args):
         model_components,
         phase_only=args.phase_only_solution == "True",
         use_previous=args.use_previous_gaintable == "True",
-        calibrate=args.calibrate_bvis == "True",
         tol=args.solution_tolerance,
     )
 
@@ -331,9 +280,6 @@ def rcal_simulator(args):
     do_plotting = args.do_plotting == "True"
     plot_dynamic = args.plot_dynamic == "True"
     full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
-
-    if not flagged:
-        _rfi_flagger(bvis, initial_threshold, rho)
 
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
@@ -359,9 +305,8 @@ def bvis_solver(
     model_components,
     phase_only=False,
     use_previous=True,
-    calibrate=True,
     jones_type="B",
-    **kwargs,
+    tol=1e-6,
 ) -> Iterable[GainTable]:
     """Iterate through the block vis, solving for the gain, returning gaintable generator
 
@@ -372,38 +317,77 @@ def bvis_solver(
     :param model_components: Model components
     :param phase_only: Solve for phase only? Otherwise, also solve for amplitude
     :param use_previous: if True, use previous GainTable as starting point for solution
-    :param calibrate: if True, apply gain table to bvis; this is done in place with the input bvis
     :param jones_type: Type of calibration matrix T or G or B
-    :param kwargs: Optional keywords
+    :param tol: solution tolerance
     :return: generator of GainTables
     """
     previous = None
     for bv in bvis_gen:
-        if model_components is not None:
-            modelvis = copy_visibility(bv, zero=True)
-            modelvis = dft_skycomponent_visibility(modelvis, model_components)
-            gt = solve_gaintable(
-                bv,
-                modelvis=modelvis,
-                gt=previous,
-                phase_only=phase_only,
-                jones_type=jones_type,
-                **kwargs,
-            )
-        else:
-            gt = solve_gaintable(
-                bv, gt=previous, phase_only=phase_only, jones_type=jones_type, **kwargs
-            )
-
-        if use_previous:
-            newgt = create_gaintable_from_blockvisibility(bv, jones_type=jones_type)
-            previous = copy_gaintable(gt)
-            previous["time"].data = newgt["time"].data
-
-        if calibrate:
-            apply_gaintable(bv, gt, inverse=True)
-
+        gt, previous = realtime_single_bvis_solver(
+            bv,
+            model_components,
+            previous,
+            phase_only=phase_only,
+            jones_type=jones_type,
+            tol=tol,
+            use_previous=use_previous,
+        )
         yield gt
+
+
+def realtime_single_bvis_solver(
+    bvis: BlockVisibility,
+    model_components,
+    previous_solution,
+    phase_only=False,
+    jones_type="B",
+    tol=1e-6,
+    use_previous=True,
+):
+    """
+    The bulk of running RCAL.
+    This solves a single BlockVisibility and returns its GainTable.
+
+    :param bvis: a BlockVisibility object
+    :param model_components: Model components
+    :param previous_solution: previous GainTable used as starting point;
+                              if use_previous is True, update this object in place
+                              and make it the "previous" to be used next time
+    :param phase_only: Solve for phase only? Otherwise, also solve for amplitude
+    :param jones_type: Type of calibration matrix T or G or B
+    :param tol: solution tolerance
+    :param use_previous: if True, use previous GainTable as starting point for solution
+
+    :return: GainTable for the input BlockVisibility
+    """
+    if model_components is not None:
+        modelvis = copy_visibility(bvis, zero=True)
+        modelvis = dft_skycomponent_visibility(modelvis, model_components)
+        gt = solve_gaintable(
+            bvis,
+            modelvis=modelvis,
+            gt=previous_solution,
+            phase_only=phase_only,
+            jones_type=jones_type,
+            tol=tol,
+        )
+    else:
+        gt = solve_gaintable(
+            bvis,
+            gt=previous_solution,
+            phase_only=phase_only,
+            jones_type=jones_type,
+            tol=tol,
+        )
+
+    if use_previous:
+        newgt = create_gaintable_from_blockvisibility(bvis, jones_type=jones_type)
+        previous_solution = copy_gaintable(gt)
+        previous_solution = previous_solution.assign_coords(
+            {"time": newgt["time"].data}
+        )
+
+    return gt, previous_solution
 
 
 def gt_sink(gt_gen: Iterable[GainTable], do_plotting, plot_dynamic, plot_name):
@@ -708,7 +692,39 @@ def apply_beam_correction(
     return comp_new
 
 
+def main(args):
+    assert args.ingest_msname is not None, "Input msname must be specified"
+
+    if args.logfile is None:
+        logfile = args.ingest_msname.replace(".ms", "_rcal.log")
+    else:
+        logfile = args.logfile
+
+    def init_logging():
+        logging.basicConfig(
+            filename=logfile,
+            filemode="a",
+            format="%(asctime)s.%(msecs)d %(name)s %(levelname)s %(message)s",
+            datefmt="%d/%m/%Y %I:%M:%S %p",
+            level=logging.INFO,
+        )
+
+    init_logging()
+
+    log.info("\nRASCIL RCAL simulator\n")
+
+    log.info(pprint.pformat(vars(args)))
+
+    bvis = create_blockvisibility_from_ms(
+        args.ingest_msname, selected_dds=args.ingest_dd
+    )[0]
+    telescope_name = bvis.configuration.name
+    log.info(f"The data is from {telescope_name}.")
+
+    rcal_simulator(bvis, args)
+
+
 if __name__ == "__main__":
     parser = cli_parser()
-    args = parser.parse_args()
-    rcal_simulator(args)
+    argv = parser.parse_args()
+    main(argv)

@@ -20,6 +20,7 @@ from astropy.coordinates import SkyCoord
 from scipy.constants import Boltzmann as k_B
 
 from rascil.data_models import PolarisationFrame
+from rascil.processing_components.visibility.base import export_blockvisibility_to_ms
 
 from rascil.processing_components import (
     create_image_from_visibility,
@@ -83,10 +84,10 @@ def cli_parser():
         help="Number of pixels in ra, dec: Should be a composite of 2, 3, 5",
     )
     parser.add_argument(
-        "--sampling_interval",
-        type=float,
-        default=600,
-        help="Sampling interval, the value should be larger than integration_time",
+        "--msfile",
+        type=str,
+        default="",
+        help="Export Measurement file.",
     )
     parser.add_argument(
         "--imaging_cellsize",
@@ -225,7 +226,7 @@ def calculate_sensitivity(args):
 
     time_rad = numpy.array(args.time_range) * numpy.pi / 12.0
     times = numpy.arange(
-        time_rad[0], time_rad[1], args.sampling_interval * numpy.pi / 43200.0
+        time_rad[0], time_rad[1], args.integration_time * numpy.pi / 43200.0
     )
 
     # Make a list of BlockVisibility's, one for each frequency.
@@ -246,6 +247,11 @@ def calculate_sensitivity(args):
         for channel, freq in enumerate(frequency)
     ]
     bvis_list = rsexecute.persist(bvis_list)
+
+    if len(args.msfile) != 0:
+        log.info(f"Export Measurement set file: {args.msfile} ")
+        ep = rsexecute.compute(bvis_list, sync=True)
+        export_blockvisibility_to_ms(args.msfile, ep)
 
     if args.verbose == "True":
         plt.clf()
@@ -279,7 +285,7 @@ def image_bvis(args, bvis_list):
         cellsize = min(advice[0]["cellsize"], advice[-1]["cellsize"])
     else:
         cellsize = args.imaging_cellsize
-
+    log.info(f"Image cellsize : {cellsize} rad, {cellsize*180./numpy.pi*3600} arcsec")
     # Now make the model images (actually a graph)
     model_list = [
         rsexecute.execute(create_image_from_visibility)(

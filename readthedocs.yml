@@ -5,7 +5,7 @@
 # Required
 version: 2
 
-# Build documentation in the docs/src/ directory with Sphinx
+# Build documentation in the docs/images/ directory with Sphinx
 sphinx:
   configuration: rtd-docs/conf.py
 

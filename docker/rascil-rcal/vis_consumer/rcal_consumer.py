@@ -92,7 +92,7 @@ def rcal_pipeline_start(block: BlockVisibility, queue=None):
             "False",
             # needed because the output files' root dir is determined based on this
             "--ingest_msname",
-            "./tmp.ms",
+            "/mnt/data/tmp.ms/",
             "--flag_rfi",
             "False",
         ]

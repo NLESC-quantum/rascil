@@ -6,4 +6,4 @@ python3 -m rascil.apps.rascil_imager  --clean_nmoment 3 --clean_facets 8 --clean
   --mode cip --imaging_ng_threads 32 \
   --imaging_cellsize 4.84813681109536e-06 --imaging_weighting robust --imaging_robustness -2.0 --imaging_nchan 1 \
   --ingest_vis_nchan 16 --ingest_chan_per_blockvis 2 \
-  --ingest_msname /mnt/data/test.ms --logfile tmp.log \
+  --ingest_msname /mnt/data/SKA_MID_SIM_custom_B2_dec_-45.0_polarisation_nchan100_actual.ms --logfile tmp.log \

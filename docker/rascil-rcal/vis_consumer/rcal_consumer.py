@@ -92,13 +92,14 @@ def rcal_pipeline_start(block: BlockVisibility, queue=None):
             "False",
             # needed because the output files' root dir is determined based on this
             "--ingest_msname",
-            "/mnt/data/tmp.ms/",
+            "./tmp.ms",
             "--flag_rfi",
             "False",
         ]
     )
     if queue:
         queue.put("working")
+        logger.info(" TEMP - rcal simulator is getting called")
         rcal_simulator(block, rcal_args)
 
 
@@ -379,6 +380,7 @@ class consumer(IConsumer):
                 if self._rcal_process.exitcode != 0:
                     logger.warning("RCAL processor exited with non-zero exit status")
 
+            logger.info("TEMP- going to call the rcal process target")
             self._rcal_process = Process(
                 target=self._rcal_process_target, args=(full_block_vis,)
             )

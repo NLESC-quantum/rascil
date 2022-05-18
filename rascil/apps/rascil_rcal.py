@@ -215,6 +215,9 @@ def rcal_simulator(bvis, args):
     :return:
         gtfile: file name containing all of the GainTables
     """
+
+    log.info("TEMP - Inside rcal simulator")
+
     if args.flag_rfi == "True":
         _rfi_flagger(bvis, args.initial_threshold, args.rho)
 
@@ -280,7 +283,7 @@ def rcal_simulator(bvis, args):
     do_plotting = args.do_plotting == "True"
     plot_dynamic = args.plot_dynamic == "True"
     full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
-
+    log.info(args.ingest_msname)
     gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
 

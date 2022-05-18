@@ -92,14 +92,13 @@ def rcal_pipeline_start(block: BlockVisibility, queue=None):
             "False",
             # needed because the output files' root dir is determined based on this
             "--ingest_msname",
-            "./tmp.ms",
+            "/mnt/data/tmp.ms",
             "--flag_rfi",
             "False",
         ]
     )
     if queue:
         queue.put("working")
-        logger.info(" TEMP - rcal simulator is getting called")
         rcal_simulator(block, rcal_args)
 
 
@@ -369,6 +368,7 @@ class consumer(IConsumer):
             """ 
             start the sub-process for this buffer
             """
+
             if self._rcal_process is not None:
                 """
                 And go!!!- there is another buffer to fill - using some process parallelism here
@@ -380,9 +380,13 @@ class consumer(IConsumer):
                 if self._rcal_process.exitcode != 0:
                     logger.warning("RCAL processor exited with non-zero exit status")
 
-            logger.info("TEMP- going to call the rcal process target")
+            # Might be better to use asyncio-executor instead of multiprocessing Process
             self._rcal_process = Process(
-                target=self._rcal_process_target, args=(full_block_vis,)
+                target=self._rcal_process_target,
+                args=(
+                    full_block_vis,
+                    self._rcal_process_q,
+                ),
             )
             self._rcal_process.start()
             self._input_buffer.empty()

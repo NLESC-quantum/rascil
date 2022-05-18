@@ -17,9 +17,6 @@ RUN mkdir -p /usr/share/casacore/data/ && \
     wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar && \
     tar xfz WSRT_Measures.ztar
 
-#COPY /rascil/ephemerides /usr/share/casacore/data
-#COPY /rascil/geodetic /usr/share/casacore/data
-
 WORKDIR /rascil
 
 # Set runtime environment variables.

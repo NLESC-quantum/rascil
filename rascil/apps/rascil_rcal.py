@@ -216,8 +216,6 @@ def rcal_simulator(bvis, args):
         gtfile: file name containing all of the GainTables
     """
 
-    log.info("TEMP - Inside rcal simulator")
-
     if args.flag_rfi == "True":
         _rfi_flagger(bvis, args.initial_threshold, args.rho)
 

@@ -215,6 +215,8 @@ def rcal_simulator(bvis, args):
     :return:
         gtfile: file name containing all of the GainTables
     """
+    log.info(pprint.pformat(vars(args)))
+    log.info("Processing bvis with dimensions: %s", bvis.dims)
 
     if args.flag_rfi == "True":
         _rfi_flagger(bvis, args.initial_threshold, args.rho)
@@ -262,8 +264,6 @@ def rcal_simulator(bvis, args):
     else:
         plot_dir = args.plot_dir
 
-    log.info(f"\nMS loaded into BlockVisibility:\n{bvis}\n")
-
     bvis_gen = bvis_source(bvis)
 
     gt_gen = bvis_solver(
@@ -274,15 +274,18 @@ def rcal_simulator(bvis, args):
         tol=args.solution_tolerance,
     )
 
+    datetime = (
+        bvis.datetime.data[0].__str__().split(".")[0].replace(":", "").replace("-", "")
+    )
     base = os.path.basename(args.ingest_msname)
-    plotfile = plot_dir + "/" + base.replace(".ms", "_plot")
+    plotfile = plot_dir + "/" + base.replace(".ms", f"_{datetime}_plot")
     log.info(f"Write plots into : \n{plotfile}\n")
 
     do_plotting = args.do_plotting == "True"
     plot_dynamic = args.plot_dynamic == "True"
     full_gt = gt_sink(gt_gen, do_plotting, plot_dynamic, plotfile)
     log.info(args.ingest_msname)
-    gtfile = args.ingest_msname.replace(".ms", "_gaintable.hdf")
+    gtfile = args.ingest_msname.replace(".ms", f"_{datetime}_gaintable.hdf")
     export_gaintable_to_hdf5(full_gt, gtfile)
 
     return gtfile
@@ -721,6 +724,7 @@ def main(args):
     )[0]
     telescope_name = bvis.configuration.name
     log.info(f"The data is from {telescope_name}.")
+    log.info(f"\nMS loaded into BlockVisibility:\n{bvis}\n")
 
     rcal_simulator(bvis, args)
 

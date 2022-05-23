@@ -89,7 +89,9 @@ def rcal_pipeline_start(block: BlockVisibility, queue=None):
     rcal_args = rcal_parser.parse_args(
         [
             "--do_plotting",
-            "False",
+            "True",
+            "--plot_dir",
+            "/mnt/data",
             # needed because the output files' root dir is determined based on this
             "--ingest_msname",
             "/mnt/data/tmp.ms",

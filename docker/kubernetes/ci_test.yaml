@@ -10,8 +10,8 @@
     name: test/$CI_COMMIT_REF_NAME
     kubernetes:
       namespace: $NAMESPACE
-#  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE != "schedule" && ($CI_COMMIT_TAG == "" || $CI_COMMIT_TAG == null)'
 
 # uses the publish stage because that happens after docker_test runs,
 # which pushes the images necessary for cluster-test to the GitLab registry
@@ -29,6 +29,8 @@ cluster-test:
   script:
     - make test_k8s
     - make test_k8s_jupyter
+  after_script:
+    - helm repo remove tmp-rascil-helm
 
 # due to permission issues, the clean up has to
 # happen in a separate CI job
@@ -37,4 +39,4 @@ cluster-test-clean-up:
   extends: .k8s-test
   stage: prepost
   script:
-    - make clean_up_k8s
+    - kubectl delete namespace $NAMESPACE --ignore-not-found

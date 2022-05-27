@@ -13,9 +13,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
-import os
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -29,7 +26,6 @@ import os
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-from unittest import mock
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -43,9 +39,6 @@ extensions = [
     "sphinxarg.ext",
     "m2r2",
 ]
-
-sys.modules["ska_post_correlation_rfi_flagger"] = mock.Mock()
-
 
 # The following seem to be buggy
 
@@ -71,7 +64,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "RASCIL"
-copyright = "2016-2021 See CONTRIBUTORS"
+copyright = "2016-2022 See CONTRIBUTORS"
 author = "See CONTRIBUTORS"
 
 # The version info for the project you're documenting, acts as replacement for

@@ -58,10 +58,6 @@ install_chart:
 	--set jupyter.image.repository=registry.gitlab.com/ska-telescope/external/rascil/rascil-notebook \
 	--wait --timeout 600s
 
-clean_up_k8s:
-	kubectl delete namespace $(NAMESPACE) --ignore-not-found
-	helm repo remove tmp-rascil-helm
-
 test_k8s:
 	pytest $(GIT_ROOT)/docker/kubernetes/test_k8s.py
 

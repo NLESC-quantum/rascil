@@ -1,7 +1,6 @@
 master
 ------
-
-* Add function to write weight_spectrum to Measurement set file  ([MR341](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/341))
+* Add function to write weight_spectrum to Measurement set file  ([MR341](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/3))
 * Refactor the RCAL pipeline: bvis calibration is no longer an option, update the flagger functionality  ([MR336](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/336))
 * Bug fix in RASCIL sensitivity app integration time ([MR328](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/328))
 * Add a temporary consumer (mswriter), which is used for testing the connection to visibility receive ([MR332](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/332))

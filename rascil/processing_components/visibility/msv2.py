@@ -148,7 +148,7 @@ try:
             inttime,
             baselines,
             visibilities,
-            weights,
+            weights=None,
             flags=None,
             pol="XX",
             source=None,
@@ -1505,9 +1505,10 @@ try:
                 matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.visibilities[
                     order, :
                 ]
-                weight_spectrum_matrix[
-                    :, self.stokes.index(dataSet.pol), :
-                ] = dataSet.weights[order, :]
+                if dataSet.weights is not None:
+                    weight_spectrum_matrix[
+                        :, self.stokes.index(dataSet.pol), :
+                    ] = dataSet.weights[order, :]
                 flag_matrix[:, self.stokes.index(dataSet.pol), :] = (
                     dataSet.flags[order, :] == 1
                 )

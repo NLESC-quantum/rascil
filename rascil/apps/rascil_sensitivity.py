@@ -20,6 +20,8 @@ from astropy.coordinates import SkyCoord
 from scipy.constants import Boltzmann as k_B
 
 from rascil.data_models import PolarisationFrame
+from rascil.processing_components.imaging.base import invert_awprojection
+from rascil.processing_components.visibility.base import export_blockvisibility_to_ms
 
 from rascil.processing_components import (
     create_image_from_visibility,
@@ -83,16 +85,22 @@ def cli_parser():
         help="Number of pixels in ra, dec: Should be a composite of 2, 3, 5",
     )
     parser.add_argument(
-        "--sampling_interval",
-        type=float,
-        default=600,
-        help="Sampling interval, the value should be larger than integration_time",
+        "--msfile",
+        type=str,
+        default="",
+        help="Export Measurement file.",
     )
     parser.add_argument(
         "--imaging_cellsize",
         type=float,
         default=None,
         help="Cellsize (radians). Default is to calculate.",
+    )
+    parser.add_argument(
+        "--imaging_oversampling",
+        type=float,
+        default=3.0,
+        help="Oversampling of synthesised_beam (Default 3.0)",
     )
     parser.add_argument(
         "--imaging_weighting",
@@ -225,12 +233,13 @@ def calculate_sensitivity(args):
 
     time_rad = numpy.array(args.time_range) * numpy.pi / 12.0
     times = numpy.arange(
-        time_rad[0], time_rad[1], args.sampling_interval * numpy.pi / 43200.0
+        time_rad[0], time_rad[1], args.integration_time * numpy.pi / 43200.0
     )
 
     # Make a list of BlockVisibility's, one for each frequency.
     # This is actually a graph that we will compute later
     # Note that the weight of one sample is set to the time-bandwidth product
+
     bvis_list = [
         rsexecute.execute(create_blockvisibility)(
             config,
@@ -247,6 +256,11 @@ def calculate_sensitivity(args):
     ]
     bvis_list = rsexecute.persist(bvis_list)
 
+    if args.msfile != "":
+        log.info(f"Export Measurement set file: {args.msfile} ")
+        export_bvis_list = rsexecute.compute(bvis_list, sync=True)
+        export_blockvisibility_to_ms(args.msfile, export_bvis_list)
+
     if args.verbose == "True":
         plt.clf()
         local_bvis_list = rsexecute.compute(bvis_list, sync=True)
@@ -254,7 +268,7 @@ def calculate_sensitivity(args):
         plt.show(block=False)
 
         log.info(
-            f"Size of BlockVisibility for first channel: {local_bvis_list[0].nbytes * 2**-30:.6f}GB "
+            f"Size of BlockVisibility for first channel: {local_bvis_list[0].nbytes * 2 ** -30:.6f}GB "
         )
 
     results = image_bvis(args, bvis_list)
@@ -272,7 +286,11 @@ def image_bvis(args, bvis_list):
     # If the cellsize has not been specified, calculate it.
     if args.imaging_cellsize is None:
         advice = [
-            rsexecute.execute(advise_wide_field)(bvis, verbose=False)
+            rsexecute.execute(advise_wide_field)(
+                bvis,
+                verbose=False,
+                oversampling_synthesised_beam=args.imaging_oversampling,
+            )
             for bvis in bvis_list
         ]
         advice = rsexecute.compute(advice, sync=True)
@@ -280,6 +298,9 @@ def image_bvis(args, bvis_list):
     else:
         cellsize = args.imaging_cellsize
 
+    log.info(
+        f"Image cellsize : {cellsize} rad, {cellsize * 180. / numpy.pi * 3600} arcsec"
+    )
     # Now make the model images (actually a graph)
     model_list = [
         rsexecute.execute(create_image_from_visibility)(
@@ -389,6 +410,32 @@ def robustness_taper_scenario(
         )
     results["taper"] = taper
 
+    # CASA approach
+    # https://casa.nrao.edu/casadocs/casa-6.1.0/imaging/synthesis-imaging/data-weighting
+    bvis_list = rsexecute.compute(bvis_list, sync=True)
+    for bv in bvis_list:
+        nrows, nbaselines, nvchan, nvpol = bv.vis.shape
+        weight = bv.blockvisibility_acc.flagged_weight.reshape(
+            [nrows * nbaselines, nvchan, nvpol]
+        ).T
+        grid_weight = bv.blockvisibility_acc.flagged_imaging_weight.reshape(
+            [nrows * nbaselines, nvchan, nvpol]
+        ).T
+
+        sum_weight = 0.0
+        sum_grid_weight = 0.0
+        sum_grid2_over_weight = 0.0
+        for pol in range(1):
+            for vchan in range(1):
+                inatwt = 2 * weight[pol, vchan, :][weight[pol, vchan] > 0]
+                igridwt = 2 * grid_weight[pol, vchan, :][grid_weight[pol, vchan] > 0]
+                sum_weight += numpy.sum(inatwt)
+                sum_grid_weight += numpy.sum(igridwt)
+                sum_grid2_over_weight += numpy.sum(igridwt**2 / inatwt)
+        pss_casa = numpy.sqrt(sum_grid2_over_weight) / sum_grid_weight
+        natss = 1.0 / numpy.sqrt(sum_weight)
+        reltonat = pss_casa / natss
+
     # Now we can make the PSF.
     psf_list = invert_list_rsexecute_workflow(
         bvis_list,
@@ -419,7 +466,7 @@ def robustness_taper_scenario(
     # The effective time-bandwidth product (i.e. accounting for weighting and taper)
     # Tim's original code: tb = sumwt[0][0] + sumwt[-1][0]
     # This summation step is already implemented in sum_invert_results_rsexecute.
-    tb = sumwt[0][0]
+    tb = sumwt[0][0] * 2
     log.info(f"\tTime-Bandwidth product (tb) = {tb:.4g} (Hz.s)")
 
     # Point source sensitivity
@@ -430,8 +477,13 @@ def robustness_taper_scenario(
     pss = (
         numpy.sqrt(2.0) * 1e26 * k_B * args.tsys / (area * efficiency * numpy.sqrt(tb))
     )
+
     results["pss"] = pss
-    log.info(f"\tPoint source sensitivity (pss) = {pss:.4g} (Jy/(clean beam))")
+    results["pss_casa"] = pss_casa
+    results["reltonat_casa"] = reltonat
+    log.info(
+        f"\tPoint source sensitivity (pss) = {pss:.4g} (Jy/(clean beam)), (pss_casa) = {pss_casa:.4g}, relative to natural weighting = {reltonat:.4g}"
+    )
 
     # Calculate solid angle of clean beam
     solid_angle = (
@@ -445,8 +497,16 @@ def robustness_taper_scenario(
     # Calculate surface brightness visibility
     sbs = pss / solid_angle
     results["sbs"] = sbs
-    log.info(f"\tSurface brightness sensitivity (sbs) = {sbs:.4g} (Jy/steradian)")
+    sbs_casa = pss_casa / solid_angle
+
+    log.info(
+        f"\tSurface brightness sensitivity (sbs) = {sbs:.4g} (Jy/steradian), (sbs_casa) = {sbs_casa:.4g}"
+    )
     results["tb"] = tb
+
+    results["sbs_casa"] = sbs_casa
+    results["pss_casa"] = pss_casa
+    results["reltonat_casa"] = reltonat
 
     return results
 

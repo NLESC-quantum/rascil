@@ -137,6 +137,7 @@ class measurementset_tests(unittest.TestCase):
         visData = numpy.random.rand(len(blList), len(freq))
         visData = visData.astype(numpy.complex64)
 
+        weights = numpy.random.rand(len(blList), len(freq))
         return {
             "freq": freq,
             "channel_width": channel_width,
@@ -144,6 +145,7 @@ class measurementset_tests(unittest.TestCase):
             "antennas": antennas,
             "bl": blList,
             "vis": visData,
+            "weights": weights,
         }
 
     def __initData_WGS84(self):
@@ -240,6 +242,7 @@ class measurementset_tests(unittest.TestCase):
         visData = numpy.random.rand(len(blList), len(freq))
         visData = visData.astype(numpy.complex64)
 
+        weights = numpy.random.rand(len(blList), len(freq))
         return {
             "freq": freq,
             "channel_width": channel_width,
@@ -247,6 +250,7 @@ class measurementset_tests(unittest.TestCase):
             "antennas": antennas,
             "bl": blList,
             "vis": visData,
+            "weights": weights,
         }
 
     def test_write_tables(self):
@@ -341,7 +345,9 @@ class measurementset_tests(unittest.TestCase):
         fits.set_stokes(["xx"])
         fits.set_frequency(data["freq"], data["channel_width"])
         fits.set_geometry(data["site"], data["antennas"])
-        fits.add_data_set(testTime, 6.0, data["bl"], data["vis"])
+        fits.add_data_set(
+            testTime, 6.0, data["bl"], data["vis"], weights=data["weights"]
+        )
         fits.write()
 
         # Open the table and examine
@@ -350,6 +356,7 @@ class measurementset_tests(unittest.TestCase):
         ant1 = ms.getcol("ANTENNA1")
         ant2 = ms.getcol("ANTENNA2")
         vis = ms.getcol("DATA")
+        weights = ms.getcol("WEIGHT_SPECTRUM")
 
         ms2 = casacore.tables.table(os.path.join(testFile, "ANTENNA"), ack=False)
         mapper = ms2.getcol("NAME")
@@ -364,11 +371,16 @@ class measurementset_tests(unittest.TestCase):
         # Correct number of frequencies
         self.assertEqual(vis.shape[1], data["freq"].size)
 
+        # Correct number of weights
+        self.assertEqual(weights.shape[0], data["weights"].shape[0])
+        self.assertEqual(weights.shape[1], data["freq"].size)
+
         # Correct values
         for row in range(uvw.shape[0]):
             stand1 = ant1[row]
             stand2 = ant2[row]
             visData = vis[row, :, 0]
+            weightData = weights[row, :, 0]
 
             # Find out which visibility set in the random data corresponds to the
             # current visibility
@@ -380,8 +392,11 @@ class measurementset_tests(unittest.TestCase):
                     i = i + 1
 
             # Run the comparison
-            for vd, sd in zip(visData, data["vis"][i, :]):
+            for vd, sd, wd, wsd in zip(
+                visData, data["vis"][i, :], weightData, data["weights"][i, :]
+            ):
                 self.assertAlmostEqual(vd, sd, 8)
+                self.assertAlmostEqual(wd, wsd, 6)
             i = i + 1
 
         ms.close()

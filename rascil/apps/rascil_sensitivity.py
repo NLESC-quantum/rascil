@@ -426,7 +426,7 @@ def robustness_taper_scenario(
         sum_grid_weight = 0.0
         sum_grid2_over_weight = 0.0
         for pol in range(nvpol):
-            for vchan in range(len(args.nchan))
+            for vchan in range(args.nchan):
                 inatwt = 2 * weight[pol, vchan, :][weight[pol, vchan] > 0]
                 igridwt = 2 * grid_weight[pol, vchan, :][grid_weight[pol, vchan] > 0]
                 sum_weight += numpy.sum(inatwt)

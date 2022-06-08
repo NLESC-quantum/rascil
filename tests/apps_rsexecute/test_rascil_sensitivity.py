@@ -169,7 +169,7 @@ def test_rascil_sensitivity(
         nrows = len(tapers * (len(robustnesses)))
 
     assert len(df) == nrows
-    assert len(df.columns) == 21
+    assert len(df.columns) == 24
 
     columns = [
         "weighting",
@@ -193,6 +193,9 @@ def test_rascil_sensitivity(
         "sa",
         "sbs",
         "tb",
+        "sbs_casa",
+        "pss_casa",
+        "reltonat_casa",
     ]
     for col in df.columns:
         assert col in columns

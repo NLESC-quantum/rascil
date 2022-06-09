@@ -228,6 +228,7 @@ def rcal_simulator(bvis, args):
             model_components = import_skycomponent_from_hdf5(
                 args.ingest_components_file
             )
+            telescope_name = bvis.configuration.name
             log.info(f"Read HDF components file {args.ingest_components_file}")
 
         except OSError:

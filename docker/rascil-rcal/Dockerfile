@@ -11,7 +11,7 @@ COPY consumer_requirements.txt .
 
 RUN pip install -r consumer_requirements.txt
 
-# casacore Measures is only needed for the consumer test
+# casacore measures needed to calculate uvw coordiantes of spead2 packets
 RUN mkdir -p /usr/share/casacore/data/ && \
     cd /usr/share/casacore/data && \
     wget -O WSRT_Measures.ztar ftp://ftp.astron.nl/outgoing/Measures/WSRT_Measures.ztar && \
@@ -20,6 +20,7 @@ RUN mkdir -p /usr/share/casacore/data/ && \
 WORKDIR /rascil
 
 # Set runtime environment variables.
+ENV PATH=$PATH:/home/rascil/.local/bin
 ENV RASCIL=/rascil
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8

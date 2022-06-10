@@ -1,10 +1,8 @@
 import asyncio
 import os
-import sys
 import tempfile
 import time
 import unittest
-import subprocess
 import pytest
 
 from cbf_sdp import packetiser
@@ -17,22 +15,18 @@ from realtime.receive.modules import receivers
 from rascil.data_models.memory_data_models import BlockVisibility
 
 try:
-    from vis_consumer import msconsumer
+    from vis_consumer import rcal_consumer
 except ImportError:
     raise ImportError("RASCIL consumer not found")
 
 
-GIT_ROOT = (
-    subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True)
-    .stdout.decode("utf-8")
-    .rstrip("\n")
-)
+TEST_DIR = os.path.dirname(__file__)
 
-scenarios("./YAN-982.feature")
+scenarios(f"{TEST_DIR}/YAN-982.feature")
 
-INPUT_FILE = f"{GIT_ROOT}/docker/rascil-rcal/vis_consumer_tests/data/AA05LOW.ms"
-SCHED_FILE = f"{GIT_ROOT}/docker/rascil-rcal/vis_consumer_tests/data/sb-test.json"
-LAYOUT_FILE = f"{GIT_ROOT}/docker/rascil-rcal/vis_consumer_tests/data/TSI-AP.json"
+INPUT_FILE = f"{TEST_DIR}/data/AA05LOW.ms"
+SCHED_FILE = f"{TEST_DIR}/data/sb-test.json"
+LAYOUT_FILE = f"{TEST_DIR}/data/TSI-AP.json"
 
 OUTPUT_FILE = tempfile.mktemp(suffix=".ms", prefix="output_")
 
@@ -50,19 +44,19 @@ def get_loop():
 
 
 @given("An example input file of the correct dimension")
-def test_file():
+def find_input_file():
     if os.path.isdir(INPUT_FILE):
         return
     else:
-        raise FileExistsError
+        raise FileNotFoundError
 
 
 @given("A scheduling block is available")
-def test_file():
+def find_sched_file():
     if os.path.isfile(SCHED_FILE):
         return
     else:
-        raise FileExistsError
+        raise FileNotFoundError
 
 
 @given(

@@ -148,6 +148,7 @@ try:
             inttime,
             baselines,
             visibilities,
+            weights=None,
             flags=None,
             pol="XX",
             source=None,
@@ -172,6 +173,7 @@ try:
                     baselines,
                     visibilities,
                     flags,
+                    weights=weights,
                     pol=numericPol,
                     source=source,
                     phasecentre=phasecentre,
@@ -1194,6 +1196,17 @@ try:
                 valuetype="float",
                 comment="Weight for each polarization spectrum",
             )
+            col_4_5 = tableutil.makearrcoldesc(
+                "WEIGHT_SPECTRUM",
+                1.0,
+                2,
+                shape=[nchan, ncorr],
+                options=4,
+                datamanagertype="TiledColumnStMan",
+                datamanagergroup="WeightSpectrum",
+                valuetype="float",
+                comment="Weight for each polarization and channel spectrum",
+            )
             col5 = tableutil.makearrcoldesc(
                 "SIGMA",
                 9999.0,
@@ -1335,6 +1348,7 @@ try:
                     col2,
                     col3,
                     col4,
+                    col_4_5,
                     col5,
                     col6,
                     col7,
@@ -1467,8 +1481,14 @@ try:
                         self.nStokes,
                         nBand * self.nchan,
                     )
+                    weight_spectrum_matrix.shape = (
+                        len(order),
+                        self.nStokes,
+                        nBand * self.nchan,
+                    )
                     matrix *= 0.0
                     flag_matrix *= False
+                    weight_spectrum_matrix *= 1.0
                 except (NameError, RuntimeError):
                     matrix = numpy.zeros(
                         (len(order), self.nStokes, self.nchan * nBand),
@@ -1477,11 +1497,18 @@ try:
                     flag_matrix = numpy.zeros(
                         (len(order), self.nStokes, self.nchan * nBand), dtype=bool
                     )
+                    weight_spectrum_matrix = numpy.ones(
+                        (len(order), self.nStokes, self.nchan * nBand), dtype=float
+                    )
 
                 # Save the visibility data in the right order
                 matrix[:, self.stokes.index(dataSet.pol), :] = dataSet.visibilities[
                     order, :
                 ]
+                if dataSet.weights is not None:
+                    weight_spectrum_matrix[
+                        :, self.stokes.index(dataSet.pol), :
+                    ] = dataSet.weights[order, :]
                 flag_matrix[:, self.stokes.index(dataSet.pol), :] = (
                     dataSet.flags[order, :] == 1
                 )
@@ -1493,6 +1520,12 @@ try:
 
                     matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
                     flag_matrix.shape = (len(order), self.nStokes, nBand, self.nchan)
+                    weight_spectrum_matrix.shape = (
+                        len(order),
+                        self.nStokes,
+                        nBand,
+                        self.nchan,
+                    )
 
                     for j in range(nBand):
                         fg = numpy.zeros((nBL, self.nStokes, self.nchan), dtype=bool)
@@ -1507,6 +1540,12 @@ try:
                         )
                         tb.putcol("FLAG_CATEGORY", fc.transpose(0, 3, 2, 1), i, nBL)
                         tb.putcol("WEIGHT", wg, i, nBL)
+                        tb.putcol(
+                            "WEIGHT_SPECTRUM",
+                            weight_spectrum_matrix[..., j, :].transpose(0, 2, 1),
+                            i,
+                            nBL,
+                        )
                         tb.putcol("SIGMA", sg, i, nBL)
                         tb.putcol("ANTENNA1", ant1List, i, nBL)
                         tb.putcol("ANTENNA2", ant2List, i, nBL)

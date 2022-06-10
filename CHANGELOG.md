@@ -1,8 +1,8 @@
 master
 ------
-
+* Improve sensitivity application using CASA approach ([MR343](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/343))
+* Add function to write weight_spectrum to Measurement set file  ([MR341](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/341))
 * Refactor the RCAL pipeline: bvis calibration is no longer an option, update the flagger functionality  ([MR336](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/336))
-* Add rascil-rcal docker directory with msconsumer ([MR336](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/336))
 * Bug fix in RASCIL sensitivity app integration time ([MR328](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/328))
 * Add a temporary consumer (mswriter), which is used for testing the connection to visibility receive ([MR332](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/332))
 * If RASCIL data directory does not exist, only fail if check_data_directory(fatal=True), if fatal=False, just log a warning ([MR331](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/331), [MR332](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/332))

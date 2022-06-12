@@ -82,7 +82,7 @@ pygments==2.12.0
     # via
     #   -r requirements-test.in
     #   sphinx
-pylint==2.14.0
+pylint==2.14.1
     # via
     #   -r requirements-test.in
     #   pylint-junit
@@ -120,7 +120,7 @@ pytz==2022.1
     # via babel
 recommonmark==0.7.1
     # via -r requirements-test.in
-requests==2.27.1
+requests==2.28.0
     # via sphinx
 six==1.16.0
     # via

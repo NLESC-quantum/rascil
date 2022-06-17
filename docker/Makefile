@@ -84,7 +84,7 @@ test_rcal:
 	@echo "------------------------------"
 	- echo "Running rcal_consumer tests"
 	echo "cd /consumer_tests; pip install -r rascil-rcal/consumer_test_requirements.txt; make test_consumer" \
-	| docker run --entrypoint /bin/bash -i -v ${PWD}:/consumer_tests test-rcal
+	| docker run --entrypoint /bin/bash -i -v ${PWD}:/consumer_tests ${IMAGE_PREFIX}/rascil-rcal-test
 
 # Singularity tests
 test_base_singularity:

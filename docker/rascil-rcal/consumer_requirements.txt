@@ -1,5 +1,5 @@
 --extra-index-url https://artefact.skao.int/repository/pypi-all/simple
 
 ska-sdp-realtime-receive-core
-ska-sdp-realtime-receive-modules>=2.0.3
+ska-sdp-realtime-receive-modules==2.0.4
 overrides

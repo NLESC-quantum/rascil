@@ -14,13 +14,14 @@ calibration pipeline RCAL. In the SKA, an initial calibration is performed in
 real-time as the visibility data are accumulated. An accurate sky model is
 assumed to be available or a point source model is used.
 
-In rascil_rcal an MeasurementSet is read in and then iterated through in time-order
+In rascil_rcal a MeasurementSet is read in and then iterated through in time-order
 solving for the gains. The gaintables are accumulated into a single gain table that is written
 as an HDF file.
 
 There is also an additional plotting function that plots the gaintable values
 (gain amplitude, phase and residual) over time. If plotting is required,
 please make sure you have the correct path `--plot_dir` set up.
+The output file name will contain the datetime of the first time sample in the data.
 
 RFI Flagger
 +++++++++++
@@ -32,7 +33,8 @@ controlled with the `flag_rfi` argument.
 RASCIL's BlockVisibility object contains a "flags" data array with the same
 dimensions as the visibilities. This array is updated with the results of
 the SKA Processing Function Library
-`RFI Flagger <https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/blob/main/src/ska_sdp_func/rfi_flagger.py>`_.
+`RFI Flagger <https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/blob/main/src/ska_sdp_func/rfi_flagger.py>`_,
+which uses the sum-threshold method for flagging.
 The RFI flagger requires `initial threshold` and `rho` values (both needed
 to provide a list of thresholds used for finding RFI signal in the data), which can
 be set via CLI arguments, though we recommend using the defaults at this stage.

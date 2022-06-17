@@ -1,51 +1,45 @@
 # -*- coding: utf-8 -*-
-
-
 """
-        Performs two tasks:
-            1) Generates a measurement set using the same functionality as the mswriter.
-            this should be indistinguishable and you should be able to use these consumers
-            interchangeably
-            2) Executes a processing pipeline in a subprocess.
-            The processing pipeline can be chosen by adding a parameter to the reception configuration.
+Performs two tasks:
+    1) Generates a measurement set using the same functionality as the mswriter.
+    this should be indistinguishable and you should be able to use these consumers
+    interchangeably
+    2) Executes a processing pipeline in a subprocess.
+    The processing pipeline can be chosen by adding a parameter to the reception configuration.
 
-            config["reception"] = {
-                "method": "spead2_receivers",
-                "receiver_port_start": 42001,
-                "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
-                "rcal_testing_method": "tests.vis_consumer_tests.test_rascil_integrations.rcal_test",
-                "schedblock": SCHED_FILE,
-                "layout": LAYOUT_FILE,
-                "outputfilename": OUTPUT_FILE,
-                "ring_heaps": 128,
-            }
+    config["reception"] = {
+        "method": "spead2_receivers",
+        "receiver_port_start": 42001,
+        "consumer": "rascil.vis_consumer.rcal_consumer.consumer",
+        "rcal_testing_method": "tests.vis_consumer_tests.test_rascil_integrations.rcal_test",
+        "schedblock": SCHED_FILE,
+        "layout": LAYOUT_FILE,
+        "outputfilename": OUTPUT_FILE,
+        "ring_heaps": 128,
+    }
 
-            In the above example the method has been redirected to a test method. So you can
-            put your pipeline anywhere.
+    In the above example the method has been redirected to a test method. So you can
+    put your pipeline anywhere.
 
-            There is a default method in this module called:
+    There is a default method in this module called:
 
-            rcal_pipeline_start(block: BlockVisibilty, Q: multiprocess.Queue = None)
+    rcal_pipeline_start(block: BlockVisibilty, Q: multiprocess.Queue = None)
 
-            You can fill this up with whatever you want,
+    You can fill this up with whatever you want,
 
-        How does this work?
+How does this work?
 
-        Each payload as received by the receiver is put into a VisibilityBucket
-        This class - which is defined in this module is just an intermediate class to combine
-        all the information that will ne needed to create a BlockVisibility
+Each payload as received by the receiver is put into a VisibilityBucket
+This class - which is defined in this module is just an intermediate class to combine
+all the information that will be needed to create a BlockVisibility
 
-        When the VisibilityBucket is full a subprocess is lauunched using multiprocess.Process with
-        the specified processing method as a target and the full BlockVisibiltiy as an argument.
-
-
-
+When the VisibilityBucket is full, a subprocess is launched using multiprocess.Process with
+the specified processing method as a target and the full BlockVisibility as an argument.
 """
 import asyncio
 import concurrent.futures
 import importlib
 import logging
-import multiprocessing
 from configparser import ConfigParser
 from datetime import datetime
 from multiprocessing import Process, Queue
@@ -82,9 +76,12 @@ logger = logging.getLogger(__name__)
 
 def rcal_pipeline_start(block: BlockVisibility, queue=None):
     """
-    THis is the rcal method that is called with a full BlockVisibility
+    This is the rcal method that is called with a full BlockVisibility
     """
     # set up arguments for running RCAL, usually supplied via CLI
+    # TODO: set up should not be invoked everytime a sample is processed by RCAL
+    #   need to refactor and update as part of a future improvement
+    # TODO: we need to supply a skymodel, also as part of the preparation step
     rcal_parser = cli_parser()
     rcal_args = rcal_parser.parse_args(
         [
@@ -93,6 +90,7 @@ def rcal_pipeline_start(block: BlockVisibility, queue=None):
             "--plot_dir",
             "/mnt/data",
             # needed because the output files' root dir is determined based on this
+            # doesn't have to be an existing MeasurementSet
             "--ingest_msname",
             "/mnt/data/tmp.ms",
             "--flag_rfi",
@@ -106,11 +104,12 @@ def rcal_pipeline_start(block: BlockVisibility, queue=None):
 
 class VisibilityBucket(object):
     """
-    Class to hold the visibilities for a single (or more) timestep until the buffers are full. This is needed as in the general case
-    there are multiple input streams - each containing frequency slices (and perhaps even baseline slices)
-    So we need to buffer them up.
-    TODO: WHat to do if the streams arrive aout of order .... say the next time stamp arrives before the next is full
-
+    Class to hold the visibilities for a single (or more) timestep until
+    the buffers are full. This is needed as in the general case there are
+    multiple input streams - each containing frequency slices
+    (and perhaps even baseline slices). So we need to buffer them up.
+    TODO: WHat to do if the streams arrive out of order ....
+        say the next time stamp arrives before the previous is full
     """
 
     def __init__(self, model: SchedTM, time_steps=1):
@@ -131,7 +130,7 @@ class VisibilityBucket(object):
             self._model.num_channels,
             self._model.num_pols,
         )
-        # howmany visibilities are required to fill the bucket
+        # how many visibilities are required to fill the bucket
         self._full_count = (
             self._model.num_baselines * self._model.num_channels * self._model.num_pols
         )
@@ -163,8 +162,8 @@ class VisibilityBucket(object):
 
     def add_uvw(self, uvw):
         """
-        Add the uvw for this buffer - needs to only be done once as all the frequency
-        channels have the same UVW
+        Add the uvw for this buffer - needs to only be done
+        once as all the frequency channels have the same UVW
 
         :param uvw: numpy array [baselines,[u,v,w]]
         """
@@ -173,10 +172,10 @@ class VisibilityBucket(object):
 
     def add_visibilities(self, vis_slice, start_chan, num_chan):
         """
-        Adds a slice to the bucket
-        visibilities come from the payload - but they are in the wrong order
-        THe ICD stacks then channels in freq x baseline x pol order - but the measurement
-        sets want baseline x freq x pol - so we need to moveaxis
+        Adds a slice to the bucket.
+        Visibilities come from the payload - but they are in the wrong order
+        The ICD stacks then channels in freq x baseline x pol order - but the measurement
+        sets want baseline x freq x pol - so we need to move axis
 
         """
         gauge_shape = (self._model.num_baselines, num_chan, self._model.num_pols)
@@ -194,7 +193,7 @@ class VisibilityBucket(object):
         if self._gauge[self._current_time_step, :, start_chan:stop_chan].sum() != 0:
             raise RuntimeError(
                 f"Trying to add a slice that is already present: "
-                f"current gauge is reading {self._gauge[self._current_time_step,:,:,start_chan:stop_chan].sum()}"
+                f"current gauge is reading {self._gauge[self._current_time_step,:,:,start_chan:stop_chan].sum()} "
                 f"startchannel {start_chan} stopchannel {stop_chan}"
             )
 
@@ -211,7 +210,7 @@ class VisibilityBucket(object):
 
     def empty(self):
         """
-        Empty bucket we do this after we have filled the BlockVisibiltiy
+        Empty bucket. We do this after we have filled the BlockVisibility
         """
         self._gauge.fill(0.0)
         self._visibilities.fill(complex(0.0))
@@ -307,14 +306,11 @@ class consumer(IConsumer):
         self.received_payloads = 0
         self._command_executor = None
         self.mswriter = None
-        """
-        Intermediate storage bucket
-        """
-        self._input_buffer = VisibilityBucket(self.tm)
-        """
-        RCAL subprocess for the actual work
-        """
 
+        # Intermediate storage bucket
+        self._input_buffer = VisibilityBucket(self.tm)
+
+        # RCAL subprocess for the actual work
         self._rcal_process = None
         self._rcal_process_q = Queue()
 
@@ -366,11 +362,9 @@ class consumer(IConsumer):
 
         if self._input_buffer.is_full():
 
-            full_block_vis = self._fill_Block_Visibility(self.tm, self._input_buffer)
-            """ 
-            start the sub-process for this buffer
-            """
+            full_block_vis = self._fill_block_visibility(self.tm, self._input_buffer)
 
+            # start the sub-process for this buffer
             if self._rcal_process is not None:
                 """
                 And go!!!- there is another buffer to fill - using some process parallelism here
@@ -418,7 +412,7 @@ class consumer(IConsumer):
 
         self._rcal_process.join()
 
-    def _init_Configuration(self, model: SchedTM) -> Configuration:
+    def _init_configuration(self, model: SchedTM) -> Configuration:
 
         """Simple method to initialise the Configuration object describing data for processing
 
@@ -493,7 +487,7 @@ class consumer(IConsumer):
             vp_type=vp_type,
         )
 
-    def _fill_Block_Visibility(
+    def _fill_block_visibility(
         self, model: SchedTM, buffer: VisibilityBucket
     ) -> BlockVisibility:
         """
@@ -513,7 +507,7 @@ class consumer(IConsumer):
         target_ra = Angle(ra_rad * units.rad)
         target_dec = Angle(dec_rad * units.rad)
         phasecentre = SkyCoord(ra=target_ra, dec=target_dec)
-        configuration = self._init_Configuration(model)
+        configuration = self._init_configuration(model)
 
         """
         
@@ -558,7 +552,7 @@ class consumer(IConsumer):
 
         """
         Writes a payload into a memory using the TM as the source of metadata
-        THis is the workhorse that fills the VisibilityBucket.
+        This is the workhorse that fills the VisibilityBucket.
 
         FIXME: (steve-ord) the Visibility bucket can hold multiple timesteps implement here
 

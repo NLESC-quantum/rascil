@@ -70,7 +70,7 @@ def get_receiver(loop):
         "method": "spead2_receivers",
         "receiver_port_start": 42001,
         "consumer": "vis_consumer.rcal_consumer.consumer",
-        "rcal_testing_method": "vis_consumer_tests.test_rascil_integrations.rcal_test",
+        "rcal_testing_method": "vis_consumer_tests.test_rcal_consumer.rcal_test",
         "schedblock": SCHED_FILE,
         "layout": LAYOUT_FILE,
         "outputfilename": OUTPUT_FILE,

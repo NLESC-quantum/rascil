@@ -19,10 +19,12 @@ Imaging
 
    apps/rascil_imager.rst
    apps/rascil_sensitivity.rst
+   apps/rascil_rcal.rst
    apps/rascil_vis_ms.rst
    apps/rascil_advise.rst
    apps/rascil_image_check.rst
    apps/imaging_qa.rst
+   apps/performance_analysis.rst
 
 
 Other

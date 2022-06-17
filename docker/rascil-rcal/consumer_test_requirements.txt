@@ -3,4 +3,4 @@
 pytest
 pytest-bdd
 ska-sdp-cbf-emulator==2.0.2
-ska-sdp-realtime-receive-modules>=2.0.3
+ska-sdp-realtime-receive-modules==2.0.4

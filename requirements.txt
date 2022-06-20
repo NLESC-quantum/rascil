@@ -42,7 +42,7 @@ bleach==5.0.0
     # via nbconvert
 bokeh==2.4.3
     # via -r requirements.in
-certifi==2022.5.18.1
+certifi==2022.6.15
     # via requests
 cffi==1.15.0
     # via
@@ -112,7 +112,7 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-ipykernel==6.13.1
+ipykernel==6.15.0
     # via
     #   ipywidgets
     #   jupyter
@@ -181,7 +181,7 @@ jupyterlab-pygments==0.2.2
     # via nbconvert
 jupyterlab-widgets==1.1.0
     # via ipywidgets
-kiwisolver==1.4.2
+kiwisolver==1.4.3
     # via matplotlib
 locket==1.0.0
     # via
@@ -345,6 +345,7 @@ pyyaml==6.0
     #   jupyter-nbextensions-configurator
 pyzmq==23.1.0
     # via
+    #   ipykernel
     #   jupyter-client
     #   notebook
     #   qtconsole
@@ -384,7 +385,7 @@ sortedcontainers==2.4.0
     # via distributed
 soupsieve==2.3.2.post1
     # via beautifulsoup4
-stack-data==0.2.0
+stack-data==0.3.0
     # via ipython
 tabulate==0.8.9
     # via -r requirements.in
@@ -410,7 +411,7 @@ tornado==6.1
     #   jupyter-nbextensions-configurator
     #   notebook
     #   terminado
-traitlets==5.2.2.post1
+traitlets==5.3.0
     # via
     #   ipykernel
     #   ipython

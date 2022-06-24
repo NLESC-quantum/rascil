@@ -36,7 +36,6 @@ all the information that will be needed to create a BlockVisibility
 When the VisibilityBucket is full, a subprocess is launched using multiprocess.Process with
 the specified processing method as a target and the full BlockVisibility as an argument.
 """
-import asyncio
 import concurrent.futures
 import importlib
 import logging
@@ -289,9 +288,6 @@ class consumer(IConsumer):
         self.outputfilename: str = config["reception"].get(
             "outputfilename", "recv-vis.ms"
         )
-        self.max_payloads: Optional[int] = config["reception"].getoptint(
-            "max_payloads", None
-        )
         self._command_template: Optional[List[str]] = config["reception"].getoptlist(
             "command_template", None
         )
@@ -305,7 +301,6 @@ class consumer(IConsumer):
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.received_payloads = 0
         self._command_executor = None
-        self.mswriter = None
 
         # Intermediate storage bucket
         self._input_buffer = VisibilityBucket(self.tm)
@@ -329,6 +324,9 @@ class consumer(IConsumer):
             self._command_executor = CommandExecutor(self._command_template)
 
     def _generate_output_path(self) -> str:
+        """
+        TODO: use this to generate RCAL output filenames
+        """
         if self._timestamp_output:
             # UTC Date Time Format
             p = Path(self.outputfilename)
@@ -339,26 +337,8 @@ class consumer(IConsumer):
     @overrides
     async def consume(self, payload):
         """Entry point invoked by the receiver each time a heap arrives"""
-        if self.mswriter is None:
-            output_path = self._generate_output_path()
-            logger.info(f"Writing to {output_path}")
-            self.mswriter = msutils.MSWriter(output_path, self.tm)
-
-        await asyncio.gather(
-            self.mswriter.write_payload(payload, self.tm, executor=self.executor),
-            self._buffer_payload(payload),
-        )
-
+        await self._buffer_payload(payload)
         self.received_payloads += 1
-
-        # Write output ms if max payloads reached
-        if (
-            self.max_payloads is not None
-            and self.received_payloads >= self.max_payloads
-        ):
-            logger.info("Max payloads received")
-            self._finish_writing()
-            self.received_payloads = 0
 
         if self._input_buffer.is_full():
 
@@ -387,32 +367,15 @@ class consumer(IConsumer):
             self._rcal_process.start()
             self._input_buffer.empty()
 
-    def _finish_writing(self):
-        if self.mswriter is None:
-            raise Exception("mswriter doesn't exist")
-        else:
-            output_path = self.mswriter.ms.name
-            self.mswriter.close()
-            self.mswriter = None
-            logger.info("Finished writing %s", output_path)
-            if self._command_executor:
-                self._command_executor.schedule(output_path)
-                # if writing to the same output file, wait until the
-                # command executor finishes before overwriting. Timestamp
-                # output option does not perform overwriting.
-                if not self._timestamp_output:
-                    self._command_executor.stop()
-
     @overrides
     def stop(self):
-        if self.mswriter is not None:
-            self._finish_writing()
         if self._command_executor is not None:
             self._command_executor.stop()
 
         self._rcal_process.join()
 
-    def _init_configuration(self, model: SchedTM) -> Configuration:
+    @staticmethod
+    def _init_configuration(model: SchedTM) -> Configuration:
 
         """Simple method to initialise the Configuration object describing data for processing
 

@@ -1,5 +1,6 @@
 import asyncio
 import os
+import subprocess
 import tempfile
 import time
 import unittest
@@ -12,6 +13,7 @@ from realtime.receive.core import ms_asserter, sched_tm
 from realtime.receive.core.config import create_config_parser
 from realtime.receive.modules import receivers
 
+from rascil.apps.rascil_rcal import cli_parser, rcal_simulator
 from rascil.data_models.memory_data_models import BlockVisibility
 
 try:
@@ -34,8 +36,26 @@ NUM_STREAMS = 96
 CHAN_PER_STREAM = 144
 
 
-def rcal_test(block: BlockVisibility):
-    exit(0)
+def rcal_test(block: BlockVisibility, queue=None):
+    rcal_parser = cli_parser()
+    rcal_args = rcal_parser.parse_args(
+        [
+            "--do_plotting",
+            "True",
+            "--plot_dir",
+            ".",
+            # needed because the output files' root dir is determined based on this
+            # doesn't have to be an existing MeasurementSet
+            "--ingest_msname",
+            "/tmp/tmp.ms",
+            "--flag_rfi",
+            "False",
+        ]
+    )
+
+    if queue:
+        queue.put("working")
+        rcal_simulator(block, rcal_args)
 
 
 @pytest.fixture(name="loop")
@@ -122,6 +142,7 @@ def send_data(rcalconsumer, loop):
 def compare_measurement_sets():
     asserter = type("asserter", (ms_asserter.MSAsserter, unittest.TestCase), {})()
     asserter.assert_ms_data_equal(INPUT_FILE, OUTPUT_FILE)
+    subprocess.run("ls -a")
 
 
 @then("It is received without loss")

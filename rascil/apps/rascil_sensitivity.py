@@ -422,9 +422,13 @@ def robustness_taper_scenario(
             [nrows * nbaselines, nvchan, nvpol]
         ).T
 
+        nd = bv.blockvisibility_acc.nvis
+
         sum_weight = 0.0
         sum_grid_weight = 0.0
         sum_grid2_over_weight = 0.0
+
+        sum_grid2 = 0.0
         for pol in range(nvpol):
             for vchan in range(args.nchan):
                 inatwt = 2 * weight[pol, vchan, :][weight[pol, vchan] > 0]
@@ -432,6 +436,8 @@ def robustness_taper_scenario(
                 sum_weight += numpy.sum(inatwt)
                 sum_grid_weight += numpy.sum(igridwt)
                 sum_grid2_over_weight += numpy.sum(igridwt**2 / inatwt)
+                sum_grid2 += numpy.sum(igridwt**2)
+
         pss_casa = numpy.sqrt(sum_grid2_over_weight) / sum_grid_weight
         natss = 1.0 / numpy.sqrt(sum_weight)
         reltonat = pss_casa / natss
@@ -470,12 +476,19 @@ def robustness_taper_scenario(
     log.info(f"\tTime-Bandwidth product (tb) = {tb:.4g} (Hz.s)")
 
     # Point source sensitivity
-    # Equation 6.50 of Thompson, Moran, and Swenson
+    # Equation 6.62 of Thompson, Moran, and Swenson
     d = args.diameter
     area = numpy.pi * (d / 2.0) ** 2
     efficiency = args.efficiency
+
     pss = (
-        numpy.sqrt(2.0) * 1e26 * k_B * args.tsys / (area * efficiency * numpy.sqrt(tb))
+        numpy.sqrt(sum_grid2 / nd)
+        / (sum_grid_weight / nd)
+        * numpy.sqrt(2.0)
+        * 1e26
+        * k_B
+        * args.tsys
+        / (area * efficiency * numpy.sqrt(sum_weight))
     )
 
     results["pss"] = pss

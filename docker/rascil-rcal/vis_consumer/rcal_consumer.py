@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Performs two tasks:
-    1) Generates a measurement set using the same functionality as the mswriter.
-    this should be indistinguishable and you should be able to use these consumers
-    interchangeably
-    2) Executes a processing pipeline in a subprocess.
+Task it performs:
+    Executes a processing pipeline in a subprocess.
     The processing pipeline can be chosen by adding a parameter to the reception configuration.
 
     config["reception"] = {
@@ -34,7 +31,7 @@ This class - which is defined in this module is just an intermediate class to co
 all the information that will be needed to create a BlockVisibility
 
 When the VisibilityBucket is full, a subprocess is launched using multiprocess.Process with
-the specified processing method as a target and the full BlockVisibility as an argument.
+the specified processing method (i.e. RCAL) as a target and the full BlockVisibility as an argument.
 """
 import concurrent.futures
 import importlib
@@ -538,10 +535,11 @@ class consumer(IConsumer):
         except ValueError:
             raise ValueError(f"No model time to match {time}")
 
-        assert len(data.uu) == self.tm.num_baselines, (
-            f"Miss-match between baselines in heap {self.tm.num_baselines} "
-            f"and uvw vector {len(data.uu)}"
-        )
+        if not len(data.uu) == self.tm.num_baselines:
+            raise ValueError(
+                f"Miss-match between baselines in heap {self.tm.num_baselines} "
+                f"and uvw vector {len(data.uu)}"
+            )
 
         vis = payload.visibilities
         first_chan = payload.channel_id

@@ -124,7 +124,7 @@ test_rcal_singularity:
 	@echo "NOT IMPLEMENTED"
 
 test_consumer:
-	HOME=`pwd` py.test rascil-rcal/vis_consumer_tests --verbose
+	HOME=`pwd` py.test -p no:logging -s rascil-rcal/vis_consumer_tests --verbose
 
 lint:
 # outputs linting.xml

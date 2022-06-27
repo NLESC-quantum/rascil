@@ -7,6 +7,6 @@ Feature:
 		And A receiver can be configured with a RCAL consumer
 		And A scheduling block is available
 		When the data is sent to the RCAL consumer
-		Then The same data is received and written
+		Then RCAL produces the right number of png and hdf files
 
 

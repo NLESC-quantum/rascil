@@ -1,5 +1,6 @@
 0.7.0
 ------
+* Implement Sensitivity Calculation Using Eq.6.62 in Thompson's book ([MR362](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/362))
 * Improve sensitivity application using CASA approach ([MR343](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/343))
 * Add function to write weight_spectrum to Measurement set file  ([MR341](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/341))
 * Refactor the RCAL pipeline: bvis calibration is no longer an option, update the flagger functionality  ([MR336](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/336))

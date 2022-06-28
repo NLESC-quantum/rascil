@@ -422,7 +422,7 @@ def robustness_taper_scenario(
             [nrows * nbaselines, nvchan, nvpol]
         ).T
 
-        nd = bv.blockvisibility_acc.nvis
+        nd = bv.blockvisibility_acc.nvis  # nd: number of visibilities
 
         sum_weight = 0.0
         sum_grid_weight = 0.0

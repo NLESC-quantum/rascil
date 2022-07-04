@@ -1,6 +1,6 @@
 ARG IMAGE_PREFIX
 
-FROM ${IMAGE_PREFIX}/rascil-base-test:latest
+FROM ${IMAGE_PREFIX}/rascil-base:latest
 
 LABEL author="SKA RASCIL Developers" \
       description="SKA Telescope RASCIL realtime-calibration image" \

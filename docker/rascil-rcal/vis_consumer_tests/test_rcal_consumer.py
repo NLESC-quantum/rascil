@@ -134,9 +134,7 @@ def send_data(rcalconsumer, loop):
     async def run():
 
         tasks = [asyncio.create_task(coro) for coro in (sending, rcalconsumer.run())]
-        print("TASKS:", tasks)
         done, waiting = await asyncio.wait(tasks, timeout=60)
-        print("DONE: ", done)
         # TODO: this assertion fails, but reason is not understood; asyncio-related
         # assert len(done) == len(tasks)
         # assert not waiting

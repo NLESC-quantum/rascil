@@ -9,16 +9,16 @@ pull_all:
 
 build_all_latest:
 	cd rascil-base; make build; make tag_latest
-	#cd rascil-full; make build; make tag_latest
-	#cd rascil-notebook; make build; make tag_latest
-	#cd rascil-imaging-qa; make build; make tag_latest
+	cd rascil-full; make build; make tag_latest
+	cd rascil-notebook; make build; make tag_latest
+	cd rascil-imaging-qa; make build; make tag_latest
 	cd rascil-rcal; make build; make tag_latest
 
 push_all_latest:
 	cd rascil-base; make tag_latest; make push_latest
-	#cd rascil-full; make tag_latest; make push_latest
-	#cd rascil-notebook; make tag_latest; make push_latest
-	#cd rascil-imaging-qa; make tag_latest; make push_latest
+	cd rascil-full; make tag_latest; make push_latest
+	cd rascil-notebook; make tag_latest; make push_latest
+	cd rascil-imaging-qa; make tag_latest; make push_latest
 	cd rascil-rcal; make tag_latest; make push_latest
 
 push_all_release:
@@ -84,7 +84,7 @@ test_rcal:
 	@echo "------------------------------"
 	- echo "Running rcal_consumer tests"
 	echo "cd /consumer_tests; pip install -r rascil-rcal/consumer_test_requirements.txt; make test_consumer" \
-	| docker run --entrypoint /bin/bash -i -v ${PWD}:/consumer_tests ${IMAGE_PREFIX}/rascil-rcal-test
+	| docker run --entrypoint /bin/bash -i -v ${PWD}:/consumer_tests ${IMAGE_PREFIX}/rascil-rcal
 
 # Singularity tests
 test_base_singularity:

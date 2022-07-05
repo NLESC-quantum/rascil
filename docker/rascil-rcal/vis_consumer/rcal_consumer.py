@@ -72,7 +72,12 @@ logger = logging.getLogger(__name__)
 
 def rcal_pipeline_start(block: BlockVisibility, queue=None):
     """
-    This is the rcal method that is called with a full BlockVisibility
+    This is the rcal method that is called with a full BlockVisibility.
+    This function is called within multiprocessing.Process, which
+    puts tasks into a queue.
+
+    :param block: BlockVisibility object
+    :param queue: multiprocessing.Queue object
     """
     # set up arguments for running RCAL, usually supplied via CLI
     # TODO: set up should not be invoked everytime a sample is processed by RCAL
@@ -373,20 +378,21 @@ class consumer(IConsumer):
 
     @staticmethod
     def _init_configuration(model: SchedTM) -> Configuration:
+        """
+        Simple method to initialise the Configuration object describing data for processing
 
-        """Simple method to initialise the Configuration object describing data for processing
-
-        name: Name of configuration e.g. 'LOWR3'
-        location: Location of array as an astropy EarthLocation
-        names: Names of the dishes/stations
-        xyz: Geocentric coordinates of dishes/stations
-        mount: Mount types of dishes/stations 'altaz' | 'xy' | 'equatorial'
-        frame: Reference frame of locations
-        receptor_frame: Receptor frame
-        diameter: Diameters of dishes/stations (m)
-        offset: Axis offset (m)
-        stations: Identifiers of the dishes/stations
-        vp_type: Type of voltage pattern (string)
+        Data needed to initialize the Configuration object:
+            name: Name of configuration e.g. 'LOWR3'
+            location: Location of array as an astropy EarthLocation
+            names: Names of the dishes/stations
+            xyz: Geocentric coordinates of dishes/stations
+            mount: Mount types of dishes/stations 'altaz' | 'xy' | 'equatorial'
+            frame: Reference frame of locations
+            receptor_frame: Receptor frame
+            diameter: Diameters of dishes/stations (m)
+            offset: Axis offset (m)
+            stations: Identifiers of the dishes/stations
+            vp_type: Type of voltage pattern (string)
         """
         antennas = model.get_antennas()
         """

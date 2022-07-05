@@ -79,7 +79,12 @@ test_imaging_qa:
 	docker run -i ${IMAGE_PREFIX}/rascil-imaging-qa /bin/bash -e
 
 test_rcal:
-	@echo "NOT IMPLEMENTED"
+	@echo "------------------------------"
+	@echo "| TESTING RASCIL-RCAL DOCKER |"
+	@echo "------------------------------"
+	- echo "Running rcal_consumer tests"
+	echo "cd /consumer_tests; pip install -r rascil-rcal/consumer_test_requirements.txt; make test_consumer" \
+	| docker run --entrypoint /bin/bash -i -v ${PWD}:/consumer_tests ${IMAGE_PREFIX}/rascil-rcal
 
 # Singularity tests
 test_base_singularity:
@@ -117,6 +122,9 @@ test_imaging_qa_singularity:
 
 test_rcal_singularity:
 	@echo "NOT IMPLEMENTED"
+
+test_consumer:
+	HOME=`pwd` py.test -p no:logging -s rascil-rcal/vis_consumer_tests --verbose
 
 lint:
 # outputs linting.xml

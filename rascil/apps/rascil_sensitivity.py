@@ -431,12 +431,25 @@ def robustness_taper_scenario(
         sum_grid2 = 0.0
         for pol in range(nvpol):
             for vchan in range(args.nchan):
-                inatwt = 2 * weight[pol, vchan, :][weight[pol, vchan] > 0]
-                igridwt = 2 * grid_weight[pol, vchan, :][grid_weight[pol, vchan] > 0]
-                sum_weight += numpy.sum(inatwt) / 2
-                sum_grid_weight += numpy.sum(igridwt)
-                sum_grid2_over_weight += numpy.sum(igridwt**2 / inatwt)
-                sum_grid2 += numpy.sum(igridwt**2)
+                inatwt2 = weight[pol, vchan, :].copy()
+                inatwt2[weight[pol, vchan] > 0] = 2 * inatwt2[weight[pol, vchan] > 0]
+                inatwt2[weight[pol, vchan] <= 0] = 0.0
+
+                igridwt2 = grid_weight[pol, vchan, :].copy()
+                igridwt2[grid_weight[pol, vchan] > 0] = (
+                    2 * igridwt2[grid_weight[pol, vchan] > 0]
+                )
+                igridwt2[grid_weight[pol, vchan] <= 0] = 0.0
+
+                # skip nan and inf value
+                igridwt22_over_inatw2 = numpy.nan_to_num(
+                    igridwt2**2 / inatwt2, nan=0.0, posinf=0.0, neginf=0.0
+                )
+                sum_grid2_over_weight += numpy.sum(igridwt22_over_inatw2)
+
+                sum_weight += numpy.sum(inatwt2) / 2
+                sum_grid_weight += numpy.sum(igridwt2)
+                sum_grid2 += numpy.sum(igridwt2**2)
 
         pss_casa = numpy.sqrt(sum_grid2_over_weight) / sum_grid_weight
         natss = 1.0 / numpy.sqrt(sum_weight)

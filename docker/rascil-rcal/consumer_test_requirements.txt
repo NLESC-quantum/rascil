@@ -1,0 +1,6 @@
+--extra-index-url https://artefact.skao.int/repository/pypi-all/simple
+
+pytest
+pytest-bdd
+ska-sdp-cbf-emulator==2.0.2
+ska-sdp-realtime-receive-modules==2.0.4

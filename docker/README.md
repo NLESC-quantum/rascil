@@ -28,7 +28,7 @@ RASCIL docker image in the CAR. Example::
 
     artefact.skao.int/rascil-base:0.6.0
 
-Upon every merge to the master branch, docker images with the `latest` tagged
+Upon every merge to the master branch, docker images with the `latest` tag
 are published to the GitLab Registry. Note that this tage is always updated
 with the latest code on master, hence it changes very often::
 
@@ -46,13 +46,20 @@ Other useful make commands :
 
 - `push` pushes the images to the docker registry 
 - `push_latest` pushes the `:latest` tag
-- `push_version` pushes a version tag without the git SHA 
-  
+- `push_version` pushes a version tag without the git SHA
+
+Note, the above make commands use environment variables to
+determine the image name and repository. For a full list and
+defaults, please consult the 
+[Makefile](https://gitlab.com/ska-telescope/external/rascil/-/blob/master/docker/make/Makefile)
+in `docker/make/`.
+
 Useful make commands that can be run from the `docker` directory:
 
 - `build_all_latest` builds, and tags as latest, all the images
 - `rm_all` removes all the images
 - `ls_all` lists all the images
+
 
 ## Test the images
 
@@ -216,16 +223,13 @@ This workflow can be deployed in the
 [SDP](https://developer.skao.int/projects/ska-sdp-integration/en/latest/index.html) system. 
 It receives data packets from the Correlator and Beam Former (CBF) or its emulator. 
 
-A specific rcal-consumer is being developed at the moment, which will 
-format the received data packets into objects that can be passed into 
-a BlockVisibility. The BlockVisibility then will be consumed by RCAL 
-to produce gain solutions. This is work in progress.
-
-The current version of the docker image contains an example consumer, 
-which is the exact copy of the 
-[mswriter](https://gitlab.com/ska-telescope/sdp/ska-sdp-realtime-receive-modules/-/blob/2.0.3/realtime/receive/modules/consumers/mswriter.py), 
-which is used to write the data into a MeasurementSet. This will be 
-replaced with the rcal-consumer when ready.
+A prototype rcal-consumer has been added to the docker image.
+It formats the received data packets into objects that can be passed into 
+a BlockVisibilityBucket. A BlockVisibilityBucket is filled up until full,
+i.e. when it received all frequency channel data for a single time sample.
+The resulting BlockVisibility object is then passed to 
+[RCAL](https://ska-telescope.gitlab.io/external/rascil/apps/rascil_rcal.html), 
+which processes the data and produces the resulting gain solutions (and optional png images).
 
 The docker image is available from the Central Artifact Repository 
 (tagged with the release version number)::

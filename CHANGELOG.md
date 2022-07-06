@@ -1,5 +1,9 @@
 master
 ------
+* Add rcal_consumer as part of the rascil-rcal docker image (it is independent of the rest of RASCIL) ([MR334](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/334))
+
+0.7.0
+-----
 * Implement Sensitivity Calculation Using Eq.6.62 in Thompson's book ([MR362](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/362))
 * Improve sensitivity application using CASA approach ([MR343](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/343))
 * Add function to write weight_spectrum to Measurement set file  ([MR341](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/341))
@@ -11,7 +15,7 @@ master
 * Bug fix in flux computation in create_test_image_from_s3 (rascil.processing_components.simulation.testing_support) ([MR325](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/325))
 * Add Kubernetes cluster tests and start publishing docker images with latest tag in GitLab registry ([MR324](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/324))
 * Update rascil.processing_components.skycomponent.operations.find_skycomponents to use photutils==1.4.0 ([MR322](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/322))
-* Bug fix for exporting measurement set file with multi-block visibility ([MR315](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/315)
+* Bug fix for exporting measurement set file with multi-block visibility ([MR315](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/315))
 
 0.6.0
 -----

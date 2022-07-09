@@ -413,6 +413,13 @@ def robustness_taper_scenario(
     # CASA approach
     # https://casa.nrao.edu/casadocs/casa-6.1.0/imaging/synthesis-imaging/data-weighting
     bvis_list = rsexecute.compute(bvis_list, sync=True)
+
+    sum_weight = 0.0
+    sum_grid_weight = 0.0
+    sum_grid2_over_weight = 0.0
+    sum_grid2 = 0.0
+
+    # Only one channel per bvis
     for bv in bvis_list:
         nrows, nbaselines, nvchan, nvpol = bv.vis.shape
         weight = bv.blockvisibility_acc.flagged_weight.reshape(
@@ -424,13 +431,9 @@ def robustness_taper_scenario(
 
         nd = bv.blockvisibility_acc.nvis  # nd: number of visibilities
 
-        sum_weight = 0.0
-        sum_grid_weight = 0.0
-        sum_grid2_over_weight = 0.0
-
-        sum_grid2 = 0.0
         for pol in range(nvpol):
-            for vchan in range(args.nchan):
+            for vchan in range(bv.blockvisibility_acc.nchan):
+                # keep the inatwt2 and igridwt2 in same shape
                 inatwt2 = weight[pol, vchan, :].copy()
                 inatwt2[weight[pol, vchan] > 0] = 2 * inatwt2[weight[pol, vchan] > 0]
                 inatwt2[weight[pol, vchan] <= 0] = 0.0
@@ -441,7 +444,7 @@ def robustness_taper_scenario(
                 )
                 igridwt2[grid_weight[pol, vchan] <= 0] = 0.0
 
-                # skip nan and inf value
+                # ignore nan and inf value
                 igridwt22_over_inatw2 = numpy.nan_to_num(
                     igridwt2**2 / inatwt2, nan=0.0, posinf=0.0, neginf=0.0
                 )
@@ -451,9 +454,9 @@ def robustness_taper_scenario(
                 sum_grid_weight += numpy.sum(igridwt2)
                 sum_grid2 += numpy.sum(igridwt2**2)
 
-        pss_casa = numpy.sqrt(sum_grid2_over_weight) / sum_grid_weight
-        natss = 1.0 / numpy.sqrt(sum_weight)
-        reltonat = pss_casa / natss
+    pss_casa = numpy.sqrt(sum_grid2_over_weight) / sum_grid_weight
+    natss = 1.0 / numpy.sqrt(sum_weight)
+    reltonat = pss_casa / natss
 
     # Now we can make the PSF.
     psf_list = invert_list_rsexecute_workflow(

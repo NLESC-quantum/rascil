@@ -8,8 +8,6 @@ argon2-cffi==21.3.0
     # via notebook
 argon2-cffi-bindings==21.2.0
     # via argon2-cffi
-argparse==1.4.0
-    # via python-casacore
 asciitree==0.3.3
     # via zarr
 astroplan==0.8
@@ -62,23 +60,23 @@ cloudpickle==2.1.0
     #   distributed
 configparser==5.2.0
     # via -r requirements.in
-cryptography==37.0.2
+cryptography==37.0.4
     # via paramiko
 cycler==0.11.0
     # via matplotlib
-dask==2022.6.1
+dask==2022.7.0
     # via
     #   -r requirements.in
     #   distributed
 dask-memusage==1.1
     # via -r requirements.in
-debugpy==1.6.0
+debugpy==1.6.2
     # via ipykernel
 decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2022.6.1
+distributed==2022.7.0
     # via
     #   -r requirements.in
     #   dask-memusage
@@ -94,12 +92,10 @@ fasteners==0.17.3
     # via zarr
 fastjsonschema==2.15.3
     # via nbformat
-fonttools==4.33.3
+fonttools==4.34.4
     # via matplotlib
 fsspec==2022.5.0
     # via dask
-future==0.18.2
-    # via python-casacore
 gitdb==4.0.9
     # via gitpython
 gitpython==3.1.27
@@ -112,7 +108,7 @@ heapdict==1.0.1
     # via zict
 idna==3.3
     # via requests
-ipykernel==6.15.0
+ipykernel==6.15.1
     # via
     #   ipywidgets
     #   jupyter
@@ -141,7 +137,7 @@ jinja2==3.1.2
     #   distributed
     #   nbconvert
     #   notebook
-jsonschema==4.6.1
+jsonschema==4.6.2
     # via nbformat
 jupyter==1.0.0
     # via -r requirements.in
@@ -154,13 +150,13 @@ jupyter-client==7.3.4
     #   qtconsole
 jupyter-console==6.4.4
     # via jupyter
-jupyter-contrib-core==0.3.3
+jupyter-contrib-core==0.4.0
     # via
     #   jupyter-contrib-nbextensions
     #   jupyter-nbextensions-configurator
 jupyter-contrib-nbextensions==0.5.1
     # via -r requirements.in
-jupyter-core==4.10.0
+jupyter-core==4.11.1
     # via
     #   jupyter-client
     #   jupyter-contrib-core
@@ -234,7 +230,7 @@ notebook==6.4.12
     #   widgetsnbextension
 numcodecs==0.10.0
     # via zarr
-numpy==1.23.0
+numpy==1.23.1
     # via
     #   -r requirements.in
     #   astroplan
@@ -321,7 +317,7 @@ pyparsing==3.0.9
     #   packaging
 pyrsistent==0.18.1
     # via jsonschema
-python-casacore==3.4.0
+python-casacore==3.5.0
     # via -r requirements.in
 python-dateutil==2.8.2
     # via
@@ -394,7 +390,7 @@ terminado==0.15.0
     # via notebook
 tinycss2==1.1.1
     # via nbconvert
-toolz==0.11.2
+toolz==0.12.0
     # via
     #   dask
     #   distributed
@@ -431,7 +427,7 @@ typing-extensions==4.3.0
     # via
     #   bokeh
     #   numcodecs
-urllib3==1.26.9
+urllib3==1.26.10
     # via
     #   distributed
     #   requests

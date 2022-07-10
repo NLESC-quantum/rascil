@@ -6,7 +6,7 @@
 #
 alabaster==0.7.12
     # via sphinx
-astroid==2.11.6
+astroid==2.11.7
     # via pylint
 attrs==21.4.0
     # via pytest
@@ -110,7 +110,7 @@ pytest-json-report==1.5.0
     # via -r requirements-test.in
 pytest-metadata==2.0.1
     # via pytest-json-report
-pytest-pylint==0.17.0
+pytest-pylint==0.18.0
     # via -r requirements-test.in
 pytest-xdist==2.5.0
     # via -r requirements-test.in
@@ -162,16 +162,16 @@ tomli==2.0.1
     #   coverage
     #   pylint
     #   pytest
-tomlkit==0.11.0
+tomlkit==0.11.1
     # via pylint
-tornado==6.1
+tornado==6.2
     # via livereload
 typing-extensions==4.3.0
     # via
     #   astroid
     #   black
     #   pylint
-urllib3==1.26.9
+urllib3==1.26.10
     # via requests
 wrapt==1.14.1
     # via astroid

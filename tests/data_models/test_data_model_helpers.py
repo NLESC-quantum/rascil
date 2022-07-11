@@ -211,7 +211,7 @@ class TestDataModelHelpers(unittest.TestCase):
             npixel=256,
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
-        im["pixels"][...] = 1.0
+        im["pixels"].data[...] = 1.0
         export_image_to_hdf5(
             im, "%s/test_data_model_helpers_image.hdf" % self.results_dir
         )
@@ -229,7 +229,7 @@ class TestDataModelHelpers(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         rand = numpy.random.random(im["pixels"].shape)
-        im["pixels"][...] = rand
+        im["pixels"].data[...] = rand
         if self.verbose:
             print(im)
         import os

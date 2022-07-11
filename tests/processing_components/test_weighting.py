@@ -1,5 +1,7 @@
 """ Unit tests for visibility weighting
 """
+# pylint: disable=bad-string-format-type
+
 import logging
 import os
 import unittest

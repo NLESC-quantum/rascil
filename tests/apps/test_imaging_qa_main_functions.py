@@ -1,6 +1,7 @@
 """Unit tests for individual functions in imaging_qa_main.py
 
 """
+# pylint: disable=bad-string-format-type
 
 import logging
 import shutil

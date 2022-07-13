@@ -128,6 +128,8 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
     # Test using DFT from PFL
     def test_dft_visibility_proc_func(self):
 
+        self.init(ntimes=2, nchan=2, ncomp=2)
+        vpol = PolarisationFrame("linear")
         vis = create_blockvisibility(
             self.lowcore,
             self.times,
@@ -135,7 +137,7 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
             channel_bandwidth=self.channel_bandwidth,
             phasecentre=self.phasecentre,
             weight=1.0,
-            polarisation_frame=PolarisationFrame("stokesIQUV"),
+            polarisation_frame=vpol,
         )
 
         result_cpu_looped = dft_skycomponent_visibility(
@@ -146,7 +148,6 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
             vis, self.comp, dft_compute_kernel="proc_func"
         )
 
-        assert (result_cpu_looped["vis"].data != vis["vis"].data).any()
         # check if two methods give the same visibility data
         assert (result_cpu_looped["vis"].data == result_proc_func["vis"].data).all()
 

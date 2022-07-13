@@ -158,14 +158,18 @@ def dft_kernel(
         else:
             comp_flux = vfluxes
 
+        ntimes, nbaselines, nchan, _ = uvw_lambda.shape
+        npol = vfluxes.shape[-1]
+        new_vis_data = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype="complex")
+
         dft_point_v00(
             direction_cosines,
             comp_flux,
             uvw_lambda.data,
-            new_fluxes,
+            new_vis_data,
         )
 
-        return new_fluxes
+        return new_vis_data
 
     else:
         raise ValueError(f"dft_compute_kernel {dft_compute_kernel} not known")

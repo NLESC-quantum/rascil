@@ -9,7 +9,6 @@ import astropy.units as u
 import numpy
 from astropy.coordinates import SkyCoord
 from numpy.testing import assert_allclose, assert_array_almost_equal
-from unittest.mock import Mock, patch
 
 from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
@@ -194,46 +193,6 @@ class TestVisibilityDFTOperations(unittest.TestCase):
 
         assert_array_almost_equal(result_direction, expected_direction)
         assert (result_flux == expected_flux).all()
-
-    def test_dft_visibility_proc_func(self):
-
-        vis = create_blockvisibility(
-            self.lowcore,
-            self.times,
-            self.frequency,
-            channel_bandwidth=self.channel_bandwidth,
-            phasecentre=self.phasecentre,
-            weight=1.0,
-            polarisation_frame=PolarisationFrame("stokesIQUV"),
-        )
-        with patch("logging.Logger.info") as log_rascil:
-            result_rascil = dft_skycomponent_visibility(
-                vis, self.comp, dft_function="rascil"
-            )
-
-        with patch("logging.Logger.info") as log_proc_func:
-            result_proc_func = dft_skycomponent_visibility(
-                vis, self.comp, dft_function="proc_func"
-            )
-
-        assert (result_rascil["vis"].data != vis["vis"].data).any()
-        # check if two methods give the same visibility data
-        assert (result_rascil["vis"].data == result_proc_func["vis"].data).all()
-        assert log_rascil.call_args.args[0] == "Running with RASCIL DFT"
-        assert (
-            log_proc_func.call_args.args[0]
-            == "Running with Processing Function Library DFT"
-        )
-
-    @patch(
-        "rascil.processing_components.dft.extract_direction_and_flux",
-        Mock(return_value=["sc", "vis"]),
-    )
-    def test_dft_unsupported_option(self):
-        self.assertRaises(
-            ValueError,
-            lambda: dft_skycomponent_visibility(Mock(), Mock(), dft_function="random"),
-        )
 
 
 if __name__ == "__main__":

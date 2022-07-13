@@ -207,11 +207,16 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             polarisation_frame=PolarisationFrame("stokesIQUV"),
         )
         with patch("logging.Logger.info") as log_rascil:
-            result_rascil = dft_skycomponent_visibility(vis, self.comp, "rascil")
+            result_rascil = dft_skycomponent_visibility(
+                vis, self.comp, dft_function="rascil"
+            )
 
         with patch("logging.Logger.info") as log_proc_func:
-            result_proc_func = dft_skycomponent_visibility(vis, self.comp, "proc_func")
+            result_proc_func = dft_skycomponent_visibility(
+                vis, self.comp, dft_function="proc_func"
+            )
 
+        assert (result_rascil["vis"].data != vis["vis"].data).any()
         # check if two methods give the same visibility data
         assert (result_rascil["vis"].data == result_proc_func["vis"].data).all()
         assert log_rascil.call_args.args[0] == "Running with RASCIL DFT"
@@ -220,10 +225,14 @@ class TestVisibilityDFTOperations(unittest.TestCase):
             == "Running with Processing Function Library DFT"
         )
 
-    @patch("rascil.processing_components.dft.extract_direction_and_flux", Mock())
+    @patch(
+        "rascil.processing_components.dft.extract_direction_and_flux",
+        Mock(return_value=["sc", "vis"]),
+    )
     def test_dft_unsupported_option(self):
         self.assertRaises(
-            ValueError, lambda: dft_skycomponent_visibility(Mock(), Mock(), "random")
+            ValueError,
+            lambda: dft_skycomponent_visibility(Mock(), Mock(), dft_function="random"),
         )
 
 

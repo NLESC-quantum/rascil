@@ -35,6 +35,7 @@ from rascil.processing_components.skycomponent import copy_skycomponent
 from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
 from rascil.processing_components.visibility.base import (
     calculate_blockvisibility_phasor,
+    copy_visibility,
 )
 from ska_sdp_func import dft_point_v00
 

@@ -36,26 +36,67 @@ from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
 from rascil.processing_components.visibility.base import (
     calculate_blockvisibility_phasor,
 )
+from ska_sdp_func import dft_point_v00
 
 log = logging.getLogger("rascil-logger")
 
 
 def dft_skycomponent_visibility(
-    vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]], **kwargs
+    vis: BlockVisibility,
+    sc: Union[Skycomponent, List[Skycomponent]],
+    dft_function="rascil",
+    **kwargs,
 ) -> BlockVisibility:
     """DFT to get the visibility from a Skycomponent, for BlockVisibility
 
     :param vis: BlockVisibility
     :param sc: SkyComponent or list of SkyComponents
+    :param dft_function: which dft function to call (proc_func or rascil), string
     :return: BlockVisibility
     """
     if sc is None or (isinstance(sc, list) and len(sc) == 0):
         return vis
 
     direction_cosines, vfluxes = extract_direction_and_flux(sc, vis)
-    vis["vis"].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
+    new_vis = copy_visibility(vis)
 
-    return vis
+    if dft_function == "proc_func":
+        log.info("Running with Processing Function Library DFT")
+
+        if vfluxes.shape[1] == 1:
+            # if sc is for a single channel, extract_direction_and_flux
+            # will return fluxes for a single channel too;
+            # this will break DFT if bvis is for multiple channels;
+            # here we broadcast vfluxes to have the correct shape that
+            # matches with the bvis.
+            # Note: this is not needed for the RASCIL DFT, because numpy
+            # correctly broadcasts the shapes at the place where its needed.
+            comp_flux = numpy.ones(
+                (vfluxes.shape[0], len(vis.frequency), vfluxes.shape[-1]),
+                dtype=complex,
+            )
+            comp_flux[:, :, :] = vfluxes
+        else:
+            comp_flux = vfluxes
+
+        dft_point_v00(
+            direction_cosines,
+            comp_flux,
+            vis.uvw_lambda.data,
+            new_vis["vis"].data,
+        )
+
+    elif dft_function == "rascil":
+        log.info("Running with RASCIL DFT")
+        new_vis["vis"].data = dft_kernel(
+            direction_cosines, vfluxes, vis.uvw_lambda, **kwargs
+        )
+    else:
+        raise ValueError(
+            "dft_function not recognised (supported 'proc_func' and 'rascil')"
+        )
+
+    return new_vis
 
 
 def extract_direction_and_flux(sc, vis):

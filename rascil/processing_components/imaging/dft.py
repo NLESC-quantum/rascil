@@ -141,6 +141,9 @@ def dft_kernel(
     elif dft_compute_kernel == "cpu_looped":
         return dft_cpu_looped(direction_cosines, uvw_lambda, vfluxes)
     elif dft_compute_kernel == "proc_func":
+        # The Processing Function Library DFT function can be found at :
+        # https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/blob/main/src/ska_sdp_func/dft.py
+
         log.info("Running with Processing Function Library DFT")
         if vfluxes.shape[1] == 1:
             # if sc is for a single channel, extract_direction_and_flux

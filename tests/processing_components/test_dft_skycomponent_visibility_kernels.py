@@ -52,9 +52,9 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
         try:
             import cupy
 
-            compute_kernels = ["cpu_looped", "gpu_cupy_raw"]
+            compute_kernels = ["cpu_looped", "gpu_cupy_raw", "proc_func"]
         except ModuleNotFoundError:
-            compute_kernels = ["cpu_looped"]
+            compute_kernels = ["cpu_looped", "proc_func"]
 
         vis = dict()
 
@@ -102,9 +102,9 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
         try:
             import cupy
 
-            compute_kernels = ["gpu_cupy_raw", "cpu_looped"]
+            compute_kernels = ["gpu_cupy_raw", "cpu_looped", "proc_func"]
         except ModuleNotFoundError:
-            compute_kernels = ["cpu_looped"]
+            compute_kernels = ["cpu_looped", "proc_func"]
 
         vpol = PolarisationFrame("linear")
         for dft_compute_kernel in compute_kernels:
@@ -124,32 +124,6 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
             numpy.testing.assert_almost_equal(qa.data["maxabs"], 240.0000000000)
             numpy.testing.assert_almost_equal(qa.data["minabs"], 20.099751242241776)
             numpy.testing.assert_almost_equal(qa.data["rms"], 94.29223125886809)
-
-    # Test using DFT from PFL
-    def test_dft_visibility_proc_func(self):
-
-        self.init(ntimes=2, nchan=2, ncomp=2)
-        vpol = PolarisationFrame("linear")
-        vis = create_blockvisibility(
-            self.lowcore,
-            self.times,
-            self.frequency,
-            channel_bandwidth=self.channel_bandwidth,
-            phasecentre=self.phasecentre,
-            weight=1.0,
-            polarisation_frame=vpol,
-        )
-
-        result_cpu_looped = dft_skycomponent_visibility(
-            vis, self.comp, dft_compute_kernel="cpu_looped"
-        )
-
-        result_proc_func = dft_skycomponent_visibility(
-            vis, self.comp, dft_compute_kernel="proc_func"
-        )
-
-        # check if two methods give the same visibility data
-        assert (result_cpu_looped["vis"].data == result_proc_func["vis"].data).all()
 
 
 if __name__ == "__main__":

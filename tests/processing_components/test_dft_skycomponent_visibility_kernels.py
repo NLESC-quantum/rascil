@@ -52,9 +52,9 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
         try:
             import cupy
 
-            compute_kernels = ["cpu_looped", "gpu_cupy_raw"]
+            compute_kernels = ["cpu_looped", "gpu_cupy_raw", "proc_func"]
         except ModuleNotFoundError:
-            compute_kernels = ["cpu_looped"]
+            compute_kernels = ["cpu_looped", "proc_func"]
 
         vis = dict()
 
@@ -102,9 +102,9 @@ class TestVisibilityDFTOperationsKernels(unittest.TestCase):
         try:
             import cupy
 
-            compute_kernels = ["gpu_cupy_raw", "cpu_looped"]
+            compute_kernels = ["gpu_cupy_raw", "cpu_looped", "proc_func"]
         except ModuleNotFoundError:
-            compute_kernels = ["cpu_looped"]
+            compute_kernels = ["cpu_looped", "proc_func"]
 
         vpol = PolarisationFrame("linear")
         for dft_compute_kernel in compute_kernels:

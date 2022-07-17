@@ -24,7 +24,7 @@ colorama==0.4.5
     # via sphinx-autobuild
 commonmark==0.9.1
     # via recommonmark
-coverage[toml]==6.4.1
+coverage[toml]==6.4.2
     # via pytest-cov
 dill==0.3.5.1
     # via pylint
@@ -82,7 +82,7 @@ pygments==2.12.0
     # via
     #   -r requirements-test.in
     #   sphinx
-pylint==2.14.4
+pylint==2.14.5
     # via
     #   -r requirements-test.in
     #   pylint-junit
@@ -108,7 +108,7 @@ pytest-forked==1.4.0
     # via pytest-xdist
 pytest-json-report==1.5.0
     # via -r requirements-test.in
-pytest-metadata==2.0.1
+pytest-metadata==2.0.2
     # via pytest-json-report
 pytest-pylint==0.18.0
     # via -r requirements-test.in
@@ -175,7 +175,7 @@ urllib3==1.26.10
     # via requests
 wrapt==1.14.1
     # via astroid
-zipp==3.8.0
+zipp==3.8.1
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:

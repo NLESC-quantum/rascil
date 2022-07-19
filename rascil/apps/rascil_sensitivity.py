@@ -414,7 +414,11 @@ def robustness_taper_scenario(
     # https://casa.nrao.edu/casadocs/casa-6.1.0/imaging/synthesis-imaging/data-weighting
     bvis_list = rsexecute.compute(bvis_list, sync=True)
 
+    # One times the sum_weight used in Thompson's formula 6.62
     sum_weight = 0.0
+    # Double sum_weight for casa's method
+    sum_weight2 = 0.0
+
     sum_grid_weight = 0.0
     sum_grid2_over_weight = 0.0
     sum_grid2 = 0.0
@@ -450,12 +454,17 @@ def robustness_taper_scenario(
                 )
                 sum_grid2_over_weight += numpy.sum(igridwt22_over_inatw2)
 
-                sum_weight += numpy.sum(inatwt2) / 2
+                # Double sum_weight for casa's method
+                sum_weight2 += numpy.sum(inatwt2)
                 sum_grid_weight += numpy.sum(igridwt2)
                 sum_grid2 += numpy.sum(igridwt2**2)
 
+                # One times the sum_weight used in Thompson's formula 6.62
+                sum_weight += numpy.sum(inatwt2) / 2
+
+
     pss_casa = numpy.sqrt(sum_grid2_over_weight) / sum_grid_weight
-    natss = 1.0 / numpy.sqrt(sum_weight)
+    natss = 1.0 / numpy.sqrt(sum_weight2)
     reltonat = pss_casa / natss
 
     # Now we can make the PSF.

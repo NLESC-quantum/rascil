@@ -462,7 +462,6 @@ def robustness_taper_scenario(
                 # One times the sum_weight used in Thompson's formula 6.62
                 sum_weight += numpy.sum(inatwt2) / 2
 
-
     pss_casa = numpy.sqrt(sum_grid2_over_weight) / sum_grid_weight
     natss = 1.0 / numpy.sqrt(sum_weight2)
     reltonat = pss_casa / natss

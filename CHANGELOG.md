@@ -1,5 +1,6 @@
 master
 ------
+* Bug Fix for relative to natural weighting ([MR371](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/371))
 * Bug Fix For Supporting multiple Channel Sensitivity Computing ([MR366](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/366))
 * Bug Fix For Numpy sum error in Robust Weight Computing ([MR365](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/365))
 * Add rcal_consumer as part of the rascil-rcal docker image (it is independent of the rest of RASCIL) ([MR334](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/334))

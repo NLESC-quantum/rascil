@@ -36,12 +36,15 @@ from rascil.processing_components.util.coordinate_support import skycoord_to_lmn
 from rascil.processing_components.visibility.base import (
     calculate_blockvisibility_phasor,
 )
+from ska_sdp_func import dft_point_v00
 
 log = logging.getLogger("rascil-logger")
 
 
 def dft_skycomponent_visibility(
-    vis: BlockVisibility, sc: Union[Skycomponent, List[Skycomponent]], **kwargs
+    vis: BlockVisibility,
+    sc: Union[Skycomponent, List[Skycomponent]],
+    **kwargs,
 ) -> BlockVisibility:
     """DFT to get the visibility from a Skycomponent, for BlockVisibility
 
@@ -53,6 +56,7 @@ def dft_skycomponent_visibility(
         return vis
 
     direction_cosines, vfluxes = extract_direction_and_flux(sc, vis)
+
     vis["vis"].data = dft_kernel(direction_cosines, vfluxes, vis.uvw_lambda, **kwargs)
 
     return vis
@@ -124,7 +128,7 @@ def dft_kernel(
     :param direction_cosines: Direction cosines [ncomp, 3]
     :param vfluxes: Fluxes [ncomp, nchan, npol]
     :param uvw_lambda: UVW in lambda [ntimes, nbaselines, nchan, 3]
-    :param dft_compute_kernel: string: cpu_looped, gpu_raw
+    :param dft_compute_kernel: string: cpu_looped, gpu_cupy_raw or proc_func
     :param kwargs: Kernel arguments (needed for future expansion)
     :return: Vis [ntimes, nbaselines, nchan, npol]
     """
@@ -136,6 +140,40 @@ def dft_kernel(
         return dft_gpu_raw_kernel(direction_cosines, uvw_lambda, vfluxes)
     elif dft_compute_kernel == "cpu_looped":
         return dft_cpu_looped(direction_cosines, uvw_lambda, vfluxes)
+    elif dft_compute_kernel == "proc_func":
+        # The Processing Function Library DFT function can be found at :
+        # https://gitlab.com/ska-telescope/sdp/ska-sdp-func/-/blob/main/src/ska_sdp_func/dft.py
+
+        log.info("Running with Processing Function Library DFT")
+        if vfluxes.shape[1] == 1:
+            # if sc is for a single channel, extract_direction_and_flux
+            # will return fluxes for a single channel too;
+            # this will break DFT if bvis is for multiple channels;
+            # here we broadcast vfluxes to have the correct shape that
+            # matches with the bvis.
+            # Note: this is not needed for the RASCIL DFT, because numpy
+            # correctly broadcasts the shapes at the place where its needed.
+            comp_flux = numpy.ones(
+                (vfluxes.shape[0], len(vis.frequency), vfluxes.shape[-1]),
+                dtype=complex,
+            )
+            comp_flux[:, :, :] = vfluxes
+        else:
+            comp_flux = vfluxes
+
+        ntimes, nbaselines, nchan, _ = uvw_lambda.shape
+        npol = vfluxes.shape[-1]
+        new_vis_data = numpy.zeros([ntimes, nbaselines, nchan, npol], dtype="complex")
+
+        dft_point_v00(
+            direction_cosines,
+            comp_flux,
+            uvw_lambda.data,
+            new_vis_data,
+        )
+
+        return new_vis_data
+
     else:
         raise ValueError(f"dft_compute_kernel {dft_compute_kernel} not known")
 

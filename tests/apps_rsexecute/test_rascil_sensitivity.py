@@ -3,6 +3,7 @@
 """
 import os
 import logging
+import numpy
 import pandas as pd
 
 import pytest
@@ -201,3 +202,8 @@ def test_rascil_sensitivity(
         assert col in columns
     for col in columns:
         assert col in df.columns
+
+    # We can only measure whether the relative NATURAL is close to 1
+    if "natural" in df["weighting"].to_numpy():
+        reltonat_casa = df[df["weighting"] == "natural"]["reltonat_casa"].to_numpy()[0]
+        assert numpy.isclose(reltonat_casa, 1.0)

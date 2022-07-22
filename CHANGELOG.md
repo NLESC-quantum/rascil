@@ -1,5 +1,6 @@
 master
 ------
+* Bug Fix for relative to natural weighting ([MR371](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/371))
 * Integrate the DFT function from Processing Function Library into imaging ([MR368](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/368))
 * Bug Fix For Supporting multiple Channel Sensitivity Computing ([MR366](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/366))
 * Bug Fix For Numpy sum error in Robust Weight Computing ([MR365](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/365))

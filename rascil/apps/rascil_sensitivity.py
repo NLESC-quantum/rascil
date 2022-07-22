@@ -414,10 +414,12 @@ def robustness_taper_scenario(
     # https://casa.nrao.edu/casadocs/casa-6.1.0/imaging/synthesis-imaging/data-weighting
     bvis_list = rsexecute.compute(bvis_list, sync=True)
 
-    sum_weight = 0.0
-    sum_grid_weight = 0.0
-    sum_grid2_over_weight = 0.0
-    sum_grid2 = 0.0
+    sum_weight_thompson = 0.0
+    sum_weight_casa = 0.0
+
+    sum_grid_weight_casa = 0.0
+    sum_grid_square_over_weight_casa = 0.0
+    sum_grid_square_casa = 0.0
 
     # Only one channel per bvis
     for bv in bvis_list:
@@ -445,18 +447,24 @@ def robustness_taper_scenario(
                 igridwt2[grid_weight[pol, vchan] <= 0] = 0.0
 
                 # ignore nan and inf value
-                igridwt22_over_inatw2 = numpy.nan_to_num(
+                igridwt2_square_over_inatw2 = numpy.nan_to_num(
                     igridwt2**2 / inatwt2, nan=0.0, posinf=0.0, neginf=0.0
                 )
-                sum_grid2_over_weight += numpy.sum(igridwt22_over_inatw2)
+                sum_grid_square_over_weight_casa += numpy.sum(
+                    igridwt2_square_over_inatw2
+                )
 
-                sum_weight += numpy.sum(inatwt2) / 2
-                sum_grid_weight += numpy.sum(igridwt2)
-                sum_grid2 += numpy.sum(igridwt2**2)
+                # Double sum_weight for casa's method
+                sum_weight_casa += numpy.sum(inatwt2)
+                sum_grid_weight_casa += numpy.sum(igridwt2)
+                sum_grid_square_casa += numpy.sum(igridwt2**2)
 
-    pss_casa = numpy.sqrt(sum_grid2_over_weight) / sum_grid_weight
-    natss = 1.0 / numpy.sqrt(sum_weight)
-    reltonat = pss_casa / natss
+                # One times the sum_weight used in Thompson's formula 6.62
+                sum_weight_thompson += numpy.sum(inatwt2) / 2
+
+    pss_casa = numpy.sqrt(sum_grid_square_over_weight_casa) / sum_grid_weight_casa
+    natss_casa = 1.0 / numpy.sqrt(sum_weight_casa)
+    reltonat_casa = pss_casa / natss_casa
 
     # Now we can make the PSF.
     psf_list = invert_list_rsexecute_workflow(
@@ -498,20 +506,20 @@ def robustness_taper_scenario(
     efficiency = args.efficiency
 
     pss = (
-        numpy.sqrt(sum_grid2 / nd)
-        / (sum_grid_weight / nd)
+        numpy.sqrt(sum_grid_square_casa / nd)
+        / (sum_grid_weight_casa / nd)
         * numpy.sqrt(2.0)
         * 1e26
         * k_B
         * args.tsys
-        / (area * efficiency * numpy.sqrt(sum_weight))
+        / (area * efficiency * numpy.sqrt(sum_weight_thompson))
     )
 
     results["pss"] = pss
     results["pss_casa"] = pss_casa
-    results["reltonat_casa"] = reltonat
+    results["reltonat_casa"] = reltonat_casa
     log.info(
-        f"\tPoint source sensitivity (pss) = {pss:.4g} (Jy/(clean beam)), (pss_casa) = {pss_casa:.4g}, relative to natural weighting = {reltonat:.4g}"
+        f"\tPoint source sensitivity (pss) = {pss:.4g} (Jy/(clean beam)), (pss_casa) = {pss_casa:.4g}, relative to natural weighting = {reltonat_casa:.4g}"
     )
 
     # Calculate solid angle of clean beam
@@ -535,7 +543,7 @@ def robustness_taper_scenario(
 
     results["sbs_casa"] = sbs_casa
     results["pss_casa"] = pss_casa
-    results["reltonat_casa"] = reltonat
+    results["reltonat_casa"] = reltonat_casa
 
     return results
 

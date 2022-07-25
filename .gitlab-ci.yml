@@ -8,6 +8,10 @@ workflow:
     - if: $CI_COMMIT_BRANCH
     - if: $CI_COMMIT_TAG
 
+default:
+  tags:
+    - k8srunner
+
 stages:
   - linting
   - build
@@ -69,6 +73,8 @@ test:
 
 test-dask:
   stage: test
+  tags:
+    - ska-sdp-cambridge
   before_script:
     - apt-get update
     - apt-get -y install rsync ca-certificates cmake

@@ -23,6 +23,6 @@ reproject
 scipy
 seqfile
 tabulate
-xarray
+xarray==2022.3.0
 zarr
 git+https://gitlab.com/ska-telescope/sdp/ska-sdp-func.git@main

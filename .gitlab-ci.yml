@@ -151,6 +151,8 @@ docs:
 # Publish tested image in the GitLab registry, with latest tag
 docker_test:
   stage: test
+  tags:
+    - ska-sdp-cambridge
   image: docker:20.10.7
   services:
     - docker:20.10.7-dind

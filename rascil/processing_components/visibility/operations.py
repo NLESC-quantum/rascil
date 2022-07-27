@@ -44,13 +44,25 @@ def concatenate_visibility(vis_list, dim="time"):
     :param vis_list: List of vis
     :return: Concatendated visibility
     """
-    # assert isinstance(vis_list, collections.abc.Iterable), "vis_list must be iterable"
+    if not len(vis_list) > 0:
+        raise ValueError("concatenate_visibility: vis_list is empty")
 
-    assert len(vis_list) > 0
-
-    return xarray.concat(
-        vis_list, dim=dim, data_vars="minimal", coords="minimal", compat="override"
-    )
+    try:
+        return xarray.concat(
+            vis_list, dim=dim, data_vars="minimal", coords="minimal", compat="override"
+        )
+    except TypeError:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.concat(
+            [dataset.to_native_dataset() for dataset in vis_list],
+            dim=dim,
+            data_vars="minimal",
+            coords="minimal",
+            compat="override",
+        )
 
 
 def concatenate_blockvisibility_frequency(bvis_list):

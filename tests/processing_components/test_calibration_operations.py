@@ -10,15 +10,14 @@ import unittest
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
-from rascil.data_models.memory_data_models import Skycomponent, GainTable
+from rascil.data_models.memory_data_models import Skycomponent
 from rascil.data_models.polarisation import PolarisationFrame
 
 from rascil.processing_components import (
     gaintable_summary,
     apply_gaintable,
     create_gaintable_from_blockvisibility,
-    create_gaintable_from_rows,
-    qa_visibility,
+    concatenate_gaintables,
 )
 from rascil.processing_components.simulation import simulate_gaintable
 from rascil.processing_components.simulation import create_named_configuration
@@ -197,6 +196,34 @@ class TestCalibrationOperations(unittest.TestCase):
                 vis = apply_gaintable(self.vis, gt)
                 error = numpy.max(numpy.abs(vis["vis"].data - self.vis["vis"].data))
                 assert error < 1e-12, f"{spf} {dpf} Error = {error}"
+
+    def test_concatenate_gaintable(self):
+        pol_frame = "stokesI"
+        self.actualSetup(pol_frame, pol_frame)
+
+        new_times = (numpy.pi / 43200.0) * numpy.arange(3001.0, 6000.0, 60.0)
+        new_vis = create_blockvisibility(
+            self.lowcore,
+            new_times,
+            self.frequency,
+            phasecentre=self.phasecentre,
+            channel_bandwidth=self.channel_bandwidth,
+            weight=1.0,
+            polarisation_frame=PolarisationFrame(pol_frame),
+        )
+
+        gt = create_gaintable_from_blockvisibility(
+            self.vis, timeslice="auto", jones_type="T"
+        )
+        new_gt = create_gaintable_from_blockvisibility(
+            new_vis, timeslice="auto", jones_type="T"
+        )
+
+        combined_gt = concatenate_gaintables([gt, new_gt])
+
+        assert combined_gt.time.size == self.vis.time.size + new_vis.time.size
+        assert numpy.isin(self.vis.time, combined_gt.time).all()
+        assert numpy.isin(new_vis.time, combined_gt.time).all()
 
 
 if __name__ == "__main__":

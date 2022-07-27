@@ -211,11 +211,14 @@ def calculate_sensitivity(args):
 
     rsexecute.run(init_logging)
 
-    start_frequency = args.frequency
-
+    # Create a frequency axis noting that the input frequency is the centre one
+    start_frequency = args.frequency - ((args.nchan - 1) / 2) * args.channel_width
     frequency = numpy.linspace(
-        start_frequency, start_frequency + args.nchan * args.channel_width, args.nchan
+        start_frequency,
+        start_frequency + (args.nchan - 1) * args.channel_width,
+        args.nchan,
     )
+
     channel_bandwidth = numpy.array(args.nchan * [args.channel_width])
 
     phasecentre = SkyCoord(

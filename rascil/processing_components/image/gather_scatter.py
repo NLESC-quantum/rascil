@@ -182,4 +182,13 @@ def image_gather_channels(
     :param subimages: Number of image partitions on each axis (2)
     :return: list of subimages
     """
-    return xarray.concat(image_list, dim="frequency")
+    try:
+        return xarray.concat(image_list, dim="frequency")
+    except TypeError:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.concat(
+            [dataset.to_native_dataset() for dataset in image_list], dim="frequency"
+        )

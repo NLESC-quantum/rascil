@@ -439,7 +439,7 @@ webencodings==0.5.1
     #   tinycss2
 widgetsnbextension==3.6.1
     # via ipywidgets
-xarray==2022.3.0
+xarray==2022.6.0
     # via -r requirements.in
 zarr==2.12.0
     # via -r requirements.in

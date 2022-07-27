@@ -1,5 +1,6 @@
 master
 ------
+* Bug Fix for frequency axis in multi-channel mode ([MR373](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/373))
 * Bug Fix for relative to natural weighting ([MR371](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/371))
 * Integrate the DFT function from Processing Function Library into imaging ([MR368](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/368))
 * Bug Fix For Supporting multiple Channel Sensitivity Computing ([MR366](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/366))

@@ -37,7 +37,10 @@ class TestConcat(unittest.TestCase):
 
                 # Don't squeeze out the unit dimensions because we will want
                 # them for the concat
-                chan_vis = [v[1] for v in vis.groupby(dim, squeeze=False)]
+                # need to call .to_native_dataset() because else xarray.concat fails
+                chan_vis = [
+                    v[1].to_native_dataset() for v in vis.groupby(dim, squeeze=False)
+                ]
 
                 # Now concatenate
                 newvis = xarray.concat(chan_vis, dim=dim, data_vars="minimal")
@@ -59,7 +62,10 @@ class TestConcat(unittest.TestCase):
 
                 # Don't squeeze out the unit dimensions because we will want
                 # them for the concat
-                chan_vis = [v[1] for v in vis.groupby_bins(dim, bins=2)]
+                # need to call .to_native_dataset() because else xarray.concat fails
+                chan_vis = [
+                    v[1].to_native_dataset() for v in vis.groupby_bins(dim, bins=2)
+                ]
 
                 # Now concatenate
                 newvis = xarray.concat(chan_vis, dim=dim, data_vars="minimal")

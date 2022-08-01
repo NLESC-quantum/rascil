@@ -182,6 +182,18 @@ class Configuration(xarray.Dataset):
         # to return size of Dataset.
         return int(self.nbytes)
 
+    def to_native_dataset(self):
+        """
+        Convert to plain Dataset. Needed, e.g., for xarray.concat.
+        This makes sure that the child class is represented as its parent class.
+        """
+        # use-case:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.Dataset(self, coords=self.coords, attrs=self.attrs)
+
 
 @xarray.register_dataset_accessor("configuration_acc")
 class ConfigurationAccessor(XarrayAccessorMixin):
@@ -304,6 +316,18 @@ class GainTable(xarray.Dataset):
         # override the default method (which gives size of reference table)
         # to return size of Dataset.
         return int(self.nbytes)
+
+    def to_native_dataset(self):
+        """
+        Convert to plain Dataset. Needed, e.g., for xarray.concat.
+        This makes sure that the child class is represented as its parent class.
+        """
+        # use-case:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.Dataset(self, coords=self.coords, attrs=self.attrs)
 
 
 @xarray.register_dataset_accessor("gaintable_acc")
@@ -449,6 +473,18 @@ class PointingTable(xarray.Dataset):
         # override the default method (which gives size of reference table)
         # to return size of Dataset.
         return int(self.nbytes)
+
+    def to_native_dataset(self):
+        """
+        Convert to plain Dataset. Needed, e.g., for xarray.concat.
+        This makes sure that the child class is represented as its parent class.
+        """
+        # use-case:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.Dataset(self, coords=self.coords, attrs=self.attrs)
 
 
 @xarray.register_dataset_accessor("pointingtable_acc")
@@ -602,6 +638,18 @@ class Image(xarray.Dataset):
         # to return size of Dataset.
         return int(self.nbytes)
 
+    def to_native_dataset(self):
+        """
+        Convert to plain Dataset. Needed, e.g., for xarray.concat.
+        This makes sure that the child class is represented as its parent class.
+        """
+        # use-case:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.Dataset(self, coords=self.coords, attrs=self.attrs)
+
 
 @xarray.register_dataset_accessor("image_acc")
 class ImageAccessor(XarrayAccessorMixin):
@@ -753,6 +801,18 @@ class GridData(xarray.Dataset):
         # override the default method (which gives size of reference table)
         # to return size of Dataset.
         return int(self.nbytes)
+
+    def to_native_dataset(self):
+        """
+        Convert to plain Dataset. Needed, e.g., for xarray.concat.
+        This makes sure that the child class is represented as its parent class.
+        """
+        # use-case:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.Dataset(self, coords=self.coords, attrs=self.attrs)
 
 
 @xarray.register_dataset_accessor("griddata_acc")
@@ -936,6 +996,18 @@ class ConvolutionFunction(xarray.Dataset):
         # override the default method (which gives size of reference table)
         # to return size of Dataset.
         return int(self.nbytes)
+
+    def to_native_dataset(self):
+        """
+        Convert to plain Dataset. Needed, e.g., for xarray.concat.
+        This makes sure that the child class is represented as its parent class.
+        """
+        # use-case:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.Dataset(self, coords=self.coords, attrs=self.attrs)
 
 
 @xarray.register_dataset_accessor("convolutionfunction_acc")
@@ -1325,6 +1397,18 @@ class BlockVisibility(xarray.Dataset):
         # to return size of Dataset.
         return int(self.nbytes)
 
+    def to_native_dataset(self):
+        """
+        Convert to plain Dataset. Needed, e.g., for xarray.concat.
+        This makes sure that the child class is represented as its parent class.
+        """
+        # use-case:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.Dataset(self, coords=self.coords, attrs=self.attrs)
+
 
 @xarray.register_dataset_accessor("blockvisibility_acc")
 class BlockVisibilityAccessor(XarrayAccessorMixin):
@@ -1514,6 +1598,18 @@ class FlagTable(xarray.Dataset):
         # override the default method (which gives size of reference table)
         # to return size of Dataset.
         return int(self.nbytes)
+
+    def to_native_dataset(self):
+        """
+        Convert to plain Dataset. Needed, e.g., for xarray.concat.
+        This makes sure that the child class is represented as its parent class.
+        """
+        # use-case:
+        # RASCIL-defined classes that inherit from xarray.Dataset, do not
+        # take attrs and an input argument; xarray.concat tries to call the
+        # subclass with attrs arg, because it assumes that the subclass takes
+        # the same args as the Dataset class; we need to manually accommodate for this
+        return xarray.Dataset(self, coords=self.corords, attrs=self.attrs)
 
 
 @xarray.register_dataset_accessor("flagtable_acc")

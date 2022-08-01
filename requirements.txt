@@ -64,7 +64,7 @@ cryptography==37.0.4
     # via paramiko
 cycler==0.11.0
     # via matplotlib
-dask==2022.7.0
+dask==2022.7.1
     # via
     #   -r requirements.in
     #   distributed
@@ -76,7 +76,7 @@ decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-distributed==2022.7.0
+distributed==2022.7.1
     # via
     #   -r requirements.in
     #   dask-memusage
@@ -86,7 +86,7 @@ entrypoints==0.4
     # via
     #   jupyter-client
     #   nbconvert
-executing==0.8.3
+executing==0.9.0
     # via stack-data
 fasteners==0.17.3
     # via zarr
@@ -100,7 +100,7 @@ gitdb==4.0.9
     # via gitpython
 gitpython==3.1.27
     # via -r requirements.in
-graphviz==0.20
+graphviz==0.20.1
     # via -r requirements.in
 h5py==3.7.0
     # via -r requirements.in
@@ -439,7 +439,7 @@ webencodings==0.5.1
     #   tinycss2
 widgetsnbextension==3.6.1
     # via ipywidgets
-xarray==2022.3.0
+xarray==2022.6.0
     # via -r requirements.in
 zarr==2.12.0
     # via -r requirements.in

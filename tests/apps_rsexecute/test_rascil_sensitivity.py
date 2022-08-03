@@ -223,7 +223,7 @@ def test_rascil_sensitivity(
             "natural",
             1e4,
         ),
-    ]
+    ],
 )
 def test_export_multi_channel_ms(
     enabled,
@@ -234,12 +234,12 @@ def test_export_multi_channel_ms(
     weighting,
     rmax,
 ):
-    """                                                                                                                      
-                                                                                                                             
+    """
+
     :param enabled: Turn this test on?
     :param use_dask: Use dask for processing. Set to False for debugging
     :param frequency: Frequency of test images (Hz)
-    :param npixel: Number of pixels in test images                                                                           
+    :param npixel: Number of pixels in test images
     :param cellsize: Cellsize of test images (rad)
     :param weighting: type of weighting
     :param rmax: Maximum distance of dish from array centre (m)
@@ -247,13 +247,13 @@ def test_export_multi_channel_ms(
     persist = os.getenv("RASCIL_PERSIST", False)
 
     if not enabled:
-            return True
+        return True
 
     nchan = 1
     tag = "1CHANNELTEST"
     msName = "test1channel.ms"
 
-    # Run the app with a single channel                                                                                      
+    # Run the app with a single channel
     with tempfile.TemporaryDirectory() as tempdir:
         tempMs = os.path.join(tempdir, msName)
         results = rascil_path(f"test_results/{tag}")
@@ -282,12 +282,12 @@ def test_export_multi_channel_ms(
         args = parser.parse_args(sensitivity_args)
         results_file = calculate_sensitivity(args)
 
-        # Determine size of ms                                                                                               
-        msSize1 = int(subprocess.check_output(
-            ['du','-s', tempMs]
-        ).split()[0].decode('utf-8'))
+        # Determine size of ms
+        msSize1 = int(
+            subprocess.check_output(["du", "-s", tempMs]).split()[0].decode("utf-8")
+        )
 
-    # Now repeat with 3 channels                                                                                             
+    # Now repeat with 3 channels
     nchan = 3
     tag = "3CHANNELTEST"
     msName = "test3channel.ms"
@@ -320,10 +320,10 @@ def test_export_multi_channel_ms(
         args = parser.parse_args(sensitivity_args)
         results_file = calculate_sensitivity(args)
 
-        # Determine size of 3-channel ms                                                                                     
-        msSize2 = int(subprocess.check_output(
-            ['du','-s', tempMs]
-        ).split()[0].decode('utf-8'))
+        # Determine size of 3-channel ms
+        msSize2 = int(
+            subprocess.check_output(["du", "-s", tempMs]).split()[0].decode("utf-8")
+        )
 
     # The multi-channel ms should be less than nchan times bigger
     assert msSize2 < msSize1 * nchan

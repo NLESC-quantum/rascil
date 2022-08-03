@@ -263,7 +263,7 @@ def calculate_sensitivity(args):
     if args.msfile != "":
         log.info(f"Export Measurement set file: {args.msfile} ")
         export_bvis_list = rsexecute.compute(bvis_list, sync=True)
-        # Concatenate block visibilities as export doesn't work properly for nchan>1                                         
+        # Concatenate block visibilities as export doesn't work properly for nchan>1
         export_bvis_concat = concatenate_blockvisibility_frequency(export_bvis_list)
         export_blockvisibility_to_ms(args.msfile, [export_bvis_concat])
 

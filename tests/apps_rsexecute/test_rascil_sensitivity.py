@@ -5,6 +5,8 @@ import os
 import logging
 import numpy
 import pandas as pd
+import subprocess
+import tempfile
 
 import pytest
 
@@ -207,3 +209,121 @@ def test_rascil_sensitivity(
     if "natural" in df["weighting"].to_numpy():
         reltonat_casa = df[df["weighting"] == "natural"]["reltonat_casa"].to_numpy()[0]
         assert numpy.isclose(reltonat_casa, 1.0)
+
+
+@pytest.mark.parametrize(
+    "enabled, use_dask, frequency, npixel, cellsize, weighting, rmax",
+    [
+        (
+            default_run,
+            True,
+            0.350e9,
+            512,
+            6e-7,
+            "natural",
+            1e4,
+        ),
+    ]
+)
+def test_export_multi_channel_ms(
+    enabled,
+    use_dask,
+    frequency,
+    npixel,
+    cellsize,
+    weighting,
+    rmax,
+):
+    """                                                                                                                      
+                                                                                                                             
+    :param enabled: Turn this test on?
+    :param use_dask: Use dask for processing. Set to False for debugging
+    :param frequency: Frequency of test images (Hz)
+    :param npixel: Number of pixels in test images                                                                           
+    :param cellsize: Cellsize of test images (rad)
+    :param weighting: type of weighting
+    :param rmax: Maximum distance of dish from array centre (m)
+    """
+    persist = os.getenv("RASCIL_PERSIST", False)
+
+    if not enabled:
+            return True
+
+    nchan = 1
+    tag = "1CHANNELTEST"
+    msName = "test1channel.ms"
+
+    # Run the app with a single channel                                                                                      
+    with tempfile.TemporaryDirectory() as tempdir:
+        tempMs = os.path.join(tempdir, msName)
+        results = rascil_path(f"test_results/{tag}")
+        sensitivity_args = [
+            "--frequency",
+            f"{frequency}",
+            "--imaging_cellsize",
+            f"{cellsize}",
+            "--imaging_npixel",
+            f"{npixel}",
+            "--imaging_weighting",
+            f"{weighting}",
+            "--rmax",
+            f"{rmax}",
+            "--results",
+            results,
+            "--verbose",
+            f"{persist}",
+            "--nchan",
+            f"{nchan}",
+            "--msfile",
+            f"{tempMs}",
+        ]
+
+        parser = cli_parser()
+        args = parser.parse_args(sensitivity_args)
+        results_file = calculate_sensitivity(args)
+
+        # Determine size of ms                                                                                               
+        msSize1 = int(subprocess.check_output(
+            ['du','-s', tempMs]
+        ).split()[0].decode('utf-8'))
+
+    # Now repeat with 3 channels                                                                                             
+    nchan = 3
+    tag = "3CHANNELTEST"
+    msName = "test3channel.ms"
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        tempMs = os.path.join(tempdir, msName)
+        results = rascil_path(f"test_results/{tag}")
+        sensitivity_args = [
+            "--frequency",
+            f"{frequency}",
+            "--imaging_cellsize",
+            f"{cellsize}",
+            "--imaging_npixel",
+            f"{npixel}",
+            "--imaging_weighting",
+            f"{weighting}",
+            "--rmax",
+            f"{rmax}",
+            "--results",
+            results,
+            "--verbose",
+            f"{persist}",
+            "--nchan",
+            f"{nchan}",
+            "--msfile",
+            f"{tempMs}",
+        ]
+
+        parser = cli_parser()
+        args = parser.parse_args(sensitivity_args)
+        results_file = calculate_sensitivity(args)
+
+        # Determine size of 3-channel ms                                                                                     
+        msSize2 = int(subprocess.check_output(
+            ['du','-s', tempMs]
+        ).split()[0].decode('utf-8'))
+
+    # The multi-channel ms should be less than nchan times bigger
+    assert msSize2 < msSize1 * nchan

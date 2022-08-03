@@ -211,49 +211,26 @@ def test_rascil_sensitivity(
         assert numpy.isclose(reltonat_casa, 1.0)
 
 
-@pytest.mark.parametrize(
-    "enabled, use_dask, frequency, npixel, cellsize, weighting, rmax",
-    [
-        (
-            default_run,
-            True,
-            0.350e9,
-            512,
-            6e-7,
-            "natural",
-            1e4,
-        ),
-    ],
-)
-def test_export_multi_channel_ms(
-    enabled,
-    use_dask,
-    frequency,
-    npixel,
-    cellsize,
-    weighting,
-    rmax,
-):
-    """
+def test_export_multi_channel_ms():
+    """Test for bugfix ORC-1372 - check that ms size grows as expected."""
 
-    :param enabled: Turn this test on?
-    :param use_dask: Use dask for processing. Set to False for debugging
-    :param frequency: Frequency of test images (Hz)
-    :param npixel: Number of pixels in test images
-    :param cellsize: Cellsize of test images (rad)
-    :param weighting: type of weighting
-    :param rmax: Maximum distance of dish from array centre (m)
-    """
     persist = os.getenv("RASCIL_PERSIST", False)
+
+    enabled = default_run
+    frequency = 0.350e9
+    npixel = 512
+    cellsize = 6e-7
+    weighting = "natural"
+    rmax = 1e4
 
     if not enabled:
         return True
 
+    # Run the app with a single channel
     nchan = 1
     tag = "1CHANNELTEST"
     msName = "test1channel.ms"
 
-    # Run the app with a single channel
     with tempfile.TemporaryDirectory() as tempdir:
         tempMs = os.path.join(tempdir, msName)
         results = rascil_path(f"test_results/{tag}")

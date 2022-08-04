@@ -24,6 +24,7 @@ from rascil.processing_components.imaging.base import invert_awprojection
 from rascil.processing_components.visibility.base import export_blockvisibility_to_ms
 
 from rascil.processing_components import (
+    concatenate_blockvisibility_frequency,
     create_image_from_visibility,
     create_blockvisibility,
     create_named_configuration,
@@ -262,7 +263,9 @@ def calculate_sensitivity(args):
     if args.msfile != "":
         log.info(f"Export Measurement set file: {args.msfile} ")
         export_bvis_list = rsexecute.compute(bvis_list, sync=True)
-        export_blockvisibility_to_ms(args.msfile, export_bvis_list)
+        # Concatenate block visibilities as export doesn't work properly for nchan>1
+        export_bvis_concat = concatenate_blockvisibility_frequency(export_bvis_list)
+        export_blockvisibility_to_ms(args.msfile, [export_bvis_concat])
 
     if args.verbose == "True":
         plt.clf()

@@ -229,7 +229,7 @@ def calculate_sensitivity(args):
     # Set up configuration and observing times. Default subarray is all antennas.
     if args.subarray != "":
         config = create_named_configuration(args.configuration)
-        log.info(f"Using subarray - rmax parameter ({args.rmax}) is ignored")
+        log.info(f"Using subarray file - rmax parameter ({args.rmax}) is ignored")
         f = open(args.subarray)
         subarray_dict = json.load(f)
         f.close()

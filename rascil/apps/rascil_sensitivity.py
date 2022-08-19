@@ -227,13 +227,16 @@ def calculate_sensitivity(args):
     )
 
     # Set up configuration and observing times. Default subarray is all antennas.
-    config = create_named_configuration(args.configuration)
     if args.subarray != "":
+        config = create_named_configuration(args.configuration)
+        log.info(f"Using subarray - rmax parameter ({args.rmax}) is ignored")
         f = open(args.subarray)
         subarray_dict = json.load(f)
         f.close()
         subarray_ids = subarray_dict["ids"]
         config = config.sel({"id": subarray_ids})
+    else:
+        config = create_named_configuration(args.configuration, rmax=args.rmax)
 
     time_rad = numpy.array(args.time_range) * numpy.pi / 12.0
     times = numpy.arange(

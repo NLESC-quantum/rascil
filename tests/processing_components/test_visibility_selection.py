@@ -186,6 +186,9 @@ class TestVisibilitySelectors(unittest.TestCase):
         assert bvis.frequency.shape == (5,)
 
     def test_blockvisibility_select_r_range(self):
+        """Expected number of baselines was calculated from a manual inspection
+        of the configuration file.
+        """
         bvis = create_blockvisibility(
             self.lowcore,
             self.times,
@@ -199,7 +202,7 @@ class TestVisibilitySelectors(unittest.TestCase):
         rmax = 20000.0
 
         sub_bvis = blockvisibility_select_r_range(bvis, rmin, rmax)
-        assert len(sub_bvis.baselines) == 3741
+        assert len(sub_bvis.baselines) == 11781
         assert len(sub_bvis.configuration.names) == 166
         assert sub_bvis.frequency.shape == (5,)
         assert sub_bvis.integration_time.shape == bvis.integration_time.shape

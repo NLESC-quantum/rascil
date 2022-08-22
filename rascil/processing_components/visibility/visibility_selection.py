@@ -79,9 +79,8 @@ def blockvisibility_select_r_range(bvis, rmin=None, rmax=None):
         return bvis
 
     # Calculate radius from array centre (in 3D) and set it as a data variable
-    r = numpy.abs(bvis.configuration.xyz - bvis.configuration.xyz.mean("id")).std(
-        "spatial"
-    )
+    xyz0 = bvis.configuration.xyz - bvis.configuration.xyz.mean("id")
+    r = numpy.sqrt(xarray.dot(xyz0, xyz0, dims="spatial"))
     config = bvis.configuration.assign(radius=r)
     # Now use it for selection
     if rmax is None:

@@ -11,6 +11,8 @@ import numpy
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
+from types import SimpleNamespace
+
 from rascil.data_models.parameters import rascil_path
 
 from rascil.data_models.polarisation import PolarisationFrame
@@ -37,6 +39,7 @@ from rascil.processing_components.simulation import (
     insert_unittest_errors,
 )
 from rascil.processing_components.skycomponent.operations import insert_skycomponent
+from rascil.apps.rascil_imager import get_cellsize
 
 log = logging.getLogger("rascil-logger")
 
@@ -55,7 +58,6 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
     def actualSetUp(
         self, add_errors=False, freqwin=5, dospectral=True, dopol=False, zerow=False
     ):
-
         self.npixel = 512
         self.low = create_named_configuration("LOWBD2", rmax=750.0)
         self.freqwin = freqwin
@@ -221,6 +223,70 @@ class TestImagingDeconvolveGraph(unittest.TestCase):
         self.save_and_check(
             116.67179726013609, -0.4492163142147586, restored, "mmclean"
         )
+
+    def test_deconvolve_and_restore_cube_msclean_radler(self):
+        is_radler_available = True
+        try:
+            import radler  # pylint: disable=import-error
+        except ImportError:
+            log.info("Radler module not available. Test is skipped.")
+            is_radler_available = False
+
+        if is_radler_available:
+            self.actualSetUp(add_errors=False)
+            dirty_imagelist = invert_list_rsexecute_workflow(
+                self.vis_list,
+                self.model_imagelist,
+                context="ng",
+                dopsf=False,
+                normalise=True,
+            )
+            psf_imagelist = invert_list_rsexecute_workflow(
+                self.vis_list,
+                self.model_imagelist,
+                context="ng",
+                dopsf=True,
+                normalise=True,
+            )
+            dirty_imagelist_trimmed = [
+                rsexecute.execute(lambda x: x[0])(d) for d in dirty_imagelist
+            ]
+            psf_imagelist_trimmed = [
+                rsexecute.execute(lambda x: x[0])(d) for d in psf_imagelist
+            ]
+
+            args = SimpleNamespace(**{"imaging_cellsize": 0.001})
+            actual_cellsize = get_cellsize(args, self.vis_list)
+            dec_imagelist = deconvolve_list_rsexecute_workflow(
+                dirty_imagelist_trimmed,
+                psf_imagelist_trimmed,
+                self.model_imagelist,
+                niter=100,
+                fractional_threshold=0.01,
+                scales=[0, 3],
+                algorithm="msclean",
+                nchan=self.freqwin,
+                threshold=0.01,
+                gain=0.7,
+                use_radler=True,
+                cellsize=actual_cellsize,
+            )
+            residual_imagelist = residual_list_rsexecute_workflow(
+                self.vis_list, model_imagelist=dec_imagelist, context="ng"
+            )
+            restored_list = restore_list_rsexecute_workflow(
+                model_imagelist=dec_imagelist,
+                psf_imagelist=psf_imagelist,
+                residual_imagelist=residual_imagelist,
+                empty=self.model_imagelist,
+            )
+
+            restored = rsexecute.compute(restored_list, sync=True)
+            restored = image_gather_channels(restored)
+
+            self.save_and_check(
+                113.68259619600235, -0.48856392086704903, restored, "msclean_radler"
+            )
 
     def test_deconvolve_and_restore_cube_msclean(self):
         self.actualSetUp(add_errors=False)

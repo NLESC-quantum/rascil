@@ -1,5 +1,6 @@
 master
 ------
+* Radler added as deconvolution method ([MR370](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/370))
 * Bug Fix for calculation of radius in rascil.processing_components.visibility.blockvisibility_select_r_range and reinstatement of rmax parameter in sensitivity app ([MR389](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/389))
 * Sensitivity App bug fix for exported measurement sets being far too large ([MR380](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/380))
 * Account for breaking changes in xarray==2022.6.0, which involve concatenating Datasets ([MR372](https://gitlab.com/ska-telescope/external/rascil/-/merge_requests/373))

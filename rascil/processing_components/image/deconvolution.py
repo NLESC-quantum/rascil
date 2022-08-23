@@ -46,6 +46,7 @@ from astropy.convolution import Gaussian2DKernel, convolve_fft
 from rascil.processing_components.image.operations import (
     convert_clean_beam_to_degrees,
     convert_clean_beam_to_pixels,
+    create_empty_image_like,
 )
 from rascil.data_models.memory_data_models import Image
 from rascil.data_models.parameters import get_parameter
@@ -158,6 +159,94 @@ def deconvolve_list(
     log.info("deconvolve_cube %s: Deconvolution finished" % (prefix))
 
     return comp_image_list, residual_image_list
+
+
+def radler_deconvolve_list(
+    dirty_list: List[Image],
+    psf_list: List[Image],
+    prefix="",
+    **kwargs,
+) -> (List[Image]):
+
+    """Clean using the Radler module, using various algorithms.
+
+    The algorithms available are (see: https://radler.readthedocs.io/en/latest/tree/cpp/algorithms.html):
+
+    msclean
+    iuwt
+    more_sane
+    generic_clean
+
+    For example::
+
+        comp = radler_deconvolve_list(dirty_list, psf_list, niter=1000, gain=0.7, algorithm='msclean',
+                                         scales=[0, 3, 10, 30], threshold=0.01)
+
+    :param dirty_list: list of dirty image
+    :param psf_list: list of point spread function
+    :param prefix: Informational message for logging
+    :param algorithm: Cleaning algorithm: 'msclean'|'iuwt'|'more_sane'|'generic_clean'
+    :param gain: loop gain (float) 0.7
+    :param threshold: Clean threshold (0.0)
+    :param scales: Scales (in pixels) for multiscale ([0, 3, 10, 30])
+    :param niter: Maximum number of iterations
+    :param cellsize: Cell size of each pixel in the image
+    :return: component image_list
+
+    """
+
+    import radler as rd  # pylint: disable=import-error
+
+    algorithm = get_parameter(kwargs, "algorithm", "msclean")
+    n_iterations = get_parameter(kwargs, "niter", 500)
+    clean_threshold = get_parameter(kwargs, "threshold", 0.001)
+    loop_gain = get_parameter(kwargs, "gain", 0.7)
+    ms_scales = get_parameter(kwargs, "scales", [])
+    cellsize = get_parameter(kwargs, "cellsize", 0.005)
+    settings = rd.Settings()
+    settings.trimmed_image_width = dirty_list[0].pixels.shape[2]
+    settings.trimmed_image_height = dirty_list[0].pixels.shape[3]
+    settings.pixel_scale.x = cellsize
+    settings.pixel_scale.y = cellsize
+    settings.minor_iteration_count = n_iterations
+    settings.threshold = clean_threshold
+    settings.minor_loop_gain = loop_gain
+    if algorithm == "msclean":
+        settings.algorithm_type = rd.AlgorithmType.multiscale
+        if len(ms_scales) > 0:
+            settings.multiscale.scale_list = ms_scales
+    elif algorithm == "iuwt":
+        settings.algorithm_type = rd.AlgorithmType.iuwt
+    elif algorithm == "more_sane":
+        settings.algorithm_type = rd.AlgorithmType.more_sane
+    elif algorithm == "generic_clean":
+        settings.algorithm_type = rd.AlgorithmType.generic_clean
+    else:
+        raise ValueError(
+            "imaging_deconvolve with radler: Unknown algorithm %s" % (algorithm)
+        )
+
+    comp_image_list = []
+    for i in range(len(dirty_list)):
+        psf_radler = psf_list[i].pixels.to_numpy().astype(numpy.float32).squeeze()
+        dirty_radler = dirty_list[i].pixels.to_numpy().astype(numpy.float32).squeeze()
+        restored_radler = numpy.zeros_like(dirty_radler)
+
+        radler_object = rd.Radler(
+            settings,
+            psf_radler,
+            dirty_radler,
+            restored_radler,
+            0.0,
+            rd.Polarization.stokes_i,
+        )
+        reached_threshold = False
+        reached_threshold = radler_object.perform(reached_threshold, 0)
+
+        x_im = create_empty_image_like(dirty_list[i])
+        x_im["pixels"].data = numpy.expand_dims(restored_radler, axis=(0, 1))
+        comp_image_list.append(x_im)
+    return comp_image_list
 
 
 def check_psf_peak(psf_list):

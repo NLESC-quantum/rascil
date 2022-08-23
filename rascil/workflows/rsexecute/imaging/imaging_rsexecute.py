@@ -24,7 +24,6 @@ import copy
 import logging
 
 import numpy
-
 from rascil.data_models import Image
 from rascil.data_models.parameters import get_parameter
 from rascil.processing_components.image.operations import create_empty_image_like
@@ -32,6 +31,7 @@ from rascil.processing_components.griddata.operations import create_griddata_fro
 from rascil.processing_components.image.deconvolution import (
     deconvolve_cube,
     deconvolve_list,
+    radler_deconvolve_list,
     restore_cube,
     restore_list,
     create_image_from_array,
@@ -443,9 +443,25 @@ def deconvolve_list_singlefacet_rsexecute_workflow(
 
         if this_peak > 1.1 * gthreshold:
             kwargs["threshold"] = gthreshold
-            comp, _ = deconvolve_list(
-                dirty, psf, prefix=prefix, mask=msk, sensitivity=sens, **kwargs
-            )
+            use_radler = get_parameter(kwargs, "use_radler", False)
+
+            if use_radler:
+                try:
+                    import radler  # pylint: disable=import-error
+                except ImportError:
+                    log.info(
+                        "Radler module not available. RASCIL deconvolution is used instead."
+                    )
+                    use_radler = False
+
+            if use_radler:
+                # deconvolve with radler.
+                comp = radler_deconvolve_list(dirty, psf, prefix=prefix, **kwargs)
+
+            else:
+                comp, _ = deconvolve_list(
+                    dirty, psf, prefix=prefix, mask=msk, sensitivity=sens, **kwargs
+                )
             for ic, c in enumerate(comp):
                 c["pixels"].data = c["pixels"].data + model[ic]["pixels"].data
             return comp

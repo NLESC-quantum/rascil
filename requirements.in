@@ -19,6 +19,7 @@ paramiko
 photutils >= 1.4.0
 python-casacore
 python-gitlab
+radler
 reproject
 scipy
 seqfile
